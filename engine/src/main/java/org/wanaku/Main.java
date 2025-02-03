@@ -1,4 +1,4 @@
-package org.apache.camel;
+package org.wanaku;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
