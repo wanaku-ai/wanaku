@@ -1,5 +1,7 @@
 package org.wanaku.server.quarkus.types;
 
+import java.util.List;
+
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -68,10 +70,42 @@ public class Messages {
 
         jsonRpc.put("result", result);
 
+        return toMessage(jsonRpc);
+    }
+
+    public static McpMessage newForResourceList(JsonObject request, List<McpResource> resourcesList, String nextCursor) {
+        return newForResourceList(request.getInteger("id"), resourcesList, nextCursor);
+    }
+
+    public static McpMessage newForResourceList(int id, List<McpResource> resourcesList, String nextCursor) {
+        JsonObject jsonRpc = new JsonObject();
+        jsonRpc.put("jsonrpc", VERSION);
+        jsonRpc.put("id", id);
+
+        JsonObject result = new JsonObject();
+
+        JsonArray resources = new JsonArray();
+        for (McpResource mcpResource : resourcesList) { // You can change this to generate multiple resources
+            JsonObject resource = new JsonObject();
+            resource.put("uri", mcpResource.uri)
+                    .put("name", mcpResource.name)
+                    .put("description", mcpResource.description)
+                    .put("mimeType", mcpResource.mimeType);
+            resources.add(resource);
+        }
+
+        result.put("resources", resources);
+        result.put("nextCursor", nextCursor);
+
+        jsonRpc.put("result", result);
+
+        return toMessage(jsonRpc);
+    }
+
+    private static McpMessage toMessage(JsonObject jsonRpc) {
         McpMessage message = new McpMessage();
         message.event = "message";
         message.payload = jsonRpc.toString();
-
         return message;
     }
 }

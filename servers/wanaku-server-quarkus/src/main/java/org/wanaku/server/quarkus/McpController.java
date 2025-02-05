@@ -1,5 +1,7 @@
 package org.wanaku.server.quarkus;
 
+import java.util.Collections;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.Dependent;
 
@@ -48,6 +50,10 @@ public class McpController {
             }
             case "notifications/initialized": {
                 return Multi.createFrom().empty();
+            }
+            case "resources/list": {
+                response = Messages.newForResourceList(request, Collections.emptyList(), "abc");
+                break;
             }
             default: {
                 response = null;
