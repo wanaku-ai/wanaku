@@ -13,6 +13,9 @@ import org.apache.camel.component.file.GenericFile;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.routers.camel.ResourceProxy;
 
+/**
+ * Proxies between MCP URIs and the Camel file component
+ */
 public class FileProxy implements ResourceProxy {
     private final ConsumerTemplate consumer;
 
