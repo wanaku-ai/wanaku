@@ -71,7 +71,7 @@
     </build>
     <profiles>
         <profile>
-            <id>native</id>
+            <id>native-router</id>
             <activation>
                 <property>
                     <name>native</name>
