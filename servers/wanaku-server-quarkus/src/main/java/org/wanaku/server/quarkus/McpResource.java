@@ -73,7 +73,7 @@ public class McpResource {
             LOG.debug("Emitting new connection request");
             newConnEmitter.sendAndForget("");
         } else {
-            LOG.debug("Not enough credits to send the request request");
+            LOG.warn("Not enough credits to send the request request");
         }
 
         return events.map(e -> sse.newEventBuilder()
