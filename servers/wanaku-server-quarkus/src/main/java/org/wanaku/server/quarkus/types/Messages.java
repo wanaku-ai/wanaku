@@ -8,30 +8,6 @@ import io.vertx.core.json.JsonObject;
 public class Messages {
     private static final String VERSION = "2.0";
 
-    public static JsonObject newError(Object id, int code, String message) {
-        JsonObject response = new JsonObject();
-        response.put("jsonrpc", VERSION);
-        response.put("id", id);
-        response.put("error", new JsonObject()
-                .put("code", code)
-                .put("message", message));
-        return response;
-    }
-
-    public static JsonObject newNotification(String method, Object params) {
-        return new JsonObject()
-                .put("jsonrpc", VERSION)
-                .put("method", method)
-                .put("params", params);
-    }
-
-    public static JsonObject newPing(Object id) {
-        return new JsonObject()
-                .put("jsonrpc", VERSION)
-                .put("id", id)
-                .put("method", "ping");
-    }
-
     public static McpMessage newForInitialization(JsonObject request) {
         return newForInitialization(request.getInteger("id"));
     }
