@@ -38,7 +38,7 @@ public class Messages {
                 .put("method", "ping");
     }
 
-    public static JsonObject newForInitialization(String id) {
+    public static JsonObject newForInitialization(int id) {
         JsonObject jsonRpc = new JsonObject();
         jsonRpc.put("jsonrpc", VERSION);
         jsonRpc.put("id", id);
@@ -47,7 +47,7 @@ public class Messages {
         result.put("protocolVersion", "2024-11-05");
 
         JsonObject capabilities = new JsonObject();
-        JsonArray logging = new JsonArray();
+        JsonObject logging = new JsonObject();
         capabilities.put("logging", logging);
 
         JsonObject prompts = new JsonObject();

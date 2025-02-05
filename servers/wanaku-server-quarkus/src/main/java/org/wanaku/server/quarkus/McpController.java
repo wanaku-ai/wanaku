@@ -43,7 +43,7 @@ public class McpController {
         String method = request.getString("method");
         switch (method) {
             case "initialize": {
-                response = Messages.newForInitialization(request.getString("id"));
+                response = Messages.newForInitialization(request.getInteger("id"));
                 break;
             }
             default: {
