@@ -1,4 +1,4 @@
-package org.wanaku.server.quarkus.types;
+package org.wanaku.api.types;
 
 public class McpResourceData {
     public String uri;

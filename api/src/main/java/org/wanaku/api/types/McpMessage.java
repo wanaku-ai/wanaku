@@ -1,5 +1,4 @@
-package org.wanaku.server.quarkus.types;
-
+package org.wanaku.api.types;
 
 public class McpMessage {
     public String event;

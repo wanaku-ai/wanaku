@@ -13,10 +13,10 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.logging.Logger;
+import org.wanaku.api.types.McpResource;
+import org.wanaku.api.types.McpResourceData;
+import org.wanaku.api.types.ResourceReference;
 import org.wanaku.server.quarkus.api.ResourceResolver;
-import org.wanaku.server.quarkus.types.McpResource;
-import org.wanaku.server.quarkus.types.McpResourceData;
-import org.wanaku.server.quarkus.types.ResourceReference;
 import picocli.CommandLine;
 
 @ApplicationScoped

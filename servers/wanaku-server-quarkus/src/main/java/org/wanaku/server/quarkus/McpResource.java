@@ -18,7 +18,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
-import org.wanaku.server.quarkus.types.McpMessage;
+import org.wanaku.api.types.McpMessage;
 
 @ApplicationScoped
 @Path("/")

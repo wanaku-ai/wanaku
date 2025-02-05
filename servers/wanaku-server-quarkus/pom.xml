@@ -42,6 +42,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.wanaku</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest</artifactId>
         </dependency>

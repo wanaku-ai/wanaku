@@ -10,9 +10,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
+import org.wanaku.api.types.McpMessage;
 import org.wanaku.server.quarkus.api.ResourceResolver;
 import org.wanaku.server.quarkus.helper.Messages;
-import org.wanaku.server.quarkus.types.McpMessage;
 
 @Dependent
 public class McpController {

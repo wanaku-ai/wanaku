@@ -6,9 +6,9 @@ import java.util.UUID;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.jboss.logging.Logger;
-import org.wanaku.server.quarkus.types.McpMessage;
-import org.wanaku.server.quarkus.types.McpResource;
-import org.wanaku.server.quarkus.types.McpResourceData;
+import org.wanaku.api.types.McpMessage;
+import org.wanaku.api.types.McpResource;
+import org.wanaku.api.types.McpResourceData;
 
 public class Messages {
     private static final Logger LOG = Logger.getLogger(Messages.class);
