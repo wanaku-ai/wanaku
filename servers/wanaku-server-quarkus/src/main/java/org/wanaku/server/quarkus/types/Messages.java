@@ -6,14 +6,6 @@ import io.vertx.core.json.JsonObject;
 public class Messages {
     private static final String VERSION = "2.0";
 
-    public static JsonObject newResult(Object id, Object result) {
-        JsonObject response = new JsonObject();
-        response.put("jsonrpc", VERSION);
-        response.put("id", id);
-        response.put("result", result);
-        return response;
-    }
-
     public static JsonObject newError(Object id, int code, String message) {
         JsonObject response = new JsonObject();
         response.put("jsonrpc", VERSION);
