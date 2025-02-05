@@ -1,7 +1,6 @@
 package org.wanaku.routers.camel;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.wanaku.api.types.McpResource;
@@ -20,8 +19,6 @@ public interface ResourceProxy {
     String name();
 
     default List<McpResource> list(String resourcesPath) {
-        List<McpResource> mcpResources = new ArrayList<>();
-
         return list(new File(resourcesPath, INDEX_FILE));
     }
 
