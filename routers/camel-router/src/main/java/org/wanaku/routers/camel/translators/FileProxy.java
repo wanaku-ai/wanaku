@@ -4,14 +4,19 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.component.file.GenericFile;
+import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
+import org.wanaku.api.types.ResourceReference;
 import org.wanaku.routers.camel.ResourceProxy;
+
+import static org.wanaku.routers.camel.ResourcesHelper.loadResources;
 
 /**
  * Proxies between MCP URIs and the Camel file component
@@ -27,6 +32,29 @@ public class FileProxy implements ResourceProxy {
     @Override
     public String name() {
         return "file";
+    }
+
+    @Override
+    public List<McpResource> list(File resourceIndex) {
+        List<McpResource> mcpResources = new ArrayList<>();
+        try {
+            List<ResourceReference> references = loadResources(resourceIndex);
+
+            for (ResourceReference reference : references) {
+                McpResource mcpResource = new McpResource();
+
+                mcpResource.uri = String.format("%s:%s", reference.getType(), reference.getLocation());
+                mcpResource.name = reference.getName();
+                mcpResource.mimeType = reference.getMimeType();
+                mcpResource.description = reference.getDescription();
+
+                mcpResources.add(mcpResource);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return mcpResources;
     }
 
     @Override
