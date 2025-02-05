@@ -12,7 +12,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
 import org.wanaku.server.quarkus.types.McpMessage;
-import org.wanaku.server.quarkus.types.Messages;
+import org.wanaku.server.quarkus.helper.Messages;
 
 @Dependent
 public class McpController {
@@ -52,6 +52,8 @@ public class McpController {
                 return Multi.createFrom().empty();
             }
             case "resources/list": {
+                // ResourceProvider::getResources();
+
                 response = Messages.newForResourceList(request, Collections.emptyList(), "abc");
                 break;
             }

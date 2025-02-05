@@ -1,4 +1,4 @@
-package org.wanaku.server.quarkus.types;
+package org.wanaku.server.quarkus.helper;
 
 import java.util.List;
 import java.util.UUID;
@@ -6,6 +6,8 @@ import java.util.UUID;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.jboss.logging.Logger;
+import org.wanaku.server.quarkus.types.McpMessage;
+import org.wanaku.server.quarkus.types.McpResource;
 
 public class Messages {
     private static final Logger LOG = Logger.getLogger(Messages.class);
