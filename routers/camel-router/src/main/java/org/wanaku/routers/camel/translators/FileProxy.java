@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.component.file.GenericFile;
+import org.jboss.logging.Logger;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
@@ -22,6 +23,7 @@ import static org.wanaku.core.util.ResourcesHelper.loadIndex;
  * Proxies between MCP URIs and the Camel file component
  */
 public class FileProxy implements ResourceProxy {
+    private static final Logger LOG = Logger.getLogger(FileProxy.class);
     private final ConsumerTemplate consumer;
 
     public FileProxy(CamelContext camelContext) {
@@ -80,8 +82,8 @@ public class FileProxy implements ResourceProxy {
             }
 
             return Collections.emptyList();
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            LOG.errorf("Unable to read file: %s", e.getMessage(), e);
             return Collections.emptyList();
         } finally {
             consumer.stop();
