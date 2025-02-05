@@ -26,7 +26,6 @@ public class FileProxy implements ResourceProxy {
 
     public FileProxy(CamelContext camelContext) {
         this.consumer = camelContext.createConsumerTemplate();
-        consumer.start();
     }
 
     @Override
@@ -59,16 +58,18 @@ public class FileProxy implements ResourceProxy {
 
     @Override
     public List<McpResourceData> eval(String uri) {
+
         URI uriUri = URI.create(uri);
         String filePath = uriUri.getSchemeSpecificPart();
 
         File file = new File(filePath);
-        String camelUri = String.format("file://%s?fileName=%s", file.getParent(), file.getName());
+        String camelUri = String.format("file://%s?fileName=%s&noop=true&idempotent=false", file.getParent(), file.getName());
 
         try {
+            consumer.start();
             Object o = consumer.receiveBody(camelUri, 5000);
             if (o instanceof GenericFile<?> genericFile) {
-                String fileName = genericFile.getFileName();
+                String fileName = genericFile.getAbsoluteFilePath();
                 McpResourceData data = new McpResourceData();
                 data.uri = uri;
 
@@ -82,6 +83,8 @@ public class FileProxy implements ResourceProxy {
         } catch (Throwable e) {
             e.printStackTrace();
             return Collections.emptyList();
+        } finally {
+            consumer.stop();
         }
     }
 }
