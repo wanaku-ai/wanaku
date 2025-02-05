@@ -1,4 +1,4 @@
-package org.wanaku.server.quarkus;
+package org.wanaku.routers.camel;
 
 import jakarta.inject.Inject;
 
@@ -8,8 +8,8 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 
 @QuarkusMain(name = "base")
-@CommandLine.Command(name = "server", mixinStandardHelpOptions = true)
-public class ServerMain implements Runnable, QuarkusApplication {
+@CommandLine.Command(name = "camel", mixinStandardHelpOptions = true)
+public class CamelRouterMain implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
@@ -21,7 +21,7 @@ public class ServerMain implements Runnable, QuarkusApplication {
     private boolean helpRequested = false;
 
     public static void main(String[] args) {
-        Quarkus.run(ServerMain.class, args);
+        Quarkus.run(CamelRouterMain.class, args);
     }
 
     @Override
