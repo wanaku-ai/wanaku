@@ -38,12 +38,12 @@ public class McpController {
     public Multi<McpMessage> requests(String str) {
         LOG.debugf("Received %s", str);
         JsonObject request = new JsonObject(str);
-        JsonObject response;
+        McpMessage response;
 
         String method = request.getString("method");
         switch (method) {
             case "initialize": {
-                response = Messages.newForInitialization(request.getInteger("id"));
+                response = Messages.newForInitialization(request);
                 break;
             }
             case "notifications/initialized": {
@@ -55,12 +55,8 @@ public class McpController {
             }
         }
 
-        McpMessage message = new McpMessage();
-        message.event = "message";
-        message.payload = response.toString();
+        LOG.debugf("Replying with %s", response.payload);
 
-        LOG.debugf("Replying with %s", message.payload);
-
-        return Multi.createFrom().item(message);
+        return Multi.createFrom().item(response);
     }
 }

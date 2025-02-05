@@ -38,7 +38,11 @@ public class Messages {
                 .put("method", "ping");
     }
 
-    public static JsonObject newForInitialization(int id) {
+    public static McpMessage newForInitialization(JsonObject request) {
+        return newForInitialization(request.getInteger("id"));
+    }
+
+    private static McpMessage newForInitialization(int id) {
         JsonObject jsonRpc = new JsonObject();
         jsonRpc.put("jsonrpc", VERSION);
         jsonRpc.put("id", id);
@@ -72,6 +76,10 @@ public class Messages {
 
         jsonRpc.put("result", result);
 
-        return jsonRpc;
+        McpMessage message = new McpMessage();
+        message.event = "message";
+        message.payload = jsonRpc.toString();
+
+        return message;
     }
 }
