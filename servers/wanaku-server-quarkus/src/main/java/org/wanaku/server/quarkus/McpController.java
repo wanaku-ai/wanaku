@@ -32,7 +32,7 @@ public class McpController {
     @Incoming("mcpNewConnections")
     @Outgoing("mcpEvents")
     public McpMessage handle(String request) {
-        return McpMessage.newConnectionMessage(host, port);
+        return Messages.newConnectionMessage(host, port);
     }
 
     @Incoming("mcpRequests")
