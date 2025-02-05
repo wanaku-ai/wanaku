@@ -17,6 +17,7 @@ import static org.wanaku.core.util.ResourcesHelper.loadIndex;
 
 class SimpleResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(SimpleResourceResolver.class);
+    private static final String INDEX_FILE = "resources.json";
     private String resourcesPath;
 
     public SimpleResourceResolver(String resourcesPath) {
@@ -24,11 +25,16 @@ class SimpleResourceResolver implements ResourceResolver {
     }
 
     @Override
+    public File indexLocation() {
+        return new File(resourcesPath, INDEX_FILE);
+    }
+
+    @Override
     public List<McpResource> resources() {
         LOG.info("Resolving resources");
         List<McpResource> mcpResources = new ArrayList<>();
 
-        File resourcesFile = new File(resourcesPath, "resources.json");
+        File resourcesFile = indexLocation();
 
         try {
             List<ResourceReference> references = loadIndex(resourcesFile);

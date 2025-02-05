@@ -1,0 +1,15 @@
+{
+  "location": "/path/to/resource",
+  "type": "image/jpeg",
+  "name": "example resource",
+  "description": "This is an example resource.",
+  "mimeType": "image/jpeg",
+  "params": [
+    {
+      "name": "param1"
+    },
+    {
+      "name": "param2"
+    }
+  ]
+}

@@ -10,17 +10,11 @@ import org.wanaku.api.types.McpResourceData;
  * Proxies between MCP URIs and Camel components capable of handling them
  */
 public interface ResourceProxy {
-    String INDEX_FILE = "resources.json";
-
     /**
      * The name of the proxy
      * @return
      */
     String name();
-
-    default List<McpResource> list(String resourcesPath) {
-        return list(new File(resourcesPath, INDEX_FILE));
-    }
 
     /**
      * List resources that can be handled by this proxy
