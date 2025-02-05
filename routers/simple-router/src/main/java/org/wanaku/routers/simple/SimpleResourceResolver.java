@@ -7,12 +7,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.logging.Logger;
 import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
+
+import static org.wanaku.core.util.ResourcesHelper.loadIndex;
 
 class SimpleResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(SimpleResourceResolver.class);
@@ -20,12 +21,6 @@ class SimpleResourceResolver implements ResourceResolver {
 
     public SimpleResourceResolver(String resourcesPath) {
         this.resourcesPath = resourcesPath;
-    }
-
-    public static List<ResourceReference> loadResources(File resourcesFile) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(resourcesFile,
-                objectMapper.getTypeFactory().constructCollectionType(List.class, ResourceReference.class));
     }
 
     @Override
@@ -36,7 +31,7 @@ class SimpleResourceResolver implements ResourceResolver {
         File resourcesFile = new File(resourcesPath, "resources.json");
 
         try {
-            List<ResourceReference> references = loadResources(resourcesFile);
+            List<ResourceReference> references = loadIndex(resourcesFile);
 
             for (ResourceReference reference : references) {
                 McpResource mcpResource = new McpResource();

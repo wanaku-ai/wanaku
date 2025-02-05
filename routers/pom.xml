@@ -52,6 +52,12 @@
 
         <dependency>
             <groupId>org.wanaku</groupId>
+            <artifactId>util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wanaku</groupId>
             <artifactId>wanaku-server-quarkus</artifactId>
             <version>${project.version}</version>
         </dependency>
