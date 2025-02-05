@@ -60,6 +60,7 @@ public class ResourceReference {
 
     public static class Param {
         private String name;
+        private String value;
 
         public String getName() {
             return name;
@@ -67,6 +68,14 @@ public class ResourceReference {
 
         public void setName(String name) {
             this.name = name;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
         }
     }
 }

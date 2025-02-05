@@ -44,6 +44,7 @@
         <module>core</module>
         <module>servers</module>
         <module>routers</module>
+        <module>cli</module>
 
     </modules>
 
