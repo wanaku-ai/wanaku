@@ -55,12 +55,12 @@ public class McpController {
                 return Multi.createFrom().empty();
             }
             case "resources/list": {
-                response = Messages.newForResourceList(request, resourceResolver.resources(), "abc");
+                response = Messages.newForResourceList(request, resourceResolver.resources(), Pagination.nextPage());
                 break;
             }
             case "resources/read": {
                 String uri = request.getJsonObject("params").getString("uri");
-                response = Messages.newForResourceRead(request, resourceResolver.read(uri), "abc");
+                response = Messages.newForResourceRead(request, resourceResolver.read(uri), Pagination.nextPage());
                 break;
             }
             default: {
