@@ -1,8 +1,9 @@
 package org.wanaku.server.quarkus;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.JsonObject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -11,7 +12,7 @@ import org.jboss.logging.Logger;
 import org.wanaku.server.quarkus.types.McpMessage;
 import org.wanaku.server.quarkus.types.Messages;
 
-@ApplicationScoped
+@Dependent
 public class McpController {
     private static final Logger LOG = Logger.getLogger(McpController.class);
 
@@ -34,7 +35,7 @@ public class McpController {
 
     @Incoming("mcpRequests")
     @Outgoing("mcpEvents")
-    public McpMessage requests(String str) {
+    public Multi<McpMessage> requests(String str) {
         LOG.debugf("Received %s", str);
         JsonObject request = new JsonObject(str);
         JsonObject response;
@@ -57,6 +58,6 @@ public class McpController {
 
         LOG.debugf("Replying with %s", message.payload);
 
-        return message;
+        return Multi.createFrom().item(message);
     }
 }

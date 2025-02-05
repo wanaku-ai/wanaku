@@ -1,5 +1,7 @@
 package org.wanaku.server.quarkus;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -12,33 +14,39 @@ import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.wanaku.server.quarkus.types.McpMessage;
 
+@ApplicationScoped
 @Path("/")
 public class McpResource {
     private static final Logger LOG = Logger.getLogger(McpResource.class);
 
+    @Inject
     @Channel("mcpEvents")
     Multi<McpMessage> events;
 
     @Inject
     @Channel("mcpNewConnections")
-    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 1000)
-    Emitter<String> newConnEmitter;
+    MutinyEmitter<String> newConnEmitter;
 
     @Inject
     @Channel("mcpRequests")
-    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 1000)
-    Emitter<String> requestsEmitter;
-
+    MutinyEmitter<String> requestsEmitter;
 
     @Inject
     Sse sse;
+
+    @PostConstruct
+    void initialize() {
+        // Without this, the first http request fails. This seems to force
+        // it to subscribe
+        LOG.debug("McpResource initialized");
+        events.subscribe().with(events -> {});
+    }
 
     @Path("/message")
     @POST
@@ -46,7 +54,7 @@ public class McpResource {
     public Response request(String request) {
         boolean hasRequests = requestsEmitter.hasRequests();
         if (hasRequests) {
-            requestsEmitter.send(request);
+            requestsEmitter.sendAndForget(request);
 
             return Response.accepted().build();
         } else {
@@ -63,7 +71,9 @@ public class McpResource {
 
         if (hasRequests) {
             LOG.debug("Emitting new connection request");
-            newConnEmitter.send("");
+            newConnEmitter.sendAndForget("");
+        } else {
+            LOG.debug("Not enough credits to send the request request");
         }
 
         return events.map(e -> sse.newEventBuilder()
