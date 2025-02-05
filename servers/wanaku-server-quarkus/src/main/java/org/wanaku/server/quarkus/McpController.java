@@ -11,7 +11,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
 import org.wanaku.api.types.McpMessage;
-import org.wanaku.server.quarkus.api.ResourceResolver;
+import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.server.quarkus.helper.Messages;
 
 @Dependent

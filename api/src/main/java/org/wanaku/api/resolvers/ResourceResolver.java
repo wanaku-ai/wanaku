@@ -1,4 +1,4 @@
-package org.wanaku.server.quarkus.api;
+package org.wanaku.api.resolvers;
 
 import java.util.List;
 

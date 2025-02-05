@@ -16,7 +16,7 @@ import org.jboss.logging.Logger;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
-import org.wanaku.server.quarkus.api.ResourceResolver;
+import org.wanaku.api.resolvers.ResourceResolver;
 import picocli.CommandLine;
 
 @ApplicationScoped
