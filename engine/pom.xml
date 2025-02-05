@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>engine</artifactId>
+    <name>Wanaku :: Engine</name>
 
     <dependencies>
         <dependency>

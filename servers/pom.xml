@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>servers</artifactId>
+    <name>Wanaku :: Servers</name>
     <packaging>pom</packaging>
 
     <modules>

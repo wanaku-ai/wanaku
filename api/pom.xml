@@ -11,5 +11,6 @@
     </parent>
 
     <artifactId>api</artifactId>
+    <name>Wanaku :: API</name>
 
 </project>

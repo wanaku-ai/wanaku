@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>parent</artifactId>
+    <name>Wanaku :: Parent</name>
     <packaging>pom</packaging>
 
     <properties>

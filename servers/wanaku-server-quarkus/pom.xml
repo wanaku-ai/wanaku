@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>wanaku-server-quarkus</artifactId>
+    <name>Wanaku :: Servers :: Quarkus</name>
 
     <properties>
         <maven.compiler.parameters>true</maven.compiler.parameters>
