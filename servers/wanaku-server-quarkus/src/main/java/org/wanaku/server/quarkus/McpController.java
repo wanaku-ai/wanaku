@@ -46,6 +46,9 @@ public class McpController {
                 response = Messages.newForInitialization(request.getInteger("id"));
                 break;
             }
+            case "notifications/initialized": {
+                return Multi.createFrom().empty();
+            }
             default: {
                 response = null;
                 break;
