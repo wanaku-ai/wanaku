@@ -1,0 +1,10 @@
+[
+  {
+    "location": "//Users/opiske/tmp/test-mcp1.txt",
+    "type": "file",
+    "name": "testMcp1",
+    "description": "Test MCP file 1",
+    "mimeType": "text/plain",
+    "params": []
+  }
+]

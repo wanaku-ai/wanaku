@@ -1,9 +1,8 @@
 package org.wanaku.server.quarkus;
 
-import java.util.Collections;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.JsonObject;
@@ -11,8 +10,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
-import org.wanaku.server.quarkus.types.McpMessage;
+import org.wanaku.server.quarkus.api.ResourceResolver;
 import org.wanaku.server.quarkus.helper.Messages;
+import org.wanaku.server.quarkus.types.McpMessage;
 
 @Dependent
 public class McpController {
@@ -23,6 +23,9 @@ public class McpController {
 
     @ConfigProperty(name = "quarkus.http.port")
     int port;
+
+    @Inject
+    ResourceResolver resourceResolver;
 
     @PostConstruct
     void initChannel() {
@@ -52,9 +55,7 @@ public class McpController {
                 return Multi.createFrom().empty();
             }
             case "resources/list": {
-                // ResourceProvider::getResources();
-
-                response = Messages.newForResourceList(request, Collections.emptyList(), "abc");
+                response = Messages.newForResourceList(request, resourceResolver.resources(), "abc");
                 break;
             }
             default: {
