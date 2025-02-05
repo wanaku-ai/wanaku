@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonObject;
 import org.jboss.logging.Logger;
 import org.wanaku.server.quarkus.types.McpMessage;
 import org.wanaku.server.quarkus.types.McpResource;
+import org.wanaku.server.quarkus.types.McpResourceData;
 
 public class Messages {
     private static final Logger LOG = Logger.getLogger(Messages.class);
@@ -111,5 +112,33 @@ public class Messages {
 
     private static String baseAddress(String host, int port) {
         return String.format("http://%s:%d", host, port);
+    }
+
+    public static McpMessage newForResourceRead(JsonObject request, List<McpResourceData> resourcesList, String nextCursor) {
+        return newForResourceRead(request.getInteger("id"), resourcesList, nextCursor);
+    }
+
+    public static McpMessage newForResourceRead(int id, List<McpResourceData> resourcesList, String nextCursor) {
+        JsonObject jsonRpc = new JsonObject();
+        jsonRpc.put("jsonrpc", VERSION);
+        jsonRpc.put("id", id);
+
+        JsonObject result = new JsonObject();
+
+        JsonArray contents = new JsonArray();
+        for (McpResourceData mcpResource : resourcesList) {
+            JsonObject resource = new JsonObject();
+            resource.put("uri", mcpResource.uri)
+                    .put("mimeType", mcpResource.mimeType)
+                    .put("text", mcpResource.text);
+            contents.add(resource);
+        }
+
+        result.put("contents", contents);
+        result.put("nextCursor", nextCursor);
+
+        jsonRpc.put("result", result);
+
+        return toMessage(jsonRpc);
     }
 }

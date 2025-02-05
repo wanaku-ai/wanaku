@@ -58,6 +58,11 @@ public class McpController {
                 response = Messages.newForResourceList(request, resourceResolver.resources(), "abc");
                 break;
             }
+            case "resources/read": {
+                String uri = request.getJsonObject("params").getString("uri");
+                response = Messages.newForResourceRead(request, resourceResolver.read(uri), "abc");
+                break;
+            }
             default: {
                 response = null;
                 break;
