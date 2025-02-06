@@ -12,6 +12,8 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
+import org.wanaku.api.resolvers.AsyncRequestHandler;
+import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
@@ -88,5 +90,14 @@ public class FileProxy implements ResourceProxy {
         } finally {
             consumer.stop();
         }
+    }
+
+    @Override
+    public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
+        McpRequestStatus<McpResourceData> mcpRequestStatus = new McpRequestStatus<>();
+
+        mcpRequestStatus.status = McpRequestStatus.Status.SUBSCRIPTION_UNSUPPORTED;
+
+        callback.handle(mcpRequestStatus);
     }
 }

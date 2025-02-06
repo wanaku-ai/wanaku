@@ -11,7 +11,9 @@ import jakarta.inject.Inject;
 
 import org.apache.camel.CamelContext;
 import org.jboss.logging.Logger;
+import org.wanaku.api.resolvers.AsyncRequestHandler;
 import org.wanaku.api.resolvers.ResourceResolver;
+import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.routers.camel.translators.FileProxy;
 import org.wanaku.server.quarkus.McpResource;
@@ -50,6 +52,11 @@ public class Providers {
                 @Override
                 public List<McpResourceData> read(String uri) {
                     return List.of();
+                }
+
+                @Override
+                public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
+
                 }
             };
         }

@@ -1,12 +1,15 @@
 package org.wanaku.server.quarkus.helper;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.jboss.logging.Logger;
 import org.wanaku.api.types.McpMessage;
+import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 
@@ -140,5 +143,39 @@ public class Messages {
         jsonRpc.put("result", result);
 
         return toMessage(jsonRpc);
+    }
+
+    public static McpMessage newError(JsonObject request, McpRequestStatus.Status status) {
+        return newError(request.getInteger("id"), status);
+    }
+
+    public static McpMessage newError(int id, McpRequestStatus.Status status) {
+        JsonObject response = new JsonObject();
+        response.put("jsonrpc", VERSION);
+        response.put("id", id);
+        response.put("error", new JsonObject()
+                .put("code", status.getCode())
+                .put("message", status.getDescription()));
+        return toMessage(response);
+    }
+
+    public static McpMessage newNotification(String method, HashMap<String, String> paramsMap) {
+        JsonObject jsonObject = new JsonObject()
+                .put("jsonrpc", VERSION)
+                .put("method", method);
+
+
+        JsonArray params = new JsonArray();
+
+        if (paramsMap != null) {
+            for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
+                JsonObject param = new JsonObject();
+                param.put(entry.getKey(), entry.getValue());
+
+                params.add(param);
+            }
+        }
+
+        return toMessage(jsonObject);
     }
 }

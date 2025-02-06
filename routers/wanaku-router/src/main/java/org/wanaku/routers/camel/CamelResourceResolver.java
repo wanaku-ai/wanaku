@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.wanaku.api.resolvers.AsyncRequestHandler;
 import org.wanaku.api.resolvers.ResourceResolver;
+import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 
@@ -48,5 +50,16 @@ class CamelResourceResolver implements ResourceResolver {
         LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", resourceProxy.name(), uri);
 
         return resourceProxy.eval(uri);
+    }
+
+    @Override
+    public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
+        URI uriUri = URI.create(uri);
+        String scheme = uriUri.getScheme();
+
+        ResourceProxy resourceProxy = proxies.get(scheme);
+        LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", resourceProxy.name(), uri);
+
+        resourceProxy.subscribe(uri, callback);
     }
 }

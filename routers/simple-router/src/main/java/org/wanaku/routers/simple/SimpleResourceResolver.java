@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.logging.Logger;
+import org.wanaku.api.resolvers.AsyncRequestHandler;
 import org.wanaku.api.resolvers.ResourceResolver;
+import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
@@ -72,5 +74,10 @@ class SimpleResourceResolver implements ResourceResolver {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
+
     }
 }

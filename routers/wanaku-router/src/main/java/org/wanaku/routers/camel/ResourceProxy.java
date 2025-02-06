@@ -3,6 +3,8 @@ package org.wanaku.routers.camel;
 import java.io.File;
 import java.util.List;
 
+import org.wanaku.api.resolvers.AsyncRequestHandler;
+import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 
@@ -29,5 +31,12 @@ public interface ResourceProxy {
      * @return
      */
     List<McpResourceData> eval(String uri);
+
+    /**
+     * Subscribe to the given MCP URI
+     * @param uri
+     * @return
+     */
+    void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback);
 
 }
