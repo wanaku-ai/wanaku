@@ -4,7 +4,7 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-User=opiske
+User=jenkins
 ExecStartPre=/usr/bin/docker pull quay.io/megacamelus/camel-router:latest
 ExecStart=/usr/bin/docker run --rm --cpus=2 --memory=2g --name wanaku-router -v wanaku:/data -p 8080:8080 quay.io/megacamelus/camel-router:latest
 ExecStop=/usr/bin/docker stop wanaku-router
