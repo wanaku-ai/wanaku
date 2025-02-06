@@ -29,6 +29,8 @@
         <maven-failsafe-plugin.version>3.3.1</maven-failsafe-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
+        <executable-suffix/>
+        <distribution.directory>${project.build.directory}/distributions</distribution.directory>
 
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>

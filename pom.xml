@@ -13,6 +13,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <camel.version>4.8.3</camel.version>
@@ -35,8 +36,17 @@
                 <version>${picocli.version}</version>
             </dependency>
         </dependencies>
-
     </dependencyManagement>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
+    </build>
 
     <modules>
         <module>parent</module>
@@ -45,7 +55,6 @@
         <module>servers</module>
         <module>routers</module>
         <module>cli</module>
-
     </modules>
 
 </project>
