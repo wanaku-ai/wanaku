@@ -13,8 +13,8 @@ public class CamelRouterMain implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
-    @CommandLine.Option(names = {"--resources-path"}, description = "The path to the resources index",
-            defaultValue = "${user.home}/.wanaku/server/")
+    @CommandLine.Option(names = {"--resources-path"}, description = "The path to the resources index directory",
+            defaultValue = "${user.home}/.wanaku/router/")
     private String resourcesPath;
 
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")

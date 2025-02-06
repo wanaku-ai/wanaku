@@ -1,6 +1,8 @@
 package org.wanaku.routers.camel;
 
+import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,6 +12,7 @@ import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.jboss.logging.Logger;
 import org.wanaku.api.resolvers.ResourceResolver;
+import org.wanaku.api.types.McpResourceData;
 import org.wanaku.routers.camel.translators.FileProxy;
 import org.wanaku.server.quarkus.McpResource;
 import picocli.CommandLine;
@@ -31,12 +34,42 @@ public class Providers {
 
     @Produces
     ResourceResolver getResourceResolver() {
-        var resourcesPath = parseResult.matchedOption("resources-path").getValue().toString();
+        if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
+            return new ResourceResolver() {
+
+                @Override
+                public File indexLocation() {
+                    return null;
+                }
+
+                @Override
+                public List<org.wanaku.api.types.McpResource> resources() {
+                    return List.of();
+                }
+
+                @Override
+                public List<McpResourceData> read(String uri) {
+                    return List.of();
+                }
+            };
+        }
+
+        String resourcesPath = parseResult.matchedOptionValue("resources-path", "${user.home}/.wanaku/router/")
+                .replace("${user.home}", System.getProperty("user.home"));
+        createSettingsDirectory(resourcesPath);
+
         if (!camelContext.isStarted()) {
             camelContext.start();
         }
         Map<String, ? extends ResourceProxy> proxies = loadProxies();
         return new CamelResourceResolver(resourcesPath, proxies);
+    }
+
+    private static void createSettingsDirectory(String resourcesPath) {
+        File resourcesDir = new File(resourcesPath);
+        if (!resourcesDir.exists()) {
+            resourcesDir.mkdirs();
+        }
     }
 
     public Map<String, ? extends ResourceProxy> loadProxies() {
