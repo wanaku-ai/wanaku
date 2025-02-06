@@ -32,6 +32,12 @@
         <executable-suffix/>
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
 
+        <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
+        <quarkus.container-image.group>megacamelus</quarkus.container-image.group>
+        <quarkus.container-image.tag>latest</quarkus.container-image.tag>
+        <quarkus.container-image.build>false</quarkus.container-image.build>
+        <quarkus.container-image.push>false</quarkus.container-image.push>
+
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>3.15.3</quarkus.platform.version>

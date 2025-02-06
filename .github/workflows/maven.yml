@@ -29,3 +29,14 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: quay.io
+        username: ${{ secrets.QUAY_USERNAME }}
+        password: ${{ secrets.QUAY_PASSWORD }}
+    - name: Publish
+      run: |
+        mvn -B package \
+          -Dquarkus.container-image.build=true \
+          -Dquarkus.container-image.push=true
