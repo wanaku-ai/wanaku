@@ -75,7 +75,7 @@
     </dependencies>
 
     <modules>
-        <module>camel-router</module>
+        <module>wanaku-router</module>
         <module>simple-router</module>
     </modules>
 

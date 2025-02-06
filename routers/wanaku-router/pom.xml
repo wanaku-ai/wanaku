@@ -9,7 +9,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>camel-router</artifactId>
+    <artifactId>wanaku-router</artifactId>
     <name>Wanaku :: Routers :: Camel</name>
 
     <properties>
