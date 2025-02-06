@@ -1,0 +1,6 @@
+#!/bin/sh
+
+localDir="$(dirname $0)"
+installDir="$(dirname "${localDir}")"
+
+java -jar "${installDir}"/quarkus-run.jar "$@"
