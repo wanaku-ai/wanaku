@@ -1,4 +1,4 @@
-package org.wanaku.routers.camel;
+package org.wanaku.routers.camel.resolvers;
 
 import java.io.File;
 import java.net.URI;
@@ -12,25 +12,25 @@ import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
+import org.wanaku.routers.camel.proxies.ResourceProxy;
 
-class CamelResourceResolver implements ResourceResolver {
+public class CamelResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(CamelResourceResolver.class);
-    private static final String INDEX_FILE = "resources.json";
-    private final String resourcesPath;
+    private final File indexFile;
     private final Map<String, ? extends ResourceProxy> proxies;
 
-    public CamelResourceResolver(String resourcesPath, Map<String, ? extends ResourceProxy> proxies) {
-        this.resourcesPath = resourcesPath;
+    public CamelResourceResolver(File indexFile, Map<String, ? extends ResourceProxy> proxies) {
+        this.indexFile = indexFile;
         this.proxies = proxies;
     }
 
     @Override
     public File indexLocation() {
-        return new File(resourcesPath, INDEX_FILE);
+        return indexFile;
     }
 
     @Override
-    public List<McpResource> resources() {
+    public List<McpResource> list() {
         List<McpResource> allResources = new ArrayList<>();
         List<? extends ResourceProxy> list = proxies.values().stream().toList();
         for (ResourceProxy proxy : list) {

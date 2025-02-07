@@ -1,0 +1,42 @@
+[
+  {
+    "name": "meow-facts",
+    "description": "Retrieve random facts about cats",
+    "uri": "https://meowfacts.herokuapp.com?count={count}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "int",
+          "description": "The number of facts to retrieve"
+        }
+      },
+      "required": [
+        "count"
+      ]
+    }
+  },
+  {
+    "name": "free-currency-conversion-api",
+    "description": "Free currency conversion API",
+    "uri": "https://economia.awesomeapi.com.br/last/{firstCurrency}-{secondCurrency}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "firstCurrency": {
+          "type": "string",
+          "description": "The first currency passed to the tool invocation (3 letter, i.e.: USD, EUR, etc)"
+        },
+        "secondCurrency": {
+          "type": "string",
+          "description": "The second currency passed to the tool invocation  (3 letter, i.e.: BRL, CZK, etc)"
+        }
+      },
+      "required": [
+        "firstCurrency", "secondCurrency"
+      ]
+    }
+  }
+]

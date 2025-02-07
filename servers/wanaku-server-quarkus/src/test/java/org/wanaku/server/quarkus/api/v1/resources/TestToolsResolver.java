@@ -2,11 +2,10 @@ package org.wanaku.server.quarkus.api.v1.resources;
 
 import java.io.File;
 
-import org.wanaku.api.resolvers.util.NoopResourceResolver;
+import org.wanaku.api.resolvers.util.NoopToolsResolver;
 
-public class TestResourceResolver extends NoopResourceResolver {
-
-    public static final String INDEX_FILE = "target/test-data/index/" + DEFAULT_RESOURCES_INDEX_FILE_NAME;
+public class TestToolsResolver extends NoopToolsResolver {
+    public static final String INDEX_FILE = "target/test-data/index/tools.json";
 
     @Override
     public File indexLocation() {

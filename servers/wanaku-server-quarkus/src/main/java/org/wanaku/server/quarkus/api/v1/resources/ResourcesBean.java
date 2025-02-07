@@ -8,7 +8,7 @@ import jakarta.inject.Inject;
 
 import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.ResourceReference;
-import org.wanaku.core.util.ResourcesHelper;
+import org.wanaku.core.util.IndexHelper;
 
 @ApplicationScoped
 public class ResourcesBean {
@@ -18,9 +18,9 @@ public class ResourcesBean {
     public void expose(ResourceReference mcpResource) {
         File indexFile = resourceResolver.indexLocation();
         try {
-            List<ResourceReference> resourceReferences = ResourcesHelper.loadIndex(indexFile);
+            List<ResourceReference> resourceReferences = IndexHelper.loadResourcesIndex(indexFile);
             resourceReferences.add(mcpResource);
-            ResourcesHelper.saveIndex(indexFile, resourceReferences);
+            IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

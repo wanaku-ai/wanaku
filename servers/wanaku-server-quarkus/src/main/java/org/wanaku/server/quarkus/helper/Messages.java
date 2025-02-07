@@ -1,5 +1,6 @@
 package org.wanaku.server.quarkus.helper;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,9 @@ import org.wanaku.api.types.McpMessage;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
+import org.wanaku.api.types.McpTool;
+import org.wanaku.api.types.McpToolContent;
+import org.wanaku.api.types.McpToolStatus;
 
 public class Messages {
     private static final Logger LOG = Logger.getLogger(Messages.class);
@@ -171,6 +175,81 @@ public class Messages {
                 params.add(param);
             }
         }
+
+        return toMessage(jsonObject);
+    }
+
+    public static McpMessage newForToolsList(JsonObject request, List<McpTool> resourcesList, String nextCursor) {
+        return newForToolsList(request.getInteger("id"), resourcesList, nextCursor);
+    }
+
+    public static McpMessage newForToolsList(int id, List<McpTool> toolList, String nextCursor) {
+        JsonObject jsonRpc = new JsonObject();
+        jsonRpc.put("jsonrpc", VERSION);
+        jsonRpc.put("id", id);
+
+        JsonObject result = new JsonObject();
+
+        JsonArray tools = new JsonArray();
+        for (McpTool mcpTool : toolList) {
+            JsonObject properties = new JsonObject();
+            List<String> required = new ArrayList<>();
+            for (var property : mcpTool.inputSchema.properties) {
+                JsonObject propertyJson = new JsonObject();
+                propertyJson.put("type", property.description);
+                propertyJson.put("description", property.description);
+
+                properties.put(property.name, property);
+                if (property.required) {
+                    required.add(property.name);
+                }
+            }
+
+            JsonObject inputSchema = new JsonObject()
+                    .put("type", mcpTool.inputSchema.type)
+                    .put("properties", properties)
+                    .put("required", required);
+
+            JsonObject tool = new JsonObject();
+            tool.put("name", mcpTool.name);
+            tool.put("description", mcpTool.description);
+            tool.put("inputSchema", inputSchema);
+            tools.add(tool);
+        }
+
+        result.put("tools", tools);
+        result.put("nextCursor", nextCursor);
+
+        jsonRpc.put("result", result);
+
+        return toMessage(jsonRpc);
+    }
+
+
+    public static McpMessage newForToolsCall(JsonObject request, McpToolStatus status) {
+        return newForToolsLCall(request.getInteger("id"), status);
+    }
+
+    public static McpMessage newForToolsLCall(int id, McpToolStatus status) {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.put("jsonrpc", VERSION);
+        jsonObject.put("id", id);
+
+        JsonObject result = new JsonObject();
+
+        JsonArray contents = new JsonArray();
+        for (McpToolContent mcpToolContent : status.content) {
+            JsonObject content = new JsonObject()
+                    .put("type", mcpToolContent.type)
+                    .put("text", mcpToolContent.text);
+
+            contents.add(content);
+        }
+
+        result.put("contents", contents);
+        result.put("isError", status.isError);
+
+        jsonObject.put("result", result);
 
         return toMessage(jsonObject);
     }
