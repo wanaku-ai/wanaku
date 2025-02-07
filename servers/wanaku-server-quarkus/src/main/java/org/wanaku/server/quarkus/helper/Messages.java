@@ -33,10 +33,6 @@ public class Messages {
         JsonObject logging = new JsonObject();
         capabilities.put("logging", logging);
 
-        JsonObject prompts = new JsonObject();
-        prompts.put("listChanged", true);
-        capabilities.put("prompts", prompts);
-
         JsonObject resources = new JsonObject();
         resources.put("subscribe", true);
         resources.put("listChanged", true);
