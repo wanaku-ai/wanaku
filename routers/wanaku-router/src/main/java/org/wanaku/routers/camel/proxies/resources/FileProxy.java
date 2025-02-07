@@ -1,4 +1,4 @@
-package org.wanaku.routers.camel.translators;
+package org.wanaku.routers.camel.proxies.resources;
 
 import java.io.File;
 import java.net.URI;
@@ -17,9 +17,9 @@ import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
-import org.wanaku.routers.camel.ResourceProxy;
+import org.wanaku.routers.camel.proxies.ResourceProxy;
 
-import static org.wanaku.core.util.ResourcesHelper.loadIndex;
+import static org.wanaku.core.util.IndexHelper.loadResourcesIndex;
 
 /**
  * Proxies between MCP URIs and the Camel file component
@@ -38,11 +38,12 @@ public class FileProxy implements ResourceProxy {
     }
 
     @Override
-    public List<McpResource> list(File resourceIndex) {
-        List<McpResource> mcpResources = new ArrayList<>();
+    public List<McpResource> list(File index) {
+        final List<McpResource> mcpResources = new ArrayList<>();
         try {
-            List<ResourceReference> references = loadIndex(resourceIndex);
+            List<ResourceReference> references = loadResourcesIndex(index);
 
+            // TODO: needs to filter only file related
             for (ResourceReference reference : references) {
                 McpResource mcpResource = new McpResource();
 

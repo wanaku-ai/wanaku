@@ -12,10 +12,9 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.wanaku.api.types.ResourceReference;
-import org.wanaku.core.util.ResourcesHelper;
+import org.wanaku.core.util.IndexHelper;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class ResourcesResourceTest {
@@ -62,7 +61,7 @@ public class ResourcesResourceTest {
         }
 
         // Save the index to a file
-        ResourcesHelper.saveIndex(indexFile, RESOURCE_REFERENCES);
+        IndexHelper.saveResourcesIndex(indexFile, RESOURCE_REFERENCES);
 
         // Verify that the file exists and is not empty
         Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");

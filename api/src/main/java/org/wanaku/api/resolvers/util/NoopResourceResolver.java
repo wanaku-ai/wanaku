@@ -17,7 +17,7 @@ public class NoopResourceResolver implements ResourceResolver {
     }
 
     @Override
-    public List<McpResource> resources() {
+    public List<McpResource> list() {
         return List.of();
     }
 

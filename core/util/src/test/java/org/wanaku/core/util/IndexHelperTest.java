@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ResourcesHelperTest {
+public class IndexHelperTest {
 
     public static final List<ResourceReference> RESOURCE_REFERENCES = Arrays.asList(
             createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg"),
@@ -36,12 +36,12 @@ public class ResourcesHelperTest {
 
     @Order(1)
     @Test
-    public void testSaveIndex() throws IOException {
+    public void testSaveResourcesIndex() throws IOException {
         // Create a temporary index file
         File indexFile = new File("target/test-classes/index.json");
 
         // Save the index to a file
-        ResourcesHelper.saveIndex(indexFile, RESOURCE_REFERENCES);
+        IndexHelper.saveResourcesIndex(indexFile, RESOURCE_REFERENCES);
 
         // Verify that the file exists and is not empty
         assertTrue(indexFile.exists());
@@ -50,15 +50,15 @@ public class ResourcesHelperTest {
 
     @Order(2)
     @Test
-    public void testLoadIndex() throws Exception {
+    public void testLoadResourcesIndex() throws Exception {
         // Use the temporary index file
         File indexFile = new File("target/test-classes/index.json");
 
         // Save the index to a file
-        ResourcesHelper.loadIndex(indexFile);
+        IndexHelper.loadResourcesIndex(indexFile);
 
         // Load the index back from the file
-        List<ResourceReference> loadedResourceReferences = ResourcesHelper.loadIndex(indexFile);
+        List<ResourceReference> loadedResourceReferences = IndexHelper.loadResourcesIndex(indexFile);
 
         // Verify that the loaded resources match the original ones
         assertEquals(loadedResourceReferences.size(), loadedResourceReferences.size());
@@ -103,10 +103,10 @@ public class ResourcesHelperTest {
 
     @Order(3)
     @Test
-    public void testLoadIndexThrowsException() {
+    public void testLoadResourcesIndexThrowsException() {
         // Create a non-existent index file
         File indexFile = new File("non-existent-index.json");
 
-        assertThrows(Exception.class, () -> ResourcesHelper.loadIndex(indexFile));
+        assertThrows(Exception.class, () -> IndexHelper.loadResourcesIndex(indexFile));
     }
 }

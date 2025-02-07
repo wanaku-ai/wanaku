@@ -15,11 +15,10 @@ import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
 
-import static org.wanaku.core.util.ResourcesHelper.loadIndex;
+import static org.wanaku.core.util.IndexHelper.loadResourcesIndex;
 
 class SimpleResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(SimpleResourceResolver.class);
-    private static final String INDEX_FILE = "resources.json";
     private String resourcesPath;
 
     public SimpleResourceResolver(String resourcesPath) {
@@ -28,18 +27,18 @@ class SimpleResourceResolver implements ResourceResolver {
 
     @Override
     public File indexLocation() {
-        return new File(resourcesPath, INDEX_FILE);
+        return new File(resourcesPath, DEFAULT_RESOURCES_INDEX_FILE_NAME);
     }
 
     @Override
-    public List<McpResource> resources() {
+    public List<McpResource> list() {
         LOG.info("Resolving resources");
         List<McpResource> mcpResources = new ArrayList<>();
 
         File resourcesFile = indexLocation();
 
         try {
-            List<ResourceReference> references = loadIndex(resourcesFile);
+            List<ResourceReference> references = loadResourcesIndex(resourcesFile);
 
             for (ResourceReference reference : references) {
                 McpResource mcpResource = new McpResource();

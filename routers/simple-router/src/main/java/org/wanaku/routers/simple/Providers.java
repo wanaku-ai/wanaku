@@ -6,6 +6,8 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.wanaku.api.resolvers.ResourceResolver;
+import org.wanaku.api.resolvers.ToolsResolver;
+import org.wanaku.api.resolvers.util.NoopToolsResolver;
 import picocli.CommandLine;
 
 @ApplicationScoped
@@ -20,6 +22,11 @@ public class Providers {
     ResourceResolver getResourceResolver() {
         var resourcesPath = parseResult.matchedOption("resources-path").getValue().toString();
         return new SimpleResourceResolver(resourcesPath);
+    }
+
+    @Produces
+    ToolsResolver getToolsResolver() {
+        return new NoopToolsResolver();
     }
 
 }

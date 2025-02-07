@@ -1,6 +1,7 @@
 package org.wanaku.server.quarkus;
 
 import java.util.List;
+import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.Dependent;
@@ -14,10 +15,14 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
+import org.wanaku.api.exceptions.ToolNotFoundException;
+import org.wanaku.api.resolvers.ToolsResolver;
 import org.wanaku.api.types.McpMessage;
 import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResourceData;
+import org.wanaku.api.types.McpTool;
+import org.wanaku.api.types.McpToolStatus;
 import org.wanaku.server.quarkus.helper.Messages;
 
 @Dependent
@@ -32,6 +37,9 @@ public class McpController {
 
     @Inject
     ResourceResolver resourceResolver;
+
+    @Inject
+    ToolsResolver toolsResolver;
 
     @Inject
     @Channel("mcpEvents")
@@ -65,7 +73,7 @@ public class McpController {
                 return Multi.createFrom().empty();
             }
             case "resources/list": {
-                response = Messages.newForResourceList(request, resourceResolver.resources(), Pagination.nextPage());
+                response = Messages.newForResourceList(request, resourceResolver.list(), Pagination.nextPage());
                 break;
             }
             case "resources/read": {
@@ -77,6 +85,33 @@ public class McpController {
                 String uri = request.getJsonObject("params").getString("uri");
                 resourceResolver.subscribe(uri, status -> onUpdate(request, status));
                 return Multi.createFrom().empty();
+            }
+            case "tools/list": {
+                response = Messages.newForToolsList(request, toolsResolver.list(), Pagination.nextPage());
+                break;
+            }
+            case "tools/call": {
+                // 1. Retrieve tool name from request
+                String toolName = request.getJsonObject("params").getString("name");
+                // 2. Find tool by name
+                McpTool mcpTool;
+                try {
+                    mcpTool = toolsResolver.find(toolName);
+
+                    // 3. Retrieve arguments from request and build a map
+                    Map<String, Object> arguments = request.getJsonObject("params").getJsonObject("arguments").getMap();
+
+                    // 4. Invoke the tool
+                    McpToolStatus toolStatus = toolsResolver.call(mcpTool, arguments);
+                    response = Messages.newForToolsCall(request, toolStatus);
+                    break;
+                } catch (ToolNotFoundException e) {
+                    LOG.errorf("Tool %s not found", toolName);
+                    response = Messages.newError(request, McpRequestStatus.Status.INTERNAL_ERROR);
+                    break;
+                }
+
+
             }
             default: {
                 response = null;

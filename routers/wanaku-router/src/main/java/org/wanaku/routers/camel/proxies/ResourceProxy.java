@@ -1,4 +1,4 @@
-package org.wanaku.routers.camel;
+package org.wanaku.routers.camel.proxies;
 
 import java.io.File;
 import java.util.List;
@@ -11,19 +11,13 @@ import org.wanaku.api.types.McpResourceData;
 /**
  * Proxies between MCP URIs and Camel components capable of handling them
  */
-public interface ResourceProxy {
-    /**
-     * The name of the proxy
-     * @return
-     */
-    String name();
-
+public interface ResourceProxy extends Proxy {
     /**
      * List resources that can be handled by this proxy
-     * @param resourcesFile the resources' index file
+     * @param index the index file
      * @return
      */
-    List<McpResource> list(File resourcesFile);
+    List<McpResource> list(File index);
 
     /**
      * Eval an MCP URI handling it as appropriate by the component
