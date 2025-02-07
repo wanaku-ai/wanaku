@@ -34,7 +34,7 @@ public class Messages {
         capabilities.put("logging", logging);
 
         JsonObject resources = new JsonObject();
-        resources.put("subscribe", true);
+        resources.put("subscribe", false);
         resources.put("listChanged", true);
         capabilities.put("resources", resources);
 
