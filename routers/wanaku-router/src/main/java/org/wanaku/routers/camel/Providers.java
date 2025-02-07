@@ -13,7 +13,6 @@ import org.jboss.logging.Logger;
 import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.resolvers.util.NoopResourceResolver;
 import org.wanaku.routers.camel.translators.FileProxy;
-import org.wanaku.server.quarkus.McpResource;
 import picocli.CommandLine;
 
 @ApplicationScoped
@@ -24,12 +23,7 @@ public class Providers {
     CommandLine.ParseResult parseResult;
 
     @Inject
-    McpResource mcpResource;
-
-    @Inject
     CamelContext camelContext;
-
-
 
     @Produces
     ResourceResolver getResourceResolver() {
