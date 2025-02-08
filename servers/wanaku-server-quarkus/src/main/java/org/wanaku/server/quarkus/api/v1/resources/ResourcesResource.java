@@ -8,11 +8,13 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.logging.Logger;
 import org.wanaku.api.types.ResourceReference;
 
 @ApplicationScoped
 @Path("/api/v1/resources")
 public class ResourcesResource {
+    private static final Logger LOG = Logger.getLogger(ResourcesResource.class);
 
     @Inject
     ResourcesBean resourcesBean;
@@ -25,7 +27,8 @@ public class ResourcesResource {
             resourcesBean.expose(resource);
             return Response.ok().build();
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+            LOG.errorf("Failed to expose resource %s: %s", resource.getName(), e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to expose resource").build();
         }
     }
 }
