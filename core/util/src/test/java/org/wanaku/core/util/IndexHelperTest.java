@@ -2,8 +2,6 @@ package org.wanaku.core.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -12,23 +10,25 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.wanaku.api.types.ResourceReference;
+import org.wanaku.api.types.ToolReference;
+import org.wanaku.core.util.support.ResourcesHelper;
+import org.wanaku.core.util.support.ToolsHelper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import static org.wanaku.core.util.support.ResourcesHelper.RESOURCES_INDEX;
+import static org.wanaku.core.util.support.ToolsHelper.TOOLS_INDEX;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IndexHelperTest {
+    public static final List<ResourceReference> RESOURCE_REFERENCES = ResourcesHelper.testFixtures();
+    public static final List<ToolReference> TOOL_REFERENCES = ToolsHelper.testFixtures();
 
-    public static final List<ResourceReference> RESOURCE_REFERENCES = Arrays.asList(
-            createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg"),
-            createResource("/tmp/resource2.txt", "text/plain", "resource2.txt")
-    );
 
     @BeforeAll
     static void setup() {
-        File indexFile = new File("target/test-classes/index.json");
+        File indexFile = new File(RESOURCES_INDEX);
         if (!indexFile.exists()) {
             indexFile.delete();
         }
@@ -38,7 +38,7 @@ public class IndexHelperTest {
     @Test
     public void testSaveResourcesIndex() throws IOException {
         // Create a temporary index file
-        File indexFile = new File("target/test-classes/index.json");
+        File indexFile = new File(RESOURCES_INDEX);
 
         // Save the index to a file
         IndexHelper.saveResourcesIndex(indexFile, RESOURCE_REFERENCES);
@@ -52,7 +52,7 @@ public class IndexHelperTest {
     @Test
     public void testLoadResourcesIndex() throws Exception {
         // Use the temporary index file
-        File indexFile = new File("target/test-classes/index.json");
+        File indexFile = new File(RESOURCES_INDEX);
 
         // Save the index to a file
         IndexHelper.loadResourcesIndex(indexFile);
@@ -71,36 +71,6 @@ public class IndexHelperTest {
         }
     }
 
-    private static ResourceReference createResource(String location, String type, String name) {
-        ResourceReference resource = new ResourceReference();
-
-        // Set mock data using getters and setters
-        resource.setLocation(location);
-        resource.setType(type);
-        resource.setName(name);
-        resource.setDescription("A sample image resource");
-
-        // Create a list of Param objects for the resource's params
-        List<ResourceReference.Param> params = new ArrayList<>();
-
-        // Add some example param data to the list
-        ResourceReference.Param param1 = new ResourceReference.Param();
-        param1.setName("param1");
-        param1.setValue("value1");
-        params.add(param1);
-
-        ResourceReference.Param param2 = new ResourceReference.Param();
-        param2.setName("param2");
-        param2.setValue("value2");
-        params.add(param2);
-
-        // Set the list of params for the resource
-        resource.setParams(params);
-
-        return resource;
-    }
-
-
     @Order(3)
     @Test
     public void testLoadResourcesIndexThrowsException() {
@@ -108,5 +78,49 @@ public class IndexHelperTest {
         File indexFile = new File("non-existent-index.json");
 
         assertThrows(Exception.class, () -> IndexHelper.loadResourcesIndex(indexFile));
+    }
+
+    @Order(4)
+    @Test
+    public void testSaveToolsIndex() throws IOException {
+        // Create a temporary index file
+        File indexFile = new File(TOOLS_INDEX);
+
+        // Save the index to a file
+        IndexHelper.saveToolsIndex(indexFile, TOOL_REFERENCES);
+
+        // Verify that the file exists and is not empty
+        assertTrue(indexFile.exists());
+        assertTrue(indexFile.length() > 0);
+    }
+
+    @Order(5)
+    @Test
+    public void testLoadToolsIndex() throws Exception {
+        // Use the temporary index file
+        File indexFile = new File(TOOLS_INDEX);
+
+        // Save the index to a file
+        IndexHelper.loadToolsIndex(indexFile);
+
+        // Load the index back from the file
+        List<ToolReference> loadedToolsReferences = IndexHelper.loadToolsIndex(indexFile);
+
+        // Verify that the loaded resources match the original ones
+        assertEquals(loadedToolsReferences.size(), loadedToolsReferences.size());
+        for (int i = 0; i < loadedToolsReferences.size(); i++) {
+            ToolReference expected = TOOL_REFERENCES.get(i);
+            ToolReference actual = loadedToolsReferences.get(i);
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Order(6)
+    @Test
+    public void testLoadToolsIndexThrowsException() {
+        // Create a non-existent index file
+        File indexFile = new File("non-existent-index.json");
+
+        assertThrows(Exception.class, () -> IndexHelper.loadToolsIndex(indexFile));
     }
 }

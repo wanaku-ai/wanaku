@@ -13,49 +13,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.wanaku.api.types.ResourceReference;
 import org.wanaku.core.util.IndexHelper;
+import org.wanaku.core.util.support.ResourcesHelper;
+import org.wanaku.server.quarkus.support.TestResourceResolver;
 
 import static io.restassured.RestAssured.given;
+import static org.wanaku.core.util.support.ResourcesHelper.createResource;
 
 @QuarkusTest
 public class ResourcesResourceTest {
 
-    public static final List<ResourceReference> RESOURCE_REFERENCES = Arrays.asList(
-            createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg"),
-            createResource("/tmp/resource2.txt", "text/plain", "resource2.txt")
-    );
-
-    private static ResourceReference createResource(String location, String type, String name) {
-        ResourceReference resource = new ResourceReference();
-
-        // Set mock data using getters and setters
-        resource.setLocation(location);
-        resource.setType(type);
-        resource.setName(name);
-        resource.setDescription("A sample image resource");
-
-        // Create a list of Param objects for the resource's params
-        List<ResourceReference.Param> params = new ArrayList<>();
-
-        // Add some example param data to the list
-        ResourceReference.Param param1 = new ResourceReference.Param();
-        param1.setName("param1");
-        param1.setValue("value1");
-        params.add(param1);
-
-        ResourceReference.Param param2 = new ResourceReference.Param();
-        param2.setName("param2");
-        param2.setValue("value2");
-        params.add(param2);
-
-        // Set the list of params for the resource
-        resource.setParams(params);
-
-        return resource;
-    }
+    public static final List<ResourceReference> RESOURCE_REFERENCES = ResourcesHelper.testFixtures();
 
     @BeforeAll
     static void setup() throws IOException {
-        File indexFile = new File(TestResourceResolver.INDEX_FILE);
+        File indexFile = new File(ResourcesHelper.RESOURCES_INDEX);
         if (!indexFile.getParentFile().exists()) {
             indexFile.getParentFile().mkdirs();
         }
