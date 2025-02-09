@@ -3,6 +3,7 @@ package org.wanaku.api.types;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ToolReference {
     private String name;
@@ -81,6 +82,21 @@ public class ToolReference {
         public void setRequired(List<String> required) {
             this.required = required;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            InputSchema that = (InputSchema) o;
+            return Objects.equals(type, that.type) && Objects.equals(properties,
+                    that.properties) && Objects.equals(required, that.required);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, properties, required);
+        }
     }
 
     public static class Property {
@@ -102,6 +118,36 @@ public class ToolReference {
         public void setDescription(String description) {
             this.description = description;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Property property = (Property) o;
+            return Objects.equals(type, property.type) && Objects.equals(description, property.description);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, description);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ToolReference that = (ToolReference) o;
+        return Objects.equals(name, that.name) && Objects.equals(description,
+                that.description) && Objects.equals(uri, that.uri) && Objects.equals(type,
+                that.type) && Objects.equals(inputSchema, that.inputSchema);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, description, uri, type, inputSchema);
     }
 }
 

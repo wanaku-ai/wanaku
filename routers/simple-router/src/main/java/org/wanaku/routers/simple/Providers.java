@@ -16,7 +16,9 @@ public class Providers {
 
     @Inject
     CommandLine.ParseResult parseResult;
-    @Inject org.wanaku.server.quarkus.McpResource mcpResource;
+
+    @Inject
+    org.wanaku.server.quarkus.McpResource mcpResource;
 
     @Produces
     ResourceResolver getResourceResolver() {

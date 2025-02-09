@@ -1,4 +1,4 @@
-package org.wanaku.server.quarkus.api.v1.resources;
+package org.wanaku.server.quarkus.support;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;

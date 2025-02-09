@@ -1,16 +1,15 @@
-package org.wanaku.server.quarkus.api.v1.resources;
+package org.wanaku.server.quarkus.support;
 
 import java.io.File;
 
 import org.wanaku.api.resolvers.util.NoopResourceResolver;
+import org.wanaku.core.util.support.ResourcesHelper;
 
 public class TestResourceResolver extends NoopResourceResolver {
 
-    public static final String INDEX_FILE = "target/test-data/index/" + DEFAULT_RESOURCES_INDEX_FILE_NAME;
-
     @Override
     public File indexLocation() {
-        File indexPath = new File(INDEX_FILE);
+        File indexPath = new File(ResourcesHelper.RESOURCES_INDEX);
         if (!indexPath.exists()) {
             indexPath.getParentFile().mkdirs();
         }
