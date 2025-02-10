@@ -2,23 +2,27 @@ package org.wanaku.server.quarkus.api.v1.resources;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import io.quarkus.test.junit.QuarkusTest;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.wanaku.api.types.ResourceReference;
 import org.wanaku.core.util.IndexHelper;
 import org.wanaku.core.util.support.ResourcesHelper;
-import org.wanaku.server.quarkus.support.TestResourceResolver;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
 import static org.wanaku.core.util.support.ResourcesHelper.createResource;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class ResourcesResourceTest {
 
@@ -38,6 +42,7 @@ public class ResourcesResourceTest {
         Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");
     }
 
+    @Order(1)
     @Test
     public void testExposeResourceSuccessfully() {
         ResourceReference resource = createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg");
@@ -47,6 +52,19 @@ public class ResourcesResourceTest {
                 .body(resource)
                 .when().post("/api/v1/resources/expose")
                 .then()
-                .statusCode(200);
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Order(2)
+    @Test
+    public void testListResourcesSuccessfully() {
+        given()
+                .when().get("/api/v1/resources/list")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("size()", is(3),
+                        "[0].name", is("resource1.jpg"),
+                        "[0].type", is("image/jpeg"),
+                        "[0].description", is("A sample image resource"));
     }
 }
