@@ -25,4 +25,13 @@ public class ResourcesBean {
             throw new RuntimeException(e);
         }
     }
+
+    public List<ResourceReference> list() {
+        File indexFile = resourceResolver.indexLocation();
+        try {
+            return IndexHelper.loadResourcesIndex(indexFile);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
