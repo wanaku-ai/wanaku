@@ -6,17 +6,23 @@ import java.util.Collections;
 import java.util.List;
 
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.wanaku.api.types.ToolReference;
 import org.wanaku.core.util.IndexHelper;
 import org.wanaku.core.util.support.ToolsHelper;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class ToolsResourceTest {
 
@@ -36,6 +42,7 @@ public class ToolsResourceTest {
         Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");
     }
 
+    @Order(1)
     @Test
     public void testExposeResourceSuccessfully() {
         ToolReference.InputSchema inputSchema1 = ToolsHelper.createInputSchema(
@@ -56,5 +63,18 @@ public class ToolsResourceTest {
                 .when().post("/api/v1/tools/add")
                 .then()
                 .statusCode(200);
+    }
+
+    @Order(2)
+    @Test
+    void testList() {
+        given()
+                .when().get("/api/v1/tools/list")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("size()", is(3),
+                        "[0].name", is("Tool 1"),
+                        "[0].type", is("http"),
+                        "[0].description", is("This is a description of Tool 1."));
     }
 }

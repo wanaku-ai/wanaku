@@ -24,4 +24,13 @@ public class ToolsBean {
             throw new RuntimeException(e);
         }
     }
+
+    public List<ToolReference> list() {
+        File indexFile = toolsResolver.indexLocation();
+        try {
+            return IndexHelper.loadToolsIndex(indexFile);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
