@@ -4,6 +4,6 @@ import org.wanaku.cli.main.commands.resources.ResourcesExpose;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "tools",
-        description = "Manage tools", subcommands = { ToolsAdd.class })
+        description = "Manage tools", subcommands = { ToolsAdd.class, ToolsList.class })
 public class Tools {
 }
