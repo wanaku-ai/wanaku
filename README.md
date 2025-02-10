@@ -1,5 +1,14 @@
 # Wanaku
 
+## Build native 
+
+```shell
+eval $(make prepare)
+make cli-native
+make install
+```
+
+
 ## Expose resources
 
 ```shell

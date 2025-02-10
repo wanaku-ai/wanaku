@@ -1,7 +1,12 @@
-GRAAL_VERSION=21.0.2-graalce
+GRAAL_VERSION?=21.0.2-graalce
+
+help:
+	@echo Make sure to adjust your environment to use Graal. For instance, run "sdk use ${GRAAL_VERSION}"
+
+prepare:
+	@echo sdk use java ${GRAAL_VERSION}
 
 cli-native:
-	sdk use java $(GRAAL_VERSION)
 	export GRAALVM_HOME=$(JAVA_HOME)
 	mvn -Pnative clean package
 
