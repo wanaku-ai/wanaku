@@ -33,7 +33,7 @@
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <camel.version>4.8.3</camel.version>
+        <camel.version>4.9.0</camel.version>
         <picocli.version>4.7.6</picocli.version>
     </properties>
 
