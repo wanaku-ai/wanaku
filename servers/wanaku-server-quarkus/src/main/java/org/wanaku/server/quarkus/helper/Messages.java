@@ -274,7 +274,7 @@ public class Messages {
             contents.add(content);
         }
 
-        result.put("contents", contents);
+        result.put("content", contents);
         result.put("isError", status.isError);
 
         jsonObject.put("result", result);
