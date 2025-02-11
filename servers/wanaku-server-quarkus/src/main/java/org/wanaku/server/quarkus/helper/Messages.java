@@ -111,27 +111,21 @@ public class Messages {
         return message;
     }
 
-    public static McpMessage newConnectionMessage(String host, int port) {
+    public static McpMessage newConnectionMessage() {
         McpMessage message = new McpMessage();
 
         message.event = "endpoint";
-        message.payload = endpoint(host, port);
+        message.payload = endpoint();
         return message;
     }
 
-    public static String endpoint(String host, int port) {
+    public static String endpoint() {
         String uuid = UUID.randomUUID().toString();
         LOG.infof("Created new session %s", uuid);
 
-        return endpoint(host, port, uuid);
-    }
-
-    public static String endpoint(String host, int port, String uuid) {
-        return String.format("%s/message?sessionId=%s", baseAddress(host, port), uuid);
-    }
-
-    private static String baseAddress(String host, int port) {
-        return String.format("http://%s:%d", host, port);
+        String endpoint = String.format("message?sessionId=%s", uuid);
+        LOG.infof("Endpoint for messages located at: %s", endpoint);
+        return endpoint;
     }
 
     public static McpMessage newForResourceRead(JsonObject request, List<McpResourceData> resourcesList, String nextCursor) {

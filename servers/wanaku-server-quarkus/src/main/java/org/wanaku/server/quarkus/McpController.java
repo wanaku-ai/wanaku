@@ -17,7 +17,6 @@
 
 package org.wanaku.server.quarkus;
 
-import java.util.List;
 import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
@@ -46,12 +45,6 @@ import org.wanaku.server.quarkus.helper.Messages;
 public class McpController {
     private static final Logger LOG = Logger.getLogger(McpController.class);
 
-    @ConfigProperty(name = "quarkus.http.host")
-    String host;
-
-    @ConfigProperty(name = "quarkus.http.port")
-    int port;
-
     @Inject
     ResourceResolver resourceResolver;
 
@@ -70,7 +63,7 @@ public class McpController {
     @Incoming("mcpNewConnections")
     @Outgoing("mcpEvents")
     public McpMessage handle(String request) {
-        return Messages.newConnectionMessage(host, port);
+        return Messages.newConnectionMessage();
     }
 
     @Incoming("mcpRequests")
