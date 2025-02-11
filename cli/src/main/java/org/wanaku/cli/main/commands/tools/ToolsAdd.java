@@ -38,16 +38,16 @@ public class ToolsAdd extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(names = {"-n", "--name"}, description="Name of the tool reference")
+    @CommandLine.Option(names = {"-n", "--name"}, description="Name of the tool reference", required = true)
     private String name;
 
-    @CommandLine.Option(names = {"-d", "--description"}, description="Description of the tool reference")
+    @CommandLine.Option(names = {"-d", "--description"}, description="Description of the tool reference", required = true)
     private String description;
 
-    @CommandLine.Option(names = {"-u", "--uri"}, description="URI of the tool")
+    @CommandLine.Option(names = {"-u", "--uri"}, description="URI of the tool", required = true)
     private String uri;
 
-    @CommandLine.Option(names = {"--type"}, description="Type of the tool reference (i.e: http)")
+    @CommandLine.Option(names = {"--type"}, description="Type of the tool reference (i.e: http)", required = true)
     private String type;
 
     @CommandLine.Option(names = {"--input-schema-type"},
