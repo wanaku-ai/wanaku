@@ -203,28 +203,45 @@ public class Messages {
 
         JsonArray tools = new JsonArray();
         for (McpTool mcpTool : toolList) {
-            JsonObject properties = new JsonObject();
-            List<String> required = new ArrayList<>();
-            for (var property : mcpTool.inputSchema.properties) {
-                JsonObject propertyJson = new JsonObject();
-                propertyJson.put("type", property.description);
-                propertyJson.put("description", property.description);
-
-                properties.put(property.name, property);
-                if (property.required) {
-                    required.add(property.name);
-                }
-            }
-
-            JsonObject inputSchema = new JsonObject()
-                    .put("type", mcpTool.inputSchema.type)
-                    .put("properties", properties)
-                    .put("required", required);
-
             JsonObject tool = new JsonObject();
             tool.put("name", mcpTool.name);
             tool.put("description", mcpTool.description);
-            tool.put("inputSchema", inputSchema);
+
+            JsonObject properties = new JsonObject();
+            List<String> required = new ArrayList<>();
+            if (mcpTool.inputSchema != null) {
+
+                if (mcpTool.inputSchema.properties != null) {
+                    for (var property : mcpTool.inputSchema.properties) {
+                        JsonObject propertyJson = new JsonObject();
+                        propertyJson.put("type", property.description);
+                        propertyJson.put("description", property.description);
+
+                        properties.put(property.name, property);
+                        if (property.required) {
+                            required.add(property.name);
+                        }
+                    }
+
+                    JsonObject inputSchema = new JsonObject()
+                            .put("type", mcpTool.inputSchema.type)
+                            .put("properties", properties)
+                            .put("required", required);
+
+                    tool.put("inputSchema", inputSchema);
+                } else {
+                    JsonObject inputSchema = new JsonObject()
+                            .put("type", mcpTool.inputSchema.type)
+                            .put("properties", properties)
+                            .put("required", required);
+
+                    tool.put("inputSchema", inputSchema);
+                }
+
+            } else {
+
+            }
+
             tools.add(tool);
         }
 

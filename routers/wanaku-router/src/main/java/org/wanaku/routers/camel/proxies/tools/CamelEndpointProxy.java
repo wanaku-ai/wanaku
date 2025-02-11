@@ -55,17 +55,21 @@ public class CamelEndpointProxy implements ToolsProxy {
                 tool.uri = toolReference.getUri();
                 tool.type = toolReference.getType();
                 tool.inputSchema = new McpTool.InputSchema();
-                tool.inputSchema.type = toolReference.getInputSchema().getType();
-                tool.inputSchema.properties = new ArrayList<>();
+                ToolReference.InputSchema inputSchema = toolReference.getInputSchema();
+                if (inputSchema != null) {
+                    tool.inputSchema.type = inputSchema.getType();
+                    tool.inputSchema.properties = new ArrayList<>();
 
-                for (var refProperty : toolReference.getInputSchema().getProperties().entrySet()) {
-                    McpTool.InputSchema.Property schemaProperty = new McpTool.InputSchema.Property();
+                    for (var refProperty : inputSchema.getProperties().entrySet()) {
+                        McpTool.InputSchema.Property schemaProperty = new McpTool.InputSchema.Property();
 
-                    schemaProperty.name = refProperty.getKey();
-                    schemaProperty.type = refProperty.getValue().getType();
-                    schemaProperty.description = refProperty.getValue().getDescription();
-                    tool.inputSchema.properties.add(schemaProperty);
+                        schemaProperty.name = refProperty.getKey();
+                        schemaProperty.type = refProperty.getValue().getType();
+                        schemaProperty.description = refProperty.getValue().getDescription();
+                        tool.inputSchema.properties.add(schemaProperty);
+                    }
                 }
+
 
                 tools.add(tool);
             }
