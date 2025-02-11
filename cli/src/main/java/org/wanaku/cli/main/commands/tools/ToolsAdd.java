@@ -56,7 +56,7 @@ public class ToolsAdd extends BaseCommand {
     private String inputSchemaType;
 
     @CommandLine.Option(names = {"-p", "--property"},
-            description = "Property name and value (e.g., '--property foo=bar')")
+            description = "Property name and value (e.g., '--property name:type,description)")
     private List<String> properties;
 
     @CommandLine.Option(names = {"-r", "--required"},
