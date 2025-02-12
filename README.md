@@ -1,6 +1,6 @@
 # Wanaku - A MCP Router that connects everything
 
-The Wanaku MCP Router is a router for AI-enabled applications powered by the [Model Context Protocol (MCP)[https://modelcontextprotocol.io/].
+The Wanaku MCP Router is a router for AI-enabled applications powered by the [Model Context Protocol (MCP)][https://modelcontextprotocol.io/].
 
 This protocol is an open protocol that standardizes how applications provide context to LLMs. 
 
