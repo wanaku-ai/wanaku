@@ -32,20 +32,21 @@ public interface ResourceProxy extends Proxy {
     /**
      * List resources that can be handled by this proxy
      * @param index the index file
-     * @return
+     * @return The list of MCP resources handled by this proxy
      */
     List<McpResource> list(File index);
 
     /**
-     * Eval an MCP URI handling it as appropriate by the component
-     * @param uri
-     * @return
+     * Eval an MCP URI handling it as appropriate by the component (i.e.: read a file, GET a static web page, etc.)
+     * @param uri the resource URI
+     * @return Returns the data read by the proxy.
      */
     List<McpResourceData> eval(String uri);
 
     /**
      * Subscribe to the given MCP URI
-     * @param uri
+     * @param uri the resource URI
+     * @param callback The callback method that is executed when the subscribed resource changes
      * @return
      */
     void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback);
