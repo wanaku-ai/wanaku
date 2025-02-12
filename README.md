@@ -25,5 +25,8 @@ Please follow the [usage guide](docs/usage.md) to learn how to use Wanaku.
 
 ## Building Wanaku MCP Router
 
-If you want to contribute to the project, the first step is to [learn how to build it](docs/building.md).
+If you want to build to the project, then read [building](docs/building.md) guide.
 
+## Contributing 
+
+If you want to contribute to the project, then read the [contributing](docs/contributing.md) guide.
