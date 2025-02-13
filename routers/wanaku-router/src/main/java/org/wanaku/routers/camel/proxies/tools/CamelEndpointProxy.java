@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+import org.jboss.logging.Logger;
 import org.wanaku.api.types.McpTool;
 import org.wanaku.api.types.McpToolContent;
 import org.wanaku.api.types.McpToolStatus;
@@ -30,6 +31,8 @@ import org.wanaku.api.types.ToolReference;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 
 public class CamelEndpointProxy implements ToolsProxy {
+    private static final Logger LOG = Logger.getLogger(CamelEndpointProxy.class);
+
     private final ProducerTemplate producer;
 
 
@@ -56,13 +59,20 @@ public class CamelEndpointProxy implements ToolsProxy {
             }
 
             McpToolContent content = new McpToolContent();
-            content.text = producer.requestBody(uri, null,   String.class);
+            content.text = producer.requestBody(uri, null, String.class);
             content.type = "text";
 
             status.content = List.of(content);
             status.isError = false;
-        } finally {
+        } catch (Exception e) {
+            LOG.errorf("Unable to call endpoint: %s", e.getMessage(), e);
+            McpToolContent content = new McpToolContent();
+            content.text = e.getMessage();
+            content.type = "text";
+
             status.isError = true;
+            status.content = List.of(content);
+        } finally {
             producer.stop();
         }
         return status;
