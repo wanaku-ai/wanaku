@@ -29,6 +29,7 @@ import org.wanaku.api.resolvers.ToolsResolver;
 import org.wanaku.api.resolvers.util.NoopToolsResolver;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 import org.wanaku.routers.camel.proxies.tools.CamelEndpointProxy;
+import org.wanaku.routers.camel.proxies.tools.CamelRouteProxy;
 import org.wanaku.routers.camel.resolvers.CamelToolsResolver;
 import picocli.CommandLine;
 
@@ -69,7 +70,8 @@ public class ToolsProvider extends AbstractProvider<ToolsProxy, ToolsResolver> {
     public Map<String, ToolsProxy> loadProxies() {
         Map<String, ToolsProxy> proxies = new HashMap<>();
 
-        proxies.put("routes", new CamelEndpointProxy(camelContext));
+        proxies.put("endpoints", new CamelEndpointProxy(camelContext));
+        proxies.put("routes", new CamelRouteProxy(camelContext));
 
         return proxies;
 

@@ -83,6 +83,20 @@ All CLI commands use the Wanaku management API under the hood. If you need more 
 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
 
+## Tools
+
+### Running Camel Routes as Tools
+
+You can design the routes visually, using [Kaoto](https://kaoto.io/). You need to make sure that the start endpoint for the 
+route is `direct:start`. If in doubt, check the [hello-quote.camel.yaml](../samples/routes/camel-route/hello-quote.camel.yaml)
+file in the `samples` directory.
+
+To add that route as a tool, you can run something similar to this: 
+
+```shell
+wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "_body:string,The data to be passed to the route"
+```
+
 
 ## Supported/Tested Client 
 

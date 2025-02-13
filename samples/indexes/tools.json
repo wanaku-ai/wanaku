@@ -38,5 +38,23 @@
         "firstCurrency", "secondCurrency"
       ]
     }
+  },
+  {
+    "name": "camel-route",
+    "description": "Invoke a camel route",
+    "uri": "camel:///Users/opiske/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml",
+    "type": "camel-route",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "_body": {
+          "type": "string",
+          "description": "The data to be passed to the route"
+        }
+      },
+      "required": [
+        "_body"
+      ]
+    }
   }
 ]
