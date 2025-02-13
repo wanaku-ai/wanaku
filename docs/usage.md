@@ -83,3 +83,23 @@ All CLI commands use the Wanaku management API under the hood. If you need more 
 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
 
+
+## Supported/Tested Client 
+
+Wanaku implements the MCP protocol and, by definition, should support any client that is compliant to the protocol. 
+
+The details below describe how Wanaku MCP router can be used with some prominent MCP clients: 
+
+### LibreChat
+
+For [LibreChat](https://www.librechat.ai/docs) search for `mcpServers` on the `librechat.yml` file and include something similar to this:
+   
+```
+mcpServers:
+    everything:
+        url: http://host.docker.internal:8080/sse
+```
+
+*NOTE*: make sure to point to the correct address of your Wanaku MCP instance.
+
+In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librechat.ai/docs/features/agents).
