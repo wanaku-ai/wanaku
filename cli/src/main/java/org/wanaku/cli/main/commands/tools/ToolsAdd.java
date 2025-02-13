@@ -77,29 +77,31 @@ public class ToolsAdd extends BaseCommand {
         ToolReference.InputSchema inputSchema = new ToolReference.InputSchema();
         inputSchema.setType(inputSchemaType);
 
+        if (properties != null) {
+            for (String propertyStr : properties) {
+                String[] parts = propertyStr.split(":");
+                if (parts.length != 2) {
+                    LOG.errorf("Invalid property: %s. It should be in the format name:type,description", propertyStr);
+                    System.exit(1);
+                }
 
-        for (String propertyStr : properties) {
-            String[] parts = propertyStr.split(":");
-            if (parts.length != 2) {
-                LOG.errorf("Invalid property: %s. It should be in the format name:type,description", propertyStr);
-                System.exit(1);
+                String name = parts[0];
+
+                String[] propertyPart = parts[1].split(",");
+                if (propertyPart.length != 2) {
+                    LOG.errorf("Invalid property: %s. It should be in the format name:type,description", propertyStr);
+                    System.exit(1);
+                }
+
+                ToolReference.Property property = new ToolReference.Property();
+                property.setType(propertyPart[0]);
+                property.setDescription(propertyPart[1]);
+
+
+                inputSchema.getProperties().put(name, property);
             }
-
-            String name = parts[0];
-
-            String[] propertyPart = parts[1].split(",");
-            if (propertyPart.length != 2) {
-                LOG.errorf("Invalid property: %s. It should be in the format name:type,description", propertyStr);
-                System.exit(1);
-            }
-
-            ToolReference.Property property = new ToolReference.Property();
-            property.setType(propertyPart[0]);
-            property.setDescription(propertyPart[1]);
-
-
-            inputSchema.getProperties().put(name, property);
         }
+
         toolReference.setInputSchema(inputSchema);
 
         if (required != null) {
