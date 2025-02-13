@@ -21,7 +21,6 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,8 +34,6 @@ import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
 import org.wanaku.routers.camel.proxies.ResourceProxy;
-
-import static org.wanaku.core.util.IndexHelper.loadResourcesIndex;
 
 /**
  * Proxies between MCP URIs and the Camel file component
@@ -55,27 +52,15 @@ public class FileProxy implements ResourceProxy {
     }
 
     @Override
-    public List<McpResource> list(File index) {
-        final List<McpResource> mcpResources = new ArrayList<>();
-        try {
-            List<ResourceReference> references = loadResourcesIndex(index);
+    public McpResource toResource(ResourceReference reference) {
+        McpResource mcpResource = new McpResource();
 
-            // TODO: needs to filter only file related
-            for (ResourceReference reference : references) {
-                McpResource mcpResource = new McpResource();
+        mcpResource.uri = String.format("%s:%s", reference.getType(), reference.getLocation());
+        mcpResource.name = reference.getName();
+        mcpResource.mimeType = reference.getMimeType();
+        mcpResource.description = reference.getDescription();
 
-                mcpResource.uri = String.format("%s:%s", reference.getType(), reference.getLocation());
-                mcpResource.name = reference.getName();
-                mcpResource.mimeType = reference.getMimeType();
-                mcpResource.description = reference.getDescription();
-
-                mcpResources.add(mcpResource);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return mcpResources;
+        return mcpResource;
     }
 
     @Override

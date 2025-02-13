@@ -18,23 +18,53 @@
 package org.wanaku.routers.camel.proxies;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.wanaku.api.resolvers.AsyncRequestHandler;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
+import org.wanaku.api.types.ResourceReference;
+
+import static org.wanaku.core.util.IndexHelper.loadResourcesIndex;
 
 /**
  * Proxies between MCP URIs and Camel components capable of handling them
  */
 public interface ResourceProxy extends Proxy {
     /**
-     * List resources that can be handled by this proxy
+     * List resources that can be handled by this proxy.
      * @param index the index file
      * @return The list of MCP resources handled by this proxy
      */
-    List<McpResource> list(File index);
+    default List<McpResource> list(File index) {
+        final List<McpResource> mcpResources = new ArrayList<>();
+        try {
+            List<ResourceReference> references = loadResourcesIndex(index);
+
+            for (ResourceReference reference : references) {
+                if (reference.getType().equals(name())) {
+                    McpResource resource = toResource(reference);
+                    if (resource != null) {
+                        mcpResources.add(resource);
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return mcpResources;
+    }
+
+    /**
+     * Convert the resource reference stored in the index, to a McpResource
+     * @param reference the resource reference to convert
+     * @return the converted reference as a MCP resource instance.
+     */
+    McpResource toResource(ResourceReference reference);
 
     /**
      * Eval an MCP URI handling it as appropriate by the component (i.e.: read a file, GET a static web page, etc.)
