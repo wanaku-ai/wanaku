@@ -17,7 +17,6 @@
 
 package org.wanaku.routers.camel.proxies.tools;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,54 +29,17 @@ import org.wanaku.api.types.McpToolStatus;
 import org.wanaku.api.types.ToolReference;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 
-import static org.wanaku.core.util.IndexHelper.loadToolsIndex;
-
 public class CamelEndpointProxy implements ToolsProxy {
     private final ProducerTemplate producer;
+
 
     public CamelEndpointProxy(CamelContext context) {
         this.producer = context.createProducerTemplate();
     }
 
-
     @Override
-    public List<McpTool> list(File index) {
-        final List<McpTool> tools = new ArrayList<>();
-
-        try {
-            final List<ToolReference> toolReferences = loadToolsIndex(index);
-
-            for (ToolReference toolReference : toolReferences) {
-                McpTool tool = new McpTool();
-
-                tool.description = toolReference.getDescription();
-                tool.name = toolReference.getName();
-                tool.uri = toolReference.getUri();
-                tool.type = toolReference.getType();
-                tool.inputSchema = new McpTool.InputSchema();
-                ToolReference.InputSchema inputSchema = toolReference.getInputSchema();
-                if (inputSchema != null) {
-                    tool.inputSchema.type = inputSchema.getType();
-                    tool.inputSchema.properties = new ArrayList<>();
-
-                    for (var refProperty : inputSchema.getProperties().entrySet()) {
-                        McpTool.InputSchema.Property schemaProperty = new McpTool.InputSchema.Property();
-
-                        schemaProperty.name = refProperty.getKey();
-                        schemaProperty.type = refProperty.getValue().getType();
-                        schemaProperty.description = refProperty.getValue().getDescription();
-                        tool.inputSchema.properties.add(schemaProperty);
-                    }
-                }
-
-
-                tools.add(tool);
-            }
-
-            return tools;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public boolean canHandle(ToolReference toolReference) {
+        return toolReference.getType().equals("http");
     }
 
     @Override
@@ -104,6 +66,32 @@ public class CamelEndpointProxy implements ToolsProxy {
             producer.stop();
         }
         return status;
+    }
+
+    @Override
+    public McpTool toMcpTool(ToolReference toolReference) {
+        McpTool tool = new McpTool();
+
+        tool.description = toolReference.getDescription();
+        tool.name = toolReference.getName();
+        tool.uri = toolReference.getUri();
+        tool.type = toolReference.getType();
+        tool.inputSchema = new McpTool.InputSchema();
+        ToolReference.InputSchema inputSchema = toolReference.getInputSchema();
+        if (inputSchema != null) {
+            tool.inputSchema.type = inputSchema.getType();
+            tool.inputSchema.properties = new ArrayList<>();
+
+            for (var refProperty : inputSchema.getProperties().entrySet()) {
+                McpTool.InputSchema.Property schemaProperty = new McpTool.InputSchema.Property();
+
+                schemaProperty.name = refProperty.getKey();
+                schemaProperty.type = refProperty.getValue().getType();
+                schemaProperty.description = refProperty.getValue().getDescription();
+                tool.inputSchema.properties.add(schemaProperty);
+            }
+        }
+        return tool;
     }
 
     @Override
