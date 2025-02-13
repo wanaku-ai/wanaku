@@ -41,11 +41,6 @@ The Wanaku MCP Router is composed of the following components:
 * **Purpose**: Reside supported routers (using transport to serve MCP workloads).
 * **Description**: This component contains supported router implementations that utilize the transport to serve MCP workloads. Each router provides a unique way to process and forward protocol messages.
 
-##### Simple-Router
-
-* **Purpose**: A simple router implementation, used for testing.
-* **Description**: This component provides a basic router implementation that can be used for testing purposes, allowing developers to test the WANAKU MCP Router without having to implement custom routing logic.
-
 #### Wanaku-Router
 
 * **Purpose**: The actual Wanaku MCP router (bridging server capabilities with features provided by Apache Camel).

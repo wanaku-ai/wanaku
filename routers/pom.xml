@@ -93,7 +93,6 @@
 
     <modules>
         <module>wanaku-router</module>
-        <module>simple-router</module>
     </modules>
 
 </project>
