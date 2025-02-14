@@ -129,7 +129,12 @@ public class McpController {
             }
         }
 
-        LOG.debugf("Replying with %s", response.payload);
+        if (response != null) {
+            LOG.debugf("Replying with %s", response.payload);
+        } else {
+            LOG.debugf("There's no response on the payload");
+        }
+
 
         return Multi.createFrom().item(response);
     }
