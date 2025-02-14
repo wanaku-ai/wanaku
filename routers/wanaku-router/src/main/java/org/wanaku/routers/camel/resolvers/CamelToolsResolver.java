@@ -31,7 +31,7 @@ import org.wanaku.api.types.McpToolStatus;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 
 public class CamelToolsResolver implements ToolsResolver {
-    private static final Logger LOG = Logger.getLogger(CamelResourceResolver.class);
+    private static final Logger LOG = Logger.getLogger(CamelToolsResolver.class);
     private final File indexFile;
     private final Map<String, ? extends ToolsProxy> proxies;
 
