@@ -72,14 +72,28 @@ public class CamelToolsResolver implements ToolsResolver {
         throw ToolNotFoundException.forName(name);
     }
 
-    @Override
-    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
+    public ToolsProxy findProxy(String name) throws ToolNotFoundException {
         List<? extends ToolsProxy> list = proxies.values().stream().toList();
         for (ToolsProxy proxy : list) {
-            McpToolStatus call = proxy.call(tool, properties);
-            return call;
+            LOG.infof("Querying proxy %s for managed tools", proxy.name());
+            List<McpTool> managedTools = proxy.list(indexLocation());
+            Optional<McpTool> first = managedTools.stream().filter(t -> t.name.equals(name)).findFirst();
+            if (first.isPresent()) {
+                return proxy;
+            }
         }
 
-        return null;
+        throw ToolNotFoundException.forName(name);
+    }
+
+    @Override
+    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
+        try {
+            ToolsProxy proxy = findProxy(tool.name);
+            return proxy.call(tool, properties);
+        } catch (ToolNotFoundException e) {
+            // NOTE: shouldn't happen ...
+            throw new RuntimeException(e);
+        }
     }
 }
