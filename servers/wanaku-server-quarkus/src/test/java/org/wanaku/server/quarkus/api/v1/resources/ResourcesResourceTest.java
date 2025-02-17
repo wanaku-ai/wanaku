@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.wanaku.api.types.ResourceReference;
-import org.wanaku.core.util.IndexHelper;
 import org.wanaku.core.util.support.ResourcesHelper;
+import org.wanaku.server.quarkus.support.TestIndexHelper;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -47,13 +47,7 @@ public class ResourcesResourceTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        File indexFile = new File(ResourcesHelper.RESOURCES_INDEX);
-        if (!indexFile.getParentFile().exists()) {
-            indexFile.getParentFile().mkdirs();
-        }
-
-        // Save the index to a file
-        IndexHelper.saveResourcesIndex(indexFile, RESOURCE_REFERENCES);
+        File indexFile = TestIndexHelper.createResourcesIndex();
 
         // Verify that the file exists and is not empty
         Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");

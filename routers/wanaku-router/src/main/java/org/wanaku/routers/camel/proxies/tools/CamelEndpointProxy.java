@@ -17,16 +17,11 @@
 
 package org.wanaku.routers.camel.proxies.tools;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
-import org.wanaku.api.types.McpTool;
-import org.wanaku.api.types.McpToolContent;
-import org.wanaku.api.types.McpToolStatus;
 import org.wanaku.api.types.ToolReference;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 
@@ -41,67 +36,20 @@ public class CamelEndpointProxy implements ToolsProxy {
     }
 
     @Override
-    public boolean canHandle(ToolReference toolReference) {
-        return toolReference.getType().equals("http");
-    }
-
-    @Override
-    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
-        McpToolStatus status = new McpToolStatus();
+    public ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
         try {
             producer.start();
 
-            String uri = tool.uri;
+            CamelRequest result = CamelRequest.newCamelRequest(toolReference, toolArguments);
 
-            for (var t : tool.inputSchema.properties) {
-                Object o = properties.get(t.name);
-                uri = uri.replace(String.format("{%s}", t.name), o.toString());
-            }
-
-            McpToolContent content = new McpToolContent();
-            content.text = producer.requestBody(uri, null, String.class);
-            content.type = "text";
-
-            status.content = List.of(content);
-            status.isError = false;
+            String s = producer.requestBody(result.uri(), result.body(), String.class);
+            return ToolResponse.success(s);
         } catch (Exception e) {
             LOG.errorf("Unable to call endpoint: %s", e.getMessage(), e);
-            McpToolContent content = new McpToolContent();
-            content.text = e.getMessage();
-            content.type = "text";
-
-            status.isError = true;
-            status.content = List.of(content);
+            return ToolResponse.error(e.getMessage());
         } finally {
             producer.stop();
         }
-        return status;
-    }
-
-    @Override
-    public McpTool toMcpTool(ToolReference toolReference) {
-        McpTool tool = new McpTool();
-
-        tool.description = toolReference.getDescription();
-        tool.name = toolReference.getName();
-        tool.uri = toolReference.getUri();
-        tool.type = toolReference.getType();
-        tool.inputSchema = new McpTool.InputSchema();
-        ToolReference.InputSchema inputSchema = toolReference.getInputSchema();
-        if (inputSchema != null) {
-            tool.inputSchema.type = inputSchema.getType();
-            tool.inputSchema.properties = new ArrayList<>();
-
-            for (var refProperty : inputSchema.getProperties().entrySet()) {
-                McpTool.InputSchema.Property schemaProperty = new McpTool.InputSchema.Property();
-
-                schemaProperty.name = refProperty.getKey();
-                schemaProperty.type = refProperty.getValue().getType();
-                schemaProperty.description = refProperty.getValue().getDescription();
-                tool.inputSchema.properties.add(schemaProperty);
-            }
-        }
-        return tool;
     }
 
     @Override

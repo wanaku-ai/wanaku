@@ -18,27 +18,15 @@
 package org.wanaku.core.mcp.common.resolvers.util;
 
 import java.io.File;
-import java.util.List;
-import java.util.Map;
 
 import org.wanaku.api.exceptions.ToolNotFoundException;
+import org.wanaku.api.types.ToolReference;
+import org.wanaku.core.mcp.common.Tool;
 import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import org.wanaku.api.types.McpTool;
-import org.wanaku.api.types.McpToolStatus;
 
 public class NoopToolsResolver implements ToolsResolver {
     @Override
-    public List<McpTool> list() {
-        return List.of();
-    }
-
-    @Override
-    public McpTool find(String name) throws ToolNotFoundException {
-        return null;
-    }
-
-    @Override
-    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
+    public Tool resolve(ToolReference toolReference) throws ToolNotFoundException {
         return null;
     }
 

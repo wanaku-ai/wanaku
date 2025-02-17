@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package org.wanaku.api.types;
+package org.wanaku.routers.camel.proxies.tools;
 
-import java.util.List;
+import io.quarkiverse.mcp.server.ToolManager;
+import org.wanaku.api.types.ToolReference;
 
-public class McpTool {
-    public String name;
-    public String description;
-    public String uri;
-    public String type;
-    public InputSchema inputSchema;
+public record CamelRequest(String uri, String body) {
 
-    public static class InputSchema {
-        public String type;
-        public List<Property> properties;
+    public static CamelRequest newCamelRequest(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
+        String uri = toolReference.getUri();
+        String body = null;
+        for (var t : toolReference.getInputSchema().getProperties().entrySet()) {
+            if (!t.getKey().equals("_body")) {
+                Object o = toolArguments.args().get(t.getKey());
+                uri = uri.replace(String.format("{%s}", t.getKey()), o.toString());
+            } else {
+                body = toolArguments.args().get("_body").toString();
+            }
 
-        public static class Property {
-            public String name;
-            public String type;
-            public String description;
-            public boolean required;
         }
+
+        return new CamelRequest(uri, body);
     }
 }

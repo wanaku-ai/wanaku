@@ -20,11 +20,9 @@ package org.wanaku.core.mcp.common.resolvers.util;
 import java.io.File;
 import java.util.List;
 
-import org.wanaku.core.mcp.common.resolvers.AsyncRequestHandler;
+import io.quarkiverse.mcp.server.ResourceContents;
+import org.wanaku.api.types.ResourceReference;
 import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import org.wanaku.api.types.McpRequestStatus;
-import org.wanaku.api.types.McpResource;
-import org.wanaku.api.types.McpResourceData;
 
 public class NoopResourceResolver implements ResourceResolver {
 
@@ -34,17 +32,7 @@ public class NoopResourceResolver implements ResourceResolver {
     }
 
     @Override
-    public List<McpResource> list() {
+    public List<ResourceContents> read(ResourceReference mcpResource) {
         return List.of();
-    }
-
-    @Override
-    public List<McpResourceData> read(String uri) {
-        return List.of();
-    }
-
-    @Override
-    public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
-
     }
 }

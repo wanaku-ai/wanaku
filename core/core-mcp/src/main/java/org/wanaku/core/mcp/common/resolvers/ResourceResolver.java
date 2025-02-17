@@ -19,29 +19,16 @@ package org.wanaku.core.mcp.common.resolvers;
 
 import java.util.List;
 
-import org.wanaku.api.types.McpRequestStatus;
-import org.wanaku.api.types.McpResource;
-import org.wanaku.api.types.McpResourceData;
+import io.quarkiverse.mcp.server.ResourceContents;
+import org.wanaku.api.types.ResourceReference;
 
 public interface ResourceResolver extends Resolver {
 
-    /**
-     * List resources
-     * @return
-     */
-    List<McpResource> list();
 
     /**
      * Read resources
-     * @param uri
-     * @return
+     * @param mcpResource the resource to read
+     * @return the resource contents in a format specific to the content that had been read
      */
-    List<McpResourceData> read(String uri);
-
-    /**
-     * Subscribe to resources
-     * @param uri
-     * @return The status of the request
-     */
-    void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback);
+    List<ResourceContents> read(ResourceReference mcpResource);
 }

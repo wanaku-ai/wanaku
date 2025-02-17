@@ -24,6 +24,7 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import org.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;

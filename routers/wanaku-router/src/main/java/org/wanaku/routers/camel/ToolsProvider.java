@@ -24,6 +24,7 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import org.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
@@ -70,8 +71,8 @@ public class ToolsProvider extends AbstractProvider<ToolsProxy, ToolsResolver> {
     public Map<String, ToolsProxy> loadProxies() {
         Map<String, ToolsProxy> proxies = new HashMap<>();
 
-        proxies.put("endpoints", new CamelEndpointProxy(camelContext));
-        proxies.put("routes", new CamelRouteProxy(camelContext));
+        proxies.put("http", new CamelEndpointProxy(camelContext));
+        proxies.put("camel-route", new CamelRouteProxy(camelContext));
 
         return proxies;
 

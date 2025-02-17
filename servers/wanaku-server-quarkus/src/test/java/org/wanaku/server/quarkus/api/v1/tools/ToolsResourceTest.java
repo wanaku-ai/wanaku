@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.wanaku.api.types.ToolReference;
-import org.wanaku.core.util.IndexHelper;
 import org.wanaku.core.util.support.ToolsHelper;
+import org.wanaku.server.quarkus.support.TestIndexHelper;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -47,13 +47,7 @@ public class ToolsResourceTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        File indexFile = new File(ToolsHelper.TOOLS_INDEX);
-        if (!indexFile.getParentFile().exists()) {
-            indexFile.getParentFile().mkdirs();
-        }
-
-        // Save the index to a file
-        IndexHelper.saveToolsIndex(indexFile, TOOL_REFERENCES);
+        File indexFile = TestIndexHelper.createToolsIndex();
 
         // Verify that the file exists and is not empty
         Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");

@@ -48,6 +48,7 @@ public class ResourcesResource {
             resourcesBean.expose(resource);
             return Response.ok().build();
         } catch (Exception e) {
+            e.printStackTrace();
             LOG.errorf("Failed to expose resource %s: %s", resource.getName(), e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to expose resource").build();
         }
