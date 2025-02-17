@@ -15,11 +15,18 @@
  * limitations under the License.
  */
 
-package org.wanaku.api.types;
+package org.wanaku.core.mcp.common;
 
-public class McpResource {
-    public String uri;
-    public String name;
-    public String description;
-    public String mimeType;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import org.wanaku.api.types.ToolReference;
+
+public interface Tool {
+    /**
+     * Call a tool
+     * @param toolReference the tool reference
+     * @param toolArguments the arguments to the tool
+     * @return
+     */
+    ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments);
 }

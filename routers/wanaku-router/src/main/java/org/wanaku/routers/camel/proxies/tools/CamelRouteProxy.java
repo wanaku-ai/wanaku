@@ -17,19 +17,13 @@
 
 package org.wanaku.routers.camel.proxies.tools;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.Resource;
 import org.apache.camel.support.PluginHelper;
 import org.jboss.logging.Logger;
-import org.wanaku.api.types.McpTool;
-import org.wanaku.api.types.McpToolContent;
-import org.wanaku.api.types.McpToolStatus;
 import org.wanaku.api.types.ToolReference;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 
@@ -46,79 +40,23 @@ public class CamelRouteProxy implements ToolsProxy {
     }
 
     @Override
-    public boolean canHandle(ToolReference toolReference) {
-        return toolReference.getType().equals("camel-route");
-    }
-
-    @Override
-    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
-        McpToolStatus status = new McpToolStatus();
+    public ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
         try {
             producer.start();
 
-            String location = resolveLocation(tool);
-
-            Resource resource = PluginHelper.getResourceLoader(camelContext).resolveResource(location);
+            Resource resource = PluginHelper.getResourceLoader(camelContext).resolveResource(toolReference.getUri());
             PluginHelper.getRoutesLoader(camelContext).loadRoutes(resource);
 
-            String body = null;
-            for (var t : tool.inputSchema.properties) {
-                if (t.name.equals("_body")) {
-                    body = properties.get(t.name).toString();
-                }
-            }
+            CamelRequest result = CamelRequest.newCamelRequest(toolReference, toolArguments);
 
-            McpToolContent content = new McpToolContent();
-
-            content.text = producer.requestBody("direct:start", body,   String.class);
-            content.type = "text";
-
-            status.content = List.of(content);
-            status.isError = false;
+            String s = producer.requestBody(result.uri(), result.body(), String.class);
+            return ToolResponse.success(s);
         } catch (Exception e) {
-            LOG.errorf("Unable to call route: %s", e.getMessage(), e);
-
-            McpToolContent content = new McpToolContent();
-            content.text = e.getMessage();
-            content.type = "text";
-
-            status.isError = true;
-            status.content = List.of(content);
+            LOG.errorf("Unable to call endpoint: %s", e.getMessage(), e);
+            return ToolResponse.error(e.getMessage());
         } finally {
-            status.isError = true;
             producer.stop();
         }
-        return status;
-    }
-
-    private static String resolveLocation(McpTool tool) {
-        return tool.uri;
-    }
-
-    @Override
-    public McpTool toMcpTool(ToolReference toolReference) {
-        McpTool tool = new McpTool();
-
-        tool.description = toolReference.getDescription();
-        tool.name = toolReference.getName();
-        tool.uri = toolReference.getUri();
-        tool.type = toolReference.getType();
-        tool.inputSchema = new McpTool.InputSchema();
-        ToolReference.InputSchema inputSchema = toolReference.getInputSchema();
-        if (inputSchema != null) {
-            tool.inputSchema.type = inputSchema.getType();
-            tool.inputSchema.properties = new ArrayList<>();
-
-            for (var refProperty : inputSchema.getProperties().entrySet()) {
-                McpTool.InputSchema.Property schemaProperty = new McpTool.InputSchema.Property();
-
-                schemaProperty.name = refProperty.getKey();
-                schemaProperty.type = refProperty.getValue().getType();
-                schemaProperty.description = refProperty.getValue().getDescription();
-                tool.inputSchema.properties.add(schemaProperty);
-            }
-        }
-        return tool;
     }
 
     @Override

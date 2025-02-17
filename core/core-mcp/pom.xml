@@ -41,6 +41,12 @@
             <artifactId>api</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkiverse.mcp</groupId>
+            <artifactId>quarkus-mcp-server-sse</artifactId> <!-- use 'quarkus-mcp-server-stdio' if you want to use the STDIO transport instead of the SSE transport -->
+            <version>${quarkus-mcp-server.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

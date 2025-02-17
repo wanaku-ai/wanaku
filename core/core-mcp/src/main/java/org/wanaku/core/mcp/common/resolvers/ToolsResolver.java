@@ -17,35 +17,17 @@
 
 package org.wanaku.core.mcp.common.resolvers;
 
-import java.util.List;
-import java.util.Map;
-
 import org.wanaku.api.exceptions.ToolNotFoundException;
-import org.wanaku.api.types.McpTool;
-import org.wanaku.api.types.McpToolStatus;
+import org.wanaku.api.types.ToolReference;
+import org.wanaku.core.mcp.common.Tool;
 
 public interface ToolsResolver extends Resolver {
 
-    /**
-     * List resources
+        /**
+     * Given a reference, resolves what tool would call it
+     * @param toolReference
      * @return
+     * @throws ToolNotFoundException
      */
-    List<McpTool> list();
-
-
-    /**
-     * Find a tool by name
-     * @param name the name of the tool to fine
-     * @return A reference to the tool
-     * @throws ToolNotFoundException if the tool cannot be found
-     */
-    McpTool find(String name) throws ToolNotFoundException;
-
-    /**
-     * Call a tool
-     * @param tool the tool to invoke
-     * @param properties the properties to use when calling the tool
-     * @return
-     */
-    McpToolStatus call(McpTool tool, Map<String, Object> properties);
+    Tool resolve(ToolReference toolReference) throws ToolNotFoundException;
 }

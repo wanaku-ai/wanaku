@@ -18,7 +18,6 @@
 package org.wanaku.cli.main.commands.resources;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;

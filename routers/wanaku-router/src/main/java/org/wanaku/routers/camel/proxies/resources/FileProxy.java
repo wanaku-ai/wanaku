@@ -18,21 +18,18 @@
 package org.wanaku.routers.camel.proxies.resources;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.TextResourceContents;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
-import org.wanaku.api.types.McpRequestStatus;
-import org.wanaku.api.types.McpResource;
-import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
-import org.wanaku.core.mcp.common.resolvers.AsyncRequestHandler;
 import org.wanaku.routers.camel.proxies.ResourceProxy;
 
 /**
@@ -52,38 +49,22 @@ public class FileProxy implements ResourceProxy {
     }
 
     @Override
-    public McpResource toResource(ResourceReference reference) {
-        McpResource mcpResource = new McpResource();
+    public List<ResourceContents> eval(ResourceReference mcpResource) {
 
-        mcpResource.uri = String.format("%s:%s", reference.getType(), reference.getLocation());
-        mcpResource.name = reference.getName();
-        mcpResource.mimeType = reference.getMimeType();
-        mcpResource.description = reference.getDescription();
-
-        return mcpResource;
-    }
-
-    @Override
-    public List<McpResourceData> eval(String uri) {
-
-        URI uriUri = URI.create(uri);
-        String filePath = uriUri.getSchemeSpecificPart();
-
-        File file = new File(filePath);
-        String camelUri = String.format("file://%s?fileName=%s&noop=true&idempotent=false", file.getParent(), file.getName());
+        File file = new File(mcpResource.getLocation());
+        String camelUri = String.format("%s://%s?fileName=%s&noop=true&idempotent=false", mcpResource.getType(), file.getParent(), file.getName());
 
         try {
             consumer.start();
             Object o = consumer.receiveBody(camelUri, 5000);
             if (o instanceof GenericFile<?> genericFile) {
                 String fileName = genericFile.getAbsoluteFilePath();
-                McpResourceData data = new McpResourceData();
-                data.uri = uri;
 
-                data.text = Files.readString(Path.of(fileName));
-                data.mimeType = "text/plain";
+                TextResourceContents textResourceContents =
+                        new TextResourceContents("file://" + mcpResource.getLocation(), Files.readString(Path.of(fileName)),
+                                mcpResource.getMimeType());
 
-                return List.of(data);
+                return List.of(textResourceContents);
             }
 
             return Collections.emptyList();
@@ -93,14 +74,5 @@ public class FileProxy implements ResourceProxy {
         } finally {
             consumer.stop();
         }
-    }
-
-    @Override
-    public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
-        McpRequestStatus<McpResourceData> mcpRequestStatus = new McpRequestStatus<>();
-
-        mcpRequestStatus.status = McpRequestStatus.Status.SUBSCRIPTION_UNSUPPORTED;
-
-        callback.handle(mcpRequestStatus);
     }
 }
