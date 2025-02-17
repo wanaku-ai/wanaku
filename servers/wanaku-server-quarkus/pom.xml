@@ -55,7 +55,7 @@
 
         <dependency>
             <groupId>org.wanaku</groupId>
-            <artifactId>util</artifactId>
+            <artifactId>core-util</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -95,7 +95,7 @@
 
         <dependency>
             <groupId>org.wanaku</groupId>
-            <artifactId>util</artifactId>
+            <artifactId>core-util</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>

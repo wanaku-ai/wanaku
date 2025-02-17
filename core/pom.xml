@@ -32,7 +32,7 @@
     <name>Wanaku :: Core</name>
 
     <modules>
-        <module>util</module>
+        <module>core-util</module>
         <module>core-mcp</module>
     </modules>
 
