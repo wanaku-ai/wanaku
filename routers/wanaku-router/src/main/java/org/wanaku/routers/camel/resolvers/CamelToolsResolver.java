@@ -25,9 +25,9 @@ import java.util.Optional;
 
 import org.jboss.logging.Logger;
 import org.wanaku.api.exceptions.ToolNotFoundException;
-import org.wanaku.api.resolvers.ToolsResolver;
 import org.wanaku.api.types.McpTool;
 import org.wanaku.api.types.McpToolStatus;
+import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 
 public class CamelToolsResolver implements ToolsResolver {

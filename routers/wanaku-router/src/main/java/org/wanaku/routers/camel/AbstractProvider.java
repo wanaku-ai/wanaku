@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.camel.CamelContext;
-import org.wanaku.api.resolvers.Resolver;
+import org.wanaku.core.mcp.common.resolvers.Resolver;
 import org.wanaku.core.util.IndexHelper;
 import org.wanaku.routers.camel.proxies.Proxy;
 

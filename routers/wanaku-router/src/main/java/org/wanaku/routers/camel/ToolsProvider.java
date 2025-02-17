@@ -25,15 +25,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
-import org.wanaku.api.resolvers.ToolsResolver;
-import org.wanaku.api.resolvers.util.NoopToolsResolver;
+import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import org.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
 import org.wanaku.routers.camel.proxies.ToolsProxy;
 import org.wanaku.routers.camel.proxies.tools.CamelEndpointProxy;
 import org.wanaku.routers.camel.proxies.tools.CamelRouteProxy;
 import org.wanaku.routers.camel.resolvers.CamelToolsResolver;
 import picocli.CommandLine;
 
-import static org.wanaku.api.resolvers.Resolver.DEFAULT_TOOLS_INDEX_FILE_NAME;
+import static org.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_TOOLS_INDEX_FILE_NAME;
 
 @ApplicationScoped
 public class ToolsProvider extends AbstractProvider<ToolsProxy, ToolsResolver> {

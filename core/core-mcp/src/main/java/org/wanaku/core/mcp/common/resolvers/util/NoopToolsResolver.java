@@ -15,17 +15,35 @@
  * limitations under the License.
  */
 
-package org.wanaku.api.resolvers;
+package org.wanaku.core.mcp.common.resolvers.util;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
-public interface Resolver {
-    String DEFAULT_RESOURCES_INDEX_FILE_NAME = "resources.json";
-    String DEFAULT_TOOLS_INDEX_FILE_NAME = "tools.json";
+import org.wanaku.api.exceptions.ToolNotFoundException;
+import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import org.wanaku.api.types.McpTool;
+import org.wanaku.api.types.McpToolStatus;
 
-    /**
-     * The location of the index file
-     * @return
-     */
-    File indexLocation();
+public class NoopToolsResolver implements ToolsResolver {
+    @Override
+    public List<McpTool> list() {
+        return List.of();
+    }
+
+    @Override
+    public McpTool find(String name) throws ToolNotFoundException {
+        return null;
+    }
+
+    @Override
+    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
+        return null;
+    }
+
+    @Override
+    public File indexLocation() {
+        return null;
+    }
 }

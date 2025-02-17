@@ -25,14 +25,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
-import org.wanaku.api.resolvers.ResourceResolver;
-import org.wanaku.api.resolvers.util.NoopResourceResolver;
+import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
+import org.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
 import org.wanaku.routers.camel.proxies.ResourceProxy;
 import org.wanaku.routers.camel.proxies.resources.FileProxy;
 import org.wanaku.routers.camel.resolvers.CamelResourceResolver;
 import picocli.CommandLine;
 
-import static org.wanaku.api.resolvers.Resolver.DEFAULT_RESOURCES_INDEX_FILE_NAME;
+import static org.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_RESOURCES_INDEX_FILE_NAME;
 
 @ApplicationScoped
 public class ResourcesProvider extends AbstractProvider<ResourceProxy, ResourceResolver> {

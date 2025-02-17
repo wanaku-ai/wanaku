@@ -19,7 +19,8 @@ package org.wanaku.server.quarkus.support;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import org.wanaku.api.resolvers.ToolsResolver;
+
+import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
 
 @ApplicationScoped
 public class TestProvider {

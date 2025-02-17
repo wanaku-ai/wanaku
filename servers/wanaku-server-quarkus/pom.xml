@@ -49,6 +49,12 @@
         </dependency>
         <dependency>
             <groupId>org.wanaku</groupId>
+            <artifactId>core-mcp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wanaku</groupId>
             <artifactId>util</artifactId>
             <version>${project.version}</version>
         </dependency>

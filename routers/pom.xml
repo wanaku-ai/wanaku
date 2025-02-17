@@ -62,6 +62,12 @@
 
         <dependency>
             <groupId>org.wanaku</groupId>
+            <artifactId>core-mcp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wanaku</groupId>
             <artifactId>wanaku-server-quarkus</artifactId>
             <version>${project.version}</version>
         </dependency>
