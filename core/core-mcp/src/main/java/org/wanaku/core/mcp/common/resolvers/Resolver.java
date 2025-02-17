@@ -15,36 +15,17 @@
  * limitations under the License.
  */
 
-package org.wanaku.api.resolvers.util;
+package org.wanaku.core.mcp.common.resolvers;
 
 import java.io.File;
-import java.util.List;
 
-import org.wanaku.api.resolvers.AsyncRequestHandler;
-import org.wanaku.api.resolvers.ResourceResolver;
-import org.wanaku.api.types.McpRequestStatus;
-import org.wanaku.api.types.McpResource;
-import org.wanaku.api.types.McpResourceData;
+public interface Resolver {
+    String DEFAULT_RESOURCES_INDEX_FILE_NAME = "resources.json";
+    String DEFAULT_TOOLS_INDEX_FILE_NAME = "tools.json";
 
-public class NoopResourceResolver implements ResourceResolver {
-
-    @Override
-    public File indexLocation() {
-        return null;
-    }
-
-    @Override
-    public List<McpResource> list() {
-        return List.of();
-    }
-
-    @Override
-    public List<McpResourceData> read(String uri) {
-        return List.of();
-    }
-
-    @Override
-    public void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback) {
-
-    }
+    /**
+     * The location of the index file
+     * @return
+     */
+    File indexLocation();
 }

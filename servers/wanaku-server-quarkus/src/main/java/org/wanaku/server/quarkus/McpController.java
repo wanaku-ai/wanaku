@@ -26,19 +26,18 @@ import jakarta.inject.Inject;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.json.JsonObject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
 import org.wanaku.api.exceptions.ToolNotFoundException;
-import org.wanaku.api.resolvers.ToolsResolver;
 import org.wanaku.api.types.McpMessage;
-import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.McpTool;
 import org.wanaku.api.types.McpToolStatus;
+import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
+import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import org.wanaku.server.quarkus.helper.Messages;
 
 @Dependent

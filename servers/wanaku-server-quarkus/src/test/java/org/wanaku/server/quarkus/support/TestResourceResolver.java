@@ -19,7 +19,7 @@ package org.wanaku.server.quarkus.support;
 
 import java.io.File;
 
-import org.wanaku.api.resolvers.util.NoopResourceResolver;
+import org.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
 import org.wanaku.core.util.support.ResourcesHelper;
 
 public class TestResourceResolver extends NoopResourceResolver {

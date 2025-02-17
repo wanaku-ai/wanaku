@@ -22,19 +22,25 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.wanaku</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>core</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>core</artifactId>
-    <packaging>pom</packaging>
-    <name>Wanaku :: Core</name>
+    <artifactId>core-mcp</artifactId>
+    <name>Wanaku :: Core :: MCP</name>
 
-    <modules>
-        <module>util</module>
-        <module>core-mcp</module>
-    </modules>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.wanaku</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>

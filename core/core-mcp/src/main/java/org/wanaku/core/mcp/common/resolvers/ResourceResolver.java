@@ -15,35 +15,33 @@
  * limitations under the License.
  */
 
-package org.wanaku.api.resolvers.util;
+package org.wanaku.core.mcp.common.resolvers;
 
-import java.io.File;
 import java.util.List;
-import java.util.Map;
 
-import org.wanaku.api.exceptions.ToolNotFoundException;
-import org.wanaku.api.resolvers.ToolsResolver;
-import org.wanaku.api.types.McpTool;
-import org.wanaku.api.types.McpToolStatus;
+import org.wanaku.api.types.McpRequestStatus;
+import org.wanaku.api.types.McpResource;
+import org.wanaku.api.types.McpResourceData;
 
-public class NoopToolsResolver implements ToolsResolver {
-    @Override
-    public List<McpTool> list() {
-        return List.of();
-    }
+public interface ResourceResolver extends Resolver {
 
-    @Override
-    public McpTool find(String name) throws ToolNotFoundException {
-        return null;
-    }
+    /**
+     * List resources
+     * @return
+     */
+    List<McpResource> list();
 
-    @Override
-    public McpToolStatus call(McpTool tool, Map<String, Object> properties) {
-        return null;
-    }
+    /**
+     * Read resources
+     * @param uri
+     * @return
+     */
+    List<McpResourceData> read(String uri);
 
-    @Override
-    public File indexLocation() {
-        return null;
-    }
+    /**
+     * Subscribe to resources
+     * @param uri
+     * @return The status of the request
+     */
+    void subscribe(String uri, AsyncRequestHandler<McpRequestStatus<McpResourceData>> callback);
 }

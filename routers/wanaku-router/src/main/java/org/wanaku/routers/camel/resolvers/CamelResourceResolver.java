@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
-import org.wanaku.api.resolvers.AsyncRequestHandler;
-import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
+import org.wanaku.core.mcp.common.resolvers.AsyncRequestHandler;
+import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import org.wanaku.routers.camel.proxies.ResourceProxy;
 
 public class CamelResourceResolver implements ResourceResolver {

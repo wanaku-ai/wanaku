@@ -21,11 +21,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.wanaku.api.resolvers.AsyncRequestHandler;
 import org.wanaku.api.types.McpRequestStatus;
 import org.wanaku.api.types.McpResource;
 import org.wanaku.api.types.McpResourceData;
 import org.wanaku.api.types.ResourceReference;
+import org.wanaku.core.mcp.common.resolvers.AsyncRequestHandler;
 
 import static org.wanaku.core.util.IndexHelper.loadResourcesIndex;
 

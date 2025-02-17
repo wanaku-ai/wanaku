@@ -23,8 +23,8 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.wanaku.api.resolvers.ResourceResolver;
 import org.wanaku.api.types.ResourceReference;
+import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import org.wanaku.core.util.IndexHelper;
 
 @ApplicationScoped
