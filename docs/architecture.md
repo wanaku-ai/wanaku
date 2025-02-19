@@ -46,6 +46,13 @@ The Wanaku MCP Router is composed of the following components:
 * **Purpose**: The actual Wanaku MCP router (bridging server capabilities with features provided by Apache Camel).
 * **Description**: This component provides a custom and robust implementation of the Wanaku MCP, bridging the capabilities of the Wanaku Server with the advanced features offered by Apache Camel.
 
+#### Services
+
+* **Purpose**: Services that can expose capabilities to the Wanaku MCP router
+* **Description**: This component provides a set of components that can expose capabilities (resources, tools, etc.) to the Wanaku MCP router. 
+   * **providers**: allow access to resources.
+   * **tools**: anything that can be exposed as a tool.
+
 ### Artwork, Samples, and Docs
 
 * **Purpose**: Provide non-code related artifacts (samples and documentation) for other team members to benefit from.

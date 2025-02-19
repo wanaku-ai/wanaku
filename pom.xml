@@ -72,6 +72,7 @@
         <module>servers</module>
         <module>routers</module>
         <module>cli</module>
+        <module>services</module>
     </modules>
 
 </project>

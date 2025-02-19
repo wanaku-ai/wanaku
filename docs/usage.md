@@ -14,6 +14,33 @@ There are three ways to run the CLI. Choose the one that fits your the best:
 
 *NOTE*: the commands below will use `wanaku` as the alias representing any of the above options.
 
+## Quick Getting Started 
+
+Wanaku needs providers and tools to serve and route. The first step is to launch them. Using the containers, you can run
+
+```shell
+podman run -p 9000:9000 quay.io/megacamelus/wanaku-routing-http-service
+podman run -p 9001:9000 quay.io/megacamelus/wanaku-routing-yaml-route-service
+podman run -p 9002:9000 quay.io/megacamelus/wanaku-provider-file
+```
+
+Then, launch the Wanaku router 
+
+```shell
+podman run -p 8080:8080 quay.io/megacamelus/wanaku-router
+```
+
+Then, link the tools and providers to the router:
+
+```shell
+wanaku targets tools link --service=http --target=host.docker.internal:9000
+wanaku targets tools link --service=camel-route --target=host.docker.internal:9001
+wanaku targets resources link --service=file --target=host.docker.internal:9002
+```
+
+After the tools and resource providers have been linked with the router, then you can 
+start adding tools and resources to be served via MCP using the commands described below.
+
 ## Supported Commands
 
 The following commands are currently supported by the Wanaku MCP Router CLI:

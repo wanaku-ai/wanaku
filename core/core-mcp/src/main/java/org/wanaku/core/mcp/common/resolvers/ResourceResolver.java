@@ -17,6 +17,7 @@
 
 package org.wanaku.core.mcp.common.resolvers;
 
+import java.io.File;
 import java.util.List;
 
 import io.quarkiverse.mcp.server.ResourceContents;
@@ -24,6 +25,14 @@ import org.wanaku.api.types.ResourceReference;
 
 public interface ResourceResolver extends Resolver {
 
+
+    /**
+     * The index file containing the targets
+     * @return
+     */
+    default File targetsIndexFile() {
+        return new File(indexBaseDirectory(), DEFAULT_TARGET_RESOURCES_INDEX_FILE_NAME);
+    }
 
     /**
      * Read resources
