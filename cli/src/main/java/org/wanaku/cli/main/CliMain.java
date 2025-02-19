@@ -21,6 +21,7 @@ import jakarta.inject.Inject;
 
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
+import org.wanaku.cli.main.commands.targets.Targets;
 import org.wanaku.cli.main.commands.resources.Resources;
 import org.wanaku.cli.main.commands.tools.Tools;
 import picocli.CommandLine;
@@ -28,7 +29,7 @@ import picocli.CommandLine;
 
 
 @TopCommand
-@CommandLine.Command(name = "wanaku", subcommands = { Resources.class, Tools.class})
+@CommandLine.Command(name = "wanaku", subcommands = { Resources.class, Tools.class, Targets.class})
 public class CliMain implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;

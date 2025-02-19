@@ -18,6 +18,7 @@
 package org.wanaku.cli.main.support;
 
 import java.util.List;
+import java.util.Map;
 
 import org.wanaku.api.types.ResourceReference;
 import org.wanaku.api.types.ToolReference;
@@ -30,8 +31,8 @@ public class PrettyPrinter {
     }
 
     /**
-     * Prints a list of packages
-     * @param list the list of packages
+     * Prints a list of references
+     * @param list the list of references
      */
     public static void printTools(final List<ToolReference> list) {
         System.out.printf("%-15s    %-15s    %-30s    %n",
@@ -49,8 +50,8 @@ public class PrettyPrinter {
     }
 
     /**
-     * Prints a list of packages
-     * @param list the list of packages
+     * Prints a list of resources
+     * @param list the list of resources
      */
     public static void printResources(final List<ResourceReference> list) {
         System.out.printf("%-20s    %-15s    %-30s    %s%n",
@@ -58,6 +59,24 @@ public class PrettyPrinter {
 
         for (ResourceReference packageInfo : list) {
             printParseable(packageInfo);
+        }
+    }
+
+
+    public static void printParseableTarget(String service, String target) {
+        System.out.printf("%-20s => %-50s%n", service, target);
+    }
+
+    /**
+     * Prints a map of entries
+     * @param map the map of entries
+     */
+    public static void printTargets(final Map<String, String> map) {
+        System.out.printf("%-20s    %-50s%n",
+                "Service", "Target");
+
+        for (var entry : map.entrySet()) {
+            printParseableTarget(entry.getKey(), entry.getValue());
         }
     }
 

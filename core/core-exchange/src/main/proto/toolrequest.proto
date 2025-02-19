@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.wanaku.core.exchange";
+option java_outer_classname = "ToolExchange";
+
+package tool;
+
+// The tool exchange service definition.
+service ToolInvoker {
+  // Invokes a tool
+  rpc InvokeTool (ToolInvokeRequest) returns (ToolInvokeReply) {}
+}
+
+// The invocation request message
+message ToolInvokeRequest {
+  string uri = 1;
+  string body = 2;
+  map<string, string> arguments = 3;
+}
+
+// The invocation response message
+message ToolInvokeReply {
+  bool isError = 1;
+  string content = 2;
+}

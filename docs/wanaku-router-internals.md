@@ -3,7 +3,9 @@
 The root abstraction for all operations within Wanaku MCP Router is the Proxy interface. All MCP
 operations within Wanaku are executed by implementations of a Proxy. For details, 
 see [`Proxy`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/Proxy.java) 
-interface.
+interface. 
+Leveraging the `Proxy` interface, then we have the classes `ResourceAcquirerProxy` and `InvokerProxy` that use [gRPC](https://grpc.io/)
+to exchange data with the subcomponents providing access to the resources and tools exposed by the router.
 
 ## Resources 
 
@@ -17,33 +19,29 @@ A resource is, essentially, anything that can be read by using the MCP protocol.
 Among other things, resources can be subscribed to, so that changes to its data and state are notified
 to the subscribers.
 
-For instance, Wanaku's ability to read files is handled by the `FileProxy` which is an implementation of the `ResourceProxy` interface, which
-extends the `Proxy` interface:
+For instance, Wanaku's ability to read files is handled by the `wanaku-provider-file` which is a gPRC server that is capable of
+consuming files isolatedly from other providers:
 
 ```
-+---------------+
-|   Proxy       |
-+---------------+
-       |
-       |
-       v
-+---------------+
-| ResourceProxy |
-+---------------+
-       |
-       |
-       v
-+---------------+
-|   FileProxy   |
-+---------------+
++-----------------------+
+|         Proxy         |
++-----------------------+
+            |
+            |
+            v
++-----------------------+
+| ResourceAcquirerProxy |
++-----------------------+
+            |
+          (gRPC)
+            |
+            v
++-----------------------+
+| Wanaku Provider - File|
++-----------------------+
 ```
 
-Check the [`ResourceProxy`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/ResourceProxy.java) interface for details.
-
-The [`FileProxy`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/resources/FileProxy.java) 
-can be used as an example implementation of a resource proxy.
-
-Ideally, resource proxies should leverage Apache Camel's [ConsumerTemplate](https://camel.apache.org/manual/consumertemplate.html). 
+Ideally, providers should leverage Apache Camel(https://camel.apache.org/) whenever possible. 
 
 ## Tools
 
@@ -56,33 +54,25 @@ Examples:
 * Executing subprocesses that provide an output
 * Executing an RPC invocation and waiting for its response
 
-In Wanaku, the tools are concrete proxies that implement the [`ToolsProxy`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/ToolsProxy.java)
-interface. 
+In Wanaku, the every tool invocation is remote and handled by the `InvokerProxy` class which, then, uses the gRPC protocol to 
+talk to the service that provides the tool.
 
-Here's the hierarchy for the `CamelEndpointProxy`, which is a proxy that invokes endpoints using the Apache Camel [ProducerTemplate](https://camel.apache.org/manual/producertemplate.html).
 
 ```
-+-------------------+
-|      Proxy        |
-+-------------------+
-         |
-         |
-         v
-+-------------------+
-|     ToolsProxy    |
-+-------------------+
-         |
-         |
-         v
-+-------------------+
-|CamelEndpointProxy |
-+-------------------+
++-----------------------+
+|         Proxy         |
++-----------------------+
+            |
+            |
+            v
++-----------------------+
+|     InvokerProxy      |
++-----------------------+
+            |
+          (gRPC)
+            |
+            v
++-----------------------+
+| (Any tool provider)   |
++-----------------------+
 ```
-
-## Resolving Resources and Tools
-
-Resources and Tools are registered during initialization: 
-
-* [`ResourceProvider`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/ResourcesProvider.java) register resource proxies.
-* [`ToolsProvider`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/ToolsProvider.java) register tools proxies.
-

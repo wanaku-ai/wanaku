@@ -20,6 +20,7 @@ package org.wanaku.core.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.wanaku.api.types.ResourceReference;
@@ -30,6 +31,18 @@ import org.wanaku.api.types.ToolReference;
  */
 public class IndexHelper {
 
+
+    /**
+     * Load an index
+     * @param indexFile
+     * @return
+     * @throws Exception
+     */
+    private static <T, Y> Map<T, Y> loadIndex(File indexFile, Class<T> clazzT, Class<Y> clazzY) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(indexFile,
+                objectMapper.getTypeFactory().constructMapType(Map.class, clazzT, clazzY));
+    }
 
     /**
      * Load an index
@@ -95,5 +108,41 @@ public class IndexHelper {
      */
     public static void saveToolsIndex(File indexFile, List<ToolReference> toolReferences) throws IOException {
         saveIndex(indexFile, toolReferences);
+    }
+
+    /**
+     * Saves an index of targets to a file
+     * @param indexFile
+     * @param map
+     * @throws IOException
+     */
+    public static <T> void saveIndex(File indexFile, Map<T, T> map) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        objectMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValue(indexFile, map);
+    }
+
+    /**
+     * Saves an index of targets to a file
+     * @param indexFile
+     * @param targetsMap
+     * @throws IOException
+     */
+    public static void saveTargetsIndex(File indexFile, Map<String, String> targetsMap) throws IOException {
+        saveIndex(indexFile, targetsMap);
+    }
+
+
+
+    /**
+     * Load an index of tools
+     * @param indexFile
+     * @return
+     * @throws Exception
+     */
+    public static Map<String, String> loadTargetsIndex(File indexFile) throws Exception {
+        return loadIndex(indexFile, String.class, String.class);
     }
 }
