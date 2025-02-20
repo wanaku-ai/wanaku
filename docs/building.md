@@ -50,3 +50,10 @@ eval $(make prepare)
 make cli-native
 make install
 ```
+
+### Building with the containers
+
+```shell
+mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
+```
+
