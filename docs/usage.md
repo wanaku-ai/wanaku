@@ -16,21 +16,21 @@ There are three ways to run the CLI. Choose the one that fits your the best:
 
 ## Quick Getting Started 
 
-Wanaku needs providers and tools to serve and route. The first step is to launch them. Using the containers, you can run
+Wanaku needs providers and tools to serve and route. The first step is to launch them. 
+
+Get the [`docker-compose.yml`](https://raw.githubusercontent.com/megacamelus/wanaku/refs/heads/main/docker-compose.yml):
 
 ```shell
-podman run -p 9000:9000 quay.io/megacamelus/wanaku-routing-http-service
-podman run -p 9001:9000 quay.io/megacamelus/wanaku-routing-yaml-route-service
-podman run -p 9002:9000 quay.io/megacamelus/wanaku-provider-file
+wget https://raw.githubusercontent.com/megacamelus/wanaku/refs/heads/main/docker-compose.yml
 ```
 
-Then, launch the Wanaku router 
+Then, you can launch the containers using:
 
 ```shell
-podman run -p 8080:8080 quay.io/megacamelus/wanaku-router
+docker-compose up -d
 ```
 
-Then, link the tools and providers to the router:
+With the Wanaku MCP router up and running, then, link the tools and providers to the router:
 
 ```shell
 wanaku targets tools link --service=http --target=host.docker.internal:9000
