@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  wanaku-routing-http-service:
+    image: quay.io/megacamelus/wanaku-routing-http-service
+    ports:
+      - "9000:9000"
+
+  wanaku-routing-yaml-route-service:
+    image: quay.io/megacamelus/wanaku-routing-yaml-route-service
+    ports:
+      - "9001:9000"
+
+  wanaku-provider-file:
+    image: quay.io/megacamelus/wanaku-provider-file
+    ports:
+      - "9002:9000"
+
+  wanaku-router:
+    depends_on:
+      - wanaku-routing-http-service
+      - wanaku-routing-yaml-route-service
+      - wanaku-provider-file
+    image: quay.io/megacamelus/wanaku-router
+    ports:
+      - "8080:8080"
