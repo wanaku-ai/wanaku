@@ -116,12 +116,21 @@ You can also build containers using:
 mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
 
-For custom containers, please make sure you set the properties `quarkus.container-image.registry` and `quarkus.container-image.group`.
-You can do that `pom.xml`:
+For custom containers, please make sure you set the following properties
+* `quarkus.container-image.registry`: to set the registry name
+* `quarkus.container-image.group`: to set the grop
+
+You can do that in the `pom.xml` file:
 
 ```xml
-    <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
-    <quarkus.container-image.group>my-group</quarkus.container-image.group>
+<project> 
+    <!-- lots of stuff --> 
+    <properties>
+        <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
+        <quarkus.container-image.group>my-group</quarkus.container-image.group>
+    </properties>
+    <!-- lots of other stuff -->
+</project>
 ```
 
 Or in the CLI:
