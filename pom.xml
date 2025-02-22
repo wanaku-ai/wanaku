@@ -73,6 +73,7 @@
         <module>routers</module>
         <module>cli</module>
         <module>services</module>
+        <module>archetypes</module>
     </modules>
 
 </project>
