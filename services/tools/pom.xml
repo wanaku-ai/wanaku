@@ -28,7 +28,7 @@
 
     <artifactId>tools</artifactId>
     <packaging>pom</packaging>
-    <name>Wanaku :: Services:: Tools</name>
+    <name>Wanaku :: Services :: Tools</name>
 
     <modules>
         <module>wanaku-routing-http-service</module>
