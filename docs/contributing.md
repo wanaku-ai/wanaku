@@ -1,9 +1,5 @@
 # Contributing
 
-To contribute new features and connectors, read the [Wanaku MCP Router Internals](wanaku-router-internals.md) guide.
-
-If you want to understand what each of the components do, then read the [Wanaku Components and Architecture](architecture.md) guide.
-
 ## Tools and Providers 
 
 A tool is anything that can operate in a request/reply mode.
@@ -124,8 +120,8 @@ For custom containers, please make sure you set the properties `quarkus.containe
 You can do that `pom.xml`:
 
 ```xml
-<quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
-<quarkus.container-image.group>my-group</quarkus.container-image.group>
+    <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
+    <quarkus.container-image.group>my-group</quarkus.container-image.group>
 ```
 
 Or in the CLI:
@@ -171,3 +167,8 @@ Essentially, the process is to launch Wanaku MCP router, then link the tool/prov
 Then, launch the inspector and use its features to list and read resources and to list and invoke tools.
 
 
+## Learn More
+
+To contribute new core features and connectors, also read the [Wanaku MCP Router Internals](wanaku-router-internals.md) guide.
+
+If you want to understand what each of the components do, then read the [Wanaku Components and Architecture](architecture.md) guide.

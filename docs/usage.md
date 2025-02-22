@@ -141,6 +141,6 @@ mcpServers:
         url: http://host.docker.internal:8080/sse
 ```
 
-*NOTE*: make sure to point to the correct address of your Wanaku MCP instance.
+**NOTE**: make sure to point to the correct address of your Wanaku MCP instance.
 
 In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librechat.ai/docs/features/agents).

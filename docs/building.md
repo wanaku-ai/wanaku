@@ -1,10 +1,10 @@
 # Building Wanaku MCP Router
 
-# Overview
+## Overview
 
 Before running or deploying the Wanaku MCP Router, you need to build the project from source.
 
-### Prerequisites
+## Prerequisites
 
 * [Apache Maven](https://maven.apache.org) 3.x is required to build and package the project.
 * For native CLI builds, please follow the [Quarkus instructions on how to set up your environment](https://quarkus.io/guides/building-native-image).
@@ -25,7 +25,7 @@ To package it into a distributable formats (i.e.: tarballs), run:
 mvn -Pdist clean package
 ```
 
-### Building with Native CLI Support
+## Building with Native CLI Support
 
 To build the project with native CLI support, run:
 
@@ -51,7 +51,7 @@ make cli-native
 make install
 ```
 
-### Building with the containers
+## Building with the containers
 
 ```shell
 mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
