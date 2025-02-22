@@ -19,7 +19,6 @@ package org.wanaku.routers.resolvers;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import org.jboss.logging.Logger;
@@ -30,11 +29,11 @@ import org.wanaku.routers.proxies.ResourceProxy;
 public class WanakuResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(WanakuResourceResolver.class);
     private final File indexFile;
-    private final Map<String, ? extends ResourceProxy> proxies;
+    private final ResourceProxy proxy;
 
-    public WanakuResourceResolver(File indexFile, Map<String, ? extends ResourceProxy> proxies) {
+    public WanakuResourceResolver(File indexFile, ResourceProxy proxy) {
         this.indexFile = indexFile;
-        this.proxies = proxies;
+        this.proxy = proxy;
     }
 
     @Override
@@ -44,9 +43,8 @@ public class WanakuResourceResolver implements ResourceResolver {
 
     @Override
     public List<ResourceContents> read(ResourceReference mcpResource) {
-        ResourceProxy resourceProxy = proxies.get(mcpResource.getType());
-        LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", resourceProxy.name(), mcpResource);
+        LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", proxy.name(), mcpResource);
 
-        return resourceProxy.eval(mcpResource);
+        return proxy.eval(mcpResource);
     }
 }

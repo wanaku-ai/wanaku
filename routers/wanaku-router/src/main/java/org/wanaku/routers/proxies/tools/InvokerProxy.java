@@ -31,21 +31,15 @@ import org.wanaku.routers.proxies.ToolsProxy;
 
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
-    private final String service;
-
-    public InvokerProxy(String service) {
-        this.service = service;
-
-    }
 
     @Override
     public ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
-        String target = ServiceRegistry.getInstance().getHostForService(service);
+        String target = ServiceRegistry.getInstance().getHostForService(toolReference.getType());
         if (target == null) {
-            return ToolResponse.error("There is no host registered for service " + service);
+            return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }
 
-        LOG.infof("Invoking %s on %s", service, target);
+        LOG.infof("Invoking %s on %s", toolReference.getType(), target);
         try {
             final ToolInvokeReply invokeReply = invokeRemotely(toolReference, toolArguments, target);
 

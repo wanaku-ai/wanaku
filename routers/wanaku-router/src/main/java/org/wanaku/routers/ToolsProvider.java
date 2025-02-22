@@ -18,13 +18,10 @@
 package org.wanaku.routers;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
-
 import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import org.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
 import org.wanaku.routers.proxies.ToolsProxy;
@@ -48,8 +45,7 @@ public class ToolsProvider extends AbstractProvider<ToolsProxy, ToolsResolver> {
 
         File resourcesIndexFile = initializeIndex();
 
-        Map<String, ? extends ToolsProxy> proxies = loadProxies();
-        return new WanakuToolsResolver(resourcesIndexFile, proxies);
+        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy());
     }
 
     @Override
@@ -58,16 +54,5 @@ public class ToolsProvider extends AbstractProvider<ToolsProxy, ToolsResolver> {
                 .replace("${user.home}", System.getProperty("user.home"));
 
         return initializeResourcesIndex(indexPath, DEFAULT_TOOLS_INDEX_FILE_NAME);
-    }
-
-    @Override
-    public Map<String, ToolsProxy> loadProxies() {
-        Map<String, ToolsProxy> proxies = new HashMap<>();
-
-        proxies.put("http", new InvokerProxy("http"));
-        proxies.put("camel-route", new InvokerProxy("camel-route"));
-
-        return proxies;
-
     }
 }

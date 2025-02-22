@@ -34,11 +34,6 @@ import org.wanaku.routers.proxies.ResourceProxy;
 
 public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);
-    private final String resourceType;
-
-    public ResourceAcquirerProxy(String resourceType) {
-        this.resourceType = resourceType;
-    }
 
     @Override
     public List<ResourceContents> eval(ResourceReference mcpResource) {
