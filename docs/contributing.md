@@ -132,7 +132,7 @@ mvn -Pdist -Dquarkus.container-image.registry=quay.io -Dquarkus.container-image.
 
 ## Adding Routes to Providers and Tools
 
-In some cases, you may need something more complex than can be achieved using Camel's `ProducerTemplate. In those cases, then you can create a traditional Camel route and invoke it from the delegate. 
+In some cases, you may need something more complex than can be achieved using Camel's `ProducerTemplate`. In those cases, then you can create a traditional Camel route and invoke it from the delegate. 
 
 Here's an example route that consumes from `direct:start` and sets a body as the reply:
 

@@ -19,8 +19,8 @@ A resource is, essentially, anything that can be read by using the MCP protocol.
 Among other things, resources can be subscribed to, so that changes to its data and state are notified
 to the subscribers.
 
-For instance, Wanaku's ability to read files is handled by the `wanaku-provider-file` which is a gPRC server that is capable of
-consuming files isolatedly from other providers:
+For instance, the ability to read files is handled by the `wanaku-provider-file` which is a gPRC server that is capable of
+consuming files isolated from other providers:
 
 ```
 +-----------------------+
@@ -41,7 +41,7 @@ consuming files isolatedly from other providers:
 +-----------------------+
 ```
 
-Ideally, providers should leverage Apache Camel(https://camel.apache.org/) whenever possible. 
+Ideally, providers should leverage [Apache Camel](https://camel.apache.org/) whenever possible. 
 
 ## Tools
 
