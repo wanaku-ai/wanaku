@@ -133,3 +133,12 @@ Or in the CLI:
 ```shell
 mvn -Pdist -Dquarkus.container-image.registry=quay.io -Dquarkus.container-image.group=my-group -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
+
+## Testing
+
+You can use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to easily test your tool or provider.
+
+Essentially, the process is to launch Wanaku MCP router, then link the tool/provider you created. 
+Then, launch the inspector and use its features to list and read resources and to list and invoke tools.
+
+
