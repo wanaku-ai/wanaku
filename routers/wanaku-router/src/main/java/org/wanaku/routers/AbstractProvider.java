@@ -20,7 +20,6 @@ package org.wanaku.routers;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 
 import org.wanaku.core.mcp.common.resolvers.Resolver;
 import org.wanaku.core.util.IndexHelper;
@@ -50,8 +49,6 @@ abstract class AbstractProvider<T extends Proxy, Y extends Resolver> {
     }
 
     abstract File initializeIndex();
-
-    abstract Map<String, T> loadProxies();
 
     abstract Y getResolver();
 }

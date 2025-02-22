@@ -18,9 +18,7 @@
 package org.wanaku.routers.resolvers;
 
 import java.io.File;
-import java.util.Map;
 
-import org.jboss.logging.Logger;
 import org.wanaku.api.exceptions.ToolNotFoundException;
 import org.wanaku.api.types.ToolReference;
 import org.wanaku.core.mcp.common.Tool;
@@ -28,13 +26,12 @@ import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import org.wanaku.routers.proxies.ToolsProxy;
 
 public class WanakuToolsResolver implements ToolsResolver {
-    private static final Logger LOG = Logger.getLogger(WanakuToolsResolver.class);
     private final File indexFile;
-    private final Map<String, ? extends ToolsProxy> proxies;
+    private final ToolsProxy proxy;
 
-    public WanakuToolsResolver(File indexFile, Map<String, ? extends ToolsProxy> proxies) {
+    public WanakuToolsResolver(File indexFile, ToolsProxy proxy) {
         this.indexFile = indexFile;
-        this.proxies = proxies;
+        this.proxy = proxy;
     }
 
     @Override
@@ -44,6 +41,6 @@ public class WanakuToolsResolver implements ToolsResolver {
 
     @Override
     public Tool resolve(ToolReference toolReference) throws ToolNotFoundException {
-        return proxies.get(toolReference.getType());
+        return proxy;
     }
 }

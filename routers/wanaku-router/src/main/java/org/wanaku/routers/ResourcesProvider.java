@@ -18,13 +18,10 @@
 package org.wanaku.routers;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
-
 import org.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import org.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
 import org.wanaku.routers.proxies.ResourceProxy;
@@ -47,9 +44,7 @@ public class ResourcesProvider extends AbstractProvider<ResourceProxy, ResourceR
         }
 
         File resourcesIndexFile = initializeIndex();
-
-        Map<String, ? extends ResourceProxy> proxies = loadProxies();
-        return new WanakuResourceResolver(resourcesIndexFile, proxies);
+        return new WanakuResourceResolver(resourcesIndexFile, new ResourceAcquirerProxy());
     }
 
 
@@ -59,15 +54,5 @@ public class ResourcesProvider extends AbstractProvider<ResourceProxy, ResourceR
                 .replace("${user.home}", System.getProperty("user.home"));
 
         return initializeResourcesIndex(indexPath, DEFAULT_RESOURCES_INDEX_FILE_NAME);
-    }
-
-    @Override
-    public Map<String, ResourceProxy> loadProxies() {
-        Map<String, ResourceProxy> proxies = new HashMap<>();
-
-        proxies.put("file", new ResourceAcquirerProxy("file"));
-
-        return proxies;
-
     }
 }
