@@ -1,6 +1,6 @@
 GRAAL_VERSION?=21.0.2-graalce
 
-HOST?="localhost:8080"
+HOST?="http://localhost:8080"
 
 help:
 	@echo Make sure to adjust your environment to use Graal. For instance, run "sdk use ${GRAAL_VERSION}"

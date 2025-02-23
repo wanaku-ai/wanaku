@@ -17,8 +17,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.wanaku</groupId>
@@ -32,6 +32,7 @@
     <properties>
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
+        <quarkus-web-bundler.version>1.8.1</quarkus-web-bundler.version>
     </properties>
 
     <dependencies>
@@ -39,6 +40,65 @@
             <groupId>org.wanaku</groupId>
             <artifactId>core-exchange</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.web-bundler</groupId>
+            <artifactId>quarkus-web-bundler</artifactId>
+            <version>${quarkus-web-bundler.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>react</artifactId>
+            <version>18.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>react-dom</artifactId>
+            <version>18.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>react-router-dom</artifactId>
+            <version>5.3.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm.at.types</groupId>
+            <artifactId>react-router-dom</artifactId>
+            <version>5.3.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>react-axe</artifactId>
+            <version>3.5.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm.at.patternfly</groupId>
+            <artifactId>react-core</artifactId>
+            <version>5.2.3</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mvnpm</groupId>
+                    <artifactId>react</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm.at.inertiajs</groupId>
+            <artifactId>react</artifactId>
+            <version>2.0.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>react-fetch-hook</artifactId>
+            <version>1.9.5</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -89,7 +149,8 @@
                         </goals>
                         <configuration>
                             <systemPropertyVariables>
-                                <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                                <native.image.path>
+                                    ${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
                             </systemPropertyVariables>
