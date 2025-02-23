@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 import org.wanaku.api.types.ToolReference;
 import org.wanaku.cli.main.commands.BaseCommand;
 import org.wanaku.cli.main.services.ToolsService;
+import org.wanaku.cli.main.support.PropertyHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "add",description = "Add tools")
@@ -76,26 +77,13 @@ public class ToolsAdd extends BaseCommand {
 
         if (properties != null) {
             for (String propertyStr : properties) {
-                String[] parts = propertyStr.split(":");
-                if (parts.length != 2) {
-                    LOG.errorf("Invalid property: %s. It should be in the format name:type,description", propertyStr);
-                    System.exit(1);
-                }
-
-                String name = parts[0];
-
-                String[] propertyPart = parts[1].split(",");
-                if (propertyPart.length != 2) {
-                    LOG.errorf("Invalid property: %s. It should be in the format name:type,description", propertyStr);
-                    System.exit(1);
-                }
+                PropertyHelper.PropertyDescription result = PropertyHelper.parseProperty(propertyStr);
 
                 ToolReference.Property property = new ToolReference.Property();
-                property.setType(propertyPart[0]);
-                property.setDescription(propertyPart[1]);
+                property.setType(result.dataType());
+                property.setDescription(result.description());
 
-
-                inputSchema.getProperties().put(name, property);
+                inputSchema.getProperties().put(result.propertyName(), property);
             }
         }
 
