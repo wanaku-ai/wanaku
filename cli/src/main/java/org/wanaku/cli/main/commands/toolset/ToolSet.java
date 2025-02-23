@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.wanaku.cli.main.commands.tools;
+package org.wanaku.cli.main.commands.toolset;
 
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "tools",
-        description = "Manage tools", subcommands = { ToolsAdd.class, ToolsList.class, ToolsImport.class })
-public class Tools {
+@CommandLine.Command(name = "toolset",
+        description = "Manage toolsets", subcommands = { ToolSetAdd.class})
+public class ToolSet {
 }

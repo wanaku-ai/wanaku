@@ -1,0 +1,31 @@
+[ {
+  "name" : "popular-memes",
+  "description" : "Get information about popular memes",
+  "uri" : "https://api.imgflip.com/get_memes",
+  "type" : "http",
+  "inputSchema" : {
+    "type" : "object",
+    "properties" : { },
+    "required" : null
+  }
+}, {
+  "name" : "random-useless-facts",
+  "description" : "Get random useless facts",
+  "uri" : "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en",
+  "type" : "http",
+  "inputSchema" : {
+    "type" : "object",
+    "properties" : { },
+    "required" : null
+  }
+}, {
+  "name" : "tech-sounding-phrases",
+  "description" : "Get tech-savvy sounding phrases",
+  "uri" : "https://techy-api.vercel.app/api/text",
+  "type" : "http",
+  "inputSchema" : {
+    "type" : "object",
+    "properties" : { },
+    "required" : null
+  }
+} ]
