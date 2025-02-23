@@ -48,11 +48,17 @@ public class HttpDelegate implements InvocationDelegate {
             ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
 
             LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
-            String s = producer.requestBody(parsedRequest.uri(), parsedRequest.body(), String.class);
+
+            String s;
+            if (parsedRequest.body().isEmpty()) {
+                s = producer.requestBody(parsedRequest.uri(), null, String.class);
+            } else {
+                s = producer.requestBody(parsedRequest.uri(), parsedRequest.body(), String.class);
+            }
 
             return ToolInvokeReply.newBuilder().setContent(s).setIsError(false).build();
         } catch (Exception e) {
-            LOG.errorf("Unable to call endpoint: %s", e.getMessage(), e);
+            LOG.errorf(e,"Unable to call endpoint: %s", e.getMessage(), e);
             return ToolInvokeReply.newBuilder().setContent(e.getMessage()).setIsError(true).build();
         } finally {
             producer.stop();
