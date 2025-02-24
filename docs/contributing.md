@@ -147,7 +147,7 @@ In those cases, then you can create a traditional Camel route and invoke it from
 The example below shows a route that consumes from `direct:start` and sets a body as the reply:
 
 ```java
-package org.wanaku.routing.service;
+package ai.wanaku.routing.service;
 
 import org.apache.camel.builder.RouteBuilder;
 

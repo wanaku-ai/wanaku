@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.wanaku.server.quarkus.support;
+package ai.wanaku.server.quarkus.support;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.wanaku.core.util.IndexHelper;
-import org.wanaku.core.util.support.ResourcesHelper;
-import org.wanaku.core.util.support.ToolsHelper;
-import org.wanaku.server.quarkus.api.v1.resources.ResourcesResourceTest;
-import org.wanaku.server.quarkus.api.v1.tools.ToolsResourceTest;
+import ai.wanaku.core.util.IndexHelper;
+import ai.wanaku.core.util.support.ResourcesHelper;
+import ai.wanaku.core.util.support.ToolsHelper;
+import ai.wanaku.server.quarkus.api.v1.resources.ResourcesResourceTest;
+import ai.wanaku.server.quarkus.api.v1.tools.ToolsResourceTest;
 
 public class TestIndexHelper {
     public static File createToolsIndex() throws IOException {

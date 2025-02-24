@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.wanaku.server.quarkus.support;
+package ai.wanaku.server.quarkus.support;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
-import org.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 
 @ApplicationScoped
 public class TestProvider {

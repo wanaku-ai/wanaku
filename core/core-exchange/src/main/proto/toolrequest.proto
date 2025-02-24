@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "org.wanaku.core.exchange";
+option java_package = "ai.wanaku.core.exchange";
 option java_outer_classname = "ToolExchange";
 
 package tool;
