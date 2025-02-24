@@ -1,0 +1,6 @@
+// Bring in all the styles for Carbon
+@use '@carbon/react' with (
+  $font-path: '@ibm/plex'
+);
+
+@import '@carbon/styles';
