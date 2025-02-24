@@ -95,4 +95,18 @@ public class ResourcesBean {
                                 resourceResolver.read(resourceReference)))
                 .register();
     }
+
+    public void remove(String name) {
+        resourceManager.removeResource(name);
+
+        File indexFile = resourceResolver.indexLocation();
+        try {
+            List<ResourceReference> resourceReferences = IndexHelper.loadResourcesIndex(indexFile);
+            resourceReferences.removeIf(resourceReference -> resourceReference.getName().equals(name));
+            IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to remove resource from file: %s", indexFile);
+            throw new RuntimeException(e);
+        }
+    }
 }

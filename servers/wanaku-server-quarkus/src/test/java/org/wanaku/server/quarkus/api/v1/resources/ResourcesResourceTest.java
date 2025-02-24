@@ -56,7 +56,7 @@ public class ResourcesResourceTest {
     @Order(1)
     @Test
     public void testExposeResourceSuccessfully() {
-        ResourceReference resource = createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg");
+        ResourceReference resource = createResource("/tmp/resource3.jpg", "image/jpeg", "resource3.jpg");
 
         given()
                 .header("Content-Type", MediaType.APPLICATION_JSON)
@@ -74,6 +74,24 @@ public class ResourcesResourceTest {
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("size()", is(3),
+                        "[0].name", is("resource1.jpg"),
+                        "[0].type", is("image/jpeg"),
+                        "[0].description", is("A sample image resource"));
+    }
+
+    @Order(3)
+    @Test
+    void testRemove() {
+        given()
+                .when().put("/api/v1/resources/remove?resource=resource3.jpg")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        given()
+                .when().get("/api/v1/resources/list")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("size()", is(2),
                         "[0].name", is("resource1.jpg"),
                         "[0].type", is("image/jpeg"),
                         "[0].description", is("A sample image resource"));
