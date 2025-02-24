@@ -22,7 +22,7 @@ Here are some examples:
 To create a new tool for Wanaku, you can start by creating a new project. For instance, to create one for Kafka:
  
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=org.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype   -DarchetypeVersion=1.0.0-SNAPSHOT -DgroupId=org.wanaku -Dpackage=org.wanaku.routing.service -DartifactId=wanaku-routing-kafka-service -Dname=Kafka
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=1.0.0-SNAPSHOT -DgroupId=ai.wanaku -Dpackage=ai.wanaku.routing.service -DartifactId=wanaku-routing-kafka-service -Dname=Kafka
 ```
 
 **NOTE**: this can be used both to create a core tool, part of the Wanaku MCP router project, or to create a custom one for your own needs.
@@ -67,7 +67,7 @@ wanaku targets tools link --service=kafka --target=localhost:9190
 To create a new resource for Wanaku, you can start by creating a new project. For instance, to create one for S3:
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=org.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=1.0.0-SNAPSHOT  -DgroupId=org.wanaku -Dpackage=org.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=1.0.0-SNAPSHOT -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S
 3
 ```
 
