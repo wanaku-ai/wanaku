@@ -163,7 +163,7 @@ For [LibreChat](https://www.librechat.ai/docs) search for `mcpServers` on the `l
 ```
 mcpServers:
     everything:
-        url: http://host.docker.internal:8080/sse
+        url: http://host.docker.internal:8080/mcp/sse
 ```
 
 **NOTE**: make sure to point to the correct address of your Wanaku MCP instance.
