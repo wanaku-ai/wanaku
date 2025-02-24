@@ -49,7 +49,7 @@ public class ResourcesResource {
             return Response.ok().build();
         } catch (Exception e) {
             e.printStackTrace();
-            LOG.errorf("Failed to expose resource %s: %s", resource.getName(), e.getMessage(), e);
+            LOG.errorf(e, "Failed to expose resource %s: %s", resource.getName(), e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to expose resource").build();
         }
     }
@@ -62,7 +62,7 @@ public class ResourcesResource {
             List<ResourceReference> list = resourcesBean.list();
             return Response.ok(list).build();
         } catch (Exception e) {
-            LOG.errorf("Failed to list resources: %s", e.getMessage(), e);
+            LOG.errorf(e, "Failed to list resources: %s", e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to list resources").build();
         }
     }
