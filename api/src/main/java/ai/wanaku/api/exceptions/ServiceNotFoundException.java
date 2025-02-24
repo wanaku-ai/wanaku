@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package ai.wanaku.core.util.support;
+package ai.wanaku.api.exceptions;
 
-import java.util.Map;
+public class ServiceNotFoundException extends WanakuException {
 
-public class TargetsHelper {
-    public static final String RESOURCE_TARGETS_INDEX = "target/test-classes/resource-targets.json";
-    public static final String TOOLS_TARGETS_INDEX = "target/test-classes/tools-targets.json";
-
-    public static Map<String, String> getResourceTargets() {
-        return Map.of("file", "localhost:9002");
+    public ServiceNotFoundException() {
     }
 
-    public static Map<String, String> getToolsTargets() {
-        return Map.of("http", "localhost:9000", "camel-route", "localhost:9001");
+    public ServiceNotFoundException(String message) {
+        super(message);
+    }
+
+    public ServiceNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public ServiceNotFoundException(Throwable cause) {
+        super(cause);
+    }
+
+    public ServiceNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
+
+    public static ServiceNotFoundException forName(String toolName) {
+        return new ServiceNotFoundException(String.format("Tool %s not found", toolName));
     }
 }

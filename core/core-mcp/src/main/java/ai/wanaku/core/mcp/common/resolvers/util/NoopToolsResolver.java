@@ -18,6 +18,7 @@
 package ai.wanaku.core.mcp.common.resolvers.util;
 
 import java.io.File;
+import java.util.Map;
 
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
@@ -28,6 +29,11 @@ public class NoopToolsResolver implements ToolsResolver {
     @Override
     public Tool resolve(ToolReference toolReference) throws ToolNotFoundException {
         return null;
+    }
+
+    @Override
+    public Map<String, String> getServiceConfigurations(String target) {
+        return Map.of();
     }
 
     @Override

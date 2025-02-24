@@ -17,6 +17,15 @@
 
 package ai.wanaku.core.exchange;
 
-public interface ResourceAcquirerDelegate {
+/**
+ * A delegate that can be used by services that provide resources
+ */
+public interface ResourceAcquirerDelegate extends ConfigurableDelegate {
+
+    /**
+     * Acquire the resource and provide it to the requester
+     * @param request the resource request
+     * @return the resource data and associated metadata about the request
+     */
     ResourceReply acquire(ResourceRequest request);
 }

@@ -19,9 +19,12 @@ package ai.wanaku.cli.main.support;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.management.Configuration;
+import ai.wanaku.api.types.management.Service;
 
 public class PrettyPrinter {
 
@@ -63,17 +66,19 @@ public class PrettyPrinter {
     }
 
 
-    public static void printParseableTarget(String service, String target) {
-        System.out.printf("%-20s => %-50s%n", service, target);
+    public static void printParseableTarget(String name, Service service) {
+        Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
+        String strings = configurations.keySet().stream().sorted().collect(Collectors.joining(", "));
+        System.out.printf("%-20s => %-30s => %-30s%n", name, service.getTarget(), strings);
     }
 
     /**
      * Prints a map of entries
      * @param map the map of entries
      */
-    public static void printTargets(final Map<String, String> map) {
-        System.out.printf("%-20s    %-50s%n",
-                "Service", "Target");
+    public static void printTargets(final Map<String, Service> map) {
+        System.out.printf("%-20s    %-30s    %-30s%n",
+                "Service", "Target", "Configurations");
 
         for (var entry : map.entrySet()) {
             printParseableTarget(entry.getKey(), entry.getValue());

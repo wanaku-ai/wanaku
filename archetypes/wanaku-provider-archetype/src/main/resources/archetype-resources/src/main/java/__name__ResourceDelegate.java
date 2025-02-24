@@ -17,6 +17,8 @@
 
 package ai.wanaku.provider;
 
+import java.util.Map;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.camel.CamelContext;
@@ -29,6 +31,9 @@ import ai.wanaku.core.exchange.ResourceRequest;
 @ApplicationScoped
 public class ${name}ResourceDelegate implements ResourceAcquirerDelegate {
     private static final Logger LOG = Logger.getLogger(${name}ResourceDelegate.class);
+
+    @Inject
+    WanakuServiceConfig config;
 
     private final CamelContext camelContext;
     private final ConsumerTemplate consumer;
@@ -57,5 +62,15 @@ public class ${name}ResourceDelegate implements ResourceAcquirerDelegate {
         } finally {
             consumer.stop();
         }
+    }
+
+    @Override
+    public Map<String, String> serviceConfigurations() {
+        return config.routing().service().configurations();
+    }
+
+    @Override
+    public Map<String, String> credentialsConfigurations() {
+        return config.routing().credentials().configurations();
     }
 }

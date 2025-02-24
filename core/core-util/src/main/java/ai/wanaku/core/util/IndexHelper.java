@@ -116,7 +116,7 @@ public class IndexHelper {
      * @param map
      * @throws IOException
      */
-    public static <T> void saveIndex(File indexFile, Map<T, T> map) throws IOException {
+    public static <T> void saveIndex(File indexFile, Map<T, ?> map) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
 
         objectMapper
@@ -130,19 +130,19 @@ public class IndexHelper {
      * @param targetsMap
      * @throws IOException
      */
-    public static void saveTargetsIndex(File indexFile, Map<String, String> targetsMap) throws IOException {
+    public static void saveTargetsIndex(File indexFile, Map<String, ?> targetsMap) throws IOException {
         saveIndex(indexFile, targetsMap);
     }
 
 
 
     /**
-     * Load an index of tools
+     * Load an index of targets and their configurations
      * @param indexFile
      * @return
      * @throws Exception
      */
-    public static Map<String, String> loadTargetsIndex(File indexFile) throws Exception {
-        return loadIndex(indexFile, String.class, String.class);
+    public static <T> Map<String, T> loadTargetsIndex(File indexFile, Class<T> serviceClass) throws Exception {
+        return loadIndex(indexFile, String.class, serviceClass);
     }
 }

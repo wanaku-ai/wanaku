@@ -21,14 +21,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import ai.wanaku.api.types.management.Service;
+
 class Registry {
-    private Map<String, String> registry;
+    private Map<String, Service> registry;
 
     protected Registry() {
         registry = new HashMap<>();
     }
 
-    public void link(String service, String target) {
+    public void link(String service, Service target) {
         registry.put(service, target);
     }
 
@@ -36,11 +38,11 @@ class Registry {
         registry.remove(service);
     }
 
-    public Map<String, String> getEntries() {
+    public Map<String, Service> getEntries() {
         return Collections.unmodifiableMap(registry);
     }
 
-    protected String getForService(String service) {
+    protected Service getForService(String service) {
         return registry.get(service);
     }
 }

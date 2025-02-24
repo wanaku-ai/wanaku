@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "ai.wanaku.core.exchange";
+option java_outer_classname = "InquiryExchange";
+
+package tool;
+
+// The inquirer exchange service definition.
+service Inquirer {
+  // Invokes a tool
+  rpc Inquire (InquireRequest) returns (InquireReply) {}
+}
+
+// The invocation request message
+message InquireRequest {
+
+}
+
+// The invocation response message
+message InquireReply {
+  map<string, string> serviceConfigurations = 1;
+  map<string, string> credentialsConfigurations = 2;
+}

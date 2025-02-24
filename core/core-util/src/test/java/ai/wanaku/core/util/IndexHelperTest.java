@@ -20,26 +20,22 @@ package ai.wanaku.core.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
+import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.core.util.support.ResourcesHelper;
+import ai.wanaku.core.util.support.ToolsHelper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.util.support.ResourcesHelper;
-import ai.wanaku.core.util.support.TargetsHelper;
-import ai.wanaku.core.util.support.ToolsHelper;
 
+import static ai.wanaku.core.util.support.ResourcesHelper.RESOURCES_INDEX;
+import static ai.wanaku.core.util.support.ToolsHelper.TOOLS_INDEX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ai.wanaku.core.util.support.ResourcesHelper.RESOURCES_INDEX;
-import static ai.wanaku.core.util.support.TargetsHelper.RESOURCE_TARGETS_INDEX;
-import static ai.wanaku.core.util.support.TargetsHelper.TOOLS_TARGETS_INDEX;
-import static ai.wanaku.core.util.support.ToolsHelper.TOOLS_INDEX;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IndexHelperTest {
@@ -143,57 +139,5 @@ public class IndexHelperTest {
         File indexFile = new File("non-existent-index.json");
 
         assertThrows(Exception.class, () -> IndexHelper.loadToolsIndex(indexFile));
-    }
-
-    @Order(7)
-    @Test
-    public void testSaveTargetsIndex() throws IOException {
-        // Create a temporary index file
-        File indexFile = new File(RESOURCE_TARGETS_INDEX);
-
-        // Save the index to a file
-        IndexHelper.saveTargetsIndex(indexFile, TargetsHelper.getResourceTargets());
-
-        // Verify that the file exists and is not empty
-        assertTrue(indexFile.exists());
-        assertTrue(indexFile.length() > 0);
-    }
-
-    @Order(8)
-    @Test
-    public void testLoadTargetsIndex() throws Exception {
-        // Use the temporary index file
-        File indexFile = new File(RESOURCE_TARGETS_INDEX);
-
-        // Save the index to a file
-        Map<String, String> targets = IndexHelper.loadTargetsIndex(indexFile);
-
-        assertEquals(1, targets.size());
-    }
-
-    @Order(9)
-    @Test
-    public void testSaveToolsTargetsIndex() throws IOException {
-        // Create a temporary index file
-        File indexFile = new File(TOOLS_TARGETS_INDEX);
-
-        // Save the index to a file
-        IndexHelper.saveTargetsIndex(indexFile, TargetsHelper.getResourceTargets());
-
-        // Verify that the file exists and is not empty
-        assertTrue(indexFile.exists());
-        assertTrue(indexFile.length() > 0);
-    }
-
-    @Order(10)
-    @Test
-    public void testLoadToolsTargetsIndex() throws Exception {
-        // Use the temporary index file
-        File indexFile = new File(TOOLS_TARGETS_INDEX);
-
-        // Save the index to a file
-        Map<String, String> targets = IndexHelper.loadTargetsIndex(indexFile);
-
-        assertEquals(1, targets.size());
     }
 }

@@ -30,7 +30,11 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.types.management.Service;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestPath;
 
 @ApplicationScoped
 @Path("/api/v1/management/targets")
@@ -69,8 +73,24 @@ public class TargetsResource {
     @Path("/tools/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    public Map<String,String> toolList() {
+    public Map<String, Service> toolList() {
         return targetsBean.toolList();
+    }
+
+    @Path("/tools/configure/{service}")
+    @PUT
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Response toolsConfigure(@RestPath("service") String service, @QueryParam("option") String option, @QueryParam("value") String value) {
+        try {
+            targetsBean.configureTools(service, option, value);
+            return Response.ok().build();
+        } catch (IOException e) {
+            LOG.errorf(e, "Unable to configure option %s from service %s: %s", option, service, e.getMessage());
+            return Response.serverError().build();
+        } catch (ServiceNotFoundException | ConfigurationNotFoundException e) {
+            LOG.warnf(e.getMessage());
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 
     @Path("/resources/link")
@@ -102,7 +122,23 @@ public class TargetsResource {
     @Path("/resources/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    public Map<String,String> resourcesList() {
+    public Map<String,Service> resourcesList() {
         return targetsBean.resourcesList();
+    }
+
+    @Path("/resources/configure/{service}")
+    @PUT
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Response resourcesConfigure(@RestPath("service") String service, @QueryParam("option") String option, @QueryParam("value") String value) {
+        try {
+            targetsBean.configureResources(service, option, value);
+            return Response.ok().build();
+        } catch (IOException e) {
+            LOG.errorf(e, "Unable to configure option %s from service %s: %s", option, service, e.getMessage());
+            return Response.serverError().build();
+        } catch (ServiceNotFoundException | ConfigurationNotFoundException e) {
+            LOG.warnf(e.getMessage());
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 }

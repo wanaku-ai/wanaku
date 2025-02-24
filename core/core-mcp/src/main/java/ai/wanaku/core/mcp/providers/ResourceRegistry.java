@@ -17,6 +17,8 @@
 
 package ai.wanaku.core.mcp.providers;
 
+import ai.wanaku.api.types.management.Service;
+
 public final class ResourceRegistry extends Registry {
     private static final ResourceRegistry INSTANCE = new ResourceRegistry();
 
@@ -24,7 +26,7 @@ public final class ResourceRegistry extends Registry {
         return INSTANCE;
     }
 
-    public String getHostForService(String service) {
+    public Service getEntryForService(String service) {
         return getForService(service);
     }
 }

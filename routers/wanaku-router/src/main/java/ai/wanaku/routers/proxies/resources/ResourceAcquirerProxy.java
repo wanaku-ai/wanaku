@@ -19,7 +19,12 @@ package ai.wanaku.routers.proxies.resources;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import ai.wanaku.api.types.management.Service;
+import ai.wanaku.core.exchange.InquireReply;
+import ai.wanaku.core.exchange.InquireRequest;
+import ai.wanaku.core.exchange.InquirerGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
@@ -37,15 +42,15 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
     @Override
     public List<ResourceContents> eval(ResourceReference mcpResource) {
-        String target = ResourceRegistry.getInstance().getHostForService(mcpResource.getType());
-        if (target == null) {
+        Service service = ResourceRegistry.getInstance().getEntryForService(mcpResource.getType());
+        if (service == null) {
             LOG.errorf("There is no host registered for type %s", mcpResource.getType());
 
             return Collections.emptyList();
         }
 
-        LOG.infof("Requesting %s from %s", mcpResource.getName(), target);
-        final ResourceReply reply = acquireRemotely(mcpResource, target);
+        LOG.infof("Requesting %s from %s", mcpResource.getName(), service.getTarget());
+        final ResourceReply reply = acquireRemotely(mcpResource, service.getTarget());
         if (reply.getIsError()) {
             TextResourceContents textResourceContents =
                     new TextResourceContents("file://" + mcpResource.getLocation(), reply.getContent(), "text/plain");
@@ -78,5 +83,17 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
         ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
         return blockingStub.resourceAcquire(request);
+    }
+
+    @Override
+    public Map<String, String> getServiceConfigurations(String target) {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+                .usePlaintext()
+                .build();
+
+        InquireRequest inquireRequest = InquireRequest.newBuilder().build();
+        InquirerGrpc.InquirerBlockingStub blockingStub = InquirerGrpc.newBlockingStub(channel);
+        InquireReply inquire = blockingStub.inquire(inquireRequest);
+        return inquire.getServiceConfigurationsMap();
     }
 }

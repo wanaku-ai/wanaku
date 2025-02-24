@@ -35,6 +35,7 @@
         <module>core-util</module>
         <module>core-mcp</module>
         <module>core-exchange</module>
+        <module>core-services</module>
     </modules>
 
 

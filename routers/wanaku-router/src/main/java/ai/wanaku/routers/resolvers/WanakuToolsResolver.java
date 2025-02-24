@@ -18,6 +18,7 @@
 package ai.wanaku.routers.resolvers;
 
 import java.io.File;
+import java.util.Map;
 
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
@@ -42,5 +43,10 @@ public class WanakuToolsResolver implements ToolsResolver {
     @Override
     public Tool resolve(ToolReference toolReference) throws ToolNotFoundException {
         return proxy;
+    }
+
+    @Override
+    public Map<String, String> getServiceConfigurations(String target) {
+        return proxy.getServiceConfigurations(target);
     }
 }

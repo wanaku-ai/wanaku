@@ -19,6 +19,7 @@ package ai.wanaku.core.mcp.common.resolvers.util;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import ai.wanaku.api.types.ResourceReference;
@@ -34,5 +35,10 @@ public class NoopResourceResolver implements ResourceResolver {
     @Override
     public List<ResourceContents> read(ResourceReference mcpResource) {
         return List.of();
+    }
+
+    @Override
+    public Map<String, String> getServiceConfigurations(String target) {
+        return Map.of();
     }
 }
