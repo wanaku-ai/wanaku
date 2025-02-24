@@ -121,4 +121,18 @@ public class ToolsBean {
             throw new RuntimeException(e);
         }
     }
+
+    public void remove(String name) {
+        toolManager.removeTool(name);
+
+        File indexFile = toolsResolver.indexLocation();
+        try {
+            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
+            toolReferences.removeIf(tool -> tool.getName().equals(name));
+            IndexHelper.saveToolsIndex(indexFile, toolReferences);
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to remove tools from file: %s", indexFile);
+            throw new RuntimeException(e);
+        }
+    }
 }
