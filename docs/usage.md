@@ -154,7 +154,6 @@ To add that route as a tool, you can run something similar to this:
 wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "_body:string,The data to be passed to the route"
 ```
 
-
 ## Supported/Tested Client 
 
 Wanaku implements the MCP protocol and, by definition, should support any client that is compliant to the protocol. 
@@ -174,3 +173,20 @@ mcpServers:
 **NOTE**: make sure to point to the correct address of your Wanaku MCP instance.
 
 In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librechat.ai/docs/features/agents).
+
+## Available Resources Providers 
+
+The following resources can be made available using Wanaku.
+
+| Type   | Resource Provider    | Description                                     |
+|--------|----------------------|-------------------------------------------------|
+| `file` | wanaku-provider-file | Provides access to files as resources to Wanaku |
+
+## Available Tools Services
+
+The following tools services can be made available using Wanaku and used to provide access to specific services.
+
+| Type         | Service Tool                      | Description                                              |
+|--------------|-----------------------------------|----------------------------------------------------------|
+| `http`       | wanaku-routing-http-service       | Provides access to HTTP endpoints as tools via Wanaku    |
+| `yaml-route` | wanaku-routing-yaml-route-service | Provides access to Camel routes in YAML tools via Wanaku |
