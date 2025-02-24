@@ -6,7 +6,7 @@ see [`Proxy`](https://github.com/megacamelus/wanaku/blob/main/routers/wanaku-rou
 interface. 
 Leveraging the `Proxy` interface, then we have the classes `ResourceAcquirerProxy` and `InvokerProxy` that use [gRPC](https://grpc.io/)
 to exchange data with the subcomponents providing access to the resources and tools exposed by the router.
-
+ 
 ## Resources 
 
 A resource is, essentially, anything that can be read by using the MCP protocol. For instance: 
