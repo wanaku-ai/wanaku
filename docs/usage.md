@@ -72,19 +72,16 @@ The following commands are currently supported by the Wanaku MCP Router CLI:
 
 ### List Resources
 
-* **Command**: `wanaku resources list`
-* **Description**: Lists available resources exposed by the Wanaku MCP Router instance.
-* **Usage**: Run this command to view a list of available resources, including their names and descriptions.
+Lists available resources exposed by the Wanaku MCP Router instance. 
+Run this command to view a list of available resources, including their names and descriptions.
 
-```markdown
+```shell
 wanaku resources list
 ```
 
 ### Expose Resource
 
-* **Command**: `wanaku resources expose <resource-id>`
-* **Description**: Exposes an existing resource to the Wanaku MCP Router instance.
-* **Usage**: Replace `<resource-id>` with the ID of the resource you want to expose. For example:
+Exposes an existing resource to the Wanaku MCP Router instance.
 
 #### Example
 
@@ -97,9 +94,8 @@ wanaku resources expose --location=$HOME/test-mcp-2.txt --mimeType=text/plain --
 
 ### List Tools
 
-* **Command**: `wanaku tools list`
-* **Description**: Lists available tools on the Wanaku MCP Router instance.
-* **Usage**: Run this command to view a list of available tools, including their names and descriptions.
+Lists available tools on the Wanaku MCP Router instance. 
+Run this command to view a list of available tools, including their names and descriptions.
 
 ```markdown
 wanaku tools list
@@ -115,9 +111,7 @@ dog-facts       => http            => https://dogapi.dog/api/v2/facts?limit={cou
 
 ### Add Tool
 
-* **Command**: `wanaku tools add ${parameters}`
-* **Description**: Adds an existing tool to the Wanaku MCP Router instance.
-* **Usage**: Replace `<tool-id>` with the ID of the tool you want to add, and `<tool-credentials>` with the credentials for that tool. For example:
+Adds an existing tool to the Wanaku MCP Router instance.
 
 #### Example
 
@@ -128,6 +122,17 @@ wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats
 ```
 
 NOTE: For remote instances, you can use the parameter `--host` to point to the location of the instance.
+
+### Targets 
+
+Link a service provider hosted at a specific address to handle tools of a specific type.
+
+```shell
+wanaku targets tools link --service=http --target=host.docker.internal:9000
+```
+
+On the command above, it would cause all tools of type `http` to be handled by the provider available on `host.docker.internal:9000`.
+
 
 ### API Note
 
