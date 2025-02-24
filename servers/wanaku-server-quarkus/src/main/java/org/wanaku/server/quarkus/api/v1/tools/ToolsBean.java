@@ -117,7 +117,7 @@ public class ToolsBean {
                 registerTool(toolReference);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.errorf(e, "Failed to load tools from file: %s", indexFile);
             throw new RuntimeException(e);
         }
     }
