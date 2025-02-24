@@ -20,9 +20,12 @@ package ai.wanaku.provider.file;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.component.file.GenericFile;
@@ -34,6 +37,9 @@ import ai.wanaku.core.exchange.ResourceRequest;
 @ApplicationScoped
 public class FileResourceDelegate implements ResourceAcquirerDelegate {
     private static final Logger LOG = Logger.getLogger(FileResourceDelegate.class);
+
+    @Inject
+    WanakuServiceConfig config;
 
     private final CamelContext camelContext;
     private final ConsumerTemplate consumer;
@@ -71,5 +77,15 @@ public class FileResourceDelegate implements ResourceAcquirerDelegate {
         } finally {
             consumer.stop();
         }
+    }
+
+    @Override
+    public Map<String, String> serviceConfigurations() {
+        return config.provider().service().configurations();
+    }
+
+    @Override
+    public Map<String, String> credentialsConfigurations() {
+        return config.provider().credentials().configurations();
     }
 }

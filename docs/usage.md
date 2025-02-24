@@ -133,6 +133,32 @@ wanaku targets tools link --service=http --target=host.docker.internal:9000
 
 On the command above, it would cause all tools of type `http` to be handled by the provider available on `host.docker.internal:9000`.
 
+#### Configuring Targets 
+
+Some tools services may need to be configured before they can be run. For instance, the Kafka tool needs
+to know both the address of the broker and the topic where to wait for a reply.
+
+```shell
+wanaku targets tools configure --service=kafka --option=bootstrapHost --value=my-kafka-host:9092
+```
+
+And, then to configure the reply to topic:
+
+```shell
+wanaku targets tools configure --service=kafka --option=replyToTopic --value=someTopicToWaitFor.reply
+```
+
+#### Targets List 
+
+You can view linked targets using the `targets tools list` or the `target resources list` command. 
+
+```shell
+wanaku targets tools list
+Service                 Target                            Configurations
+kafka                => localhost:9003                 => bootstrapHost, replyToTopic
+http                 => localhost:9000                 =>
+```
+
 
 ### API Note
 

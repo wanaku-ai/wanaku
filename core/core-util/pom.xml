@@ -29,6 +29,18 @@
     <artifactId>core-util</artifactId>
     <name>Wanaku :: Core :: Util</name>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
@@ -53,6 +65,11 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -63,7 +80,9 @@
                 <version>${maven-jar-plugin.version}</version>
                 <executions>
                     <execution>
-                        <goals><goal>test-jar</goal></goals>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

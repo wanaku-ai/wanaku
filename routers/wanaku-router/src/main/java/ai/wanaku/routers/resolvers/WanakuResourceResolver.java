@@ -19,6 +19,7 @@ package ai.wanaku.routers.resolvers;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import org.jboss.logging.Logger;
@@ -46,5 +47,10 @@ public class WanakuResourceResolver implements ResourceResolver {
         LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", proxy.name(), mcpResource);
 
         return proxy.eval(mcpResource);
+    }
+
+    @Override
+    public Map<String, String> getServiceConfigurations(String target) {
+        return proxy.getServiceConfigurations(target);
     }
 }

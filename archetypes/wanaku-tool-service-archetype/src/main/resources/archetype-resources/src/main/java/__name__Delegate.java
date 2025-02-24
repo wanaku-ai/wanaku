@@ -17,22 +17,27 @@
 
 package ai.wanaku.routing.service;
 
+import java.util.Map;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
-import org.jboss.logging.Logger;
 import ai.wanaku.core.exchange.InvocationDelegate;
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ${name}Delegate implements InvocationDelegate {
     private static final Logger LOG = Logger.getLogger(${name}Delegate.class);
 
-    private final CamelContext camelContext;
+    @Inject
+    WanakuServiceConfig config;
 
+    private final CamelContext camelContext;
     private final ProducerTemplate producer;
 
     public ${name}Delegate(CamelContext camelContext) {
@@ -57,5 +62,15 @@ public class ${name}Delegate implements InvocationDelegate {
         } finally {
             producer.stop();
         }
+    }
+
+    @Override
+    public Map<String, String> serviceConfigurations() {
+        return config.routing().service().configurations();
+    }
+
+    @Override
+    public Map<String, String> credentialsConfigurations() {
+        return config.routing().credentials().configurations();
     }
 }

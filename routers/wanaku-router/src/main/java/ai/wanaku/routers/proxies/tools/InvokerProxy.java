@@ -17,6 +17,15 @@
 
 package ai.wanaku.routers.proxies.tools;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import ai.wanaku.api.types.management.Configuration;
+import ai.wanaku.api.types.management.Configurations;
+import ai.wanaku.core.exchange.InquireReply;
+import ai.wanaku.core.exchange.InquireRequest;
+import ai.wanaku.core.exchange.InquirerGrpc;
+import ai.wanaku.api.types.management.Service;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ToolManager;
@@ -34,14 +43,14 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
-        String target = ServiceRegistry.getInstance().getHostForService(toolReference.getType());
-        if (target == null) {
+        Service service = ServiceRegistry.getInstance().getEntryForService(toolReference.getType());
+        if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }
 
-        LOG.infof("Invoking %s on %s", toolReference.getType(), target);
+        LOG.infof("Invoking %s on %s", toolReference.getType(), service);
         try {
-            final ToolInvokeReply invokeReply = invokeRemotely(toolReference, toolArguments, target);
+            final ToolInvokeReply invokeReply = invokeRemotely(toolReference, toolArguments, service);
 
             if (invokeReply.getIsError()) {
                 return ToolResponse.error(invokeReply.getContent());
@@ -55,15 +64,17 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     private static ToolInvokeReply invokeRemotely(
-            ToolReference toolReference, ToolManager.ToolArguments toolArguments, String target) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
-                .usePlaintext()
-                .build();
+            ToolReference toolReference, ToolManager.ToolArguments toolArguments, Service service) {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.getTarget()).usePlaintext().build();
+
+        Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
+        Map<String, String> collect = Configurations.toStringMap(configurations);
 
         Request result = Request.newRequest(toolReference, toolArguments);
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody(result.body())
                 .setUri(result.uri())
+                .putAllServiceConfigurations(collect)
 //                TODO
 //                .getArgumentsMap().putAll(toolArguments.args())
                 .build();
@@ -73,7 +84,19 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     @Override
+    public Map<String, String> getServiceConfigurations(String target) {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+                .usePlaintext()
+                .build();
+
+        InquireRequest inquireRequest = InquireRequest.newBuilder().build();
+        InquirerGrpc.InquirerBlockingStub blockingStub = InquirerGrpc.newBlockingStub(channel);
+        InquireReply inquire = blockingStub.inquire(inquireRequest);
+        return inquire.getServiceConfigurationsMap();
+    }
+
+    @Override
     public String name() {
-        return "camel-invoker";
+        return "invoker";
     }
 }

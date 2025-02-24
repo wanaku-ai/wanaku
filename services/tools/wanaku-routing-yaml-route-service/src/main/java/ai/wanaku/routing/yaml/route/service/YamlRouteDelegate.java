@@ -17,6 +17,8 @@
 
 package ai.wanaku.routing.yaml.route.service;
 
+import java.util.Map;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.camel.CamelContext;
@@ -63,5 +65,15 @@ public class YamlRouteDelegate implements InvocationDelegate {
         } finally {
             producer.stop();
         }
+    }
+
+    @Override
+    public Map<String, String> serviceConfigurations() {
+        return Map.of();
+    }
+
+    @Override
+    public Map<String, String> credentialsConfigurations() {
+        return Map.of();
     }
 }

@@ -21,13 +21,14 @@ import jakarta.inject.Inject;
 
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
+import ai.wanaku.core.exchange.Inquirer;
 import ai.wanaku.core.exchange.ResourceAcquirer;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 
 @GrpcService
-public class ResourceService implements ResourceAcquirer {
+public class ResourceService implements ResourceAcquirer, Inquirer {
 
     @Inject
     ResourceAcquirerDelegate delegate;
@@ -35,5 +36,15 @@ public class ResourceService implements ResourceAcquirer {
     @Override
     public Uni<ResourceReply> resourceAcquire(ResourceRequest request) {
         return Uni.createFrom().item(() -> delegate.acquire(request));
+    }
+
+    @Override
+    public Uni<InquireReply> inquire(InquireRequest request) {
+        InquireReply reply = InquireReply.newBuilder()
+                .putAllServiceConfigurations(delegate.serviceConfigurations())
+                .putAllCredentialsConfigurations(delegate.credentialsConfigurations())
+                .build();
+
+        return Uni.createFrom().item(() -> reply);
     }
 }

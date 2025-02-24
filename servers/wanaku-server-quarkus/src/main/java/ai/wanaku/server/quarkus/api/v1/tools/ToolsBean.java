@@ -61,7 +61,6 @@ public class ToolsBean {
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
-        System.out.println("Tool " + toolReference);
         LOG.debugf("Registering tool: %s", toolReference.getName());
         Tool tool = toolsResolver.resolve(toolReference);
 
