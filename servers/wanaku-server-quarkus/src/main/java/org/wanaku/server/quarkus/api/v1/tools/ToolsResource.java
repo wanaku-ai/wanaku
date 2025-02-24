@@ -50,7 +50,7 @@ public class ToolsResource {
             toolsBean.add(resource);
             return Response.ok().build();
         } catch (Exception e) {
-            LOG.errorf("Failed to add tools %s: %s", resource.getName(), e.getMessage(), e);
+            LOG.errorf(e, "Failed to add tools %s: %s", resource.getName(), e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to expose tool").build();
         }
     }
@@ -63,7 +63,7 @@ public class ToolsResource {
             List<ToolReference> list = toolsBean.list();
             return Response.ok().entity(list).build();
         } catch (Exception e) {
-            LOG.errorf("Failed to list tools: %s", e.getMessage(), e);
+            LOG.errorf(e, "Failed to list tools: %s", e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to list tools").build();
         }
     }
