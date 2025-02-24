@@ -41,6 +41,31 @@ wanaku targets resources link --service=file --target=host.docker.internal:9002
 After the tools and resource providers have been linked with the router, then you can 
 start adding tools and resources to be served via MCP using the commands described below.
 
+### Importing a ToolSet
+
+Wanaku ToolSets are a group of tools that you can use to share with friends and colleagues and 
+can be easily imported into the router. 
+Wanaku [comes with a couple of ToolSets](docs/toolsets) that you can import into your router and use them to try 
+it and see how it works.
+
+The first step is to download a toolset: 
+
+```shell
+wget -c https://raw.githubusercontent.com/megacamelus/wanaku/refs/heads/main/samples/toolsets/currency.json
+```
+
+Then, you can import them into the router using: 
+
+```shell
+wanaku tools import /path/to/currency.json
+```
+
+You can check if they were imported by running the following command: 
+
+```shell
+wanaku tools list
+```
+
 ## Supported Commands
 
 The following commands are currently supported by the Wanaku MCP Router CLI:
