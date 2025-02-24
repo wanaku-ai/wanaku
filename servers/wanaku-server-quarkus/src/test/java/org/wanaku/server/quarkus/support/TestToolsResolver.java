@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.wanaku.server.quarkus.support;
+package ai.wanaku.server.quarkus.support;
 
 import java.io.File;
 
-import org.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
-import org.wanaku.core.util.support.ToolsHelper;
+import ai.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
+import ai.wanaku.core.util.support.ToolsHelper;
 
 public class TestToolsResolver extends NoopToolsResolver {
     @Override

@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.wanaku.provider;
+package ai.wanaku.provider;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.jboss.logging.Logger;
-import org.wanaku.core.exchange.ResourceAcquirerDelegate;
-import org.wanaku.core.exchange.ResourceReply;
-import org.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
+import ai.wanaku.core.exchange.ResourceReply;
+import ai.wanaku.core.exchange.ResourceRequest;
 
 @ApplicationScoped
 public class ${name}ResourceDelegate implements ResourceAcquirerDelegate {

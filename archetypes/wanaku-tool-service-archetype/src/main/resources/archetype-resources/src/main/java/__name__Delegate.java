@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.wanaku.routing.service;
+package ai.wanaku.routing.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
-import org.wanaku.core.exchange.InvocationDelegate;
-import org.wanaku.core.exchange.ParsedToolInvokeRequest;
-import org.wanaku.core.exchange.ToolInvokeReply;
-import org.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.InvocationDelegate;
+import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
+import ai.wanaku.core.exchange.ToolInvokeReply;
+import ai.wanaku.core.exchange.ToolInvokeRequest;
 
 @ApplicationScoped
 public class ${name}Delegate implements InvocationDelegate {
