@@ -24,8 +24,10 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -63,6 +65,18 @@ public class ToolsResource {
         } catch (Exception e) {
             LOG.errorf("Failed to list tools: %s", e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to list tools").build();
+        }
+    }
+
+    @Path("/remove")
+    @PUT
+    public Response remove(@QueryParam("tool") String tool) {
+        try {
+            toolsBean.remove(tool);
+            return Response.ok().build();
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to remove tool %s: %s", tool, e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to remove tool").build();
         }
     }
 }

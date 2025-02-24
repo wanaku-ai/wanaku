@@ -62,7 +62,7 @@ public class ToolsResourceTest {
         );
 
         ToolReference toolReference1 = ToolsHelper.createToolReference(
-                "Test tool 1",
+                "test-tool-3",
                 "This is a description of the test tool 1.",
                 "https://example.com/test/tool-1",
                 inputSchema1
@@ -84,6 +84,24 @@ public class ToolsResourceTest {
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("size()", is(3),
+                        "[0].name", is("Tool 1"),
+                        "[0].type", is("http"),
+                        "[0].description", is("This is a description of Tool 1."));
+    }
+
+    @Order(3)
+    @Test
+    void testRemove() {
+        given()
+                .when().put("/api/v1/tools/remove?tool=test-tool-3")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        given()
+                .when().get("/api/v1/tools/list")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("size()", is(2),
                         "[0].name", is("Tool 1"),
                         "[0].type", is("http"),
                         "[0].description", is("This is a description of Tool 1."));
