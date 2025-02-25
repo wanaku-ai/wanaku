@@ -216,3 +216,4 @@ The following tools services can be made available using Wanaku and used to prov
 |--------------|-----------------------------------|----------------------------------------------------------|
 | `http`       | wanaku-routing-http-service       | Provides access to HTTP endpoints as tools via Wanaku    |
 | `yaml-route` | wanaku-routing-yaml-route-service | Provides access to Camel routes in YAML tools via Wanaku |
+| `kafka`      | wanaku-routing-kafka-service      | Provides access to Kafka topics as tools via Wanaku      |
