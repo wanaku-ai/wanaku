@@ -28,20 +28,20 @@ import jakarta.inject.Inject;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.services.config.WanakuServiceConfig;
+import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class FileResourceDelegate extends AbstractResourceDelegate{
+public class FileResourceDelegate extends AbstractResourceDelegate {
     private static final Logger LOG = Logger.getLogger(FileResourceDelegate.class);
 
     @Inject
-    WanakuServiceConfig config;
+    WanakuProviderConfig config;
 
     protected String getEndpointUri(ResourceRequest request) {
-        String baseUri = config.provider().baseUri();
+        String baseUri = config.baseUri();
 
         File file = new File(request.getLocation());
         return String.format(baseUri, request.getType(), file.getParent(), file.getName());

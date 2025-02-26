@@ -1,4 +1,4 @@
-package ai.wanaku.core.services.provider;
+package ai.wanaku.core.services.routing;
 
 import java.util.Map;
 
@@ -6,33 +6,28 @@ import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
-import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.services.config.WanakuProviderConfig;
+import ai.wanaku.core.exchange.InvocationDelegate;
+import ai.wanaku.core.exchange.ToolInvokeReply;
+import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.services.config.WanakuRoutingConfig;
 import org.jboss.logging.Logger;
 
 /**
  * Base delegate class
  */
-public abstract class AbstractResourceDelegate implements ResourceAcquirerDelegate {
-    private static final Logger LOG = Logger.getLogger(AbstractResourceDelegate.class);
+public abstract class AbstractRoutingDelegate implements InvocationDelegate {
+    private static final Logger LOG = Logger.getLogger(AbstractRoutingDelegate.class);
 
     @Inject
-    WanakuProviderConfig config;
+    WanakuRoutingConfig config;
 
     @Inject
-    ResourceConsumer consumer;
+    Client client;
 
-    /**
-     * Gets the endpoint URI
-     * @param request the request
-     * @return the URI as a string
-     */
-    protected abstract String getEndpointUri(ResourceRequest request);
 
     /**
      * Convert the response in whatever format it is to a String
+     *
      * @param response the response
      * @return the response as a String
      * @throws InvalidResponseTypeException if the response cannot be converted
@@ -40,30 +35,30 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     protected abstract String coerceResponse(Object response)
             throws InvalidResponseTypeException, NonConvertableResponseException;
 
+
     @Override
-    public ResourceReply acquire(ResourceRequest request) {
+    public ToolInvokeReply invoke(ToolInvokeRequest request) {
         try {
-            String uri = getEndpointUri(request);
-            Object obj = consumer.consume(uri);
+            Object obj = client.exchange(request);
 
             String response = coerceResponse(obj);
 
-            return ResourceReply.newBuilder()
+            return ToolInvokeReply.newBuilder()
                     .setIsError(false)
                     .setContent(response).build();
         } catch (InvalidResponseTypeException e) {
             LOG.errorf("Invalid response type from the consumer: %s", e.getMessage());
-            return ResourceReply.newBuilder()
+            return ToolInvokeReply.newBuilder()
                     .setIsError(true)
                     .setContent("Invalid response type from the consumer: " + e.getMessage()).build();
         } catch (NonConvertableResponseException e) {
             LOG.errorf("Non-convertable response from the consumer: %s", e.getMessage());
-            return ResourceReply.newBuilder()
+            return ToolInvokeReply.newBuilder()
                     .setIsError(true)
                     .setContent("Non-convertable response from the consumer " + e.getMessage()).build();
         } catch (Exception e) {
             LOG.errorf("Unable to read file: %s", e.getMessage(), e);
-            return ResourceReply.newBuilder()
+            return ToolInvokeReply.newBuilder()
                     .setIsError(true)
                     .setContent(e.getMessage()).build();
         }
