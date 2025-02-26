@@ -18,74 +18,46 @@
 package ai.wanaku.provider.file;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import ai.wanaku.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.services.config.WanakuServiceConfig;
-import org.apache.camel.CamelContext;
-import org.apache.camel.ConsumerTemplate;
+import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
-import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
 
 @ApplicationScoped
-public class FileResourceDelegate implements ResourceAcquirerDelegate {
+public class FileResourceDelegate extends AbstractResourceDelegate{
     private static final Logger LOG = Logger.getLogger(FileResourceDelegate.class);
 
     @Inject
     WanakuServiceConfig config;
 
-    private final CamelContext camelContext;
-    private final ConsumerTemplate consumer;
+    protected String getEndpointUri(ResourceRequest request) {
+        String baseUri = config.provider().baseUri();
 
-    public FileResourceDelegate(CamelContext camelContext) {
-        this.camelContext = camelContext;
-        this.consumer = camelContext.createConsumerTemplate();
-    }
-
-    @Override
-    public ResourceReply acquire(ResourceRequest request) {
         File file = new File(request.getLocation());
-        String camelUri = String.format("%s://%s?fileName=%s&noop=true&idempotent=false", request.getType(), file.getParent(), file.getName());
+        return String.format(baseUri, request.getType(), file.getParent(), file.getName());
+    }
 
-        try {
-            consumer.start();
-            Object o = consumer.receiveBody(camelUri, 5000);
-            if (o instanceof GenericFile<?> genericFile) {
-                String fileName = genericFile.getAbsoluteFilePath();
+    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+        if (response instanceof GenericFile<?> genericFile) {
+            String fileName = genericFile.getAbsoluteFilePath();
 
-                return ResourceReply.newBuilder()
-                        .setIsError(false)
-                        .setContent(Files.readString(Path.of(fileName))).build();
-
+            try {
+                return Files.readString(Path.of(fileName));
+            } catch (IOException e) {
+                throw new NonConvertableResponseException(e);
             }
-            LOG.errorf("Invalid response type from the consumer: %s", o != null? o.getClass().getName() : "null");
-            return ResourceReply.newBuilder()
-                    .setIsError(true)
-                    .setContent("Invalid response type from the consumer").build();
-        } catch (Exception e) {
-            LOG.errorf("Unable to read file: %s", e.getMessage(), e);
-            return ResourceReply.newBuilder()
-                    .setIsError(true)
-                    .setContent(e.getMessage()).build();
-        } finally {
-            consumer.stop();
         }
-    }
 
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        return config.provider().service().configurations();
-    }
-
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return config.provider().credentials().configurations();
+        throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response != null? response.getClass().getName() : "null");
     }
 }
