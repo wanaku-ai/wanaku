@@ -17,63 +17,24 @@
 
 package ai.wanaku.routing.service;
 
-import java.util.Map;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
+import ai.wanaku.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.core.services.routing.AbstractRoutingDelegate;
 import org.jboss.logging.Logger;
-import ai.wanaku.core.exchange.InvocationDelegate;
-import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
 
 @ApplicationScoped
-public class HttpDelegate implements InvocationDelegate {
+public class HttpDelegate extends AbstractRoutingDelegate {
     private static final Logger LOG = Logger.getLogger(HttpDelegate.class);
 
-    private final CamelContext camelContext;
-
-    private final ProducerTemplate producer;
-
-    public HttpDelegate(CamelContext camelContext) {
-        this.camelContext = camelContext;
-        this.producer = camelContext.createProducerTemplate();
-    }
-
-    @Override
-    public ToolInvokeReply invoke(ToolInvokeRequest request) {
-        try {
-            producer.start();
-
-            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
-
-            LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
-
-            String s;
-            if (parsedRequest.body().isEmpty()) {
-                s = producer.requestBody(parsedRequest.uri(), null, String.class);
-            } else {
-                s = producer.requestBody(parsedRequest.uri(), parsedRequest.body(), String.class);
-            }
-
-            return ToolInvokeReply.newBuilder().setContent(s).setIsError(false).build();
-        } catch (Exception e) {
-            LOG.errorf(e,"Unable to call endpoint: %s", e.getMessage(), e);
-            return ToolInvokeReply.newBuilder().setContent(e.getMessage()).setIsError(true).build();
-        } finally {
-            producer.stop();
+    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+        if (response != null) {
+            return response.toString();
         }
+
+        throw new InvalidResponseTypeException("The response is null");
     }
 
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        return Map.of();
-    }
 
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return Map.of();
-    }
 }

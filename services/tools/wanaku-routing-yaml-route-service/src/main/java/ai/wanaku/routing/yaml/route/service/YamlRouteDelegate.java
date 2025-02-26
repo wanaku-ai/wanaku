@@ -17,63 +17,20 @@
 
 package ai.wanaku.routing.yaml.route.service;
 
-import java.util.Map;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.spi.Resource;
-import org.apache.camel.support.PluginHelper;
-import org.jboss.logging.Logger;
-import ai.wanaku.core.exchange.InvocationDelegate;
-import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.core.services.routing.AbstractRoutingDelegate;
 
 @ApplicationScoped
-public class YamlRouteDelegate implements InvocationDelegate {
-    private static final Logger LOG = Logger.getLogger(YamlRouteDelegate.class);
+public class YamlRouteDelegate extends AbstractRoutingDelegate {
 
-    private final CamelContext camelContext;
-
-    ProducerTemplate producer;
-
-    public YamlRouteDelegate(CamelContext camelContext) {
-        this.camelContext = camelContext;
-        this.producer = camelContext.createProducerTemplate();
-    }
-
-    @Override
-    public ToolInvokeReply invoke(ToolInvokeRequest request) {
-        try {
-            producer.start();
-
-            LOG.infof("Loading resource from URI: %s", request.getUri());
-            Resource resource = PluginHelper.getResourceLoader(camelContext).resolveResource(request.getUri());
-            PluginHelper.getRoutesLoader(camelContext).loadRoutes(resource);
-
-            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
-
-            LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
-            String s = producer.requestBody("direct:start", parsedRequest.body(), String.class);
-
-            return ToolInvokeReply.newBuilder().setContent(s).setIsError(false).build();
-        } catch (Exception e) {
-            LOG.errorf("Unable to call endpoint: %s", e.getMessage(), e);
-            return ToolInvokeReply.newBuilder().setContent(e.getMessage()).setIsError(true).build();
-        } finally {
-            producer.stop();
+    protected String coerceResponse(Object response) throws InvalidResponseTypeException {
+        if (response != null) {
+            return response.toString();
         }
+
+        throw new InvalidResponseTypeException("The response is null");
     }
 
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        return Map.of();
-    }
-
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return Map.of();
-    }
 }
