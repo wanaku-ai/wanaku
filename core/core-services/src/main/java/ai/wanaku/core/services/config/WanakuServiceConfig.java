@@ -9,6 +9,7 @@ import io.smallrye.config.ConfigMapping;
 public interface WanakuServiceConfig extends WanakuConfig {
 
     interface Service {
+        Map<String, String> defaults();
         Map<String, String> configurations();
     }
 
