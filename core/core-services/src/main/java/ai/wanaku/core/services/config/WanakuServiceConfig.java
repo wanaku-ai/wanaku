@@ -17,6 +17,7 @@ public interface WanakuServiceConfig extends WanakuConfig {
     }
 
     interface Provider {
+        String baseUri();
         Service service();
         Credentials credentials();
     }
