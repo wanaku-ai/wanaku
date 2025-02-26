@@ -41,26 +41,11 @@
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-core</artifactId>
         </dependency>
-    </dependencies>
 
-<!--    <build>-->
-<!--        <plugins>-->
-<!--            <plugin>-->
-<!--                <groupId>${quarkus.platform.group-id}</groupId>-->
-<!--                <artifactId>quarkus-maven-plugin</artifactId>-->
-<!--                <version>${quarkus.platform.version}</version>-->
-<!--                <extensions>true</extensions>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>build</goal>-->
-<!--                            <goal>generate-code</goal>-->
-<!--                            <goal>generate-code-tests</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
-<!--        </plugins>-->
-<!--    </build>-->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-catalog</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

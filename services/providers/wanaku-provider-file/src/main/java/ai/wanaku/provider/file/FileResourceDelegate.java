@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -33,6 +35,8 @@ import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
 
+import static ai.wanaku.core.services.util.URIHelper.buildUri;
+
 @ApplicationScoped
 public class FileResourceDelegate extends AbstractResourceDelegate {
     private static final Logger LOG = Logger.getLogger(FileResourceDelegate.class);
@@ -41,10 +45,35 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
     WanakuProviderConfig config;
 
     protected String getEndpointUri(ResourceRequest request) {
-        String baseUri = config.baseUri();
-
         File file = new File(request.getLocation());
-        return String.format(baseUri, request.getType(), file.getParent(), file.getName());
+
+        Map<String, String> defaults = config.service().defaults();
+        Map<String, String> requestParams = new HashMap<>(request.getParams());
+
+        for (Map.Entry<String, String> entry : defaults.entrySet()) {
+            String value = entry.getValue();
+
+            switch (value) {
+                case "{location}": {
+                    requestParams.put(entry.getKey(), request.getLocation());
+                    break;
+                }
+                case "{location.name}": {
+                    requestParams.put(entry.getKey(), file.getName());
+                    break;
+                }
+                case "{location.parent}": {
+                    requestParams.put(entry.getKey(), file.getParent());
+                    break;
+                }
+                default: {
+                    requestParams.putIfAbsent(entry.getKey(), entry.getValue());
+                    break;
+                }
+            }
+        }
+
+        return buildUri("file://", file.getParent(), requestParams);
     }
 
     protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
@@ -52,12 +81,22 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
             String fileName = genericFile.getAbsoluteFilePath();
 
             try {
-                return Files.readString(Path.of(fileName));
+                Path path = Path.of(fileName);
+                if (Files.exists(path)) {
+                    return Files.readString(path);
+                } else {
+                    throw new NonConvertableResponseException("The file does not exist: " + fileName);
+                }
+
             } catch (IOException e) {
                 throw new NonConvertableResponseException(e);
             }
         }
 
-        throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response != null? response.getClass().getName() : "null");
+        if (response == null) {
+            throw new InvalidResponseTypeException("Unable the read the file: no response (does the file exist?)");
+        }
+
+        throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response.getClass().getName());
     }
 }

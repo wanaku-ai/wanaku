@@ -6,6 +6,8 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "wanaku.service.provider")
 public interface WanakuProviderConfig extends WanakuServiceConfig {
 
+    String name();
+
     @WithDefault("%s://%s")
     String baseUri();
 

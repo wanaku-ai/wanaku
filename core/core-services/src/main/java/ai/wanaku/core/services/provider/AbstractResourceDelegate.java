@@ -1,5 +1,6 @@
 package ai.wanaku.core.services.provider;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.inject.Inject;
@@ -10,6 +11,10 @@ import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
+import org.apache.camel.catalog.CamelCatalog;
+import org.apache.camel.catalog.DefaultCamelCatalog;
+import org.apache.camel.tooling.model.BaseOptionModel;
+import org.apache.camel.tooling.model.ComponentModel;
 import org.jboss.logging.Logger;
 
 /**
@@ -44,6 +49,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     public ResourceReply acquire(ResourceRequest request) {
         try {
             String uri = getEndpointUri(request);
+            LOG.debugf("Acquiring resource: %s", uri);
             Object obj = consumer.consume(uri);
 
             String response = coerceResponse(obj);
@@ -71,11 +77,28 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Override
     public Map<String, String> serviceConfigurations() {
-        return config.service().configurations();
+        Map<String, String> configurations =  config.service().configurations();
+
+        return componentOptions(configurations);
     }
 
     @Override
     public Map<String, String> credentialsConfigurations() {
         return config.credentials().configurations();
+    }
+
+    protected Map<String, String> componentOptions(Map<String, String> opt) {
+        CamelCatalog catalog = new DefaultCamelCatalog(true);
+
+        String name = config.name();
+        final ComponentModel componentModel = catalog.componentModel(name);
+        final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
+        for (BaseOptionModel option : options) {
+            if (option.getLabel().contains("consumer")) {
+                opt.put(option.getName(), option.getDescription());
+            }
+        }
+
+        return opt;
     }
 }
