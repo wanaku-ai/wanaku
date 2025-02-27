@@ -45,9 +45,12 @@ public class ResourceAcquirerProxy implements ResourceProxy {
     public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         Service service = ResourceRegistry.getInstance().getEntryForService(mcpResource.getType());
         if (service == null) {
-            LOG.errorf("There is no host registered for type %s", mcpResource.getType());
+            String message = String.format("There is no service registered for service %s", mcpResource.getType());
+            LOG.error(message);
 
-            return Collections.emptyList();
+            TextResourceContents textResourceContents =
+                    new TextResourceContents(arguments.requestUri().value(), message, "text/plain");
+            return List.of(textResourceContents);
         }
 
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.getTarget());
