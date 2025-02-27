@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package ai.wanaku.provider.file;
+package ai.wanaku.provider;
 
 import jakarta.inject.Inject;
 
