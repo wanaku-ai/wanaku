@@ -92,7 +92,7 @@ public class ResourcesBean {
                 .setDescription(resourceReference.getDescription())
                 .setHandler(
                         args -> new ResourceResponse(
-                                resourceResolver.read(resourceReference)))
+                                resourceResolver.read(args, resourceReference)))
                 .register();
     }
 
