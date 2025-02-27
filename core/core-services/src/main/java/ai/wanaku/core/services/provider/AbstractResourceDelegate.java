@@ -1,6 +1,6 @@
 package ai.wanaku.core.services.provider;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.inject.Inject;
@@ -11,10 +11,6 @@ import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
-import org.apache.camel.catalog.CamelCatalog;
-import org.apache.camel.catalog.DefaultCamelCatalog;
-import org.apache.camel.tooling.model.BaseOptionModel;
-import org.apache.camel.tooling.model.ComponentModel;
 import org.jboss.logging.Logger;
 
 /**
@@ -77,9 +73,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Override
     public Map<String, String> serviceConfigurations() {
-        Map<String, String> configurations =  config.service().configurations();
-
-        return componentOptions(configurations);
+        return config.service().configurations();
     }
 
     @Override
@@ -87,18 +81,13 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         return config.credentials().configurations();
     }
 
-    protected Map<String, String> componentOptions(Map<String, String> opt) {
-        CamelCatalog catalog = new DefaultCamelCatalog(true);
+    protected Map<String, String> mergeParameters(ResourceRequest request) {
+        Map<String, String> defaults = config.service().defaults();
+        Map<String, String> requestParams = new HashMap<>(request.getParamsMap());
 
-        String name = config.name();
-        final ComponentModel componentModel = catalog.componentModel(name);
-        final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
-        for (BaseOptionModel option : options) {
-            if (option.getLabel().contains("consumer")) {
-                opt.put(option.getName(), option.getDescription());
-            }
+        for (Map.Entry<String, String> entry : defaults.entrySet()) {
+            requestParams.putIfAbsent(entry.getKey(), entry.getValue());
         }
-
-        return opt;
+        return requestParams;
     }
 }
