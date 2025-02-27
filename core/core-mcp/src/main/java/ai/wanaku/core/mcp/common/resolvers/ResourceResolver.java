@@ -23,6 +23,7 @@ import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import ai.wanaku.api.types.ResourceReference;
+import io.quarkiverse.mcp.server.ResourceManager;
 
 public interface ResourceResolver extends Resolver {
 
@@ -37,10 +38,11 @@ public interface ResourceResolver extends Resolver {
 
     /**
      * Read resources
+     * @param arguments the resource request arguments
      * @param mcpResource the resource to read
      * @return the resource contents in a format specific to the content that had been read
      */
-    List<ResourceContents> read(ResourceReference mcpResource);
+    List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
 
     /**
      * Retrieve service configurations from the service

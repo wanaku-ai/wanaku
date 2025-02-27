@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
@@ -43,10 +44,10 @@ public class WanakuResourceResolver implements ResourceResolver {
     }
 
     @Override
-    public List<ResourceContents> read(ResourceReference mcpResource) {
+    public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", proxy.name(), mcpResource);
 
-        return proxy.eval(mcpResource);
+        return proxy.eval(arguments, mcpResource);
     }
 
     @Override

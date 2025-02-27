@@ -28,6 +28,7 @@ import ai.wanaku.core.exchange.InquirerGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ResourceReference;
@@ -41,7 +42,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);
 
     @Override
-    public List<ResourceContents> eval(ResourceReference mcpResource) {
+    public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         Service service = ResourceRegistry.getInstance().getEntryForService(mcpResource.getType());
         if (service == null) {
             LOG.errorf("There is no host registered for type %s", mcpResource.getType());
@@ -53,11 +54,11 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         final ResourceReply reply = acquireRemotely(mcpResource, service.getTarget());
         if (reply.getIsError()) {
             TextResourceContents textResourceContents =
-                    new TextResourceContents("file://" + mcpResource.getLocation(), reply.getContent(), "text/plain");
+                    new TextResourceContents(arguments.requestUri().value(), reply.getContent(), "text/plain");
             return List.of(textResourceContents);
         } else {
             TextResourceContents textResourceContents =
-                    new TextResourceContents("file://" + mcpResource.getLocation(), reply.getContent(),
+                    new TextResourceContents(arguments.requestUri().value(), reply.getContent(),
                             mcpResource.getMimeType());
 
             return List.of(textResourceContents);
