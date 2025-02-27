@@ -12,18 +12,6 @@
     <artifactId>core-services</artifactId>
     <name>Wanaku :: Core :: Services</name>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>quarkus-camel-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>

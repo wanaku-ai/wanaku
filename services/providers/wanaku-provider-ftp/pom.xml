@@ -29,27 +29,6 @@
     <artifactId>wanaku-provider-ftp</artifactId>
     <name>Wanaku :: Services :: Providers :: FTP</name>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>quarkus-camel-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
