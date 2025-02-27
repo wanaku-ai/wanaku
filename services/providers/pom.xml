@@ -32,6 +32,7 @@
 
   <modules>
     <module>wanaku-provider-file</module>
+      <module>wanaku-provider-ftp</module>
   </modules>
 
 </project>

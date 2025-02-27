@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package ai.wanaku.provider.file;
+package ai.wanaku.provider.ftp.file;
 
 import java.io.File;
 import java.io.IOException;

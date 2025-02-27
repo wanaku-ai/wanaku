@@ -1,6 +1,7 @@
 package ai.wanaku.core.services.provider;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.inject.Inject;
@@ -11,6 +12,10 @@ import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
+import org.apache.camel.catalog.CamelCatalog;
+import org.apache.camel.catalog.DefaultCamelCatalog;
+import org.apache.camel.tooling.model.BaseOptionModel;
+import org.apache.camel.tooling.model.ComponentModel;
 import org.jboss.logging.Logger;
 
 /**
@@ -94,5 +99,19 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
             requestParams.putIfAbsent(entry.getKey(), entry.getValue());
         }
         return requestParams;
+    }
+
+    protected Map<String, String> componentOptions(String name, Map<String, String> opt) {
+        CamelCatalog catalog = new DefaultCamelCatalog(true);
+
+        final ComponentModel componentModel = catalog.componentModel(name);
+        final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
+        for (BaseOptionModel option : options) {
+            if (option.getLabel().contains("consumer") || option.getLabel().contains("common")) {
+                opt.put(option.getName(), option.getDescription());
+            }
+        }
+
+        return opt;
     }
 }
