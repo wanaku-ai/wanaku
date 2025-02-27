@@ -20,57 +20,48 @@ package ai.wanaku.provider;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.ConsumerTemplate;
-import org.jboss.logging.Logger;
-import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
-import ai.wanaku.core.exchange.ResourceReply;
+import ai.wanaku.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.services.config.WanakuProviderConfig;
+import ai.wanaku.core.services.provider.AbstractResourceDelegate;
+import org.jboss.logging.Logger;
+
+import static ai.wanaku.core.services.util.URIHelper.buildUri;
 
 @ApplicationScoped
-public class ${name}ResourceDelegate implements ResourceAcquirerDelegate {
+public class ${name}ResourceDelegate extends AbstractResourceDelegate {
     private static final Logger LOG = Logger.getLogger(${name}ResourceDelegate.class);
 
     @Inject
-    WanakuServiceConfig config;
+    WanakuProviderConfig config;
 
-    private final CamelContext camelContext;
-    private final ConsumerTemplate consumer;
-
-    public ${name}ResourceDelegate(CamelContext camelContext) {
-        this.camelContext = camelContext;
-        this.consumer = camelContext.createConsumerTemplate();
+    @Override
+    protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
+        /*
+         * Here you build the Camel URI based on the request parameters.
+         * The parameters are already merged w/ the requested ones, but
+         * feel free to override if necessary.
+         *
+         * For instance, suppose the component has an option "fileName" and
+         * you need to set it, then use:
+         *
+         * parameters.putIfAbsent("fileName", file.getName());
+         *
+         * After the map has been adjusted, just call the buildUri from URIHelper
+         */
+        return buildUri(config.baseUri(), request.getLocation(), parameters);
     }
 
     @Override
-    public ResourceReply acquire(ResourceRequest request) {
-        try {
-            consumer.start();
-            Object o = consumer.receiveBody("write the camel URI here", 5000);
-
-            // Adjust the return so that the content is a string (see the file provider for an example)
-
-            return ResourceReply.newBuilder()
-                    .setIsError(true)
-                    .setContent("Invalid response type from the consumer").build();
-        } catch (Exception e) {
-            LOG.errorf("Unable to read %s: %s", request.getType(), e.getMessage(), e);
-            return ResourceReply.newBuilder()
-                    .setIsError(true)
-                    .setContent(e.getMessage()).build();
-        } finally {
-            consumer.stop();
+    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+        if (response == null) {
+            throw new InvalidResponseTypeException("Invalid response type from the consumer: null");
         }
-    }
 
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        return config.routing().service().configurations();
-    }
-
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return config.routing().credentials().configurations();
+        // Here, convert the response from whatever format it is, to a String instance.
+        return null;
     }
 }

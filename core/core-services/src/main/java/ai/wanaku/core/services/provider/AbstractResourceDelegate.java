@@ -26,11 +26,15 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     ResourceConsumer consumer;
 
     /**
-     * Gets the endpoint URI
+     * Gets the endpoint URI.
+     * Here you build the Camel URI based on the request parameters.
+     * The parameters are already merged w/ the requested ones, but feel free to override or
+     * add more if necessary.
      * @param request the request
+     * @param parameters the merged (between config and defauts) request parameters
      * @return the URI as a string
      */
-    protected abstract String getEndpointUri(ResourceRequest request);
+    protected abstract String getEndpointUri(ResourceRequest request, Map<String, String> parameters);
 
     /**
      * Convert the response in whatever format it is to a String
@@ -44,7 +48,8 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @Override
     public ResourceReply acquire(ResourceRequest request) {
         try {
-            String uri = getEndpointUri(request);
+            Map<String, String> parameters = mergeParameters(request);
+            String uri = getEndpointUri(request, parameters);
             LOG.debugf("Acquiring resource: %s", uri);
             Object obj = consumer.consume(uri);
 

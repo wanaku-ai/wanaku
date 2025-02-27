@@ -24,37 +24,38 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
-import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.services.util.URIHelper.buildUri;
 
 @ApplicationScoped
 public class FileResourceDelegate extends AbstractResourceDelegate {
-    private static final Logger LOG = Logger.getLogger(FileResourceDelegate.class);
+    @Inject
+    WanakuProviderConfig config;
 
-    protected String getEndpointUri(ResourceRequest request) {
-        Map<String, String> requestParams = mergeParameters(request);
-
+    @Override
+    protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
         File file = new File(request.getLocation());
         String path;
         if (file.isDirectory()) {
             path = file.getAbsolutePath();
-            requestParams.putIfAbsent("recursive", "true");
+            parameters.putIfAbsent("recursive", "true");
         } else {
             path = file.getParent();
-            requestParams.putIfAbsent("fileName", file.getName());
+            parameters.putIfAbsent("fileName", file.getName());
         }
 
-        return buildUri("file://", path, requestParams);
+        return buildUri(config.baseUri(), path, parameters);
     }
 
-
+    @Override
     protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response instanceof GenericFile<?> genericFile) {
             String fileName = genericFile.getAbsoluteFilePath();
