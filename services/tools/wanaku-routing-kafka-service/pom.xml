@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-routing-kafka-service</artifactId>
-    <name>Wanaku :: Service :: Tools :: Kafka</name>
+    <name>Wanaku :: Services :: Tools :: Kafka</name>
 
     <dependencyManagement>
         <dependencies>

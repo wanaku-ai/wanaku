@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-provider-ftp</artifactId>
-    <name>Wanaku :: Service :: Providers :: FTP</name>
+    <name>Wanaku :: Services :: Providers :: FTP</name>
 
     <dependencyManagement>
         <dependencies>

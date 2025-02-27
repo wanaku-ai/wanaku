@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-routing-yaml-route-service</artifactId>
-    <name>Wanaku :: Service :: Tools :: YAML Route Service</name>
+    <name>Wanaku :: Services :: Tools :: YAML Route Service</name>
 
     <dependencyManagement>
         <dependencies>

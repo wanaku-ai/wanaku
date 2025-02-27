@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-provider-${name.toLowerCase()}</artifactId>
-    <name>Wanaku :: Service :: Providers :: ${name}</name>
+    <name>Wanaku :: Services :: Providers :: ${name}</name>
 
     <dependencyManagement>
         <dependencies>

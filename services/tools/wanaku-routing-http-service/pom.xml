@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-routing-http-service</artifactId>
-    <name>Wanaku :: Service :: Tools :: HTTP Routing</name>
+    <name>Wanaku :: Services :: Tools :: HTTP Routing</name>
 
     <dependencyManagement>
         <dependencies>

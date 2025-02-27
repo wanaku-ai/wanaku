@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-provider-file</artifactId>
-    <name>Wanaku :: Service :: Providers :: File</name>
+    <name>Wanaku :: Services :: Providers :: File</name>
 
     <dependencyManagement>
         <dependencies>
