@@ -30,4 +30,8 @@
     <artifactId>providers</artifactId>
     <name>Wanaku :: Services :: Providers</name>
 
+  <modules>
+    <module>wanaku-provider-file</module>
+  </modules>
+
 </project>

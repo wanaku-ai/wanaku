@@ -34,7 +34,6 @@
     <modules>
         <module>providers</module>
         <module>tools</module>
-        <module>providers/wanaku-provider-file</module>
     </modules>
 
 </project>
