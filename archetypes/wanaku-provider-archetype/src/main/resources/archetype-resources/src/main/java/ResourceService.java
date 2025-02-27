@@ -19,9 +19,11 @@ package ai.wanaku.provider.file;
 
 import jakarta.inject.Inject;
 
+import ai.wanaku.core.exchange.InquireReply;
+import ai.wanaku.core.exchange.InquireRequest;
+import ai.wanaku.core.exchange.Inquirer;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
-import ai.wanaku.core.exchange.Inquirer;
 import ai.wanaku.core.exchange.ResourceAcquirer;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
