@@ -24,15 +24,36 @@
     <groupId>ai.wanaku</groupId>
     <artifactId>wanaku</artifactId>
     <name>Wanaku</name>
+    <inceptionYear>2025</inceptionYear>
+    <url>https://github.com/wanaku-ai/wanaku</url>
+
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <developers>
+        <developer>
+            <name>The Wanaku Development Team</name>
+            <email>contact@wanaku.ai</email>
+            <url>https://wanaku.ai</url>
+            <organization>Wanaku</organization>
+            <organizationUrl>http://wanaku.ai</organizationUrl>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jreleaser-maven-plugin.version>1.6.0</jreleaser-maven-plugin.version>
+        <jreleaser-maven-plugin.version>1.17.0</jreleaser-maven-plugin.version>
     </properties>
 
     <build>
