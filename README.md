@@ -14,7 +14,7 @@ South America.
 To execute the project using containers run: 
 
 ```shell
-podman run -p 8080:8080 quay.io/megacamelus/wanaku-router
+podman run -p 8080:8080 quay.io/wanaku/wanaku-router
 ```
 
 NOTE: replace `podman` with `docker` if that's what you have on your environment.

@@ -5,8 +5,8 @@ Requires=docker.service
 
 [Service]
 User=jenkins
-ExecStartPre=/usr/bin/docker pull quay.io/megacamelus/wanaku-router:latest
-ExecStart=/usr/bin/docker run --rm --cpus=2 --memory=2g --name wanaku-router -v wanaku:/data -p 8080:8080 quay.io/megacamelus/wanaku-router:latest
+ExecStartPre=/usr/bin/docker pull quay.io/wanaku/wanaku-router:latest
+ExecStart=/usr/bin/docker run --rm --cpus=2 --memory=2g --name wanaku-router -v wanaku:/data -p 8080:8080 quay.io/wanaku/wanaku-router:latest
 ExecStop=/usr/bin/docker stop wanaku-router
 Restart=on-abort
 
