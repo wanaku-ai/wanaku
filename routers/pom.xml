@@ -81,7 +81,7 @@
         <dependency>
             <groupId>io.quarkiverse.quinoa</groupId>
             <artifactId>quarkus-quinoa</artifactId>
-            <version>2.5.1</version>
+            <version>${quarkus-quinoa.version}</version>
         </dependency>
 
         <!-- For building containers -->

@@ -68,6 +68,7 @@
         <camel.version>4.8.3</camel.version>
         <picocli.version>4.7.6</picocli.version>
         <langchain4j.version>1.0.0-beta1</langchain4j.version>
+        <quarkus-quinoa.version>2.5.1</quarkus-quinoa.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
