@@ -23,7 +23,7 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>providers</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${wanaku-version}</version>
     </parent>
 
     <artifactId>wanaku-provider-${name.toLowerCase()}</artifactId>
