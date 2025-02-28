@@ -78,6 +78,12 @@
             <artifactId>quarkus-picocli</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>2.5.1</version>
+        </dependency>
+
         <!-- For building containers -->
         <dependency>
             <groupId>io.quarkus</groupId>
