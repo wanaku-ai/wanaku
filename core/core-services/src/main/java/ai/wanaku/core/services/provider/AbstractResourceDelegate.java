@@ -107,7 +107,8 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         final ComponentModel componentModel = catalog.componentModel(name);
         final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
         for (BaseOptionModel option : options) {
-            if (option.getLabel().contains("consumer") || option.getLabel().contains("common")) {
+            if (option.getLabel().contains("consumer") || option.getLabel().contains("common") ||
+                    option.getLabel().contains("security")) {
                 opt.put(option.getName(), option.getDescription());
             }
         }
