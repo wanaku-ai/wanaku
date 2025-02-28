@@ -132,7 +132,7 @@
     </build>
     <profiles>
         <profile>
-            <id>native-router</id>
+            <id>native</id>
             <activation>
                 <property>
                     <name>native</name>
