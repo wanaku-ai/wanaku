@@ -45,13 +45,13 @@ start adding tools and resources to be served via MCP using the commands describ
 
 Wanaku ToolSets are a group of tools that you can use to share with friends and colleagues and 
 can be easily imported into the router. 
-Wanaku [comes with a couple of ToolSets](toolsets) that you can import into your router and use them to try 
+Wanaku [comes with a couple of ToolSets](https://github.com/wanaku-ai/wanaku-toolsets) that you can import into your router and use them to try 
 it and see how it works.
 
 The first step is to download a toolset: 
 
 ```shell
-wget -c https://raw.githubusercontent.com/wanaku-ai/wanaku/refs/heads/main/samples/toolsets/currency.json
+wget -c https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/refs/heads/main/toolsets/currency.json
 ```
 
 Then, you can import them into the router using: 
