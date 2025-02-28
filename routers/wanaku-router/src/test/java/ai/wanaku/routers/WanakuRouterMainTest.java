@@ -1,9 +1,6 @@
 package ai.wanaku.routers;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,18 +31,6 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 public class WanakuRouterMainTest {
 
-    public static void deleteDirectory(Path directory) throws IOException {
-        Files.walk(directory)
-                .sorted((a, b) -> b.compareTo(a))
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        System.err.println("Error deleting file: " + path + ", " + e.getMessage());
-                    }
-                });
-    }
-
     @AfterAll
     static void cleanData() {
         File indexFile = new File("target/test-data/", Resolver.DEFAULT_TOOLS_INDEX_FILE_NAME);
@@ -61,10 +46,9 @@ public class WanakuRouterMainTest {
                 .logResponses(true)
                 .build();
 
-        McpClient mcpClient = new DefaultMcpClient.Builder()
+        return new DefaultMcpClient.Builder()
                 .transport(transport)
                 .build();
-        return mcpClient;
     }
 
     @Order(1)
