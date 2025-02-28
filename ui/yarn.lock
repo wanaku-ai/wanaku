@@ -1113,6 +1113,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^22.13.5":
+  version: 22.13.5
+  resolution: "@types/node@npm:22.13.5"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/a2e7ed7bb0690e439004779baedeb05159c5cc41ef6d81c7a6ebea5303fde4033669e1c0e41ff7453b45fd2fea8dbd55fddfcd052950c7fcae3167c970bca725
+  languageName: node
+  linkType: hard
+
 "@types/react-dom@npm:^19.0.3":
   version: 19.0.4
   resolution: "@types/react-dom@npm:19.0.4"
@@ -3473,6 +3482,7 @@ __metadata:
     "@carbon/icons-react": "npm:^11.55.0"
     "@carbon/react": "npm:^1.76.0"
     "@eslint/js": "npm:^9.19.0"
+    "@types/node": "npm:^22.13.5"
     "@types/react": "npm:^19.0.8"
     "@types/react-dom": "npm:^19.0.3"
     "@vitejs/plugin-react": "npm:^4.3.4"
@@ -3489,6 +3499,13 @@ __metadata:
     vite: "npm:^6.2.0"
   languageName: unknown
   linkType: soft
+
+"undici-types@npm:~6.20.0":
+  version: 6.20.0
+  resolution: "undici-types@npm:6.20.0"
+  checksum: 10c0/68e659a98898d6a836a9a59e6adf14a5d799707f5ea629433e025ac90d239f75e408e2e5ff086afc3cace26f8b26ee52155293564593fbb4a2f666af57fc59bf
+  languageName: node
+  linkType: hard
 
 "unique-filename@npm:^4.0.0":
   version: 4.0.0

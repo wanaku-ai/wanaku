@@ -1,0 +1,13 @@
+# Local environment
+.env
+.quinoa
+
+# Plugin directory
+/.quarkus/cli/plugins/
+
+# Generated Typescript definition
+dist
+
+# Quarkus
+**/application-dev.properties
+**/.camel-jbang
