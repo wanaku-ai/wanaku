@@ -86,6 +86,19 @@
                         <groupId>org.jreleaser</groupId>
                         <artifactId>jreleaser-maven-plugin</artifactId>
                         <version>${jreleaser-maven-plugin.version}</version>
+                        <configuration>
+                            <gitRootSearch>true</gitRootSearch>
+                            <jreleaser>
+                                <release>
+                                    <github>
+                                        <changelog>
+                                            <formatted>ALWAYS</formatted>
+                                            <preset>conventional-commits</preset>
+                                        </changelog>
+                                    </github>
+                                </release>
+                            </jreleaser>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
