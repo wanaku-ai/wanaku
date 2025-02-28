@@ -1,7 +1,6 @@
 # Generated with JReleaser 1.17.0 at 2025-02-28T14:15:59.531913+01:00
 project:
   name: Wanaku
-  version: 0.0.1-SNAPSHOT
   description: Wanaku MCP Router
   longDescription: Wanaku MCP Router is the first open-source MCP Router that transforms how agentic applications integrate with
     enterprise systems. Think of Wanaku as the friendly, efficient receptionist for your digital office. Just as a receptionist 
