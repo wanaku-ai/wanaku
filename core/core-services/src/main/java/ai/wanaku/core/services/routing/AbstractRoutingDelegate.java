@@ -30,7 +30,8 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
      *
      * @param response the response
      * @return the response as a String
-     * @throws InvalidResponseTypeException if the response cannot be converted
+     * @throws InvalidResponseTypeException if the response type is invalid (such as null)
+     * @throws NonConvertableResponseException if the response cannot be converted
      */
     protected abstract String coerceResponse(Object response)
             throws InvalidResponseTypeException, NonConvertableResponseException;
