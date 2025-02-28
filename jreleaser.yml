@@ -3,7 +3,12 @@ project:
   name: Wanaku
   version: 0.0.1-SNAPSHOT
   description: Wanaku MCP Router
-  longDescription: Wanaku MCP Router
+  longDescription: Wanaku MCP Router is the first open-source MCP Router that transforms how agentic applications integrate with
+    enterprise systems. Think of Wanaku as the friendly, efficient receptionist for your digital office. Just as a receptionist 
+    greets visitors, verifies their credentials, and directs them to the right department, Wanaku manages incoming AI agents 
+    ensuring they have the proper access, and routing them to the right enterprise resources. This lets your agentic 
+    applications focus on what they do best.
+
   authors:
     - The Wanaku Development Team
   license: Apache-2.0
@@ -14,10 +19,18 @@ project:
       groupId: ai.wanaku
       version: 17
   inceptionYear: 2025
+  tags:
+    - 'ai'
+    - 'mcp'
+    - 'java'
+    - 'agentic'
+    - 'agents'
 
 release:
   github:
     owner: wanaku-ai
+    issues:
+      enabled: true
 
 distributions:
   cli:
