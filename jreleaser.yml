@@ -26,6 +26,9 @@ project:
     - 'agentic'
     - 'agents'
 
+signing:
+  active: ALWAYS
+
 release:
   github:
     owner: wanaku-ai
