@@ -70,9 +70,8 @@ public class ToolsBean {
         final boolean required = isRequired(toolReference);
 
         Class<?> type = toType(toolReference);
-        toolReference.getInputSchema().getProperties().forEach((key, value) -> {
-            toolDefinition.addArgument(key, value.getDescription(), required, type);
-        });
+        toolReference.getInputSchema().getProperties().forEach((key, value) ->
+                toolDefinition.addArgument(key, value.getDescription(), required, type));
 
         toolDefinition
                 .setHandler(ta -> tool.call(toolReference, ta))

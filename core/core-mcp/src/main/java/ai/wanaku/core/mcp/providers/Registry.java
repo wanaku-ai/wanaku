@@ -24,7 +24,7 @@ import java.util.Map;
 import ai.wanaku.api.types.management.Service;
 
 class Registry {
-    private Map<String, Service> registry;
+    private final Map<String, Service> registry;
 
     protected Registry() {
         registry = new HashMap<>();

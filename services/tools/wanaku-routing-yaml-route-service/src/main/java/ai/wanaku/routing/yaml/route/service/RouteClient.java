@@ -1,13 +1,11 @@
 package ai.wanaku.routing.yaml.route.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.config.WanakuRoutingConfig;
-import ai.wanaku.core.services.config.WanakuServiceConfig;
 import ai.wanaku.core.services.routing.Client;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
@@ -46,7 +44,6 @@ public class RouteClient implements Client {
         ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
 
         LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
-        String s = producer.requestBody(config.baseUri(), parsedRequest.body(), String.class);
-        return s;
+        return producer.requestBody(config.baseUri(), parsedRequest.body(), String.class);
     }
 }

@@ -17,8 +17,6 @@
 
 package ai.wanaku.routing.service;
 
-import java.util.Map;
-
 import jakarta.inject.Inject;
 
 import ai.wanaku.core.exchange.InquireReply;

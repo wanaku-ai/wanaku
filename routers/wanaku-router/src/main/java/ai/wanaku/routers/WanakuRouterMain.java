@@ -42,7 +42,7 @@ public class WanakuRouterMain implements Runnable, QuarkusApplication {
     }
 
     @Override
-    public int run(String... args) throws Exception {
+    public int run(String... args) {
         return new CommandLine(this, factory).execute(args);
     }
 

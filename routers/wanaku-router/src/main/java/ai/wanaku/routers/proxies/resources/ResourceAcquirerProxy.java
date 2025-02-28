@@ -17,26 +17,25 @@
 
 package ai.wanaku.routers.proxies.resources;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.exchange.InquireReply;
 import ai.wanaku.core.exchange.InquireRequest;
 import ai.wanaku.core.exchange.InquirerGrpc;
+import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
+import ai.wanaku.core.exchange.ResourceReply;
+import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.mcp.providers.ResourceRegistry;
+import ai.wanaku.routers.proxies.ResourceProxy;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import org.jboss.logging.Logger;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.mcp.providers.ResourceRegistry;
-import ai.wanaku.routers.proxies.ResourceProxy;
 
 public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);

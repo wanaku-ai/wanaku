@@ -18,25 +18,24 @@
 package ai.wanaku.routers.proxies.tools;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Configurations;
+import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.exchange.InquireReply;
 import ai.wanaku.core.exchange.InquireRequest;
 import ai.wanaku.core.exchange.InquirerGrpc;
-import ai.wanaku.api.types.management.Service;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
-import org.jboss.logging.Logger;
-import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.routers.proxies.ToolsProxy;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import org.jboss.logging.Logger;
 
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
