@@ -8,7 +8,7 @@ The Wanaku MCP Router CLI provides a simple way to manage resources and tools fo
 
 There are three ways to run the CLI. Choose the one that fits your the best: 
 
-1. Using the container: `podman run quay.io/megacamelus/cli`. This is the recommended way.
+1. Using the container: `podman run quay.io/wanaku/cli`. This is the recommended way.
 2. Using the `wanaku` launcher script from the tarball generated during the build
 3. Using the `wanaku` native binary generated during the build.
 
@@ -18,10 +18,10 @@ There are three ways to run the CLI. Choose the one that fits your the best:
 
 Wanaku needs providers and tools to serve and route. The first step is to launch them. 
 
-Get the [`docker-compose.yml`](https://raw.githubusercontent.com/megacamelus/wanaku/refs/heads/main/docker-compose.yml):
+Get the [`docker-compose.yml`](https://raw.githubusercontent.com/wanaku-ai/wanaku/refs/heads/main/docker-compose.yml):
 
 ```shell
-wget https://raw.githubusercontent.com/megacamelus/wanaku/refs/heads/main/docker-compose.yml
+wget https://raw.githubusercontent.com/wanaku-ai/wanaku/refs/heads/main/docker-compose.yml
 ```
 
 Then, you can launch the containers using:
