@@ -14,8 +14,8 @@ export const router = createHashRouter([
         lazy: async () => import("./Pages/Dashboard"),
       },
       {
-        path: Links.About,
-        lazy: async () => import("./Pages/About"),
+        path: Links.Tools,
+        lazy: async () => import("./Pages/Tools"),
       },
     ],
   },
