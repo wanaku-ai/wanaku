@@ -22,12 +22,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.services.routing.AbstractRoutingDelegate;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class HttpDelegate extends AbstractRoutingDelegate {
-    private static final Logger LOG = Logger.getLogger(HttpDelegate.class);
 
+    @Override
     protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response != null) {
             return response.toString();

@@ -20,11 +20,9 @@ package ai.wanaku.routers;
 import java.io.File;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
-import ai.wanaku.core.config.WanakuConfig;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
 import ai.wanaku.routers.config.WanakuRouterConfig;

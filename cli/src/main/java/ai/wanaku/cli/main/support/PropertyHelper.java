@@ -27,7 +27,6 @@ public class PropertyHelper {
         String propertyName = propertyStr.substring(0, nameDelimiter);
         String dataType = propertyStr.substring(nameDelimiter + 1, typeDelimiter);
         String description = propertyStr.substring(typeDelimiter + 1);
-        PropertyHelper.PropertyDescription result = new PropertyHelper.PropertyDescription(propertyName, dataType, description);
-        return result;
+        return new PropertyDescription(propertyName, dataType, description);
     }
 }
