@@ -5,16 +5,25 @@ services:
     image: quay.io/wanaku/wanaku-routing-http-service
     ports:
       - "9000:9000"
+# Uncomment when using plain Docker, without Docker Desktop 
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 
   wanaku-routing-yaml-route-service:
     image: quay.io/wanaku/wanaku-routing-yaml-route-service
     ports:
       - "9001:9000"
+# Uncomment when using plain Docker, without Docker Desktop 
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 
   wanaku-provider-file:
     image: quay.io/wanaku/wanaku-provider-file
     ports:
       - "9002:9000"
+# Uncomment when using plain Docker, without Docker Desktop 
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 
   wanaku-router:
     depends_on:
@@ -24,3 +33,6 @@ services:
     image: quay.io/wanaku/wanaku-router
     ports:
       - "8080:8080"
+# Uncomment when using plain Docker, without Docker Desktop 
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
