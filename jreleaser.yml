@@ -1,0 +1,50 @@
+# Generated with JReleaser 1.17.0 at 2025-02-28T14:15:59.531913+01:00
+project:
+  name: Wanaku
+  version: 0.0.1-SNAPSHOT
+  description: Wanaku MCP Router
+  longDescription: Wanaku MCP Router
+  authors:
+    - The Wanaku Development Team
+  license: Apache-2.0
+  links:
+    homepage: https://wanaku.ai
+  languages:
+    java:
+      groupId: ai.wanaku
+      version: 17
+  inceptionYear: 2025
+
+release:
+  github:
+    owner: wanaku-ai
+
+distributions:
+  cli:
+    artifacts:
+      - path: cli/target/distributions/cli-{{projectVersion}}.zip
+        platform: osx-x86_64
+  router:
+    artifacts:
+      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
+        platform: osx-x86_64
+  service-yaml-route:
+    artifacts:
+      - path: services/tools/wanaku-routing-yaml-route-service/target/distributions/wanaku-routing-yaml-route-service-{{projectVersion}}.zip
+        platform: osx-x86_64
+  service-kafka:
+    artifacts:
+      - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}.zip
+        platform: osx-x86_64
+  service-http:
+    artifacts:
+      - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}.zip
+        platform: osx-x86_64
+  provider-file:
+    artifacts:
+      - path: services/providers/wanaku-provider-file/target/distributions/wanaku-provider-file-{{projectVersion}}.zip
+        platform: osx-x86_64
+  provider-ftp:
+    artifacts:
+      - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}.zip
+        platform: osx-x86_64

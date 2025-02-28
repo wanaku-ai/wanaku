@@ -26,6 +26,7 @@
     <name>Wanaku</name>
     <inceptionYear>2025</inceptionYear>
     <url>https://github.com/wanaku-ai/wanaku</url>
+    <description>Wanaku MCP Router</description>
 
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -53,7 +54,6 @@
         <maven.compiler.target>17</maven.compiler.target>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jreleaser-maven-plugin.version>1.17.0</jreleaser-maven-plugin.version>
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
     </properties>
 
@@ -80,48 +80,38 @@
 
     <profiles>
         <profile>
-            <id>release</id>
+            <id>dist</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.jreleaser</groupId>
-                        <artifactId>jreleaser-maven-plugin</artifactId>
-                        <version>${jreleaser-maven-plugin.version}</version>
-                        <configuration>
-                            <gitRootSearch>true</gitRootSearch>
-                            <jreleaser>
-                                <release>
-                                    <github>
-                                        <changelog>
-                                            <formatted>ALWAYS</formatted>
-                                            <preset>conventional-commits</preset>
-                                        </changelog>
-                                    </github>
-                                </release>
-                                <distributions>
-                                    <app>
-                                        <type>BINARY</type>
-                                        <brew>
-                                            <active>ALWAYS</active>
-                                        </brew>
-                                        <artifacts>
-                                            <artifact>
-                                                <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-linux-x86_64.tar.gz</path>
-                                                <platform>linux-x86_64</platform>
-                                            </artifact>
-                                            <artifact>
-                                                <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-windows-x86_64.zip</path>
-                                                <platform>windows-x86_64</platform>
-                                            </artifact>
-                                            <artifact>
-                                                <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-osx-x86_64.zip</path>
-                                                <platform>osx-x86_64</platform>
-                                            </artifact>
-                                        </artifacts>
-                                    </app>
-                                </distributions>
-                            </jreleaser>
-                        </configuration>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
