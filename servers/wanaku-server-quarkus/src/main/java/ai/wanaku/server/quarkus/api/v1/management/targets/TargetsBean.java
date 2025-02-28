@@ -53,14 +53,7 @@ public class TargetsBean {
     public void configureTools(String service, String option, String value)
             throws IOException, ConfigurationNotFoundException, ServiceNotFoundException {
         Service entry = ServiceRegistry.getInstance().getEntryForService(service);
-        if (entry == null) {
-            throw new ServiceNotFoundException(String.format("There is no service named %s",  service));
-        }
-
-        Configuration configuration = entry.getConfigurations().getConfigurations().get(option);
-        if (configuration == null) {
-            throw new ConfigurationNotFoundException(String.format("There is no configuration named %s for %s",  option, service));
-        }
+        Configuration configuration = configurationForService(service, option, entry);
 
         configuration.setValue(value);
         ServiceRegistry.getInstance().link(service, entry);
@@ -70,18 +63,24 @@ public class TargetsBean {
     public void configureResources(String service, String option, String value)
             throws IOException, ConfigurationNotFoundException, ServiceNotFoundException {
         Service entry = ResourceRegistry.getInstance().getEntryForService(service);
-        if (entry == null) {
-            throw new ServiceNotFoundException(String.format("There is no service named %s",  service));
-        }
-
-        Configuration configuration = entry.getConfigurations().getConfigurations().get(option);
-        if (configuration == null) {
-            throw new ConfigurationNotFoundException(String.format("There is no configuration named %s for %s",  option, service));
-        }
+        Configuration configuration = configurationForService(service, option, entry);
 
         configuration.setValue(value);
         ResourceRegistry.getInstance().link(service, entry);
         IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), ResourceRegistry.getInstance().getEntries());
+    }
+
+    private static Configuration configurationForService(String service, String option, Service entry)
+            throws ServiceNotFoundException, ConfigurationNotFoundException {
+        if (entry == null) {
+            throw new ServiceNotFoundException(String.format("There is no service named %s", service));
+        }
+
+        Configuration configuration = entry.getConfigurations().getConfigurations().get(option);
+        if (configuration == null) {
+            throw new ConfigurationNotFoundException(String.format("There is no configuration named %s for %s", option, service));
+        }
+        return configuration;
     }
 
     public void toolsLink(String service, String target) throws IOException {
