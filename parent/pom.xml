@@ -52,7 +52,7 @@
 
         <!-- Container stuff -->
         <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
-        <quarkus.container-image.group>megacamelus</quarkus.container-image.group>
+        <quarkus.container-image.group>wanaku</quarkus.container-image.group>
         <quarkus.container-image.tag>latest</quarkus.container-image.tag>
         <quarkus.container-image.build>false</quarkus.container-image.build>
         <quarkus.container-image.push>false</quarkus.container-image.push>
