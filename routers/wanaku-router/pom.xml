@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>wanaku-router</artifactId>
-    <name>Wanaku :: Routers :: Camel</name>
+    <name>Wanaku :: Routers :: Wanaku</name>
 
     <properties>
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
