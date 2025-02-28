@@ -1,0 +1,11 @@
+@use "@carbon/layout" as *;
+
+.title {
+    padding-top: $spacing-05;
+    padding-bottom: $spacing-07;
+}
+
+.description {
+    padding-bottom: $spacing-07;
+    max-width: 600px;
+}
