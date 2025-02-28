@@ -1,6 +1,8 @@
 package ai.wanaku.core.services.util;
 
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.junit.jupiter.api.Test;
 
@@ -20,10 +22,15 @@ class URIHelperTest {
         assertEquals("ftp://test?key=value", uri);
     }
 
+
     @Test
     void testQueryTwoParams() {
-        String uri = URIHelper.buildUri("ftp://test", Map.of("key1", "value1", "key2", "value2"));
-        assertEquals("ftp://test?key2=value2&key1=value1", uri);
+        SortedMap <String, String> params = new TreeMap<>();
+
+        params.put("key1", "value1");
+        params.put("key2", "value2");
+        String uri = URIHelper.buildUri("ftp://test", params);
+        assertEquals("ftp://test?key1=value1&key2=value2", uri);
     }
 
 }
