@@ -1,4 +1,5 @@
 GRAAL_VERSION?=21.0.2-graalce
+WANAKU_VERSION=0.0.1-SNAPSHOT
 
 HOST?=localhost
 API_ENDPOINT?=http://$(HOST):8080
@@ -19,7 +20,7 @@ cli-native:
 
 install:
 	mkdir -p $(HOME)/bin
-	install -m755 cli/target/cli-1.0.0-SNAPSHOT-runner $(HOME)/bin/wanaku
+	install -m755 cli/target/cli-$(WANAKU_VERSION)-runner $(HOME)/bin/wanaku
 	ln -sf $(HOME)/bin/wanaku $(HOME)/bin/wk
 
 load-meta:
