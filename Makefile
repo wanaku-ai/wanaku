@@ -16,7 +16,11 @@ prepare:
 
 cli-native:
 	export GRAALVM_HOME=$(JAVA_HOME)
-	mvn -Pnative clean package
+	mvn -Dnative clean package
+
+dist-native:
+	export GRAALVM_HOME=$(JAVA_HOME)
+	mvn -Pdist -Dnative clean package
 
 install:
 	mkdir -p $(HOME)/bin
