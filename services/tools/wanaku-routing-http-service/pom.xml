@@ -95,8 +95,6 @@
             <properties>
                 <skipITs>false</skipITs>
                 <quarkus.native.enabled>true</quarkus.native.enabled>
-                <assembly.descriptor>src/main/assembly/assembly-native.xml</assembly.descriptor>
-                <dist.final.name>${project.artifactId}-${project.version}-${os.detected.classifier}</dist.final.name>
             </properties>
         </profile>
         <profile>
@@ -110,12 +108,8 @@
                         <configuration>
                             <attach>false</attach>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>${dist.final.name}</finalName>
                             <outputDirectory>${distribution.directory}</outputDirectory>
                             <workDirectory>${project.build.directory}/assembly/work</workDirectory>
-                            <descriptors>
-                                <descriptor>${assembly.descriptor}</descriptor>
-                            </descriptors>
                         </configuration>
                         <executions>
                             <execution>
@@ -124,6 +118,50 @@
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
+                                <configuration>
+                                    <finalName>${project.artifactId}-${project.version}</finalName>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/assembly.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>dist-native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>${maven-assembly-plugin.version}</version>
+                        <configuration>
+                            <attach>false</attach>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <outputDirectory>${distribution.directory}</outputDirectory>
+                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-native-distribution</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <finalName>${project.artifactId}-${project.version}-${os.detected.classifier}</finalName>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/assembly-native.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
