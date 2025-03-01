@@ -32,7 +32,10 @@ signing:
 release:
   github:
     owner: wanaku-ai
+    overwrite: false
     issues:
+      enabled: true
+    update:
       enabled: true
 
 distributions:
