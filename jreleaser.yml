@@ -39,42 +39,85 @@ distributions:
   cli:
     artifacts:
       - path: cli/target/distributions/cli-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: cli/target/distributions/cli-{{projectVersion}}.zip
         platform: linux-x86_64
   router:
     artifacts:
       - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
         platform: linux-x86_64
   service-yaml-route:
     artifacts:
       - path: services/tools/wanaku-routing-yaml-route-service/target/distributions/wanaku-routing-yaml-route-service-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
         platform: linux-x86_64
   service-kafka:
     artifacts:
       - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}.zip
         platform: linux-x86_64
   service-http:
     artifacts:
       - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}.zip
         platform: linux-x86_64
   provider-file:
     artifacts:
       - path: services/providers/wanaku-provider-file/target/distributions/wanaku-provider-file-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: services/providers/wanaku-provider-file/target/distributions/wanaku-provider-file-{{projectVersion}}.zip
         platform: linux-x86_64
   provider-ftp:
     artifacts:
       - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}.zip
-        platform: osx-x86_64
+        platform: osx-aarch_64
       - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}.zip
+        platform: linux-x86_64
+
+  cli-native:
+    artifacts:
+      - path: cli/target/distributions/cli-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: cli/target/distributions/cli-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  router-native:
+    artifacts:
+      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  service-yaml-route-native:
+    artifacts:
+      - path: services/tools/wanaku-routing-yaml-route-service/target/distributions/wanaku-routing-yaml-route-service-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  service-kafka-native:
+    artifacts:
+      - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  service-http-native:
+    artifacts:
+      - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  provider-file-native:
+    artifacts:
+      - path: services/providers/wanaku-provider-file/target/distributions/wanaku-provider-file-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/providers/wanaku-provider-file/target/distributions/wanaku-provider-file-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  provider-ftp-native:
+    artifacts:
+      - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
