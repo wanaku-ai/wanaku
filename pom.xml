@@ -41,6 +41,12 @@
         </developer>
     </developers>
 
+    <scm>
+        <connection>scm:git:https://github.com/wanaku-ai/wanaku.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/wanaku-ai/wanaku.git</developerConnection>
+        <url>https://github.com/wanaku-ai/wanaku</url>
+    </scm>
+
     <licenses>
         <license>
             <name>Apache-2.0</name>
