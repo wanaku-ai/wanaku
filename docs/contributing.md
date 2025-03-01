@@ -185,3 +185,7 @@ Then, launch the inspector and use its features to list and read resources and t
 To contribute new core features and connectors, also read the [Wanaku MCP Router Internals](wanaku-router-internals.md) guide.
 
 If you want to understand what each of the components do, then read the [Wanaku Components and Architecture](architecture.md) guide.
+
+## Release Guide
+
+Committers should check the [Release Guide](release-guide) for details about how to build and distribute Wanaku. 
