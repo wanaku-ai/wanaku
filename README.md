@@ -7,18 +7,6 @@ This protocol is an open protocol that standardizes how applications provide con
 The project name comes from the origins of the word [Guanaco](https://en.wikipedia.org/wiki/Guanaco), a camelid native to
 South America.
 
-## Installation 
-
-### Using Containers 
-
-To execute the project using containers run: 
-
-```shell
-podman run -p 8080:8080 quay.io/wanaku/wanaku-router
-```
-
-NOTE: replace `podman` with `docker` if that's what you have on your environment.
-
 ## Usage Guide
 
 Please follow the [usage guide](docs/usage) to learn how to use Wanaku.
