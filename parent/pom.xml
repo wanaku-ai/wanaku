@@ -16,12 +16,14 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>wanaku</artifactId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -45,7 +47,7 @@
         <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
         <maven-enforcer-plugin-version>3.5.0</maven-enforcer-plugin-version>
         <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
-        <executable-suffix />
+        <executable-suffix/>
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
 
         <!-- Container stuff -->
