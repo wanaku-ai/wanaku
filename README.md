@@ -21,12 +21,12 @@ NOTE: replace `podman` with `docker` if that's what you have on your environment
 
 ## Usage Guide
 
-Please follow the [usage guide](docs/usage.md) to learn how to use Wanaku.
+Please follow the [usage guide](docs/usage) to learn how to use Wanaku.
 
 ## Building Wanaku MCP Router
 
-If you want to build to the project, then read [building](docs/building.md) guide.
+If you want to build to the project, then read [building](docs/building) guide.
 
 ## Contributing 
 
-If you want to contribute to the project, then read the [contributing](docs/contributing.md) guide.
+If you want to contribute to the project, then read the [contributing](docs/contributing) guide.
