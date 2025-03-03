@@ -7,6 +7,9 @@ This protocol is an open protocol that standardizes how applications provide con
 The project name comes from the origins of the word [Guanaco](https://en.wikipedia.org/wiki/Guanaco), a camelid native to
 South America.
 
+[![Getting Started With Wanaku](https://img.youtube.com/vi/-fuNAo2j4SA/0.jpg)](https://www.youtube.com/watch?v=-fuNAo2j4SA)
+
+
 ## Usage Guide
 
 Please follow the [usage guide](docs/usage) to learn how to use Wanaku.
