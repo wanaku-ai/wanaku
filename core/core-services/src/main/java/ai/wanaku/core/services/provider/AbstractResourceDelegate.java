@@ -57,7 +57,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
             Map<String, String> parameters = mergeParameters(request);
             String uri = getEndpointUri(request, parameters);
             LOG.debugf("Acquiring resource: %s", uri);
-            Object obj = consumer.consume(uri);
+            Object obj = consumer.consume(uri, request);
 
             String response = coerceResponse(obj);
 
