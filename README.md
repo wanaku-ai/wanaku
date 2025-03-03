@@ -12,12 +12,12 @@ South America.
 
 ## Usage Guide
 
-Please follow the [usage guide](docs/usage) to learn how to use Wanaku.
+Please follow the [usage guide](docs/usage.md) to learn how to use Wanaku.
 
 ## Building Wanaku MCP Router
 
-If you want to build to the project, then read [building](docs/building) guide.
+If you want to build to the project, then read [building](docs/building.md) guide.
 
 ## Contributing 
 
-If you want to contribute to the project, then read the [contributing](docs/contributing) guide.
+If you want to contribute to the project, then read the [contributing](docs/contributing.md) guide.
