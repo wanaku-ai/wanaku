@@ -232,3 +232,48 @@ The following tools services can be made available using Wanaku and used to prov
 | `http`       | wanaku-routing-http-service       | Provides access to HTTP endpoints as tools via Wanaku    |
 | `yaml-route` | wanaku-routing-yaml-route-service | Provides access to Camel routes in YAML tools via Wanaku |
 | `kafka`      | wanaku-routing-kafka-service      | Provides access to Kafka topics as tools via Wanaku      |
+
+
+## Adding Your Own Resource Provider or Tool Service
+
+Wanaku leverages the Apache Camel to provide connectivity to a vast range of services and platforms. Although we 
+aim to provide many of them out-of-the box, not all of them will fit all the use cases. That's why we make it 
+simple for users to create custom services that solve their particular need.
+
+### Creating a New Resource Provider
+
+To create a custom resource provider, you can run: 
+
+```shell
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=0.0.1 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S3 -Dwanaku-version=0.0.1
+```
+
+### Creating a New Tool Service
+
+To create a custom tool service, you can run:
+
+```shell
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.1 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.routing.service -DartifactId=wanaku-routing-jms-service -Dname=JMS -Dwanaku-version=0.0.1
+```
+
+### Adjusting Your Resource Provider or Tool Service
+
+After created, then most of the work is to adjust the auto-generated `Delegate` class to provide the Camel-based URL and, if 
+necessary, coerce the response from an specific type to String. 
+
+In some cases it may also be necessary to implement your own `Client` or `Resource` consumer. 
+In those cases, then you also need to write a class that leverages [Apache Camel's](http://camel.apache.org) `ProducerTemplate`
+and (or, sometimes, both) `ConsumerTemplate` to interact with the system you are implementing connectivity too. 
+
+### Implementing Services in Other Languages
+
+The communication between Wanaku MCP Router and its downstream services is capable of talking to any type of service using gRPC, 
+therefore, it's possible to implement services in any language that supports it. 
+
+For those cases, leverage the `.proto` files in the `core-exchange` module for creating your own service.
+
+**NOTE**: at this time, Wanaku is being intensively developed, therefore, we cannot guararantee backwards compatibility of the protocol. 
+
+**NOTE**: for Java, you can still generate the project using the archetype, but in this case, you must implement your own 
+delegate from scratch.
+
