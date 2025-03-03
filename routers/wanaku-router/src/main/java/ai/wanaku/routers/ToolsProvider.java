@@ -26,7 +26,6 @@ import jakarta.inject.Inject;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
 import ai.wanaku.routers.config.WanakuRouterConfig;
-import ai.wanaku.routers.proxies.ToolsProxy;
 import ai.wanaku.routers.proxies.tools.InvokerProxy;
 import ai.wanaku.routers.resolvers.WanakuToolsResolver;
 import io.quarkus.arc.DefaultBean;
@@ -37,7 +36,7 @@ import picocli.CommandLine;
 import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_TOOLS_INDEX_FILE_NAME;
 
 @ApplicationScoped
-public class ToolsProvider extends AbstractProvider<ToolsProxy, ToolsResolver> {
+public class ToolsProvider extends AbstractProvider<ToolsResolver> {
     private static final Logger LOG = Logger.getLogger(ToolsProvider.class);
 
     @Inject
