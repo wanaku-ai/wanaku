@@ -2,6 +2,7 @@ package ai.wanaku.core.services.provider;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import ai.wanaku.core.exchange.ResourceRequest;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 
@@ -17,7 +18,7 @@ public class DefaultResourceConsumer implements ResourceConsumer {
     }
 
     @Override
-    public Object consume(String uri) {
+    public Object consume(String uri, ResourceRequest request) {
         try {
             consumer.start();
             return consumer.receiveBody(uri, 5000);
