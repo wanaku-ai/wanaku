@@ -53,17 +53,18 @@ public class WanakuRouterMainTest {
 
     @Order(1)
     @Test
-    void testListEmpty() {
-        McpClient mcpClient = createClient();
+    void testListEmpty() throws Exception {
+        try (McpClient mcpClient = createClient()) {
 
-        List<ToolSpecification> toolSpecifications = mcpClient.listTools();
-        Assertions.assertNotNull(toolSpecifications);
-        Assertions.assertEquals(0, toolSpecifications.size());
+            List<ToolSpecification> toolSpecifications = mcpClient.listTools();
+            Assertions.assertNotNull(toolSpecifications);
+            Assertions.assertEquals(0, toolSpecifications.size());
+        }
     }
 
     @Order(2)
     @Test
-    public void testExposeResourceSuccessfully() {
+    public void testExposeResourceSuccessfully() throws Exception {
         ToolReference.InputSchema inputSchema1 = ToolsHelper.createInputSchema(
                 "http",
                 Collections.singletonMap("username", ToolsHelper.createProperty("string", "A username."))
@@ -83,15 +84,17 @@ public class WanakuRouterMainTest {
                 .then()
                 .statusCode(200);
 
-        McpClient mcpClient = createClient();
-        List<ToolSpecification> toolSpecifications = mcpClient.listTools();
-        Assertions.assertNotNull(toolSpecifications);
-        Assertions.assertEquals(1, toolSpecifications.size());
+        try (McpClient mcpClient = createClient()) {
+            List<ToolSpecification> toolSpecifications = mcpClient.listTools();
+            Assertions.assertNotNull(toolSpecifications);
+            Assertions.assertEquals(1, toolSpecifications.size());
+        }
+
     }
 
     @Order(3)
     @Test
-    void testRemove() {
+    void testRemove() throws Exception {
         given()
                 .when().put("/api/v1/tools/remove?tool=test-tool-3")
                 .then()
@@ -103,9 +106,11 @@ public class WanakuRouterMainTest {
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("size()", is(0));
 
-        McpClient mcpClient = createClient();
-        List<ToolSpecification> toolSpecifications = mcpClient.listTools();
-        Assertions.assertNotNull(toolSpecifications);
-        Assertions.assertEquals(0, toolSpecifications.size());
+
+        try (McpClient mcpClient = createClient()) {
+            List<ToolSpecification> toolSpecifications = mcpClient.listTools();
+            Assertions.assertNotNull(toolSpecifications);
+            Assertions.assertEquals(0, toolSpecifications.size());
+        }
     }
 }
