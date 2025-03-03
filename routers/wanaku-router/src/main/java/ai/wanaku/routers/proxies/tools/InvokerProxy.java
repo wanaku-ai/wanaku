@@ -17,8 +17,6 @@
 
 package ai.wanaku.routers.proxies.tools;
 
-import java.util.Map;
-
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Configurations;
@@ -30,11 +28,13 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.routers.proxies.ToolsProxy;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import java.util.Map;
 import org.jboss.logging.Logger;
 
 /**
@@ -70,15 +70,15 @@ public class InvokerProxy implements ToolsProxy {
         ManagedChannel channel = ManagedChannelBuilder.forTarget(service.getTarget()).usePlaintext().build();
 
         Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
-        Map<String, String> collect = Configurations.toStringMap(configurations);
+        Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
+        Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
         Request result = Request.newRequest(toolReference, toolArguments);
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody(result.body())
                 .setUri(result.uri())
-                .putAllServiceConfigurations(collect)
-//                TODO
-//                .getArgumentsMap().putAll(toolArguments.args())
+                .putAllServiceConfigurations(serviceConfigurations)
+                .putAllArguments(argumentsMap)
                 .build();
 
         ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
