@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "resolutions": {
+    "jsonpath-plus": "^10.3.0"
+  },
   "dependencies": {
     "@carbon/icons-react": "^11.55.0",
     "@carbon/layout": "^11.30.0",
