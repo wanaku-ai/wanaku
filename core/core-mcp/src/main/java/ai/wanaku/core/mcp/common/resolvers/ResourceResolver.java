@@ -25,6 +25,10 @@ import io.quarkiverse.mcp.server.ResourceContents;
 import ai.wanaku.api.types.ResourceReference;
 import io.quarkiverse.mcp.server.ResourceManager;
 
+/**
+ * A resolver that consumes MCP requests and resolves what type of resource acquirer
+ * should handle it
+ */
 public interface ResourceResolver extends Resolver {
 
 

@@ -36,7 +36,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      * The parameters are already merged w/ the requested ones, but feel free to override or
      * add more if necessary.
      * @param request the request
-     * @param parameters the merged (between config and defauts) request parameters
+     * @param parameters the merged (between config and defaults) request parameters
      * @return the URI as a string
      */
     protected abstract String getEndpointUri(ResourceRequest request, Map<String, String> parameters);
@@ -45,7 +45,8 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      * Convert the response in whatever format it is to a String
      * @param response the response
      * @return the response as a String
-     * @throws InvalidResponseTypeException if the response cannot be converted
+     * @throws InvalidResponseTypeException if the response type is invalid (such as null)
+     * @throws NonConvertableResponseException if the response cannot be converted
      */
     protected abstract String coerceResponse(Object response)
             throws InvalidResponseTypeException, NonConvertableResponseException;

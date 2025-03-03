@@ -24,6 +24,10 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
 
+/**
+ * A resolver that consumes MCP requests and resolves what type of tool
+ * should handle it
+ */
 public interface ToolsResolver extends Resolver {
 
     /**

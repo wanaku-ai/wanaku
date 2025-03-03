@@ -5,6 +5,9 @@ import java.util.Map;
 import ai.wanaku.core.config.WanakuConfig;
 import io.smallrye.config.ConfigMapping;
 
+/**
+ * Base configuration class for the downstream services
+ */
 @ConfigMapping(prefix = "wanaku.service")
 public interface WanakuServiceConfig extends WanakuConfig {
 

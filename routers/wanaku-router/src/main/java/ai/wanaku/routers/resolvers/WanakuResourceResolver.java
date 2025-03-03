@@ -28,6 +28,9 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.routers.proxies.ResourceProxy;
 
+/**
+ * Represents resolvers for Wanaku resources
+ */
 public class WanakuResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(WanakuResourceResolver.class);
     private final File indexFile;
