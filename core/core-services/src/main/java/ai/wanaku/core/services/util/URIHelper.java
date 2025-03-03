@@ -7,6 +7,8 @@ import java.util.Map;
  */
 public class URIHelper {
 
+    private URIHelper() {}
+
     private static String buildFromBaseUri(Map<String, String> parameters, StringBuilder uri) {
         boolean first = true;
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
