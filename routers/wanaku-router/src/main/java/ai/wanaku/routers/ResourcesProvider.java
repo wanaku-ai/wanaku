@@ -24,7 +24,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
-import ai.wanaku.routers.proxies.ResourceProxy;
 import ai.wanaku.routers.proxies.resources.ResourceAcquirerProxy;
 import ai.wanaku.routers.resolvers.WanakuResourceResolver;
 import picocli.CommandLine;
@@ -32,7 +31,7 @@ import picocli.CommandLine;
 import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_RESOURCES_INDEX_FILE_NAME;
 
 @ApplicationScoped
-public class ResourcesProvider extends AbstractProvider<ResourceProxy, ResourceResolver> {
+public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
     @Inject
     CommandLine.ParseResult parseResult;
 

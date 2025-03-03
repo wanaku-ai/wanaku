@@ -23,9 +23,8 @@ import java.util.Collections;
 
 import ai.wanaku.core.mcp.common.resolvers.Resolver;
 import ai.wanaku.core.util.IndexHelper;
-import ai.wanaku.routers.proxies.Proxy;
 
-abstract class AbstractProvider<T extends Proxy, Y extends Resolver> {
+abstract class AbstractProvider<Y extends Resolver> {
     private static File createSettingsDirectory(String settingsDirectory) {
         File resourcesDir = new File(settingsDirectory);
         if (!resourcesDir.exists()) {
