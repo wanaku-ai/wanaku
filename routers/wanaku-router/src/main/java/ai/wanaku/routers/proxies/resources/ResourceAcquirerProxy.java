@@ -69,7 +69,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
     @Override
     public String name() {
-        return "";
+        return "resource-acquirer";
     }
 
     private ResourceReply acquireRemotely(ResourceReference mcpResource, String target) {
