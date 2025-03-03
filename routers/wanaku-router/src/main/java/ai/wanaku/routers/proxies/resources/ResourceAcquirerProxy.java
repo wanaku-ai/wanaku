@@ -17,10 +17,9 @@
 
 package ai.wanaku.routers.proxies.resources;
 
-import java.util.List;
-import java.util.Map;
-
 import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.management.Configuration;
+import ai.wanaku.api.types.management.Configurations;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.exchange.InquireReply;
 import ai.wanaku.core.exchange.InquireRequest;
@@ -35,6 +34,8 @@ import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
+import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 
 /**
@@ -56,7 +57,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         }
 
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.getTarget());
-        final ResourceReply reply = acquireRemotely(mcpResource, service.getTarget());
+        final ResourceReply reply = acquireRemotely(mcpResource, arguments, service);
         if (reply.getIsError()) {
             TextResourceContents textResourceContents =
                     new TextResourceContents(arguments.requestUri().value(), reply.getContent(), "text/plain");
@@ -75,16 +76,20 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         return "resource-acquirer";
     }
 
-    private ResourceReply acquireRemotely(ResourceReference mcpResource, String target) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+    private ResourceReply acquireRemotely(ResourceReference mcpResource, ResourceManager.ResourceArguments arguments, Service service) {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.getTarget())
                 .usePlaintext()
                 .build();
+
+        Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
+        Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
 
         ResourceRequest request = ResourceRequest
                 .newBuilder()
                 .setLocation(mcpResource.getLocation())
                 .setType(mcpResource.getType())
                 .setName(mcpResource.getName())
+                .putAllServiceConfigurations(serviceConfigurations)
                 .build();
 
         ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
