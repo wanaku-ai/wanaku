@@ -5,6 +5,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 
+/**
+ * A simple consumer of resources implemented on top of Camel's ConsumerTemplate
+ */
 @ApplicationScoped
 public class DefaultResourceConsumer implements ResourceConsumer {
     private final ConsumerTemplate consumer;

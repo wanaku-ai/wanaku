@@ -24,6 +24,9 @@ import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 
+/**
+ * Main class for the router
+ */
 @QuarkusMain(name = "base")
 @CommandLine.Command(name = "camel", mixinStandardHelpOptions = true)
 public class WanakuRouterMain implements Runnable, QuarkusApplication {

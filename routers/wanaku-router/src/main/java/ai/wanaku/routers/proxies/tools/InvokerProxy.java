@@ -37,6 +37,9 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import org.jboss.logging.Logger;
 
+/**
+ * A proxy class for invoking tools
+ */
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
 

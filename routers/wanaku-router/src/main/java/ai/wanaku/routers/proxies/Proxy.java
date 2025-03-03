@@ -25,7 +25,7 @@ import java.util.Map;
 public interface Proxy {
     /**
      * The name of the proxy
-     * @return
+     * @return the name of the proxy
      */
     String name();
 

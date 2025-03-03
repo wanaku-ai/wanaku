@@ -2,6 +2,9 @@ package ai.wanaku.core.services.util;
 
 import java.util.Map;
 
+/**
+ * Utility class to build URIs
+ */
 public class URIHelper {
 
     private static String buildFromBaseUri(Map<String, String> parameters, StringBuilder uri) {

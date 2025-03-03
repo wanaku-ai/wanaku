@@ -35,6 +35,9 @@ import picocli.CommandLine;
 
 import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_TOOLS_INDEX_FILE_NAME;
 
+/**
+ * A provider for tools resolvers
+ */
 @ApplicationScoped
 public class ToolsProvider extends AbstractProvider<ToolsResolver> {
     private static final Logger LOG = Logger.getLogger(ToolsProvider.class);

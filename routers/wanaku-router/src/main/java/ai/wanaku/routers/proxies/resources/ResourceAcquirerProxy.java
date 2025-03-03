@@ -37,6 +37,9 @@ import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import org.jboss.logging.Logger;
 
+/**
+ * A proxy class for acquiring resources
+ */
 public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);
 

@@ -30,6 +30,9 @@ import picocli.CommandLine;
 
 import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_RESOURCES_INDEX_FILE_NAME;
 
+/**
+ * A provider for resources resolvers
+ */
 @ApplicationScoped
 public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
     @Inject
