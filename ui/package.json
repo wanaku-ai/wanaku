@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "orval --config ./orval.config.ts && vite",
+    "build": "orval --config ./orval.config.ts && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -13,6 +13,7 @@
     "@carbon/icons-react": "^11.55.0",
     "@carbon/layout": "^11.30.0",
     "@carbon/react": "^1.76.0",
+    "axios": "^1.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-is": "^19.0.0",
@@ -29,6 +30,8 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
+    "orval": "6.24.0",
+    "prettier": "3.5.3",
     "sass-embedded": "^1.85.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
