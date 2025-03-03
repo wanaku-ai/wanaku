@@ -48,7 +48,8 @@ public class WanakuResourceResolver implements ResourceResolver {
 
     @Override
     public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-        LOG.infof("Using the resource proxy %s to evaluate MCP uri %s", proxy.name(), mcpResource);
+        LOG.infof("Using the resource proxy %s to evaluate MCP uri %s for request %s", proxy.name(), mcpResource,
+                arguments.requestId());
 
         return proxy.eval(arguments, mcpResource);
     }
