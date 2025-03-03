@@ -1,22 +1,37 @@
-# Using the Wanaku MCP Router CLI
+# Using the Wanaku MCP Router
+
+Wanaku aims to provide unified access, routing and resource management capabilities for your organization and your AI Agents.
+
+## Meet Wanaku 
+
+If you haven't seen it already, we recommend watching the Getting Started with Wanaku video that introduces the project, 
+and introduces how it works.
+
+[![Getting Started With Wanaku](https://img.youtube.com/vi/-fuNAo2j4SA/0.jpg)](https://www.youtube.com/watch?v=-fuNAo2j4SA)
 
 ## Overview
 
+In addition to installing the Wanaku MCP Router, it is also necessary to install the CLI used to manage the router. 
 The Wanaku MCP Router CLI provides a simple way to manage resources and tools for your Wanaku MCP Router instance.
 
-## Ways to run the CLI
+**NOTE**: Wanaku also comes with a web user interface that you can access on port 8080 of the host running the router, but at 
+this moment, some features are only available on the CLI. 
 
-There are three ways to run the CLI. Choose the one that fits your the best: 
+The MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host your are using (for instance, if running 
+locally, that would mean `http://localhost:8080/mcp/sse`)
 
-1. Using the container: `podman run quay.io/wanaku/cli`. This is the recommended way.
-2. Using the `wanaku` launcher script from the tarball generated during the build
-3. Using the `wanaku` native binary generated during the build.
+## Getting the CLI
 
-*NOTE*: the commands below will use `wanaku` as the alias representing any of the above options.
+The best way to install the CLI is by downloading the latest `cli` from the [latest release](https://github.com/wanaku-ai/wanaku/releases).
+
+*NOTE*: You may also find a container for the CLI on our [Quay.io organization](https://quay.io/repository/wanaku/cli), 
+although it is not entirely tested at the moment. 
 
 ## Quick Getting Started 
 
-Wanaku needs providers and tools to serve and route. The first step is to launch them. 
+Wanaku needs providers and tools to serve and route. These are the downstream services that Wanaku talk to. 
+
+The first step is to launch them. 
 
 Get the [`docker-compose.yml`](https://raw.githubusercontent.com/wanaku-ai/wanaku/refs/heads/main/docker-compose.yml):
 
