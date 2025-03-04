@@ -11,6 +11,8 @@ out
 .idea/misc.xml
 .idea/workspace.xml
 .idea/libraries/
+.idea/encodings.xml
+.idea/vcs.xml
 *.iws
 *.iml
 *.ipr
