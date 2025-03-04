@@ -174,7 +174,9 @@ export const postApiV1ResourcesExpose = <TData = AxiosResponse<void>>(
 /**
  * @summary List
  */
-export const getApiV1ResourcesList = <TData = AxiosResponse<void>>(
+export const getApiV1ResourcesList = <
+  TData = AxiosResponse<ResourceReference[]>,
+>(
   options?: AxiosRequestConfig,
 ): Promise<TData> => {
   return axios.default.get(`/api/v1/resources/list`, options);
@@ -239,7 +241,7 @@ export type GetApiV1ManagementTargetsToolsListResult =
   AxiosResponse<GetApiV1ManagementTargetsToolsList200>;
 export type PutApiV1ManagementTargetsToolsUnlinkResult = AxiosResponse<void>;
 export type PostApiV1ResourcesExposeResult = AxiosResponse<void>;
-export type GetApiV1ResourcesListResult = AxiosResponse<void>;
+export type GetApiV1ResourcesListResult = AxiosResponse<ResourceReference[]>;
 export type PutApiV1ResourcesRemoveResult = AxiosResponse<void>;
 export type PostApiV1ToolsAddResult = AxiosResponse<void>;
 export type GetApiV1ToolsListResult = AxiosResponse<void>;

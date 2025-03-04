@@ -17,6 +17,10 @@ export const router = createHashRouter([
         path: Links.Tools,
         lazy: async () => import("./Pages/Tools"),
       },
+      {
+        path: Links.Resources,
+        lazy: async () => import("./Pages/Resources"),
+      },
     ],
   },
 ]);
