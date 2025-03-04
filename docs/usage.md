@@ -219,9 +219,11 @@ In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librech
 
 The following resources can be made available using Wanaku.
 
-| Type   | Resource Provider    | Description                                     |
-|--------|----------------------|-------------------------------------------------|
-| `file` | wanaku-provider-file | Provides access to files as resources to Wanaku |
+| Type   | Resource Provider    | Description                                                    |
+|--------|----------------------|----------------------------------------------------------------|
+| `file` | wanaku-provider-file | Provides access to files as resources to Wanaku                |
+| `ftp`  | wanaku-provider-ftp  | Provides access to files in FTP servers as resources to Wanaku |
+| `s3`   | wanaku-provider-s3   | Provides access to files in AWS S3 as resources to Wanaku      |
 
 ## Available Tools Services
 
