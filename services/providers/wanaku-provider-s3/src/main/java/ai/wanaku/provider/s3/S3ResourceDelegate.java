@@ -7,7 +7,6 @@ import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Map;
 
