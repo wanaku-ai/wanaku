@@ -33,6 +33,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
 
 import java.util.List;
@@ -61,8 +62,11 @@ public class ResourcesResource {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponse(responseCode = "200", content = @Content(
-            schema = @Schema(type = SchemaType.ARRAY, implementation = ResourceReference.class)))
+    @APIResponses({
+            @APIResponse(responseCode = "200", content = @Content(
+                    schema = @Schema(type = SchemaType.ARRAY, implementation = ResourceReference.class))),
+            @APIResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     public Response list() {
         try {
             List<ResourceReference> list = resourcesBean.list();

@@ -24,7 +24,7 @@ import { ExternalLinks, Links } from "./router/links.models";
 import axios from "axios";
 
 function App() {
-  axios.defaults.baseURL = import.meta.env.VITE_WANAKU_ROUTER_BASE_URL || 'http://localhost:8080';
+  axios.defaults.baseURL = VITE_API_URL;
 
   const action = (click: string) => () => {
     console.log(click);

@@ -225,6 +225,15 @@
                 }
               }
             }
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
           }
         },
         "summary" : "List",

@@ -158,6 +158,11 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ResourceReference"
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
       summary: List
       tags:
       - Resources Resource
