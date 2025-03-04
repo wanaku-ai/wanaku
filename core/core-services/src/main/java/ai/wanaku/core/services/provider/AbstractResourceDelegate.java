@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -49,7 +50,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      * @throws NonConvertableResponseException if the response cannot be converted
      */
     protected abstract String coerceResponse(Object response)
-            throws InvalidResponseTypeException, NonConvertableResponseException;
+            throws InvalidResponseTypeException, NonConvertableResponseException, ResourceNotFoundException;
 
     @Override
     public ResourceReply acquire(ResourceRequest request) {
@@ -96,10 +97,19 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         Map<String, String> defaults = config.service().defaults();
         Map<String, String> requestParams = new HashMap<>(request.getParamsMap());
 
-        for (Map.Entry<String, String> entry : defaults.entrySet()) {
-            requestParams.putIfAbsent(entry.getKey(), entry.getValue());
-        }
+        addToRequestParams(requestParams, defaults);
+        addToRequestParams(requestParams, request.getCredentialsConfigurationsMap());
+        addToRequestParams(requestParams, request.getServiceConfigurationsMap());
+
         return requestParams;
+    }
+
+    private void addToRequestParams(Map<String, String> requestParams, Map<String, String> map) {
+        if (map != null) {
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                requestParams.putIfAbsent(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     protected Map<String, String> componentOptions(String name, Map<String, String> opt) {
@@ -109,7 +119,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
         for (BaseOptionModel option : options) {
             if (option.getLabel().contains("consumer") || option.getLabel().contains("common") ||
-                    option.getLabel().contains("security")) {
+                    option.getGroup().contains("common") || option.getLabel().contains("security")) {
                 opt.put(option.getName(), option.getDescription());
             }
         }
