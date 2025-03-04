@@ -244,5 +244,5 @@ export type PostApiV1ResourcesExposeResult = AxiosResponse<void>;
 export type GetApiV1ResourcesListResult = AxiosResponse<ResourceReference[]>;
 export type PutApiV1ResourcesRemoveResult = AxiosResponse<void>;
 export type PostApiV1ToolsAddResult = AxiosResponse<void>;
-export type GetApiV1ToolsListResult = AxiosResponse<void>;
+export type GetApiV1ToolsListResult = AxiosResponse<Array<ToolReference>>;
 export type PutApiV1ToolsRemoveResult = AxiosResponse<void>;
