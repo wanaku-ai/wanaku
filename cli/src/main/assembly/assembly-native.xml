@@ -14,5 +14,13 @@
             <outputDirectory>./bin</outputDirectory>
             <destName>${project.artifactId}${executable-suffix}</destName>
         </file>
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>README.md</include>
+                <include>LICENSE</include>
+            </includes>
+        </fileSet>
     </files>
 </assembly>
