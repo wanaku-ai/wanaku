@@ -14,7 +14,7 @@ import { FunctionComponent } from "react";
 import { ToolReference } from "../../models";
 
 interface ToolListProps {
-  fetchedData: ToolReference[];
+  fetchedData: ToolReference[] | string;
   onDelete: (toolName?: string) => void;
   onImport: () => void;
   onAdd: () => void;

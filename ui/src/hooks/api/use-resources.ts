@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import type { AxiosRequestConfig, AxiosResponse } from "axios";
 import {
   putApiV1ManagementTargetsResourcesConfigureService,
   putApiV1ManagementTargetsResourcesLink,
@@ -8,8 +7,13 @@ import {
   postApiV1ResourcesExpose,
   getApiV1ResourcesList,
   putApiV1ResourcesRemove,
-  GetApiV1ResourcesListResult,
-  GetApiV1ManagementTargetsResourcesListResult,
+  putApiV1ManagementTargetsResourcesConfigureServiceResponse,
+  putApiV1ManagementTargetsResourcesLinkResponse,
+  getApiV1ManagementTargetsResourcesListResponse,
+  putApiV1ManagementTargetsResourcesUnlinkResponse,
+  postApiV1ResourcesExposeResponse,
+  getApiV1ResourcesListResponse,
+  putApiV1ResourcesRemoveResponse
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ManagementTargetsResourcesConfigureServiceParams,
@@ -27,8 +31,8 @@ export const useResources = () => {
     (
       service: string,
       params?: PutApiV1ManagementTargetsResourcesConfigureServiceParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ManagementTargetsResourcesConfigureServiceResponse> => {
       return putApiV1ManagementTargetsResourcesConfigureService(service, params, options);
     },
     []
@@ -40,8 +44,8 @@ export const useResources = () => {
   const linkResource = useCallback(
     (
       params?: PutApiV1ManagementTargetsResourcesLinkParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ManagementTargetsResourcesLinkResponse> => {
       return putApiV1ManagementTargetsResourcesLink(params, options);
     },
     []
@@ -52,8 +56,8 @@ export const useResources = () => {
    */
   const listManagementResources = useCallback(
     (
-      options?: AxiosRequestConfig
-    ): Promise<GetApiV1ManagementTargetsResourcesListResult> => {
+      options?: RequestInit
+    ): Promise<getApiV1ManagementTargetsResourcesListResponse> => {
       return getApiV1ManagementTargetsResourcesList(options);
     },
     []
@@ -65,8 +69,8 @@ export const useResources = () => {
   const unlinkResource = useCallback(
     (
       params?: PutApiV1ManagementTargetsResourcesUnlinkParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ManagementTargetsResourcesUnlinkResponse> => {
       return putApiV1ManagementTargetsResourcesUnlink(params, options);
     },
     []
@@ -78,8 +82,8 @@ export const useResources = () => {
   const exposeResource = useCallback(
     (
       resourceReference: ResourceReference, // Define the proper type from your models if available.
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<postApiV1ResourcesExposeResponse> => {
       return postApiV1ResourcesExpose(resourceReference, options);
     },
     []
@@ -90,8 +94,8 @@ export const useResources = () => {
    */
   const listResources = useCallback(
     (
-      options?: AxiosRequestConfig
-    ): Promise<GetApiV1ResourcesListResult> => {
+      options?: RequestInit
+    ): Promise<getApiV1ResourcesListResponse> => {
       return getApiV1ResourcesList(options);
     },
     []
@@ -103,8 +107,8 @@ export const useResources = () => {
   const removeResource = useCallback(
     (
       params?: PutApiV1ResourcesRemoveParams, // Replace with the actual type if available from models.
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ResourcesRemoveResponse> => {
       return putApiV1ResourcesRemove(params, options);
     },
     []

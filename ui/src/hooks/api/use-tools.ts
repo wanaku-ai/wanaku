@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import type { AxiosRequestConfig, AxiosResponse } from "axios";
 import {
   putApiV1ManagementTargetsToolsConfigureService,
   putApiV1ManagementTargetsToolsLink,
@@ -8,8 +7,13 @@ import {
   postApiV1ToolsAdd,
   getApiV1ToolsList,
   putApiV1ToolsRemove,
-  GetApiV1ManagementTargetsToolsListResult,
-  GetApiV1ToolsListResult,
+  putApiV1ManagementTargetsToolsConfigureServiceResponse,
+  putApiV1ManagementTargetsToolsLinkResponse,
+  getApiV1ManagementTargetsToolsListResponse,
+  putApiV1ManagementTargetsToolsUnlinkResponse,
+  postApiV1ToolsAddResponse,
+  getApiV1ToolsListResponse,
+  putApiV1ToolsRemoveResponse
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ManagementTargetsToolsConfigureServiceParams,
@@ -27,8 +31,8 @@ export const useTools = () => {
     (
       service: string,
       params?: PutApiV1ManagementTargetsToolsConfigureServiceParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ManagementTargetsToolsConfigureServiceResponse> => {
       return putApiV1ManagementTargetsToolsConfigureService(
         service,
         params,
@@ -44,8 +48,8 @@ export const useTools = () => {
   const linkTool = useCallback(
     (
       params?: PutApiV1ManagementTargetsToolsLinkParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ManagementTargetsToolsLinkResponse> => {
       return putApiV1ManagementTargetsToolsLink(params, options);
     },
     []
@@ -56,8 +60,8 @@ export const useTools = () => {
    */
   const listManagementTools = useCallback(
     (
-      options?: AxiosRequestConfig
-    ): Promise<GetApiV1ManagementTargetsToolsListResult> => {
+      options?: RequestInit
+    ): Promise<getApiV1ManagementTargetsToolsListResponse> => {
       return getApiV1ManagementTargetsToolsList(options);
     },
     []
@@ -69,8 +73,8 @@ export const useTools = () => {
   const unlinkTool = useCallback(
     (
       params?: PutApiV1ManagementTargetsToolsUnlinkParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ManagementTargetsToolsUnlinkResponse> => {
       return putApiV1ManagementTargetsToolsUnlink(params, options);
     },
     []
@@ -82,8 +86,8 @@ export const useTools = () => {
   const addTool = useCallback(
     (
       toolReference: ToolReference,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<postApiV1ToolsAddResponse> => {
       return postApiV1ToolsAdd(toolReference, options);
     },
     []
@@ -93,7 +97,7 @@ export const useTools = () => {
    * List tools.
    */
   const listTools = useCallback(
-    (options?: AxiosRequestConfig): Promise<GetApiV1ToolsListResult> => {
+    (options?: RequestInit): Promise<getApiV1ToolsListResponse> => {
       return getApiV1ToolsList(options);
     },
     []
@@ -105,8 +109,8 @@ export const useTools = () => {
   const removeTool = useCallback(
     (
       params?: PutApiV1ToolsRemoveParams,
-      options?: AxiosRequestConfig
-    ): Promise<AxiosResponse<void>> => {
+      options?: RequestInit
+    ): Promise<putApiV1ToolsRemoveResponse> => {
       return putApiV1ToolsRemove(params, options);
     },
     []

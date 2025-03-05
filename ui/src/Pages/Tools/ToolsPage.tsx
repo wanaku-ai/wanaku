@@ -12,7 +12,7 @@ import { ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
 
 export const ToolsPage: React.FC = () => {
-  const [fetchedData, setFetchedData] = useState<ToolReference[] | null>([]);
+  const [fetchedData, setFetchedData] = useState<ToolReference[] | string>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);

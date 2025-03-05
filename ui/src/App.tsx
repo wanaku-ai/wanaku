@@ -16,12 +16,9 @@ import {
 import { Link, Outlet } from "react-router-dom";
 import "./App.scss";
 import { ExternalLinks, Links } from "./router/links.models";
-import axios from "axios";
 import wanakuLogo from "./assets/wanaku.svg";
 
 function App() {
-  axios.defaults.baseURL = VITE_API_URL;
-
   const action = (click: string) => () => {
     console.log(click);
   };
