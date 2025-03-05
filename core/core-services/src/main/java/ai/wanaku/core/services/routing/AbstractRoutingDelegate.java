@@ -1,7 +1,5 @@
 package ai.wanaku.core.services.routing;
 
-import java.util.Map;
-
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -9,7 +7,10 @@ import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.InvocationDelegate;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.services.config.WanakuRoutingConfig;
+import java.util.Map;
 import org.jboss.logging.Logger;
 
 /**
@@ -23,6 +24,9 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
 
     @Inject
     Client client;
+
+    @Inject
+    ServiceRegistry serviceRegistry;
 
 
     /**
@@ -73,5 +77,15 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     @Override
     public Map<String, String> credentialsConfigurations() {
         return config.credentials().configurations();
+    }
+
+    @Override
+    public void register(String service, String address, int port) {
+        serviceRegistry.register(ServiceTarget.toolInvoker(service, address, port), serviceConfigurations());
+    }
+
+    @Override
+    public void deregister(String service, String address, int port) {
+        serviceRegistry.deregister(service);
     }
 }

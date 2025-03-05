@@ -45,17 +45,6 @@ Then, you can launch the containers using:
 docker-compose up -d
 ```
 
-With the Wanaku MCP router up and running, then, link the tools and providers to the router:
-
-```shell
-wanaku targets tools link --service=http --target=host.docker.internal:9000
-wanaku targets tools link --service=camel-route --target=host.docker.internal:9001
-wanaku targets resources link --service=file --target=host.docker.internal:9002
-```
-
-After the tools and resource providers have been linked with the router, then you can 
-start adding tools and resources to be served via MCP using the commands described below.
-
 ### Importing a ToolSet
 
 Wanaku ToolSets are a group of tools that you can use to share with friends and colleagues and 
@@ -141,17 +130,9 @@ NOTE: For remote instances, you can use the parameter `--host` to point to the l
 
 ### Targets 
 
-Link a service provider hosted at a specific address to handle tools of a specific type.
-
-```shell
-wanaku targets tools link --service=http --target=host.docker.internal:9000
-```
-
-On the command above, it would cause all tools of type `http` to be handled by the provider available on `host.docker.internal:9000`.
-
 #### Configuring Targets 
 
-Some tools services may need to be configured before they can be run. For instance, the Kafka tool needs
+Tools services may need to be configured before they can be run. For instance, the Kafka tool needs
 to know both the address of the broker and the topic where to wait for a reply.
 
 ```shell

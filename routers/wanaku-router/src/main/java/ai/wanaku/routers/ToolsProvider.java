@@ -1,5 +1,6 @@
 package ai.wanaku.routers;
 
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import java.io.File;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,6 +32,9 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
     @Inject
     WanakuRouterConfig config;
 
+    @Inject
+    ServiceRegistry serviceRegistry;
+
     @Produces
     @IfBuildProfile(anyOf = {"dev", "test"})
     public ToolsResolver devResolver() {
@@ -41,7 +45,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
         File resourcesIndexFile = initializeResourcesIndex(config.indexesPath(), DEFAULT_TOOLS_INDEX_FILE_NAME);
         LOG.infof("Using resources index file: %s", resourcesIndexFile.getAbsolutePath());
 
-        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy());
+        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy(serviceRegistry));
     }
 
     @Produces
@@ -54,7 +58,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
 
         File resourcesIndexFile = initializeIndex();
 
-        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy());
+        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy(serviceRegistry));
     }
 
     @Override

@@ -1,24 +1,18 @@
 import { useCallback } from "react";
 import {
   putApiV1ManagementTargetsResourcesConfigureService,
-  putApiV1ManagementTargetsResourcesLink,
   getApiV1ManagementTargetsResourcesList,
-  putApiV1ManagementTargetsResourcesUnlink,
   postApiV1ResourcesExpose,
   getApiV1ResourcesList,
   putApiV1ResourcesRemove,
   putApiV1ManagementTargetsResourcesConfigureServiceResponse,
-  putApiV1ManagementTargetsResourcesLinkResponse,
   getApiV1ManagementTargetsResourcesListResponse,
-  putApiV1ManagementTargetsResourcesUnlinkResponse,
   postApiV1ResourcesExposeResponse,
   getApiV1ResourcesListResponse,
   putApiV1ResourcesRemoveResponse
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ManagementTargetsResourcesConfigureServiceParams,
-  PutApiV1ManagementTargetsResourcesLinkParams,
-  PutApiV1ManagementTargetsResourcesUnlinkParams,
   PutApiV1ResourcesRemoveParams,
   ResourceReference,
 } from "../../models";
@@ -39,19 +33,6 @@ export const useResources = () => {
   );
 
   /**
-   * Link a resource.
-   */
-  const linkResource = useCallback(
-    (
-      params?: PutApiV1ManagementTargetsResourcesLinkParams,
-      options?: RequestInit
-    ): Promise<putApiV1ManagementTargetsResourcesLinkResponse> => {
-      return putApiV1ManagementTargetsResourcesLink(params, options);
-    },
-    []
-  );
-
-  /**
    * List management resources.
    */
   const listManagementResources = useCallback(
@@ -59,19 +40,6 @@ export const useResources = () => {
       options?: RequestInit
     ): Promise<getApiV1ManagementTargetsResourcesListResponse> => {
       return getApiV1ManagementTargetsResourcesList(options);
-    },
-    []
-  );
-
-  /**
-   * Unlink a resource.
-   */
-  const unlinkResource = useCallback(
-    (
-      params?: PutApiV1ManagementTargetsResourcesUnlinkParams,
-      options?: RequestInit
-    ): Promise<putApiV1ManagementTargetsResourcesUnlinkResponse> => {
-      return putApiV1ManagementTargetsResourcesUnlink(params, options);
     },
     []
   );
@@ -116,9 +84,7 @@ export const useResources = () => {
 
   return {
     configureService,
-    linkResource,
     listManagementResources,
-    unlinkResource,
     exposeResource,
     listResources,
     removeResource,

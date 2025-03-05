@@ -81,6 +81,7 @@
         <module>cli</module>
         <module>services</module>
         <module>archetypes</module>
+        <module>core/core-service-discovery</module>
     </modules>
 
     <profiles>

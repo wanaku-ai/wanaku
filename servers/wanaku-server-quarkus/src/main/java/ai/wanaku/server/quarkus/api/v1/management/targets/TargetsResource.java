@@ -28,22 +28,6 @@ public class TargetsResource {
     @Inject
     TargetsBean targetsBean;
 
-    @Path("/tools/link")
-    @PUT
-    @Consumes(MediaType.TEXT_PLAIN)
-    public Response toolsLink(@QueryParam("service") String service, @QueryParam("target") String target) throws WanakuException, IOException {
-        targetsBean.toolsLink(service, target);
-        return Response.ok().build();
-    }
-
-    @Path("/tools/unlink")
-    @PUT
-    @Consumes(MediaType.TEXT_PLAIN)
-    public Response toolsUnlink(@QueryParam("service") String service) throws IOException {
-        targetsBean.toolsUnlink(service);
-        return Response.ok().build();
-    }
-
     @Path("/tools/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
@@ -57,22 +41,6 @@ public class TargetsResource {
     public Response toolsConfigure(@RestPath("service") String service, @QueryParam("option") String option,
                                    @QueryParam("value") String value) throws IOException {
         targetsBean.configureTools(service, option, value);
-        return Response.ok().build();
-    }
-
-    @Path("/resources/link")
-    @PUT
-    @Consumes(MediaType.TEXT_PLAIN)
-    public Response resourcesLink(@QueryParam("service") String service, @QueryParam("target") String target) throws IOException {
-        targetsBean.resourcesLink(service, target);
-        return Response.ok().build();
-    }
-
-    @Path("/resources/unlink")
-    @PUT
-    @Consumes(MediaType.TEXT_PLAIN)
-    public Response resourcesUnlink(@QueryParam("service") String service) throws IOException {
-        targetsBean.resourcesUnlink(service);
         return Response.ok().build();
     }
 

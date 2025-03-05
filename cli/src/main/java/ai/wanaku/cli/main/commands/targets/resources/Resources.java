@@ -4,7 +4,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "resources",
-        description = "Manage targets", subcommands = { ResourcesLink.class, ResourcesUnlink.class, ResourcesLinkedList.class, ResourcesConfigure.class })
+        description = "Manage targets", subcommands = { ResourcesLinkedList.class, ResourcesConfigure.class })
 public class Resources extends BaseCommand {
     @Override
     public void run() {
