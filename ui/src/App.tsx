@@ -1,9 +1,4 @@
-import {
-  IbmDynamicRouteServer,
-  LogoGithub,
-  Notification,
-  Search,
-} from "@carbon/icons-react";
+import { LogoGithub, Notification, Search } from "@carbon/icons-react";
 import {
   Column,
   Content,
@@ -22,6 +17,7 @@ import { Link, Outlet } from "react-router-dom";
 import "./App.scss";
 import { ExternalLinks, Links } from "./router/links.models";
 import axios from "axios";
+import wanakuLogo from "./assets/wanaku.svg";
 
 function App() {
   axios.defaults.baseURL = VITE_API_URL;
@@ -43,7 +39,11 @@ function App() {
               aria-expanded={isSideNavExpanded}
             />
             <HeaderName href={ExternalLinks.Home} target="_blank" prefix="">
-              <IbmDynamicRouteServer size={32} style={{ marginRight: "1em" }} />{" "}
+              <img
+                src={wanakuLogo}
+                alt="Wanaku"
+                style={{ marginRight: "1em" }}
+              />
               Wanaku
             </HeaderName>
 
