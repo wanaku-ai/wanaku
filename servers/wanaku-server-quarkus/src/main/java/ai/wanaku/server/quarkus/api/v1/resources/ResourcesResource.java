@@ -1,7 +1,6 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
-import java.util.List;
-
+import ai.wanaku.api.types.ResourceReference;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -13,9 +12,14 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
-import ai.wanaku.api.types.ResourceReference;
+
+import java.util.List;
 
 @ApplicationScoped
 @Path("/api/v1/resources")
@@ -41,6 +45,11 @@ public class ResourcesResource {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @APIResponses({
+            @APIResponse(responseCode = "200", content = @Content(
+                    schema = @Schema(type = SchemaType.ARRAY, implementation = ResourceReference.class))),
+            @APIResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     public Response list() {
         try {
             List<ResourceReference> list = resourcesBean.list();

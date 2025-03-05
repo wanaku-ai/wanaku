@@ -21,8 +21,11 @@ import {
 import { Link, Outlet } from "react-router-dom";
 import "./App.scss";
 import { ExternalLinks, Links } from "./router/links.models";
+import axios from "axios";
 
 function App() {
+  axios.defaults.baseURL = VITE_API_URL;
+
   const action = (click: string) => () => {
     console.log(click);
   };
@@ -50,6 +53,9 @@ function App() {
               </HeaderMenuItem>
               <HeaderMenuItem as={Link} to={Links.Tools}>
                 Tools
+              </HeaderMenuItem>
+              <HeaderMenuItem as={Link} to={Links.Resources}>
+                Resources
               </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>

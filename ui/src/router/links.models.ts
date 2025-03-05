@@ -1,6 +1,7 @@
 export const enum Links {
   Home = '/', // Dashboard
   Tools = '/tools',
+  Resources = "/resources"
 }
 
 export const enum ExternalLinks {

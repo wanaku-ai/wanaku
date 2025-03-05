@@ -214,7 +214,26 @@
       "get" : {
         "responses" : {
           "200" : {
-            "description" : "OK"
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ResourceReference"
+                  }
+                }
+              }
+            }
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
           }
         },
         "summary" : "List",
