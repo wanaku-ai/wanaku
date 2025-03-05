@@ -13,7 +13,7 @@ import { ResourceReference } from "../../models";
 import { useResources } from "../../hooks/api/use-resources";
 
 export const ResourcesPage: React.FC = () => {
-  const [fetchedData, setFetchedData] = useState<ResourceReference[] | string>(
+  const [fetchedData, setFetchedData] = useState<ResourceReference[]>(
     []
   );
   const [isLoading, setIsLoading] = useState(true);
@@ -21,7 +21,7 @@ export const ResourcesPage: React.FC = () => {
 
   useEffect(() => {
     listResources().then((result) => {
-      setFetchedData(result.data);
+      setFetchedData(result.data as ResourceReference[]);
       setIsLoading(false);
     });
   }, [listResources]);
