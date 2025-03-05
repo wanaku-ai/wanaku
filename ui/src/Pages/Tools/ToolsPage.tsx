@@ -1,4 +1,4 @@
-import { Add, Upload } from "@carbon/icons-react";
+import { Add, Upload, TrashCan } from "@carbon/icons-react";
 import {
   Button,
   Column,
@@ -18,47 +18,24 @@ import {
   ToastNotification,
 } from "@carbon/react";
 import { FunctionComponent, useState, useEffect } from "react";
-import { WanakuLinks } from "../../router/links.models";
-
-interface ToolType {
-  name: string;
-  type: string;
-  description: string;
-  uri: string;
-  inputSchema: {
-    type: string;
-    properties: {
-      count: {
-        type: string;
-        description: string;
-      };
-    };
-    required: string[];
-  };
-}
+import { useTools } from "../../hooks/api/use-tools";
+import { PutApiV1ToolsRemoveParams, ToolReference } from "../../models";
 
 export const ToolsPage: FunctionComponent = () => {
-  const [fetchedData, setFetchedData] = useState<ToolType[] | null>(null);
+  const [fetchedData, setFetchedData] = useState<ToolReference[] | null>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { listTools, addTool, removeTool } = useTools();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(WanakuLinks.ListTools);
-        const data = await response.json();
-        setFetchedData(data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    listTools().then((result) => {
+      setFetchedData(result.data);
+      setIsLoading(false);
+    });
+  }, [listTools]);
 
-    fetchData();
-  }, []);
   useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
@@ -67,46 +44,17 @@ export const ToolsPage: FunctionComponent = () => {
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
+
   if (isLoading) return <div>Loading...</div>;
-  const testData: ToolType[] = [
-    {
-      name: "meow-facts",
-      description: "Retrieve random facts about cats",
-      uri: "https://meowfacts.herokuapp.com?count={count}",
-      type: "http",
-      inputSchema: {
-        type: "object",
-        properties: {
-          count: {
-            type: "int",
-            description: "The count of facts to retrieve",
-          },
-        },
-        required: ["count"],
-      },
-    },
-    {
-      name: "dog-facts",
-      description: "Retrieve random facts about dogs",
-      uri: "https://dogapi.dog/api/v2/facts?limit={count}",
-      type: "http",
-      inputSchema: {
-        type: "object",
-        properties: {
-          count: {
-            type: "int",
-            description: "The count of facts to retrieve",
-          },
-        },
-        required: ["count"],
-      },
-    },
+
+  const headers = [
+    "Name",
+    "Type",
+    "Description",
+    "URI",
+    "Input Schema",
+    "Actions",
   ];
-
-  const data = fetchedData || testData;
-
-  console.log(data);
-  const headers = ["Name", "Type", "Description", "URI", "Input Schema"];
   let ToolsList = <></>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatInputSchema = (inputSchema: any) => {
@@ -119,7 +67,7 @@ export const ToolsPage: FunctionComponent = () => {
         .join("\n")
     );
   };
-  if (data) {
+  if (fetchedData) {
     ToolsList = (
       <Grid>
         <Column lg={12} md={8} sm={4}>
@@ -152,7 +100,7 @@ export const ToolsPage: FunctionComponent = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((row: ToolType) => (
+              {fetchedData.map((row: ToolReference) => (
                 <TableRow key={row.name}>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.type}</TableCell>
@@ -162,6 +110,14 @@ export const ToolsPage: FunctionComponent = () => {
                   </TableCell>
                   <TableCell style={{ fontSize: "14px" }}>
                     {formatInputSchema(row.inputSchema)}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      kind="ghost"
+                      renderIcon={TrashCan}
+                      iconDescription="Delete"
+                      onClick={() => handleDeleteTool(row.name)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -188,7 +144,7 @@ export const ToolsPage: FunctionComponent = () => {
       (document.getElementById("input-schema") as HTMLInputElement).value
     );
 
-    const newTool = {
+    const newTool: ToolReference = {
       name,
       description,
       uri,
@@ -197,30 +153,16 @@ export const ToolsPage: FunctionComponent = () => {
     };
 
     try {
-      const response = await fetch("/api/v1/tools/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newTool),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setErrorMessage(errorData.message || "Failed to add tool");
-        return;
-      }
-
+      await addTool(newTool);
       setIsModalOpen(false);
       setErrorMessage(null);
-      // Optionally, refetch the tools list to update the table
-      const updatedData = await fetch(WanakuLinks.ListTools);
-      const data = await updatedData.json();
-      setFetchedData(data);
+      listTools().then((result) => {
+        setFetchedData(result.data);
+      });
     } catch (error) {
       console.error("Error adding tool:", error);
+      setIsModalOpen(false);
       setErrorMessage("Error adding tool: The tool name must be unique");
-      setIsImportModalOpen(false);
     }
   };
 
@@ -232,24 +174,33 @@ export const ToolsPage: FunctionComponent = () => {
     setErrorMessage(null);
 
     for (const tool of toolset) {
-      const response = await fetch(WanakuLinks.AddTool, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(tool),
-      });
-
-      if (!response.ok) {
+      try {
+        await addTool(tool);
+      } catch (error) {
+        console.error("Error adding tool:", error);
         setErrorMessage(`Failed to add tool: ${tool.name}`);
       }
     }
 
     setIsImportModalOpen(false);
-    // Optionally, refetch the tools list to update the table
-    const updatedData = await fetch(WanakuLinks.ListTools);
-    const data = await updatedData.json();
-    setFetchedData(data);
+    listTools().then((result) => {
+      setFetchedData(result.data);
+    });
+  };
+
+  const handleDeleteTool = async (toolName?: string) => {
+    try {
+      const tool: PutApiV1ToolsRemoveParams = {
+        tool: toolName,
+      };
+      await removeTool(tool);
+      listTools().then((result) => {
+        setFetchedData(result.data);
+      });
+    } catch (error) {
+      console.error("Error deleting tool:", error);
+      setErrorMessage(`Failed to delete tool: ${toolName}`);
+    }
   };
 
   return (

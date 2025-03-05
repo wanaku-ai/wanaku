@@ -14,7 +14,14 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
+
+import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.ToolReference;
 
 @ApplicationScoped
@@ -41,6 +48,11 @@ public class ToolsResource {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @APIResponses({
+            @APIResponse(responseCode = "200", content = @Content(
+                    schema = @Schema(type = SchemaType.ARRAY, implementation = ToolReference.class))),
+            @APIResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     public Response list() {
         try {
             List<ToolReference> list = toolsBean.list();
