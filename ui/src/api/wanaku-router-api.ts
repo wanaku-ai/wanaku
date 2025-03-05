@@ -4,9 +4,6 @@
  * wanaku-router API
  * OpenAPI spec version: 0.0.2-SNAPSHOT
  */
-import * as axios from "axios";
-import type { AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   GetApiV1ManagementTargetsResourcesList200,
   GetApiV1ManagementTargetsToolsList200,
@@ -22,22 +19,52 @@ import type {
   ToolReference,
 } from "../models";
 
+import { customFetch } from "../custom-fetch";
 /**
  * @summary Resources Configure
  */
-export const putApiV1ManagementTargetsResourcesConfigureService = <
-  TData = AxiosResponse<void>,
->(
+export type putApiV1ManagementTargetsResourcesConfigureServiceResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ManagementTargetsResourcesConfigureServiceResponseComposite =
+  putApiV1ManagementTargetsResourcesConfigureServiceResponse200;
+
+export type putApiV1ManagementTargetsResourcesConfigureServiceResponse =
+  putApiV1ManagementTargetsResourcesConfigureServiceResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ManagementTargetsResourcesConfigureServiceUrl = (
   service: string,
   params?: PutApiV1ManagementTargetsResourcesConfigureServiceParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(
-    `/api/v1/management/targets/resources/configure/${service}`,
-    undefined,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/management/targets/resources/configure/${service}?${stringifiedParams}`
+    : `/api/v1/management/targets/resources/configure/${service}`;
+};
+
+export const putApiV1ManagementTargetsResourcesConfigureService = async (
+  service: string,
+  params?: PutApiV1ManagementTargetsResourcesConfigureServiceParams,
+  options?: RequestInit,
+): Promise<putApiV1ManagementTargetsResourcesConfigureServiceResponse> => {
+  return customFetch<putApiV1ManagementTargetsResourcesConfigureServiceResponse>(
+    getPutApiV1ManagementTargetsResourcesConfigureServiceUrl(service, params),
     {
       ...options,
-      params: { ...params, ...options?.params },
+      method: "PUT",
     },
   );
 };
@@ -45,18 +72,46 @@ export const putApiV1ManagementTargetsResourcesConfigureService = <
 /**
  * @summary Resources Link
  */
-export const putApiV1ManagementTargetsResourcesLink = <
-  TData = AxiosResponse<void>,
->(
+export type putApiV1ManagementTargetsResourcesLinkResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ManagementTargetsResourcesLinkResponseComposite =
+  putApiV1ManagementTargetsResourcesLinkResponse200;
+
+export type putApiV1ManagementTargetsResourcesLinkResponse =
+  putApiV1ManagementTargetsResourcesLinkResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ManagementTargetsResourcesLinkUrl = (
   params?: PutApiV1ManagementTargetsResourcesLinkParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(
-    `/api/v1/management/targets/resources/link`,
-    undefined,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/management/targets/resources/link?${stringifiedParams}`
+    : `/api/v1/management/targets/resources/link`;
+};
+
+export const putApiV1ManagementTargetsResourcesLink = async (
+  params?: PutApiV1ManagementTargetsResourcesLinkParams,
+  options?: RequestInit,
+): Promise<putApiV1ManagementTargetsResourcesLinkResponse> => {
+  return customFetch<putApiV1ManagementTargetsResourcesLinkResponse>(
+    getPutApiV1ManagementTargetsResourcesLinkUrl(params),
     {
       ...options,
-      params: { ...params, ...options?.params },
+      method: "PUT",
     },
   );
 };
@@ -64,32 +119,78 @@ export const putApiV1ManagementTargetsResourcesLink = <
 /**
  * @summary Resources List
  */
-export const getApiV1ManagementTargetsResourcesList = <
-  TData = AxiosResponse<GetApiV1ManagementTargetsResourcesList200>,
->(
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.get(
-    `/api/v1/management/targets/resources/list`,
-    options,
+export type getApiV1ManagementTargetsResourcesListResponse200 = {
+  data: GetApiV1ManagementTargetsResourcesList200;
+  status: 200;
+};
+
+export type getApiV1ManagementTargetsResourcesListResponseComposite =
+  getApiV1ManagementTargetsResourcesListResponse200;
+
+export type getApiV1ManagementTargetsResourcesListResponse =
+  getApiV1ManagementTargetsResourcesListResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementTargetsResourcesListUrl = () => {
+  return `/api/v1/management/targets/resources/list`;
+};
+
+export const getApiV1ManagementTargetsResourcesList = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementTargetsResourcesListResponse> => {
+  return customFetch<getApiV1ManagementTargetsResourcesListResponse>(
+    getGetApiV1ManagementTargetsResourcesListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
   );
 };
 
 /**
  * @summary Resources Unlink
  */
-export const putApiV1ManagementTargetsResourcesUnlink = <
-  TData = AxiosResponse<void>,
->(
+export type putApiV1ManagementTargetsResourcesUnlinkResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ManagementTargetsResourcesUnlinkResponseComposite =
+  putApiV1ManagementTargetsResourcesUnlinkResponse200;
+
+export type putApiV1ManagementTargetsResourcesUnlinkResponse =
+  putApiV1ManagementTargetsResourcesUnlinkResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ManagementTargetsResourcesUnlinkUrl = (
   params?: PutApiV1ManagementTargetsResourcesUnlinkParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(
-    `/api/v1/management/targets/resources/unlink`,
-    undefined,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/management/targets/resources/unlink?${stringifiedParams}`
+    : `/api/v1/management/targets/resources/unlink`;
+};
+
+export const putApiV1ManagementTargetsResourcesUnlink = async (
+  params?: PutApiV1ManagementTargetsResourcesUnlinkParams,
+  options?: RequestInit,
+): Promise<putApiV1ManagementTargetsResourcesUnlinkResponse> => {
+  return customFetch<putApiV1ManagementTargetsResourcesUnlinkResponse>(
+    getPutApiV1ManagementTargetsResourcesUnlinkUrl(params),
     {
       ...options,
-      params: { ...params, ...options?.params },
+      method: "PUT",
     },
   );
 };
@@ -97,19 +198,48 @@ export const putApiV1ManagementTargetsResourcesUnlink = <
 /**
  * @summary Tools Configure
  */
-export const putApiV1ManagementTargetsToolsConfigureService = <
-  TData = AxiosResponse<void>,
->(
+export type putApiV1ManagementTargetsToolsConfigureServiceResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ManagementTargetsToolsConfigureServiceResponseComposite =
+  putApiV1ManagementTargetsToolsConfigureServiceResponse200;
+
+export type putApiV1ManagementTargetsToolsConfigureServiceResponse =
+  putApiV1ManagementTargetsToolsConfigureServiceResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ManagementTargetsToolsConfigureServiceUrl = (
   service: string,
   params?: PutApiV1ManagementTargetsToolsConfigureServiceParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(
-    `/api/v1/management/targets/tools/configure/${service}`,
-    undefined,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/management/targets/tools/configure/${service}?${stringifiedParams}`
+    : `/api/v1/management/targets/tools/configure/${service}`;
+};
+
+export const putApiV1ManagementTargetsToolsConfigureService = async (
+  service: string,
+  params?: PutApiV1ManagementTargetsToolsConfigureServiceParams,
+  options?: RequestInit,
+): Promise<putApiV1ManagementTargetsToolsConfigureServiceResponse> => {
+  return customFetch<putApiV1ManagementTargetsToolsConfigureServiceResponse>(
+    getPutApiV1ManagementTargetsToolsConfigureServiceUrl(service, params),
     {
       ...options,
-      params: { ...params, ...options?.params },
+      method: "PUT",
     },
   );
 };
@@ -117,42 +247,125 @@ export const putApiV1ManagementTargetsToolsConfigureService = <
 /**
  * @summary Tools Link
  */
-export const putApiV1ManagementTargetsToolsLink = <TData = AxiosResponse<void>>(
+export type putApiV1ManagementTargetsToolsLinkResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ManagementTargetsToolsLinkResponseComposite =
+  putApiV1ManagementTargetsToolsLinkResponse200;
+
+export type putApiV1ManagementTargetsToolsLinkResponse =
+  putApiV1ManagementTargetsToolsLinkResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ManagementTargetsToolsLinkUrl = (
   params?: PutApiV1ManagementTargetsToolsLinkParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(`/api/v1/management/targets/tools/link`, undefined, {
-    ...options,
-    params: { ...params, ...options?.params },
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
   });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/management/targets/tools/link?${stringifiedParams}`
+    : `/api/v1/management/targets/tools/link`;
+};
+
+export const putApiV1ManagementTargetsToolsLink = async (
+  params?: PutApiV1ManagementTargetsToolsLinkParams,
+  options?: RequestInit,
+): Promise<putApiV1ManagementTargetsToolsLinkResponse> => {
+  return customFetch<putApiV1ManagementTargetsToolsLinkResponse>(
+    getPutApiV1ManagementTargetsToolsLinkUrl(params),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
 };
 
 /**
  * @summary Tool List
  */
-export const getApiV1ManagementTargetsToolsList = <
-  TData = AxiosResponse<GetApiV1ManagementTargetsToolsList200>,
->(
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.get(`/api/v1/management/targets/tools/list`, options);
+export type getApiV1ManagementTargetsToolsListResponse200 = {
+  data: GetApiV1ManagementTargetsToolsList200;
+  status: 200;
+};
+
+export type getApiV1ManagementTargetsToolsListResponseComposite =
+  getApiV1ManagementTargetsToolsListResponse200;
+
+export type getApiV1ManagementTargetsToolsListResponse =
+  getApiV1ManagementTargetsToolsListResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementTargetsToolsListUrl = () => {
+  return `/api/v1/management/targets/tools/list`;
+};
+
+export const getApiV1ManagementTargetsToolsList = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementTargetsToolsListResponse> => {
+  return customFetch<getApiV1ManagementTargetsToolsListResponse>(
+    getGetApiV1ManagementTargetsToolsListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 };
 
 /**
  * @summary Tools Unlink
  */
-export const putApiV1ManagementTargetsToolsUnlink = <
-  TData = AxiosResponse<void>,
->(
+export type putApiV1ManagementTargetsToolsUnlinkResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ManagementTargetsToolsUnlinkResponseComposite =
+  putApiV1ManagementTargetsToolsUnlinkResponse200;
+
+export type putApiV1ManagementTargetsToolsUnlinkResponse =
+  putApiV1ManagementTargetsToolsUnlinkResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ManagementTargetsToolsUnlinkUrl = (
   params?: PutApiV1ManagementTargetsToolsUnlinkParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(
-    `/api/v1/management/targets/tools/unlink`,
-    undefined,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/management/targets/tools/unlink?${stringifiedParams}`
+    : `/api/v1/management/targets/tools/unlink`;
+};
+
+export const putApiV1ManagementTargetsToolsUnlink = async (
+  params?: PutApiV1ManagementTargetsToolsUnlinkParams,
+  options?: RequestInit,
+): Promise<putApiV1ManagementTargetsToolsUnlinkResponse> => {
+  return customFetch<putApiV1ManagementTargetsToolsUnlinkResponse>(
+    getPutApiV1ManagementTargetsToolsUnlinkUrl(params),
     {
       ...options,
-      params: { ...params, ...options?.params },
+      method: "PUT",
     },
   );
 };
@@ -160,89 +373,230 @@ export const putApiV1ManagementTargetsToolsUnlink = <
 /**
  * @summary Expose
  */
-export const postApiV1ResourcesExpose = <TData = AxiosResponse<void>>(
+export type postApiV1ResourcesExposeResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type postApiV1ResourcesExposeResponseComposite =
+  postApiV1ResourcesExposeResponse200;
+
+export type postApiV1ResourcesExposeResponse =
+  postApiV1ResourcesExposeResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ResourcesExposeUrl = () => {
+  return `/api/v1/resources/expose`;
+};
+
+export const postApiV1ResourcesExpose = async (
   resourceReference: ResourceReference,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.post(
-    `/api/v1/resources/expose`,
-    resourceReference,
-    options,
+  options?: RequestInit,
+): Promise<postApiV1ResourcesExposeResponse> => {
+  return customFetch<postApiV1ResourcesExposeResponse>(
+    getPostApiV1ResourcesExposeUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(resourceReference),
+    },
   );
 };
 
 /**
  * @summary List
  */
-export const getApiV1ResourcesList = <
-  TData = AxiosResponse<ResourceReference[]>,
->(
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.get(`/api/v1/resources/list`, options);
+export type getApiV1ResourcesListResponse200 = {
+  data: ResourceReference[];
+  status: 200;
+};
+
+export type getApiV1ResourcesListResponse500 = {
+  data: string;
+  status: 500;
+};
+
+export type getApiV1ResourcesListResponseComposite =
+  | getApiV1ResourcesListResponse200
+  | getApiV1ResourcesListResponse500;
+
+export type getApiV1ResourcesListResponse =
+  getApiV1ResourcesListResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ResourcesListUrl = () => {
+  return `/api/v1/resources/list`;
+};
+
+export const getApiV1ResourcesList = async (
+  options?: RequestInit,
+): Promise<getApiV1ResourcesListResponse> => {
+  return customFetch<getApiV1ResourcesListResponse>(
+    getGetApiV1ResourcesListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 };
 
 /**
  * @summary Remove
  */
-export const putApiV1ResourcesRemove = <TData = AxiosResponse<void>>(
+export type putApiV1ResourcesRemoveResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ResourcesRemoveResponseComposite =
+  putApiV1ResourcesRemoveResponse200;
+
+export type putApiV1ResourcesRemoveResponse =
+  putApiV1ResourcesRemoveResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ResourcesRemoveUrl = (
   params?: PutApiV1ResourcesRemoveParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(`/api/v1/resources/remove`, undefined, {
-    ...options,
-    params: { ...params, ...options?.params },
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
   });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/resources/remove?${stringifiedParams}`
+    : `/api/v1/resources/remove`;
+};
+
+export const putApiV1ResourcesRemove = async (
+  params?: PutApiV1ResourcesRemoveParams,
+  options?: RequestInit,
+): Promise<putApiV1ResourcesRemoveResponse> => {
+  return customFetch<putApiV1ResourcesRemoveResponse>(
+    getPutApiV1ResourcesRemoveUrl(params),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
 };
 
 /**
  * @summary Add
  */
-export const postApiV1ToolsAdd = <TData = AxiosResponse<void>>(
+export type postApiV1ToolsAddResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type postApiV1ToolsAddResponseComposite = postApiV1ToolsAddResponse200;
+
+export type postApiV1ToolsAddResponse = postApiV1ToolsAddResponseComposite & {
+  headers: Headers;
+};
+
+export const getPostApiV1ToolsAddUrl = () => {
+  return `/api/v1/tools/add`;
+};
+
+export const postApiV1ToolsAdd = async (
   toolReference: ToolReference,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.post(`/api/v1/tools/add`, toolReference, options);
+  options?: RequestInit,
+): Promise<postApiV1ToolsAddResponse> => {
+  return customFetch<postApiV1ToolsAddResponse>(getPostApiV1ToolsAddUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(toolReference),
+  });
 };
 
 /**
  * @summary List
  */
-export const getApiV1ToolsList = <TData = AxiosResponse<ToolReference[]>>(
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.get(`/api/v1/tools/list`, options);
+export type getApiV1ToolsListResponse200 = {
+  data: ToolReference[];
+  status: 200;
+};
+
+export type getApiV1ToolsListResponse500 = {
+  data: string;
+  status: 500;
+};
+
+export type getApiV1ToolsListResponseComposite =
+  | getApiV1ToolsListResponse200
+  | getApiV1ToolsListResponse500;
+
+export type getApiV1ToolsListResponse = getApiV1ToolsListResponseComposite & {
+  headers: Headers;
+};
+
+export const getGetApiV1ToolsListUrl = () => {
+  return `/api/v1/tools/list`;
+};
+
+export const getApiV1ToolsList = async (
+  options?: RequestInit,
+): Promise<getApiV1ToolsListResponse> => {
+  return customFetch<getApiV1ToolsListResponse>(getGetApiV1ToolsListUrl(), {
+    ...options,
+    method: "GET",
+  });
 };
 
 /**
  * @summary Remove
  */
-export const putApiV1ToolsRemove = <TData = AxiosResponse<void>>(
-  params?: PutApiV1ToolsRemoveParams,
-  options?: AxiosRequestConfig,
-): Promise<TData> => {
-  return axios.default.put(`/api/v1/tools/remove`, undefined, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
+export type putApiV1ToolsRemoveResponse200 = {
+  data: void;
+  status: 200;
 };
 
-export type PutApiV1ManagementTargetsResourcesConfigureServiceResult =
-  AxiosResponse<void>;
-export type PutApiV1ManagementTargetsResourcesLinkResult = AxiosResponse<void>;
-export type GetApiV1ManagementTargetsResourcesListResult =
-  AxiosResponse<GetApiV1ManagementTargetsResourcesList200>;
-export type PutApiV1ManagementTargetsResourcesUnlinkResult =
-  AxiosResponse<void>;
-export type PutApiV1ManagementTargetsToolsConfigureServiceResult =
-  AxiosResponse<void>;
-export type PutApiV1ManagementTargetsToolsLinkResult = AxiosResponse<void>;
-export type GetApiV1ManagementTargetsToolsListResult =
-  AxiosResponse<GetApiV1ManagementTargetsToolsList200>;
-export type PutApiV1ManagementTargetsToolsUnlinkResult = AxiosResponse<void>;
-export type PostApiV1ResourcesExposeResult = AxiosResponse<void>;
-export type GetApiV1ResourcesListResult = AxiosResponse<ResourceReference[]>;
-export type PutApiV1ResourcesRemoveResult = AxiosResponse<void>;
-export type PostApiV1ToolsAddResult = AxiosResponse<void>;
-export type GetApiV1ToolsListResult = AxiosResponse<ToolReference[]>;
-export type PutApiV1ToolsRemoveResult = AxiosResponse<void>;
+export type putApiV1ToolsRemoveResponseComposite =
+  putApiV1ToolsRemoveResponse200;
+
+export type putApiV1ToolsRemoveResponse =
+  putApiV1ToolsRemoveResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ToolsRemoveUrl = (
+  params?: PutApiV1ToolsRemoveParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/tools/remove?${stringifiedParams}`
+    : `/api/v1/tools/remove`;
+};
+
+export const putApiV1ToolsRemove = async (
+  params?: PutApiV1ToolsRemoveParams,
+  options?: RequestInit,
+): Promise<putApiV1ToolsRemoveResponse> => {
+  return customFetch<putApiV1ToolsRemoveResponse>(
+    getPutApiV1ToolsRemoveUrl(params),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
+};

@@ -8,12 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@carbon/react";
-import { FunctionComponent, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ResourceReference } from "../../models";
 import { useResources } from "../../hooks/api/use-resources";
 
-export const ResourcesPage: FunctionComponent = () => {
-  const [fetchedData, setFetchedData] = useState<ResourceReference[] | null>(
+export const ResourcesPage: React.FC = () => {
+  const [fetchedData, setFetchedData] = useState<ResourceReference[] | string>(
     []
   );
   const [isLoading, setIsLoading] = useState(true);
