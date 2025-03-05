@@ -1,15 +1,4 @@
-import { Add, Upload, TrashCan } from "@carbon/icons-react";
 import {
-  Button,
-  Column,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tile,
   Modal,
   TextInput,
   Select,
@@ -20,6 +9,7 @@ import {
 import { FunctionComponent, useState, useEffect } from "react";
 import { useTools } from "../../hooks/api/use-tools";
 import { PutApiV1ToolsRemoveParams, ToolReference } from "../../models";
+import { ToolsTable } from "./ToolsTable";
 
 export const ToolsPage: FunctionComponent = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[] | null>([]);
@@ -46,90 +36,6 @@ export const ToolsPage: FunctionComponent = () => {
   }, [errorMessage]);
 
   if (isLoading) return <div>Loading...</div>;
-
-  const headers = [
-    "Name",
-    "Type",
-    "Description",
-    "URI",
-    "Input Schema",
-    "Actions",
-  ];
-  let ToolsList = <></>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formatInputSchema = (inputSchema: any) => {
-    return (
-      Object.entries(inputSchema.properties)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map(([key, value]: [string, any]) => {
-          return `${key}: ${value.type} - ${value.description}`;
-        })
-        .join("\n")
-    );
-  };
-  if (fetchedData) {
-    ToolsList = (
-      <Grid>
-        <Column lg={12} md={8} sm={4}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-            }}
-          >
-            <Button
-              kind="secondary"
-              renderIcon={Upload}
-              onClick={() => setIsImportModalOpen(true)}
-            >
-              Import Toolset
-            </Button>
-            <Button renderIcon={Add} onClick={() => setIsModalOpen(true)}>
-              Add Tool
-            </Button>
-          </div>
-          <Table aria-label="Tools table">
-            <TableHead>
-              <TableRow>
-                {headers.map((header) => (
-                  <TableHeader id={header} key={header}>
-                    {header}
-                  </TableHeader>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {fetchedData.map((row: ToolReference) => (
-                <TableRow key={row.name}>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.type}</TableCell>
-                  <TableCell>{row.description}</TableCell>
-                  <TableCell style={{ wordWrap: "break-word" }}>
-                    {row.uri}
-                  </TableCell>
-                  <TableCell style={{ fontSize: "14px" }}>
-                    {formatInputSchema(row.inputSchema)}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      kind="ghost"
-                      renderIcon={TrashCan}
-                      iconDescription="Delete"
-                      onClick={() => handleDeleteTool(row.name)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Column>
-        <Column sm={4}>
-          <Tile></Tile>
-        </Column>
-      </Grid>
-    );
-  }
 
   const handleAddTool = async () => {
     const name = (document.getElementById("tool-name") as HTMLInputElement)
@@ -221,7 +127,14 @@ export const ToolsPage: FunctionComponent = () => {
         by utilizing these tools. Each tool is uniquely identified by a name and
         defined with an input schema outlining the expected parameters.
       </p>
-      {ToolsList}
+      {fetchedData && (
+        <ToolsTable
+          fetchedData={fetchedData}
+          onDelete={handleDeleteTool}
+          onImport={() => setIsImportModalOpen(true)}
+          onAdd={() => setIsModalOpen(true)}
+        />
+      )}
       <Modal
         open={isModalOpen}
         modalHeading="Add a Tool"

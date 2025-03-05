@@ -204,6 +204,11 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ToolReference"
+        "500":
+          content:
+            application/json:
+              schema:
+                type: string
       summary: List
       tags:
       - Tools Resource
