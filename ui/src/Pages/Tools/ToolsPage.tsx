@@ -22,7 +22,7 @@ import { useTools } from "../../hooks/api/use-tools";
 import { PutApiV1ToolsRemoveParams, ToolReference } from "../../models";
 
 export const ToolsPage: FunctionComponent = () => {
-  const [fetchedData, setFetchedData] = useState<ToolReference[] | null>(null);
+  const [fetchedData, setFetchedData] = useState<ToolReference[] | null>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -47,8 +47,6 @@ export const ToolsPage: FunctionComponent = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
-  const data = fetchedData || [];
-
   const headers = [
     "Name",
     "Type",
@@ -69,7 +67,7 @@ export const ToolsPage: FunctionComponent = () => {
         .join("\n")
     );
   };
-  if (data) {
+  if (fetchedData) {
     ToolsList = (
       <Grid>
         <Column lg={12} md={8} sm={4}>
@@ -102,7 +100,7 @@ export const ToolsPage: FunctionComponent = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((row: ToolReference) => (
+              {fetchedData.map((row: ToolReference) => (
                 <TableRow key={row.name}>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.type}</TableCell>
