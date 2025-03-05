@@ -6,11 +6,7 @@
  */
 import type {
   PutApiV1ManagementTargetsResourcesConfigureServiceParams,
-  PutApiV1ManagementTargetsResourcesLinkParams,
-  PutApiV1ManagementTargetsResourcesUnlinkParams,
   PutApiV1ManagementTargetsToolsConfigureServiceParams,
-  PutApiV1ManagementTargetsToolsLinkParams,
-  PutApiV1ManagementTargetsToolsUnlinkParams,
   PutApiV1ResourcesRemoveParams,
   PutApiV1ToolsRemoveParams,
   ResourceReference,
@@ -71,53 +67,6 @@ export const putApiV1ManagementTargetsResourcesConfigureService = async (
 };
 
 /**
- * @summary Resources Link
- */
-export type putApiV1ManagementTargetsResourcesLinkResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type putApiV1ManagementTargetsResourcesLinkResponseComposite =
-  putApiV1ManagementTargetsResourcesLinkResponse200;
-
-export type putApiV1ManagementTargetsResourcesLinkResponse =
-  putApiV1ManagementTargetsResourcesLinkResponseComposite & {
-    headers: Headers;
-  };
-
-export const getPutApiV1ManagementTargetsResourcesLinkUrl = (
-  params?: PutApiV1ManagementTargetsResourcesLinkParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/management/targets/resources/link?${stringifiedParams}`
-    : `/api/v1/management/targets/resources/link`;
-};
-
-export const putApiV1ManagementTargetsResourcesLink = async (
-  params?: PutApiV1ManagementTargetsResourcesLinkParams,
-  options?: RequestInit,
-): Promise<putApiV1ManagementTargetsResourcesLinkResponse> => {
-  return customFetch<putApiV1ManagementTargetsResourcesLinkResponse>(
-    getPutApiV1ManagementTargetsResourcesLinkUrl(params),
-    {
-      ...options,
-      method: "PUT",
-    },
-  );
-};
-
-/**
  * @summary Resources List
  */
 export type getApiV1ManagementTargetsResourcesListResponse200 = {
@@ -145,53 +94,6 @@ export const getApiV1ManagementTargetsResourcesList = async (
     {
       ...options,
       method: "GET",
-    },
-  );
-};
-
-/**
- * @summary Resources Unlink
- */
-export type putApiV1ManagementTargetsResourcesUnlinkResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type putApiV1ManagementTargetsResourcesUnlinkResponseComposite =
-  putApiV1ManagementTargetsResourcesUnlinkResponse200;
-
-export type putApiV1ManagementTargetsResourcesUnlinkResponse =
-  putApiV1ManagementTargetsResourcesUnlinkResponseComposite & {
-    headers: Headers;
-  };
-
-export const getPutApiV1ManagementTargetsResourcesUnlinkUrl = (
-  params?: PutApiV1ManagementTargetsResourcesUnlinkParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/management/targets/resources/unlink?${stringifiedParams}`
-    : `/api/v1/management/targets/resources/unlink`;
-};
-
-export const putApiV1ManagementTargetsResourcesUnlink = async (
-  params?: PutApiV1ManagementTargetsResourcesUnlinkParams,
-  options?: RequestInit,
-): Promise<putApiV1ManagementTargetsResourcesUnlinkResponse> => {
-  return customFetch<putApiV1ManagementTargetsResourcesUnlinkResponse>(
-    getPutApiV1ManagementTargetsResourcesUnlinkUrl(params),
-    {
-      ...options,
-      method: "PUT",
     },
   );
 };
@@ -246,53 +148,6 @@ export const putApiV1ManagementTargetsToolsConfigureService = async (
 };
 
 /**
- * @summary Tools Link
- */
-export type putApiV1ManagementTargetsToolsLinkResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type putApiV1ManagementTargetsToolsLinkResponseComposite =
-  putApiV1ManagementTargetsToolsLinkResponse200;
-
-export type putApiV1ManagementTargetsToolsLinkResponse =
-  putApiV1ManagementTargetsToolsLinkResponseComposite & {
-    headers: Headers;
-  };
-
-export const getPutApiV1ManagementTargetsToolsLinkUrl = (
-  params?: PutApiV1ManagementTargetsToolsLinkParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/management/targets/tools/link?${stringifiedParams}`
-    : `/api/v1/management/targets/tools/link`;
-};
-
-export const putApiV1ManagementTargetsToolsLink = async (
-  params?: PutApiV1ManagementTargetsToolsLinkParams,
-  options?: RequestInit,
-): Promise<putApiV1ManagementTargetsToolsLinkResponse> => {
-  return customFetch<putApiV1ManagementTargetsToolsLinkResponse>(
-    getPutApiV1ManagementTargetsToolsLinkUrl(params),
-    {
-      ...options,
-      method: "PUT",
-    },
-  );
-};
-
-/**
  * @summary Tool List
  */
 export type getApiV1ManagementTargetsToolsListResponse200 = {
@@ -320,53 +175,6 @@ export const getApiV1ManagementTargetsToolsList = async (
     {
       ...options,
       method: "GET",
-    },
-  );
-};
-
-/**
- * @summary Tools Unlink
- */
-export type putApiV1ManagementTargetsToolsUnlinkResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type putApiV1ManagementTargetsToolsUnlinkResponseComposite =
-  putApiV1ManagementTargetsToolsUnlinkResponse200;
-
-export type putApiV1ManagementTargetsToolsUnlinkResponse =
-  putApiV1ManagementTargetsToolsUnlinkResponseComposite & {
-    headers: Headers;
-  };
-
-export const getPutApiV1ManagementTargetsToolsUnlinkUrl = (
-  params?: PutApiV1ManagementTargetsToolsUnlinkParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/management/targets/tools/unlink?${stringifiedParams}`
-    : `/api/v1/management/targets/tools/unlink`;
-};
-
-export const putApiV1ManagementTargetsToolsUnlink = async (
-  params?: PutApiV1ManagementTargetsToolsUnlinkParams,
-  options?: RequestInit,
-): Promise<putApiV1ManagementTargetsToolsUnlinkResponse> => {
-  return customFetch<putApiV1ManagementTargetsToolsUnlinkResponse>(
-    getPutApiV1ManagementTargetsToolsUnlinkUrl(params),
-    {
-      ...options,
-      method: "PUT",
     },
   );
 };

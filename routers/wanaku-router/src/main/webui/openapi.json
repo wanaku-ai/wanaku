@@ -216,30 +216,6 @@
         "tags" : [ "Targets Resource" ]
       }
     },
-    "/api/v1/management/targets/resources/link" : {
-      "put" : {
-        "parameters" : [ {
-          "name" : "service",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "target",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        },
-        "summary" : "Resources Link",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
     "/api/v1/management/targets/resources/list" : {
       "get" : {
         "responses" : {
@@ -255,24 +231,6 @@
           }
         },
         "summary" : "Resources List",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
-    "/api/v1/management/targets/resources/unlink" : {
-      "put" : {
-        "parameters" : [ {
-          "name" : "service",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        },
-        "summary" : "Resources Unlink",
         "tags" : [ "Targets Resource" ]
       }
     },
@@ -307,34 +265,6 @@
         "tags" : [ "Targets Resource" ]
       }
     },
-    "/api/v1/management/targets/tools/link" : {
-      "put" : {
-        "parameters" : [ {
-          "name" : "service",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "target",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : { }
-          }
-        },
-        "summary" : "Tools Link",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
     "/api/v1/management/targets/tools/list" : {
       "get" : {
         "responses" : {
@@ -350,24 +280,6 @@
           }
         },
         "summary" : "Tool List",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
-    "/api/v1/management/targets/tools/unlink" : {
-      "put" : {
-        "parameters" : [ {
-          "name" : "service",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        },
-        "summary" : "Tools Unlink",
         "tags" : [ "Targets Resource" ]
       }
     },

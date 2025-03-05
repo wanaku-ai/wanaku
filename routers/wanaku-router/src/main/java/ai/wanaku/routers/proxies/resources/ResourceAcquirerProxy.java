@@ -10,7 +10,7 @@ import ai.wanaku.core.exchange.InquirerGrpc;
 import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.mcp.providers.ResourceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.routers.proxies.ResourceProxy;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -27,9 +27,15 @@ import org.jboss.logging.Logger;
 public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);
 
+    private final ServiceRegistry serviceRegistry;
+
+    public ResourceAcquirerProxy(ServiceRegistry serviceRegistry) {
+        this.serviceRegistry = serviceRegistry;
+    }
+
     @Override
     public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-        Service service = ResourceRegistry.getInstance().getEntryForService(mcpResource.getType());
+        Service service = serviceRegistry.getService(mcpResource.getType());
         if (service == null) {
             String message = String.format("There is no service registered for service %s", mcpResource.getType());
             LOG.error(message);

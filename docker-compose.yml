@@ -1,6 +1,11 @@
 version: '3'
 
 services:
+  valkey:
+    image: valkey/valkey
+    ports:
+      - "6379:6379"
+
   wanaku-routing-http-service:
     image: quay.io/wanaku/wanaku-routing-http-service
     ports:

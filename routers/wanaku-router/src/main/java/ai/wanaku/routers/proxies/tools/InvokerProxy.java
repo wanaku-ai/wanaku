@@ -26,9 +26,15 @@ import org.jboss.logging.Logger;
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
 
+    private final ServiceRegistry serviceRegistry;
+
+    public InvokerProxy(ServiceRegistry serviceRegistry) {
+        this.serviceRegistry = serviceRegistry;
+    }
+
     @Override
     public ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
-        Service service = ServiceRegistry.getInstance().getEntryForService(toolReference.getType());
+        Service service = serviceRegistry.getService(toolReference.getType());
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }

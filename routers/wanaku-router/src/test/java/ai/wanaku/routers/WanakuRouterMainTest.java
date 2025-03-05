@@ -1,5 +1,6 @@
 package ai.wanaku.routers;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
+@QuarkusTestResource(ValkeyResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class WanakuRouterMainTest {

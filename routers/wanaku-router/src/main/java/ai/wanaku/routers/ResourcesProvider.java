@@ -1,14 +1,15 @@
 package ai.wanaku.routers;
 
-import java.io.File;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.routers.proxies.resources.ResourceAcquirerProxy;
 import ai.wanaku.routers.resolvers.WanakuResourceResolver;
+import java.io.File;
 import picocli.CommandLine;
 
 import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_RESOURCES_INDEX_FILE_NAME;
@@ -21,6 +22,9 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
     @Inject
     CommandLine.ParseResult parseResult;
 
+    @Inject
+    ServiceRegistry serviceRegistry;
+
     @Produces
     @Override
     ResourceResolver getResolver() {
@@ -29,7 +33,7 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
         }
 
         File resourcesIndexFile = initializeIndex();
-        return new WanakuResourceResolver(resourcesIndexFile, new ResourceAcquirerProxy());
+        return new WanakuResourceResolver(resourcesIndexFile, new ResourceAcquirerProxy(serviceRegistry));
     }
 
 

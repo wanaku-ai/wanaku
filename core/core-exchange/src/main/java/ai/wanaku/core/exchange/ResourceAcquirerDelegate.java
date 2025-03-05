@@ -3,7 +3,7 @@ package ai.wanaku.core.exchange;
 /**
  * A delegate that can be used by services that provide resources
  */
-public interface ResourceAcquirerDelegate extends ConfigurableDelegate {
+public interface ResourceAcquirerDelegate extends ConfigurableDelegate, RegisterAware {
 
     /**
      * Acquire the resource and provide it to the requester

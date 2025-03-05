@@ -1,24 +1,18 @@
 import { useCallback } from "react";
 import {
   putApiV1ManagementTargetsToolsConfigureService,
-  putApiV1ManagementTargetsToolsLink,
   getApiV1ManagementTargetsToolsList,
-  putApiV1ManagementTargetsToolsUnlink,
   postApiV1ToolsAdd,
   getApiV1ToolsList,
   putApiV1ToolsRemove,
   putApiV1ManagementTargetsToolsConfigureServiceResponse,
-  putApiV1ManagementTargetsToolsLinkResponse,
   getApiV1ManagementTargetsToolsListResponse,
-  putApiV1ManagementTargetsToolsUnlinkResponse,
   postApiV1ToolsAddResponse,
   getApiV1ToolsListResponse,
   putApiV1ToolsRemoveResponse
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ManagementTargetsToolsConfigureServiceParams,
-  PutApiV1ManagementTargetsToolsLinkParams,
-  PutApiV1ManagementTargetsToolsUnlinkParams,
   PutApiV1ToolsRemoveParams,
   ToolReference,
 } from "../../models";
@@ -43,19 +37,6 @@ export const useTools = () => {
   );
 
   /**
-   * Link a tool.
-   */
-  const linkTool = useCallback(
-    (
-      params?: PutApiV1ManagementTargetsToolsLinkParams,
-      options?: RequestInit
-    ): Promise<putApiV1ManagementTargetsToolsLinkResponse> => {
-      return putApiV1ManagementTargetsToolsLink(params, options);
-    },
-    []
-  );
-
-  /**
    * List management tools.
    */
   const listManagementTools = useCallback(
@@ -63,19 +44,6 @@ export const useTools = () => {
       options?: RequestInit
     ): Promise<getApiV1ManagementTargetsToolsListResponse> => {
       return getApiV1ManagementTargetsToolsList(options);
-    },
-    []
-  );
-
-  /**
-   * Unlink a tool.
-   */
-  const unlinkTool = useCallback(
-    (
-      params?: PutApiV1ManagementTargetsToolsUnlinkParams,
-      options?: RequestInit
-    ): Promise<putApiV1ManagementTargetsToolsUnlinkResponse> => {
-      return putApiV1ManagementTargetsToolsUnlink(params, options);
     },
     []
   );
@@ -118,9 +86,7 @@ export const useTools = () => {
 
   return {
     configureService,
-    linkTool,
     listManagementTools,
-    unlinkTool,
     addTool,
     listTools,
     removeTool,

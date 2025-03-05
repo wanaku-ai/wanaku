@@ -1,18 +1,19 @@
 package ai.wanaku.core.services.provider;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.camel.catalog.CamelCatalog;
 import org.apache.camel.catalog.DefaultCamelCatalog;
 import org.apache.camel.tooling.model.BaseOptionModel;
@@ -30,6 +31,9 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Inject
     ResourceConsumer consumer;
+
+    @Inject
+    ServiceRegistry serviceRegistry;
 
     /**
      * Gets the endpoint URI.
@@ -125,5 +129,15 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         }
 
         return opt;
+    }
+
+    @Override
+    public void register(String service, String address, int port) {
+        serviceRegistry.register(ServiceTarget.provider(service, address, port), serviceConfigurations());
+    }
+
+    @Override
+    public void deregister(String service, String address, int port) {
+        serviceRegistry.deregister(service);
     }
 }
