@@ -1,20 +1,20 @@
+import React, { useState, useEffect } from "react";
 import {
+  ToastNotification,
   Modal,
   TextInput,
   Select,
   SelectItem,
   TextArea,
-  ToastNotification,
 } from "@carbon/react";
-import { FunctionComponent, useState, useEffect } from "react";
 import { useTools } from "../../hooks/api/use-tools";
-import { PutApiV1ToolsRemoveParams, ToolReference } from "../../models";
+import { ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
 
-export const ToolsPage: FunctionComponent = () => {
+export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[] | null>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { listTools, addTool, removeTool } = useTools();
@@ -37,49 +37,24 @@ export const ToolsPage: FunctionComponent = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
-  const handleAddTool = async () => {
-    const name = (document.getElementById("tool-name") as HTMLInputElement)
-      .value;
-    const description = (
-      document.getElementById("tool-description") as HTMLInputElement
-    ).value;
-    const uri = (document.getElementById("tool-uri") as HTMLInputElement).value;
-    const type = (document.getElementById("tool-type") as HTMLSelectElement)
-      .value;
-    const inputSchema = JSON.parse(
-      (document.getElementById("input-schema") as HTMLInputElement).value
-    );
-
-    const newTool: ToolReference = {
-      name,
-      description,
-      uri,
-      type,
-      inputSchema,
-    };
-
+  const handleAddTool = async (newTool: ToolReference) => {
     try {
       await addTool(newTool);
-      setIsModalOpen(false);
+      setIsAddModalOpen(false);
       setErrorMessage(null);
       listTools().then((result) => {
         setFetchedData(result.data);
       });
     } catch (error) {
       console.error("Error adding tool:", error);
-      setIsModalOpen(false);
+      setIsAddModalOpen(false);
       setErrorMessage("Error adding tool: The tool name must be unique");
     }
   };
 
-  const handleImportToolset = async () => {
-    const toolsetJson = (
-      document.getElementById("toolset-json") as HTMLTextAreaElement
-    ).value;
-    const toolset = JSON.parse(toolsetJson);
+  const handleImportToolset = async (tools: ToolReference[]) => {
     setErrorMessage(null);
-
-    for (const tool of toolset) {
+    for (const tool of tools) {
       try {
         await addTool(tool);
       } catch (error) {
@@ -87,7 +62,6 @@ export const ToolsPage: FunctionComponent = () => {
         setErrorMessage(`Failed to add tool: ${tool.name}`);
       }
     }
-
     setIsImportModalOpen(false);
     listTools().then((result) => {
       setFetchedData(result.data);
@@ -96,10 +70,7 @@ export const ToolsPage: FunctionComponent = () => {
 
   const handleDeleteTool = async (toolName?: string) => {
     try {
-      const tool: PutApiV1ToolsRemoveParams = {
-        tool: toolName,
-      };
-      await removeTool(tool);
+      await removeTool({ tool: toolName });
       listTools().then((result) => {
         setFetchedData(result.data);
       });
@@ -132,61 +103,144 @@ export const ToolsPage: FunctionComponent = () => {
           fetchedData={fetchedData}
           onDelete={handleDeleteTool}
           onImport={() => setIsImportModalOpen(true)}
-          onAdd={() => setIsModalOpen(true)}
+          onAdd={() => setIsAddModalOpen(true)}
         />
       )}
-      <Modal
-        open={isModalOpen}
-        modalHeading="Add a Tool"
-        primaryButtonText="Add"
-        secondaryButtonText="Cancel"
-        onRequestClose={() => setIsModalOpen(false)}
-        onRequestSubmit={handleAddTool}
-      >
-        <TextInput
-          id="tool-name"
-          labelText="Tool Name"
-          placeholder="e.g. meow-facts"
+      {isAddModalOpen && (
+        <AddToolModal
+          onRequestClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddTool}
         />
-        <TextInput
-          id="tool-description"
-          labelText="Description"
-          placeholder="e.g. Retrieve random facts about cats"
+      )}
+      {isImportModalOpen && (
+        <ImportToolsetModal
+          onRequestClose={() => setIsImportModalOpen(false)}
+          onSubmit={handleImportToolset}
         />
-        <TextInput
-          id="tool-uri"
-          labelText="URI"
-          placeholder="e.g. https://meowfacts.herokuapp.com?count={count}"
-        />
-        <Select id="tool-type" defaultValue="http" labelText="Type">
-          <SelectItem value="http" text="HTTP" />
-          <SelectItem value="kafka" text="Kafka" />
-          <SelectItem
-            value="camel-route"
-            text="Camel Route (for prototyping)"
-          />
-        </Select>
-        <TextInput
-          id="input-schema"
-          labelText="Input Schema"
-          placeholder='e.g. {"type": "object", "properties": {"count": {"type": "int", "description": "The count of facts to retrieve"}}, "required": ["count"]}'
-        />
-      </Modal>
-      <Modal
-        open={isImportModalOpen}
-        modalHeading="Import Toolset"
-        primaryButtonText="Import"
-        secondaryButtonText="Cancel"
-        onRequestClose={() => setIsImportModalOpen(false)}
-        onRequestSubmit={handleImportToolset}
-      >
-        <TextArea
-          id="toolset-json"
-          labelText="Toolset JSON"
-          placeholder="Paste your JSON array here"
-          rows={10}
-        />
-      </Modal>
+      )}
     </div>
+  );
+};
+
+interface AddToolModalProps {
+  onRequestClose: () => void;
+  onSubmit: (newTool: ToolReference) => void;
+}
+
+const AddToolModal: React.FC<AddToolModalProps> = ({
+  onRequestClose,
+  onSubmit,
+}) => {
+  const [toolName, setToolName] = useState("");
+  const [description, setDescription] = useState("");
+  const [uri, setUri] = useState("");
+  const [toolType, setToolType] = useState("http");
+  const [inputSchema, setInputSchema] = useState("");
+
+  const handleSubmit = () => {
+    try {
+      const schema = JSON.parse(inputSchema);
+      onSubmit({
+        name: toolName,
+        description,
+        uri,
+        type: toolType,
+        inputSchema: schema,
+      });
+    } catch (error) {
+      console.error("Invalid JSON in input schema:", error);
+    }
+  };
+
+  return (
+    <Modal
+      open={true}
+      modalHeading="Add a Tool"
+      primaryButtonText="Add"
+      secondaryButtonText="Cancel"
+      onRequestClose={onRequestClose}
+      onRequestSubmit={handleSubmit}
+    >
+      <TextInput
+        id="tool-name"
+        labelText="Tool Name"
+        placeholder="e.g. meow-facts"
+        value={toolName}
+        onChange={(e) => setToolName(e.target.value)}
+      />
+      <TextInput
+        id="tool-description"
+        labelText="Description"
+        placeholder="e.g. Retrieve random facts about cats"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <TextInput
+        id="tool-uri"
+        labelText="URI"
+        placeholder="e.g. https://meowfacts.herokuapp.com?count={count}"
+        value={uri}
+        onChange={(e) => setUri(e.target.value)}
+      />
+      <Select
+        id="tool-type"
+        labelText="Type"
+        defaultValue="http"
+        value={toolType}
+        onChange={(e) => setToolType(e.target.value)}
+      >
+        <SelectItem value="http" text="HTTP" />
+        <SelectItem value="kafka" text="Kafka" />
+        <SelectItem value="camel-route" text="Camel Route (for prototyping)" />
+      </Select>
+      <TextInput
+        id="input-schema"
+        labelText="Input Schema"
+        placeholder='e.g. {"type": "object", "properties": {"count": {"type": "int", "description": "The count of facts to retrieve"}}, "required": ["count"]}'
+        value={inputSchema}
+        onChange={(e) => setInputSchema(e.target.value)}
+      />
+    </Modal>
+  );
+};
+
+interface ImportToolsetModalProps {
+  onRequestClose: () => void;
+  onSubmit: (tools: ToolReference[]) => void;
+}
+
+export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({
+  onRequestClose,
+  onSubmit,
+}) => {
+  const [toolsetJson, setToolsetJson] = useState("");
+
+  const handleSubmit = () => {
+    try {
+      const tools = JSON.parse(toolsetJson);
+      onSubmit(tools);
+    } catch (error) {
+      console.error("Invalid JSON for toolset:", error);
+    }
+  };
+
+  return (
+    <Modal
+      open={true}
+      modalHeading="Import Toolset"
+      primaryButtonText="Import"
+      secondaryButtonText="Cancel"
+      onRequestClose={onRequestClose}
+      onRequestSubmit={handleSubmit}
+    >
+      <TextArea
+        id="toolset-json"
+        labelText="Toolset JSON"
+        placeholder="Paste your JSON array here"
+        rows={10}
+        value={toolsetJson}
+        onChange={(e) => setToolsetJson(e.target.value)}
+      />
+    </Modal>
   );
 };
