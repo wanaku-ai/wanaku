@@ -218,19 +218,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ResourceReference"
-                  }
-                }
-              }
-            }
-          },
-          "500" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string"
+                  "$ref" : "#/components/schemas/WanakuResponseListResourceReference"
                 }
               }
             }
@@ -448,6 +436,28 @@
           },
           "inputSchema" : {
             "$ref" : "#/components/schemas/InputSchema"
+          }
+        }
+      },
+      "WanakuError" : {
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "WanakuResponseListResourceReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ResourceReference"
+            }
           }
         }
       }

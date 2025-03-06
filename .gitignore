@@ -13,6 +13,7 @@ out
 .idea/libraries/
 .idea/encodings.xml
 .idea/vcs.xml
+.idea/uiDesigner.xml
 *.iws
 *.iml
 *.ipr

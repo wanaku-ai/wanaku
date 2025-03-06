@@ -17,6 +17,7 @@ import type {
   PutApiV1ToolsRemoveParams,
   ResourceReference,
   ToolReference,
+  WanakuResponseListResourceReference,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
@@ -409,18 +410,12 @@ export const postApiV1ResourcesExpose = async (
  * @summary List
  */
 export type getApiV1ResourcesListResponse200 = {
-  data: ResourceReference[];
+  data: WanakuResponseListResourceReference;
   status: 200;
 };
 
-export type getApiV1ResourcesListResponse500 = {
-  data: string;
-  status: 500;
-};
-
 export type getApiV1ResourcesListResponseComposite =
-  | getApiV1ResourcesListResponse200
-  | getApiV1ResourcesListResponse500;
+  getApiV1ResourcesListResponse200;
 
 export type getApiV1ResourcesListResponse =
   getApiV1ResourcesListResponseComposite & {

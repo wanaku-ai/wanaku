@@ -21,7 +21,7 @@ export const ResourcesPage: React.FC = () => {
 
   useEffect(() => {
     listResources().then((result) => {
-      setFetchedData(result.data as ResourceReference[]);
+      setFetchedData(result.data.data!);
       setIsLoading(false);
     });
   }, [listResources]);

@@ -56,10 +56,10 @@ public class ResourcesResourceTest {
                 .when().get("/api/v1/resources/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("size()", is(3),
-                        "[0].name", is("resource1.jpg"),
-                        "[0].type", is("image/jpeg"),
-                        "[0].description", is("A sample image resource"));
+                .body("data.size()", is(3),
+                        "data[0].name", is("resource1.jpg"),
+                        "data[0].type", is("image/jpeg"),
+                        "data[0].description", is("A sample image resource"));
     }
 
     @Order(3)
@@ -74,9 +74,9 @@ public class ResourcesResourceTest {
                 .when().get("/api/v1/resources/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("size()", is(2),
-                        "[0].name", is("resource1.jpg"),
-                        "[0].type", is("image/jpeg"),
-                        "[0].description", is("A sample image resource"));
+                .body("data.size()", is(2),
+                        "data[0].name", is("resource1.jpg"),
+                        "data[0].type", is("image/jpeg"),
+                        "data[0].description", is("A sample image resource"));
     }
 }
