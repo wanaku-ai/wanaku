@@ -19,6 +19,7 @@ package ai.wanaku.core.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +54,18 @@ public class IndexHelper {
     private static <T> List<T> loadIndex(File indexFile, Class<T> clazz) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(indexFile,
+                objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
+    }
+
+    /**
+     * Load an index
+     * @param indexURL
+     * @return
+     * @throws Exception
+     */
+    private static <T> List<T> loadIndex(URL indexURL, Class<T> clazz) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(indexURL,
                 objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
@@ -98,6 +111,16 @@ public class IndexHelper {
      */
     public static List<ToolReference> loadToolsIndex(File indexFile) throws Exception {
         return loadIndex(indexFile, ToolReference.class);
+    }
+
+    /**
+     * Load an index of tools
+     * @param indexURL
+     * @return
+     * @throws Exception
+     */
+    public static List<ToolReference> loadToolsIndex(URL indexURL) throws Exception {
+        return loadIndex(indexURL, ToolReference.class);
     }
 
     /**
