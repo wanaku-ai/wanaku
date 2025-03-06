@@ -63,19 +63,20 @@ can be easily imported into the router.
 Wanaku [comes with a couple of ToolSets](https://github.com/wanaku-ai/wanaku-toolsets) that you can import into your router and use them to try 
 it and see how it works.
 
-The first step is to download a toolset: 
+The first step is to import toolset into the router using:
 
 ```shell
-wget -c https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/refs/heads/main/toolsets/currency.json
+wanaku tools import https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/refs/heads/main/toolsets/currency.json
 ```
 
-Then, you can import them into the router using: 
+if you already have a toolset definition on your local machine you can import it using:
 
 ```shell
-wanaku tools import /path/to/currency.json
+wanaku tools import /path/to/the/toolsets/currency.json
 ```
 
-You can check if they were imported by running the following command: 
+
+Now you can check if they were imported by running the following command: 
 
 ```shell
 wanaku tools list

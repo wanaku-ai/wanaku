@@ -1,9 +1,10 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import java.io.File;
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 
+import ai.wanaku.cli.main.converter.URLConverter;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
@@ -20,9 +21,8 @@ public class ToolsImport extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-
-    @CommandLine.Parameters(description="Path to the toolset", arity = "1..1")
-    private String path;
+    @CommandLine.Parameters(description="location to the toolset, can be a local path or an URL", arity = "1..1", converter = URLConverter.class)
+    private URL location;
 
     ToolsService toolsService;
 
@@ -33,8 +33,7 @@ public class ToolsImport extends BaseCommand {
                     .baseUri(URI.create(host))
                     .build(ToolsService.class);
 
-            File indexFile = new File(path);
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
+            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(location);
 
             for (var toolReference : toolReferences) {
                 toolsService.add(toolReference);
@@ -43,10 +42,5 @@ public class ToolsImport extends BaseCommand {
             LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
             throw new RuntimeException(e);
         }
-
-
-
-
     }
-
 }
