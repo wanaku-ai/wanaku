@@ -1,6 +1,7 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
 import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.server.quarkus.api.v1.models.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -18,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import java.util.List;
 
@@ -45,18 +47,13 @@ public class ResourcesResource {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponses({
-            @APIResponse(responseCode = "200", content = @Content(
-                    schema = @Schema(type = SchemaType.ARRAY, implementation = ResourceReference.class))),
-            @APIResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = String.class)))
-    })
-    public Response list() {
+    public RestResponse<WanakuResponse<List<ResourceReference>>> list() {
         try {
             List<ResourceReference> list = resourcesBean.list();
-            return Response.ok(list).build();
+            return RestResponse.ok(new WanakuResponse<>(list));
         } catch (Exception e) {
             LOG.errorf(e, "Failed to list resources: %s", e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to list resources").build();
+            throw new RuntimeException("Failed to list resources", e);
         }
     }
 

@@ -25,3 +25,5 @@ export * from "./putApiV1ToolsRemoveParams";
 export * from "./resourceReference";
 export * from "./service";
 export * from "./toolReference";
+export * from "./wanakuError";
+export * from "./wanakuResponseListResourceReference";
