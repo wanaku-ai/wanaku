@@ -26,4 +26,8 @@ export * from "./resourceReference";
 export * from "./service";
 export * from "./toolReference";
 export * from "./wanakuError";
+export * from "./wanakuResponse";
 export * from "./wanakuResponseListResourceReference";
+export * from "./wanakuResponseListToolReference";
+export * from "./wanakuResponseMapStringService";
+export * from "./wanakuResponseMapStringServiceData";

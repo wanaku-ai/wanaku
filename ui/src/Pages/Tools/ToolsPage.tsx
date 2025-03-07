@@ -21,7 +21,7 @@ export const ToolsPage: React.FC = () => {
 
   useEffect(() => {
     listTools().then((result) => {
-      setFetchedData(result.data as ToolReference[]);
+      setFetchedData(result.data.data!);
       setIsLoading(false);
     });
   }, [listTools]);
@@ -43,7 +43,7 @@ export const ToolsPage: React.FC = () => {
       setIsAddModalOpen(false);
       setErrorMessage(null);
       listTools().then((result) => {
-        setFetchedData(result.data as ToolReference[]);
+        setFetchedData(result.data.data!);
       });
     } catch (error) {
       console.error("Error adding tool:", error);
@@ -64,7 +64,7 @@ export const ToolsPage: React.FC = () => {
     }
     setIsImportModalOpen(false);
     listTools().then((result) => {
-      setFetchedData(result.data as ToolReference[]);
+      setFetchedData(result.data.data!);
     });
   };
 
@@ -72,7 +72,7 @@ export const ToolsPage: React.FC = () => {
     try {
       await removeTool({ tool: toolName });
       listTools().then((result) => {
-        setFetchedData(result.data as ToolReference[]);
+        setFetchedData(result.data.data!);
       });
     } catch (error) {
       console.error("Error deleting tool:", error);

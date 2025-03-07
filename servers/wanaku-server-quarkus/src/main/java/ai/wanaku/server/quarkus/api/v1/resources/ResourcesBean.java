@@ -3,6 +3,7 @@ package ai.wanaku.server.quarkus.api.v1.resources;
 import java.io.File;
 import java.util.List;
 
+import ai.wanaku.api.exceptions.WanakuException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -88,8 +89,7 @@ public class ResourcesBean {
             resourceReferences.removeIf(resourceReference -> resourceReference.getName().equals(name));
             IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to remove resource from file: %s", indexFile);
-            throw new RuntimeException(e);
+            throw new WanakuException(String.format("Failed to remove resource from file: %s", indexFile));
         }
     }
 }

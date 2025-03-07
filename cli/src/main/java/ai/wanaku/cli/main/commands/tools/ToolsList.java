@@ -27,7 +27,7 @@ public class ToolsList extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
 
-        List<ToolReference> list = toolsService.list();
+        List<ToolReference> list = toolsService.list().getEntity().data();
         PrettyPrinter.printTools(list);
     }
 

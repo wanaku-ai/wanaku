@@ -5,8 +5,6 @@
  * OpenAPI spec version: 0.0.2-SNAPSHOT
  */
 import type {
-  GetApiV1ManagementTargetsResourcesList200,
-  GetApiV1ManagementTargetsToolsList200,
   PutApiV1ManagementTargetsResourcesConfigureServiceParams,
   PutApiV1ManagementTargetsResourcesLinkParams,
   PutApiV1ManagementTargetsResourcesUnlinkParams,
@@ -18,6 +16,8 @@ import type {
   ResourceReference,
   ToolReference,
   WanakuResponseListResourceReference,
+  WanakuResponseListToolReference,
+  WanakuResponseMapStringService,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
@@ -121,7 +121,7 @@ export const putApiV1ManagementTargetsResourcesLink = async (
  * @summary Resources List
  */
 export type getApiV1ManagementTargetsResourcesListResponse200 = {
-  data: GetApiV1ManagementTargetsResourcesList200;
+  data: WanakuResponseMapStringService;
   status: 200;
 };
 
@@ -296,7 +296,7 @@ export const putApiV1ManagementTargetsToolsLink = async (
  * @summary Tool List
  */
 export type getApiV1ManagementTargetsToolsListResponse200 = {
-  data: GetApiV1ManagementTargetsToolsList200;
+  data: WanakuResponseMapStringService;
   status: 200;
 };
 
@@ -519,18 +519,11 @@ export const postApiV1ToolsAdd = async (
  * @summary List
  */
 export type getApiV1ToolsListResponse200 = {
-  data: ToolReference[];
+  data: WanakuResponseListToolReference;
   status: 200;
 };
 
-export type getApiV1ToolsListResponse500 = {
-  data: string;
-  status: 500;
-};
-
-export type getApiV1ToolsListResponseComposite =
-  | getApiV1ToolsListResponse200
-  | getApiV1ToolsListResponse500;
+export type getApiV1ToolsListResponseComposite = getApiV1ToolsListResponse200;
 
 export type getApiV1ToolsListResponse = getApiV1ToolsListResponseComposite & {
   headers: Headers;

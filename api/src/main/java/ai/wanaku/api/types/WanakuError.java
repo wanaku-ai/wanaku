@@ -1,4 +1,4 @@
-package ai.wanaku.server.quarkus.api.v1.models;
+package ai.wanaku.api.types;
 
 public record WanakuError(String message) {
     public WanakuError() {

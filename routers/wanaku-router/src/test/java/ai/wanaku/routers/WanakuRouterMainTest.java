@@ -104,7 +104,7 @@ public class WanakuRouterMainTest {
                 .when().get("/api/v1/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("size()", is(0));
+                .body("data.size()", is(0));
 
 
         try (McpClient mcpClient = createClient()) {
