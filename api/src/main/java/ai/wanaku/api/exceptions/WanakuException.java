@@ -1,6 +1,6 @@
 package ai.wanaku.api.exceptions;
 
-public class WanakuException extends Exception {
+public class WanakuException extends RuntimeException {
     public WanakuException() {
     }
 

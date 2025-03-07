@@ -2,6 +2,7 @@ package ai.wanaku.cli.main.services;
 
 import java.util.Map;
 
+import ai.wanaku.api.types.WanakuResponse;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -29,7 +30,7 @@ public interface LinkService {
     @Path("/tools/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    Map<String, Service> toolsList();
+    WanakuResponse<Map<String, Service>> toolsList();
 
     @Path("/tools/configure/{service}")
     @PUT
@@ -49,7 +50,7 @@ public interface LinkService {
     @Path("/resources/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    Map<String, Service> resourcesList();
+    WanakuResponse<Map<String, Service>> resourcesList();
 
     @Path("/resources/configure/{service}")
     @PUT

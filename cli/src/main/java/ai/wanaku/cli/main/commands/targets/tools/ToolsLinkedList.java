@@ -14,7 +14,7 @@ public class ToolsLinkedList extends AbstractTargetsList {
     public void run() {
         initService();
 
-        Map<String, Service> list = linkService.toolsList();
+        Map<String, Service> list = linkService.toolsList().data();
         PrettyPrinter.printTargets(list);
     }
 }

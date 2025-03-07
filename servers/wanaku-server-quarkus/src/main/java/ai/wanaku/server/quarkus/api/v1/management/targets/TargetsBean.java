@@ -1,25 +1,25 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-
 import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Service;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import io.quarkus.runtime.StartupEvent;
-import org.jboss.logging.Logger;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.providers.ResourceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.IndexHelper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 
 import static ai.wanaku.api.types.management.Service.newService;
 
@@ -34,7 +34,7 @@ public class TargetsBean {
     ToolsResolver toolsResolver;
 
     public void configureTools(String service, String option, String value)
-            throws IOException, ConfigurationNotFoundException, ServiceNotFoundException {
+            throws IOException {
         Service entry = ServiceRegistry.getInstance().getEntryForService(service);
         Configuration configuration = configurationForService(service, option, entry);
 
@@ -44,7 +44,7 @@ public class TargetsBean {
     }
 
     public void configureResources(String service, String option, String value)
-            throws IOException, ConfigurationNotFoundException, ServiceNotFoundException {
+            throws IOException {
         Service entry = ResourceRegistry.getInstance().getEntryForService(service);
         Configuration configuration = configurationForService(service, option, entry);
 
@@ -53,8 +53,7 @@ public class TargetsBean {
         IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), ResourceRegistry.getInstance().getEntries());
     }
 
-    private static Configuration configurationForService(String service, String option, Service entry)
-            throws ServiceNotFoundException, ConfigurationNotFoundException {
+    private static Configuration configurationForService(String service, String option, Service entry) {
         if (entry == null) {
             throw new ServiceNotFoundException(String.format("There is no service named %s", service));
         }
@@ -146,8 +145,7 @@ public class TargetsBean {
             indexFile.delete();
             return Map.of();
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to load targets index from %s.", indexFile);
-            throw new RuntimeException(e);
+            throw new WanakuException(String.format("Failed to load targets index from %s.", indexFile));
         }
     }
 }

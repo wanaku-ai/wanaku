@@ -27,18 +27,14 @@ public class ToolsBean {
     ToolsResolver toolsResolver;
 
     public void add(ToolReference mcpResource) {
-        try {
-            registerTool(mcpResource);
+        registerTool(mcpResource);
 
-            File indexFile = toolsResolver.indexLocation();
-            try {
-                List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-                toolReferences.add(mcpResource);
-                IndexHelper.saveToolsIndex(indexFile, toolReferences);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } catch (ToolNotFoundException e) {
+        File indexFile = toolsResolver.indexLocation();
+        try {
+            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
+            toolReferences.add(mcpResource);
+            IndexHelper.saveToolsIndex(indexFile, toolReferences);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

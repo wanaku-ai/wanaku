@@ -25,7 +25,7 @@ public class ResourcesList extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ResourcesService.class);
 
-        List<ResourceReference> list = resourcesService.list();
+        List<ResourceReference> list = resourcesService.list().getEntity().data();
         PrettyPrinter.printResources(list);
     }
 }

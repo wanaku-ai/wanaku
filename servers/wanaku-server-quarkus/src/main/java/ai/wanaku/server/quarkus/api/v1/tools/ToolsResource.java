@@ -1,7 +1,8 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
-import java.util.List;
-
+import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -13,16 +14,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
-import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.ToolReference;
+import java.util.List;
 
 @ApplicationScoped
 @Path("/api/v1/tools")
@@ -35,43 +30,22 @@ public class ToolsResource {
     @Path("/add")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response add(ToolReference resource) {
-        try {
-            toolsBean.add(resource);
-            return Response.ok().build();
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to add tools %s: %s", resource.getName(), e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to expose tool").build();
-        }
+    public Response add(ToolReference resource) throws WanakuException {
+        toolsBean.add(resource);
+        return Response.ok().build();
     }
 
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponses({
-            @APIResponse(responseCode = "200", content = @Content(
-                    schema = @Schema(type = SchemaType.ARRAY, implementation = ToolReference.class))),
-            @APIResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = String.class)))
-    })
-    public Response list() {
-        try {
-            List<ToolReference> list = toolsBean.list();
-            return Response.ok().entity(list).build();
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to list tools: %s", e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to list tools").build();
-        }
+    public RestResponse<WanakuResponse<List<ToolReference>>> list() throws WanakuException {
+        return RestResponse.ok(new WanakuResponse<>(toolsBean.list()));
     }
 
     @Path("/remove")
     @PUT
-    public Response remove(@QueryParam("tool") String tool) {
-        try {
-            toolsBean.remove(tool);
-            return Response.ok().build();
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to remove tool %s: %s", tool, e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to remove tool").build();
-        }
+    public Response remove(@QueryParam("tool") String tool) throws WanakuException {
+        toolsBean.remove(tool);
+        return Response.ok().build();
     }
 }

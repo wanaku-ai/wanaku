@@ -66,10 +66,10 @@ public class ToolsResourceTest {
                 .when().get("/api/v1/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("size()", is(3),
-                        "[0].name", is("Tool 1"),
-                        "[0].type", is("http"),
-                        "[0].description", is("This is a description of Tool 1."));
+                .body("data.size()", is(3),
+                        "data[0].name", is("Tool 1"),
+                        "data[0].type", is("http"),
+                        "data[0].description", is("This is a description of Tool 1."));
     }
 
     @Order(3)
@@ -84,9 +84,9 @@ public class ToolsResourceTest {
                 .when().get("/api/v1/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("size()", is(2),
-                        "[0].name", is("Tool 1"),
-                        "[0].type", is("http"),
-                        "[0].description", is("This is a description of Tool 1."));
+                .body("data.size()", is(2),
+                        "data[0].name", is("Tool 1"),
+                        "data[0].type", is("http"),
+                        "data[0].description", is("This is a description of Tool 1."));
     }
 }
