@@ -302,6 +302,9 @@
           "500" : {
             "description" : "Wanaku error",
             "content" : { }
+          },
+          "400" : {
+            "description" : "Bad Request"
           }
         },
         "summary" : "Expose",
@@ -371,6 +374,9 @@
           "500" : {
             "description" : "Wanaku error",
             "content" : { }
+          },
+          "400" : {
+            "description" : "Bad Request"
           }
         },
         "summary" : "Add",

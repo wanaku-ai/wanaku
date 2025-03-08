@@ -201,6 +201,8 @@ paths:
         "500":
           description: Wanaku error
           content: {}
+        "400":
+          description: Bad Request
       summary: Expose
       tags:
       - Resources Resource
@@ -249,6 +251,8 @@ paths:
         "500":
           description: Wanaku error
           content: {}
+        "400":
+          description: Bad Request
       summary: Add
       tags:
       - Tools Resource
