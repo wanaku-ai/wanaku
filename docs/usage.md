@@ -183,6 +183,11 @@ Wanaku implements the MCP protocol and, by definition, should support any client
 
 The details below describe how Wanaku MCP router can be used with some prominent MCP clients: 
 
+### HyperChat 
+
+Wanaku works with [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat), however, setting up requires manually editing the `mcp.json` file. You can follow
+[the steps descripted on the improvement ticket](https://github.com/BigSweetPotatoStudio/HyperChat/issues/30) to set it up.
+
 ### LibreChat
 
 For [LibreChat](https://www.librechat.ai/docs) search for `mcpServers` on the `librechat.yml` file and include something similar to this:
@@ -196,6 +201,17 @@ mcpServers:
 **NOTE**: make sure to point to the correct address of your Wanaku MCP instance.
 
 In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librechat.ai/docs/features/agents).
+
+### Using an STDIO gateway
+
+Wanaku does not support stdio.
+Therefore, to use Wanaku with to use it with tools that don't support SSE, it is
+necessary to use an stdio-to-SSE gateway.
+The application [super gateway](https://github.com/supercorp-ai/supergateway) can be used for this.
+
+```
+npx -y supergateway --sse http://localhost:8080/mcp/sse
+```
 
 ## Available Resources Providers 
 
@@ -260,4 +276,3 @@ For those cases, leverage the `.proto` files in the `core-exchange` module for c
 
 **NOTE**: for Java, you can still generate the project using the archetype, but in this case, you must implement your own 
 delegate from scratch.
-
