@@ -187,8 +187,14 @@ export type postApiV1ResourcesExposeResponse200 = {
   status: 200;
 };
 
+export type postApiV1ResourcesExposeResponse400 = {
+  data: void;
+  status: 400;
+};
+
 export type postApiV1ResourcesExposeResponseComposite =
-  postApiV1ResourcesExposeResponse200;
+  | postApiV1ResourcesExposeResponse200
+  | postApiV1ResourcesExposeResponse400;
 
 export type postApiV1ResourcesExposeResponse =
   postApiV1ResourcesExposeResponseComposite & {
@@ -301,7 +307,14 @@ export type postApiV1ToolsAddResponse200 = {
   status: 200;
 };
 
-export type postApiV1ToolsAddResponseComposite = postApiV1ToolsAddResponse200;
+export type postApiV1ToolsAddResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ToolsAddResponseComposite =
+  | postApiV1ToolsAddResponse200
+  | postApiV1ToolsAddResponse400;
 
 export type postApiV1ToolsAddResponse = postApiV1ToolsAddResponseComposite & {
   headers: Headers;
