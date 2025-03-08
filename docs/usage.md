@@ -281,7 +281,7 @@ therefore, it's possible to implement services in any language that supports it.
 
 For those cases, leverage the `.proto` files in the `core-exchange` module for creating your own service.
 
-**NOTE**: at this time, Wanaku is being intensively developed, therefore, we cannot guararantee backwards compatibility of the protocol. 
+**NOTE**: at this time, Wanaku is being intensively developed, therefore, we cannot guarantee backwards compatibility of the protocol. 
 
 **NOTE**: for Java, you can still generate the project using the archetype, but in this case, you must implement your own 
 delegate from scratch.
