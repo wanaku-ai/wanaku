@@ -67,8 +67,7 @@ public class ValkeyRegistry implements ServiceRegistry {
     @Override
     public Service getService(String service) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
-            Set<String> configs = jedis.hkeys(service);
-            return toService(jedis, configs);
+            return newService(jedis, service);
         }
     }
 
@@ -80,11 +79,7 @@ public class ValkeyRegistry implements ServiceRegistry {
             for (String key : keys) {
                 String sType = jedis.hget(key, ReservedKeys.WANAKU_TARGET_TYPE);
                 if (serviceType.asValue().equals(sType)) {
-                    Set<String> configs = jedis.hkeys(key);
-
-                    Service service = toService(jedis, configs);
-                    String address = jedis.hget(key, ReservedKeys.WANAKU_TARGET_ADDRESS);
-                    service.setTarget(address);
+                    Service service = newService(jedis, key);
 
                     entries.put(key, service);
                 }
@@ -96,7 +91,12 @@ public class ValkeyRegistry implements ServiceRegistry {
         return entries;
     }
 
-    private static Service toService(Jedis jedis, Set<String> configs) {
+    private static Service newService(Jedis jedis, String key) {
+        Set<String> configs = jedis.hkeys(key);
+        return toService(jedis, key, configs);
+    }
+
+    private static Service toService(Jedis jedis, String key, Set<String> configs) {
         Service service = new Service();
 
         Map<String, Configuration> configurationMap = new HashMap<>();
@@ -111,6 +111,9 @@ public class ValkeyRegistry implements ServiceRegistry {
         Configurations configurations = new Configurations();
         configurations.setConfigurations(configurationMap);
         service.setConfigurations(configurations);
+
+        String address = jedis.hget(key, ReservedKeys.WANAKU_TARGET_ADDRESS);
+        service.setTarget(address);
 
         return service;
     }
