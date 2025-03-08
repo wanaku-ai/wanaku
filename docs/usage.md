@@ -157,6 +157,15 @@ http                 => localhost:9000                 =>
 ```
 
 
+#### ToolSets
+
+To add a tool to a toolset: 
+
+```shell
+wanaku toolset add ./path/to/toolset-file.json -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count}" --type http --property "count:int,The count of facts to retrieve" --required count
+```
+
+
 ### API Note
 
 All CLI commands use the Wanaku management API under the hood. If you need more advanced functionality or want to automate tasks, you may be able to use this API directly.
