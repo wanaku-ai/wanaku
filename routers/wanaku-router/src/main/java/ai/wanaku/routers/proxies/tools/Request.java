@@ -9,10 +9,7 @@ record Request(String uri, String body) {
         String uri = toolReference.getUri();
         String body = null;
         for (var t : toolReference.getInputSchema().getProperties().entrySet()) {
-            if (!t.getKey().equals("_body")) {
-                Object o = toolArguments.args().get(t.getKey());
-                uri = uri.replace(String.format("{%s}", t.getKey()), o.toString());
-            } else {
+            if (t.getKey().equals("_body")) {
                 body = toolArguments.args().get("_body").toString();
             }
         }
