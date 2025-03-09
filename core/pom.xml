@@ -18,6 +18,7 @@
         <module>core-mcp</module>
         <module>core-exchange</module>
         <module>core-services</module>
+        <module>core-service-discovery</module>
     </modules>
 
 
