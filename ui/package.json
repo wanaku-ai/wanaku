@@ -16,9 +16,13 @@
     "@carbon/icons-react": "^11.55.0",
     "@carbon/layout": "^11.30.0",
     "@carbon/react": "^1.76.0",
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "axios": "^1.8.1",
+    "highlight.js": "^11.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-is": "^19.0.0",
+    "react-markdown": "^10.0.1",
     "react-router-dom": "^6.14.1",
     "sass": "^1.85.1"
   },

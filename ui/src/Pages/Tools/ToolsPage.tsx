@@ -98,26 +98,28 @@ export const ToolsPage: React.FC = () => {
         by utilizing these tools. Each tool is uniquely identified by a name and
         defined with an input schema outlining the expected parameters.
       </p>
-      {fetchedData && (
-        <ToolsTable
-          fetchedData={fetchedData}
-          onDelete={handleDeleteTool}
-          onImport={() => setIsImportModalOpen(true)}
-          onAdd={() => setIsAddModalOpen(true)}
-        />
-      )}
-      {isAddModalOpen && (
-        <AddToolModal
-          onRequestClose={() => setIsAddModalOpen(false)}
-          onSubmit={handleAddTool}
-        />
-      )}
-      {isImportModalOpen && (
-        <ImportToolsetModal
-          onRequestClose={() => setIsImportModalOpen(false)}
-          onSubmit={handleImportToolset}
-        />
-      )}
+      <div style={{ background: "#161616", paddingTop: "2rem" }}>
+        {fetchedData && (
+          <ToolsTable
+            fetchedData={fetchedData}
+            onDelete={handleDeleteTool}
+            onImport={() => setIsImportModalOpen(true)}
+            onAdd={() => setIsAddModalOpen(true)}
+          />
+        )}
+        {isAddModalOpen && (
+          <AddToolModal
+            onRequestClose={() => setIsAddModalOpen(false)}
+            onSubmit={handleAddTool}
+          />
+        )}
+        {isImportModalOpen && (
+          <ImportToolsetModal
+            onRequestClose={() => setIsImportModalOpen(false)}
+            onSubmit={handleImportToolset}
+          />
+        )}
+      </div>
     </div>
   );
 };

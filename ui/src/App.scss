@@ -1,11 +1,25 @@
-@use "@carbon/layout" as *;
-
 .title {
-    padding-top: $spacing-05;
-    padding-bottom: $spacing-07;
+  padding: 2rem 4rem;
 }
 
 .description {
-    padding-bottom: $spacing-07;
-    max-width: 600px;
+  padding: 1rem 4rem;
+  padding-bottom: 2rem;
+  max-width: 600px;
+}
+
+ul {
+  margin: 1rem 0;
+  list-style-type: disc;
+  padding-left: 2rem;
+}
+
+ol {
+  margin: 1rem 0;
+  list-style: decimal;
+  padding-left: 2rem;
+}
+
+li {
+  margin-bottom: 5px;
 }
