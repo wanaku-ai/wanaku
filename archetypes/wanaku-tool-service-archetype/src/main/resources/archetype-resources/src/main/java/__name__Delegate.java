@@ -21,56 +21,21 @@ import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import ai.wanaku.core.exchange.InvocationDelegate;
-import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.services.config.WanakuServiceConfig;
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
-import org.jboss.logging.Logger;
+import ai.wanaku.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.core.services.routing.AbstractRoutingDelegate;
+
 
 @ApplicationScoped
-public class ${name}Delegate implements InvocationDelegate {
-    private static final Logger LOG = Logger.getLogger(${name}Delegate.class);
-
-    @Inject
-    WanakuServiceConfig config;
-
-    private final CamelContext camelContext;
-    private final ProducerTemplate producer;
-
-    public ${name}Delegate(CamelContext camelContext) {
-        this.camelContext = camelContext;
-        this.producer = camelContext.createProducerTemplate();
-    }
+public class ${name}Delegate extends AbstractRoutingDelegate {
 
     @Override
-    public ToolInvokeReply invoke(ToolInvokeRequest request) {
-        try {
-            producer.start();
-
-            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
-
-            LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
-            String s = producer.requestBody(parsedRequest.uri(), parsedRequest.body(), String.class);
-
-            return ToolInvokeReply.newBuilder().setContent(s).setIsError(false).build();
-        } catch (Exception e) {
-            LOG.errorf("Unable to call endpoint: %s", e.getMessage(), e);
-            return ToolInvokeReply.newBuilder().setContent(e.getMessage()).setIsError(true).build();
-        } finally {
-            producer.stop();
+    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+        if (response == null) {
+            throw new InvalidResponseTypeException("Invalid response type from the consumer: null");
         }
-    }
 
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        return config.routing().service().configurations();
-    }
-
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return config.routing().credentials().configurations();
+        // Here, convert the response from whatever format it is, to a String instance.
+        return null;
     }
 }
