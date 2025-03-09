@@ -16,6 +16,7 @@
         <module>wanaku-routing-http-service</module>
         <module>wanaku-routing-kafka-service</module>
         <module>wanaku-routing-yaml-route-service</module>
+        <module>wanaku-routing-tavily-service</module>
     </modules>
 
 </project>

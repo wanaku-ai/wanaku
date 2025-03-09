@@ -236,11 +236,12 @@ The following resources can be made available using Wanaku.
 
 The following tools services can be made available using Wanaku and used to provide access to specific services.
 
-| Type         | Service Tool                      | Description                                              |
-|--------------|-----------------------------------|----------------------------------------------------------|
-| `http`       | wanaku-routing-http-service       | Provides access to HTTP endpoints as tools via Wanaku    |
-| `yaml-route` | wanaku-routing-yaml-route-service | Provides access to Camel routes in YAML tools via Wanaku |
-| `kafka`      | wanaku-routing-kafka-service      | Provides access to Kafka topics as tools via Wanaku      |
+| Type         | Service Tool                      | Description                                                                 |
+|--------------|-----------------------------------|-----------------------------------------------------------------------------|
+| `http`       | wanaku-routing-http-service       | Provides access to HTTP endpoints as tools via Wanaku                       |
+| `yaml-route` | wanaku-routing-yaml-route-service | Provides access to Camel routes in YAML tools via Wanaku                    |
+| `kafka`      | wanaku-routing-kafka-service      | Provides access to Kafka topics as tools via Wanaku                         |
+| `tavily`     | wanaku-routing-tavily-service     | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
 
 
 ## Adding Your Own Resource Provider or Tool Service
