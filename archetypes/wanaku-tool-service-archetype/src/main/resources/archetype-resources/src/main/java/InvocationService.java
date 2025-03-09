@@ -38,6 +38,7 @@ import org.jboss.logging.Logger;
 
 @GrpcService
 public class InvocationService implements ToolInvoker, Inquirer {
+    private static final Logger LOG = Logger.getLogger(InvocationService.class);
 
     @Inject
     InvocationDelegate delegate;
