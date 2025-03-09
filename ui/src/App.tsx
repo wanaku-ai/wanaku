@@ -1,8 +1,6 @@
 import { LogoGithub, Notification, Search } from "@carbon/icons-react";
 import {
-  Column,
   Content,
-  Grid,
   Header,
   HeaderContainer,
   HeaderGlobalAction,
@@ -54,6 +52,9 @@ function App() {
               <HeaderMenuItem as={Link} to={Links.Resources}>
                 Resources
               </HeaderMenuItem>
+              <HeaderMenuItem as={Link} to={Links.LLMChat}>
+                LLMChat
+              </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>
               <HeaderGlobalAction
@@ -80,12 +81,8 @@ function App() {
             </HeaderGlobalBar>
           </Header>
 
-          <Content id="main-content">
-            <Grid fullWidth>
-              <Column lg={16} md={8} sm={4}>
-                <Outlet />
-              </Column>
-            </Grid>
+          <Content id="main-content" style={{ background: "#262626", padding: 0 }}>
+            <Outlet />
           </Content>
         </>
       )}
