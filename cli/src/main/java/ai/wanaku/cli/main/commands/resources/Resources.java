@@ -9,6 +9,6 @@ public class Resources extends BaseCommand {
 
     @Override
     public void run() {
-
+        CommandLine.usage(this, System.out);
     }
 }
