@@ -80,7 +80,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
                     .setIsError(true)
                     .addAllContent(List.of("Non-convertable response from the consumer " + e.getMessage())).build();
         } catch (Exception e) {
-            LOG.errorf("Unable to read file: %s", e.getMessage(), e);
+            LOG.errorf(e, "Unable to read resource: %s", e.getMessage(), e);
             return ResourceReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(e.getMessage())).build();
