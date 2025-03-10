@@ -62,7 +62,7 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
                     .setIsError(true)
                     .setContent("Non-convertable response from the consumer " + e.getMessage()).build();
         } catch (Exception e) {
-            LOG.errorf("Unable to read file: %s", e.getMessage(), e);
+            LOG.errorf(e,"Unable to invoke tool: %s", e.getMessage(), e);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
                     .setContent(e.getMessage()).build();
