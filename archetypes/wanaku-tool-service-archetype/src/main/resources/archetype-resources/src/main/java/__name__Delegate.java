@@ -17,6 +17,7 @@
 
 package ai.wanaku.routing.service;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,7 +31,7 @@ import ai.wanaku.core.services.routing.AbstractRoutingDelegate;
 public class ${name}Delegate extends AbstractRoutingDelegate {
 
     @Override
-    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response == null) {
             throw new InvalidResponseTypeException("Invalid response type from the consumer: null");
         }

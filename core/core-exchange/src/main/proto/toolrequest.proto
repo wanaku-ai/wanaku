@@ -24,5 +24,5 @@ message ToolInvokeRequest {
 // The invocation response message
 message ToolInvokeReply {
   bool isError = 1;
-  string content = 2;
+  repeated string content = 2;
 }

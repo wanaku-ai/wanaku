@@ -8,6 +8,7 @@ import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.util.List;
 import java.util.Map;
 
 import static ai.wanaku.core.services.util.URIHelper.buildUri;
@@ -33,13 +34,13 @@ public class S3ResourceDelegate  extends AbstractResourceDelegate {
     }
 
     @Override
-    protected String coerceResponse(Object response) throws InvalidResponseTypeException, ResourceNotFoundException {
+    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, ResourceNotFoundException {
         if (response == null) {
             throw new ResourceNotFoundException("File not found");
         }
 
         if (response instanceof byte[] bytes) {
-            return new String(bytes);
+            return List.of(new String(bytes));
         }
 
         throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response.getClass().getName());

@@ -17,6 +17,7 @@
 
 package ai.wanaku.provider;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -56,7 +57,7 @@ public class ${name}ResourceDelegate extends AbstractResourceDelegate {
     }
 
     @Override
-    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response == null) {
             throw new InvalidResponseTypeException("Invalid response type from the consumer: null");
         }

@@ -13,10 +13,14 @@ import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.routers.proxies.ToolsProxy;
+import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
@@ -44,9 +48,13 @@ public class InvokerProxy implements ToolsProxy {
             final ToolInvokeReply invokeReply = invokeRemotely(toolReference, toolArguments, service);
 
             if (invokeReply.getIsError()) {
-                return ToolResponse.error(invokeReply.getContent());
+                return ToolResponse.error(invokeReply.getContentList().get(0));
             } else {
-                return ToolResponse.success(invokeReply.getContent());
+                ProtocolStringList contentList = invokeReply.getContentList();
+                List<TextContent> contents = new ArrayList<>(invokeReply.getContentList().size());
+                contentList.stream().map(TextContent::new).forEach(contents::add);
+
+                return ToolResponse.success(contents);
             }
         } catch (Exception e) {
             LOG.errorf(e, "Unable to call endpoint: %s", e.getMessage());

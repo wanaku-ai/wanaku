@@ -1,5 +1,6 @@
 package ai.wanaku.provider.ftp;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,11 +29,11 @@ public class FTPResourceDelegate extends AbstractResourceDelegate {
     }
 
     @Override
-    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response instanceof GenericFile<?> genericFile) {
             Object body = genericFile.getBody();
             if (body instanceof byte[] bytes) {
-                return new String(bytes);
+                return List.of(new String(bytes));
 
             }
 

@@ -12,11 +12,13 @@ import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.routers.proxies.ResourceProxy;
+import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
@@ -48,15 +50,23 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.getTarget());
         final ResourceReply reply = acquireRemotely(mcpResource, arguments, service);
         if (reply.getIsError()) {
+
             TextResourceContents textResourceContents =
-                    new TextResourceContents(arguments.requestUri().value(), reply.getContent(), "text/plain");
+                    new TextResourceContents(arguments.requestUri().value(), reply.getContentList().get(0), "text/plain");
             return List.of(textResourceContents);
         } else {
-            TextResourceContents textResourceContents =
-                    new TextResourceContents(arguments.requestUri().value(), reply.getContent(),
-                            mcpResource.getMimeType());
+            ProtocolStringList contentList = reply.getContentList();
+            List<ResourceContents> textResourceContentsList = new ArrayList<>();
 
-            return List.of(textResourceContents);
+            for (String content : contentList) {
+                TextResourceContents textResourceContents =
+                        new TextResourceContents(arguments.requestUri().value(), content,
+                                mcpResource.getMimeType());
+
+                textResourceContentsList.add(textResourceContents);
+            }
+
+            return textResourceContentsList;
         }
     }
 

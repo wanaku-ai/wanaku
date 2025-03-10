@@ -32,20 +32,20 @@ public class TavilyDelegate extends AbstractRoutingDelegate {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response == null) {
             throw new InvalidResponseTypeException("Invalid response type from the consumer: null");
         }
 
         // Here, convert the response from whatever format it is, to a String instance.
         if (response instanceof String) {
-            return response.toString();
+            return List.of(response.toString());
         }
 
         if (response instanceof List) {
-            List<String> list = (List<String>) response;
-
-            return String.join("\n", list);
+            List<String> responseStrings = (List<String>) response;
+            // Annoyingly, the component sometimes return null elements. We have to filter them
+            return responseStrings.stream().filter(s -> s != null && !s.isEmpty()).collect(Collectors.toList());
         }
 
         throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response.getClass().getName());
