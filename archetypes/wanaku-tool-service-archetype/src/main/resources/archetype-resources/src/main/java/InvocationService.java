@@ -33,6 +33,7 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.common.annotation.Blocking;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -50,6 +51,7 @@ public class InvocationService implements ToolInvoker, Inquirer {
     int port;
 
     @Override
+    @Blocking
     public Uni<ToolInvokeReply> invokeTool(ToolInvokeRequest request) {
         return Uni.createFrom().item(() -> delegate.invoke(request));
     }
