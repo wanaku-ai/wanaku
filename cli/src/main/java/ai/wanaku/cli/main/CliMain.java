@@ -35,5 +35,7 @@ public class CliMain implements Runnable, QuarkusApplication {
         if (versionRequested) {
             System.out.println("Wanaku CLI version " + VersionHelper.VERSION);
         }
+
+        CommandLine.usage(this, System.out);
     }
 }

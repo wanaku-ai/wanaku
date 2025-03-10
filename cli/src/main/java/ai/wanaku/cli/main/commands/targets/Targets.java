@@ -10,6 +10,6 @@ import picocli.CommandLine;
 public class Targets extends BaseCommand {
     @Override
     public void run() {
-
+        CommandLine.usage(this, System.out);
     }
 }
