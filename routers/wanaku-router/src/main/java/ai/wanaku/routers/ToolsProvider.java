@@ -1,6 +1,7 @@
 package ai.wanaku.routers;
 
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.util.VersionHelper;
 import java.io.File;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -42,6 +43,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
             return new NoopToolsResolver();
         }
 
+        LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
         File resourcesIndexFile = initializeResourcesIndex(config.indexesPath(), DEFAULT_TOOLS_INDEX_FILE_NAME);
         LOG.infof("Using resources index file: %s", resourcesIndexFile.getAbsolutePath());
 
@@ -58,6 +60,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
 
         File resourcesIndexFile = initializeIndex();
 
+        LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
         return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy(serviceRegistry));
     }
 
