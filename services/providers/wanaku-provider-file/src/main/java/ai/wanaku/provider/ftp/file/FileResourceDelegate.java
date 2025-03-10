@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -39,14 +40,14 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
     }
 
     @Override
-    protected String coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response instanceof GenericFile<?> genericFile) {
             String fileName = genericFile.getAbsoluteFilePath();
 
             try {
                 Path path = Path.of(fileName);
                 if (Files.exists(path)) {
-                    return Files.readString(path);
+                    return List.of(Files.readString(path));
                 } else {
                     throw new NonConvertableResponseException("The file does not exist: " + fileName);
                 }

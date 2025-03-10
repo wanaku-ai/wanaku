@@ -53,7 +53,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      * @throws InvalidResponseTypeException if the response type is invalid (such as null)
      * @throws NonConvertableResponseException if the response cannot be converted
      */
-    protected abstract String coerceResponse(Object response)
+    protected abstract List<String> coerceResponse(Object response)
             throws InvalidResponseTypeException, NonConvertableResponseException, ResourceNotFoundException;
 
     @Override
@@ -64,26 +64,26 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
             LOG.debugf("Acquiring resource: %s", uri);
             Object obj = consumer.consume(uri, request);
 
-            String response = coerceResponse(obj);
+            List<String> response = coerceResponse(obj);
 
             return ResourceReply.newBuilder()
                     .setIsError(false)
-                    .setContent(response).build();
+                    .addAllContent(response).build();
         } catch (InvalidResponseTypeException e) {
             LOG.errorf("Invalid response type from the consumer: %s", e.getMessage());
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .setContent("Invalid response type from the consumer: " + e.getMessage()).build();
+                    .addAllContent(List.of("Invalid response type from the consumer: " + e.getMessage())).build();
         } catch (NonConvertableResponseException e) {
             LOG.errorf("Non-convertable response from the consumer: %s", e.getMessage());
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .setContent("Non-convertable response from the consumer " + e.getMessage()).build();
+                    .addAllContent(List.of("Non-convertable response from the consumer " + e.getMessage())).build();
         } catch (Exception e) {
             LOG.errorf("Unable to read file: %s", e.getMessage(), e);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .setContent(e.getMessage()).build();
+                    .addAllContent(List.of(e.getMessage())).build();
         }
     }
 

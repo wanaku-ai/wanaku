@@ -25,5 +25,5 @@ message ResourceRequest {
 // The invocation response message
 message ResourceReply {
   bool isError = 1;
-  string content = 2;
+  repeated string content = 2;
 }
