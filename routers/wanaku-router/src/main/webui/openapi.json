@@ -92,6 +92,14 @@
           }
         }
       },
+      "ServerInfo" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "string"
+          }
+        }
+      },
       "Service" : {
         "type" : "object",
         "properties" : {
@@ -181,10 +189,39 @@
             }
           }
         }
+      },
+      "WanakuResponseServerInfo" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ServerInfo"
+          }
+        }
       }
     }
   },
   "paths" : {
+    "/api/v1/management/info/version" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseServerInfo"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Version",
+        "tags" : [ "Info Resource" ]
+      }
+    },
     "/api/v1/management/targets/resources/configure/{service}" : {
       "put" : {
         "parameters" : [ {

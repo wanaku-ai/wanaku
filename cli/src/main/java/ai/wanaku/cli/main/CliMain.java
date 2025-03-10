@@ -2,6 +2,7 @@ package ai.wanaku.cli.main;
 
 import jakarta.inject.Inject;
 
+import ai.wanaku.core.util.VersionHelper;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
 import ai.wanaku.cli.main.commands.targets.Targets;
@@ -21,6 +22,9 @@ public class CliMain implements Runnable, QuarkusApplication {
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "Display the help and sub-commands")
     private boolean helpRequested = false;
 
+    @CommandLine.Option(names = { "-v", "--version" }, description = "Display the current version of Wanaku CLI")
+    private boolean versionRequested = false;
+
     @Override
     public int run(String... args) throws Exception {
         return new CommandLine(this, factory).execute(args);
@@ -28,5 +32,8 @@ public class CliMain implements Runnable, QuarkusApplication {
 
     @Override
     public void run() {
+        if (versionRequested) {
+            System.out.println("Wanaku CLI version " + VersionHelper.VERSION);
+        }
     }
 }

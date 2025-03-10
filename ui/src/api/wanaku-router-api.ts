@@ -14,9 +14,42 @@ import type {
   WanakuResponseListResourceReference,
   WanakuResponseListToolReference,
   WanakuResponseMapStringService,
+  WanakuResponseServerInfo,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
+/**
+ * @summary Version
+ */
+export type getApiV1ManagementInfoVersionResponse200 = {
+  data: WanakuResponseServerInfo;
+  status: 200;
+};
+
+export type getApiV1ManagementInfoVersionResponseComposite =
+  getApiV1ManagementInfoVersionResponse200;
+
+export type getApiV1ManagementInfoVersionResponse =
+  getApiV1ManagementInfoVersionResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementInfoVersionUrl = () => {
+  return `/api/v1/management/info/version`;
+};
+
+export const getApiV1ManagementInfoVersion = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementInfoVersionResponse> => {
+  return customFetch<getApiV1ManagementInfoVersionResponse>(
+    getGetApiV1ManagementInfoVersionUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
 /**
  * @summary Resources Configure
  */
