@@ -1,5 +1,6 @@
 package ai.wanaku.core.services.config;
 
+import io.smallrye.config.WithDefault;
 import java.util.Map;
 
 import ai.wanaku.core.config.WanakuConfig;
@@ -19,4 +20,13 @@ public interface WanakuServiceConfig extends WanakuConfig {
     interface Credentials {
         Map<String, String> configurations();
     }
+
+    @WithDefault("3")
+    int registerRetries();
+
+    @WithDefault("3")
+    int registerDelaySeconds();
+
+    @WithDefault("1")
+    int registerRetryWaitSeconds();
 }

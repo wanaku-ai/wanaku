@@ -12,6 +12,8 @@ import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.services.config.WanakuRoutingConfig;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.jboss.logging.Logger;
 
 /**
@@ -29,6 +31,8 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     @Inject
     ServiceRegistry serviceRegistry;
 
+    @Inject
+    ScheduledExecutorService executor;
 
     /**
      * Convert the response in whatever format it is to a String
@@ -81,9 +85,39 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
         return config.credentials().configurations();
     }
 
+    private void tryRegistering(String service, String address, int port) {
+        int retries = config.registerRetries();
+        boolean registered = false;
+        do {
+            try {
+                serviceRegistry.register(ServiceTarget.toolInvoker(service, address, port), serviceConfigurations());
+                registered = true;
+            } catch (Exception e) {
+                retries = waitAndRetry(service, e, retries);
+            }
+        } while (!registered && (retries > 0));
+    }
+
+    private int waitAndRetry(String service, Exception e, int retries) {
+        retries--;
+        if (retries == 0) {
+            LOG.errorf(e, "Failed to register service %s: %s. No more retries left", service, e.getMessage());
+            return 0;
+        } else {
+            LOG.warnf("Failed to register service %s: %s. Retries left: %d", service, e.getMessage(), retries);
+        }
+        try {
+            int waitSeconds = config.registerRetryWaitSeconds();
+            Thread.sleep(waitSeconds * 1000);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        return retries;
+    }
+
     @Override
     public void register(String service, String address, int port) {
-        serviceRegistry.register(ServiceTarget.toolInvoker(service, address, port), serviceConfigurations());
+        executor.schedule(() -> tryRegistering(service, address, port), config.registerDelaySeconds(), TimeUnit.SECONDS);
     }
 
     @Override
