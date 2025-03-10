@@ -23,7 +23,7 @@
             </includes>
         </fileSet>
         <fileSet filtered="true" encoding="UTF-8">
-            <directory>src/main/scripts</directory>
+            <directory>src/main/assembly</directory>
             <includes>
                 <include>**/*</include>
             </includes>
