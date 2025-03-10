@@ -65,13 +65,13 @@ public class InvocationService implements ToolInvoker, Inquirer {
     }
 
     void register(@Observes StartupEvent ev) {
-        LOG.info("Registering resource service");
+        LOG.info("Registering tool service");
 
         delegate.register(config.name(), DiscoveryUtil.resolveRegistrationAddress(), port);
     }
 
     void deregister(@Observes ShutdownEvent ev) {
-        LOG.info("De-registering resource service");
+        LOG.info("De-registering tool service");
 
         delegate.deregister(config.name(), DiscoveryUtil.resolveRegistrationAddress(), port);
     }

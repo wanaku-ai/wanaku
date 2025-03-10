@@ -36,6 +36,6 @@ public class ${name}Delegate extends AbstractRoutingDelegate {
         }
 
         // Here, convert the response from whatever format it is, to a String instance.
-        return null;
+        throw new InvalidResponseTypeException("The downstream service has not implemented the response coercion method");
     }
 }
