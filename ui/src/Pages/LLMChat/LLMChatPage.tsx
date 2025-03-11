@@ -522,9 +522,6 @@ export const LLMChatPage: React.FC = () => {
                             onChange={(e) =>
                               setRawExtraLLMParams(e.target.value)
                             }
-                            style={{
-                              background: "#393939",
-                            }}
                           />
                         </Stack>
                       </Column>
@@ -591,9 +588,6 @@ export const LLMChatPage: React.FC = () => {
                         rows={4}
                         value={systemMessage}
                         onChange={(e) => setSystemMessage(e.target.value)}
-                        style={{
-                          background: "#393939",
-                        }}
                       />
                       <TextArea
                         labelText="Enter Prompt"
@@ -602,9 +596,6 @@ export const LLMChatPage: React.FC = () => {
                         rows={4}
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        style={{
-                          background: "#393939",
-                        }}
                       />
                       <div
                         style={{

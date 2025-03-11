@@ -11,12 +11,8 @@
 
 @include grid.flex-grid();
 
-:root[data-carbon-theme="g10"] {
+:root {
   @include theme.theme(themes.$g10);
-}
-
-:root[data-carbon-theme="g100"] {
-  @include theme.theme(themes.$g100);
 }
 
 @media (prefers-color-scheme: dark) {
