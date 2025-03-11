@@ -31,9 +31,6 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     @Inject
     ServiceRegistry serviceRegistry;
 
-//    @Inject
-//    ScheduledExecutorService executor;
-
     /**
      * Convert the response in whatever format it is to a String
      *
