@@ -81,6 +81,12 @@ distributions:
         platform: osx-aarch_64
       - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}.zip
         platform: linux-x86_64
+  provider-s3:
+    artifacts:
+      - path: services/providers/wanaku-provider-s3/target/distributions/wanaku-provider-s3-{{projectVersion}}.zip
+        platform: osx-aarch_64
+      - path: services/providers/wanaku-provider-s3/target/distributions/wanaku-provider-s3-{{projectVersion}}.zip
+        platform: linux-x86_64
 
   cli-native:
     artifacts:
@@ -124,3 +130,10 @@ distributions:
         platform: osx-aarch_64
       - path: services/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
+  provider-s3-native:
+    artifacts:
+      - path: services/providers/wanaku-provider-s3/target/distributions/wanaku-provider-s3-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/providers/wanaku-provider-s3/target/distributions/wanaku-provider-s3-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+# Note: not all components support native mode (i.e.: Tavily)
