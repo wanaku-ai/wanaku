@@ -9,11 +9,11 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceTarget;
+import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuRoutingConfig;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 /**
@@ -31,8 +31,8 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     @Inject
     ServiceRegistry serviceRegistry;
 
-    @Inject
-    ScheduledExecutorService executor;
+//    @Inject
+//    ScheduledExecutorService executor;
 
     /**
      * Convert the response in whatever format it is to a String
@@ -86,7 +86,7 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     }
 
     private void tryRegistering(String service, String address, int port) {
-        int retries = config.registerRetries();
+        int retries = config.registration().retries();
         boolean registered = false;
         do {
             try {
@@ -101,13 +101,13 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     private int waitAndRetry(String service, Exception e, int retries) {
         retries--;
         if (retries == 0) {
-            LOG.errorf(e, "Failed to register service %s: %s. No more retries left", service, e.getMessage());
+            LOG.errorf(e, "No more retries left and while trying to register service %s: %s.", service, e.getMessage());
             return 0;
         } else {
             LOG.warnf("Failed to register service %s: %s. Retries left: %d", service, e.getMessage(), retries);
         }
         try {
-            int waitSeconds = config.registerRetryWaitSeconds();
+            int waitSeconds = config.registration().retryWaitSeconds();
             Thread.sleep(waitSeconds * 1000L);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
@@ -116,8 +116,13 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     }
 
     @Override
-    public void register(String service, String address, int port) {
-        executor.schedule(() -> tryRegistering(service, address, port), config.registerDelaySeconds(), TimeUnit.SECONDS);
+    public void register() {
+        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.routing.name").getValue();
+        String port = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
+
+        LOG.infof("Registering tool service %s", service);
+
+        tryRegistering(service, DiscoveryUtil.resolveRegistrationAddress(), Integer.parseInt(port));
     }
 
     @Override

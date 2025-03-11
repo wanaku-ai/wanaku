@@ -10,13 +10,14 @@ import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.core.exchange.ResourceAcquirer;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -49,10 +50,9 @@ public class ResourceService implements ResourceAcquirer, Inquirer {
         return Uni.createFrom().item(() -> reply);
     }
 
-    void register(@Observes StartupEvent ev) {
-        LOG.info("Registering resource service");
-
-        delegate.register(config.name(), DiscoveryUtil.resolveRegistrationAddress(), port);
+    @Scheduled(every="{wanaku.service.provider.registration.interval}", delayed = "{wanaku.service.provider.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
+    void register() {
+        delegate.register();
     }
 
     void deregister(@Observes ShutdownEvent ev) {

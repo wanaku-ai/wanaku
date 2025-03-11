@@ -31,9 +31,10 @@ import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuRoutingConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -66,10 +67,9 @@ public class InvocationService implements ToolInvoker, Inquirer {
         return Uni.createFrom().item(() -> reply);
     }
 
-    void register(@Observes StartupEvent ev) {
-        LOG.info("Registering tool service");
-
-        delegate.register(config.name(), DiscoveryUtil.resolveRegistrationAddress(), port);
+    @Scheduled(every="{wanaku.service.routing.registration.interval}", delayed = "{wanaku.service.routing.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
+    void register() {
+        delegate.register();
     }
 
     void deregister(@Observes ShutdownEvent ev) {

@@ -4,12 +4,10 @@ import io.smallrye.config.WithDefault;
 import java.util.Map;
 
 import ai.wanaku.core.config.WanakuConfig;
-import io.smallrye.config.ConfigMapping;
 
 /**
  * Base configuration class for the downstream services
  */
-@ConfigMapping(prefix = "wanaku.service")
 public interface WanakuServiceConfig extends WanakuConfig {
 
     interface Service {
@@ -21,12 +19,18 @@ public interface WanakuServiceConfig extends WanakuConfig {
         Map<String, String> configurations();
     }
 
-    @WithDefault("3")
-    int registerRetries();
+    interface Registration {
+        @WithDefault("10s")
+        String interval();
 
-    @WithDefault("3")
-    int registerDelaySeconds();
+        @WithDefault("3")
+        int delaySeconds();
 
-    @WithDefault("1")
-    int registerRetryWaitSeconds();
+        @WithDefault("3")
+        int retries();
+
+        @WithDefault("1")
+        int retryWaitSeconds();
+    }
+
 }
