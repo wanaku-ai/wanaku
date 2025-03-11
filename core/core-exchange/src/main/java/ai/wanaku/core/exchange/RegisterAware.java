@@ -6,11 +6,8 @@ package ai.wanaku.core.exchange;
 public interface RegisterAware {
     /**
      * Register a service with the router
-     * @param host the router host
-     * @param service the service to register
-     * @param port the port where the service is listening to on
      */
-    void register(String host, String service, int port);
+    void register();
 
     /**
      * Deregister a service with the router

@@ -16,4 +16,6 @@ public interface WanakuRoutingConfig extends WanakuServiceConfig {
 
     Service service();
     Credentials credentials();
+
+    Registration registration();
 }

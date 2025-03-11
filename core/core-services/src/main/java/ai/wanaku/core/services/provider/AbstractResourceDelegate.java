@@ -10,16 +10,17 @@ import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceTarget;
+import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.camel.catalog.CamelCatalog;
 import org.apache.camel.catalog.DefaultCamelCatalog;
 import org.apache.camel.tooling.model.BaseOptionModel;
 import org.apache.camel.tooling.model.ComponentModel;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 /**
@@ -137,7 +138,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     }
 
     private void tryRegistering(String service, String address, int port) {
-        int retries = config.registerRetries();
+        int retries = config.registration().retries();
         boolean registered = false;
         do {
             try {
@@ -158,7 +159,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
             LOG.warnf("Failed to register service %s: %s. Retries left: %d", service, e.getMessage(), retries);
         }
         try {
-            int waitSeconds = config.registerRetryWaitSeconds();
+            int waitSeconds = config.registration().retryWaitSeconds();
             Thread.sleep(waitSeconds * 1000L);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
@@ -167,8 +168,12 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     }
 
     @Override
-    public void register(String service, String address, int port) {
-        executor.schedule(() -> tryRegistering(service, address, port), config.registerDelaySeconds(), TimeUnit.SECONDS);
+    public void register() {
+        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.provider.name").getValue();
+        String port = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
+
+        LOG.infof("Registering resource service %s", service);
+        tryRegistering(service, DiscoveryUtil.resolveRegistrationAddress(), Integer.parseInt(port));
     }
 
     @Override
