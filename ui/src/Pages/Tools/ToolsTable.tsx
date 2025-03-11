@@ -91,6 +91,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                     kind="ghost"
                     renderIcon={TrashCan}
                     iconDescription="Delete"
+                    hasIconOnly
                     onClick={() => onDelete(row.name)}
                   />
                 </TableCell>
