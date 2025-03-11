@@ -455,7 +455,7 @@ export const LLMChatPage: React.FC = () => {
           <Tab>Chat</Tab>
         </TabList>
         <TabPanels>
-          <TabPanel style={{ background: "#161616" }}>
+          <TabPanel className="tabbg">
             <Grid fullWidth>
               <Column sm={4} md={8} lg={8}>
                 <Tile style={{ marginBottom: "1rem", padding: "1rem" }}>
@@ -534,7 +534,7 @@ export const LLMChatPage: React.FC = () => {
               </Column>
             </Grid>
           </TabPanel>
-          <TabPanel style={{ background: "#161616" }}>
+          <TabPanel className="tabbg">
             <Tile style={{ marginBottom: "1rem", padding: "1rem" }}>
               <Stack gap={7}>
                 {isLoadingTools && <p>Loading tools...</p>}
@@ -572,7 +572,7 @@ export const LLMChatPage: React.FC = () => {
               </Stack>
             </Tile>
           </TabPanel>
-          <TabPanel style={{ background: "#161616" }}>
+          <TabPanel className="tabbg">
             <Grid fullWidth>
               <Column sm={4} md={8} lg={5}>
                 <Tile style={{ marginBottom: "1rem", padding: "1rem" }}>

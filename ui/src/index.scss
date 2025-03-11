@@ -29,3 +29,17 @@ body {
   background: theme.$background;
   color: theme.$text-primary;
 }
+
+#main-content {
+  background: theme.$layer-01;
+  padding: 0;
+}
+
+#page-content {
+  background: theme.$background;
+  padding-top: 2rem;
+}
+
+.tabbg {
+  background: theme.$background;
+}
