@@ -14,15 +14,6 @@ import io.quarkiverse.mcp.server.ResourceManager;
  */
 public interface ResourceResolver extends Resolver {
 
-
-    /**
-     * The index file containing the targets
-     * @return
-     */
-    default File targetsIndexFile() {
-        return new File(indexBaseDirectory(), DEFAULT_TARGET_RESOURCES_INDEX_FILE_NAME);
-    }
-
     /**
      * Read resources
      * @param arguments the resource request arguments

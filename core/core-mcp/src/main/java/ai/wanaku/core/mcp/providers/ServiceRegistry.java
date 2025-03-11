@@ -1,6 +1,9 @@
 package ai.wanaku.core.mcp.providers;
 
 import ai.wanaku.api.types.management.Service;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.Collection;
 import java.util.Map;
 
 /**

@@ -44,7 +44,8 @@ public class TargetsBean {
         Map<String, String> configurations = toolsConfigurations(service);
         configurations.put(option, value);
 
-        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
+        // TODO is it really needed?
+//        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
     }
 
     public void configureResources(String service, String option, String value)
@@ -52,7 +53,8 @@ public class TargetsBean {
         Map<String, String> configurations = resourcesConfigurations(service);
         configurations.put(option, value);
 
-        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
+        // TODO is it really needed?
+//        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
     }
 
     public Map<String,Service> toolList() {
@@ -78,8 +80,4 @@ public class TargetsBean {
         }
         return configurations;
     }
-
-
-
-
 }

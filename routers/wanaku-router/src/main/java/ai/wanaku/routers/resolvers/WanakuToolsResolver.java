@@ -9,17 +9,17 @@ import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.routers.proxies.ToolsProxy;
 
 public class WanakuToolsResolver implements ToolsResolver {
-    private final File indexFile;
+    private final String index;
     private final ToolsProxy proxy;
 
-    public WanakuToolsResolver(File indexFile, ToolsProxy proxy) {
-        this.indexFile = indexFile;
+    public WanakuToolsResolver(String index, ToolsProxy proxy) {
+        this.index = index;
         this.proxy = proxy;
     }
 
     @Override
-    public File indexLocation() {
-        return indexFile;
+    public String index() {
+        return index;
     }
 
     @Override

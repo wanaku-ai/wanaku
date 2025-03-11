@@ -12,7 +12,7 @@ import io.quarkiverse.mcp.server.ResourceManager;
 public class NoopResourceResolver implements ResourceResolver {
 
     @Override
-    public File indexLocation() {
+    public String index() {
         return null;
     }
 

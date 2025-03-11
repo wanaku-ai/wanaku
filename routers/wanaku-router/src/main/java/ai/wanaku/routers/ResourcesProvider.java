@@ -32,8 +32,7 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
             return new NoopResourceResolver();
         }
 
-        File resourcesIndexFile = initializeIndex();
-        return new WanakuResourceResolver(resourcesIndexFile, new ResourceAcquirerProxy(serviceRegistry));
+        return new WanakuResourceResolver("resources", new ResourceAcquirerProxy(serviceRegistry));
     }
 
 

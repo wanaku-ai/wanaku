@@ -1,25 +1,16 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
-import java.io.File;
-import java.util.Map;
-
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
+
+import java.util.Map;
 
 /**
  * A resolver that consumes MCP requests and resolves what type of tool
  * should handle it
  */
 public interface ToolsResolver extends Resolver {
-
-    /**
-     * The index file containing the targets
-     * @return
-     */
-    default File targetsIndexFile() {
-        return new File(indexBaseDirectory(), DEFAULT_TARGET_TOOLS_INDEX_FILE_NAME);
-    }
 
     /**
      * Given a reference, resolves what tool would call it

@@ -13,16 +13,8 @@ public interface Resolver {
     String DEFAULT_TARGET_TOOLS_INDEX_FILE_NAME = "tools-targets.json";
 
     /**
-     * The base directory for the index file
-     * @return
-     */
-    default File indexBaseDirectory() {
-        return indexLocation().getParentFile();
-    }
-
-    /**
      * The location of the index file
      * @return
      */
-    File indexLocation();
+    String index();
 }

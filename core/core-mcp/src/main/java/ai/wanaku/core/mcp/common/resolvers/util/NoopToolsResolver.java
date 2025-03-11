@@ -20,7 +20,7 @@ public class NoopToolsResolver implements ToolsResolver {
     }
 
     @Override
-    public File indexLocation() {
+    public String index() {
         return null;
     }
 }

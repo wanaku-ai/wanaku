@@ -1,22 +1,23 @@
 package ai.wanaku.core.service.discovery;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Configurations;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.ShutdownEvent;
 import io.valkey.Jedis;
 import io.valkey.JedisPool;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.jboss.logging.Logger;
 
 /**
  * Host information is stored as keys in a hashmap in Valkey. Suppose, for instance, a service
@@ -37,17 +38,21 @@ public class ValkeyRegistry implements ServiceRegistry {
     @Inject
     JedisPool jedisPool;
 
+    private static final String TARGETS_INDEX_PREFIX = "target";
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
     @Override
     public void register(ServiceTarget serviceTarget, Map<String, String> configurations) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
-            jedis.hset(serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_ADDRESS, serviceTarget.toAddress());
-            jedis.hset(serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_TYPE, serviceTarget.getServiceType().asValue());
+            jedis.hset(TARGETS_INDEX_PREFIX + ":" + serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_ADDRESS, serviceTarget.toAddress());
+            jedis.hset(TARGETS_INDEX_PREFIX + ":" + serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_TYPE, serviceTarget.getServiceType().asValue());
 
             LOG.infof("Service %s with target %s registered", serviceTarget.getService(), serviceTarget.toAddress());
 
             for (var entry : configurations.entrySet()) {
                 LOG.infof("Registering configuration %s for service %s", entry.getKey(), serviceTarget.getService());
-                jedis.hset(serviceTarget.getService(), entry.getKey(), entry.getValue());
+                jedis.hset(TARGETS_INDEX_PREFIX + ":" + serviceTarget.getService(), entry.getKey(), entry.getValue());
             }
         } catch (Exception e) {
             LOG.errorf(e, "Failed to register service %s: %s", serviceTarget.getService(), e.getMessage());
@@ -57,10 +62,10 @@ public class ValkeyRegistry implements ServiceRegistry {
     @Override
     public void deregister(String service) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
-            jedis.del(service);
-            LOG.infof("Service %s registered", service);
+            jedis.del(TARGETS_INDEX_PREFIX + ":" + service);
+            LOG.infof("Service %s deregistered", service);
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to register service %s: %s", service, e.getMessage());
+            LOG.errorf(e, "Failed to deregister service %s: %s", service, e.getMessage());
         }
     }
 
@@ -75,7 +80,7 @@ public class ValkeyRegistry implements ServiceRegistry {
     public Map<String, Service> getEntries(ServiceType serviceType) {
         Map<String, Service> entries = new HashMap<>();
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
-            Set<String> keys = jedis.keys("*");
+            Set<String> keys = jedis.keys(TARGETS_INDEX_PREFIX + ":" + "*");
             for (String key : keys) {
                 String sType = jedis.hget(key, ReservedKeys.WANAKU_TARGET_TYPE);
                 if (serviceType.asValue().equals(sType)) {
@@ -112,7 +117,7 @@ public class ValkeyRegistry implements ServiceRegistry {
         configurations.setConfigurations(configurationMap);
         service.setConfigurations(configurations);
 
-        String address = jedis.hget(key, ReservedKeys.WANAKU_TARGET_ADDRESS);
+        String address = jedis.hget(TARGETS_INDEX_PREFIX + ":" + key, ReservedKeys.WANAKU_TARGET_ADDRESS);
         service.setTarget(address);
 
         return service;
