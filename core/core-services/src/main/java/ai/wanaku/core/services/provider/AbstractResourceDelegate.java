@@ -159,7 +159,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         }
         try {
             int waitSeconds = config.registerRetryWaitSeconds();
-            Thread.sleep(waitSeconds * 1000);
+            Thread.sleep(waitSeconds * 1000L);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
