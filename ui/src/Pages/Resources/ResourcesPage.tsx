@@ -139,7 +139,7 @@ export const ResourcesPage: React.FC = () => {
         Resources are a fundamental primitive in MCP that allow servers to
         expose data and content to LLM clients
       </p>
-      <div style={{ background: "#161616", paddingTop: "2rem" }}>
+      <div id="page-content">
         {resourcesList}
       </div>
       {isAddModalOpen && (

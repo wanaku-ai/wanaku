@@ -81,7 +81,7 @@ function App() {
             </HeaderGlobalBar>
           </Header>
 
-          <Content id="main-content" style={{ background: "#262626", padding: 0 }}>
+          <Content id="main-content">
             <Outlet />
           </Content>
         </>

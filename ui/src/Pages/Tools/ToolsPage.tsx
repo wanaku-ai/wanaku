@@ -98,7 +98,7 @@ export const ToolsPage: React.FC = () => {
         by utilizing these tools. Each tool is uniquely identified by a name and
         defined with an input schema outlining the expected parameters.
       </p>
-      <div style={{ background: "#161616", paddingTop: "2rem" }}>
+      <div id="page-content">
         {fetchedData && (
           <ToolsTable
             fetchedData={fetchedData}
