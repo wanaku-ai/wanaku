@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>wanaku-provider-s3</artifactId>
-    <name>Wanaku :: Services :: Providers :: D3</name>
+    <name>Wanaku :: Services :: Providers :: S3</name>
 
     <dependencies>
         <dependency>
