@@ -9,6 +9,9 @@ import {
   HeaderMenuItem,
   HeaderName,
   HeaderNavigation,
+  SideNav,
+  SideNavItems,
+  SideNavMenuItem,
   SkipToContent,
 } from "@carbon/react";
 import { Link, Outlet } from "react-router-dom";
@@ -80,6 +83,44 @@ function App() {
               </HeaderGlobalAction>
             </HeaderGlobalBar>
           </Header>
+
+          <SideNav
+            aria-label="Side navigation"
+            expanded={isSideNavExpanded}
+            isPersistent={false}
+            onOverlayClick={onClickSideNavExpand}
+          >
+            <SideNavItems>
+              <SideNavMenuItem
+                element={Link}
+                to="/home"
+                onClick={onClickSideNavExpand}
+              >
+                Home
+              </SideNavMenuItem>
+              <SideNavMenuItem
+                element={Link}
+                to="/tools"
+                onClick={onClickSideNavExpand}
+              >
+                Tools
+              </SideNavMenuItem>
+              <SideNavMenuItem
+                element={Link}
+                to="/resources"
+                onClick={onClickSideNavExpand}
+              >
+                Resources
+              </SideNavMenuItem>
+              <SideNavMenuItem
+                element={Link}
+                to="/llmchat"
+                onClick={onClickSideNavExpand}
+              >
+                LLMChat
+              </SideNavMenuItem>
+            </SideNavItems>
+          </SideNav>
 
           <Content id="main-content">
             <Outlet />
