@@ -102,7 +102,7 @@ mvn -Pdist -Dnative clean package
 Check if all went well with a dry-run:
 
 ```shell
-jreleaser full-release -Djreleaser.project.version${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --dry-run
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --dry-run
 ```
 
 Then, run `jreleaser` filtering the source ones, and only publishing the Linux native deliverables on GitHub.
