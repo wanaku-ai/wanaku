@@ -4,6 +4,8 @@ package ai.wanaku.api.types;
  * Represents a Wanaku response, which can contain either an error or data.
  *
  * @param <T> The type of the data in the response.
+ * @param error An optional error to include in the response
+ * @param data The data to include in the response.
  */
 public record WanakuResponse<T>(WanakuError error, T data) {
 
