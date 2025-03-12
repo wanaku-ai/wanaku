@@ -15,6 +15,7 @@ import ai.wanaku.api.types.ToolReference;
  */
 public class IndexHelper {
 
+    private IndexHelper() {}
 
     /**
      * Load an index
