@@ -192,6 +192,20 @@ Wanaku implements the MCP protocol and, by definition, should support any client
 
 The details below describe how Wanaku MCP router can be used with some prominent MCP clients: 
 
+### Embedded LLMChat for testing
+
+Wanaku Console includes simple LLMChat specificly designed for quick testing of the tools.
+
+```
+open http://localhost:8080
+```
+
+![Embedded LLMChat for testing](https://github.com/user-attachments/assets/7a80aacd-0da8-435b-8cd9-75cc073dfc79)
+
+1. Setup LLM - baseurl, api key, model, and extra parameters
+2. Select tools
+3. Enter prompt and send
+
 ### HyperChat 
 
 Wanaku works with [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat), however, setting up requires manually editing the `mcp.json` file. You can follow
