@@ -45,6 +45,21 @@ Then, you can launch the containers using:
 docker-compose up -d
 ```
 
+Alternatively, using podman:
+
+```shell
+podman compose up -d
+```
+
+Open Wanaku Console to easily import toolsets, add new tools, resources, and test tools using simple LLMChat:
+
+```shell
+open http://localhost:8080
+```
+
+![Wanaku Console](https://github.com/user-attachments/assets/4da352f8-719c-4ffb-b3d5-d831a295672f)
+
+
 ### Importing a ToolSet
 
 Wanaku ToolSets are a group of tools that you can use to share with friends and colleagues and 
@@ -196,7 +211,7 @@ The details below describe how Wanaku MCP router can be used with some prominent
 
 Wanaku Console includes simple LLMChat specificly designed for quick testing of the tools.
 
-```
+```shell
 open http://localhost:8080
 ```
 
