@@ -87,6 +87,12 @@ distributions:
         platform: osx-aarch_64
       - path: services/providers/wanaku-provider-s3/target/distributions/wanaku-provider-s3-{{projectVersion}}.zip
         platform: linux-x86_64
+  service-tavily:
+    artifacts:
+      - path: services/tools/wanaku-routing-tavily-service/target/distributions/wanaku-routing-tavily-service-{{projectVersion}}.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-routing-tavily-service/target/distributions/wanaku-routing-tavily-service-{{projectVersion}}.zip
+        platform: linux-x86_64
 
   cli-native:
     artifacts:
