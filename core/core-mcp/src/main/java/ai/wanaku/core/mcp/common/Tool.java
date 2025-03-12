@@ -4,6 +4,9 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import ai.wanaku.api.types.ToolReference;
 
+/**
+ * Represents a tool that can be called and executed.
+ */
 public interface Tool {
     /**
      * Call a tool

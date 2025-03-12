@@ -37,6 +37,12 @@ public class ValkeyRegistry implements ServiceRegistry {
     @Inject
     JedisPool jedisPool;
 
+    /**
+     * Registers a new service with the given configurations.
+     *
+     * @param serviceTarget The service target, including its address and type.
+     * @param configurations A map of configuration key-value pairs for the service.
+     */
     @Override
     public void register(ServiceTarget serviceTarget, Map<String, String> configurations) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
@@ -54,6 +60,11 @@ public class ValkeyRegistry implements ServiceRegistry {
         }
     }
 
+    /**
+     * Deregisters a service with the given name.
+     *
+     * @param service The name of the service to deregister.
+     */
     @Override
     public void deregister(String service) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
@@ -64,6 +75,12 @@ public class ValkeyRegistry implements ServiceRegistry {
         }
     }
 
+    /**
+     * Retrieves a service with the given name.
+     *
+     * @param service The name of the service to retrieve.
+     * @return A Service object representing the retrieved service.
+     */
     @Override
     public Service getService(String service) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
@@ -71,6 +88,12 @@ public class ValkeyRegistry implements ServiceRegistry {
         }
     }
 
+    /**
+     * Retrieves a map of services with the given type.
+     *
+     * @param serviceType The type of services to retrieve.
+     * @return A map of Service objects representing the retrieved services.
+     */
     @Override
     public Map<String, Service> getEntries(ServiceType serviceType) {
         Map<String, Service> entries = new HashMap<>();
@@ -91,11 +114,28 @@ public class ValkeyRegistry implements ServiceRegistry {
         return entries;
     }
 
+
+    /**
+     * Creates a new Service object from the given hashmap key.
+     *
+     * @param jedis The Jedis connection used to retrieve service information.
+     * @param key   The hashmap key representing the service.
+     * @return A Service object representing the created service.
+     */
     private static Service newService(Jedis jedis, String key) {
         Set<String> configs = jedis.hkeys(key);
         return toService(jedis, key, configs);
     }
 
+
+    /**
+     * Creates a new Service object from the given hashmap key and configuration keys.
+     *
+     * @param jedis The Jedis connection used to retrieve service information.
+     * @param key   The hashmap key representing the service.
+     * @param configs The set of configuration keys for the service.
+     * @return A Service object representing the created service.
+     */
     private static Service toService(Jedis jedis, String key, Set<String> configs) {
         Service service = new Service();
 
@@ -118,6 +158,14 @@ public class ValkeyRegistry implements ServiceRegistry {
         return service;
     }
 
+
+    /**
+     * Creates a new Configuration object from the given hashmap key and configuration value.
+     *
+     * @param jedis The Jedis connection used to retrieve configuration information.
+     * @param config The hashmap key representing the configuration.
+     * @return A Configuration object representing the created configuration.
+     */
     private static Configuration toConfiguration(Jedis jedis, String config) {
         Configuration configuration = new Configuration();
         configuration.setValue(config);
@@ -127,6 +175,10 @@ public class ValkeyRegistry implements ServiceRegistry {
         return configuration;
     }
 
+
+    /**
+     * Shuts down the Jedis connection pool when the application is stopped.
+     */
     void shutdown(@Observes ShutdownEvent shutdownEvent) {
         jedisPool.close();
     }

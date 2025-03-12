@@ -4,6 +4,9 @@ package ai.wanaku.core.exchange;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Represents a parsed tool invocation request containing the URI and its body.
+ */
 public record ParsedToolInvokeRequest(String uri, String body) {
 
     /**

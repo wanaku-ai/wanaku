@@ -7,18 +7,35 @@ import io.valkey.JedisPool;
 import io.valkey.JedisPoolConfig;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+/**
+ * Provides a configuration-driven connection to Valkey using Jedis.
+ */
 @ApplicationScoped
 public class ValkeyProvider {
 
+    /**
+     * The host address of the Redis instance (default: localhost).
+     */
     @ConfigProperty(name = "valkey.host", defaultValue = "localhost")
     String host;
 
+    /**
+     * The port number of the Redis instance (default: 6379).
+     */
     @ConfigProperty(name = "valkey.port", defaultValue = "6379")
     int port;
 
+    /**
+     * The connection timeout in seconds for the Redis instance (default: 10).
+     */
     @ConfigProperty(name = "valkey.timeout", defaultValue = "10")
     int timeout;
 
+    /**
+     * Produces a JedisPool instance with the configured settings.
+     *
+     * @return A JedisPool instance for connecting to Redis.
+     */
     @Produces
     public JedisPool redisClient() {
         JedisPoolConfig config = new JedisPoolConfig();

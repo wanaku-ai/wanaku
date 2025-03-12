@@ -3,6 +3,9 @@ package ai.wanaku.core.util;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Helper utilities for working with Java collections
+ */
 public class CollectionsHelper {
     private CollectionsHelper() {}
 

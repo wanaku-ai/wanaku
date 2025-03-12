@@ -9,6 +9,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.jboss.logging.Logger;
 
+/**
+ * A provider of a base exception mapper that converts exceptions to standardized responses.
+ */
 @Provider
 public class BaseExceptionMapper implements ExceptionMapper<Exception> {
     private static final Logger LOG = Logger.getLogger(BaseExceptionMapper.class);
