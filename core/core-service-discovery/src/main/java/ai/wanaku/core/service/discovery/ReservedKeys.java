@@ -1,6 +1,5 @@
 package ai.wanaku.core.service.discovery;
 
-import java.util.Collections;
 import java.util.Set;
 
 /**
