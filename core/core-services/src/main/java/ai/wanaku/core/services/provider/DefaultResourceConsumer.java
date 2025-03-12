@@ -13,6 +13,10 @@ import org.apache.camel.ConsumerTemplate;
 public class DefaultResourceConsumer implements ResourceConsumer {
     private final ConsumerTemplate consumer;
 
+    /**
+     * Creates a new instance of the resource consumer
+     * @param camelContext the camel context
+     */
     public DefaultResourceConsumer(CamelContext camelContext) {
         this.consumer = camelContext.createConsumerTemplate();
     }

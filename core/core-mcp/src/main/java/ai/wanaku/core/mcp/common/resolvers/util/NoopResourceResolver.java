@@ -9,6 +9,9 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import io.quarkiverse.mcp.server.ResourceManager;
 
+/**
+ * A resolver that does not to anything (mostly used for testing)
+ */
 public class NoopResourceResolver implements ResourceResolver {
 
     @Override
