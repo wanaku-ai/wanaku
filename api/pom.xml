@@ -12,4 +12,12 @@
     <artifactId>api</artifactId>
     <name>Wanaku :: API</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+    </dependencies>
+
 </project>

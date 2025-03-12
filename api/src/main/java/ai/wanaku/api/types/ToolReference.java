@@ -1,15 +1,29 @@
 package ai.wanaku.api.types;
 
-import java.util.HashMap;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
+@Entity
+@Table(name = "TOOL_REFERENCE")
 public class ToolReference {
+    @Id
     private String name;
     private String description;
     private String uri;
     private String type;
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private InputSchema inputSchema;
 
     public String getName() {
@@ -54,9 +68,20 @@ public class ToolReference {
         this.inputSchema = inputSchema;
     }
 
+    @Entity
+    @Table(name = "INPUT_SCHEMA")
     public static class InputSchema {
+        @Id
         private String type;
-        private Map<String, Property> properties = new HashMap<>();
+        @Id
+        private String name;
+        @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+        @JoinColumns({
+                @JoinColumn(name = "name"),
+                @JoinColumn(name = "inputSchemaType")
+        })
+        private List<Property> properties = new ArrayList<>();
+        @ElementCollection(fetch = FetchType.EAGER)
         private List<String> required;
 
         public String getType() {
@@ -67,12 +92,20 @@ public class ToolReference {
             this.type = type;
         }
 
-        public Map<String, Property> getProperties() {
+        public List<Property> getProperties() {
             return properties;
         }
 
-        public void setProperties(Map<String, Property> properties) {
+        public void setProperties(List<Property> properties) {
             this.properties = properties;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
         }
 
         public List<String> getRequired() {
@@ -99,7 +132,14 @@ public class ToolReference {
         }
     }
 
+    @Entity
+    @Table(name = "PROPERTY")
     public static class Property {
+        @Id
+        private String propertyName;
+        @Id
+        private String name;
+        private String inputSchemaType;
         private String type;
         private String description;
 
@@ -119,6 +159,14 @@ public class ToolReference {
             this.description = description;
         }
 
+        public String getInputSchemaType() {
+            return inputSchemaType;
+        }
+
+        public void setInputSchemaType(String inputSchemaType) {
+            this.inputSchemaType = inputSchemaType;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (o == null || getClass() != o.getClass()) {
@@ -131,6 +179,22 @@ public class ToolReference {
         @Override
         public int hashCode() {
             return Objects.hash(type, description);
+        }
+
+        public String getPropertyName() {
+            return propertyName;
+        }
+
+        public void setPropertyName(String propertyName) {
+            this.propertyName = propertyName;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
         }
     }
 

@@ -24,7 +24,11 @@ public class ToolsHelper {
     public static ToolReference.InputSchema createInputSchema(String type, Map<String, ToolReference.Property> properties) {
         ToolReference.InputSchema schemaInstance = new ToolReference.InputSchema();
         schemaInstance.setType(type);
-        schemaInstance.getProperties().putAll(properties);
+        for (Map.Entry<String, ToolReference.Property> propertyEntry : properties.entrySet()) {
+            propertyEntry.getValue().setPropertyName(propertyEntry.getKey());
+            schemaInstance.getProperties().add(propertyEntry.getValue());
+        }
+
         return schemaInstance;
     }
 

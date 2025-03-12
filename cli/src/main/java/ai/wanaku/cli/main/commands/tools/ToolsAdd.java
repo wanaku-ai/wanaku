@@ -1,15 +1,15 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import java.net.URI;
-import java.util.List;
-
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ToolsService;
 import ai.wanaku.cli.main.support.PropertyHelper;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import org.jboss.logging.Logger;
 import picocli.CommandLine;
+
+import java.net.URI;
+import java.util.List;
 
 @CommandLine.Command(name = "add",description = "Add tools")
 public class ToolsAdd extends BaseCommand {
@@ -65,8 +65,9 @@ public class ToolsAdd extends BaseCommand {
                 ToolReference.Property property = new ToolReference.Property();
                 property.setType(result.dataType());
                 property.setDescription(result.description());
+                property.setPropertyName(result.propertyName());
 
-                inputSchema.getProperties().put(result.propertyName(), property);
+                inputSchema.getProperties().add(property);
             }
         }
 

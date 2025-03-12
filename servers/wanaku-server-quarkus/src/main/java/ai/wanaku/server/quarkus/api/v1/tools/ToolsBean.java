@@ -4,16 +4,18 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import ai.wanaku.core.mcp.providers.Repository;
+import ai.wanaku.core.service.discovery.ToolReferenceRepository;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.util.List;
 
+@Transactional
 @ApplicationScoped
 public class ToolsBean {
     private static final Logger LOG = Logger.getLogger(ToolsBean.class);
@@ -25,13 +27,15 @@ public class ToolsBean {
     ToolsResolver toolsResolver;
 
     @Inject
-    Repository<ToolReference> repository;
+    ToolReferenceRepository repository;
 
     public void add(ToolReference mcpResource) {
+        mcpResource.getInputSchema().setName(mcpResource.getName());
+        for (ToolReference.Property property : mcpResource.getInputSchema().getProperties()) {
+            property.setName(mcpResource.getName());
+        }
+        repository.persist(mcpResource);
         registerTool(mcpResource);
-
-        String index = toolsResolver.index();
-        repository.save(index, mcpResource.getName(), mcpResource);
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
@@ -44,8 +48,8 @@ public class ToolsBean {
         final boolean required = isRequired(toolReference);
 
         Class<?> type = toType(toolReference);
-        toolReference.getInputSchema().getProperties().forEach((key, value) ->
-                toolDefinition.addArgument(key, value.getDescription(), required, type));
+        toolReference.getInputSchema().getProperties().forEach((property) ->
+                toolDefinition.addArgument(property.getPropertyName(), property.getDescription(), required, type));
 
         toolDefinition
                 .setHandler(ta -> tool.call(toolReference, ta))
@@ -63,8 +67,7 @@ public class ToolsBean {
     }
 
     public List<ToolReference> list() {
-        String index = toolsResolver.index();
-        return repository.getAll(index);
+        return repository.listAll();
     }
 
     // TODO:
@@ -88,7 +91,6 @@ public class ToolsBean {
     public void remove(String name) {
         toolManager.removeTool(name);
 
-        String index = toolsResolver.index();
-        repository.delete(index, name);
+        repository.deleteById(name);
     }
 }

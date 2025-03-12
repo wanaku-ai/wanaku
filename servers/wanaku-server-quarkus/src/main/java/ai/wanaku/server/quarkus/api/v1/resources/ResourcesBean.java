@@ -2,17 +2,19 @@ package ai.wanaku.server.quarkus.api.v1.resources;
 
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import ai.wanaku.core.mcp.providers.Repository;
+import ai.wanaku.core.service.discovery.ResourceReferenceRepository;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.util.List;
 
+@Transactional
 @ApplicationScoped
 public class ResourcesBean {
     private static final Logger LOG = Logger.getLogger(ResourcesBean.class);
@@ -24,18 +26,17 @@ public class ResourcesBean {
     ResourceResolver resourceResolver;
 
     @Inject
-    Repository<ResourceReference> repository;
+    ResourceReferenceRepository repository;
 
     public void expose(ResourceReference mcpResource) {
         doExposeResource(mcpResource);
 
-        String index = resourceResolver.index();
-        repository.save(index, mcpResource.getLocation(), mcpResource);
+        repository.persist(mcpResource);
     }
 
     public List<ResourceReference> list() {
-        String index = resourceResolver.index();
-        return repository.getAll(index);
+        // TODO evaluate paging
+        return repository.listAll();
     }
 
     void loadResources(@Observes StartupEvent ev) {
@@ -49,10 +50,10 @@ public class ResourcesBean {
         try {
             for (ResourceReference resourceReference : resources) {
                 doExposeResource(resourceReference);
-            }
 
-            // TODO is it an update?
-//            IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
+                // TODO double check if an updated is needed
+//                repository.persist(resourceReference);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -73,7 +74,6 @@ public class ResourcesBean {
     public void remove(String name) {
         resourceManager.removeResource(name);
 
-        String index = resourceResolver.index();
-        repository.delete(index, name);
+        repository.deleteById(name);
     }
 }

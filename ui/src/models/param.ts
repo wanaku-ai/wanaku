@@ -7,5 +7,6 @@
 
 export interface Param {
   name?: string;
+  resourceReferenceId?: string;
   value?: string;
 }

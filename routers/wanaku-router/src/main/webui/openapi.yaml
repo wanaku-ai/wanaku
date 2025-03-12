@@ -21,9 +21,11 @@ components:
       properties:
         type:
           type: string
+        name:
+          type: string
         properties:
-          type: object
-          additionalProperties:
+          type: array
+          items:
             $ref: "#/components/schemas/Property"
         required:
           type: array
@@ -34,11 +36,21 @@ components:
       properties:
         name:
           type: string
+        location:
+          type: string
+        paramValue:
+          type: string
         value:
           type: string
     Property:
       type: object
       properties:
+        propertyName:
+          type: string
+        name:
+          type: string
+        inputSchemaType:
+          type: string
         type:
           type: string
         description:

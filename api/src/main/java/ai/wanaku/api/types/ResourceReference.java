@@ -1,13 +1,25 @@
 package ai.wanaku.api.types;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
 import java.util.List;
 
+@Table(name = "RESOURCE_REFERENCE")
+@Entity
 public class ResourceReference {
+    @Id
     private String location;
     private String type;
     private String name;
     private String description;
     private String mimeType;
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinColumn(name = "location")
     private List<Param> params;
 
     public String getLocation() {
@@ -58,9 +70,14 @@ public class ResourceReference {
         this.params = params;
     }
 
+    @Table(name = "PARAM")
+    @Entity
     public static class Param {
+        @Id
         private String name;
-        private String value;
+        @Id
+        private String location;
+        private String paramValue;
 
         public String getName() {
             return name;
@@ -71,11 +88,19 @@ public class ResourceReference {
         }
 
         public String getValue() {
-            return value;
+            return paramValue;
         }
 
         public void setValue(String value) {
-            this.value = value;
+            this.paramValue = value;
+        }
+
+        public String getLocation() {
+            return location;
+        }
+
+        public void setLocation(String location) {
+            this.location = location;
         }
     }
 }
