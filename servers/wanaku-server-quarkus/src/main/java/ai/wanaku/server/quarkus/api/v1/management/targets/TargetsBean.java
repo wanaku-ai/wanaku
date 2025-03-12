@@ -1,31 +1,23 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.exceptions.ResourceNotFoundException;
+import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.core.mcp.ServiceEntity;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceType;
-import ai.wanaku.core.util.IndexHelper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import io.quarkus.runtime.StartupEvent;
+import ai.wanaku.core.service.discovery.ServiceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 
-import static ai.wanaku.api.types.management.Service.newService;
-
+@Transactional
 @ApplicationScoped
 public class TargetsBean {
     private static final Logger LOG = Logger.getLogger(TargetsBean.class);
@@ -39,20 +31,39 @@ public class TargetsBean {
     @Inject
     ServiceRegistry serviceRegistry;
 
-    public void configureTools(String service, String option, String value)
-            throws IOException {
-        Map<String, String> configurations = toolsConfigurations(service);
-        configurations.put(option, value);
+    @Inject
+    ServiceRepository serviceRepository;
 
-        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
+    public void configureTools(String service, String option, String value) {
+        // TODO why is it needed?
+        Map<String, String> configurations = toolsConfigurations(service);
+
+        ServiceEntity serviceEntity = serviceRepository.findByIdAndServiceType(service, ServiceType.TOOL_INVOKER);
+        if (serviceEntity == null) {
+            throw new ToolNotFoundException("Tool not found: " + service);
+        }
+        if (!serviceEntity.getConfigurations().containsKey(option)) {
+            throw new WanakuException("The option '" + option + "' cannot be configured on the Service: " + service);
+        }
+        serviceEntity.getConfigurations().get(option).setValue(value);
+
+        serviceRepository.update(serviceEntity);
     }
 
-    public void configureResources(String service, String option, String value)
-            throws IOException {
-        Map<String, String> configurations = resourcesConfigurations(service);
-        configurations.put(option, value);
+    public void configureResources(String service, String option, String value) {
+        // TODO why is it needed?
+//        Map<String, String> configurations = resourcesConfigurations(service);
 
-        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
+        ServiceEntity serviceEntity = serviceRepository.findByIdAndServiceType(service, ServiceType.RESOURCE_PROVIDER);
+        if (serviceEntity == null) {
+            throw new ResourceNotFoundException("Resource not found: " + service);
+        }
+        if (!serviceEntity.getConfigurations().containsKey(option)) {
+            throw new WanakuException("The option '" + option + "' cannot be configured on the Service: " + service);
+        }
+        serviceEntity.getConfigurations().get(option).setValue(value);
+
+        serviceRepository.update(serviceEntity);
     }
 
     public Map<String,Service> toolList() {
@@ -78,8 +89,5 @@ public class TargetsBean {
         }
         return configurations;
     }
-
-
-
 
 }

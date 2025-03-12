@@ -1,4 +1,4 @@
-package ai.wanaku.server.quarkus.support;
+package org.wanaku.server.quarkus.support;
 
 import java.io.File;
 

@@ -20,12 +20,6 @@
             <artifactId>core-mcp</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>io.valkey</groupId>
-            <artifactId>valkey-java</artifactId>
-            <version>${valkey-java.version}</version>
-        </dependency>
     </dependencies>
 
 

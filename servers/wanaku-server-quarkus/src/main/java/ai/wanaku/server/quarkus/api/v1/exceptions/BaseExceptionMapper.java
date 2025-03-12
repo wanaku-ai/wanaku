@@ -25,7 +25,7 @@ public class BaseExceptionMapper implements ExceptionMapper<Exception> {
     )
     @Override
     public Response toResponse(Exception e) {
-        LOG.error(e);
+        LOG.error(e.getMessage(), e);
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new WanakuResponse<Void>(GENERIC_ERROR)).build();

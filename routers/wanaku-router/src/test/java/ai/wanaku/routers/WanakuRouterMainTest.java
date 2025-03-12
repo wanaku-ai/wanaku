@@ -1,13 +1,5 @@
 package ai.wanaku.routers;
 
-import io.quarkus.test.common.QuarkusTestResource;
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.resolvers.Resolver;
 import ai.wanaku.core.util.support.ToolsHelper;
@@ -16,8 +8,11 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -25,10 +20,14 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@QuarkusTestResource(ValkeyResource.class)
+@QuarkusTestResource(MongoDBResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class WanakuRouterMainTest {
@@ -107,7 +106,6 @@ public class WanakuRouterMainTest {
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(0));
-
 
         try (McpClient mcpClient = createClient()) {
             List<ToolSpecification> toolSpecifications = mcpClient.listTools();

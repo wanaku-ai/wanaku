@@ -1,39 +1,45 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
+import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.core.mcp.ResourceReferenceEntity;
+import ai.wanaku.core.util.support.ResourcesHelper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoDatabase;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Assumptions;
+import org.bson.Document;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.core.util.support.ResourcesHelper;
-import ai.wanaku.server.quarkus.support.TestIndexHelper;
+import org.wanaku.server.quarkus.support.MongoDBResource;
 
+import static ai.wanaku.core.util.support.ResourcesHelper.createResource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
-import static ai.wanaku.core.util.support.ResourcesHelper.createResource;
 
+@QuarkusTestResource(MongoDBResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class ResourcesResourceTest {
 
-    public static final List<ResourceReference> RESOURCE_REFERENCES = ResourcesHelper.testFixtures();
-
     @BeforeAll
-    static void setup() throws IOException {
-        File indexFile = TestIndexHelper.createResourcesIndex();
+    public static void beforeAll() throws JsonProcessingException {
+        MongoDatabase mongoDatabase = MongoDBResource.getDatabase();
 
-        // Verify that the file exists and is not empty
-        Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");
+        mongoDatabase.createCollection(ResourceReferenceEntity.COLLECTION_NAME);
+
+        ObjectMapper mapper = new ObjectMapper();
+        for (ResourceReference resourceReference : ResourcesHelper.testFixtures()) {
+            Document d = Document.parse(mapper.writeValueAsString(resourceReference));
+            d.append("_id", resourceReference.getName());
+
+            mongoDatabase.getCollection(ResourceReferenceEntity.COLLECTION_NAME).insertOne(d);
+        }
     }
 
     @Order(1)

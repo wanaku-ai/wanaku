@@ -17,6 +17,10 @@
             <artifactId>api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mongodb-panache</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>

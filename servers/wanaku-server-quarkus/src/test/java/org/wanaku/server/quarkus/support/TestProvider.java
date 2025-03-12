@@ -1,9 +1,8 @@
-package ai.wanaku.server.quarkus.support;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
+package org.wanaku.server.quarkus.support;
 
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 @ApplicationScoped
 public class TestProvider {

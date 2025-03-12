@@ -1,21 +1,23 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
-import java.io.File;
-import java.util.List;
-
+import ai.wanaku.api.exceptions.ToolNotFoundException;
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.core.mcp.ToolReferenceEntity;
+import ai.wanaku.core.mcp.common.Tool;
+import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import ai.wanaku.core.service.discovery.ToolReferenceRepository;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkus.runtime.StartupEvent;
+import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.mcp.common.Tool;
-import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import ai.wanaku.core.util.IndexHelper;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Transactional
 @ApplicationScoped
 public class ToolsBean {
     private static final Logger LOG = Logger.getLogger(ToolsBean.class);
@@ -26,17 +28,12 @@ public class ToolsBean {
     @Inject
     ToolsResolver toolsResolver;
 
-    public void add(ToolReference mcpResource) {
-        registerTool(mcpResource);
+    @Inject
+    ToolReferenceRepository toolReferenceRepository;
 
-        File indexFile = toolsResolver.indexLocation();
-        try {
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-            toolReferences.add(mcpResource);
-            IndexHelper.saveToolsIndex(indexFile, toolReferences);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public void add(ToolReference mcpResource) {
+        toolReferenceRepository.persist(new ToolReferenceEntity(mcpResource));
+        registerTool(mcpResource);
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
@@ -68,12 +65,11 @@ public class ToolsBean {
     }
 
     public List<ToolReference> list() {
-        File indexFile = toolsResolver.indexLocation();
-        try {
-            return IndexHelper.loadToolsIndex(indexFile);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        List<ToolReferenceEntity> toolReferenceEntities = toolReferenceRepository.listAll();
+
+        return toolReferenceEntities.stream()
+                .map(toolReferenceEntity -> toolReferenceEntity.asToolReference())
+                .collect(Collectors.toList());
     }
 
     // TODO:
@@ -82,34 +78,15 @@ public class ToolsBean {
     }
 
     void loadTools(@Observes StartupEvent ev) {
-        File indexFile = toolsResolver.indexLocation();
-        if (!indexFile.exists()) {
-            LOG.warnf("Index file not found: %s", indexFile);
-            return;
-        }
-
-        try {
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-            for (ToolReference toolReference : toolReferences) {
-                registerTool(toolReference);
-            }
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to load tools from file: %s", indexFile);
-            throw new RuntimeException(e);
+        for (ToolReference toolReference : list()) {
+            registerTool(toolReference);
         }
     }
 
     public void remove(String name) {
-        toolManager.removeTool(name);
-
-        File indexFile = toolsResolver.indexLocation();
-        try {
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-            toolReferences.removeIf(tool -> tool.getName().equals(name));
-            IndexHelper.saveToolsIndex(indexFile, toolReferences);
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to remove tools from file: %s", indexFile);
-            throw new RuntimeException(e);
+        if (!toolReferenceRepository.deleteById(name)) {
+            throw new ToolNotFoundException("Tool not found: " + name);
         }
+        toolManager.removeTool(name);
     }
 }

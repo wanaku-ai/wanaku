@@ -22,6 +22,8 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 /**
@@ -84,7 +86,7 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public Map<String, String> getServiceConfigurations(String target) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(serviceRegistry.getService(target).getTarget())
                 .usePlaintext()
                 .build();
 

@@ -10,6 +10,8 @@ import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.routers.proxies.resources.ResourceAcquirerProxy;
 import ai.wanaku.routers.resolvers.WanakuResourceResolver;
 import java.io.File;
+
+import jakarta.transaction.Transactional;
 import picocli.CommandLine;
 
 import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_RESOURCES_INDEX_FILE_NAME;
@@ -18,6 +20,7 @@ import static ai.wanaku.core.mcp.common.resolvers.Resolver.DEFAULT_RESOURCES_IND
  * A provider for resources resolvers
  */
 @ApplicationScoped
+@Transactional
 public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
     @Inject
     CommandLine.ParseResult parseResult;

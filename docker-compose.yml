@@ -1,103 +1,123 @@
 version: '3'
 
 services:
-  valkey:
-    image: valkey/valkey
-    ports:
-      - "6379:6379"
-
-  wanaku-routing-http-service:
-    depends_on:
-      - valkey
-    image: quay.io/wanaku/wanaku-routing-http-service
+  mongodb:
+    image: mongo:8.0.5
+    volumes:
+      - mongo:/data/db
     environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
+      MONGO_INITDB_DATABASE: attachments
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
     ports:
-      - "9000:9000"
-  wanaku-routing-yaml-route-service:
+      - "27017:27017"
+    command: "--bind_ip_all --quiet --logpath /dev/null --replSet rs0"
+  mongo-init:
+    image: mongo:8.0.5
+    restart: "no"
     depends_on:
-      - valkey
-    image: quay.io/wanaku/wanaku-routing-yaml-route-service
-    environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
-    ports:
-      - "9001:9000"
+      mongodb:
+        condition: service_healthy
+    command: >
+      mongosh --host mongodb:27017 --eval
+      '
+      rs.initiate( {
+         _id : "rs0",
+         members: [
+            { _id: 0, host: "localhost:27017" }
+         ]
+      })
+      '
 
-# Uncomment if you want to enable Kafka
-#  wanaku-routing-kafka-service:
+#  wanaku-routing-http-service:
 #    depends_on:
-#      - valkey
-#    image: quay.io/wanaku/wanaku-routing-kafka-service
+#      - mongodb
+#    image: quay.io/wanaku/wanaku-routing-http-service
 #    environment:
-#      VALKEY_HOST: valkey
-#      VALKEY_PORT: 6379
-#      VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
 #    ports:
-#      - "9003:9000"
-
-  wanaku-routing-tavily-service:
-    depends_on:
-      - valkey
-    image: quay.io/wanaku/wanaku-routing-tavily-service
-    environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
-    ports:
-      - "9006:9000"
-
-  wanaku-provider-file:
-    depends_on:
-      - valkey
-    image: quay.io/wanaku/wanaku-provider-file
-    environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
-    ports:
-      - "9002:9000"
-
-  wanaku-provider-ftp:
-    depends_on:
-      - valkey
-    image: quay.io/wanaku/wanaku-provider-ftp
-    environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
-    ports:
-      - "9004:9000"
-
-# Uncomment the lines below to enable access to AWS S3
-#  wanaku-provider-s3:
+#      - "9000:9000"
+#  wanaku-routing-yaml-route-service:
 #    depends_on:
-#      - valkey
-#    image: quay.io/wanaku/wanaku-provider-s3
+#      - mongodb
+#    image: quay.io/wanaku/wanaku-routing-yaml-route-service
 #    environment:
-#      VALKEY_HOST: valkey
-#      VALKEY_PORT: 6379
-#      VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
 #    ports:
-#      - "9005:9000"
+#      - "9001:9000"
+#
+## Uncomment if you want to enable Kafka
+##  wanaku-routing-kafka-service:
+##    depends_on:
+##      - mongodb
+##    image: quay.io/wanaku/wanaku-routing-kafka-service
+##    environment:
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
+##    ports:
+##      - "9003:9000"
+#
+#  wanaku-routing-tavily-service:
+#    depends_on:
+#      - mongodb
+#    image: quay.io/wanaku/wanaku-routing-tavily-service
+#    environment:
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
+#    ports:
+#      - "9006:9000"
+#
+#  wanaku-provider-file:
+#    depends_on:
+#      - mongodb
+#    image: quay.io/wanaku/wanaku-provider-file
+#    environment:
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
+#    ports:
+#      - "9002:9000"
+#
+#  wanaku-provider-ftp:
+#    depends_on:
+#      - mongodb
+#    image: quay.io/wanaku/wanaku-provider-ftp
+#    environment:
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
+#    ports:
+#      - "9004:9000"
+#
+## Uncomment the lines below to enable access to AWS S3
+##  wanaku-provider-s3:
+##    depends_on:
+##      - mongodb
+##    image: quay.io/wanaku/wanaku-provider-s3
+##    environment:
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
+##    ports:
+##      - "9005:9000"
+#
+#  wanaku-router:
+#    depends_on:
+#      - wanaku-routing-http-service
+##      - wanaku-routing-kafka-service
+#      - wanaku-routing-tavily-service
+#      - wanaku-routing-yaml-route-service
+#      - wanaku-provider-file
+#      - wanaku-provider-ftp
+##      - wanaku-provider-s3
+#    image: quay.io/wanaku/wanaku-router
+#    environment:
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      QUARKUS_MONGODB_DATABASE: wanaku
+#    ports:
+#      - "8080:8080"
 
-  wanaku-router:
-    depends_on:
-      - wanaku-routing-http-service
-#      - wanaku-routing-kafka-service
-      - wanaku-routing-tavily-service
-      - wanaku-routing-yaml-route-service
-      - wanaku-provider-file
-      - wanaku-provider-ftp
-#      - wanaku-provider-s3
-      - valkey
-    image: quay.io/wanaku/wanaku-router
-    environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
-    ports:
-      - "8080:8080"
+volumes:
+  mongo:

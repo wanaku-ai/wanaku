@@ -1,39 +1,46 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.core.mcp.ToolReferenceEntity;
+import ai.wanaku.core.util.support.ToolsHelper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoDatabase;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Assumptions;
+import org.bson.Document;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.util.support.ToolsHelper;
-import ai.wanaku.server.quarkus.support.TestIndexHelper;
+import org.wanaku.server.quarkus.support.MongoDBResource;
+
+import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
+@QuarkusTestResource(MongoDBResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class ToolsResourceTest {
 
-    public static final List<ToolReference> TOOL_REFERENCES = ToolsHelper.testFixtures();
-
     @BeforeAll
-    static void setup() throws IOException {
-        File indexFile = TestIndexHelper.createToolsIndex();
+    public static void beforeAll() throws JsonProcessingException {
+        MongoDatabase mongoDatabase = MongoDBResource.getDatabase();
 
-        // Verify that the file exists and is not empty
-        Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");
+        mongoDatabase.createCollection(ToolReferenceEntity.COLLECTION_NAME);
+
+        ObjectMapper mapper = new ObjectMapper();
+        for (ToolReference toolReference : ToolsHelper.testFixtures()) {
+            Document d = Document.parse(mapper.writeValueAsString(toolReference));
+            d.append("_id", toolReference.getName());
+
+            mongoDatabase.getCollection(ToolReferenceEntity.COLLECTION_NAME).insertOne(d);
+        }
     }
 
     @Order(1)
@@ -88,5 +95,14 @@ public class ToolsResourceTest {
                         "data[0].name", is("Tool 1"),
                         "data[0].type", is("http"),
                         "data[0].description", is("This is a description of Tool 1."));
+    }
+
+    @Order(4)
+    @Test
+    void testRemoveNonExistentTool() {
+        given()
+                .when().put("/api/v1/tools/remove?tool=test-tool-non-existent-tool")
+                .then()
+                .statusCode(Response.Status.NOT_FOUND.getStatusCode());
     }
 }
