@@ -20,7 +20,7 @@ public class ValkeyProvider {
     int timeout;
 
     @Produces
-    public JedisPool consulClient() {
+    public JedisPool redisClient() {
         JedisPoolConfig config = new JedisPoolConfig();
 
         // It is recommended that you set maxTotal = maxIdle = 2*minIdle for best performance
