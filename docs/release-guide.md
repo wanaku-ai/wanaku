@@ -59,7 +59,33 @@ mvn release:clean
 mvn --batch-mode -Dtag=wanaku-${CURRENT_DEVELOPMENT_VERSION} release:prepare -DreleaseVersion=${CURRENT_DEVELOPMENT_VERSION} -DdevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}-SNAPSHOT
 ```
 
-At this point, build the code to regenerate the UI files with the openAPI specification. 
+Commit the auto-generated UI files:
+
+```shell
+mvn -PcommitFiles scm:checkin
+```
+
+**NOTE**: do not perform any other manual commit nor push the code. If necessary, append to the UI commit.
+
+Erase the tag created incorrectly by Maven
+
+```shell
+git tag -d wanaku-${CURRENT_DEVELOPMENT_VERSION}
+```
+
+Recreate the release tag by marking tagging at exactly two commits before HEAD (i.: ignoring the version bumps from maven)
+
+```shell
+git tag wanaku-${CURRENT_DEVELOPMENT_VERSION} HEAD~2
+```
+
+Push the code to the repository:
+
+```shell
+git push upstream wanaku-${CURRENT_DEVELOPMENT_VERSION}
+```
+
+Now continue with the release:
 
 ```
 mvn -Pdist release:perform
