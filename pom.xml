@@ -27,8 +27,8 @@
         <connection>scm:git:https://github.com/wanaku-ai/wanaku.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/wanaku-ai/wanaku.git</developerConnection>
         <url>https://github.com/wanaku-ai/wanaku</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <licenses>
         <license>
@@ -46,6 +46,8 @@
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
         <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
         <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
+        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <maven-scm-plugin.version>2.1.0</maven-scm-plugin.version>
     </properties>
 
     <build>
@@ -56,6 +58,18 @@
                 <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <preparationGoals>-PcommitFiles clean scm:add scm:checkin install</preparationGoals>
+                    <completionGoals>-PcommitFiles clean scm:add scm:checkin install</completionGoals>
+                    <pushChanges>false</pushChanges>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <repositories>
@@ -141,14 +155,26 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <configuration>
-                            <preparationGoals>clean install</preparationGoals>
-                        </configuration>
-                    </plugin>
-
                 </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>commitFiles</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-scm-plugin</artifactId>
+                            <version>${maven-scm-plugin.version}</version>
+                            <configuration>
+                                <message>[maven-scm-plugin] Update version in UI files</message>
+                                <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
+                                <excludes>ui/node_modules/**</excludes>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
     </profiles>
