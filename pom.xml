@@ -61,20 +61,11 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-scm-plugin</artifactId>
-                <version>${maven-scm-plugin.version}</version>
-                <configuration>
-                    <message>[maven-scm-plugin] Update version in UI files</message>
-                    <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
-                    <excludes>ui/node_modules/**</excludes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>${maven-release-plugin.version}</version>
                 <configuration>
-                    <preparationGoals>clean scm:checkin install</preparationGoals>
+                    <preparationGoals>-PcommitFiles clean scm:add scm:checkin install</preparationGoals>
+                    <completionGoals>-PcommitFiles clean scm:add scm:checkin</completionGoals>
                 </configuration>
             </plugin>
         </plugins>
@@ -164,6 +155,25 @@
                         </executions>
                     </plugin>
                 </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>commitFiles</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-scm-plugin</artifactId>
+                            <version>${maven-scm-plugin.version}</version>
+                            <configuration>
+                                <message>[maven-scm-plugin] Update version in UI files</message>
+                                <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
+                                <excludes>ui/node_modules/**</excludes>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
     </profiles>
