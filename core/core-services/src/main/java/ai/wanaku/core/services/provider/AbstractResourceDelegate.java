@@ -15,6 +15,7 @@ import ai.wanaku.core.services.config.WanakuProviderConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.camel.catalog.CamelCatalog;
 import org.apache.camel.catalog.DefaultCamelCatalog;
@@ -123,9 +124,15 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     }
 
     protected Map<String, String> componentOptions(String name, Map<String, String> opt) {
+        Objects.requireNonNull(name, "The component name must not be null");
+
         CamelCatalog catalog = new DefaultCamelCatalog(true);
 
         final ComponentModel componentModel = catalog.componentModel(name);
+        if (componentModel == null) {
+            LOG.warnf("No component model found for component: %s", name);
+            return Map.of();
+        }
         final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
         for (BaseOptionModel option : options) {
             if (option.getLabel().contains("consumer") || option.getLabel().contains("common") ||
