@@ -313,7 +313,7 @@ paths:
       - Tools Resource
 info:
   title: wanaku-router API
-  version: 0.0.3
+  version: 0.0.4-SNAPSHOT
 servers:
 - url: http://localhost:8080
   description: Auto generated value
