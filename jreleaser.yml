@@ -55,7 +55,7 @@ distributions:
     artifacts:
       - path: services/tools/wanaku-routing-yaml-route-service/target/distributions/wanaku-routing-yaml-route-service-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
+      - path: services/tools/wanaku-routing-yaml-route-service/target/distributions/wanaku-routing-yaml-route-service-{{projectVersion}}.zip
         platform: linux-x86_64
   service-kafka:
     artifacts:
