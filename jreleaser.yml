@@ -106,23 +106,11 @@ distributions:
         platform: osx-aarch_64
       - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
-  service-yaml-route-native:
-    artifacts:
-      - path: services/tools/wanaku-routing-yaml-route-service/target/distributions/wanaku-routing-yaml-route-service-{{projectVersion}}-osx-aarch_64.zip
-        platform: osx-aarch_64
-      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}-linux-x86_64.zip
-        platform: linux-x86_64
   service-kafka-native:
     artifacts:
       - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
       - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}-linux-x86_64.zip
-        platform: linux-x86_64
-  service-http-native:
-    artifacts:
-      - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}-osx-aarch_64.zip
-        platform: osx-aarch_64
-      - path: services/tools/wanaku-routing-http-service/target/distributions/wanaku-routing-http-service-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
   provider-file-native:
     artifacts:
