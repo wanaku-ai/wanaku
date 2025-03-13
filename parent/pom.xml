@@ -53,6 +53,7 @@
         <quarkus-quinoa.version>2.5.1</quarkus-quinoa.version>
         <test-containers.version>1.20.6</test-containers.version>
         <valkey-java.version>5.3.0</valkey-java.version>
+        <commons-pool2.version>2.12.1</commons-pool2.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>

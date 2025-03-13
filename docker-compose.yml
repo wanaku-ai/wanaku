@@ -9,7 +9,7 @@ services:
   wanaku-routing-http-service:
     depends_on:
       - valkey
-    image: quay.io/wanaku/wanaku-routing-http-service
+    image: quay.io/wanaku/wanaku-routing-http-service:release-prep
     environment:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
@@ -19,7 +19,7 @@ services:
   wanaku-routing-yaml-route-service:
     depends_on:
       - valkey
-    image: quay.io/wanaku/wanaku-routing-yaml-route-service
+    image: quay.io/wanaku/wanaku-routing-yaml-route-service:release-prep
     environment:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
@@ -31,7 +31,7 @@ services:
 #  wanaku-routing-kafka-service:
 #    depends_on:
 #      - valkey
-#    image: quay.io/wanaku/wanaku-routing-kafka-service
+#    image: quay.io/wanaku/wanaku-routing-kafka-service:release-prep
 #    environment:
 #      VALKEY_HOST: valkey
 #      VALKEY_PORT: 6379
@@ -42,7 +42,7 @@ services:
   wanaku-routing-tavily-service:
     depends_on:
       - valkey
-    image: quay.io/wanaku/wanaku-routing-tavily-service
+    image: quay.io/wanaku/wanaku-routing-tavily-service:release-prep
     environment:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
@@ -53,7 +53,7 @@ services:
   wanaku-provider-file:
     depends_on:
       - valkey
-    image: quay.io/wanaku/wanaku-provider-file
+    image: quay.io/wanaku/wanaku-provider-file:release-prep
     environment:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
@@ -61,22 +61,22 @@ services:
     ports:
       - "9002:9000"
 
-  wanaku-provider-ftp:
-    depends_on:
-      - valkey
-    image: quay.io/wanaku/wanaku-provider-ftp
-    environment:
-      VALKEY_HOST: valkey
-      VALKEY_PORT: 6379
-      VALKEY_TIMEOUT: 10
-    ports:
-      - "9004:9000"
+#  wanaku-provider-ftp:
+#    depends_on:
+#      - valkey
+#    image: quay.io/wanaku/wanaku-provider-ftp:release-prep
+#    environment:
+#      VALKEY_HOST: valkey
+#      VALKEY_PORT: 6379
+#      VALKEY_TIMEOUT: 10
+#    ports:
+#      - "9004:9000"
 
 # Uncomment the lines below to enable access to AWS S3
 #  wanaku-provider-s3:
 #    depends_on:
 #      - valkey
-#    image: quay.io/wanaku/wanaku-provider-s3
+#    image: quay.io/wanaku/wanaku-provider-s3:release-prep
 #    environment:
 #      VALKEY_HOST: valkey
 #      VALKEY_PORT: 6379
@@ -91,10 +91,10 @@ services:
       - wanaku-routing-tavily-service
       - wanaku-routing-yaml-route-service
       - wanaku-provider-file
-      - wanaku-provider-ftp
+#      - wanaku-provider-ftp
 #      - wanaku-provider-s3
       - valkey
-    image: quay.io/wanaku/wanaku-router
+    image: quay.io/wanaku/wanaku-router:release-prep
     environment:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
