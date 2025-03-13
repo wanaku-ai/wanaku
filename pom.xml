@@ -58,6 +58,26 @@
                 <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>${maven-scm-plugin.version}</version>
+                <configuration>
+                    <message>[maven-scm-plugin] Update version in UI files</message>
+                    <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
+                    <excludes>ui/node_modules/**</excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <preparationGoals>clean scm:checkin install</preparationGoals>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <repositories>
@@ -142,24 +162,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>${maven-release-plugin.version}</version>
-                        <configuration>
-                            <preparationGoals>-Pdist clean scm:checkin install</preparationGoals>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-scm-plugin</artifactId>
-                        <version>${maven-scm-plugin.version}</version>
-                        <configuration>
-                            <message>[maven-scm-plugin] set ${replacerVersion} version in files</message>
-                            <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
-                            <excludes>ui/node_modules/**</excludes>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
