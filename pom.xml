@@ -65,7 +65,7 @@
                 <version>${maven-release-plugin.version}</version>
                 <configuration>
                     <preparationGoals>-PcommitFiles clean scm:add scm:checkin install</preparationGoals>
-                    <completionGoals>-PcommitFiles clean scm:add scm:checkin</completionGoals>
+                    <completionGoals>-PcommitFiles clean scm:add scm:checkin install</completionGoals>
                 </configuration>
             </plugin>
         </plugins>
