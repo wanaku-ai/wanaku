@@ -27,8 +27,8 @@
         <connection>scm:git:https://github.com/wanaku-ai/wanaku.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/wanaku-ai/wanaku.git</developerConnection>
         <url>https://github.com/wanaku-ai/wanaku</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <licenses>
         <license>
@@ -46,6 +46,8 @@
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
         <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
         <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
+        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <maven-scm-plugin.version>2.1.0</maven-scm-plugin.version>
     </properties>
 
     <build>
@@ -142,12 +144,23 @@
                         </executions>
                     </plugin>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-release-plugin</artifactId>
+                        <version>${maven-release-plugin.version}</version>
                         <configuration>
-                            <preparationGoals>clean install</preparationGoals>
+                            <preparationGoals>-Pdist clean scm:checkin install</preparationGoals>
                         </configuration>
                     </plugin>
-
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-scm-plugin</artifactId>
+                        <version>${maven-scm-plugin.version}</version>
+                        <configuration>
+                            <message>[maven-scm-plugin] set ${replacerVersion} version in files</message>
+                            <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
+                            <excludes>ui/node_modules/**</excludes>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
