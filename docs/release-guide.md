@@ -57,6 +57,11 @@ If everything goes alright, then it should be ready to release.
 ```shell
 mvn release:clean
 mvn --batch-mode -Dtag=wanaku-${CURRENT_DEVELOPMENT_VERSION} release:prepare -DreleaseVersion=${CURRENT_DEVELOPMENT_VERSION} -DdevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}-SNAPSHOT
+```
+
+At this point, build the code to regenerate the UI files with the openAPI specification. 
+
+```
 mvn -Pdist release:perform
 ```
 
