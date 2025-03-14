@@ -284,7 +284,7 @@ simple for users to create custom services that solve their particular need.
 To create a custom resource provider, you can run: 
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=0.0.2 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S3 -Dwanaku-version=0.0.2
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S3 -Dwanaku-version=0.0.3
 ```
 
 ### Creating a New Tool Service
@@ -292,7 +292,7 @@ mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wan
 To create a custom tool service, you can run:
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.2 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.routing.service -DartifactId=wanaku-routing-jms-service -Dname=JMS -Dwanaku-version=0.0.2
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.routing.service -DartifactId=wanaku-routing-jms-service -Dname=JMS -Dwanaku-version=0.0.3
 ```
 
 ### Adjusting Your Resource Provider or Tool Service
