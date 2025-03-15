@@ -39,3 +39,12 @@ body {
 .tabbg {
   background: theme.$background;
 }
+
+.message {
+  padding: 0.5rem;
+  background: theme.$layer-02;
+  border-radius: 4px;
+  width: 100%;
+  word-wrap: break-word;
+  border: 1px solid theme.$border-subtle;
+}
