@@ -47,6 +47,7 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+      # TAVILY_API_KEY: include-you-api-key-here
     ports:
       - "9006:9000"
 

@@ -272,6 +272,7 @@ The following tools services can be made available using Wanaku and used to prov
 | `kafka`      | wanaku-routing-kafka-service      | Provides access to Kafka topics as tools via Wanaku                         |
 | `tavily`     | wanaku-routing-tavily-service     | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
 
+NOTE: some services (i.e.; Tavily, S3, etc.) may require API keys and/or other forms of authentication. Check the README.md files in each service documentation for more details.
 
 ## Adding Your Own Resource Provider or Tool Service
 
