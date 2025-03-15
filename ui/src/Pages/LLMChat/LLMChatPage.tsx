@@ -423,16 +423,7 @@ export const LLMChatPage: React.FC = () => {
           <Icon />
           {title}
         </div>
-        <div
-          style={{
-            padding: "0.5rem",
-            background: "#393939",
-            borderRadius: "4px",
-            width: "100%",
-            wordWrap: "break-word",
-            border: "1px solid #525252",
-          }}
-        >
+        <div className="message">
           {(message.role === "tool-response" && (
             <p
               dangerouslySetInnerHTML={{
@@ -448,7 +439,10 @@ export const LLMChatPage: React.FC = () => {
   return (
     <div>
       <h1 className="title">LLM Chat for testing</h1>
-      <Tabs selectedIndex={tabIndex} onChange={({ selectedIndex }) => setTabIndex(selectedIndex)}>
+      <Tabs
+        selectedIndex={tabIndex}
+        onChange={({ selectedIndex }) => setTabIndex(selectedIndex)}
+      >
         <TabList scrollDebounceWait={200} style={{ padding: "0 2rem" }}>
           <Tab>LLM Setup</Tab>
           <Tab>Tools Selection</Tab>
