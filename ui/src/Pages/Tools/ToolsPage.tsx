@@ -6,6 +6,7 @@ import {
   Select,
   SelectItem,
   TextArea,
+  Stack,
 } from "@carbon/react";
 import { useTools } from "../../hooks/api/use-tools";
 import { ToolReference } from "../../models";
@@ -216,8 +217,24 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({
   onSubmit,
 }) => {
   const [toolsetJson, setToolsetJson] = useState("");
+  const [toolsetUrl, setToolsetUrl] = useState("");
 
-  const handleSubmit = () => {
+  const handleFetchToolset = async () => {
+    if (toolsetUrl) {
+      try {
+        const response = await fetch(toolsetUrl);
+        if (!response.ok) {
+          throw new Error("Failed to fetch toolset from URL");
+        }
+        const tools = await response.json();
+        setToolsetJson(JSON.stringify(tools, null, 2));
+      } catch (error) {
+        console.error("Error fetching toolset from URL:", error);
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
     try {
       const tools = JSON.parse(toolsetJson);
       onSubmit(tools);
@@ -235,14 +252,27 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({
       onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}
     >
-      <TextArea
-        id="toolset-json"
-        labelText="Toolset JSON"
-        placeholder="Paste your JSON array here"
-        rows={10}
-        value={toolsetJson}
-        onChange={(e) => setToolsetJson(e.target.value)}
-      />
+      <Stack gap={7}>
+        <TextInput
+          id="toolset-url"
+          labelText="Fetch from Toolset URL"
+          placeholder="Enter the URL of the toolset JSON"
+          value={toolsetUrl}
+          onChange={(e) => setToolsetUrl(e.target.value)}
+          onBlur={handleFetchToolset}
+        />
+        <TextArea
+          id="toolset-json"
+          labelText="Toolset JSON"
+          placeholder="Paste your JSON array here"
+          rows={10}
+          required
+          value={toolsetJson}
+          onChange={(e) => setToolsetJson(e.target.value)}
+          invalid={!toolsetJson}
+          invalidText="This field is required"
+        />
+      </Stack>
     </Modal>
   );
 };
