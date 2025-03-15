@@ -164,7 +164,7 @@ const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [resourceName, setResourceName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [resourceType, setResourceType] = useState("http");
+  const [resourceType, setResourceType] = useState("file");
 
   const handleSubmit = () => {
     onSubmit({
