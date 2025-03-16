@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
 import org.apache.camel.catalog.CamelCatalog;
 import org.apache.camel.catalog.DefaultCamelCatalog;
 import org.apache.camel.tooling.model.BaseOptionModel;
@@ -38,9 +37,6 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Inject
     ServiceRegistry serviceRegistry;
-
-    @Inject
-    ScheduledExecutorService executor;
 
     /**
      * Gets the endpoint URI.
