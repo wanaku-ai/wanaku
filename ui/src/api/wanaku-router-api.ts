@@ -13,6 +13,7 @@ import type {
   ToolReference,
   WanakuResponseListResourceReference,
   WanakuResponseListToolReference,
+  WanakuResponseMapStringListState,
   WanakuResponseMapStringService,
   WanakuResponseServerInfo,
 } from "../models";
@@ -132,6 +133,38 @@ export const getApiV1ManagementTargetsResourcesList = async (
 };
 
 /**
+ * @summary Resources State
+ */
+export type getApiV1ManagementTargetsResourcesStateResponse200 = {
+  data: WanakuResponseMapStringListState;
+  status: 200;
+};
+
+export type getApiV1ManagementTargetsResourcesStateResponseComposite =
+  getApiV1ManagementTargetsResourcesStateResponse200;
+
+export type getApiV1ManagementTargetsResourcesStateResponse =
+  getApiV1ManagementTargetsResourcesStateResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementTargetsResourcesStateUrl = () => {
+  return `/api/v1/management/targets/resources/state`;
+};
+
+export const getApiV1ManagementTargetsResourcesState = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementTargetsResourcesStateResponse> => {
+  return customFetch<getApiV1ManagementTargetsResourcesStateResponse>(
+    getGetApiV1ManagementTargetsResourcesStateUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
  * @summary Tools Configure
  */
 export type putApiV1ManagementTargetsToolsConfigureServiceResponse200 = {
@@ -205,6 +238,38 @@ export const getApiV1ManagementTargetsToolsList = async (
 ): Promise<getApiV1ManagementTargetsToolsListResponse> => {
   return customFetch<getApiV1ManagementTargetsToolsListResponse>(
     getGetApiV1ManagementTargetsToolsListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Tools State
+ */
+export type getApiV1ManagementTargetsToolsStateResponse200 = {
+  data: WanakuResponseMapStringListState;
+  status: 200;
+};
+
+export type getApiV1ManagementTargetsToolsStateResponseComposite =
+  getApiV1ManagementTargetsToolsStateResponse200;
+
+export type getApiV1ManagementTargetsToolsStateResponse =
+  getApiV1ManagementTargetsToolsStateResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementTargetsToolsStateUrl = () => {
+  return `/api/v1/management/targets/tools/state`;
+};
+
+export const getApiV1ManagementTargetsToolsState = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementTargetsToolsStateResponse> => {
+  return customFetch<getApiV1ManagementTargetsToolsStateResponse>(
+    getGetApiV1ManagementTargetsToolsStateUrl(),
     {
       ...options,
       method: "GET",

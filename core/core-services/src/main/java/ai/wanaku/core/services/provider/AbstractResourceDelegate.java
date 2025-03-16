@@ -1,5 +1,6 @@
 package ai.wanaku.core.services.provider;
 
+import ai.wanaku.core.mcp.providers.ServiceType;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -61,6 +62,8 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Override
     public ResourceReply acquire(ResourceRequest request) {
+        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.provider.name").getValue();
+
         try {
             Map<String, String> parameters = mergeParameters(request);
             String uri = getEndpointUri(request, parameters);
@@ -69,24 +72,34 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
             List<String> response = coerceResponse(obj);
 
-            return ResourceReply.newBuilder()
-                    .setIsError(false)
-                    .addAllContent(response).build();
+            try {
+                return ResourceReply.newBuilder()
+                        .setIsError(false)
+                        .addAllContent(response).build();
+            } finally {
+                serviceRegistry.saveState(service, true, null);
+            }
         } catch (InvalidResponseTypeException e) {
-            LOG.errorf("Invalid response type from the consumer: %s", e.getMessage());
+            String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
+            LOG.errorf(e,stateMsg);
+            serviceRegistry.saveState(service, false, stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of("Invalid response type from the consumer: " + e.getMessage())).build();
+                    .addAllContent(List.of(stateMsg)).build();
         } catch (NonConvertableResponseException e) {
-            LOG.errorf("Non-convertable response from the consumer: %s", e.getMessage());
+            String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
+            LOG.errorf(e,stateMsg);
+            serviceRegistry.saveState(service, false, stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of("Non-convertable response from the consumer " + e.getMessage())).build();
+                    .addAllContent(List.of(stateMsg)).build();
         } catch (Exception e) {
-            LOG.errorf(e, "Unable to read resource: %s", e.getMessage(), e);
+            String stateMsg = "Unable to read or acquire resource: " + e.getMessage();
+            LOG.errorf(e, stateMsg);
+            serviceRegistry.saveState(service, false, stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(e.getMessage())).build();
+                    .addAllContent(List.of(stateMsg)).build();
         }
     }
 
@@ -181,6 +194,6 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Override
     public void deregister(String service, String address, int port) {
-        serviceRegistry.deregister(service);
+        serviceRegistry.deregister(service, ServiceType.RESOURCE_PROVIDER);
     }
 }

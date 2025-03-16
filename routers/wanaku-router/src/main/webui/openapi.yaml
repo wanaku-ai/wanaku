@@ -72,6 +72,15 @@ components:
           type: string
         configurations:
           $ref: "#/components/schemas/Configurations"
+    State:
+      type: object
+      properties:
+        service:
+          type: string
+        healthy:
+          type: boolean
+        message:
+          type: string
     ToolReference:
       type: object
       properties:
@@ -114,6 +123,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ToolReference"
+    WanakuResponseMapStringListState:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/State"
     WanakuResponseMapStringService:
       type: object
       properties:
@@ -177,6 +197,18 @@ paths:
       summary: Resources List
       tags:
       - Targets Resource
+  /api/v1/management/targets/resources/state:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseMapStringListState"
+      summary: Resources State
+      tags:
+      - Targets Resource
   /api/v1/management/targets/tools/configure/{service}:
     put:
       parameters:
@@ -209,6 +241,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringService"
       summary: Tool List
+      tags:
+      - Targets Resource
+  /api/v1/management/targets/tools/state:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseMapStringListState"
+      summary: Tools State
       tags:
       - Targets Resource
   /api/v1/resources/expose:

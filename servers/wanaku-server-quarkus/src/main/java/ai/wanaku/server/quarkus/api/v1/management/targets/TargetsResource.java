@@ -2,9 +2,9 @@ package ai.wanaku.server.quarkus.api.v1.management.targets;
 
 import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestPath;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
@@ -33,6 +34,14 @@ public class TargetsResource {
     @Consumes(MediaType.TEXT_PLAIN)
     public WanakuResponse<Map<String, Service>> toolList() {
         return new WanakuResponse<>(targetsBean.toolList());
+    }
+
+
+    @Path("/tools/state")
+    @GET
+    @Consumes(MediaType.TEXT_PLAIN)
+    public WanakuResponse<Map<String, List<State>>> toolsState() {
+        return new WanakuResponse<>(targetsBean.toolsState());
     }
 
     @Path("/tools/configure/{service}")
@@ -57,5 +66,12 @@ public class TargetsResource {
     public Response resourcesConfigure(@RestPath("service") String service, @QueryParam("option") String option, @QueryParam("value") String value) throws ServiceNotFoundException, IOException, ConfigurationNotFoundException {
         targetsBean.configureResources(service, option, value);
         return Response.ok().build();
+    }
+
+    @Path("/resources/state")
+    @GET
+    @Consumes(MediaType.TEXT_PLAIN)
+    public WanakuResponse<Map<String, List<State>>> resourcesState() {
+        return new WanakuResponse<>(targetsBean.resourcesState());
     }
 }

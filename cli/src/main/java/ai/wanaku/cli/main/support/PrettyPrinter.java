@@ -8,6 +8,7 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
 
 public class PrettyPrinter {
 
@@ -67,5 +68,27 @@ public class PrettyPrinter {
             printParseableTarget(entry.getKey(), entry.getValue());
         }
     }
+
+
+    /**
+     * Prints a map of entries
+     * @param states the map of states
+     */
+    public static void printStates(final Map<String, List<State>> states) {
+        System.out.printf("%-20s    %-10s    %-60s%n",
+                "Service", "Healthy", "Message");
+
+        for (var entry : states.entrySet()) {
+            for (var state : entry.getValue()) {
+                printParseableState(entry.getKey(), state.healthy(), state.message());
+            }
+        }
+    }
+
+    private static void printParseableState(String service, boolean healthy, String message) {
+        System.out.printf("%-15s => %-15s => %-30s    %n",
+                service, Boolean.valueOf(healthy), message);
+    }
+
 
 }
