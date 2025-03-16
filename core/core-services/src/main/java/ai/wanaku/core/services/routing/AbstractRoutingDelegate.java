@@ -1,5 +1,6 @@
 package ai.wanaku.core.services.routing;
 
+import ai.wanaku.core.mcp.providers.ServiceType;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -45,6 +46,7 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
 
     @Override
     public ToolInvokeReply invoke(ToolInvokeRequest request) {
+        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.routing.name").getValue();
         try {
             Object obj = client.exchange(request);
 
@@ -53,22 +55,32 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
             ToolInvokeReply.Builder builder = ToolInvokeReply.newBuilder().setIsError(false);
             builder.addAllContent(response);
 
-            return builder.build();
+            try {
+                return builder.build();
+            } finally {
+                serviceRegistry.saveState(service, true, null);
+            }
         } catch (InvalidResponseTypeException e) {
-            LOG.errorf("Invalid response type from the consumer: %s", e.getMessage());
+            String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
+            LOG.errorf(e,stateMsg);
+            serviceRegistry.saveState(service, false, stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of("Invalid response type from the consumer: " + e.getMessage())).build();
+                    .addAllContent(List.of(stateMsg)).build();
         } catch (NonConvertableResponseException e) {
-            LOG.errorf("Non-convertable response from the consumer: %s", e.getMessage());
+            String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
+            LOG.errorf(e, stateMsg);
+            serviceRegistry.saveState(service, false, stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of("Non-convertable response from the consumer " + e.getMessage())).build();
+                    .addAllContent(List.of(stateMsg)).build();
         } catch (Exception e) {
-            LOG.errorf(e,"Unable to invoke tool: %s", e.getMessage(), e);
+            String stateMsg = "Unable to invoke tool: " + e.getMessage();
+            LOG.errorf(e,stateMsg, e);
+            serviceRegistry.saveState(service, false, stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(e.getMessage())).build();
+                    .addAllContent(List.of(stateMsg)).build();
         }
     }
 
@@ -124,6 +136,6 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
 
     @Override
     public void deregister(String service, String address, int port) {
-        serviceRegistry.deregister(service);
+        serviceRegistry.deregister(service, ServiceType.TOOL_INVOKER);
     }
 }

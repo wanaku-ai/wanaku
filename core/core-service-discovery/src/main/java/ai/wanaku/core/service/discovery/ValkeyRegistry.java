@@ -1,5 +1,9 @@
 package ai.wanaku.core.service.discovery;
 
+import ai.wanaku.api.types.management.State;
+import io.valkey.StreamEntryID;
+import io.valkey.params.XAddParams;
+import io.valkey.resps.StreamEntry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -13,7 +17,11 @@ import ai.wanaku.core.mcp.providers.ServiceType;
 import io.quarkus.runtime.ShutdownEvent;
 import io.valkey.Jedis;
 import io.valkey.JedisPool;
+
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jboss.logging.Logger;
@@ -46,6 +54,10 @@ public class ValkeyRegistry implements ServiceRegistry {
     @Override
     public void register(ServiceTarget serviceTarget, Map<String, String> configurations) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
+            // Register the service on the specific set
+            String serviceKey = ReservedKeys.getServiceKey(serviceTarget.getServiceType());
+            jedis.sadd(serviceKey, serviceTarget.getService());
+
             jedis.hset(serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_ADDRESS, serviceTarget.toAddress());
             jedis.hset(serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_TYPE, serviceTarget.getServiceType().asValue());
 
@@ -64,15 +76,68 @@ public class ValkeyRegistry implements ServiceRegistry {
      * Deregisters a service with the given name.
      *
      * @param service The name of the service to deregister.
+     * @param serviceType the type of service to deregister
      */
     @Override
-    public void deregister(String service) {
+    public void deregister(String service, ServiceType serviceType) {
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
-            jedis.del(service);
+            String serviceKey = ReservedKeys.getServiceKey(serviceType);
+            jedis.srem(serviceKey, service);
+
             LOG.infof("Service %s registered", service);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to register service %s: %s", service, e.getMessage());
         }
+    }
+
+
+    @Override
+    public void saveState(String service, boolean healthy, String message) {
+        try (io.valkey.Jedis jedis = jedisPool.getResource()) {
+            Map<String, String> state = Map.of("service", service, "healthy",
+                    Boolean.toString(healthy), "message", (healthy ? "healthy" : message));
+
+            jedis.xadd(stateKey(service), state, XAddParams.xAddParams());
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to save state for %s: %s", service, e.getMessage());
+        }
+    }
+
+    @Override
+    public List<State> getState(String service, int count) {
+        try (io.valkey.Jedis jedis = jedisPool.getResource()) {
+
+            String stateKey = stateKey(service);
+            Instant now = Instant.now();
+            long endEpoch = now.toEpochMilli();
+            long startEpoch = now.minusSeconds(60).toEpochMilli();
+
+            List<StreamEntry> streamEntries = jedis.xrange(stateKey, new StreamEntryID(startEpoch), new StreamEntryID(endEpoch));
+
+            List<State> states = new ArrayList<>(streamEntries.size());
+
+            for (StreamEntry streamEntry : streamEntries) {
+                LOG.debugf("Entry %s", streamEntry);
+
+                Map<String, String> fields = streamEntry.getFields();
+                String serviceName = fields.get("service");
+                String message = fields.get("message");
+                String healthy = fields.get("healthy");
+
+                State state = new State(serviceName, Boolean.parseBoolean(healthy), message);
+                states.add(state);
+            }
+
+            return states;
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to get state for %s: %s", service, e.getMessage());
+        }
+
+        return List.of();
+    }
+
+    private static String stateKey(String service) {
+        return "state:" + service;
     }
 
     /**
@@ -98,14 +163,13 @@ public class ValkeyRegistry implements ServiceRegistry {
     public Map<String, Service> getEntries(ServiceType serviceType) {
         Map<String, Service> entries = new HashMap<>();
         try (io.valkey.Jedis jedis = jedisPool.getResource()) {
-            Set<String> keys = jedis.keys("*");
-            for (String key : keys) {
-                String sType = jedis.hget(key, ReservedKeys.WANAKU_TARGET_TYPE);
-                if (serviceType.asValue().equals(sType)) {
-                    Service service = newService(jedis, key);
+            String serviceKey = ReservedKeys.getServiceKey(serviceType);
+            Set<String> services = jedis.smembers(serviceKey);
 
-                    entries.put(key, service);
-                }
+            for (String key : services) {
+                Service service = newService(jedis, key);
+
+                entries.put(key, service);
             }
 
         } catch (Exception e) {

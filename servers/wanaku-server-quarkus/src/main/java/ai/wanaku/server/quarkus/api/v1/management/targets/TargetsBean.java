@@ -1,30 +1,21 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
+import ai.wanaku.api.types.management.State;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.util.IndexHelper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import static ai.wanaku.api.types.management.Service.newService;
 
 @ApplicationScoped
 public class TargetsBean {
@@ -55,7 +46,7 @@ public class TargetsBean {
         IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
     }
 
-    public Map<String,Service> toolList() {
+    public Map<String, Service> toolList() {
         return serviceRegistry.getEntries(ServiceType.TOOL_INVOKER);
     }
 
@@ -79,7 +70,30 @@ public class TargetsBean {
         return configurations;
     }
 
+    public Map<String, List<State>> toolsState() {
+        Map<String, List<State>> states = new HashMap<>();
+        Map<String, Service> toolsServices = toolList();
+        buildState(toolsServices, states);
 
+        return states;
+    }
+
+    public Map<String, List<State>> resourcesState() {
+        Map<String, List<State>> states = new HashMap<>();
+
+        Map<String, Service> resourcesServices = resourcesList();
+        buildState(resourcesServices, states);
+
+        return states;
+    }
+
+    private void buildState(Map<String, Service> stringServiceMap, Map<String, List<State>> states) {
+        for (var entry : stringServiceMap.entrySet()) {
+            List<State> state = serviceRegistry.getState(entry.getKey(), 10);
+
+            states.put(entry.getKey(), state);
+        }
+    }
 
 
 }
