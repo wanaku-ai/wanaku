@@ -79,4 +79,26 @@ public class ResourcesResourceTest {
                         "data[0].type", is("image/jpeg"),
                         "data[0].description", is("A sample image resource"));
     }
+
+    @Order(4)
+    @Test
+    void testAddAfterRemove() {
+        ResourceReference resource = createResource("/tmp/resource3.jpg", "image/jpeg", "resource3.jpg");
+
+        given()
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(resource)
+                .when().post("/api/v1/resources/expose")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        given()
+                .when().get("/api/v1/resources/list")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.size()", is(3),
+                        "data[2].name", is("resource3.jpg"),
+                        "data[2].type", is("image/jpeg"),
+                        "data[2].location", is("/tmp/resource3.jpg"));
+    }
 }

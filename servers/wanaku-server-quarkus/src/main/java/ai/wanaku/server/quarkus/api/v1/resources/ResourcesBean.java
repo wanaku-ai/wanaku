@@ -1,20 +1,20 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
-import java.io.File;
-import java.util.List;
-
-import ai.wanaku.api.exceptions.WanakuException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
-import io.quarkus.runtime.StartupEvent;
-import org.jboss.logging.Logger;
+import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.util.IndexHelper;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ResourceResponse;
+import io.quarkus.runtime.StartupEvent;
+import java.io.File;
+import java.util.List;
+import java.util.function.Consumer;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ResourcesBean {
@@ -29,13 +29,18 @@ public class ResourcesBean {
     public void expose(ResourceReference mcpResource) {
         doExposeResource(mcpResource);
 
+        loadIndexAndThen(resourceReferences -> resourceReferences.add(mcpResource));
+    }
+
+    private synchronized void loadIndexAndThen(Consumer<List<ResourceReference>> handler) {
         File indexFile = resourceResolver.indexLocation();
         try {
             List<ResourceReference> resourceReferences = IndexHelper.loadResourcesIndex(indexFile);
-            resourceReferences.add(mcpResource);
+            handler.accept(resourceReferences);
+
             IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new WanakuException(String.format("I/O error reading/writing resources file: %s", indexFile));
         }
     }
 
@@ -55,16 +60,12 @@ public class ResourcesBean {
             return;
         }
 
-        try {
-            List<ResourceReference> resourceReferences = IndexHelper.loadResourcesIndex(indexFile);
+        loadIndexAndThen(this::exposeAllResources);
+    }
 
-            for (ResourceReference resourceReference : resourceReferences) {
-                doExposeResource(resourceReference);
-            }
-
-            IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    private void exposeAllResources(List<ResourceReference> resourceReferences) {
+        for (ResourceReference resourceReference : resourceReferences) {
+            doExposeResource(resourceReference);
         }
     }
 
@@ -81,15 +82,21 @@ public class ResourcesBean {
     }
 
     public void remove(String name) {
-        resourceManager.removeResource(name);
+        loadIndexAndThen(resourceReferences -> removeResource(name, resourceReferences));
+    }
 
-        File indexFile = resourceResolver.indexLocation();
-        try {
-            List<ResourceReference> resourceReferences = IndexHelper.loadResourcesIndex(indexFile);
-            resourceReferences.removeIf(resourceReference -> resourceReference.getName().equals(name));
-            IndexHelper.saveResourcesIndex(indexFile, resourceReferences);
-        } catch (Exception e) {
-            throw new WanakuException(String.format("Failed to remove resource from file: %s", indexFile));
+    private void removeResource(String name, List<ResourceReference> resourceReferences) {
+        ResourceReference resourceReference = null;
+        for (var ref : resourceReferences) {
+            if (ref.getName().equals(name)) {
+                resourceReference = ref;
+                break;
+            }
+        }
+
+        if (resourceReference != null) {
+            resourceReferences.remove(resourceReference);
+            resourceManager.removeResource(resourceReference.getLocation());
         }
     }
 }
