@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import ai.wanaku.api.types.ResourceReference;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -19,6 +20,7 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.util.support.ToolsHelper;
 import ai.wanaku.server.quarkus.support.TestIndexHelper;
 
+import static ai.wanaku.core.util.support.ResourcesHelper.createResource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -88,5 +90,36 @@ public class ToolsResourceTest {
                         "data[0].name", is("Tool 1"),
                         "data[0].type", is("http"),
                         "data[0].description", is("This is a description of Tool 1."));
+    }
+
+    @Order(4)
+    @Test
+    void testAddAfterRemove() {
+        ToolReference.InputSchema inputSchema3 = ToolsHelper.createInputSchema(
+                "http",
+                Collections.singletonMap("username", ToolsHelper.createProperty("string", "A username."))
+        );
+
+        ToolReference toolReference3 = ToolsHelper.createToolReference(
+                "test-tool-3",
+                "This is a description of the test tool 3.",
+                "https://example.com/test/tool-3",
+                inputSchema3
+        );
+
+        given()
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(toolReference3)
+                .when().post("/api/v1/tools/add")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        given()
+                .when().get("/api/v1/tools/list")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.size()", is(3),
+                        "data[2].name", is("test-tool-3"),
+                        "data[2].type", is("http"));
     }
 }

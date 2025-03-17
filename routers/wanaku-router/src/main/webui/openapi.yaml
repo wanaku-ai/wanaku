@@ -70,6 +70,10 @@ components:
       properties:
         target:
           type: string
+        name:
+          type: string
+        serviceType:
+          type: string
         configurations:
           $ref: "#/components/schemas/Configurations"
     State:
