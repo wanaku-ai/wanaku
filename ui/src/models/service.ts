@@ -8,5 +8,7 @@ import type { Configurations } from "./configurations";
 
 export interface Service {
   target?: string;
+  name?: string;
+  serviceType?: string;
   configurations?: Configurations;
 }
