@@ -282,10 +282,10 @@ simple for users to create custom services that solve their particular need.
 
 ### Creating a New Resource Provider
 
-To create a custom resource provider, you can run: 
+To create a custom resource provider, you can run:
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-y4 -Dname=Y4 -Dwanaku-version=0.0.3
+wanaku services create resource --name y4
 ```
 
 To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-provider-y4`),
@@ -306,7 +306,7 @@ You can check if the service was registered correctly using `wanaku targets reso
 To create a custom tool service, you can run:
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.routing.service -DartifactId=wanaku-routing-jms-service -Dname=JMS -Dwanaku-version=0.0.3
+wanaku services create tool --name jms
 ```
 
 To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-routing-jms-service`), then build the project using Maven (`mvn clean package`). 
