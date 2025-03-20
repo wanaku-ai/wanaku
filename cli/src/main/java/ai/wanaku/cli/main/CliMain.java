@@ -2,21 +2,21 @@ package ai.wanaku.cli.main;
 
 import jakarta.inject.Inject;
 
+import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.services.Services;
-import ai.wanaku.cli.main.commands.services.ServicesCreate;
+import ai.wanaku.cli.main.commands.start.Start;
+import ai.wanaku.cli.main.commands.targets.Targets;
+import ai.wanaku.cli.main.commands.tools.Tools;
+import ai.wanaku.cli.main.commands.toolset.ToolSet;
 import ai.wanaku.core.util.VersionHelper;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
-import ai.wanaku.cli.main.commands.targets.Targets;
-import ai.wanaku.cli.main.commands.resources.Resources;
-import ai.wanaku.cli.main.commands.tools.Tools;
-import ai.wanaku.cli.main.commands.toolset.ToolSet;
 import picocli.CommandLine;
 
 
 
 @TopCommand
-@CommandLine.Command(name = "wanaku", subcommands = { Resources.class, Tools.class, Targets.class, ToolSet.class, Services.class })
+@CommandLine.Command(name = "wanaku", subcommands = { Resources.class, Tools.class, Targets.class, ToolSet.class, Services.class, Start.class })
 public class CliMain implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
