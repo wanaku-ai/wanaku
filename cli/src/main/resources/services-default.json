@@ -1,0 +1,55 @@
+{
+  "environment": {
+    "variables": [
+      "VALKEY_HOST=valkey",
+      "VALKEY_PORT=6379",
+      "VALKEY_TIMEOUT=10"
+    ]
+  },
+  "infrastructure": [
+    {
+      "name": "valkey",
+      "image": "valkey/valkey"
+    }
+  ],
+  "services": [
+    {
+      "name": "wanaku-routing-http-service",
+      "image": "quay.io/wanaku/wanaku-routing-http-service"
+    },
+    {
+      "name": "wanaku-routing-yaml-route-service",
+      "image": "quay.io/wanaku/wanaku-routing-yaml-route-service"
+    },
+    {
+      "name": "wanaku-routing-kafka-service",
+      "image": "quay.io/wanaku/wanaku-routing-kafka-service"
+    },
+    {
+      "name": "wanaku-routing-tavily-service",
+      "image": "quay.io/wanaku/wanaku-routing-tavily-service",
+      "environment": {
+        "variables": [
+          "TAVILY_API_KEY=\"\""
+        ]
+      }
+    },
+    {
+      "name": "wanaku-provider-file",
+      "image": "quay.io/wanaku/wanaku-provider-file"
+    },
+    {
+      "name": "wanaku-provider-ftp",
+      "image": "quay.io/wanaku/wanaku-provider-ftp"
+    },
+    {
+      "name": "wanaku-provider-s3",
+      "image": "quay.io/wanaku/wanaku-provider-s3"
+    }
+  ],
+  "server": [
+    {
+      "image": "quay.io/wanaku/wanaku-router"
+    }
+  ]
+}

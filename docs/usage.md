@@ -27,9 +27,16 @@ locally, that would mean `http://localhost:8080/mcp/sse`)
 The best way to install the CLI is by downloading the latest `cli` from the [latest release](https://github.com/wanaku-ai/wanaku/releases).
 
 *NOTE*: You may also find a container for the CLI on our [Quay.io organization](https://quay.io/repository/wanaku/cli), 
-although it is not entirely tested at the moment. 
+although it is not entirely tested at the moment.
 
-## Quick Getting Started 
+
+## Quick Getting Started (Local)
+
+After downloading the CLI, simply run `wanaku start local` and the CLI should download, deploy and start Wanaku with the main 
+server, a file provider and an HTTP provider.
+If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
+
+## Quick Getting Started (Docker Compose)
 
 Wanaku needs providers and tools to serve and route. These are the downstream services that Wanaku talk to. 
 

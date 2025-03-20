@@ -71,6 +71,7 @@ public class ProcessRunner {
             processBuilder.directory(directory);
 
             final Process process = processBuilder.start();
+
             LOG.info("Waiting for process to finish...");
             waitForExit(process);
         } catch (IOException e) {
@@ -83,9 +84,23 @@ public class ProcessRunner {
     }
 
     private static void waitForExit(Process process) throws InterruptedException {
-        final int ret = process.waitFor();
-        if (ret != 0) {
-            LOG.warnf("Process did not execute successfully: (return status %d)", ret);
+        Thread thread = new Thread(() -> {
+            if (process.isAlive()) {
+                process.destroy();
+            }
+        });
+
+        try {
+            Runtime.getRuntime().addShutdownHook(thread);
+
+            final int ret = process.waitFor();
+            if (ret != 0) {
+                LOG.warnf("Process did not execute successfully: (return status %d)", ret);
+            }
+        } finally {
+            if (!process.isAlive()) {
+                Runtime.getRuntime().removeShutdownHook(thread);
+            }
         }
     }
 }
