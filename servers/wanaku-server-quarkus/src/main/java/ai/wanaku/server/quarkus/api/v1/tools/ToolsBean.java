@@ -3,6 +3,7 @@ package ai.wanaku.server.quarkus.api.v1.tools;
 import java.io.File;
 import java.util.List;
 
+import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -14,7 +15,6 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import ai.wanaku.core.util.IndexHelper;
 
 @ApplicationScoped
 public class ToolsBean {
@@ -26,17 +26,12 @@ public class ToolsBean {
     @Inject
     ToolsResolver toolsResolver;
 
+    @Inject
+    ToolReferenceRepository toolReferenceRepository;
+
     public void add(ToolReference mcpResource) {
         registerTool(mcpResource);
-
-        File indexFile = toolsResolver.indexLocation();
-        try {
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-            toolReferences.add(mcpResource);
-            IndexHelper.saveToolsIndex(indexFile, toolReferences);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        toolReferenceRepository.persist(mcpResource);
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
@@ -68,12 +63,7 @@ public class ToolsBean {
     }
 
     public List<ToolReference> list() {
-        File indexFile = toolsResolver.indexLocation();
-        try {
-            return IndexHelper.loadToolsIndex(indexFile);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return toolReferenceRepository.listAll();
     }
 
     // TODO:
@@ -88,28 +78,13 @@ public class ToolsBean {
             return;
         }
 
-        try {
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-            for (ToolReference toolReference : toolReferences) {
-                registerTool(toolReference);
-            }
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to load tools from file: %s", indexFile);
-            throw new RuntimeException(e);
+        for (ToolReference toolReference : list()) {
+            registerTool(toolReference);
         }
     }
 
     public void remove(String name) {
         toolManager.removeTool(name);
-
-        File indexFile = toolsResolver.indexLocation();
-        try {
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(indexFile);
-            toolReferences.removeIf(tool -> tool.getName().equals(name));
-            IndexHelper.saveToolsIndex(indexFile, toolReferences);
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to remove tools from file: %s", indexFile);
-            throw new RuntimeException(e);
-        }
+        toolReferenceRepository.deleteById(name);
     }
 }

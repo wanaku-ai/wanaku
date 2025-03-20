@@ -6,6 +6,35 @@ services:
     ports:
       - "6379:6379"
 
+#  mongodb:
+#    image: mongo:8.0.5
+#    volumes:
+#      - mongo:/data/db
+#    healthcheck:
+#      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+#      interval: 10s
+#      timeout: 10s
+#      retries: 5
+#    ports:
+#      - "27017:27017"
+#    command: "--bind_ip_all --quiet --logpath /dev/null --replSet rs0"
+#  mongo-init:
+#    image: mongo:8.0.5
+#    restart: "no"
+#    depends_on:
+#      mongodb:
+#        condition: service_healthy
+#    command: >
+#      mongosh --host mongodb:27017 --eval
+#      '
+#      rs.initiate( {
+#         _id : "rs0",
+#         members: [
+#            { _id: 0, host: "localhost:27017" }
+#         ]
+#      })
+#      '
+
   wanaku-routing-http-service:
     depends_on:
       - valkey
@@ -14,6 +43,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "9000:9000"
   wanaku-routing-yaml-route-service:
@@ -24,6 +55,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "9001:9000"
 
@@ -36,6 +69,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "9003:9000"
 
@@ -47,6 +82,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
       # TAVILY_API_KEY: include-you-api-key-here
     ports:
       - "9006:9000"
@@ -59,6 +96,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "9002:9000"
 
@@ -70,6 +109,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "9004:9000"
 
@@ -82,6 +123,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "9005:9000"
 
@@ -100,5 +143,10 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: 6379
       VALKEY_TIMEOUT: 10
+#      QUARKUS_MONGODB_CONNECTION-STRING: mongodb://localhost:27017
+#      WANAKU_PERSISTENCE_MONGODB: true
     ports:
       - "8080:8080"
+
+volumes:
+  mongo:
