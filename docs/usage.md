@@ -9,6 +9,8 @@ and introduces how it works.
 
 [![Getting Started With Wanaku](https://img.youtube.com/vi/-fuNAo2j4SA/0.jpg)](https://www.youtube.com/watch?v=-fuNAo2j4SA)
 
+**NOTE**: Also check the Getting Started from the [demos repository](https://github.com/wanaku-ai/wanaku-demos/tree/main/01-getting-started).
+
 ## Overview
 
 In addition to installing the Wanaku MCP Router, it is also necessary to install the CLI used to manage the router. 
@@ -125,8 +127,8 @@ wanaku tools list
 
 ```shell
 Name               Type               URI
-meow-facts      => http            => https://meowfacts.herokuapp.com?count={count}
-dog-facts       => http            => https://dogapi.dog/api/v2/facts?limit={count}
+meow-facts      => http            => https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}
+dog-facts       => http            => https://dogapi.dog/api/v2/facts?limit={parameter.valueOrElse('count', 1)}
 ```
 
 ### Add Tool
@@ -138,7 +140,7 @@ Adds an existing tool to the Wanaku MCP Router instance.
 Here's how you could add a new tool to a Wanaku MCP router instance running locally on http://localhost:8080:
 
 ```shell
-wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count}" --type http --property "count:int,The count of facts to retrieve" --required count
+wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}" --type http --property "count:int,The count of facts to retrieve" --required count
 ```
 
 NOTE: For remote instances, you can use the parameter `--host` to point to the location of the instance.
@@ -177,7 +179,7 @@ http                 => localhost:9000                 =>
 To add a tool to a toolset: 
 
 ```shell
-wanaku toolset add ./path/to/toolset-file.json -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count}" --type http --property "count:int,The count of facts to retrieve" --required count
+wanaku toolset add ./path/to/toolset-file.json -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}" --type http --property "count:int,The count of facts to retrieve" --required count
 ```
 
 
@@ -188,6 +190,28 @@ All CLI commands use the Wanaku management API under the hood. If you need more 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
 
 ## Tools
+
+### Creating URIs
+
+Building the URIs is not always as simple as defining their address. Sometimes, optional parameters need to be filtered out or
+query parameters need to be built. To help with that, Wanaku comes with a couple of expressions to build them.
+
+To access the values, ou can use the expression `{parameter.value('name')}`. For instance, to get the value of the parameter `id` 
+you would use the expression `{parameter.value('id')}`. You can also provide default values, if none are provided, such as 
+`http://my-host/{parameter.valueOrElse('id', 1)}/data` (this would provide the value 1 if the parameter `id` is not set).
+
+It is also possible to build the query part of URIs with the `query` method. For instance, to create an URI such as `http://my-host/data?id=456`
+you could use `http://my-host/data{parameter.query('id')}`. If the `id` parameter is not provided, this would generate an URI such as
+`http://my-host/data`. This can take multiple parameters, so it is possible to pass extra variables such as 
+`{parameter.query('id', 'name', 'location', ...)}`. 
+
+**NOTE**: it is important not to provide the `?` character, as it would be added automatically the parsing code. 
+
+Building the query part of URIs can be quite complex if there are too many. To avoid that, you can use `{parameter.query}` to build 
+a query composed of all query parameters.
+
+The values for the queries will be automatically encoded, so a URI defined as `http://my-host/{parameter.query('id', 'name')}` 
+would generate `http://my-host/?id=456&name=My+Name+With+Spaces` if provided with a name value of "My Name With Spaces".
 
 ### Running Camel Routes as Tools
 

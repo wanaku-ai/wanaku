@@ -12,7 +12,7 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
-import static ai.wanaku.core.services.util.URIHelper.buildUri;
+import static ai.wanaku.core.uri.URIHelper.buildUri;
 
 @ApplicationScoped
 public class S3ResourceDelegate  extends AbstractResourceDelegate {
