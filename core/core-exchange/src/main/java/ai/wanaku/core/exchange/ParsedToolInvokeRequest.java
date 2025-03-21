@@ -1,8 +1,9 @@
 package ai.wanaku.core.exchange;
 
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import ai.wanaku.core.uri.URIParser;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Represents a parsed tool invocation request containing the URI and its body.
@@ -27,21 +28,16 @@ public record ParsedToolInvokeRequest(String uri, String body) {
      * @return the parsed URI and its body
      */
     public static ParsedToolInvokeRequest parseRequest(String uri, ToolInvokeRequest toolInvokeRequest) {
-        String body = null;
-        for (var t : toolInvokeRequest.getArgumentsMap().entrySet()) {
-            if (!t.getKey().equals("_body")) {
-                Object o = toolInvokeRequest.getArgumentsMap().get(t.getKey());
-                String encoded = URLEncoder.encode(o.toString(), StandardCharsets.UTF_8);
-                uri = uri.replace(String.format("{%s}", t.getKey()), encoded);
-            } else {
-                body = toolInvokeRequest.getArgumentsMap().get("_body").toString();
-            }
+        Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
+
+        if (argumentsMap == null) {
+            argumentsMap = Collections.emptyMap();
         }
 
-        if (body == null) {
-            body = "";
-        }
+        String parsedUri = URIParser.parse(uri, (Map) argumentsMap);
 
-        return new ParsedToolInvokeRequest(uri, body);
+        String body = toolInvokeRequest.getBody();
+
+        return new ParsedToolInvokeRequest(parsedUri, body);
     }
 }

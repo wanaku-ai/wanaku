@@ -1,4 +1,4 @@
-package ai.wanaku.core.services.util;
+package ai.wanaku.core.uri;
 
 import java.util.Map;
 import java.util.SortedMap;
