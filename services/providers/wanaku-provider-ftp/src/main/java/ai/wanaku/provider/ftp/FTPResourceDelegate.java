@@ -15,7 +15,7 @@ import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
 
-import static ai.wanaku.core.services.util.URIHelper.buildUri;
+import static ai.wanaku.core.uri.URIHelper.buildUri;
 
 @ApplicationScoped
 public class FTPResourceDelegate extends AbstractResourceDelegate {

@@ -12,6 +12,7 @@ import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.util.ReservedArgumentNames;
 import ai.wanaku.routers.proxies.ToolsProxy;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
@@ -29,6 +30,7 @@ import org.jboss.logging.Logger;
  */
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
+    private static final String EMPTY_BODY = "";
 
     private final ServiceRegistry serviceRegistry;
 
@@ -70,16 +72,31 @@ public class InvokerProxy implements ToolsProxy {
         Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
-        Request result = Request.newRequest(toolReference, toolArguments);
+        String body = extractBody(toolReference);
+
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
-                .setBody(result.body())
-                .setUri(result.uri())
+                .setBody(body)
+                .setUri(toolReference.getUri())
                 .putAllServiceConfigurations(serviceConfigurations)
                 .putAllArguments(argumentsMap)
                 .build();
 
         ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
         return blockingStub.invokeTool(toolInvokeRequest);
+    }
+
+    private static String extractBody(ToolReference toolReference) {
+        Map<String, ToolReference.Property> properties = toolReference.getInputSchema().getProperties();
+        ToolReference.Property bodyProp = properties.get(ReservedArgumentNames.BODY);
+        if (bodyProp == null) {
+            return EMPTY_BODY;
+        }
+
+        String body = bodyProp.toString();
+        if (body == null) {
+            return EMPTY_BODY;
+        }
+        return body;
     }
 
     @Override

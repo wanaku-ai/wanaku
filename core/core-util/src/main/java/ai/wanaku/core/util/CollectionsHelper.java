@@ -1,6 +1,8 @@
 package ai.wanaku.core.util;
 
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -19,5 +21,9 @@ public class CollectionsHelper {
         return map.entrySet().stream()
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+    }
+
+    public static <K, V> Map<?, ?> sortedMapOf(Map<K, V> original) {
+        return new TreeMap<>(original);
     }
 }
