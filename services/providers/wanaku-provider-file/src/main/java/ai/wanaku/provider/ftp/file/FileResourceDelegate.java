@@ -17,7 +17,7 @@ import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
 
-import static ai.wanaku.core.services.util.URIHelper.buildUri;
+import static ai.wanaku.core.uri.URIHelper.buildUri;
 
 @ApplicationScoped
 public class FileResourceDelegate extends AbstractResourceDelegate {

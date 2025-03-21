@@ -1,4 +1,4 @@
-package ai.wanaku.core.services.util;
+package ai.wanaku.core.uri;
 
 import java.util.Map;
 
@@ -9,9 +9,15 @@ public class URIHelper {
 
     private URIHelper() {}
 
-    private static String buildFromBaseUri(Map<String, String> parameters, StringBuilder uri) {
+    private static String buildFromBaseUri(StringBuilder uri, Map<String, ?> parameters) {
+        buildQuery(uri, parameters);
+
+        return uri.toString();
+    }
+
+    private static void buildQuery(StringBuilder uri, Map<String, ?> parameters) {
         boolean first = true;
-        for (Map.Entry<String, String> entry : parameters.entrySet()) {
+        for (Map.Entry<String, ?> entry : parameters.entrySet()) {
             if (first) {
                 uri.append('?');
                 first = false;
@@ -22,8 +28,17 @@ public class URIHelper {
             uri.append('=');
             uri.append(entry.getValue());
         }
+    }
 
-        return uri.toString();
+    /**
+     * Builds only the query part of a URI
+     * @param parameters the parameters to build
+     * @return the query part of the URI
+     */
+    public static String buildQuery(Map<String, ?> parameters) {
+        StringBuilder uri = new StringBuilder();
+
+        return buildFromBaseUri(uri, parameters);
     }
 
     /**
@@ -32,10 +47,10 @@ public class URIHelper {
      * @param parameters the query parameters
      * @return
      */
-    public static String buildUri(String baseUri, Map<String, String> parameters) {
+    public static String buildUri(String baseUri, Map<String, ?> parameters) {
         StringBuilder uri = new StringBuilder(baseUri);
 
-        return buildFromBaseUri(parameters, uri);
+        return buildFromBaseUri(uri, parameters);
     }
 
     /**
@@ -45,10 +60,10 @@ public class URIHelper {
      * @param parameters query parameters as a Map
      * @return
      */
-    public static String buildUri(String scheme, String path, Map<String, String> parameters) {
+    public static String buildUri(String scheme, String path, Map<String, ?> parameters) {
         StringBuilder uri = new StringBuilder(scheme);
 
         uri.append(path);
-        return buildFromBaseUri(parameters, uri);
+        return buildFromBaseUri(uri, parameters);
     }
 }
