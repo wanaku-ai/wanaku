@@ -1,6 +1,5 @@
 package ai.wanaku.core.persistence.file;
 
-import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
@@ -25,20 +24,22 @@ public class ResourceReferenceTest {
     @Inject
     ResourceReferenceRepository resourceReferenceRepository;
 
+    private static Path path;
+
     @BeforeAll
     public static void init() throws IOException {
-        Files.deleteIfExists(Path.of(
+        path = Path.of(
                 ConfigProvider.getConfig().getValue("wanaku.persistence.file.base-folder", String.class),
-                ConfigProvider.getConfig().getValue("wanaku.persistence.file.resource-reference", String.class)));
+                ConfigProvider.getConfig().getValue("wanaku.persistence.file.resource-reference", String.class));
+
+        if (Files.exists(path)) {
+            Files.write(path, "".getBytes());
+        }
     }
 
     @Test
     @Order(1)
     public void insertThreeFiles() {
-        Assertions.assertFalse(Files.exists(Path.of(
-                ConfigProvider.getConfig().getValue("wanaku.persistence.file.base-folder", String.class),
-                ConfigProvider.getConfig().getValue("wanaku.persistence.file.resource-reference", String.class))));
-
         for (int i = 1; i < 4; i++) {
             ResourceReference resourceReference = new ResourceReference();
             resourceReference.setDescription("description" + i);
@@ -58,9 +59,7 @@ public class ResourceReferenceTest {
             resourceReferenceRepository.persist(resourceReference);
         }
 
-        Assertions.assertTrue(Files.exists(Path.of(
-                ConfigProvider.getConfig().getValue("wanaku.persistence.file.base-folder", String.class),
-                ConfigProvider.getConfig().getValue("wanaku.persistence.file.resource-reference", String.class))));
+        Assertions.assertTrue(Files.exists(path));
     }
 
     @Test

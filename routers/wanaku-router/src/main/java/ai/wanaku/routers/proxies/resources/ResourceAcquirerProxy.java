@@ -97,7 +97,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
     @Override
     public Map<String, String> getServiceConfigurations(String target) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(serviceRegistry.getService(target).getTarget())
                 .usePlaintext()
                 .build();
 

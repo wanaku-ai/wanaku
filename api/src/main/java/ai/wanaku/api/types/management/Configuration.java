@@ -1,5 +1,8 @@
 package ai.wanaku.api.types.management;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Represents a configuration for the downstream service.
  *
@@ -51,5 +54,31 @@ public class Configuration {
      */
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String toJson() {
+        return String.format("""
+            {"value":%s,"description":%s}
+            """, getValue() == null ? "null" : "\"" + getValue() + "\"",
+                getDescription() == null ? "null" : "\"" + getDescription() + "\"");
+    }
+
+    private static Pattern valuePattern = Pattern.compile("\"value\":\"(.*)\",");
+    private static Pattern descriptionPattern = Pattern.compile("\"description\":\"(.*)\"");
+
+    public static Configuration fromJson(String json) {
+        Configuration configuration = new Configuration();
+
+        Matcher matcher = valuePattern.matcher(json);
+        if (matcher.find()) {
+            configuration.setValue(matcher.group(1));
+        }
+
+        Matcher descriptionMatcher = descriptionPattern.matcher(json);
+        if (descriptionMatcher.find()) {
+            configuration.setDescription(descriptionMatcher.group(1));
+        }
+
+        return configuration;
     }
 }

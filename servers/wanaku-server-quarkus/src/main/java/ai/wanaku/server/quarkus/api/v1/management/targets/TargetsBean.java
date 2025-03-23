@@ -1,20 +1,15 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
-import ai.wanaku.api.types.management.State;
-import ai.wanaku.api.exceptions.ResourceNotFoundException;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceType;
-import ai.wanaku.core.persistence.api.ServiceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,43 +27,12 @@ public class TargetsBean {
     @Inject
     ServiceRegistry serviceRegistry;
 
-    @Inject
-    ServiceRepository serviceRepository;
-
-    public void configureTools(String service, String option, String value)
-            throws IOException {
-        // TODO why is it needed?
-//        Map<String, String> configurations = toolsConfigurations(service);
-//        configurations.put(option, value);
-
-        Service storedService = serviceRepository.findByIdAndServiceType(service, ServiceType.TOOL_INVOKER);
-        if (storedService == null) {
-            throw new ToolNotFoundException("Tool not found: " + service);
-        }
-        if (!storedService.getConfigurations().getConfigurations().containsKey(option)) {
-            throw new WanakuException("The option '" + option + "' cannot be configured on the Service: " + service);
-        }
-        storedService.getConfigurations().getConfigurations().get(option).setValue(value);
-
-        serviceRepository.update(storedService);
+    public void configureTools(String service, String option, String value) {
+        serviceRegistry.update(service, option, value);
     }
 
-    public void configureResources(String service, String option, String value)
-            throws IOException {
-        // TODO why is it needed?
-//        Map<String, String> configurations = resourcesConfigurations(service);
-//        configurations.put(option, value);
-
-        Service serviceEntity = serviceRepository.findByIdAndServiceType(service, ServiceType.RESOURCE_PROVIDER);
-        if (serviceEntity == null) {
-            throw new ResourceNotFoundException("Resource not found: " + service);
-        }
-        if (!serviceEntity.getConfigurations().getConfigurations().containsKey(option)) {
-            throw new WanakuException("The option '" + option + "' cannot be configured on the Service: " + service);
-        }
-        serviceEntity.getConfigurations().getConfigurations().get(option).setValue(value);
-
-        serviceRepository.update(serviceEntity);
+    public void configureResources(String service, String option, String value) {
+        serviceRegistry.update(service, option, value);
     }
 
     public Map<String, Service> toolList() {
@@ -119,6 +83,4 @@ public class TargetsBean {
             states.put(entry.getKey(), state);
         }
     }
-
-
 }

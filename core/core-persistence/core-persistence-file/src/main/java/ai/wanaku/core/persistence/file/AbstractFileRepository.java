@@ -22,6 +22,15 @@ public abstract class AbstractFileRepository<A, T extends IdEntity, K> implement
     public AbstractFileRepository(WanakuMarshallerService wanakuMarshallerService, Path file) {
         this.wanakuMarshallerService = wanakuMarshallerService;
         this.file = file;
+
+        if (!Files.exists(file)) {
+            try {
+                Files.createFile(file);
+                Files.write(file, "[]".getBytes());
+            } catch (IOException e) {
+                throw new WanakuException("Can't write to file " + file, e);
+            }
+        }
     }
 
     @Override
@@ -29,9 +38,6 @@ public abstract class AbstractFileRepository<A, T extends IdEntity, K> implement
         T entity = convertToEntity(model);
 
         try {
-            if (!Files.exists(file)) {
-                Files.createFile(file);
-            }
             String data = Files.readString(file);
 
             List<T> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
@@ -56,7 +62,6 @@ public abstract class AbstractFileRepository<A, T extends IdEntity, K> implement
     public List<A> listAll() {
         String data;
         try {
-            checkFileExists();
             data = Files.readString(file);
         } catch (IOException e) {
             throw new RuntimeException("Can't read file " + file.toString(), e);
@@ -68,7 +73,6 @@ public abstract class AbstractFileRepository<A, T extends IdEntity, K> implement
     @Override
     public boolean deleteById(K id) {
         try {
-            checkFileExists();
             String data = Files.readString(file);
 
             List<T> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
@@ -92,7 +96,6 @@ public abstract class AbstractFileRepository<A, T extends IdEntity, K> implement
     @Override
     public A findById(K id) {
         try {
-            checkFileExists();
             String data = Files.readString(file);
 
             List<T> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
@@ -106,18 +109,8 @@ public abstract class AbstractFileRepository<A, T extends IdEntity, K> implement
             } else {
                 return null;
             }
-
-//            return convertToModel()
-//            return convertToModel(result.orElseThrow(() -> new WanakuException("Resource " + id + " not found")));
         } catch (IOException e) {
             throw new WanakuException("Can't retrieve resource " + id, e);
-        }
-    }
-
-    private void checkFileExists() throws IOException {
-        if (!Files.exists(file)) {
-            Files.createFile(file);
-            Files.write(file, "[]".getBytes());
         }
     }
 
