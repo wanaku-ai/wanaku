@@ -3,11 +3,11 @@ package ai.wanaku.core.persistence.api;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Configurations;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.persistence.types.ConfigurationEntity;
-import ai.wanaku.core.persistence.types.ServiceEntity;
+import ai.wanaku.core.persistence.types.ServiceTargetEntity;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * <p>This interface extends WanakuRepository to provide specific operations
  * for Service objects, including querying by service type and updating services.</p>
  */
-public interface ServiceRepository extends WanakuRepository<Service, ServiceEntity, String> {
+public interface ServiceRepository extends WanakuRepository<ServiceTarget, ServiceTargetEntity, String> {
 
     /**
      * Lists all services of a specific service type.
@@ -27,7 +27,7 @@ public interface ServiceRepository extends WanakuRepository<Service, ServiceEnti
      * @param serviceType the type of service to list
      * @return a list of services matching the specified type
      */
-    List<Service> listByServiceType(ServiceType serviceType);
+    List<ServiceTarget> listByServiceType(ServiceType serviceType);
 
     /**
      * Finds a service by its ID and service type.
@@ -36,7 +36,7 @@ public interface ServiceRepository extends WanakuRepository<Service, ServiceEnti
      * @param serviceType the type of the service to find
      * @return the matching service, or null if not found
      */
-    Service findByIdAndServiceType(String id, ServiceType serviceType);
+    ServiceTarget findByIdAndServiceType(String id, ServiceType serviceType);
 
     /**
      * Updates an existing service.
@@ -44,7 +44,7 @@ public interface ServiceRepository extends WanakuRepository<Service, ServiceEnti
      * @param entity the service with updated information
      * @return the updated service
      */
-    Service update(Service entity);
+    ServiceTarget update(ServiceTarget entity);
 
     /**
      * Converts a ServiceEntity to its corresponding Service model.
@@ -56,19 +56,8 @@ public interface ServiceRepository extends WanakuRepository<Service, ServiceEnti
      * @return the converted Service model
      */
     @Override
-    default Service convertToModel(ServiceEntity entity) {
-        Service service = new Service();
-        service.setTarget(entity.getTargetAddress());
-        service.setName(entity.getName());
-        service.setServiceType(entity.getServiceType().asValue());
-        Map<String, Configuration> configurationMap = new HashMap<>();
-        for (ConfigurationEntity configurationEntity : entity.getConfigurationEntities()) {
-            configurationMap.put(configurationEntity.getKey(), configurationEntity.getConfiguration());
-        }
-        service.setConfigurations(new Configurations());
-        service.getConfigurations().setConfigurations(configurationMap);
-
-        return service;
+    default ServiceTarget convertToModel(ServiceTargetEntity entity) {
+        return new ServiceTarget(entity.getService(), entity.getHost(), entity.getPort(), entity.getServiceType());
     }
 
     /**
@@ -81,18 +70,7 @@ public interface ServiceRepository extends WanakuRepository<Service, ServiceEnti
      * @return the converted ServiceEntity
      */
     @Override
-    default ServiceEntity convertToEntity(Service model) {
-        ServiceEntity entity = new ServiceEntity();
-        entity.setName(model.getName());
-        entity.setId(model.getName());
-        entity.setTargetAddress(model.getTarget());
-        entity.setServiceType(ServiceType.fromValue(model.getServiceType()));
-        entity.setConfigurationEntities(
-                model.getConfigurations().getConfigurations().entrySet().stream()
-                        .map(configuration -> new ConfigurationEntity(configuration.getKey(), configuration.getValue()))
-                        .collect(Collectors.toList())
-        );
-
-        return entity;
+    default ServiceTargetEntity convertToEntity(ServiceTarget model) {
+        return new ServiceTargetEntity(model.getService(), model.getHost(), model.getPort(), model.getServiceType());
     }
 }

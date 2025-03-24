@@ -16,16 +16,6 @@ public class Service {
     private String target;
 
     /**
-     * The unique name of the Service
-     */
-    private String name;
-
-    /**
-     * Tpye of the service, can be a resource or a tool
-     */
-    private String serviceType;
-
-    /**
      * The configuration settings for the service, which can include various parameters and values.
      */
     private Configurations configurations;
@@ -64,22 +54,6 @@ public class Service {
      */
     public void setConfigurations(Configurations configurations) {
         this.configurations = configurations;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getServiceType() {
-        return serviceType;
-    }
-
-    public void setServiceType(String serviceType) {
-        this.serviceType = serviceType;
     }
 
     /**

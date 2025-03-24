@@ -2,7 +2,7 @@ package ai.wanaku.core.persistence.mongodb;
 
 import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.api.WanakuRepository;
-import ai.wanaku.core.persistence.types.IdEntity;
+import ai.wanaku.core.persistence.types.WanakuEntity;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -13,7 +13,7 @@ import org.bson.Document;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractMongoDBRepository<A, T extends IdEntity, K> implements WanakuRepository<A, T, K> {
+public abstract class AbstractMongoDBRepository<A, T extends WanakuEntity, K> implements WanakuRepository<A, T, K> {
 
     protected MongoClient mongoClient;
     protected WanakuMarshallerService wanakuMarshallerService;

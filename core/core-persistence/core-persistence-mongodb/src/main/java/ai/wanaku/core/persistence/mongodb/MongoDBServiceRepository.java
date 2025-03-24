@@ -2,10 +2,11 @@ package ai.wanaku.core.persistence.mongodb;
 
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.api.ServiceRepository;
-import ai.wanaku.core.persistence.types.ServiceEntity;
+import ai.wanaku.core.persistence.types.ServiceTargetEntity;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
@@ -15,7 +16,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MongoDBServiceRepository extends AbstractMongoDBRepository<Service, ServiceEntity, String> implements ServiceRepository {
+public class MongoDBServiceRepository extends AbstractMongoDBRepository<ServiceTarget, ServiceTargetEntity, String>
+        implements ServiceRepository {
 
     public MongoDBServiceRepository(MongoClient mongoClient, WanakuMarshallerService wanakuMarshallerService) {
         super(mongoClient, wanakuMarshallerService);
@@ -32,16 +34,16 @@ public class MongoDBServiceRepository extends AbstractMongoDBRepository<Service,
     }
 
     @Override
-    Class<ServiceEntity> getEntityClass() {
-        return ServiceEntity.class;
+    Class<ServiceTargetEntity> getEntityClass() {
+        return ServiceTargetEntity.class;
     }
 
     @Override
-    public List<Service> listByServiceType(ServiceType serviceType) {
-        List<Service> services = new ArrayList<>();
+    public List<ServiceTarget> listByServiceType(ServiceType serviceType) {
+        List<ServiceTarget> services = new ArrayList<>();
 
         for (Document type : mongoCollection().find(Filters.eq("serviceType", serviceType))) {
-            ServiceEntity serviceEntity = wanakuMarshallerService.unmarshalOne(type.toJson(), ServiceEntity.class);
+            ServiceTargetEntity serviceEntity = wanakuMarshallerService.unmarshalOne(type.toJson(), ServiceTargetEntity.class);
             services.add(convertToModel(serviceEntity));
         }
 
@@ -49,7 +51,7 @@ public class MongoDBServiceRepository extends AbstractMongoDBRepository<Service,
     }
 
     @Override
-    public Service findByIdAndServiceType(String id, ServiceType serviceType) {
+    public ServiceTarget findByIdAndServiceType(String id, ServiceType serviceType) {
         Bson filter = Filters.and(Filters.eq("_id", id), Filters.eq("serviceType", serviceType));
         Document document = mongoCollection().find(filter).first();
 
@@ -57,12 +59,12 @@ public class MongoDBServiceRepository extends AbstractMongoDBRepository<Service,
             throw new ServiceNotFoundException("Service with ID " + id + " and type " + serviceType.asValue() + " not found");
         }
 
-        return convertToModel(wanakuMarshallerService.unmarshalOne(document.toJson(), ServiceEntity.class));
+        return convertToModel(wanakuMarshallerService.unmarshalOne(document.toJson(), ServiceTargetEntity.class));
     }
 
     @Override
-    public Service update(Service model) {
-        ServiceEntity entity = convertToEntity(model);
+    public ServiceTarget update(ServiceTarget model) {
+        ServiceTargetEntity entity = convertToEntity(model);
 
         String marshalled = wanakuMarshallerService.marshal(entity);
 

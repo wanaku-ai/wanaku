@@ -2,37 +2,43 @@ package ai.wanaku.core.persistence.file;
 
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.api.types.management.Configuration;
+import ai.wanaku.api.types.management.Configurations;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.api.ServiceRepository;
-import ai.wanaku.core.persistence.types.ServiceEntity;
+import ai.wanaku.core.persistence.types.ServiceTargetEntity;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class FileServiceRepository extends AbstractFileRepository<Service, ServiceEntity, String> implements ServiceRepository {
+public class FileServiceRepository extends AbstractFileRepository<ServiceTarget, ServiceTargetEntity, String> implements ServiceRepository {
 
     public FileServiceRepository(WanakuMarshallerService wanakuMarshallerService, Path file) {
         super(wanakuMarshallerService, file);
     }
 
     @Override
-    Class<ServiceEntity> getEntityClass() {
-        return ServiceEntity.class;
+    Class<ServiceTargetEntity> getEntityClass() {
+        return ServiceTargetEntity.class;
     }
 
     @Override
-    public List<Service> listByServiceType(ServiceType serviceType) {
+    public List<ServiceTarget> listByServiceType(ServiceType serviceType) {
         try {
             String data = Files.readString(file);
 
-            List<ServiceEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
+            List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
 
             return convertToModels(entities.stream()
                     .filter(e -> serviceType.equals(e.getServiceType()))
@@ -43,11 +49,11 @@ public class FileServiceRepository extends AbstractFileRepository<Service, Servi
     }
 
     @Override
-    public Service findByIdAndServiceType(String id, ServiceType serviceType) {
+    public ServiceTarget findByIdAndServiceType(String id, ServiceType serviceType) {
         try {
             String data = Files.readString(file);
 
-            List<ServiceEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
+            List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
 
             return convertToModel(entities.stream()
                     .filter(e -> e.getServiceType().equals(serviceType) && e.getId().equals(id))
@@ -58,14 +64,14 @@ public class FileServiceRepository extends AbstractFileRepository<Service, Servi
     }
 
     @Override
-    public Service update(Service model) {
+    public ServiceTarget update(ServiceTarget model) {
         try {
-            ServiceEntity entity = convertToEntity(model);
+            ServiceTargetEntity entity = convertToEntity(model);
             String data = Files.readString(file);
 
-            List<ServiceEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
+            List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
 
-            List<ServiceEntity> s = entities.stream()
+            List<ServiceTargetEntity> s = entities.stream()
                     .filter(e -> !e.getId().equals(entity.getId()))
                     .collect(Collectors.toList());
 

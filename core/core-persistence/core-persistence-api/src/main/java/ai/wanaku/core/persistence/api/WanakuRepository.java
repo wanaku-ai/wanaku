@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.core.persistence.types.IdEntity;
+import ai.wanaku.core.persistence.types.WanakuEntity;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * @param <B> the entity type which must extend IdEntity
  * @param <C> the ID type
  */
-public interface WanakuRepository<A, B extends IdEntity, C> {
+public interface WanakuRepository<A, B extends WanakuEntity, C> {
 
     /**
      * Persists a model to the repository.

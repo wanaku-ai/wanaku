@@ -1,5 +1,6 @@
 package ai.wanaku.core.service.discovery;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
@@ -10,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 /**
  * Provides a configuration-driven connection to Valkey using Jedis.
  */
+@IfBuildProperty(name = "wanaku.service.persistence", stringValue = "valkey")
 @ApplicationScoped
 public class ValkeyProvider {
 

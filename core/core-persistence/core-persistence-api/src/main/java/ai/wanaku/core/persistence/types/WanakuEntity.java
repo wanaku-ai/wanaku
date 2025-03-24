@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.types;
 
-public interface IdEntity<T> {
+public interface WanakuEntity<T> {
 
     String getId();
 

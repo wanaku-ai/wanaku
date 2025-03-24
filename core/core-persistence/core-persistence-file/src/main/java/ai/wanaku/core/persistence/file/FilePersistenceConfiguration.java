@@ -1,5 +1,6 @@
 package ai.wanaku.core.persistence.file;
 
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ServiceRepository;
@@ -46,5 +47,14 @@ public class FilePersistenceConfiguration {
     ServiceRepository serviceRepository() {
         return new FileServiceRepository(new WanakuMarshallerService(), Path.of(
                 baseFolder.replace("${user.home}", System.getProperty("user.home")), servicesFileName));
+    }
+
+    @DefaultBean
+    @Produces
+    ServiceRegistry serviceRegistry() {
+        return new FileServiceRegistry(new WanakuMarshallerService(), Path.of(
+                baseFolder.replace("${user.home}", System.getProperty("user.home")), servicesFileName),
+                Path.of(
+                        baseFolder.replace("${user.home}", System.getProperty("user.home"))));
     }
 }

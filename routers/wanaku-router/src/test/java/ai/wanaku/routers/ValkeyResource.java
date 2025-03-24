@@ -16,6 +16,7 @@ public class ValkeyResource implements QuarkusTestResourceLifecycleManager {
 
 
         return Map.of(
+                "wanaku.service.persistence", "valkey",
                 "valkey.host", container.getHost(),
                 "valkey.port", container.getFirstMappedPort().toString()
         );

@@ -3,18 +3,17 @@ package ai.wanaku.core.persistence.file;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.api.WanakuRepository;
-import ai.wanaku.core.persistence.types.IdEntity;
+import ai.wanaku.core.persistence.types.WanakuEntity;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public abstract class AbstractFileRepository<A, T extends IdEntity, K> implements WanakuRepository<A, T, K> {
+public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> implements WanakuRepository<A, T, K> {
 
     protected WanakuMarshallerService wanakuMarshallerService;
     protected Path file;

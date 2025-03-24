@@ -20,6 +20,11 @@
             <artifactId>core-mcp</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-persistence-file</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>io.valkey</groupId>
