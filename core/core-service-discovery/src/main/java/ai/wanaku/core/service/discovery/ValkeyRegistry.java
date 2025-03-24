@@ -1,6 +1,7 @@
 package ai.wanaku.core.service.discovery;
 
 import ai.wanaku.api.types.management.State;
+import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.valkey.StreamEntryID;
 import io.valkey.params.XAddParams;
@@ -40,7 +41,7 @@ import org.jboss.logging.Logger;
  * This class is basically iterating over the hashmap
  */
 @ApplicationScoped
-@IfBuildProperty(name = "wanaku.service.persistence", stringValue = "valkey")
+@LookupIfProperty(name = "wanaku.service.persistence", stringValue = "valkey")
 public class ValkeyRegistry implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(ValkeyRegistry.class);
 

@@ -3,6 +3,7 @@ package ai.wanaku.core.persistence.file;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
@@ -22,7 +23,7 @@ import java.util.List;
 public class ResourceReferenceTest {
 
     @Inject
-    ResourceReferenceRepository resourceReferenceRepository;
+    Instance<ResourceReferenceRepository> resourceReferenceRepository;
 
     private static Path path;
 
@@ -56,7 +57,7 @@ public class ResourceReferenceTest {
             param2.setValue("value2" + i);
 
             resourceReference.setParams(List.of(param1, param2));
-            resourceReferenceRepository.persist(resourceReference);
+            resourceReferenceRepository.get().persist(resourceReference);
         }
 
         Assertions.assertTrue(Files.exists(path));
@@ -65,7 +66,7 @@ public class ResourceReferenceTest {
     @Test
     @Order(2)
     public void list() {
-        List<ResourceReference> entities = resourceReferenceRepository.listAll();
+        List<ResourceReference> entities = resourceReferenceRepository.get().listAll();
 
         Assertions.assertTrue(entities.size() == 3);
         Assertions.assertTrue(entities.get(0).getName().equals("name1"));
@@ -74,7 +75,7 @@ public class ResourceReferenceTest {
     @Test
     @Order(3)
     public void find() {
-        ResourceReference model = resourceReferenceRepository.findById("name1");
+        ResourceReference model = resourceReferenceRepository.get().findById("name1");
 
         Assertions.assertNotNull(model);
     }
@@ -82,17 +83,17 @@ public class ResourceReferenceTest {
     @Test
     @Order(4)
     public void findNonExistent() {
-        Assertions.assertNull(resourceReferenceRepository.findById("nameNotExists"));
+        Assertions.assertNull(resourceReferenceRepository.get().findById("nameNotExists"));
     }
 
     @Test
     @Order(5)
     public void delete() {
-        int initialSize = resourceReferenceRepository.listAll().size();
+        int initialSize = resourceReferenceRepository.get().listAll().size();
 
-        resourceReferenceRepository.deleteById("name2");
+        resourceReferenceRepository.get().deleteById("name2");
 
-        int finalSize = resourceReferenceRepository.listAll().size();
+        int finalSize = resourceReferenceRepository.get().listAll().size();
 
         Assertions.assertTrue(finalSize < initialSize);
     }

@@ -6,7 +6,9 @@ import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceType;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
@@ -25,7 +27,15 @@ public class TargetsBean {
     ToolsResolver toolsResolver;
 
     @Inject
-    ServiceRegistry serviceRegistry;
+    Instance<ServiceRegistry> serviceRegistryInstance;
+
+    private ServiceRegistry serviceRegistry;
+
+    @PostConstruct
+    public void init() {
+        serviceRegistry = serviceRegistryInstance.get();
+        LOG.info("Using service registry implementation " + serviceRegistry.getClass().getName());
+    }
 
     public void configureTools(String service, String option, String value) {
         serviceRegistry.update(service, option, value);

@@ -4,7 +4,9 @@ import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.VersionHelper;
 import java.io.File;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -34,7 +36,14 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
     WanakuRouterConfig config;
 
     @Inject
+    Instance<ServiceRegistry> serviceRegistryInstance;
+
     ServiceRegistry serviceRegistry;
+
+    @PostConstruct
+    void init() {
+        serviceRegistry = serviceRegistryInstance.get();
+    }
 
     @Produces
     @IfBuildProfile(anyOf = {"dev", "test"})

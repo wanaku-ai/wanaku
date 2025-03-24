@@ -6,8 +6,10 @@ import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
@@ -25,7 +27,14 @@ public class ResourcesBean {
     ResourceResolver resourceResolver;
 
     @Inject
-    ResourceReferenceRepository resourceReferenceRepository;
+    Instance<ResourceReferenceRepository> resourceReferenceRepositoryInstance;
+
+    private ResourceReferenceRepository resourceReferenceRepository;
+
+    @PostConstruct
+    public void init() {
+        resourceReferenceRepository = resourceReferenceRepositoryInstance.get();
+    }
 
     public void expose(ResourceReference mcpResource) {
         doExposeResource(mcpResource);

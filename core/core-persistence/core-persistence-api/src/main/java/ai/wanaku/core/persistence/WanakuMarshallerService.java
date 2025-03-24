@@ -4,6 +4,8 @@ import ai.wanaku.api.exceptions.WanakuException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +14,8 @@ import java.util.List;
  * Service class responsible for marshalling and unmarshalling objects to and from JSON format.
  * This class provides functionality to convert Java objects to JSON strings and vice versa.
  */
+@ApplicationScoped
+@Default
 public class WanakuMarshallerService {
 
     private ObjectMapper mapper;

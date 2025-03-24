@@ -17,7 +17,7 @@ public class MongoDBResource implements QuarkusTestResourceLifecycleManager {
         container.start();
 
         return Map.of(
-                "wanaku.persistence.mongodb", "true",
+                "wanaku.persistence", "mongodb",
                 "quarkus.mongodb.connection-string", String.format("mongodb://%s:%s", container.getHost(),
                         container.getMappedPort(27017).toString()),
                 "quarkus.mongodb.database", "wanaku-test"

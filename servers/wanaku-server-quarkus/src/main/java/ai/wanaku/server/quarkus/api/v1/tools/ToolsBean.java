@@ -4,8 +4,10 @@ import java.io.File;
 import java.util.List;
 
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import io.quarkiverse.mcp.server.ToolManager;
@@ -27,7 +29,14 @@ public class ToolsBean {
     ToolsResolver toolsResolver;
 
     @Inject
-    ToolReferenceRepository toolReferenceRepository;
+    Instance<ToolReferenceRepository> toolReferenceRepositoryInstance;
+
+    private ToolReferenceRepository toolReferenceRepository;
+
+    @PostConstruct
+    void init() {
+        toolReferenceRepository = toolReferenceRepositoryInstance.get();
+    }
 
     public void add(ToolReference mcpResource) {
         registerTool(mcpResource);
