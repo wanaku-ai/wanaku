@@ -16,11 +16,6 @@ import ai.wanaku.core.services.config.WanakuProviderConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import org.apache.camel.catalog.CamelCatalog;
-import org.apache.camel.catalog.DefaultCamelCatalog;
-import org.apache.camel.tooling.model.BaseOptionModel;
-import org.apache.camel.tooling.model.ComponentModel;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -130,27 +125,6 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
                 requestParams.putIfAbsent(entry.getKey(), entry.getValue());
             }
         }
-    }
-
-    protected Map<String, String> componentOptions(String name, Map<String, String> opt) {
-        Objects.requireNonNull(name, "The component name must not be null");
-
-        CamelCatalog catalog = new DefaultCamelCatalog(true);
-
-        final ComponentModel componentModel = catalog.componentModel(name);
-        if (componentModel == null) {
-            LOG.warnf("No component model found for component: %s", name);
-            return Map.of();
-        }
-        final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
-        for (BaseOptionModel option : options) {
-            if (option.getLabel().contains("consumer") || option.getLabel().contains("common") ||
-                    option.getGroup().contains("common") || option.getLabel().contains("security")) {
-                opt.put(option.getName(), option.getDescription());
-            }
-        }
-
-        return opt;
     }
 
     private void tryRegistering(String service, String address, int port) {
