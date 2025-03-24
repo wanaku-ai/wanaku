@@ -3,6 +3,7 @@ package ai.wanaku.provider.s3;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.services.common.ServiceOptions;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,6 +19,9 @@ public class S3ResourceDelegate  extends AbstractResourceDelegate {
 
     @Inject
     WanakuProviderConfig config;
+
+    @Inject
+    ServiceOptions serviceOptions;
 
     @Override
     protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
@@ -50,6 +54,6 @@ public class S3ResourceDelegate  extends AbstractResourceDelegate {
     public Map<String, String> serviceConfigurations() {
         Map<String, String> configurations =  config.service().configurations();
 
-        return componentOptions(config.name(), configurations);
+        return serviceOptions.merge(config.name(), configurations);
     }
 }

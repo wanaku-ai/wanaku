@@ -1,8 +1,9 @@
-package ai.wanaku.core.services.provider;
+package ai.wanaku.core.runtime.camel;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.services.provider.ResourceConsumer;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 

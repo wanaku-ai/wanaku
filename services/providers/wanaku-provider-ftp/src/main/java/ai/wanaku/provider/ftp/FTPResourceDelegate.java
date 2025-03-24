@@ -1,5 +1,6 @@
 package ai.wanaku.provider.ftp;
 
+import ai.wanaku.core.services.common.ServiceOptions;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,9 @@ import static ai.wanaku.core.services.util.URIHelper.buildUri;
 @ApplicationScoped
 public class FTPResourceDelegate extends AbstractResourceDelegate {
     private static final Logger LOG = Logger.getLogger(FTPResourceDelegate.class);
+
+    @Inject
+    ServiceOptions serviceOptions;
 
     @Inject
     WanakuProviderConfig config;
@@ -47,6 +51,6 @@ public class FTPResourceDelegate extends AbstractResourceDelegate {
     public Map<String, String> serviceConfigurations() {
         Map<String, String> configurations =  config.service().configurations();
 
-        return componentOptions(config.name(), configurations);
+        return serviceOptions.merge(config.name(), configurations);
     }
 }

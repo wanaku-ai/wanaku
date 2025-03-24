@@ -20,9 +20,12 @@ public abstract class ServicesBase extends BaseCommand {
     @CommandLine.Option(names = {"--path"}, description = "The project path", defaultValue = ".", arity = "0..1")
     protected String path;
 
+    @CommandLine.Option(names = { "--type" }, description = "The service type (camel, quarkus, etc)", defaultValue = "camel", required = true, arity = "0..1")
+    protected String type;
+
     protected void createProject(String baseCmd) {
-        String cmd = String.format("%s -DartifactId=wanaku-routing-%s-service -Dname=%s -Dwanaku-version=%s",
-                baseCmd, name.toLowerCase(), name, VersionHelper.VERSION);
+        String cmd = String.format("%s -DartifactId=wanaku-routing-%s-service -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s",
+                baseCmd, name.toLowerCase(), name, wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION, type);
 
         String[] split = cmd.split(" ");
         final File projectDir = new File(path);

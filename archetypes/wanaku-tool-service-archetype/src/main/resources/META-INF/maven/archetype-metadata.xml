@@ -8,6 +8,7 @@
             <defaultValue>${project.version}</defaultValue>
         </requiredProperty>
         <requiredProperty key="wanaku-version" />
+        <requiredProperty key="wanaku-service-type" />
     </requiredProperties>
     <fileSets>
         <fileSet filtered="true" packaged="true" encoding="UTF-8">

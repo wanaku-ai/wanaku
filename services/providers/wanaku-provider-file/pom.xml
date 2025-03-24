@@ -26,6 +26,12 @@
 
         <dependency>
             <groupId>ai.wanaku</groupId>
+            <artifactId>core-runtime-camel</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
             <artifactId>core-service-discovery</artifactId>
             <version>${project.version}</version>
         </dependency>
