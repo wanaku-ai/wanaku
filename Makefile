@@ -1,12 +1,11 @@
 GRAAL_VERSION?=21.0.2-graalce
-WANAKU_VERSION=0.0.2-SNAPSHOT
+WANAKU_VERSION := $(shell cat core/core-util/target/classes/version.txt)
 
 HOST?=localhost
 API_ENDPOINT?=http://$(HOST):8080
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
-
 
 help:
 	@echo Make sure to adjust your environment to use Graal. For instance, run "sdk use ${GRAAL_VERSION}"
