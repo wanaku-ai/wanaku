@@ -1,6 +1,8 @@
 package ai.wanaku.routers;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -23,7 +25,14 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
     CommandLine.ParseResult parseResult;
 
     @Inject
-    ServiceRegistry serviceRegistry;
+    Instance<ServiceRegistry> serviceRegistryInstance;
+
+    private ServiceRegistry serviceRegistry;
+
+    @PostConstruct
+    public void init() {
+        serviceRegistry = serviceRegistryInstance.get();
+    }
 
     @Produces
     @Override

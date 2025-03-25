@@ -53,4 +53,6 @@ public interface ServiceRegistry {
      * @return a map of all registered services and their configurations
      */
     Map<String, Service> getEntries(ServiceType serviceType);
+
+    void update(String target, String option, String value);
 }

@@ -1,18 +1,17 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
-import ai.wanaku.api.types.management.State;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceType;
-import ai.wanaku.core.util.IndexHelper;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,22 +27,22 @@ public class TargetsBean {
     ToolsResolver toolsResolver;
 
     @Inject
-    ServiceRegistry serviceRegistry;
+    Instance<ServiceRegistry> serviceRegistryInstance;
 
-    public void configureTools(String service, String option, String value)
-            throws IOException {
-        Map<String, String> configurations = toolsConfigurations(service);
-        configurations.put(option, value);
+    private ServiceRegistry serviceRegistry;
 
-        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
+    @PostConstruct
+    public void init() {
+        serviceRegistry = serviceRegistryInstance.get();
+        LOG.info("Using service registry implementation " + serviceRegistry.getClass().getName());
     }
 
-    public void configureResources(String service, String option, String value)
-            throws IOException {
-        Map<String, String> configurations = resourcesConfigurations(service);
-        configurations.put(option, value);
+    public void configureTools(String service, String option, String value) {
+        serviceRegistry.update(service, option, value);
+    }
 
-        IndexHelper.saveTargetsIndex(toolsResolver.targetsIndexFile(), configurations);
+    public void configureResources(String service, String option, String value) {
+        serviceRegistry.update(service, option, value);
     }
 
     public Map<String, Service> toolList() {
@@ -94,6 +93,4 @@ public class TargetsBean {
             states.put(entry.getKey(), state);
         }
     }
-
-
 }

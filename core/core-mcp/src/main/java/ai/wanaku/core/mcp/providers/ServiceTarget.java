@@ -17,7 +17,7 @@ public class ServiceTarget {
      * @param port The port number of the service.
      * @param serviceType The type of service, either RESOURCE_PROVIDER or TOOL_INVOKER.
      */
-    private ServiceTarget(String service, String host, int port, ServiceType serviceType) {
+    public ServiceTarget(String service, String host, int port, ServiceType serviceType) {
         this.service = service;
         this.host = host;
         this.port = port;

@@ -1,6 +1,8 @@
 package ai.wanaku.core.service.discovery;
 
 import ai.wanaku.api.types.management.State;
+import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.valkey.StreamEntryID;
 import io.valkey.params.XAddParams;
 import io.valkey.resps.StreamEntry;
@@ -39,6 +41,7 @@ import org.jboss.logging.Logger;
  * This class is basically iterating over the hashmap
  */
 @ApplicationScoped
+@LookupIfProperty(name = "wanaku.service.persistence", stringValue = "valkey")
 public class ValkeyRegistry implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(ValkeyRegistry.class);
 
@@ -64,8 +67,12 @@ public class ValkeyRegistry implements ServiceRegistry {
             LOG.infof("Service %s with target %s registered", serviceTarget.getService(), serviceTarget.toAddress());
 
             for (var entry : configurations.entrySet()) {
-                LOG.infof("Registering configuration %s for service %s", entry.getKey(), serviceTarget.getService());
-                jedis.hset(serviceTarget.getService(), entry.getKey(), entry.getValue());
+                if (jedis.hget(serviceTarget.getService(), entry.getKey()) == null) {
+                    LOG.infof("Registering configuration %s for service %s", entry.getKey(), serviceTarget.getService());
+                    Configuration configuration = new Configuration();
+                    configuration.setDescription(entry.getValue());
+                    jedis.hset(serviceTarget.getService(), entry.getKey(), configuration.toJson());
+                }
             }
         } catch (Exception e) {
             LOG.errorf(e, "Failed to register service %s: %s", serviceTarget.getService(), e.getMessage());
@@ -178,6 +185,21 @@ public class ValkeyRegistry implements ServiceRegistry {
         return entries;
     }
 
+    @Override
+    public void update(String target, String option, String value) {
+        try (io.valkey.Jedis jedis = jedisPool.getResource()) {
+            String jsonConfiguration = jedis.hget(target, option);
+            Configuration configuration = Configuration.fromJson(jsonConfiguration);
+            configuration.setValue(value);
+
+            jedis.hset(target, option, configuration.toJson());
+
+            LOG.infof("Option %s updated for Service %s", option, target);
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to update option %s for service %s: %s", option, target, e.getMessage());
+        }
+    }
+
 
     /**
      * Creates a new Service object from the given hashmap key.
@@ -207,7 +229,7 @@ public class ValkeyRegistry implements ServiceRegistry {
 
         for (String config : configs) {
             if (!ReservedKeys.ALL_KEYS.contains(config)) {
-                Configuration configuration = toConfiguration(jedis, config);
+                Configuration configuration = toConfiguration(jedis, key, config);
                 configurationMap.put(config, configuration);
             }
         }
@@ -230,13 +252,10 @@ public class ValkeyRegistry implements ServiceRegistry {
      * @param config The hashmap key representing the configuration.
      * @return A Configuration object representing the created configuration.
      */
-    private static Configuration toConfiguration(Jedis jedis, String config) {
-        Configuration configuration = new Configuration();
-        configuration.setValue(config);
-        String configDescription = jedis.hget(config, "description");
+    private static Configuration toConfiguration(Jedis jedis, String key, String config) {
+        String jsonConfiguration = jedis.hget(key, config);
 
-        configuration.setDescription(configDescription);
-        return configuration;
+        return Configuration.fromJson(jsonConfiguration);
     }
 
 

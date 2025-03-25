@@ -1,6 +1,8 @@
 package ai.wanaku.core.services.provider;
 
 import ai.wanaku.core.mcp.providers.ServiceType;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -32,7 +34,15 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     ResourceConsumer consumer;
 
     @Inject
+    Instance<ServiceRegistry> serviceRegistryInstance;
+
     ServiceRegistry serviceRegistry;
+
+    @PostConstruct
+    public void init() {
+        serviceRegistry = serviceRegistryInstance.get();
+        LOG.info("Using service registry implementation " + serviceRegistry.getClass().getName());
+    }
 
     /**
      * Gets the endpoint URI.

@@ -27,4 +27,12 @@ public enum ServiceType {
     public String asValue() {
         return value;
     }
+
+    public static ServiceType fromValue(String value) {
+        switch (value) {
+            case "resource-provider": return RESOURCE_PROVIDER;
+            case "tool-invoker": return TOOL_INVOKER;
+            default: throw new IllegalArgumentException("Value " + value + " is not a valid service type");
+        }
+    }
 }

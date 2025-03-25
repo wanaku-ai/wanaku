@@ -1,6 +1,8 @@
 package ai.wanaku.core.services.routing;
 
 import ai.wanaku.core.mcp.providers.ServiceType;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -30,7 +32,15 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
     Client client;
 
     @Inject
+    Instance<ServiceRegistry> serviceRegistryInstance;
+
     ServiceRegistry serviceRegistry;
+
+    @PostConstruct
+    public void init() {
+        serviceRegistry = serviceRegistryInstance.get();
+        LOG.info("Using service registry implementation " + serviceRegistry.getClass().getName());
+    }
 
     /**
      * Convert the response in whatever format it is to a String

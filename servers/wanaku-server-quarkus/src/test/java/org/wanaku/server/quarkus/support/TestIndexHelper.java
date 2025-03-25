@@ -2,6 +2,7 @@ package ai.wanaku.server.quarkus.support;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import ai.wanaku.core.util.IndexHelper;
 import ai.wanaku.core.util.support.ResourcesHelper;
@@ -18,7 +19,7 @@ public class TestIndexHelper {
 
         indexFile.deleteOnExit();
 
-        if (indexFile.exists()) {
+        if (indexFile.exists() && !Files.readString(indexFile.toPath()).equals("[]")) {
             return indexFile;
         }
 
@@ -35,7 +36,7 @@ public class TestIndexHelper {
 
         indexFile.deleteOnExit();
 
-        if (indexFile.exists()) {
+        if (indexFile.exists() && !Files.readString(indexFile.toPath()).equals("[]")) {
             return indexFile;
         }
 

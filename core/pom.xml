@@ -20,6 +20,7 @@
         <module>core-services</module>
         <module>core-service-discovery</module>
         <module>core-runtimes</module>
+        <module>core-persistence</module>
     </modules>
 
 
