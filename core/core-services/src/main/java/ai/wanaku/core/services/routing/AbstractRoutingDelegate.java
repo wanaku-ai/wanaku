@@ -139,7 +139,7 @@ public abstract class AbstractRoutingDelegate implements InvocationDelegate {
         String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.routing.name").getValue();
         String port = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
 
-        LOG.infof("Registering tool service %s", service);
+        LOG.debugf("Registering tool service %s", service);
 
         tryRegistering(service, DiscoveryUtil.resolveRegistrationAddress(), Integer.parseInt(port));
     }
