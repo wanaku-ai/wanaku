@@ -7,14 +7,18 @@ import jakarta.enterprise.context.ApplicationScoped;
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.routing.Client;
+
+#if ( $wanaku-service-type == "camel")
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+#end
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ${name}Client implements Client {
     private static final Logger LOG = Logger.getLogger(${name}Client.class);
 
+#if ( $wanaku-service-type == "camel")
     private final ProducerTemplate producer;
 
     public ${name}Client(CamelContext camelContext) {
@@ -39,4 +43,18 @@ public class ${name}Client implements Client {
         }
         return s;
     }
+#else
+    public ${name}Client() {
+
+    }
+
+    @Override
+    public Object exchange(ToolInvokeRequest request) {
+        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
+
+        LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
+
+
+    }
+#end
 }
