@@ -4,6 +4,7 @@ package ai.wanaku.core.exchange;
 import ai.wanaku.core.uri.Parameter;
 import ai.wanaku.core.uri.URIParser;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -35,7 +36,10 @@ public record ParsedToolInvokeRequest(String uri, String body) {
             argumentsMap = Collections.emptyMap();
         }
 
-        String parsedUri = URIParser.parse(uri, Map.of(Parameter.KEY_NAME, new Parameter((Map) argumentsMap)));
+        Map<String, Object> map = new HashMap<>(argumentsMap);
+        map.put(Parameter.KEY_NAME, new Parameter((Map) argumentsMap));
+
+        String parsedUri = URIParser.parse(uri, map);
 
         String body = toolInvokeRequest.getBody();
 
