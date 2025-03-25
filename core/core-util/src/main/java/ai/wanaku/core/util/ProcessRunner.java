@@ -40,7 +40,7 @@ public class ProcessRunner {
             }
         } catch (IOException e) {
             LOG.error("I/O Error: %s", e.getMessage(), e);
-            throw new RuntimeException(e);
+            throw new WanakuException(e);
         } catch (InterruptedException e) {
             LOG.error("Interrupted: %s", e.getMessage(), e);
             throw new WanakuException(e);
