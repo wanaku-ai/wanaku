@@ -36,7 +36,7 @@ public class ProcessRunner {
             LOG.info("Waiting for process to finish...");
             final int i = process.waitFor();
             if (i != 0) {
-                LOG.warn("Process did execute successfully");
+                LOG.warn("Process did not execute successfully");
             }
         } catch (IOException e) {
             LOG.error("I/O Error: %s", e.getMessage(), e);
