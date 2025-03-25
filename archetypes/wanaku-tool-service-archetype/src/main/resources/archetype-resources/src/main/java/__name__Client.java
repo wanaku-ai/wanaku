@@ -54,7 +54,8 @@ public class ${name}Client implements Client {
 
         LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
 
-
+        // Execute and return the result
+        return null;
     }
 #end
 }
