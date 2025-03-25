@@ -38,7 +38,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+#if ( $wanaku-service-type == "camel")
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-camel-bom</artifactId>
@@ -46,6 +46,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+#end
         </dependencies>
     </dependencyManagement>
 
