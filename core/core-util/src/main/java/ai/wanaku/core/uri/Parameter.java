@@ -20,7 +20,9 @@ public class Parameter {
     }
 
     public Object value(String argument) {
-        return parameters.get(argument);
+        String filtered = argument.replace("{", "").replace("}", "");
+
+        return parameters.get(filtered);
     }
 
     public Object valueOrElse(String argument, int defaultValue) {

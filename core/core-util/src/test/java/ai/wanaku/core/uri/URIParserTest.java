@@ -1,5 +1,6 @@
 package ai.wanaku.core.uri;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,9 +21,10 @@ class URIParserTest {
 
     static Stream<Arguments> mapProvider() {
         return Stream.of(
-                arguments("http://my-host/", "http://my-host/{parameter.value('id')}", emptyArg()),
-                arguments("http://my-host//data", "http://my-host/{parameter.value('id')}/data", emptyArg()),
-                arguments("http://my-host/123/data", "http://my-host/{parameter.value('id')}/data", makeArg(Map.of("id", "123"))),
+                arguments("http://my-host/", "http://my-host/{parameter.value('{id}')}", emptyArg()),
+                arguments("http://my-host//data", "http://my-host/{parameter.value('{id}')}/data", emptyArg()),
+                arguments("http://my-host/123/data", "http://my-host/{parameter.value('{id}')}/data", makeArg(Map.of("id", "123"))),
+                arguments("http://my-host/456/data", "http://my-host/{id}/data", makeArg(Map.of("id", "456"))),
                 arguments("http://my-host/1/data", "http://my-host/{parameter.valueOrElse('id', 1)}/data", emptyArg()),
                 arguments("http://my-host/1/data", "http://my-host/{parameter.valueOrElse('id', '1')}/data", emptyArg()),
                 arguments("http://my-host/123/data", "http://my-host/{parameter.valueOrElse('id', 1)}/data", makeArg(Map.of("id", "123"))),
@@ -43,7 +45,10 @@ class URIParserTest {
     }
 
     static Map<String, Object> makeArg(Map<String, Object> map) {
-        return Map.of("parameter", new Parameter(map));
+        Map<String, Object> ret = new HashMap<>(map);
+        ret.put("parameter", new Parameter(map));
+
+        return ret;
     }
 
     static Map<String, Object> emptyArg() {
