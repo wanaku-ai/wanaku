@@ -1,5 +1,6 @@
 package ai.wanaku.core.uri;
 
+
 import java.util.Map;
 
 /**
@@ -16,7 +17,10 @@ public class URIHelper {
     }
 
     private static void buildQuery(StringBuilder uri, Map<String, ?> parameters) {
-        boolean first = true;
+        buildQuery(uri, parameters, true);
+    }
+
+    private static void buildQuery(StringBuilder uri, Map<String, ?> parameters, boolean first) {
         for (Map.Entry<String, ?> entry : parameters.entrySet()) {
             if (first) {
                 uri.append('?');
@@ -65,5 +69,15 @@ public class URIHelper {
 
         uri.append(path);
         return buildFromBaseUri(uri, parameters);
+    }
+
+    public static String addQueryParameters(String uri, Map<String, ?> parameters) {
+        boolean first = true;
+        if (uri.contains("?")) {
+            first = false;
+        }
+        StringBuilder uriBuilder = new StringBuilder(uri);
+        buildQuery(uriBuilder, parameters, first);
+        return uriBuilder.toString();
     }
 }

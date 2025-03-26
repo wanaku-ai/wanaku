@@ -12,7 +12,6 @@ import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.CollectionsHelper;
-import ai.wanaku.core.util.ReservedArgumentNames;
 import ai.wanaku.routers.proxies.ToolsProxy;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
@@ -23,7 +22,15 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.jboss.logging.Logger;
+
+import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
+import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE_ENDPOINT;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_CONFIGURATION;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
 /**
  * A proxy class for invoking tools
@@ -72,12 +79,47 @@ public class InvokerProxy implements ToolsProxy {
         Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
+        Map<String, ToolReference.Property> inputSchema =toolReference
+                .getInputSchema()
+                .getProperties();
+
+        Map<String,String> serviceEndpointConfiguration = inputSchema.entrySet()
+                .stream()
+                .filter(entry -> {
+                    ToolReference.Property property = entry.getValue();
+                    return property !=null &&
+                            property.getTarget() != null &&
+                            property.getScope() != null &&
+                            property.getTarget().equals(TARGET_CONFIGURATION) &&
+                            property.getScope().equals(SCOPE_SERVICE_ENDPOINT);
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
+
+        //override the global configuration with the invocation specific one.
+        serviceConfigurations.putAll(serviceEndpointConfiguration);
+
+
+        // extract headers parameter
+        Map<String, String> headers = inputSchema.entrySet()
+                .stream()
+                .filter(entry -> {
+                    ToolReference.Property property = entry.getValue();
+                    return  property !=null &&
+                            property.getTarget() != null &&
+                            property.getScope() != null &&
+                            property.getTarget().equals(TARGET_HEADER) &&
+                            property.getScope().equals(SCOPE_SERVICE);
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
+
+
         String body = extractBody(toolReference);
 
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody(body)
                 .setUri(toolReference.getUri())
                 .putAllServiceConfigurations(serviceConfigurations)
+                .putAllHeaders(headers)
                 .putAllArguments(argumentsMap)
                 .build();
 
@@ -87,7 +129,7 @@ public class InvokerProxy implements ToolsProxy {
 
     private static String extractBody(ToolReference toolReference) {
         Map<String, ToolReference.Property> properties = toolReference.getInputSchema().getProperties();
-        ToolReference.Property bodyProp = properties.get(ReservedArgumentNames.BODY);
+        ToolReference.Property bodyProp = properties.get(BODY);
         if (bodyProp == null) {
             return EMPTY_BODY;
         }

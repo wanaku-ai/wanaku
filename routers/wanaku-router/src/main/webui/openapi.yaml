@@ -43,6 +43,12 @@ components:
           type: string
         description:
           type: string
+        target:
+          type: string
+        scope:
+          type: string
+        value:
+          type: string
     ResourceReference:
       type: object
       properties:

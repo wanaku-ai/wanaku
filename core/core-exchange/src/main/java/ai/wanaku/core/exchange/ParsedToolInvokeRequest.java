@@ -2,6 +2,7 @@ package ai.wanaku.core.exchange;
 
 
 import ai.wanaku.core.uri.Parameter;
+import ai.wanaku.core.uri.URIHelper;
 import ai.wanaku.core.uri.URIParser;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,7 +11,7 @@ import java.util.Map;
 /**
  * Represents a parsed tool invocation request containing the URI and its body.
  */
-public record ParsedToolInvokeRequest(String uri, String body) {
+public record ParsedToolInvokeRequest(String uri, String body, Map<String, String> headers) {
 
     /**
      * Parses the URI provided by the router
@@ -41,8 +42,13 @@ public record ParsedToolInvokeRequest(String uri, String body) {
 
         String parsedUri = URIParser.parse(uri, map);
 
+        //Add additional configuration
+        parsedUri = URIHelper.addQueryParameters(parsedUri, toolInvokeRequest.getServiceConfigurationsMap());
+
         String body = toolInvokeRequest.getBody();
 
-        return new ParsedToolInvokeRequest(parsedUri, body);
+        Map<String, String> headers = toolInvokeRequest.getHeadersMap();
+
+        return new ParsedToolInvokeRequest(parsedUri, body, headers);
     }
 }
