@@ -222,8 +222,19 @@ file in the `samples` directory.
 To add that route as a tool, you can run something similar to this: 
 
 ```shell
-wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "_body:string,The data to be passed to the route"
+wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "wanaku_body:string,The data to be passed to the route"
 ```
+
+## Special/Reserved Arguments
+
+In the command above, we used the property `wanaku_body`. That is a special property that indicate that the property/argument 
+should be part of the body of the data exchange and not as part of a parameter. For instance, consider an HTTP call. In such cases, 
+this indicates that the property should be part of the HTTP body, not as part of the HTTP URI. How parameters like these are handled may vary according to the service being used. 
+
+Currently special arguments: 
+
+* `wanaku_body`: special property to indicate that 
+
 
 ## Supported/Tested Client 
 

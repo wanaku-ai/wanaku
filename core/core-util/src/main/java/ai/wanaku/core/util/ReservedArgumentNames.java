@@ -7,5 +7,5 @@ public class ReservedArgumentNames {
     /**
      * Represents the body of the message
      */
-    public static final String BODY = "_body";
+    public static final String BODY = "wanaku_body";
 }
