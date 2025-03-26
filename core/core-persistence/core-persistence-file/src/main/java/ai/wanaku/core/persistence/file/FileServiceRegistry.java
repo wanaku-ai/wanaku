@@ -15,9 +15,11 @@ import ai.wanaku.core.persistence.types.ServiceTargetEntity;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,9 +41,22 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
 
     private void tryWrite(Path file, byte[] content) throws IOException {
         try (FileOutputStream stream = new FileOutputStream(file.toFile())) {
-            try (FileLock lock = stream.getChannel().lock()) {
-                Files.write(file, content, StandardOpenOption.TRUNCATE_EXISTING);
-            }
+            boolean written = false;
+            int retries = 10;
+            do {
+                try (FileLock lock = stream.getChannel().lock()) {
+                    Files.write(file, content, StandardOpenOption.TRUNCATE_EXISTING);
+                    written = true;
+                } catch (OverlappingFileLockException e) {
+                    LOG.warnf("Overlapping file lock: %s", file.getFileName());
+                    try {
+                        Thread.sleep(Duration.ofMillis(100).toMillis());
+                    } catch (InterruptedException ex) {
+                        throw new WanakuException(ex);
+                    }
+                    retries--;
+                }
+            } while (!written && retries > 0);
         }
     }
 

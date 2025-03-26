@@ -8,6 +8,10 @@ import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -120,5 +124,29 @@ public class ServiceRegistryTest {
         serviceRegistry.deregister(testServiceName, ServiceType.TOOL_INVOKER);
 
         Assertions.assertThrows(ServiceNotFoundException.class, () -> serviceRegistry.getService(testServiceName));
+    }
+
+    @Test
+    @Order(100)
+    public void testConcurrentRegistrations() throws IOException, InterruptedException {
+        List<Callable<Void>> callables = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            int finalI = i;
+            callables.add(() -> {
+                ServiceTarget serviceTarget = new ServiceTarget(testServiceName + finalI, "localhost", 8081, ServiceType.TOOL_INVOKER);
+                serviceRegistry.register(serviceTarget, Map.of("myProperty", "myDescription"));
+                return null;
+            });
+        }
+
+        Executors.newFixedThreadPool(10)
+                .invokeAll(callables).forEach(f -> {
+                            try {
+                                f.get();
+                            } catch (Exception e) {
+                                Assertions.fail(e);
+                            }
+                        }
+                );
     }
 }
