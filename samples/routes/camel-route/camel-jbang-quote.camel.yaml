@@ -1,0 +1,18 @@
+- route:
+    id: route-3104
+    from:
+      id: from-4035
+      uri: timer
+      parameters:
+        fixedRate: true
+        repeatCount: "1"
+        timerName: start
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: '{"number": "12354", "text": "Laptop order 12354 created
+                  successfully"}'
+        - log:
+            id: log-2526
+            message: ${body}
