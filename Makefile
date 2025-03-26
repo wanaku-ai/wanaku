@@ -37,7 +37,7 @@ test-resources:
 test-tools:
 	wanaku tools add --host $(API_ENDPOINT) -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --required count
 	wanaku tools add --host $(API_ENDPOINT) -n "dog-facts" --description "Retrieve random facts about dogs" --uri "https://dogapi.dog/api/v2/facts?limit={count or 1}" --type http  --property "count:int,The count of facts to retrieve" --required count
-	wanaku tools add --host $(API_ENDPOINT) -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "camel://$(mkfile_dir)/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-yaml --property "wanaku_body:string,the data to be passed to the route"
+	wanaku tools add --host $(API_ENDPOINT) -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file://$(mkfile_dir)/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-yaml --property "wanaku_body:string,the data to be passed to the route"
 	wanaku tools add --host $(API_ENDPOINT) -n "tavily-search" --description "Search on the internet using Tavily" --uri "tavily://search" --type tavily --property "wanaku_body:string,The search terms" --property "maxResults:int,The maxResults is the expected number of results to be found if the search request were made" --required "wanaku_body"
 
 test-targets:
