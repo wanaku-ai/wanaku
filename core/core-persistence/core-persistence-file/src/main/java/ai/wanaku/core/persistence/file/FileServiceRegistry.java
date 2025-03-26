@@ -12,15 +12,19 @@ import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.types.ServiceTargetEntity;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 
 public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, ServiceTargetEntity, String> implements ServiceRegistry {
+    private static final Logger LOG = Logger.getLogger(FileServiceRegistry.class);
 
     private Path folder;
 
@@ -29,10 +33,22 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
         this.folder = folder;
     }
 
+    private String tryRead(Path file) throws IOException {
+        return Files.readString(file);
+    }
+
+    private void tryWrite(Path file, byte[] content) throws IOException {
+        try (FileOutputStream stream = new FileOutputStream(file.toFile())) {
+            try (FileLock lock = stream.getChannel().lock()) {
+                Files.write(file, content, StandardOpenOption.TRUNCATE_EXISTING);
+            }
+        }
+    }
+
     @Override
     public void register(ServiceTarget serviceTarget, Map<String, String> configurations) {
         try {
-            String data = Files.readString(file);
+            String data = tryRead(file);
 
             List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
 
@@ -64,8 +80,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
             entities.add(entity);
             String marshalledServiceTarget = wanakuMarshallerService.marshal(entities);
 
-            Files.deleteIfExists(file);
-            Files.write(file, marshalledServiceTarget.getBytes(), StandardOpenOption.CREATE);
+            tryWrite(file, marshalledServiceTarget.getBytes());
         } catch (IOException e) {
             throw new WanakuException("Can't write to file " + file.toString(), e);
         }
@@ -74,7 +89,8 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
     @Override
     public void deregister(String service, ServiceType serviceType) {
         try {
-            String data = Files.readString(file);
+            String data = tryRead(file);
+            LOG.tracef("Deregistering service %s: %s", service, data);
 
             List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
 
@@ -82,8 +98,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
 
             String marshalledServiceTarget = wanakuMarshallerService.marshal(entities);
 
-            Files.deleteIfExists(file);
-            Files.write(file, marshalledServiceTarget.getBytes(), StandardOpenOption.CREATE);
+            tryWrite(file, marshalledServiceTarget.getBytes());
         } catch (IOException e) {
             throw new WanakuException("Can't write to file " + file.toString(), e);
         }
@@ -92,7 +107,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
     @Override
     public Service getService(String service) {
         try {
-            String data = Files.readString(file);
+            String data = tryRead(file);
             List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, ServiceTargetEntity.class);
 
             ServiceTargetEntity entity = entities.stream().filter(e -> service.equals(e.getService()))
@@ -124,7 +139,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
                 Files.createFile(folder.resolve(fileName));
                 Files.write(folder.resolve(fileName), "[]".getBytes());
             }
-            String data = Files.readString(folder.resolve(fileName));
+            String data = tryRead(folder.resolve(fileName));
 
             List<State> states = wanakuMarshallerService.unmarshal(data, State.class);
 
@@ -141,7 +156,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
     public List<State> getState(String service, int count) {
         String fileName = String.format("state-%s.json", service);
         try {
-            String data = Files.readString(folder.resolve(fileName));
+            String data = tryRead(folder.resolve(fileName));
 
             return wanakuMarshallerService.unmarshal(data, State.class);
         } catch (IOException e) {
@@ -166,7 +181,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
     @Override
     public void update(String target, String option, String value) {
         try {
-            String data = Files.readString(file);
+            String data = tryRead(file);
 
             List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
 
@@ -182,8 +197,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
             entities.add(entity);
             String marshalledServiceTarget = wanakuMarshallerService.marshal(entities);
 
-            Files.deleteIfExists(file);
-            Files.write(file, marshalledServiceTarget.getBytes(), StandardOpenOption.CREATE);
+            tryWrite(file, marshalledServiceTarget.getBytes());
         } catch (IOException e) {
             throw new WanakuException("Can't write to file " + file.toString(), e);
         }
