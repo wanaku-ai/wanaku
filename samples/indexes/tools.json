@@ -47,13 +47,13 @@
     "inputSchema": {
       "type": "object",
       "properties": {
-        "_body": {
+        "wanaku_body": {
           "type": "string",
           "description": "The data to be passed to the route"
         }
       },
       "required": [
-        "_body"
+        "wanaku_body"
       ]
     }
   }
