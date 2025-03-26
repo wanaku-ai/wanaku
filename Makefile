@@ -37,7 +37,7 @@ test-resources:
 test-tools:
 	wanaku tools add --host $(API_ENDPOINT) -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count}" --type http --property "count:int,The count of facts to retrieve" --required count
 	wanaku tools add --host $(API_ENDPOINT) -n "dog-facts" --description "Retrieve random facts about dogs" --uri "https://dogapi.dog/api/v2/facts?limit={count}" --type http  --property "count:int,The count of facts to retrieve" --required count
-	wanaku tools add --host $(API_ENDPOINT) -n "hello-camel-generator" --description "Generate a random quote from a Camel rider" --uri "camel://$(mkfile_dir)/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "_body:string,the data to be passed to the route"
+	wanaku tools add --host $(API_ENDPOINT) -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "camel://$(mkfile_dir)/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "_body:string,the data to be passed to the route"
 
 test-targets:
 	wanaku targets tools link --host $(API_ENDPOINT) --service=http --target=$(HOST):9000
@@ -48,7 +48,7 @@ test-targets:
 clean-test-tools:
 	wanaku tools remove --name "meow-facts"
 	wanaku tools remove --name "dog-facts"
-	wanaku tools remove --name "hello-camel-generator"
+	wanaku tools remove --name "camel-rider-quote-generator"
 
 clean-test-resources:
 	wanaku resources remove --name "sample-file"
