@@ -33,4 +33,25 @@ class URIHelperTest {
         assertEquals("ftp://test?key1=value1&key2=value2", uri);
     }
 
+    @Test
+    void testAddQueryParameterToBaseUri() {
+        SortedMap <String, String> params = new TreeMap<>();
+        params.put("key1", "value1");
+        params.put("key2", "value2");
+        String uri = URIHelper.addQueryParameters("ftp://test", params);
+        assertEquals("ftp://test?key1=value1&key2=value2", uri);
+    }
+
+    @Test
+    void testAddQueryParametersToUriAlreadyContainsQueryParameters() {
+        SortedMap <String, String> params = new TreeMap<>();
+        params.put("key1", "value1");
+        params.put("key2", "value2");
+        String uri = URIHelper.addQueryParameters("ftp://test?foo=bar&dead=false", params);
+        assertEquals("ftp://test?foo=bar&dead=false&key1=value1&key2=value2", uri);
+    }
+
+
+
+
 }

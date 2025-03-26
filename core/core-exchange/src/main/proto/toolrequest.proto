@@ -19,6 +19,7 @@ message ToolInvokeRequest {
   map<string, string> arguments = 3;
   map<string, string> serviceConfigurations = 4;
   map<string, string> credentialsConfigurations = 5;
+  map<string, string> headers = 6;
 }
 
 // The invocation response message
