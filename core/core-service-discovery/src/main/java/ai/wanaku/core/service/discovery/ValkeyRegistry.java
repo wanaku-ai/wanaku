@@ -2,7 +2,6 @@ package ai.wanaku.core.service.discovery;
 
 import ai.wanaku.api.types.management.State;
 import io.quarkus.arc.lookup.LookupIfProperty;
-import io.quarkus.arc.properties.IfBuildProperty;
 import io.valkey.StreamEntryID;
 import io.valkey.params.XAddParams;
 import io.valkey.resps.StreamEntry;
@@ -26,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
@@ -49,6 +50,15 @@ public class ValkeyRegistry implements ServiceRegistry {
     JedisPool jedisPool;
 
     /**
+     * In case of a deregister event is not triggered (for example, kill -9),
+     * The entry in Valkey will be removed after expireTime.
+     *
+     * NB {wanaku.service.expire-time} > {wanaku.service.provider.registration.interval}
+     */
+    @ConfigProperty(name = "wanaku.service.expire-time", defaultValue = "60")
+    private int expireTime;
+
+    /**
      * Registers a new service with the given configurations.
      *
      * @param serviceTarget The service target, including its address and type.
@@ -67,13 +77,17 @@ public class ValkeyRegistry implements ServiceRegistry {
             LOG.infof("Service %s with target %s registered", serviceTarget.getService(), serviceTarget.toAddress());
 
             for (var entry : configurations.entrySet()) {
-                if (jedis.hget(serviceTarget.getService(), entry.getKey()) == null) {
+                if (!jedis.hexists(serviceTarget.getService(), entry.getKey())) {
                     LOG.infof("Registering configuration %s for service %s", entry.getKey(), serviceTarget.getService());
                     Configuration configuration = new Configuration();
                     configuration.setDescription(entry.getValue());
                     jedis.hset(serviceTarget.getService(), entry.getKey(), configuration.toJson());
                 }
             }
+
+            jedis.expire(serviceTarget.getService(), expireTime);
+            // Need to wait for https://github.com/valkey-io/valkey/issues/640
+            // jedis.expireMember(serviceKey, serviceTarget.getService(), EXPIRE_TIME);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to register service %s: %s", serviceTarget.getService(), e.getMessage());
         }
@@ -176,7 +190,9 @@ public class ValkeyRegistry implements ServiceRegistry {
             for (String key : services) {
                 Service service = newService(jedis, key);
 
-                entries.put(key, service);
+                if (service != null) {
+                    entries.put(key, service);
+                }
             }
 
         } catch (Exception e) {
@@ -223,7 +239,14 @@ public class ValkeyRegistry implements ServiceRegistry {
      * @return A Service object representing the created service.
      */
     private static Service toService(Jedis jedis, String key, Set<String> configs) {
+        String address = jedis.hget(key, ReservedKeys.WANAKU_TARGET_ADDRESS);
+        if (address == null) {
+            return null;
+        }
+
         Service service = new Service();
+
+        service.setTarget(address);
 
         Map<String, Configuration> configurationMap = new HashMap<>();
 
@@ -237,9 +260,6 @@ public class ValkeyRegistry implements ServiceRegistry {
         Configurations configurations = new Configurations();
         configurations.setConfigurations(configurationMap);
         service.setConfigurations(configurations);
-
-        String address = jedis.hget(key, ReservedKeys.WANAKU_TARGET_ADDRESS);
-        service.setTarget(address);
 
         return service;
     }
