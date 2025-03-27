@@ -93,6 +93,12 @@ distributions:
         platform: osx-aarch_64
       - path: services/tools/wanaku-routing-tavily-service/target/distributions/wanaku-routing-tavily-service-{{projectVersion}}.zip
         platform: linux-x86_64
+  service-exec:
+    artifacts:
+      - path: services/tools/wanaku-routing-exec-service/target/distributions/wanaku-routing-exec-service-{{projectVersion}}.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-routing-exec-service/target/distributions/wanaku-routing-exec-service-{{projectVersion}}.zip
+        platform: linux-x86_64
 
   cli-native:
     artifacts:
@@ -111,6 +117,12 @@ distributions:
       - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
       - path: services/tools/wanaku-routing-kafka-service/target/distributions/wanaku-routing-kafka-service-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  service-exec-native:
+    artifacts:
+      - path: services/tools/wanaku-routing-exec-service/target/distributions/wanaku-routing-exec-service-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-routing-exec-service/target/distributions/wanaku-routing-exec-service-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
   provider-file-native:
     artifacts:
