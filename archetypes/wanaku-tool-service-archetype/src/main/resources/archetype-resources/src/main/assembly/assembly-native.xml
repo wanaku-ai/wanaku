@@ -14,6 +14,8 @@
             <outputDirectory>./bin</outputDirectory>
             <destName>${project.artifactId}${executable-suffix}</destName>
         </file>
+    </files>
+    <fileSets>
         <fileSet>
             <directory>${project.basedir}</directory>
             <outputDirectory>/</outputDirectory>
@@ -22,5 +24,5 @@
                 <include>LICENSE</include>
             </includes>
         </fileSet>
-    </files>
+    </fileSets>
 </assembly>
