@@ -15,7 +15,7 @@ public class ServicesCreateResources extends ServicesBase {
 
     @Override
     public void run() {
-        String baseCmd = config.tool().createCmd();
+        String baseCmd = config.resource().createCmd();
 
         createProject(baseCmd);
     }
