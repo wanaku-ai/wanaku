@@ -27,6 +27,8 @@ import org.jboss.logging.Logger;
 public class ProcessRunner {
     private static final Logger LOG = Logger.getLogger(ProcessRunner.class);
 
+    private ProcessRunner() {}
+
     public static String runWithOutput(String...command) {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder(command);
