@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>core-runtime-camel</artifactId>
+    <name>Wanaku :: Core :: Runtimes :: Camel</name>
 
     <dependencies>
         <dependency>
