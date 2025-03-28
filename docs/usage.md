@@ -296,23 +296,24 @@ npx -y supergateway --sse http://localhost:8080/mcp/sse
 
 The following resources can be made available using Wanaku.
 
-| Type   | Resource Provider    | Description                                                    |
-|--------|----------------------|----------------------------------------------------------------|
-| `file` | wanaku-provider-file | Provides access to files as resources to Wanaku                |
-| `ftp`  | wanaku-provider-ftp  | Provides access to files in FTP servers as resources to Wanaku |
-| `s3`   | wanaku-provider-s3   | Provides access to files in AWS S3 as resources to Wanaku      |
+| Type   | Resource Provider                                                  | Description                                                    |
+|--------|--------------------------------------------------------------------|----------------------------------------------------------------|
+| `file` | [wanaku-provider-file](../services/providers/wanaku-provider-file) | Provides access to files as resources to Wanaku                |
+| `ftp`  | [wanaku-provider-ftp](../services/providers/wanaku-provider-ftp)   | Provides access to files in FTP servers as resources to Wanaku |
+| `s3`   | [wanaku-provider-s3](../services/providers/wanaku-provider-s3)     | Provides access to files in AWS S3 as resources to Wanaku      |
 
 ## Available Tools Services
 
 The following tools services can be made available using Wanaku and used to provide access to specific services.
 
-| Type         | Service Tool                   | Description                                                                 |
-|--------------|--------------------------------|-----------------------------------------------------------------------------|
-| `http`       | wanaku-tool-service-http       | Provides access to HTTP endpoints as tools via Wanaku                       |
-| `yaml-route` | wanaku-tool-service-yaml-route | Provides access to Camel routes in YAML tools via Wanaku                    |
-| `kafka`      | wanaku-tool-service-kafka      | Provides access to Kafka topics as tools via Wanaku                         |
-| `tavily`     | wanaku-tool-service-tavily     | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
-| `exec`       | wanaku-tool-service-exec       | Executes a process as a tool (use carefully - there's no input validation)  |
+| Type         | Service Tool                                                                       | Description                                                                 |
+|--------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| `exec`       | [wanaku-tool-service-exec](../services/tools/wanaku-tool-service-exec)             | Executes a process as a tool (use carefully - there's no input validation)  |
+| `http`       | [wanaku-tool-service-http](../services/tools/wanaku-tool-service-http)             | Provides access to HTTP endpoints as tools via Wanaku                       |
+| `kafka`      | [wanaku-tool-service-kafka](../services/tools/wanaku-tool-service-kafka)           | Provides access to Kafka topics as tools via Wanaku                         |
+| `tavily`     | [wanaku-tool-service-tavily](../services/tools/wanaku-tool-service-tavily)         | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
+| `yaml-route` | [wanaku-tool-service-yaml-route](../services/tools/wanaku-tool-service-yaml-route) | Provides access to Camel routes in YAML tools via Wanaku                    |
+
 
 NOTE: some services (i.e.; Tavily, S3, etc.) may require API keys and/or other forms of authentication. Check the README.md files in each service documentation for more details.
 
