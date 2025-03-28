@@ -13,11 +13,11 @@
     <name>Wanaku :: Services :: Tools</name>
 
     <modules>
-        <module>wanaku-routing-http-service</module>
-        <module>wanaku-routing-kafka-service</module>
-        <module>wanaku-routing-yaml-route-service</module>
-        <module>wanaku-routing-tavily-service</module>
-        <module>wanaku-routing-exec-service</module>
+        <module>wanaku-tool-service-exec</module>
+        <module>wanaku-tool-service-http</module>
+        <module>wanaku-tool-service-kafka</module>
+        <module>wanaku-tool-service-yaml-route</module>
+        <module>wanaku-tool-service-tavily</module>
     </modules>
 
 </project>

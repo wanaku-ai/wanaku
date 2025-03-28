@@ -16,18 +16,16 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>tools</artifactId>
-        <version>${wanaku-version}</version>
+        <version>0.0.4-SNAPSHOT</version>
     </parent>
 
-    <artifactId>wanaku-tool-service-${name.toLowerCase()}</artifactId>
-    <name>Wanaku :: Services :: Tools :: ${name}</name>
+    <artifactId>wanaku-tool-service-tavily</artifactId>
+    <name>Wanaku :: Services :: Tools :: Tavily</name>
 
     <dependencyManagement>
         <dependencies>
@@ -39,7 +37,6 @@
                 <scope>import</scope>
             </dependency>
 
-#if ( $wanaku-service-type == "camel")
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-camel-bom</artifactId>
@@ -47,10 +44,8 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-#end
         </dependencies>
     </dependencyManagement>
-
 
     <dependencies>
         <dependency>
@@ -65,17 +60,15 @@
             <version>${project.version}</version>
         </dependency>
 
-#if ( $wanaku-service-type == "camel")
-        <dependency>
-            <groupId>ai.wanaku</groupId>
-            <artifactId>core-runtime-camel</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-#end
-
         <dependency>
             <groupId>ai.wanaku</groupId>
             <artifactId>core-service-discovery</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-runtime-camel</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -88,6 +81,22 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-langchain4j-web-search</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-web-search-engine-tavily</artifactId>
+        </dependency>
+
 
         <!-- For building containers -->
         <dependency>
@@ -121,18 +130,6 @@
 
     <profiles>
         <profile>
-            <id>native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <properties>
-                <skipITs>false</skipITs>
-                <quarkus.native.enabled>true</quarkus.native.enabled>
-            </properties>
-        </profile>
-        <profile>
             <id>dist</id>
             <build>
                 <plugins>
@@ -164,55 +161,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>dist-native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>${maven-assembly-plugin.version}</version>
-                        <configuration>
-                            <attach>false</attach>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <outputDirectory>${distribution.directory}</outputDirectory>
-                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-native-distribution</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <finalName>${project.artifactId}-${project.version}-${os.detected.classifier}</finalName>
-                                    <descriptors>
-                                        <descriptor>src/main/assembly/assembly-native.xml</descriptor>
-                                    </descriptors>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>dist-windows</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <executable-suffix>.exe</executable-suffix>
-            </properties>
         </profile>
     </profiles>
 </project>
