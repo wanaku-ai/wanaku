@@ -172,7 +172,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.provider.name").getValue();
         String port = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
 
-        LOG.infof("Registering resource service %s", service);
+        LOG.debugf("Registering resource service %s", service);
         tryRegistering(service, DiscoveryUtil.resolveRegistrationAddress(), Integer.parseInt(port));
     }
 
