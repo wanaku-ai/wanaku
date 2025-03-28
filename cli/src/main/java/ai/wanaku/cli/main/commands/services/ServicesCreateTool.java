@@ -17,6 +17,6 @@ public class ServicesCreateTool extends ServicesBase {
     public void run() {
         String baseCmd = config.tool().createCmd();
 
-        createProject(baseCmd);
+        createProject(baseCmd, "wanaku-tool-service");
     }
 }

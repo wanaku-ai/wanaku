@@ -30,7 +30,7 @@ import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.jboss.logging.Logger;
 
-import static ai.wanaku.core.services.util.URIHelper.buildUri;
+import static ai.wanaku.core.uri.URIHelper.buildUri;
 
 @ApplicationScoped
 public class ${name}ResourceDelegate extends AbstractResourceDelegate {
@@ -42,7 +42,7 @@ public class ${name}ResourceDelegate extends AbstractResourceDelegate {
     @Override
     protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
         /*
-         * Here you build the Camel URI based on the request parameters.
+         * Here you build the URI based on the request parameters.
          * The parameters are already merged w/ the requested ones, but
          * feel free to override if necessary.
          *

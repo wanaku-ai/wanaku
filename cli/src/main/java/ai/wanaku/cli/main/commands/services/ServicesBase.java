@@ -23,10 +23,10 @@ public abstract class ServicesBase extends BaseCommand {
     @CommandLine.Option(names = { "--type" }, description = "The service type (camel, quarkus, etc)", defaultValue = "camel", required = true, arity = "0..1")
     protected String type;
 
-    protected void createProject(String baseCmd) {
+    protected void createProject(String baseCmd, String baseArtifactId) {
         String version = wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION;
-        String cmd = String.format("%s -DartifactId=wanaku-tool-service-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s -DarchetypeVersion=%s",
-                baseCmd, name.toLowerCase(), name, version, type, version);
+        String cmd = String.format("%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s -DarchetypeVersion=%s",
+                baseCmd, baseArtifactId, name.toLowerCase().replace("-", ""), name, version, type, version);
 
         String[] split = cmd.split(" ");
         final File projectDir = new File(path);

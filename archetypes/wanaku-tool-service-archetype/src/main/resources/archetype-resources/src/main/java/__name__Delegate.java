@@ -23,11 +23,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
-import ai.wanaku.core.services.tool.AbstractRoutingDelegate;
+import ai.wanaku.core.services.tool.AbstractToolDelegate;
 
 
 @ApplicationScoped
-public class ${name}Delegate extends AbstractRoutingDelegate {
+public class ${name}Delegate extends AbstractToolDelegate {
 
     @Override
     protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {

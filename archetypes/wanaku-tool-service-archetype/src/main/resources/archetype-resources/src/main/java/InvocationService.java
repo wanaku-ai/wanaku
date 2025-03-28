@@ -28,7 +28,7 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvoker;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
-import ai.wanaku.core.services.config.WanakuRoutingConfig;
+import ai.wanaku.core.services.config.WanakuToolConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.scheduler.Scheduled;
@@ -46,7 +46,7 @@ public class InvocationService implements ToolInvoker, Inquirer {
     InvocationDelegate delegate;
 
     @Inject
-    WanakuRoutingConfig config;
+    WanakuToolConfig config;
 
     @ConfigProperty(name = "quarkus.grpc.server.port")
     int port;
