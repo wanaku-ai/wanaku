@@ -23,11 +23,11 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>tools</artifactId>
-        <version>${wanaku-version}</version>
+        <version>0.0.4-SNAPSHOT</version>
     </parent>
 
-    <artifactId>wanaku-tool-service-${name.toLowerCase()}</artifactId>
-    <name>Wanaku :: Services :: Tools :: ${name}</name>
+    <artifactId>wanaku-tool-service-exec</artifactId>
+    <name>Wanaku :: Services :: Tools :: Exec</name>
 
     <dependencyManagement>
         <dependencies>
@@ -38,16 +38,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
-#if ( $wanaku-service-type == "camel")
-            <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>quarkus-camel-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-#end
         </dependencies>
     </dependencyManagement>
 
@@ -64,14 +54,6 @@
             <artifactId>core-services</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-#if ( $wanaku-service-type == "camel")
-        <dependency>
-            <groupId>ai.wanaku</groupId>
-            <artifactId>core-runtime-camel</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-#end
 
         <dependency>
             <groupId>ai.wanaku</groupId>

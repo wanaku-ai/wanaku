@@ -1,12 +1,10 @@
 package ai.wanaku.routing.service;
 
-import java.util.Map;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.services.routing.Client;
+import ai.wanaku.core.services.tool.Client;
 
 #if ( $wanaku-service-type == "camel")
 import org.apache.camel.CamelContext;

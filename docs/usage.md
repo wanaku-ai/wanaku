@@ -29,7 +29,6 @@ The best way to install the CLI is by downloading the latest `cli` from the [lat
 *NOTE*: You may also find a container for the CLI on our [Quay.io organization](https://quay.io/repository/wanaku/cli), 
 although it is not entirely tested at the moment.
 
-
 ## Quick Getting Started (Local)
 
 After downloading the CLI, simply run `wanaku start local` and the CLI should download, deploy and start Wanaku with the main 
@@ -307,13 +306,13 @@ The following resources can be made available using Wanaku.
 
 The following tools services can be made available using Wanaku and used to provide access to specific services.
 
-| Type         | Service Tool                      | Description                                                                 |
-|--------------|-----------------------------------|-----------------------------------------------------------------------------|
-| `http`       | wanaku-routing-http-service       | Provides access to HTTP endpoints as tools via Wanaku                       |
-| `yaml-route` | wanaku-routing-yaml-route-service | Provides access to Camel routes in YAML tools via Wanaku                    |
-| `kafka`      | wanaku-routing-kafka-service      | Provides access to Kafka topics as tools via Wanaku                         |
-| `tavily`     | wanaku-routing-tavily-service     | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
-| `exec`       | wanaku-routing-exec-service       | Executes a process as a tool (use carefully - there's no input validation)  |
+| Type         | Service Tool                   | Description                                                                 |
+|--------------|--------------------------------|-----------------------------------------------------------------------------|
+| `http`       | wanaku-tool-service-http       | Provides access to HTTP endpoints as tools via Wanaku                       |
+| `yaml-route` | wanaku-tool-service-yaml-route | Provides access to Camel routes in YAML tools via Wanaku                    |
+| `kafka`      | wanaku-tool-service-kafka      | Provides access to Kafka topics as tools via Wanaku                         |
+| `tavily`     | wanaku-tool-service-tavily     | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
+| `exec`       | wanaku-tool-service-exec       | Executes a process as a tool (use carefully - there's no input validation)  |
 
 NOTE: some services (i.e.; Tavily, S3, etc.) may require API keys and/or other forms of authentication. Check the README.md files in each service documentation for more details.
 
@@ -352,7 +351,7 @@ To create a custom tool service, you can run:
 wanaku services create tool --name jms
 ```
 
-To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-routing-jms-service`), then build the project using Maven (`mvn clean package`). 
+To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-tool-service-jms`), then build the project using Maven (`mvn clean package`). 
 
 Then, launch it using:
 

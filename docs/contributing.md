@@ -36,7 +36,7 @@ wanaku services create tool --name kafka
 Alternatively, if you don't have the CLI instanced, you can do so using Maven:
  
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.2 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.routing.service -DartifactId=wanaku-routing-kafka-service -Dname=Kafka -Dwanaku-version=0.0.2 -Dwanaku-service-type=camel
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool -DartifactId=wanaku-tool-service-kafka -Dname=Kafka -Dwanaku-version=0.0.2 -Dwanaku-service-type=camel
 ```
 
 **NOTE**: this can be used both to create a core tool, part of the Wanaku MCP router project, or to create a custom one for your own needs.
@@ -172,7 +172,7 @@ In those cases, then you can create a traditional Camel route and invoke it from
 The example below shows a route that consumes from `direct:start` and sets a body as the reply:
 
 ```java
-package ai.wanaku.routing.service;
+package ai.wanaku.tool;
 
 import org.apache.camel.builder.RouteBuilder;
 
