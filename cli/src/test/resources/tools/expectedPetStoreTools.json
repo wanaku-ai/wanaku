@@ -1,0 +1,416 @@
+[
+  {
+    "name": "addPet",
+    "description": "Add a new pet to the store.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "POST"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": [
+        "wanaku_body"
+      ]
+    }
+  },
+  {
+    "name": "updatePet",
+    "description": "Update an existing pet by Id.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "PUT"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": [
+        "wanaku_body"
+      ]
+    }
+  },
+  {
+    "name": "findPetsByStatus",
+    "description": "Multiple status values can be provided with comma separated strings.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet/findByStatus",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "findPetsByTags",
+    "description": "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet/findByTags",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getPetById",
+    "description": "Returns a single pet.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "updatePetWithForm",
+    "description": "Updates a pet resource based on the form data.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "POST"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "deletePet",
+    "description": "Delete a pet.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "DELETE"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "uploadFile",
+    "description": "Upload image of the pet.",
+    "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}/uploadImage",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "POST"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getInventory",
+    "description": "Returns a map of status codes to quantities.",
+    "uri": "https://petstore3.swagger.io/api/v3/store/inventory",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "placeOrder",
+    "description": "Place a new order in the store.",
+    "uri": "https://petstore3.swagger.io/api/v3/store/order",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "POST"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getOrderById",
+    "description": "For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions.",
+    "uri": "https://petstore3.swagger.io/api/v3/store/order/{parameter.value('orderId')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "deleteOrder",
+    "description": "For valid response try integer IDs with value < 1000. Anything above 1000 or non-integers will generate API errors.",
+    "uri": "https://petstore3.swagger.io/api/v3/store/order/{parameter.value('orderId')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "DELETE"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "createUser",
+    "description": "This can only be done by the logged in user.",
+    "uri": "https://petstore3.swagger.io/api/v3/user",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "POST"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "createUsersWithListInput",
+    "description": "Creates list of users with given input array.",
+    "uri": "https://petstore3.swagger.io/api/v3/user/createWithList",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "POST"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "loginUser",
+    "description": "Log into the system.",
+    "uri": "https://petstore3.swagger.io/api/v3/user/login",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "logoutUser",
+    "description": "Log user out of the system.",
+    "uri": "https://petstore3.swagger.io/api/v3/user/logout",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getUserByName",
+    "description": "Get user detail based on username.",
+    "uri": "https://petstore3.swagger.io/api/v3/user/{parameter.value('username')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "GET"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "updateUser",
+    "description": "This can only be done by the logged in user.",
+    "uri": "https://petstore3.swagger.io/api/v3/user/{parameter.value('username')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "PUT"
+        },
+        "wanaku_body": {
+          "type": "string",
+          "description": null,
+          "target": null,
+          "scope": null,
+          "value": null
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "deleteUser",
+    "description": "This can only be done by the logged in user.",
+    "uri": "https://petstore3.swagger.io/api/v3/user/{parameter.value('username')}",
+    "type": "http",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "CamelHttpMethod": {
+          "type": "string",
+          "description": "HTTP method to use when call the service.",
+          "target": "header",
+          "scope": "service",
+          "value": "DELETE"
+        }
+      },
+      "required": []
+    }
+  }
+]
