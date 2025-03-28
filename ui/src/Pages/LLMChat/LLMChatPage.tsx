@@ -37,7 +37,7 @@ export const LLMChatPage: React.FC = () => {
   hljs.registerLanguage("xml", xml);
 
   const baseUrlItems = [
-    "http://0.0.0.0:8000",
+    "http://localhost:11434",
     "https://api.openai.com",
     "https://api.mistral.ai",
     "https://generativelanguage.googleapis.com/v1beta/openai/",
