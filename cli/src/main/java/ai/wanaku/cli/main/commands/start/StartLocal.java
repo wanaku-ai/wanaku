@@ -8,6 +8,7 @@ import ai.wanaku.cli.main.support.WanakuCliConfig;
 import ai.wanaku.cli.runner.local.LocalRunner;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jboss.logging.Logger;
@@ -22,13 +23,17 @@ public class StartLocal extends StartBase {
 
     @Override
     protected void startWanaku() {
-        if (exclusive.services == null) {
-            exclusive.services = config.defaultServices();
+        List<String> services;
+        if (exclusive != null && exclusive.services != null) {
+            services = exclusive.services;
+
+        } else {
+            services = config.defaultServices();
         }
 
         LocalRunner localRunner = new LocalRunner(config);
         try {
-            localRunner.start(exclusive.services);
+            localRunner.start(services);
         } catch (WanakuException | IOException e) {
             LOG.errorf(e, e.getMessage());
         }
@@ -55,23 +60,28 @@ public class StartLocal extends StartBase {
 
     @Override
     public void run() {
-        if (exclusive.listServices) {
-            Map<String, String> components = config.components();
-            for (String component : components.keySet()) {
-                System.out.println(" - " + component);
+        if (exclusive != null && exclusive.exclusiveNonStart != null) {
+            if (exclusive.exclusiveNonStart.listServices) {
+                Map<String, String> components = config.components();
+                for (String component : components.keySet()) {
+                    if (!component.equals("wanaku-router")) {
+                        System.out.println(" - " + component);
+                    }
+                }
+                return;
             }
-            return;
+
+            if (exclusive.exclusiveNonStart.clean) {
+                System.out.println("Removing Wanaku cache directory");
+                deleteDirectory(new File(RuntimeConstants.WANAKU_CACHE_DIR));
+
+                System.out.println("Removing Wanaku local instance directory");
+                deleteDirectory(new File(RuntimeConstants.WANAKU_LOCAL_DIR));
+
+                return;
+            }
         }
 
-        if (exclusive.clean) {
-            System.out.println("Removing Wanaku cache directory");
-            deleteDirectory(new File(RuntimeConstants.WANAKU_CACHE_DIR));
-
-            System.out.println("Removing Wanaku local instance directory");
-            deleteDirectory(new File(RuntimeConstants.WANAKU_LOCAL_DIR));
-
-            return;
-        }
 
         startWanaku();
     }

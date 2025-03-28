@@ -8,13 +8,19 @@ import java.util.List;
 public abstract class StartBase extends BaseCommand {
     private static final Logger LOG = Logger.getLogger(StartBase.class);
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     ExclusiveOptions exclusive;
 
     static class ExclusiveOptions {
         @CommandLine.Option(names = { "--services" }, split = ",", description = "Which of services to start (separated by comma)", arity = "0..n")
         protected List<String> services;
 
+        @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+        ExclusiveNonStartOptions exclusiveNonStart;
+
+    }
+
+    static class ExclusiveNonStartOptions {
         @CommandLine.Option(names = { "--list-services" }, description = "A list of available services")
         protected boolean listServices = false;
 
