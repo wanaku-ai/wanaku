@@ -1,4 +1,4 @@
-package org.wanaku.server.quarkus.support;
+package ai.wanaku.server.quarkus.support;
 
 import java.util.Map;
 

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import ai.wanaku.api.types.ResourceReference;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -20,7 +19,6 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.util.support.ToolsHelper;
 import ai.wanaku.server.quarkus.support.TestIndexHelper;
 
-import static ai.wanaku.core.util.support.ResourcesHelper.createResource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 

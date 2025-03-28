@@ -6,7 +6,7 @@ import java.util.Map;
 
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.util.IndexHelper;
-import org.wanaku.server.quarkus.support.TargetsHelper;
+import ai.wanaku.server.quarkus.support.TargetsHelper;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -14,8 +14,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wanaku.server.quarkus.support.TargetsHelper.RESOURCE_TARGETS_INDEX;
-import static org.wanaku.server.quarkus.support.TargetsHelper.TOOLS_TARGETS_INDEX;
+import static ai.wanaku.server.quarkus.support.TargetsHelper.RESOURCE_TARGETS_INDEX;
+import static ai.wanaku.server.quarkus.support.TargetsHelper.TOOLS_TARGETS_INDEX;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ServiceRegistrySaveTest {
