@@ -24,8 +24,9 @@ public abstract class ServicesBase extends BaseCommand {
     protected String type;
 
     protected void createProject(String baseCmd) {
-        String cmd = String.format("%s -DartifactId=wanaku-tool-service-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s",
-                baseCmd, name.toLowerCase(), name, wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION, type);
+        String version = wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION;
+        String cmd = String.format("%s -DartifactId=wanaku-tool-service-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s -DarchetypeVersion=%s",
+                baseCmd, name.toLowerCase(), name, version, type, version);
 
         String[] split = cmd.split(" ");
         final File projectDir = new File(path);
