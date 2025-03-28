@@ -113,7 +113,7 @@ public class InvokerProxy implements ToolsProxy {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
 
 
-        String body = extractBody(toolReference);
+        String body = extractBody(toolReference, toolArguments);
 
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody(body)
@@ -127,17 +127,23 @@ public class InvokerProxy implements ToolsProxy {
         return blockingStub.invokeTool(toolInvokeRequest);
     }
 
-    private static String extractBody(ToolReference toolReference) {
+    private static String extractBody(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
+        // First, check if the tool specification defines it as having a body
         Map<String, ToolReference.Property> properties = toolReference.getInputSchema().getProperties();
         ToolReference.Property bodyProp = properties.get(BODY);
         if (bodyProp == null) {
+            // If the tool does not specify a body, then return an empty string
             return EMPTY_BODY;
         }
 
-        String body = bodyProp.toString();
+        // If there is a body defined, then get it from the arguments from the LLM
+        String body = (String) toolArguments.args().get(BODY);
         if (body == null) {
+            // If the LLM does not provide a body, then return an empty string
             return EMPTY_BODY;
         }
+
+        // Use the body provided by the LLM
         return body;
     }
 
