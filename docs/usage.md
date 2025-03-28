@@ -299,11 +299,11 @@ npx -y supergateway --sse http://localhost:8080/mcp/sse
 
 The following resources can be made available using Wanaku.
 
-| Type   | Resource Provider                                                  | Description                                                    |
-|--------|--------------------------------------------------------------------|----------------------------------------------------------------|
-| `file` | [wanaku-provider-file](../services/providers/wanaku-provider-file) | Provides access to files as resources to Wanaku                |
-| `ftp`  | [wanaku-provider-ftp](../services/providers/wanaku-provider-ftp)   | Provides access to files in FTP servers as resources to Wanaku |
-| `s3`   | [wanaku-provider-s3](../services/providers/wanaku-provider-s3)     | Provides access to files in AWS S3 as resources to Wanaku      |
+| Type   | Resource Provider                                                         | Description                                                    |
+|--------|---------------------------------------------------------------------------|----------------------------------------------------------------|
+| `file` | [wanaku-provider-file](../services/providers/wanaku-provider-file/README) | Provides access to files as resources to Wanaku                |
+| `ftp`  | [wanaku-provider-ftp](../services/providers/wanaku-provider-ftp)          | Provides access to files in FTP servers as resources to Wanaku |
+| `s3`   | [wanaku-provider-s3](../services/providers/wanaku-provider-s3)            | Provides access to files in AWS S3 as resources to Wanaku      |
 
 ## Available Tools Services
 
