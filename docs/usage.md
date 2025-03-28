@@ -171,6 +171,128 @@ wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats
 
 NOTE: For remote instances, you can use the parameter `--host` to point to the location of the instance.
 
+### Generate Tools
+
+The `generate` command converts an OpenAPI specification into a collection of tool references that can be used by an
+AI agent. It parses and resolves OpenAPI paths and operations, transforming them into a standardized tool reference
+format for HTTP services.
+This command accepts an OpenAPI specification file (either as a local path or URL) and produces a JSON output containing
+tool references. 
+Each operation in the API is converted to a tool reference with appropriate metadata, including the operation's name, 
+description, URI template, and input schema. The command handles server variable substitution, proper formatting of path
+parameters according to the tool reference specification. By default, the command uses the first server defined in the 
+OpenAPI specification, but you can override this behavior by specifying a different server URL or selecting a different 
+server from the specification by index.
+The generated output can be directed to standard output or saved to a file. If the process completes successfully, 
+the command returns exit code 0. It returns exit code 3 if no paths are found in the specification and exit code 2 if an
+error occurs during processing.
+
+#### Example
+
+The command support both `json` and `yaml` definition: 
+
+```shell
+wanaku tools generate http://petstore3.swagger.io/api/v3/openapi.yaml
+```
+
+If the spec defines a server url that contains variables
+
+```yaml
+servers:
+  - url: 'https://{env}.domain.com/foo/{v1}/{v2}/{v3}'
+    variables:
+      env:
+        description: Environment - staging or production
+        default: stage-api
+        enum:
+          - stage-api
+          - api
+      # other variables
+      # ...
+```
+you can specify values as command parameters:
+
+```shell
+wanaku tools generate --server-variable env=prod --server-variable v1=first http://petstore3.swagger.io/api/v3/openapi.json
+```
+If not specified for a variable in the server URL template, the default value defined in the OpenAPI specification will be used.
+It Only applies when using servers from the OpenAPI specification (not when using --serverUrl).
+Variables must be defined in the server object of the OpenAPI specification.
+Empty or null values for either key or value will be ignored.
+
+
+OpenAPI specifications can define multiple server URLs:
+```json
+{
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.example.com/v1",
+      "description": "Staging server"
+    },
+    {
+      "url": "http://localhost:8080/v1",
+      "description": "Local development server"
+    }
+  ]
+}
+```
+The `--server-index` (or `-i`) option allows you to specify which server definition from the OpenAPI specification 
+should be used as the base URL for tool references.
+
+```shell
+wanaku tools generate -i 1 ./openapi-spec.yaml
+```
+This option is ignored if `--server-url` is specified, as an explicit URL overrides any server definitions in the 
+specification.
+If neither `--server-index` nor `--server-url` is specified, the command will default to using the first server (index 0) 
+from the specification.
+The `--serverIndex` option can be used together with `--server-variable` when the selected server has variable templates:
+```yaml
+servers:
+  - url: https://{environment}.api.example.com/{version}
+    variables:
+      environment:
+        default: dev
+      version:
+        default: v1
+  - url: https://{environment}.api2.example.com/{version}
+    variables:
+      environment:
+        default: dev
+      version:
+        default: v1
+  - url: https://{environment}.api3.example.com/{version}
+    variables:
+      environment:
+        default: dev
+      version:
+        default: v1            
+```
+You could select this server and override its variables:
+
+```shell
+wanaku tools generate -i 0 -v environment=prod -v version=v2 ./openapi-spec.yaml
+```
+
+The `--output-file` (or `-o`) option specifies the file path where the generated tool references should be written. 
+It determines where the output JSON containing all the tool references will be saved.
+
+```shell
+wanaku tools generate -o ./toolsets/api-tools.json http://petstore3.swagger.io/api/v3/openapi.json
+```
+
+If `--output-file` is specified, the command will write the JSON toolset to the specified file path.
+If `--output-file` is not specified, the command will write the JSON toolset to standard output (STDOUT).
+If the specified path is a directory, the command will write to a file named `out.json` within that directory and provide
+a warning message.
+If the specified file already exists, the command will return an error without overwriting the file.
+The parent directory of the specified file must exist and be writable by the current user.
+
+
 ### Targets 
 
 #### Configuring Targets 

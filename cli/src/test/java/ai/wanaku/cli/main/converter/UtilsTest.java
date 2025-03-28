@@ -44,7 +44,7 @@ public class UtilsTest {
     @Test
     void testRelativeWindows() throws Exception {
         String relativePath = "my\\local\\relative\\path\\tools.json";
-        String expected = new File(relativePath).toURL().toString();
+        String expected = new File(relativePath).toURI().toURL().toString();
         Assertions.assertEquals(expected,converter.convert(relativePath).toString());
     }
 }

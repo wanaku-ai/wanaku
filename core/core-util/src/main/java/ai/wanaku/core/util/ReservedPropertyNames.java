@@ -16,6 +16,11 @@ public class ReservedPropertyNames {
     public static final String TARGET_HEADER = "header";
 
     /**
+     * Indicate that the argument is intended as cookie for services/tools that support them
+     */
+    public static final String TARGET_COOKIE = "cookie";
+
+    /**
      * Indicate that the argument is intended to be used on the service
      */
     public static final String SCOPE_SERVICE = "service";
