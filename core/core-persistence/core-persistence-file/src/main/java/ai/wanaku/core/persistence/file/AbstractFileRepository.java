@@ -24,6 +24,8 @@ public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> imple
 
         if (!Files.exists(file)) {
             try {
+                Files.createDirectories(file.getParent());
+
                 Files.createFile(file);
                 Files.write(file, "[]".getBytes());
             } catch (IOException e) {
