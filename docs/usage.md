@@ -254,6 +254,9 @@ The details below describe how Wanaku MCP router can be used with some prominent
 
 Wanaku Console includes simple LLMChat specificly designed for quick testing of the tools.
 
+> [!NOTE]
+> At the moment, the Embedded LLMChat supports only the tools.
+
 ```shell
 open http://localhost:8080
 ```
