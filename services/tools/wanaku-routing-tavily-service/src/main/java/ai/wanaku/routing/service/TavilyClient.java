@@ -28,7 +28,7 @@ public class TavilyClient implements Client {
 
         tavilyWebSearchEngine = TavilyWebSearchEngine.builder()
                 .apiKey(tavilyApiKey)
-                .includeRawContent(true)
+                .includeRawContent(false)
                 .build();
 
          camelContext.getRegistry().bind("tavily", tavilyWebSearchEngine);
@@ -39,7 +39,7 @@ public class TavilyClient implements Client {
         try {
             producer.start();
 
-            String baseUri = "langchain4j-web-search:test?webSearchEngine=#tavily";
+            String baseUri = "langchain4j-web-search:test?webSearchEngine=#tavily&resultType=SNIPPET";
             if (request.getArgumentsMap().containsKey("maxResults")) {
                 baseUri += "&maxResults={maxResults}";
             }
