@@ -33,11 +33,13 @@ To build the project with native CLI support, run:
 mvn -Pnative clean package
 ```
 
-NOTE: The router also supports running natively, but this feature has not been fully tested. 
+> [!NOTE]
+> Wanaku also supports running natively, but this feature has not been fully tested.
+
 To enable native mode for the router, run:
 
 ```shell
-mvn -Pnative,native-router clean package
+mvn -Pdist -Dnative clean package
 ```
 
 By following these steps, you should be able to successfully build the Wanaku MCP Router project and prepare it for deployment.
@@ -56,4 +58,3 @@ make install
 ```shell
 mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
-

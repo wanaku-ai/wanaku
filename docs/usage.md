@@ -17,8 +17,9 @@ and introduces how it works.
 In addition to installing the Wanaku MCP Router, it is also necessary to install the CLI used to manage the router. 
 The Wanaku MCP Router CLI provides a simple way to manage resources and tools for your Wanaku MCP Router instance.
 
-**NOTE**: Wanaku also comes with a web user interface that you can access on port 8080 of the host running the router, but at 
-this moment, some features are only available on the CLI. 
+> [!NOTE]
+> Wanaku also comes with a web user interface that you can access on port 8080 of the host running the router, but at this 
+> moment, some features are only available on the CLI. 
 
 The MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host your are using (for instance, if running 
 locally, that would mean `http://localhost:8080/mcp/sse`)
@@ -27,8 +28,9 @@ locally, that would mean `http://localhost:8080/mcp/sse`)
 
 The best way to install the CLI is by downloading the latest `cli` from the [latest release](https://github.com/wanaku-ai/wanaku/releases).
 
-*NOTE*: You may also find a container for the CLI on our [Quay.io organization](https://quay.io/repository/wanaku/cli), 
-although it is not entirely tested at the moment.
+> [!NOTE]
+> You may also find a container for the CLI on our [Quay.io organization](https://quay.io/repository/wanaku/cli), 
+> although it **is not entirely tested** at the moment.
 
 ## Quick Getting Started (Local)
 
@@ -87,7 +89,6 @@ if you already have a toolset definition on your local machine you can import it
 ```shell
 wanaku tools import /path/to/the/toolsets/currency.json
 ```
-
 
 Now you can check if they were imported by running the following command: 
 
@@ -180,7 +181,6 @@ kafka                => localhost:9003                 => bootstrapHost, replyTo
 http                 => localhost:9000                 =>
 ```
 
-
 #### ToolSets
 
 To add a tool to a toolset: 
@@ -188,7 +188,6 @@ To add a tool to a toolset:
 ```shell
 wanaku toolset add ./path/to/toolset-file.json -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}" --type http --property "count:int,The count of facts to retrieve" --required count
 ```
-
 
 ### API Note
 
@@ -212,7 +211,9 @@ you could use `http://my-host/data{parameter.query('id')}`. If the `id` paramete
 `http://my-host/data`. This can take multiple parameters, so it is possible to pass extra variables such as 
 `{parameter.query('id', 'name', 'location', ...)}`. 
 
-**NOTE**: it is important not to provide the `?` character, as it would be added automatically the parsing code. 
+> [!IMPORTANT]
+> Do not provide the `?` character.
+> It is added automatically the parsing code if necessary. 
 
 Building the query part of URIs can be quite complex if there are too many. To avoid that, you can use `{parameter.query}` to build 
 a query composed of all query parameters.
@@ -259,7 +260,7 @@ open http://localhost:8080
 
 ![Embedded LLMChat for testing](https://github.com/user-attachments/assets/7a80aacd-0da8-435b-8cd9-75cc073dfc79)
 
-1. Setup LLM - baseurl, api key, model, and extra parameters
+1. Setup LLM - `baseurl`, `api key`, `model`, and extra parameters
 2. Select tools
 3. Enter prompt and send
 
@@ -278,7 +279,8 @@ mcpServers:
         url: http://host.docker.internal:8080/mcp/sse
 ```
 
-**NOTE**: make sure to point to the correct address of your Wanaku MCP instance.
+> [!IMPORTANT]
+> Make sure to point to the correct address of your Wanaku MCP instance.
 
 In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librechat.ai/docs/features/agents).
 
@@ -315,8 +317,9 @@ The following tools services can be made available using Wanaku and used to prov
 | `tavily`     | [wanaku-tool-service-tavily](../services/tools/wanaku-tool-service-tavily)         | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
 | `yaml-route` | [wanaku-tool-service-yaml-route](../services/tools/wanaku-tool-service-yaml-route) | Provides access to Camel routes in YAML tools via Wanaku                    |
 
-
-NOTE: some services (i.e.; Tavily, S3, etc.) may require API keys and/or other forms of authentication. Check the README.md files in each service documentation for more details.
+> [!NOTE]
+> Some services (i.e.; Tavily, S3, etc.) may require API keys and/or other forms of authentication.
+> Check the README.md files in each service documentation for more details.
 
 ## Adding Your Own Resource Provider or Tool Service
 
@@ -343,7 +346,8 @@ java -Dvalkey.host=localhost -Dvalkey.port=6379 -Dvalkey.timeout=10 -Dquarkus.gr
 
 You can check if the service was registered correctly using `wanaku targets resources list`.
 
-**NOTE**: remember to set the parameters in the `application.properties` file.
+> [!IMPORTANT]
+> Remember to set the parameters in the `application.properties` file.
 
 ### Creating a New Tool Service
 
@@ -363,7 +367,8 @@ java -Dvalkey.host=localhost -Dvalkey.port=6379 -Dvalkey.timeout=10 -Dquarkus.gr
 
 You can check if the service was registered correctly using `wanaku targets tools list`.
 
-**NOTE**: remember to set the parameters in the `application.properties` file. 
+> [!IMPORTANT]
+> Remember to set the parameters in the `application.properties` file. 
 
 To customize your service, adjust the delegate and client classes.
 
@@ -383,7 +388,9 @@ therefore, it's possible to implement services in any language that supports it.
 
 For those cases, leverage the `.proto` files in the `core-exchange` module for creating your own service.
 
-**NOTE**: at this time, Wanaku is being intensively developed, therefore, we cannot guarantee backwards compatibility of the protocol. 
+> [!CAUTION]
+> At this time, Wanaku is being intensively developed, therefore, we cannot guarantee backwards compatibility of the protocol. 
 
-**NOTE**: for Java, you can still generate the project using the archetype, but in this case, you must implement your own 
-delegate from scratch.
+> [!NOTE]
+> For plain Java, you can still generate the project using the archetype, but in this case, you must implement your own 
+delegate from scratch and adjust the dependencies.
