@@ -53,21 +53,21 @@ distributions:
         platform: linux-x86_64
   service-yaml-route:
     artifacts:
-      - path: services/tools/wanaku-tool-service-yaml-route-service/target/distributions/wanaku-tool-service-yaml-route-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-yaml-route/target/distributions/wanaku-tool-service-yaml-route-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-yaml-route-service/target/distributions/wanaku-tool-service-yaml-route-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-yaml-route/target/distributions/wanaku-tool-service-yaml-route-{{projectVersion}}.zip
         platform: linux-x86_64
   service-kafka:
     artifacts:
-      - path: services/tools/wanaku-tool-service-kafka-service/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-kafka/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-kafka-service/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-kafka/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}.zip
         platform: linux-x86_64
   service-http:
     artifacts:
-      - path: services/tools/wanaku-tool-service-http-service/target/distributions/wanaku-tool-service-http-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-http-service/target/distributions/wanaku-tool-service-http-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-{{projectVersion}}.zip
         platform: linux-x86_64
   provider-file:
     artifacts:
@@ -89,15 +89,15 @@ distributions:
         platform: linux-x86_64
   service-tavily:
     artifacts:
-      - path: services/tools/wanaku-tool-service-tavily-service/target/distributions/wanaku-tool-service-tavily-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-tavily/target/distributions/wanaku-tool-service-tavily-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-tavily-service/target/distributions/wanaku-tool-service-tavily-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-tavily/target/distributions/wanaku-tool-service-tavily-{{projectVersion}}.zip
         platform: linux-x86_64
   service-exec:
     artifacts:
-      - path: services/tools/wanaku-tool-service-exec-service/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-exec-service/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
+      - path: services/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
         platform: linux-x86_64
 
   cli-native:
@@ -114,15 +114,15 @@ distributions:
         platform: linux-x86_64
   service-kafka-native:
     artifacts:
-      - path: services/tools/wanaku-tool-service-kafka-service/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}-osx-aarch_64.zip
+      - path: services/tools/wanaku-tool-service-kafka/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-kafka-service/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}-linux-x86_64.zip
+      - path: services/tools/wanaku-tool-service-kafka/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
   service-exec-native:
     artifacts:
-      - path: services/tools/wanaku-tool-service-exec-service/target/distributions/wanaku-tool-service-exec-{{projectVersion}}-osx-aarch_64.zip
+      - path: services/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
-      - path: services/tools/wanaku-tool-service-exec-service/target/distributions/wanaku-tool-service-exec-{{projectVersion}}-linux-x86_64.zip
+      - path: services/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
   provider-file-native:
     artifacts:
