@@ -2,11 +2,11 @@
 
 The following resources can be made available using Wanaku.
 
-| Type   | Resource Provider                                                            | Description                                                    |
-|--------|------------------------------------------------------------------------------|----------------------------------------------------------------|
-| `file` | [wanaku-provider-file](../services/providers/wanaku-provider-file/README.md) | Provides access to files as resources to Wanaku                |
-| `ftp`  | [wanaku-provider-ftp](../services/providers/wanaku-provider-ftp/README.md)   | Provides access to files in FTP servers as resources to Wanaku |
-| `s3`   | [wanaku-provider-s3](../services/providers/wanaku-provider-s3/README.md)     | Provides access to files in AWS S3 as resources to Wanaku      |
+| Type   | Resource Provider                                        | Description                                                    |
+|--------|----------------------------------------------------------|----------------------------------------------------------------|
+| `file` | [wanaku-provider-file](./wanaku-provider-file/README.md) | Provides access to files as resources to Wanaku                |
+| `ftp`  | [wanaku-provider-ftp](./wanaku-provider-ftp/README.md)   | Provides access to files in FTP servers as resources to Wanaku |
+| `s3`   | [wanaku-provider-s3](./wanaku-provider-s3/README.md)     | Provides access to files in AWS S3 as resources to Wanaku      |
 
 
 > [!NOTE]
