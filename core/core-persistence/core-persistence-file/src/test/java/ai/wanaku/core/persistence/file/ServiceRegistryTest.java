@@ -110,7 +110,7 @@ public class ServiceRegistryTest {
 
         Service service = serviceRegistry.getService(TEST_SERVICE_NAME);
 
-        Assertions.assertEquals(service.getConfigurations().getConfigurations().get("myProperty").getValue(), "myValue");
+        Assertions.assertEquals("myValue", service.getConfigurations().getConfigurations().get("myProperty").getValue());
     }
 
     @Test
