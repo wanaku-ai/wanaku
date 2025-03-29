@@ -21,7 +21,7 @@ public final class DiscoveryUtil {
             InetAddress address = InetAddress.getLocalHost();
             return address.getHostAddress();
         } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
+            throw new WanakuException(e);
         }
     }
 }
