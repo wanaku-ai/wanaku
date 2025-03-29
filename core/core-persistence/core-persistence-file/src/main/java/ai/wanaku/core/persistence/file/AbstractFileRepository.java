@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> implements WanakuRepository<A, T, K> {
 
-    protected WanakuMarshallerService wanakuMarshallerService;
-    protected Path file;
+    protected final WanakuMarshallerService wanakuMarshallerService;
+    protected final Path file;
 
     public AbstractFileRepository(WanakuMarshallerService wanakuMarshallerService, Path file) {
         this.wanakuMarshallerService = wanakuMarshallerService;

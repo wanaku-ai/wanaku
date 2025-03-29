@@ -18,7 +18,7 @@ import java.util.List;
 @Default
 public class WanakuMarshallerService {
 
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     public WanakuMarshallerService() {
         mapper = new ObjectMapper();

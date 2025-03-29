@@ -4,7 +4,7 @@ package ai.wanaku.core.util;
  * Runtime information utilities
  */
 public class RuntimeInfo {
-    private static String OS = System.getProperty("os.name").toLowerCase();
+    private static final String OS = System.getProperty("os.name").toLowerCase();
 
     private RuntimeInfo() {    }
 

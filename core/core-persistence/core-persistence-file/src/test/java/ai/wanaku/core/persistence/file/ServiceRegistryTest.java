@@ -35,7 +35,7 @@ public class ServiceRegistryTest {
 
     private static Path basePath;
     private static Path servicePath;
-    private static String testServiceName = "myService";
+    private static final String TEST_SERVICE_NAME = "myService";
     private static Path statusPath;
 
     @BeforeAll
@@ -48,7 +48,7 @@ public class ServiceRegistryTest {
             Files.write(servicePath, "".getBytes());
         }
 
-        statusPath = basePath.resolve("state-" + testServiceName + ".json");
+        statusPath = basePath.resolve("state-" + TEST_SERVICE_NAME + ".json");
 
         if (Files.exists(statusPath)) {
             Files.write(statusPath, "".getBytes());
@@ -58,7 +58,7 @@ public class ServiceRegistryTest {
     @Test
     @Order(1)
     public void register() throws IOException {
-        ServiceTarget serviceTarget = new ServiceTarget(testServiceName, "localhost", 8081, ServiceType.TOOL_INVOKER);
+        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
 
         serviceRegistry.register(serviceTarget, Map.of("myProperty", "myDescription"));
 
@@ -68,7 +68,7 @@ public class ServiceRegistryTest {
     @Test
     @Order(2)
     public void getService() {
-        Service service = serviceRegistry.getService(testServiceName);
+        Service service = serviceRegistry.getService(TEST_SERVICE_NAME);
 
         Assertions.assertEquals("localhost:8081", service.getTarget());
     }
@@ -86,7 +86,7 @@ public class ServiceRegistryTest {
     @Test
     @Order(4)
     public void saveState() throws IOException {
-        serviceRegistry.saveState(testServiceName, true, "myMessage");
+        serviceRegistry.saveState(TEST_SERVICE_NAME, true, "myMessage");
 
         Assertions.assertTrue(Files.readString(statusPath).contains("myMessage"));
     }
@@ -94,7 +94,7 @@ public class ServiceRegistryTest {
     @Test
     @Order(5)
     public void getState() throws IOException {
-        List<State> states = serviceRegistry.getState(testServiceName, 10);
+        List<State> states = serviceRegistry.getState(TEST_SERVICE_NAME, 10);
 
         Assertions.assertEquals(1, states.size());
     }
@@ -104,11 +104,11 @@ public class ServiceRegistryTest {
     public void updateProperty() throws IOException {
         Assertions.assertFalse(Files.readString(servicePath).contains("myValue"));
 
-        serviceRegistry.update(testServiceName, "myProperty", "myValue");
+        serviceRegistry.update(TEST_SERVICE_NAME, "myProperty", "myValue");
 
         Assertions.assertTrue(Files.readString(servicePath).contains("myValue"));
 
-        Service service = serviceRegistry.getService(testServiceName);
+        Service service = serviceRegistry.getService(TEST_SERVICE_NAME);
 
         Assertions.assertEquals(service.getConfigurations().getConfigurations().get("myProperty").getValue(), "myValue");
     }
@@ -117,13 +117,13 @@ public class ServiceRegistryTest {
     @Order(7)
     public void deregister() {
         // The testServiceName is a TOOL, this line of code should not deregister
-        serviceRegistry.deregister(testServiceName, ServiceType.RESOURCE_PROVIDER);
+        serviceRegistry.deregister(TEST_SERVICE_NAME, ServiceType.RESOURCE_PROVIDER);
 
-        Assertions.assertNotNull(serviceRegistry.getService(testServiceName));
+        Assertions.assertNotNull(serviceRegistry.getService(TEST_SERVICE_NAME));
 
-        serviceRegistry.deregister(testServiceName, ServiceType.TOOL_INVOKER);
+        serviceRegistry.deregister(TEST_SERVICE_NAME, ServiceType.TOOL_INVOKER);
 
-        Assertions.assertThrows(ServiceNotFoundException.class, () -> serviceRegistry.getService(testServiceName));
+        Assertions.assertThrows(ServiceNotFoundException.class, () -> serviceRegistry.getService(TEST_SERVICE_NAME));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ServiceRegistryTest {
         for (int i = 0; i < 100; i++) {
             int finalI = i;
             callables.add(() -> {
-                ServiceTarget serviceTarget = new ServiceTarget(testServiceName + finalI, "localhost", 8081, ServiceType.TOOL_INVOKER);
+                ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_NAME + finalI, "localhost", 8081, ServiceType.TOOL_INVOKER);
                 serviceRegistry.register(serviceTarget, Map.of("myProperty", "myDescription"));
                 return null;
             });

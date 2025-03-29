@@ -32,8 +32,8 @@ import org.jboss.logging.Logger;
 public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, ServiceTargetEntity, String> implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(FileServiceRegistry.class);
 
-    private Path folder;
-    private ReentrantLock lock = new ReentrantLock();
+    private final Path folder;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public FileServiceRegistry(WanakuMarshallerService wanakuMarshallerService, Path file, Path folder) {
         super(wanakuMarshallerService, file);
