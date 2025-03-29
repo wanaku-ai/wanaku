@@ -15,8 +15,8 @@ import java.util.List;
 
 public abstract class AbstractMongoDBRepository<A, T extends WanakuEntity, K> implements WanakuRepository<A, T, K> {
 
-    protected MongoClient mongoClient;
-    protected WanakuMarshallerService wanakuMarshallerService;
+    protected final MongoClient mongoClient;
+    protected final WanakuMarshallerService wanakuMarshallerService;
 
     public AbstractMongoDBRepository(MongoClient mongoClient, WanakuMarshallerService wanakuMarshallerService) {
         this.mongoClient = mongoClient;

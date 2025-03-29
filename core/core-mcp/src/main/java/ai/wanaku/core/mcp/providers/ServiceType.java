@@ -14,7 +14,7 @@ public enum ServiceType {
      */
     TOOL_INVOKER("tool-invoker");
 
-    private String value;
+    private final String value;
 
     ServiceType(String value) {
         this.value = value;
