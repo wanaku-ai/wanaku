@@ -22,13 +22,18 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import ai.wanaku.core.util.RuntimeInfo;
 import org.jboss.logging.Logger;
 
 public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, ServiceTargetEntity, String> implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(FileServiceRegistry.class);
 
     private Path folder;
+    private ReentrantLock lock = new ReentrantLock();
 
     public FileServiceRegistry(WanakuMarshallerService wanakuMarshallerService, Path file, Path folder) {
         super(wanakuMarshallerService, file);
@@ -39,7 +44,39 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
         return Files.readString(file);
     }
 
+    private void tryWriteWindows(Path file, byte[] content) throws IOException {
+        try (FileOutputStream stream = new FileOutputStream(file.toFile())) {
+            boolean written = false;
+            int retries = 10;
+            do {
+                if (lock.tryLock(100, TimeUnit.MILLISECONDS)) {
+                    Files.write(file, content, StandardOpenOption.TRUNCATE_EXISTING);
+                    written = true;
+                } else {
+                    LOG.warnf("Overlapping file lock: %s", file.getFileName());
+                    try {
+                        Thread.sleep(Duration.ofMillis(100).toMillis());
+                    } catch (InterruptedException ex) {
+                        throw new WanakuException(ex);
+                    }
+                    retries--;
+                }
+            } while (!written && retries > 0);
+        } catch (InterruptedException ex) {
+            throw new WanakuException(ex);
+        }
+
+    }
+
     private void tryWrite(Path file, byte[] content) throws IOException {
+        if (RuntimeInfo.isWindows()) {
+            tryWriteWindows(file, content);
+        } else {
+            tryWriteNormal(file, content);
+        }
+    }
+
+    private void tryWriteNormal(Path file, byte[] content) throws IOException {
         try (FileOutputStream stream = new FileOutputStream(file.toFile())) {
             boolean written = false;
             int retries = 10;
