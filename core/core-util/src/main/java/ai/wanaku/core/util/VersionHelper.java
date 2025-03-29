@@ -1,6 +1,7 @@
 package ai.wanaku.core.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * A utility class that provides a way to retrieve Wanaku current version
@@ -28,8 +29,9 @@ public final class VersionHelper {
      * @return The current version of this library.
      */
     private static String initVersion() {
-        try {
-            byte[] bytes = VersionHelper.class.getResourceAsStream("/version.txt").readAllBytes();
+        try (InputStream stream = VersionHelper.class.getResourceAsStream("/version.txt")) {
+            assert stream != null;
+            byte[] bytes = stream.readAllBytes();
             return new String(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
