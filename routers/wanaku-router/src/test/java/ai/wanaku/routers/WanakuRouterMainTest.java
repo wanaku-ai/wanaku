@@ -1,12 +1,8 @@
 package ai.wanaku.routers;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.resolvers.Resolver;
@@ -16,16 +12,19 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.testcontainers.DockerClientFactory;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -33,8 +32,12 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTestResource(ValkeyResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
+@EnabledIf(value = "dockerCheck", disabledReason = "Docker environment is not available")
 public class WanakuRouterMainTest {
+
+    static boolean dockerCheck() {
+        return DockerClientFactory.instance().isDockerAvailable();
+    }
 
     @AfterAll
     static void cleanData() {

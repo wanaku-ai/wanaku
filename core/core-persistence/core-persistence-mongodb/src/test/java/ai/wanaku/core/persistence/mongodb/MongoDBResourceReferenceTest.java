@@ -1,5 +1,7 @@
 package ai.wanaku.core.persistence.mongodb;
 
+import java.util.List;
+
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import com.mongodb.client.MongoClient;
@@ -11,15 +13,13 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-
-import java.util.List;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.testcontainers.DockerClientFactory;
 
 @QuarkusTestResource(MongoDBResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@DisabledOnOs(OS.WINDOWS)
+@EnabledIf(value = "dockerCheck", disabledReason = "Docker environment is not available")
 public class MongoDBResourceReferenceTest {
 
     @Inject
@@ -27,6 +27,10 @@ public class MongoDBResourceReferenceTest {
 
     @Inject
     MongoClient mongoClient;
+
+    static boolean dockerCheck() {
+        return DockerClientFactory.instance().isDockerAvailable();
+    }
 
     @Order(1)
     @Test
