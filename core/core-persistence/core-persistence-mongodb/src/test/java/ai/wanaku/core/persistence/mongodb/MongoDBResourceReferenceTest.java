@@ -52,7 +52,7 @@ public class MongoDBResourceReferenceTest {
             resourceReferenceRepository.persist(resourceReference);
         }
 
-        Assertions.assertTrue(mongoClient.getDatabase("wanaku").getCollection("resourceReference").countDocuments() == 3);
+        Assertions.assertEquals(3, mongoClient.getDatabase("wanaku").getCollection("resourceReference").countDocuments());
     }
 
     @Order(2)
@@ -60,6 +60,6 @@ public class MongoDBResourceReferenceTest {
     public void list() {
         List<ResourceReference> resources = resourceReferenceRepository.listAll();
 
-        Assertions.assertTrue(resources.size() == 3);
+        Assertions.assertEquals(3, resources.size());
     }
 }

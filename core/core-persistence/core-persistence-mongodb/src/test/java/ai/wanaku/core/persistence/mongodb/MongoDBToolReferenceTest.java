@@ -57,14 +57,14 @@ public class MongoDBToolReferenceTest {
             toolReferenceRepository.persist(toolReference);
         }
 
-        Assertions.assertTrue(mongoClient.getDatabase("wanaku").getCollection("toolReference").countDocuments() == 3);
+        Assertions.assertEquals(3, mongoClient.getDatabase("wanaku").getCollection("toolReference").countDocuments());
     }
 
     @Order(2)
     @Test
     public void list() {
         List<ToolReference> tools = toolReferenceRepository.listAll();
-        Assertions.assertTrue(tools.size() == 3);
+        Assertions.assertEquals(3, tools.size());
 
         ToolReference toolReference = tools.stream().filter(tool -> "name1".equals(tool.getName()))
                         .findFirst().get();
@@ -82,7 +82,7 @@ public class MongoDBToolReferenceTest {
         Assertions.assertTrue(toolReferenceRepository.deleteById("name2"));
 
         List<ToolReference> tools = toolReferenceRepository.listAll();
-        Assertions.assertTrue(tools.size() == 2);
+        Assertions.assertEquals(2, tools.size());
     }
 
     @Order(3)
