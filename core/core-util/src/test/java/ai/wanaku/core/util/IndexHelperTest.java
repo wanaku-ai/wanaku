@@ -61,7 +61,7 @@ public class IndexHelperTest {
         List<ResourceReference> loadedResourceReferences = IndexHelper.loadResourcesIndex(indexFile);
 
         // Verify that the loaded resources match the original ones
-        assertEquals(loadedResourceReferences.size(), loadedResourceReferences.size());
+        assertEquals(RESOURCE_REFERENCES.size(), loadedResourceReferences.size());
         for (int i = 0; i < loadedResourceReferences.size(); i++) {
             ResourceReference expected = RESOURCE_REFERENCES.get(i);
             ResourceReference actual = loadedResourceReferences.get(i);
@@ -107,7 +107,7 @@ public class IndexHelperTest {
         List<ToolReference> loadedToolsReferences = IndexHelper.loadToolsIndex(indexFile);
 
         // Verify that the loaded resources match the original ones
-        assertEquals(loadedToolsReferences.size(), loadedToolsReferences.size());
+        assertEquals(TOOL_REFERENCES.size(), loadedToolsReferences.size());
         for (int i = 0; i < loadedToolsReferences.size(); i++) {
             ToolReference expected = TOOL_REFERENCES.get(i);
             ToolReference actual = loadedToolsReferences.get(i);
