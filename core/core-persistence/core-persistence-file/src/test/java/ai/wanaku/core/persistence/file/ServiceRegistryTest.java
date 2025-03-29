@@ -93,7 +93,7 @@ public class ServiceRegistryTest {
 
     @Test
     @Order(5)
-    public void getState() throws IOException {
+    public void getState() {
         List<State> states = serviceRegistry.getState(TEST_SERVICE_NAME, 10);
 
         Assertions.assertEquals(1, states.size());
@@ -128,7 +128,7 @@ public class ServiceRegistryTest {
 
     @Test
     @Order(100)
-    public void testConcurrentRegistrations() throws IOException, InterruptedException {
+    public void testConcurrentRegistrations() throws InterruptedException {
         List<Callable<Void>> callables = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             int finalI = i;
