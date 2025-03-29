@@ -4,7 +4,6 @@ import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
 
-import java.util.List;
 import java.util.Map;
 
 public class ServiceTargetEntity extends ServiceTarget implements WanakuEntity {
