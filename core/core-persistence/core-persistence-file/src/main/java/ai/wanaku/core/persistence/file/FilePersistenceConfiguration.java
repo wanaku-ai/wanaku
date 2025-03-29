@@ -5,8 +5,6 @@ import ai.wanaku.core.persistence.WanakuMarshallerService;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import io.quarkus.arc.lookup.LookupUnlessProperty;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Produces;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
