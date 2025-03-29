@@ -68,8 +68,8 @@ public class ResourceReferenceTest {
     public void list() {
         List<ResourceReference> entities = resourceReferenceRepository.get().listAll();
 
-        Assertions.assertTrue(entities.size() == 3);
-        Assertions.assertTrue(entities.get(0).getName().equals("name1"));
+        Assertions.assertEquals(3, entities.size());
+        Assertions.assertEquals("name1", entities.get(0).getName());
     }
 
     @Test
