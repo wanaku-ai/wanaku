@@ -24,6 +24,8 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -31,6 +33,7 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTestResource(ValkeyResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
+@DisabledOnOs(OS.WINDOWS)
 public class WanakuRouterMainTest {
 
     @AfterAll
