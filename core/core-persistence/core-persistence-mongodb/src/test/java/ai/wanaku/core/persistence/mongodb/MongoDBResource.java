@@ -1,10 +1,10 @@
 package ai.wanaku.core.persistence.mongodb;
 
+import java.util.Map;
+
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MongoDBContainer;
-
-import java.util.Map;
 
 public class MongoDBResource implements QuarkusTestResourceLifecycleManager {
     private GenericContainer container;
