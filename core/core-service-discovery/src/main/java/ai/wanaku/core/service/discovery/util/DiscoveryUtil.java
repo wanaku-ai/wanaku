@@ -3,6 +3,8 @@ package ai.wanaku.core.service.discovery.util;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import ai.wanaku.api.exceptions.WanakuException;
+
 /**
  * Utilities to help with target discovery
  */
@@ -15,9 +17,8 @@ public final class DiscoveryUtil {
      * @return the address as a string
      */
     public static String resolveRegistrationAddress() {
-        InetAddress address = null;
         try {
-            address = InetAddress.getLocalHost();
+            InetAddress address = InetAddress.getLocalHost();
             return address.getHostAddress();
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
