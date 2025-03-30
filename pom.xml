@@ -95,6 +95,7 @@
         <module>cli</module>
         <module>services</module>
         <module>archetypes</module>
+        <module>jbang</module>
     </modules>
 
     <profiles>

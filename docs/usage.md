@@ -25,12 +25,30 @@ The MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the
 locally, that would mean `http://localhost:8080/mcp/sse`)
 
 ## Getting the CLI
+### Getting the CLI by downloading binary
 
 The best way to install the CLI is by downloading the latest `cli` from the [latest release](https://github.com/wanaku-ai/wanaku/releases).
 
 > [!NOTE]
 > You may also find a container for the CLI on our [Quay.io organization](https://quay.io/repository/wanaku/cli), 
 > although it **is not entirely tested** at the moment.
+
+### Getting the CLI via JBang
+First, you must install [JBang](https://www.jbang.dev/). See instructions on [JBang](https://www.jbang.dev/download/) how to download and install.
+
+After JBang is installed, you can verify JBang is working by executing the following command from a command shell:
+```shell
+jbang version
+```
+Which should output the version of JBang.
+
+To make it easier to use Wanaku CLI, then install the following:
+```shell
+jbang app install wanaku@wanaku-ai/wanaku
+```
+This will install Wanaku CLI as the wanaku command within JBang, meaning that you can run Wanaku from the command line by just executing wanaku (see more next).
+
+Note: It requires access to the internet, in case of using a proxy, please ensure that the proxy is configured for your system. If Wanaku JBang is not working with your current configuration, please look to [Proxy configuration in JBang documentation](https://www.jbang.dev/documentation/guide/latest/configuration.html#proxy-configuration).
 
 ## Quick Getting Started (Local)
 
