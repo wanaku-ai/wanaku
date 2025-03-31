@@ -6,10 +6,10 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Java CI with Maven
+name: Build Main
 
 on:
-  pull_request:
+  push:
     branches: [ "main" ]
 
 env:
@@ -17,18 +17,7 @@ env:
 
 jobs:
   build:
-
-    runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        experimental: [false]
-        include:
-          - os: [ windows-latest ]
-            experimental: true
-      fail-fast: true
-
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
@@ -39,3 +28,15 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+# Temporarily disabled: needs adjustments on Quay
+#    - name: Login to Container Registry
+#      uses: docker/login-action@v3
+#      with:
+#        registry: quay.io
+#        username: ${{ secrets.QUAY_USERNAME }}
+#        password: ${{ secrets.QUAY_PASSWORD }}
+#    - name: Publish
+#      run: |
+#        mvn -B package \
+#          -Dquarkus.container-image.build=true \
+#          -Dquarkus.container-image.push=true
