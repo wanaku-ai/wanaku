@@ -3,7 +3,7 @@ package ai.wanaku.routers.proxies;
 import java.util.Map;
 
 /**
- * Proxies between MCP URIs and Camel components capable of handling them
+ * Proxies between MCP URIs and services capable of handling them
  */
 public interface Proxy {
     /**
