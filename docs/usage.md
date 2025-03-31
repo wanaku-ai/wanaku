@@ -303,6 +303,11 @@ mcpServers:
 
 In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librechat.ai/docs/features/agents).
 
+### Witsy
+
+We also have tested Wanaku with [Witsy - AI Desktop Assistant](https://github.com/nbonamy/witsy/).
+
+
 ### Using an STDIO gateway
 
 Wanaku does not support stdio.
