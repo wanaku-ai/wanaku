@@ -1,30 +1,22 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
-import ai.wanaku.api.types.management.Service;
-import ai.wanaku.api.types.management.State;
-import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.core.mcp.providers.ServiceType;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 
+import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TargetsBean {
     private static final Logger LOG = Logger.getLogger(TargetsBean.class);
-
-    @Inject
-    ResourceResolver resourceResolver;
-
-    @Inject
-    ToolsResolver toolsResolver;
 
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
@@ -51,22 +43,6 @@ public class TargetsBean {
 
     public Map<String, Service> resourcesList() {
         return serviceRegistry.getEntries(ServiceType.RESOURCE_PROVIDER);
-    }
-
-    public Map<String, String> toolsConfigurations(String target) {
-        Map<String, String> configurations = toolsResolver.getServiceConfigurations(target);
-        for (var entry : configurations.entrySet()) {
-            LOG.infof("Received tool configuration %s from %s: %s", entry.getKey(), target, entry.getValue());
-        }
-        return configurations;
-    }
-
-    public Map<String, String> resourcesConfigurations(String target) {
-        Map<String, String> configurations = resourceResolver.getServiceConfigurations(target);
-        for (var entry : configurations.entrySet()) {
-            LOG.infof("Received resource configuration %s from %s: %s", entry.getKey(), target, entry.getValue());
-        }
-        return configurations;
     }
 
     public Map<String, List<State>> toolsState() {
