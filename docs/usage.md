@@ -269,8 +269,24 @@ open http://localhost:8080
 
 ### HyperChat 
 
-Wanaku works with [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat), however, setting up requires manually editing the `mcp.json` file. You can follow
-[the steps descripted on the improvement ticket](https://github.com/BigSweetPotatoStudio/HyperChat/issues/30) to set it up.
+Wanaku works with [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat). To do so,
+you can configure Wanaku as an MCP server using the MCP configuration as shown below:
+
+![HyperChat Configuration](imgs/hyperchat-configuration.png)
+
+> [!IMPORTANT]
+> Make sure to have Wanaku up and running before configuring HyperChat. You may also need to 
+> close and reopen HyperChat.
+
+After configuring HyperChat, you may need to go the Main Window and edit any existing agent if you have any.
+Then, in the agent configuration Window, in the `allowMCPs` option, make sure you mark Wanaku as an allowed MCP server. If in 
+doubt, check the HyperChat project documentation.
+
+> [!NOTE]
+> Older versions of HyperChat (pre 1.1.13) required manually editing the `mcp.json` file as described on the
+> [improvement ticket](https://github.com/BigSweetPotatoStudio/HyperChat/issues/30). This is not necessary
+> for newer versions.
+
 
 ### LibreChat
 
