@@ -1,7 +1,6 @@
 package ai.wanaku.routers.resolvers;
 
 import java.util.List;
-import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
@@ -27,10 +26,5 @@ public class WanakuResourceResolver implements ResourceResolver {
                 arguments.requestId());
 
         return proxy.eval(arguments, mcpResource);
-    }
-
-    @Override
-    public Map<String, String> getServiceConfigurations(String target) {
-        return proxy.getServiceConfigurations(target);
     }
 }

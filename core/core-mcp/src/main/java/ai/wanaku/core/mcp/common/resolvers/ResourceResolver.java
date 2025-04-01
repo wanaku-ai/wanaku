@@ -20,11 +20,4 @@ public interface ResourceResolver extends Resolver {
      * @return the resource contents in a format specific to the content that had been read
      */
     List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
-
-    /**
-     * Retrieve service configurations from the service
-     * @param target the target service to retrieve configurations from
-     * @return A map of configurations and their descriptions
-     */
-    Map<String, String> getServiceConfigurations(String target);
 }
