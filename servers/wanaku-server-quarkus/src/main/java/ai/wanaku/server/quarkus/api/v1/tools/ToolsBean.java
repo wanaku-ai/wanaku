@@ -81,12 +81,6 @@ public class ToolsBean {
     }
 
     void loadTools(@Observes StartupEvent ev) {
-        File indexFile = toolsResolver.indexLocation();
-        if (!indexFile.exists()) {
-            LOG.warnf("Index file not found: %s", indexFile);
-            return;
-        }
-
         for (ToolReference toolReference : list()) {
             registerTool(toolReference);
         }

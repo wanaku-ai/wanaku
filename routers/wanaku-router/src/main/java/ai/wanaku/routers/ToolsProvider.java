@@ -56,7 +56,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
         File resourcesIndexFile = initializeResourcesIndex(config.indexesPath(), DEFAULT_TOOLS_INDEX_FILE_NAME);
         LOG.infof("Using resources index file: %s", resourcesIndexFile.getAbsolutePath());
 
-        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy(serviceRegistry));
+        return new WanakuToolsResolver(new InvokerProxy(serviceRegistry));
     }
 
     @Produces
@@ -70,7 +70,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
         File resourcesIndexFile = initializeIndex();
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        return new WanakuToolsResolver(resourcesIndexFile, new InvokerProxy(serviceRegistry));
+        return new WanakuToolsResolver(new InvokerProxy(serviceRegistry));
     }
 
     @Override

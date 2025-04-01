@@ -1,5 +1,6 @@
 package ai.wanaku.routers;
 
+import ai.wanaku.routers.proxies.resources.ResourceAcquirerProxy;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -9,7 +10,6 @@ import jakarta.inject.Inject;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.routers.proxies.resources.ResourceAcquirerProxy;
 import ai.wanaku.routers.resolvers.WanakuResourceResolver;
 import java.io.File;
 import picocli.CommandLine;
@@ -41,8 +41,8 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
             return new NoopResourceResolver();
         }
 
-        File resourcesIndexFile = initializeIndex();
-        return new WanakuResourceResolver(resourcesIndexFile, new ResourceAcquirerProxy(serviceRegistry));
+        initializeIndex();
+        return new WanakuResourceResolver(new ResourceAcquirerProxy(serviceRegistry));
     }
 
 
