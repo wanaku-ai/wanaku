@@ -5,15 +5,19 @@
  * OpenAPI spec version: 0.0.4-SNAPSHOT
  */
 
+export * from "./callableReference";
 export * from "./configuration";
 export * from "./configurations";
 export * from "./configurationsConfigurations";
+export * from "./forwardReference";
+export * from "./getApiV1ManagementTargetsForwardParams";
 export * from "./getApiV1ManagementTargetsResourcesList200";
 export * from "./getApiV1ManagementTargetsToolsList200";
 export * from "./inputSchema";
 export * from "./inputSchemaProperties";
 export * from "./param";
 export * from "./property";
+export * from "./putApiV1ManagementTargetsForwardParams";
 export * from "./putApiV1ManagementTargetsResourcesConfigureServiceParams";
 export * from "./putApiV1ManagementTargetsResourcesLinkParams";
 export * from "./putApiV1ManagementTargetsResourcesUnlinkParams";
@@ -29,6 +33,8 @@ export * from "./state";
 export * from "./toolReference";
 export * from "./wanakuError";
 export * from "./wanakuResponse";
+export * from "./wanakuResponseListExtendsCallableReference";
+export * from "./wanakuResponseListForwardReference";
 export * from "./wanakuResponseListResourceReference";
 export * from "./wanakuResponseListToolReference";
 export * from "./wanakuResponseMapStringListState";

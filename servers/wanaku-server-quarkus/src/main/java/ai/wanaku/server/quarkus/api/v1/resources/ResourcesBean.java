@@ -1,19 +1,19 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
-import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 
+import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
+import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
+import ai.wanaku.server.quarkus.common.ResourceHelper;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkus.runtime.StartupEvent;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ResourcesBean {
@@ -51,15 +51,7 @@ public class ResourcesBean {
     }
 
     private void doExposeResource(ResourceReference resourceReference) {
-        LOG.debugf("Exposing resource: %s", resourceReference.getName());
-        resourceManager.newResource(resourceReference.getName())
-                .setUri(resourceReference.getLocation())
-                .setMimeType(resourceReference.getMimeType())
-                .setDescription(resourceReference.getDescription())
-                .setHandler(
-                        args -> new ResourceResponse(
-                                resourceResolver.read(args, resourceReference)))
-                .register();
+        ResourceHelper.expose(resourceReference, resourceManager, resourceResolver::read);
     }
 
     public void remove(String name) {

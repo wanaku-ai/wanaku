@@ -1,15 +1,17 @@
 package ai.wanaku.core.persistence.mongodb;
 
-import java.util.List;
-import java.util.Map;
+import jakarta.inject.Inject;
 
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoClient;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -40,9 +42,9 @@ public class MongoDBToolReferenceTest {
         for (int i = 1; i < 4; i++) {
             ToolReference toolReference = new ToolReference();
 
-            ToolReference.InputSchema inputSchema = new ToolReference.InputSchema();
+            InputSchema inputSchema = new InputSchema();
             inputSchema.setType("type" + i);
-            ToolReference.Property property = new ToolReference.Property();
+            Property property = new Property();
             property.setType("propertyType" + i);
             property.setDescription("propertyDescription" + i);
             inputSchema.setProperties(Map.of("prop" + i, property));

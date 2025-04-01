@@ -5,12 +5,14 @@
  * OpenAPI spec version: 0.0.4-SNAPSHOT
  */
 import type {
+  ForwardReference,
   PutApiV1ManagementTargetsResourcesConfigureServiceParams,
   PutApiV1ManagementTargetsToolsConfigureServiceParams,
   PutApiV1ResourcesRemoveParams,
   PutApiV1ToolsRemoveParams,
   ResourceReference,
   ToolReference,
+  WanakuResponseListForwardReference,
   WanakuResponseListResourceReference,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListState,
@@ -19,6 +21,120 @@ import type {
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
+/**
+ * @summary Add Forward
+ */
+export type postApiV1ForwardsAddResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type postApiV1ForwardsAddResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ForwardsAddResponseComposite =
+  | postApiV1ForwardsAddResponse200
+  | postApiV1ForwardsAddResponse400;
+
+export type postApiV1ForwardsAddResponse =
+  postApiV1ForwardsAddResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ForwardsAddUrl = () => {
+  return `/api/v1/forwards/add`;
+};
+
+export const postApiV1ForwardsAdd = async (
+  forwardReference: ForwardReference,
+  options?: RequestInit,
+): Promise<postApiV1ForwardsAddResponse> => {
+  return customFetch<postApiV1ForwardsAddResponse>(
+    getPostApiV1ForwardsAddUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(forwardReference),
+    },
+  );
+};
+
+/**
+ * @summary List Forwards
+ */
+export type getApiV1ForwardsListResponse200 = {
+  data: WanakuResponseListForwardReference;
+  status: 200;
+};
+
+export type getApiV1ForwardsListResponseComposite =
+  getApiV1ForwardsListResponse200;
+
+export type getApiV1ForwardsListResponse =
+  getApiV1ForwardsListResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ForwardsListUrl = () => {
+  return `/api/v1/forwards/list`;
+};
+
+export const getApiV1ForwardsList = async (
+  options?: RequestInit,
+): Promise<getApiV1ForwardsListResponse> => {
+  return customFetch<getApiV1ForwardsListResponse>(
+    getGetApiV1ForwardsListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Remove Forward
+ */
+export type putApiV1ForwardsRemoveResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type putApiV1ForwardsRemoveResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type putApiV1ForwardsRemoveResponseComposite =
+  | putApiV1ForwardsRemoveResponse200
+  | putApiV1ForwardsRemoveResponse400;
+
+export type putApiV1ForwardsRemoveResponse =
+  putApiV1ForwardsRemoveResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPutApiV1ForwardsRemoveUrl = () => {
+  return `/api/v1/forwards/remove`;
+};
+
+export const putApiV1ForwardsRemove = async (
+  forwardReference: ForwardReference,
+  options?: RequestInit,
+): Promise<putApiV1ForwardsRemoveResponse> => {
+  return customFetch<putApiV1ForwardsRemoveResponse>(
+    getPutApiV1ForwardsRemoveUrl(),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(forwardReference),
+    },
+  );
+};
+
 /**
  * @summary Version
  */

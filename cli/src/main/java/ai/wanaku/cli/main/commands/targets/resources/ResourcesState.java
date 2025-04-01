@@ -16,7 +16,7 @@ public class ResourcesState extends AbstractTargetsList {
     public void run() {
         initService();
 
-        WanakuResponse<Map<String, List<State>>> list = linkService.resourcesState();
+        WanakuResponse<Map<String, List<State>>> list = targetsService.resourcesState();
         PrettyPrinter.printStates(list.data());
     }
 }

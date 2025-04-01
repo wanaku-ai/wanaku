@@ -1,14 +1,14 @@
 package ai.wanaku.cli.main.support;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.api.types.management.State;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class PrettyPrinter {
 
@@ -93,4 +93,17 @@ public class PrettyPrinter {
     }
 
 
+    private static void printForwardReference(ForwardReference reference) {
+        System.out.printf("%-20s    %-60s%n", reference.getName(), reference.getAddress());
+    }
+
+    /**
+     * Prints a list of resources
+     * @param list the list of resources
+     */
+    public static void printForwards(final List<ForwardReference> list) {
+        System.out.printf("%-20s    %-60s%n", "Service", "Address");
+
+        list.forEach(PrettyPrinter::printForwardReference);
+    }
 }

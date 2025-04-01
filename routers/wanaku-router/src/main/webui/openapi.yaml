@@ -16,6 +16,13 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/Configuration"
+    ForwardReference:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
     InputSchema:
       type: object
       properties:
@@ -111,6 +118,15 @@ components:
         error:
           $ref: "#/components/schemas/WanakuError"
         data: {}
+    WanakuResponseListForwardReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForwardReference"
     WanakuResponseListResourceReference:
       type: object
       properties:
@@ -157,6 +173,53 @@ components:
         data:
           $ref: "#/components/schemas/ServerInfo"
 paths:
+  /api/v1/forwards/add:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content: {}
+        "400":
+          description: Bad Request
+      summary: Add Forward
+      tags:
+      - Forwards Resource
+  /api/v1/forwards/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListForwardReference"
+      summary: List Forwards
+      tags:
+      - Forwards Resource
+  /api/v1/forwards/remove:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+      summary: Remove Forward
+      tags:
+      - Forwards Resource
   /api/v1/management/info/version:
     get:
       responses:

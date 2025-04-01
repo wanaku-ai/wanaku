@@ -251,7 +251,7 @@ To add that route as a tool, you can run something similar to this:
 wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "wanaku_body:string,The data to be passed to the route"
 ```
 
-## Special/Reserved Arguments
+### Special/Reserved Arguments
 
 In the command above, we used the property `wanaku_body`. That is a special property that indicate that the property/argument 
 should be part of the body of the data exchange and not as part of a parameter. For instance, consider an HTTP call. In such cases, 
@@ -261,8 +261,95 @@ Currently special arguments:
 
 * `wanaku_body`: special property to indicate that 
 
+## Forwards (MCP-to-MCP Bridge)
 
-## Supported/Tested Client 
+The MCP bridge in Wanaku allows it to act as a central gateway or proxy to other MCP servers that use HTTP as the transport mechanism. 
+
+This feature enables a centralized endpoint for aggregating tools and resources provided by other MCP servers.
+
+### Listing Forwards
+
+To view a list of currently configured forwards, use the `wanaku forwards list` command:
+
+```bash
+wanaku forwards list
+```
+
+This command displays information about each forward, including its name, service URL, and any other relevant details.
+
+This can be useful for managing and troubleshooting MCP server integrations.
+
+### Adding Forward
+
+To add an external MCP server to the Wanaku instance, use the `wanaku forwards add` command:
+
+```bash
+wanaku forwards add --service="http://your-mcp-server.com:8080/mcp/sse" --name my-mcp-server
+```
+
+*   `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
+*   `--name`: A unique human-readable name for the forward, used for identification and management purposes.
+
+Once a forward is added, all tools and resources provided by the external MCP server will be mapped in the Wanaku instance.
+
+These tools and resources can then be accessed as if they were local to the server.
+
+### Removing Forward
+
+To remove an external MCP server from the Wanaku instance, use the `wanaku forwards remove` command:
+
+```bash
+wanaku forwards remove --service="http://your-mcp-server.com:8080/mcp/sse" --name my-mcp-server
+```
+
+*   `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
+*   `--name`: The human-readable name for the forward to be removed.
+
+Note that attempting to remove a non-existent forward will result in an error message. If you want to remove multiple forwards, simply repeat the command with different names and service URLs.
+
+### Example Use Case
+
+Suppose you have two MCP servers: `http://mcp-server1.com:8080/mcp/sse` and `http://mcp-server2.com:8080/mcp/sse`. 
+
+To integrate these external MCP servers into your Wanaku instance, follow these steps:
+
+1.  Add the first forward using the `wanaku forwards add` command:
+
+```shell
+wanaku forwards add --service="http://mcp-server1.com:8080/mcp/sse" --name mcp-server-1
+```
+2.  Use the `wanaku forwards list` command to confirm that the forward has been successfully added:
+```bash
+wanaku forwards list
+``` 
+ 
+3. Verify that all tools and resources from `mcp-server1` are now accessible within your Wanaku instance using `wanaku tools list`
+
+```shell
+Name               Type               URI
+tavily-search-local => tavily          => tavily://search?maxResults={parameter.value('maxResults')}
+meow-facts      => mcp-remote-tool => <remote>
+dog-facts       => mcp-remote-tool => <remote>
+camel-rider-quote-generator => mcp-remote-tool => <remote>
+tavily-search   => mcp-remote-tool => <remote>
+laptop-order    => mcp-remote-tool => <remote>
+```
+
+4.  Add the second forward using the same command:
+```bash
+wanaku forwards add --service="http://mcp-server2.com:8080/mcp/sse" --name mcp-server-2
+```
+
+5. Confirm that tools and resources from both external MCP servers are now integrated into your Wanaku instance (use `wanaku tools list`)
+6. Use the `wanaku forwards list` command to view the updated list of forwards:
+```bash
+wanaku forwards list
+```
+
+By leveraging the MCP bridge feature, you can create a centralized endpoint for aggregating tools and resources from multiple 
+external MCP servers, simplifying management and increasing the overall functionality of your Wanaku instance.
+
+## Supported/Tested Clients 
 
 Wanaku implements the MCP protocol and, by definition, should support any client that is compliant to the protocol. 
 

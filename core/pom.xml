@@ -21,6 +21,7 @@
         <module>core-service-discovery</module>
         <module>core-runtimes</module>
         <module>core-persistence</module>
+        <module>core-mcp-client</module>
     </modules>
 
 

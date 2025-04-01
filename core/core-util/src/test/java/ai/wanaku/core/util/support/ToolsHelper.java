@@ -1,5 +1,7 @@
 package ai.wanaku.core.util.support;
 
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Property;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +12,7 @@ import ai.wanaku.api.types.ToolReference;
 public class ToolsHelper {
     public static final String TOOLS_INDEX = "target/test-classes/tools.json";
 
-    public static ToolReference createToolReference(String name, String description, String uri, ToolReference.InputSchema inputSchema) {
+    public static ToolReference createToolReference(String name, String description, String uri, InputSchema inputSchema) {
         ToolReference toolReference = new ToolReference();
         toolReference.setName(name);
         toolReference.setDescription(description);
@@ -21,15 +23,15 @@ public class ToolsHelper {
         return toolReference;
     }
 
-    public static ToolReference.InputSchema createInputSchema(String type, Map<String, ToolReference.Property> properties) {
-        ToolReference.InputSchema schemaInstance = new ToolReference.InputSchema();
+    public static InputSchema createInputSchema(String type, Map<String, Property> properties) {
+        InputSchema schemaInstance = new InputSchema();
         schemaInstance.setType(type);
         schemaInstance.getProperties().putAll(properties);
         return schemaInstance;
     }
 
-    public static ToolReference.Property createProperty(String type, String description) {
-        ToolReference.Property propertyInstance = new ToolReference.Property();
+    public static Property createProperty(String type, String description) {
+        Property propertyInstance = new Property();
         propertyInstance.setType(type);
         propertyInstance.setDescription(description);
         return propertyInstance;
@@ -37,7 +39,7 @@ public class ToolsHelper {
 
 
     public static List<ToolReference> testFixtures() {
-        ToolReference.InputSchema inputSchema1 = createInputSchema(
+        InputSchema inputSchema1 = createInputSchema(
                 "http",
                 Collections.singletonMap("username", createProperty("string", "A username."))
         );
@@ -49,7 +51,7 @@ public class ToolsHelper {
                 inputSchema1
         );
 
-        ToolReference.InputSchema inputSchema2 = createInputSchema(
+        InputSchema inputSchema2 = createInputSchema(
                 "https",
                 Map.of("id", createProperty("integer", "An order ID."),
                         "date", createProperty("Date", "The date of the order."))

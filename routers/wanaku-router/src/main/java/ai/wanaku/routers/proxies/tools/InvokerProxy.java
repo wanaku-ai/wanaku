@@ -1,5 +1,7 @@
 package ai.wanaku.routers.proxies.tools;
 
+import ai.wanaku.api.types.CallableReference;
+import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Configurations;
@@ -46,7 +48,16 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     @Override
-    public ToolResponse call(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
+    public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+        if (toolReference instanceof ToolReference ref) {
+            return call(toolArguments, ref);
+        }
+
+        LOG.errorf("Tool reference %s not supported", toolReference == null ? "null" : toolReference.getClass().getName());
+        throw new UnsupportedOperationException("Only local tool call references should be invoked by this proxy");
+    }
+
+    public ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
         Service service = serviceRegistry.getService(toolReference.getType());
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
@@ -79,14 +90,14 @@ public class InvokerProxy implements ToolsProxy {
         Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
-        Map<String, ToolReference.Property> inputSchema =toolReference
+        Map<String, Property> inputSchema =toolReference
                 .getInputSchema()
                 .getProperties();
 
         Map<String,String> serviceEndpointConfiguration = inputSchema.entrySet()
                 .stream()
                 .filter(entry -> {
-                    ToolReference.Property property = entry.getValue();
+                    Property property = entry.getValue();
                     return property !=null &&
                             property.getTarget() != null &&
                             property.getScope() != null &&
@@ -103,7 +114,7 @@ public class InvokerProxy implements ToolsProxy {
         Map<String, String> headers = inputSchema.entrySet()
                 .stream()
                 .filter(entry -> {
-                    ToolReference.Property property = entry.getValue();
+                    Property property = entry.getValue();
                     return  property !=null &&
                             property.getTarget() != null &&
                             property.getScope() != null &&
@@ -129,8 +140,8 @@ public class InvokerProxy implements ToolsProxy {
 
     private static String extractBody(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
         // First, check if the tool specification defines it as having a body
-        Map<String, ToolReference.Property> properties = toolReference.getInputSchema().getProperties();
-        ToolReference.Property bodyProp = properties.get(BODY);
+        Map<String, Property> properties = toolReference.getInputSchema().getProperties();
+        Property bodyProp = properties.get(BODY);
         if (bodyProp == null) {
             // If the tool does not specify a body, then return an empty string
             return EMPTY_BODY;

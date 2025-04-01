@@ -1,10 +1,5 @@
 package ai.wanaku.cli.main.services;
 
-import java.util.List;
-import java.util.Map;
-
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.management.State;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -13,11 +8,15 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
+import java.util.List;
+import java.util.Map;
 import org.jboss.resteasy.reactive.RestPath;
 
 @Path("/api/v1/management/targets")
-public interface LinkService {
+public interface TargetsService {
 
     @Path("/tools/list")
     @GET

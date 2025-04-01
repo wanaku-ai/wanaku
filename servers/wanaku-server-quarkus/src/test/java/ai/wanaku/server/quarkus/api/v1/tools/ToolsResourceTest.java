@@ -1,23 +1,23 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.core.util.support.ToolsHelper;
+import ai.wanaku.server.quarkus.support.TestIndexHelper;
+import io.quarkus.test.junit.QuarkusTest;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.util.support.ToolsHelper;
-import ai.wanaku.server.quarkus.support.TestIndexHelper;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,7 +39,7 @@ public class ToolsResourceTest {
     @Order(1)
     @Test
     public void testExposeResourceSuccessfully() {
-        ToolReference.InputSchema inputSchema1 = ToolsHelper.createInputSchema(
+        InputSchema inputSchema1 = ToolsHelper.createInputSchema(
                 "http",
                 Collections.singletonMap("username", ToolsHelper.createProperty("string", "A username."))
         );
@@ -93,7 +93,7 @@ public class ToolsResourceTest {
     @Order(4)
     @Test
     void testAddAfterRemove() {
-        ToolReference.InputSchema inputSchema3 = ToolsHelper.createInputSchema(
+        InputSchema inputSchema3 = ToolsHelper.createInputSchema(
                 "http",
                 Collections.singletonMap("username", ToolsHelper.createProperty("string", "A username."))
         );

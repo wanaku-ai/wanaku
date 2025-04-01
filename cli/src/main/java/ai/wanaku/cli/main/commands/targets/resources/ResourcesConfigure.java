@@ -15,7 +15,7 @@ public class ResourcesConfigure extends AbstractTargetsConfigure {
         initService();
 
         try {
-            linkService.resourcesConfigure(service, option, value);
+            targetsService.resourcesConfigure(service, option, value);
         } catch (WebApplicationException e) {
             Response response = e.getResponse();
 

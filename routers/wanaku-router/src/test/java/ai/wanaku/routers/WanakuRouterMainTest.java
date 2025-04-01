@@ -1,5 +1,7 @@
 package ai.wanaku.routers;
 
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.core.mcp.client.ClientUtil;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -8,10 +10,7 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.resolvers.Resolver;
 import ai.wanaku.core.util.support.ToolsHelper;
 import dev.langchain4j.agent.tool.ToolSpecification;
-import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -48,15 +47,7 @@ public class WanakuRouterMainTest {
     }
 
     private static McpClient createClient() {
-        McpTransport transport = new HttpMcpTransport.Builder()
-                .sseUrl(String.format("http://localhost:%d/mcp/sse", RestAssured.port))
-                .logRequests(true)
-                .logResponses(true)
-                .build();
-
-        return new DefaultMcpClient.Builder()
-                .transport(transport)
-                .build();
+        return ClientUtil.createClient(String.format("http://localhost:%d/mcp/sse", RestAssured.port));
     }
 
     @Order(1)
@@ -73,7 +64,7 @@ public class WanakuRouterMainTest {
     @Order(2)
     @Test
     public void testExposeResourceSuccessfully() throws Exception {
-        ToolReference.InputSchema inputSchema1 = ToolsHelper.createInputSchema(
+        InputSchema inputSchema1 = ToolsHelper.createInputSchema(
                 "http",
                 Collections.singletonMap("username", ToolsHelper.createProperty("string", "A username."))
         );

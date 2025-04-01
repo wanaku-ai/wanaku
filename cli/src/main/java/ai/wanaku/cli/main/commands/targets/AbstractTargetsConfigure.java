@@ -1,10 +1,9 @@
 package ai.wanaku.cli.main.commands.targets;
 
-import java.net.URI;
-
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.LinkService;
+import ai.wanaku.cli.main.services.TargetsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import java.net.URI;
 import picocli.CommandLine;
 
 public abstract class AbstractTargetsConfigure extends BaseCommand {
@@ -21,11 +20,11 @@ public abstract class AbstractTargetsConfigure extends BaseCommand {
     @CommandLine.Option(names = { "--value" }, description = "The value to set the option", required = true, arity = "0..1")
     protected String value;
 
-    protected LinkService linkService;
+    protected TargetsService targetsService;
 
     protected void initService() {
-        linkService = QuarkusRestClientBuilder.newBuilder()
+        targetsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
-                .build(LinkService.class);
+                .build(TargetsService.class);
     }
 }
