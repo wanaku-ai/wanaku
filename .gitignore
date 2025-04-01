@@ -42,3 +42,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Camel JBang ###
+/services/tools/wanaku-tool-service-exec/.camel-jbang/camel-jbang-run.properties
