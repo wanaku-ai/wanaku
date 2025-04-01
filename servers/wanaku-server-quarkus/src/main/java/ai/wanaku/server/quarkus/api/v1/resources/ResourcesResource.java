@@ -14,6 +14,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -25,6 +28,9 @@ public class ResourcesResource {
 
     @Inject
     ResourcesBean resourcesBean;
+
+    @Inject
+    ForwardsBean forwardsBean;
 
     @Path("/expose")
     @POST
@@ -38,7 +44,12 @@ public class ResourcesResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public RestResponse<WanakuResponse<List<ResourceReference>>> list() throws WanakuException {
-        return RestResponse.ok(new WanakuResponse<>(resourcesBean.list()));
+        List<ResourceReference> list = resourcesBean.list();
+        List<ResourceReference> resourceReferences = forwardsBean.listAllResources();
+
+        List<ResourceReference> ret = CollectionsHelper.join(list, resourceReferences);
+
+        return RestResponse.ok(new WanakuResponse<>(ret));
     }
 
     @Path("/remove")

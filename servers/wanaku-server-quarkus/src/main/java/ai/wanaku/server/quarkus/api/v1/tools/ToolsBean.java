@@ -1,22 +1,21 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
-import java.io.File;
-import java.util.List;
-
-import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkus.runtime.StartupEvent;
-import org.jboss.logging.Logger;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import ai.wanaku.core.persistence.api.ToolReferenceRepository;
+import ai.wanaku.server.quarkus.common.ToolsHelper;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkus.runtime.StartupEvent;
+import java.util.List;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ToolsBean {
@@ -47,37 +46,12 @@ public class ToolsBean {
         LOG.debugf("Registering tool: %s", toolReference.getName());
         Tool tool = toolsResolver.resolve(toolReference);
 
-        ToolManager.ToolDefinition toolDefinition = toolManager.newTool(toolReference.getName())
-                .setDescription(toolReference.getDescription());
-
-        final boolean required = isRequired(toolReference);
-
-        Class<?> type = toType(toolReference);
-        toolReference.getInputSchema().getProperties().forEach((key, value) ->
-                toolDefinition.addArgument(key, value.getDescription(), required, type));
-
-        toolDefinition
-                .setHandler(ta -> tool.call(toolReference, ta))
-                .register();
+        ToolsHelper.registerTool(toolReference, toolManager, tool::call);
     }
 
-    private static boolean isRequired(ToolReference toolReference) {
-        boolean required = false;
-        List<String> requiredList = toolReference.getInputSchema().getRequired();
-
-        if (requiredList != null) {
-            required = requiredList.contains(toolReference.getName());
-        }
-        return required;
-    }
 
     public List<ToolReference> list() {
         return toolReferenceRepository.listAll();
-    }
-
-    // TODO:
-    private Class<?> toType(ToolReference mcpResource) {
-        return String.class;
     }
 
     void loadTools(@Observes StartupEvent ev) {

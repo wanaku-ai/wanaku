@@ -4,7 +4,7 @@ import java.net.URI;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.LinkService;
+import ai.wanaku.cli.main.services.TargetsService;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "list",
@@ -14,12 +14,12 @@ public abstract class AbstractTargetsList extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    protected LinkService linkService;
+    protected TargetsService targetsService;
 
     protected void initService() {
-        linkService = QuarkusRestClientBuilder.newBuilder()
+        targetsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
-                .build(LinkService.class);
+                .build(TargetsService.class);
     }
 
 }

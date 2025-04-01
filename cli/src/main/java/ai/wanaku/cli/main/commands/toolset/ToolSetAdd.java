@@ -1,15 +1,16 @@
 package ai.wanaku.cli.main.commands.toolset;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jboss.logging.Logger;
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import ai.wanaku.core.util.IndexHelper;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import org.jboss.logging.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "add",description = "Add tools to a toolset")
@@ -53,14 +54,14 @@ public class ToolSetAdd extends BaseCommand {
         toolReference.setUri(uri);
         toolReference.setType(type);
 
-        ToolReference.InputSchema inputSchema = new ToolReference.InputSchema();
+        InputSchema inputSchema = new InputSchema();
         inputSchema.setType(inputSchemaType);
 
         if (properties != null) {
             for (String propertyStr : properties) {
                 PropertyHelper.PropertyDescription result = PropertyHelper.parseProperty(propertyStr);
 
-                ToolReference.Property property = new ToolReference.Property();
+                Property property = new Property();
                 property.setType(result.dataType());
                 property.setDescription(result.description());
 

@@ -1,10 +1,5 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
-import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.management.Service;
-import ai.wanaku.api.types.management.State;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -14,12 +9,17 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestPath;
 
+import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.management.State;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestPath;
 
 @ApplicationScoped
 @Path("/api/v1/management/targets")

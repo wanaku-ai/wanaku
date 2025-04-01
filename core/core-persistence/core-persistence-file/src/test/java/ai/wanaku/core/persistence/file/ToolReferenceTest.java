@@ -1,9 +1,17 @@
 package ai.wanaku.core.persistence.file;
 
+import jakarta.inject.Inject;
+
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -11,12 +19,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -48,9 +50,9 @@ public class ToolReferenceTest {
             toolReference.setDescription("description" + i);
             toolReference.setType("type" + i);
 
-            ToolReference.InputSchema inputSchema = new ToolReference.InputSchema();
+            InputSchema inputSchema = new InputSchema();
             inputSchema.setType("type" + i);
-            ToolReference.Property property = new ToolReference.Property();
+            Property property = new Property();
             property.setDescription("propertyDescription" + i);
             property.setType("propertyType" + i);
             inputSchema.setProperties(Map.of("prop" + i, property));

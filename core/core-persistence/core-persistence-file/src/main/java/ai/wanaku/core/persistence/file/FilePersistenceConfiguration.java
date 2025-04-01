@@ -2,6 +2,7 @@ package ai.wanaku.core.persistence.file;
 
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.persistence.WanakuMarshallerService;
+import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import io.quarkus.arc.lookup.LookupUnlessProperty;
@@ -24,6 +25,9 @@ public class FilePersistenceConfiguration {
     @ConfigProperty(name = "wanaku.persistence.file.services", defaultValue = "targets.json")
     String servicesFileName;
 
+    @ConfigProperty(name = "wanaku.persistence.file.forwards-reference", defaultValue = "forwards.json")
+    String forwardsReferenceFileName;
+
     @LookupUnlessProperty(name = "wanaku.persistence", stringValue = "mongodb", lookupIfMissing = true)
     @Produces
     ResourceReferenceRepository resourceReferenceRepository() {
@@ -45,5 +49,12 @@ public class FilePersistenceConfiguration {
                 baseFolder.replace("${user.home}", System.getProperty("user.home")), servicesFileName),
                 Path.of(
                         baseFolder.replace("${user.home}", System.getProperty("user.home"))));
+    }
+
+    @LookupUnlessProperty(name = "wanaku.persistence", stringValue = "mongodb", lookupIfMissing = true)
+    @Produces
+    ForwardReferenceRepository forwardReferenceRepository() {
+        return new FileForwardReferenceRepository(new WanakuMarshallerService(), Path.of(
+                baseFolder.replace("${user.home}", System.getProperty("user.home")), forwardsReferenceFileName));
     }
 }

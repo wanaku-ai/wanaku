@@ -14,7 +14,7 @@ public class ResourcesLinkedList extends AbstractTargetsList {
     public void run() {
         initService();
 
-        Map<String, Service> list = linkService.resourcesList().data();
+        Map<String, Service> list = targetsService.resourcesList().data();
         PrettyPrinter.printTargets(list);
     }
 }

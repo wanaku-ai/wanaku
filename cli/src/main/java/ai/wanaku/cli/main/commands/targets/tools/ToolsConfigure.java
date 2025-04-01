@@ -15,7 +15,7 @@ public class ToolsConfigure extends AbstractTargetsConfigure {
         initService();
 
         try {
-            linkService.toolsConfigure(service, option, value);
+            targetsService.toolsConfigure(service, option, value);
         } catch (WebApplicationException e) {
             Response response = e.getResponse();
 

@@ -1,8 +1,5 @@
 package ai.wanaku.cli.main.services;
 
-import java.util.List;
-
-import ai.wanaku.api.types.WanakuResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -13,6 +10,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.WanakuResponse;
+import java.util.List;
 import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/api/v1/tools")

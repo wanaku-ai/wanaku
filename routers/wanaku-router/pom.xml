@@ -39,15 +39,9 @@
         </dependency>
 
         <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-mcp</artifactId>
-            <scope>test</scope>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-mcp-client</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
