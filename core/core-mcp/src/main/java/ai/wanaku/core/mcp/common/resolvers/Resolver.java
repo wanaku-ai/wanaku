@@ -1,28 +1,16 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
-import java.io.File;
-
 /**
  * A resolver that consumes MCP requests and resolves what type of tool or resource acquirer
  * should handle it
  */
 public interface Resolver {
+
+    // Whatever is using this, needs to get it from the persistence API
+    @Deprecated
     String DEFAULT_RESOURCES_INDEX_FILE_NAME = "resources.json";
+
+    // Whatever is using this, needs to get it from the persistence API
+    @Deprecated
     String DEFAULT_TOOLS_INDEX_FILE_NAME = "tools.json";
-    String DEFAULT_TARGET_RESOURCES_INDEX_FILE_NAME = "resources-targets.json";
-    String DEFAULT_TARGET_TOOLS_INDEX_FILE_NAME = "tools-targets.json";
-
-    /**
-     * The base directory for the index file
-     * @return
-     */
-    default File indexBaseDirectory() {
-        return indexLocation().getParentFile();
-    }
-
-    /**
-     * The location of the index file
-     * @return
-     */
-    File indexLocation();
 }

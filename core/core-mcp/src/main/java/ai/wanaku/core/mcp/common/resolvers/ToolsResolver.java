@@ -14,14 +14,6 @@ import ai.wanaku.core.mcp.common.Tool;
 public interface ToolsResolver extends Resolver {
 
     /**
-     * The index file containing the targets
-     * @return
-     */
-    default File targetsIndexFile() {
-        return new File(indexBaseDirectory(), DEFAULT_TARGET_TOOLS_INDEX_FILE_NAME);
-    }
-
-    /**
      * Given a reference, resolves what tool would call it
      * @param toolReference the reference to the tool
      * @return An instance of the requested tool

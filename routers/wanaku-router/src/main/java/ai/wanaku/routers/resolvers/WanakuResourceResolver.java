@@ -1,6 +1,5 @@
 package ai.wanaku.routers.resolvers;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -16,17 +15,10 @@ import ai.wanaku.routers.proxies.ResourceProxy;
  */
 public class WanakuResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(WanakuResourceResolver.class);
-    private final File indexFile;
     private final ResourceProxy proxy;
 
-    public WanakuResourceResolver(File indexFile, ResourceProxy proxy) {
-        this.indexFile = indexFile;
+    public WanakuResourceResolver(ResourceProxy proxy) {
         this.proxy = proxy;
-    }
-
-    @Override
-    public File indexLocation() {
-        return indexFile;
     }
 
     @Override

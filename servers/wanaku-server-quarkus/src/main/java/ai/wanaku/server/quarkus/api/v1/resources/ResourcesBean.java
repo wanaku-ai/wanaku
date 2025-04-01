@@ -13,7 +13,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.io.File;
 import java.util.List;
 
 @ApplicationScoped
@@ -46,12 +45,6 @@ public class ResourcesBean {
     }
 
     void loadResources(@Observes StartupEvent ev) {
-        File indexFile = resourceResolver.indexLocation();
-        if (!indexFile.exists()) {
-            LOG.warnf("Index file not found: %s", indexFile);
-            return;
-        }
-
         for (ResourceReference resourceReference : list()) {
             doExposeResource(resourceReference);
         }
