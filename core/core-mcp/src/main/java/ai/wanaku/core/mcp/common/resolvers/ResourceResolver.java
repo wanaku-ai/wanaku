@@ -1,7 +1,6 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
 import java.util.List;
-import java.util.Map;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import ai.wanaku.api.types.ResourceReference;
