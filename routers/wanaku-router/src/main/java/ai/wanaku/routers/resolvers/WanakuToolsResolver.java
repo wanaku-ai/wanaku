@@ -1,7 +1,5 @@
 package ai.wanaku.routers.resolvers;
 
-import java.util.Map;
-
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
@@ -17,10 +15,5 @@ public class WanakuToolsResolver implements ToolsResolver {
     @Override
     public Tool resolve(ToolReference toolReference) {
         return proxy;
-    }
-
-    @Override
-    public Map<String, String> getServiceConfigurations(String target) {
-        return proxy.getServiceConfigurations(target);
     }
 }
