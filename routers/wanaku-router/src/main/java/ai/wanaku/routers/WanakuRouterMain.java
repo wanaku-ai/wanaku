@@ -16,10 +16,6 @@ public class WanakuRouterMain implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
-    @CommandLine.Option(names = {"--indexes-path"}, description = "The path to the index directory",
-            defaultValue = "${user.home}/.wanaku/router/")
-    private String indexesPath;
-
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
