@@ -33,9 +33,6 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
     CommandLine.ParseResult parseResult;
 
     @Inject
-    WanakuRouterConfig config;
-
-    @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
 
     ServiceRegistry serviceRegistry;
@@ -53,9 +50,6 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        File resourcesIndexFile = initializeResourcesIndex(config.indexesPath(), DEFAULT_TOOLS_INDEX_FILE_NAME);
-        LOG.infof("Using resources index file: %s", resourcesIndexFile.getAbsolutePath());
-
         return new WanakuToolsResolver(new InvokerProxy(serviceRegistry));
     }
 
@@ -67,19 +61,7 @@ public class ToolsProvider extends AbstractProvider<ToolsResolver> {
             return new NoopToolsResolver();
         }
 
-        File resourcesIndexFile = initializeIndex();
-
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
         return new WanakuToolsResolver(new InvokerProxy(serviceRegistry));
-    }
-
-    @Override
-    protected File initializeIndex() {
-        String defaultValue = config.indexesPath();
-        String value = parseResult.matchedOptionValue("indexes-path", defaultValue);
-
-        String indexPath = value.replace("${user.home}", System.getProperty("user.home"));
-
-        return initializeResourcesIndex(indexPath, DEFAULT_TOOLS_INDEX_FILE_NAME);
     }
 }
