@@ -1,6 +1,7 @@
 package ai.wanaku.cli.main.commands.toolset;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,7 +81,7 @@ public class ToolSetAdd extends BaseCommand {
             if (indexFile.exists()) {
                 toolReferences = IndexHelper.loadToolsIndex(indexFile);
             } else {
-                indexFile.getParentFile().mkdirs();
+                Files.createDirectories(indexFile.getParentFile().toPath());
                 toolReferences = new ArrayList<>();
             }
 

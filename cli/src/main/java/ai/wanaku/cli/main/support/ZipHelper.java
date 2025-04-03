@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -51,9 +52,7 @@ public class ZipHelper {
                         return;
                     }
 
-                    if (!unzippedFile.mkdirs()) {
-                        LOG.warnf("Unable to create directory: %s", unzippedFile.getAbsolutePath());
-                    }
+                    Files.createDirectories(unzippedFile.toPath());
                 }
             }
         }
