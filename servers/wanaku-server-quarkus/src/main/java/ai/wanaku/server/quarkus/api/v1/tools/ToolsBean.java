@@ -87,7 +87,10 @@ public class ToolsBean {
     }
 
     public void remove(String name) {
-        toolManager.removeTool(name);
-        toolReferenceRepository.deleteById(name);
+        try {
+            toolManager.removeTool(name);
+        } finally {
+            toolReferenceRepository.deleteById(name);
+        }
     }
 }

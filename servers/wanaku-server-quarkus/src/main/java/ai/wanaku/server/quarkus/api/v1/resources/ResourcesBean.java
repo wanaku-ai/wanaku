@@ -64,7 +64,12 @@ public class ResourcesBean {
 
     public void remove(String name) {
         ResourceReference resourceReference = resourceReferenceRepository.findById(name);
-        resourceManager.removeResource(resourceReference.getLocation());
-        resourceReferenceRepository.deleteById(resourceReference.getName());
+
+        try {
+            resourceManager.removeResource(resourceReference.getLocation());
+        } finally {
+            resourceReferenceRepository.deleteById(resourceReference.getName());
+        }
+
     }
 }
