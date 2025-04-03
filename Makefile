@@ -41,12 +41,6 @@ test-tools:
 	wanaku tools add --host $(API_ENDPOINT) -n "tavily-search" --description "Search on the internet using Tavily" --uri "tavily://search" --type tavily --property "wanaku_body:string,The search terms" --property "maxResults:int,The maxResults is the expected number of results to be found if the search request were made" --required "wanaku_body"
 	wanaku tools add --host $(API_ENDPOINT) -n "laptop-order" --description "Issue a new laptop order" --uri "$(HOME)/.jbang/bin/camel run --max-messages=1 $(mkfile_dir)/samples/routes/camel-route/camel-jbang-quote.camel.yaml" --type exec
 
-test-targets:
-	wanaku targets tools link --host $(API_ENDPOINT) --service=http --target=$(HOST):9000
-	wanaku targets tools link --host $(API_ENDPOINT) --service=camel-route --target=$(HOST):9001
-	wanaku targets tools link --host $(API_ENDPOINT) --service=kafka --target=$(HOST):9003
-	wanaku targets resources link --host $(API_ENDPOINT) --service=file --target=$(HOST):9002
-
 clean-test-tools:
 	wanaku tools remove --name "meow-facts"
 	wanaku tools remove --name "dog-facts"
@@ -58,19 +52,11 @@ clean-test-resources:
 	wanaku resources remove --name "sample-file"
 	wanaku resources remove --name "sample-dir"
 
-clean-targets:
-	wanaku targets tools unlink --host $(API_ENDPOINT) --service=http
-	wanaku targets tools unlink --host $(API_ENDPOINT) --service=camel-route
-	wanaku targets tools unlink --host $(API_ENDPOINT) --service=kafka
-	wanaku targets resources unlink --host $(API_ENDPOINT) --service=file
-	wanaku targets resources list
-	wanaku targets tools list
-
 clean-data: clean-test-resources clean-test-tools
 	wanaku resources list
 	wanaku tools list
 
-load-test: test-resources test-tools test-targets
+load-test: test-resources test-tools
 	wanaku targets resources list
 	wanaku targets tools list
 
