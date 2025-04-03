@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.jboss.logging.Logger;
@@ -33,11 +34,7 @@ public class Downloader {
 
         try (InputStream in = remoteFile.openStream()) {
             File parentDir = localFile.getParentFile();
-            if (!parentDir.exists()) {
-                if (!parentDir.mkdirs()) {
-                    LOG.warnf("Unable to create directory %s.", parentDir.getAbsolutePath());
-                }
-            }
+            Files.createDirectories(parentDir.toPath());
 
             try (OutputStream out = new FileOutputStream(localFile)) {
                 in.transferTo(out);

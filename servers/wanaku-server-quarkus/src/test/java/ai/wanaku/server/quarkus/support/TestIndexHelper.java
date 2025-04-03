@@ -13,9 +13,7 @@ import ai.wanaku.server.quarkus.api.v1.tools.ToolsResourceTest;
 public class TestIndexHelper {
     public static File createToolsIndex() throws IOException {
         File indexFile = new File(ToolsHelper.TOOLS_INDEX);
-        if (!indexFile.getParentFile().exists()) {
-            indexFile.getParentFile().mkdirs();
-        }
+        Files.createDirectories(indexFile.getParentFile().toPath());
 
         indexFile.deleteOnExit();
 
@@ -30,9 +28,7 @@ public class TestIndexHelper {
 
     public static File createResourcesIndex() throws IOException {
         File indexFile = new File(ResourcesHelper.RESOURCES_INDEX);
-        if (!indexFile.getParentFile().exists()) {
-            indexFile.getParentFile().mkdirs();
-        }
+        Files.createDirectories(indexFile.getParentFile().toPath());
 
         indexFile.deleteOnExit();
 
