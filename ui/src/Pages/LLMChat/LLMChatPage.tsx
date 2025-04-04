@@ -23,6 +23,7 @@ import {
   AccordionItem,
 } from "@carbon/react";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { getUrl } from "../../custom-fetch";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import hljs from "highlight.js/lib/core";
 import "highlight.js/styles/atom-one-dark.css";
@@ -177,7 +178,7 @@ export const LLMChatPage: React.FC = () => {
     try {
       await mcpClient.connect(
         // try with /mcp/sse
-        new SSEClientTransport(new URL("http://localhost:8080/mcp/sse"))
+        new SSEClientTransport(new URL(getUrl("mcp/sse")))
       );
       return mcpClient;
     } catch (error) {

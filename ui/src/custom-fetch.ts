@@ -9,9 +9,9 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
   };
 
   // NOTE: Update just base url
-  const getUrl = (contextUrl: string): string => {
+  export const getUrl = (contextUrl: string): string => {
     const baseUrl = VITE_API_URL || window.location.origin;
-    const url = new URL(baseUrl + contextUrl, baseUrl);
+    const url = new URL(contextUrl, baseUrl);
     const pathname = url.pathname;
     const search = url.search;
 
