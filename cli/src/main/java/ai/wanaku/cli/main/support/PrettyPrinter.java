@@ -12,6 +12,8 @@ import ai.wanaku.api.types.management.State;
 
 public class PrettyPrinter {
 
+    private PrettyPrinter() {}
+
     public static void printParseable(final ToolReference toolReference) {
         System.out.printf("%-15s => %-15s => %-30s    %n",
                 toolReference.getName(), toolReference.getType(), toolReference.getUri());
