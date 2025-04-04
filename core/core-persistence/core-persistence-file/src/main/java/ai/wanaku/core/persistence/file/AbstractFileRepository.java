@@ -112,4 +112,17 @@ public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> imple
     }
 
     abstract Class<T> getEntityClass();
+
+    @Override
+    public boolean update(K id, A model) {
+        final A byId = findById(id);
+        if (byId == null) {
+            return false;
+        }
+
+        deleteById(id);
+        persist(model);
+
+        return true;
+    }
 }
