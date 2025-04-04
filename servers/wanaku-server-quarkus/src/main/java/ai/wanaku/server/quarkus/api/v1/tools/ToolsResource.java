@@ -59,4 +59,12 @@ public class ToolsResource {
         toolsBean.remove(tool);
         return Response.ok().build();
     }
+
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response update(ToolReference resource) throws WanakuException {
+        toolsBean.update(resource);
+        return Response.ok().build();
+    }
 }

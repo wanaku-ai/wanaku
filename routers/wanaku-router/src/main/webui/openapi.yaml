@@ -220,6 +220,25 @@ paths:
       summary: Remove Forward
       tags:
       - Forwards Resource
+  /api/v1/forwards/update:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content: {}
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Forwards Resource
   /api/v1/management/info/version:
     get:
       responses:
@@ -374,6 +393,25 @@ paths:
       summary: Remove
       tags:
       - Resources Resource
+  /api/v1/resources/update:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content: {}
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Resources Resource
   /api/v1/tools/add:
     post:
       requestBody:
@@ -422,6 +460,25 @@ paths:
           description: Wanaku error
           content: {}
       summary: Remove
+      tags:
+      - Tools Resource
+  /api/v1/tools/update:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content: {}
+        "400":
+          description: Bad Request
+      summary: Update
       tags:
       - Tools Resource
 info:

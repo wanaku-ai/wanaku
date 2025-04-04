@@ -74,4 +74,13 @@ public interface WanakuRepository<A, B extends WanakuEntity, C> {
     default List<A> convertToModels(List<B> entities) {
         return entities.stream().map(this::convertToModel).collect(Collectors.toList());
     }
+
+
+    /**
+     * Updates a model to the repository.
+     *
+     * @param model the model to update
+     * @return true if the record was updated
+     */
+    boolean update(C id, A model);
 }

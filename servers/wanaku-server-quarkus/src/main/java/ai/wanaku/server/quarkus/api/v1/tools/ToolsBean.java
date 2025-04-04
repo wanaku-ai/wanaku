@@ -67,4 +67,8 @@ public class ToolsBean {
             toolReferenceRepository.deleteById(name);
         }
     }
+
+    public void update(ToolReference resource) {
+        toolReferenceRepository.update(resource.getName(), resource);
+    }
 }

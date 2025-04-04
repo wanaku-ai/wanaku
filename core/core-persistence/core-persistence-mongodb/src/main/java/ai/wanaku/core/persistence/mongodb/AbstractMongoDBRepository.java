@@ -8,6 +8,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -25,12 +26,17 @@ public abstract class AbstractMongoDBRepository<A, T extends WanakuEntity, K> im
 
     @Override
     public void persist(A model) {
+        Document document = toDocument(model);
+
+        mongoCollection().insertOne(document);
+    }
+
+    private Document toDocument(A model) {
         T entity = convertToEntity(model);
         String marshalled = wanakuMarshallerService.marshal(entity);
         Document document = Document.parse(marshalled);
         document.append("_id", entity.getId());
-
-        mongoCollection().insertOne(document);
+        return document;
     }
 
     @Override
@@ -73,4 +79,12 @@ public abstract class AbstractMongoDBRepository<A, T extends WanakuEntity, K> im
     }
 
     abstract Class<T> getEntityClass();
+
+    @Override
+    public boolean update(K id, A model) {
+        Document document = toDocument(model);
+        final UpdateResult id1 = mongoCollection().updateOne(Filters.eq("_id", id), document);
+
+        return id1.getModifiedCount() > 1;
+    }
 }

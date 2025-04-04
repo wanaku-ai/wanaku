@@ -64,4 +64,8 @@ public class ResourcesBean {
         }
 
     }
+
+    public void update(ResourceReference resource) {
+        resourceReferenceRepository.update(resource.getName(), resource);
+    }
 }
