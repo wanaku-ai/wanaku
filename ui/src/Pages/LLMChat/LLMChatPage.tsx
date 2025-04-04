@@ -160,12 +160,7 @@ export const LLMChatPage: React.FC = () => {
           function: {
             name: tool.name,
             description: tool.description || "No description provided.",
-            parameters: Object.fromEntries(
-              Object.entries(tool.inputSchema.properties || {}).map(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ([key, value]: [string, any]) => [key, value.type]
-              )
-            ),
+            parameters: tool.inputSchema || {},
           },
         };
       });
