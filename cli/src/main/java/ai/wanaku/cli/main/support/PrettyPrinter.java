@@ -14,7 +14,7 @@ public class PrettyPrinter {
 
     private PrettyPrinter() {}
 
-    public static void printParseable(final ToolReference toolReference) {
+    public static void printTool(final ToolReference toolReference) {
         System.out.printf("%-15s => %-15s => %-30s    %n",
                 toolReference.getName(), toolReference.getType(), toolReference.getUri());
     }
@@ -27,12 +27,10 @@ public class PrettyPrinter {
         System.out.printf("%-15s    %-15s    %-30s    %n",
                 "Name", "Type", "URI");
 
-        for (ToolReference toolReference : list) {
-            printParseable(toolReference);
-        }
+        list.forEach(PrettyPrinter::printTool);
     }
 
-    public static void printParseable(final ResourceReference resourceReference) {
+    public static void printResourceRef(final ResourceReference resourceReference) {
         System.out.printf("%-20s => %-15s => %-30s    %s%n",
                 resourceReference.getName(), resourceReference.getType(), resourceReference.getLocation(),
                 resourceReference.getDescription());
@@ -46,13 +44,11 @@ public class PrettyPrinter {
         System.out.printf("%-20s    %-15s    %-30s    %s%n",
                 "Name", "Type", "Location", "Description");
 
-        for (ResourceReference packageInfo : list) {
-            printParseable(packageInfo);
-        }
+        list.forEach(PrettyPrinter::printResourceRef);
     }
 
 
-    public static void printParseableTarget(String name, Service service) {
+    public static void printTarget(String name, Service service) {
         Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
         String strings = configurations.keySet().stream().sorted().collect(Collectors.joining(", "));
         System.out.printf("%-20s => %-30s => %-30s%n", name, service.getTarget(), strings);
@@ -66,9 +62,7 @@ public class PrettyPrinter {
         System.out.printf("%-20s    %-30s    %-30s%n",
                 "Service", "Target", "Configurations");
 
-        for (var entry : map.entrySet()) {
-            printParseableTarget(entry.getKey(), entry.getValue());
-        }
+        map.forEach(PrettyPrinter::printTarget);
     }
 
 
@@ -82,14 +76,14 @@ public class PrettyPrinter {
 
         for (var entry : states.entrySet()) {
             for (var state : entry.getValue()) {
-                printParseableState(entry.getKey(), state.healthy(), state.message());
+                printState(entry.getKey(), state.healthy(), state.message());
             }
         }
     }
 
-    private static void printParseableState(String service, boolean healthy, String message) {
+    private static void printState(String service, boolean healthy, String message) {
         System.out.printf("%-15s => %-15s => %-30s    %n",
-                service, Boolean.valueOf(healthy), message);
+                service, healthy, message);
     }
 
 
