@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 
 import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.mcp.common.resolvers.Resolver;
 import ai.wanaku.core.util.support.ToolsHelper;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
