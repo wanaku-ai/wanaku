@@ -46,4 +46,12 @@ public class ForwardsResource {
     public RestResponse<WanakuResponse<List<ForwardReference>>> listForwards() {
         return RestResponse.ok(new WanakuResponse<>(forwardsBean.listForwards()));
     }
+
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response update(ForwardReference resource) throws WanakuException {
+        forwardsBean.update(resource);
+        return Response.ok().build();
+    }
 }

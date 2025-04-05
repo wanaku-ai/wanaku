@@ -157,4 +157,8 @@ public class ForwardsBean {
 
         return services.stream().toList();
     }
+
+    public void update(ForwardReference resource) {
+        forwardReferenceRepository.update(resource.getName(), resource);
+    }
 }

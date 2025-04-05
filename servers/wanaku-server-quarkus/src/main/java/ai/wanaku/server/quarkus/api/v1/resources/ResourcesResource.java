@@ -58,4 +58,12 @@ public class ResourcesResource {
         resourcesBean.remove(resource);
         return Response.ok().build();
     }
+
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response update(ResourceReference resource) throws WanakuException {
+        resourcesBean.update(resource);
+        return Response.ok().build();
+    }
 }

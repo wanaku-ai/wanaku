@@ -136,6 +136,47 @@ export const putApiV1ForwardsRemove = async (
 };
 
 /**
+ * @summary Update
+ */
+export type postApiV1ForwardsUpdateResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type postApiV1ForwardsUpdateResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ForwardsUpdateResponseComposite =
+  | postApiV1ForwardsUpdateResponse200
+  | postApiV1ForwardsUpdateResponse400;
+
+export type postApiV1ForwardsUpdateResponse =
+  postApiV1ForwardsUpdateResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ForwardsUpdateUrl = () => {
+  return `/api/v1/forwards/update`;
+};
+
+export const postApiV1ForwardsUpdate = async (
+  forwardReference: ForwardReference,
+  options?: RequestInit,
+): Promise<postApiV1ForwardsUpdateResponse> => {
+  return customFetch<postApiV1ForwardsUpdateResponse>(
+    getPostApiV1ForwardsUpdateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(forwardReference),
+    },
+  );
+};
+
+/**
  * @summary Version
  */
 export type getApiV1ManagementInfoVersionResponse200 = {
@@ -514,6 +555,47 @@ export const putApiV1ResourcesRemove = async (
 };
 
 /**
+ * @summary Update
+ */
+export type postApiV1ResourcesUpdateResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type postApiV1ResourcesUpdateResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ResourcesUpdateResponseComposite =
+  | postApiV1ResourcesUpdateResponse200
+  | postApiV1ResourcesUpdateResponse400;
+
+export type postApiV1ResourcesUpdateResponse =
+  postApiV1ResourcesUpdateResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ResourcesUpdateUrl = () => {
+  return `/api/v1/resources/update`;
+};
+
+export const postApiV1ResourcesUpdate = async (
+  resourceReference: ResourceReference,
+  options?: RequestInit,
+): Promise<postApiV1ResourcesUpdateResponse> => {
+  return customFetch<postApiV1ResourcesUpdateResponse>(
+    getPostApiV1ResourcesUpdateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(resourceReference),
+    },
+  );
+};
+
+/**
  * @summary Add
  */
 export type postApiV1ToolsAddResponse200 = {
@@ -620,6 +702,47 @@ export const putApiV1ToolsRemove = async (
     {
       ...options,
       method: "PUT",
+    },
+  );
+};
+
+/**
+ * @summary Update
+ */
+export type postApiV1ToolsUpdateResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type postApiV1ToolsUpdateResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ToolsUpdateResponseComposite =
+  | postApiV1ToolsUpdateResponse200
+  | postApiV1ToolsUpdateResponse400;
+
+export type postApiV1ToolsUpdateResponse =
+  postApiV1ToolsUpdateResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ToolsUpdateUrl = () => {
+  return `/api/v1/tools/update`;
+};
+
+export const postApiV1ToolsUpdate = async (
+  toolReference: ToolReference,
+  options?: RequestInit,
+): Promise<postApiV1ToolsUpdateResponse> => {
+  return customFetch<postApiV1ToolsUpdateResponse>(
+    getPostApiV1ToolsUpdateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(toolReference),
     },
   );
 };
