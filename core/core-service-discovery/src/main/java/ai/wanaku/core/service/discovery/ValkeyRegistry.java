@@ -56,7 +56,7 @@ public class ValkeyRegistry implements ServiceRegistry {
      * NB {wanaku.service.expire-time} > {wanaku.service.provider.registration.interval}
      */
     @ConfigProperty(name = "wanaku.service.expire-time", defaultValue = "60")
-    private int expireTime;
+    int expireTime;
 
     /**
      * Registers a new service with the given configurations.

@@ -55,7 +55,7 @@ public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> imple
             Files.deleteIfExists(file);
             Files.write(file, marshalledEntity.getBytes(), StandardOpenOption.CREATE);
         } catch (IOException e) {
-            throw new WanakuException("Can't write to file " + file.toString(), e);
+            throw new WanakuException("Can't write to file " + file, e);
         }
     }
 
@@ -65,7 +65,7 @@ public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> imple
         try {
             data = Files.readString(file);
         } catch (IOException e) {
-            throw new RuntimeException("Can't read file " + file.toString(), e);
+            throw new RuntimeException("Can't read file " + file, e);
         }
 
         return convertToModels(wanakuMarshallerService.unmarshal(data, getEntityClass()));
@@ -105,11 +105,7 @@ public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> imple
                     .filter(e -> e.getId().equals(id))
                     .findFirst();
 
-            if (result.isPresent()) {
-                return convertToModel(result.get());
-            } else {
-                return null;
-            }
+            return result.map(this::convertToModel).orElse(null);
         } catch (IOException e) {
             throw new WanakuException("Can't retrieve resource " + id, e);
         }

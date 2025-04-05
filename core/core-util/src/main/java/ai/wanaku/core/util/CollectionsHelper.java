@@ -24,10 +24,6 @@ public class CollectionsHelper {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
     }
 
-    public static <K, V> Map<?, ?> sortedMapOf(Map<K, V> original) {
-        return new TreeMap<>(original);
-    }
-
     public static <T> List<T> join(List<T> list1, List<T> list2) {
         List<T> dest = new ArrayList<>(list1.size() + list2.size());
         dest.addAll(list1);

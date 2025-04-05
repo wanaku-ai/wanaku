@@ -72,6 +72,6 @@ public interface WanakuRepository<A, B extends WanakuEntity, C> {
      * @return a list of models
      */
     default List<A> convertToModels(List<B> entities) {
-        return entities.stream().map(entity -> convertToModel(entity)).collect(Collectors.toList());
+        return entities.stream().map(this::convertToModel).collect(Collectors.toList());
     }
 }

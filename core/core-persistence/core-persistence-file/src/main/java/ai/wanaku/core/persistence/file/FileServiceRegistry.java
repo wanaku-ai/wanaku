@@ -121,7 +121,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
                 }
             } else {
                 entity.setConfigurations(configurations.entrySet().stream()
-                        .collect(Collectors.toMap(k -> k.getKey(), entry -> {
+                        .collect(Collectors.toMap(Map.Entry::getKey, entry -> {
                             Configuration configuration = new Configuration();
                             configuration.setDescription(entry.getValue());
 
@@ -164,9 +164,8 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
 
             ServiceTargetEntity entity = entities.stream().filter(e -> service.equals(e.getService()))
                     .findFirst().orElseThrow(() -> new ServiceNotFoundException("Service with id: " + service + " not found"));
-            Service model = toService(entity);
 
-            return model;
+            return toService(entity);
         } catch (IOException e) {
             throw new WanakuException("Can't read file " + file.toString(), e);
         }
@@ -224,7 +223,7 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
             List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, ServiceTargetEntity.class);
 
             return entities.stream().filter(entity -> serviceType.equals(entity.getServiceType()))
-                    .collect(Collectors.toMap(e -> e.getService(), e -> toService(e)));
+                    .collect(Collectors.toMap(ServiceTarget::getService, FileServiceRegistry::toService));
         } catch (IOException e) {
             throw new WanakuException("Can't read file " + file, e);
         }

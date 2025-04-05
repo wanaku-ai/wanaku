@@ -30,6 +30,7 @@ public record ParsedToolInvokeRequest(String uri, String body, Map<String, Strin
      * @param toolInvokeRequest the invocation request (containing the arguments and the request URI)
      * @return the parsed URI and its body
      */
+    @SuppressWarnings("unchecked")
     public static ParsedToolInvokeRequest parseRequest(String uri, ToolInvokeRequest toolInvokeRequest) {
         Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
 

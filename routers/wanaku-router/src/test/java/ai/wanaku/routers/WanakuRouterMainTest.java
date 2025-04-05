@@ -33,6 +33,7 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 @EnabledIf(value = "dockerCheck", disabledReason = "Docker environment is not available")
 public class WanakuRouterMainTest {
+    private static final String DEFAULT_TOOLS_INDEX_FILE_NAME = "tools.json";
 
     static boolean dockerCheck() {
         return DockerClientFactory.instance().isDockerAvailable();
@@ -40,7 +41,7 @@ public class WanakuRouterMainTest {
 
     @AfterAll
     static void cleanData() {
-        File indexFile = new File("target/test-data/", Resolver.DEFAULT_TOOLS_INDEX_FILE_NAME);
+        File indexFile = new File("target/test-data/", DEFAULT_TOOLS_INDEX_FILE_NAME);
         if (indexFile.exists()) {
             indexFile.delete();
         }

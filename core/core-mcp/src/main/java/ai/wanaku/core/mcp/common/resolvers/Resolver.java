@@ -6,11 +6,4 @@ package ai.wanaku.core.mcp.common.resolvers;
  */
 public interface Resolver {
 
-    // Whatever is using this, needs to get it from the persistence API
-    @Deprecated
-    String DEFAULT_RESOURCES_INDEX_FILE_NAME = "resources.json";
-
-    // Whatever is using this, needs to get it from the persistence API
-    @Deprecated
-    String DEFAULT_TOOLS_INDEX_FILE_NAME = "tools.json";
 }

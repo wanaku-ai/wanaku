@@ -72,10 +72,7 @@ public class URIHelper {
     }
 
     public static String addQueryParameters(String uri, Map<String, ?> parameters) {
-        boolean first = true;
-        if (uri.contains("?")) {
-            first = false;
-        }
+        final boolean first = !uri.contains("?");
         StringBuilder uriBuilder = new StringBuilder(uri);
         buildQuery(uriBuilder, parameters, first);
         return uriBuilder.toString();

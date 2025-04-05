@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+@SuppressWarnings("unused")
 public class Parameter {
     public static final String KEY_NAME = "parameter";
     public static final Parameter EMPTY = new Parameter(Map.of());
