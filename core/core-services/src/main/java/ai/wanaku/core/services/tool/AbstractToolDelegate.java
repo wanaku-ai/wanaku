@@ -1,9 +1,7 @@
 package ai.wanaku.core.services.tool;
 
-import ai.wanaku.core.mcp.providers.ServiceType;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Map;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
@@ -12,12 +10,16 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceTarget;
+import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuToolConfig;
-import java.util.List;
-import java.util.Map;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+
+import static ai.wanaku.core.services.common.ServicesHelper.waitAndRetry;
 
 /**
  * Base delegate class
@@ -112,26 +114,10 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                 serviceRegistry.register(ServiceTarget.toolInvoker(service, address, port), serviceConfigurations());
                 registered = true;
             } catch (Exception e) {
-                retries = waitAndRetry(service, e, retries);
+                int waitSeconds = config.registration().retryWaitSeconds();
+                retries = waitAndRetry(service, e, retries, waitSeconds);
             }
         } while (!registered && (retries > 0));
-    }
-
-    private int waitAndRetry(String service, Exception e, int retries) {
-        retries--;
-        if (retries == 0) {
-            LOG.errorf(e, "No more retries left and while trying to register service %s: %s.", service, e.getMessage());
-            return 0;
-        } else {
-            LOG.warnf("Failed to register service %s: %s. Retries left: %d", service, e.getMessage(), retries);
-        }
-        try {
-            int waitSeconds = config.registration().retryWaitSeconds();
-            Thread.sleep(waitSeconds * 1000L);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-        return retries;
     }
 
     @Override
