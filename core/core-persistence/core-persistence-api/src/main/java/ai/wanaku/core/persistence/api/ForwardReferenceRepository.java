@@ -8,16 +8,19 @@ public interface ForwardReferenceRepository extends WanakuRepository<ForwardRefe
     default ForwardReference convertToModel(ForwardEntity entity) {
         ForwardReference model = new ForwardReference();
 
-        model.setName(entity.getName());
-        model.setAddress(entity.getAddress());
+        convert(entity, model);
         return model;
     }
 
     default ForwardEntity convertToEntity(ForwardReference model) {
         ForwardEntity entity = new ForwardEntity();
 
-        entity.setName(model.getName());
-        entity.setAddress(model.getAddress());
+        convert(model, entity);
         return entity;
+    }
+
+    private static <T extends ForwardReference, V extends ForwardReference> void convert(T from, V to) {
+        to.setName(from.getName());
+        to.setAddress(from.getAddress());
     }
 }

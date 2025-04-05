@@ -23,12 +23,7 @@ public interface ResourceReferenceRepository extends WanakuRepository<ResourceRe
     @Override
     default ResourceReference convertToModel(ResourceReferenceEntity entity) {
         ResourceReference model = new ResourceReference();
-        model.setLocation(entity.getLocation());
-        model.setName(entity.getName());
-        model.setType(entity.getType());
-        model.setDescription(entity.getDescription());
-        model.setMimeType(entity.getMimeType());
-        model.setType(entity.getType());
+        convert(entity, model);
 
         return model;
     }
@@ -44,13 +39,17 @@ public interface ResourceReferenceRepository extends WanakuRepository<ResourceRe
     @Override
     default ResourceReferenceEntity convertToEntity(ResourceReference model) {
         ResourceReferenceEntity entity = new ResourceReferenceEntity();
-        entity.setLocation(model.getLocation());
-        entity.setName(model.getName());
-        entity.setType(model.getType());
-        entity.setDescription(model.getDescription());
-        entity.setMimeType(model.getMimeType());
-        entity.setType(model.getType());
+        convert(model, entity);
 
         return entity;
+    }
+
+    private static <T extends ResourceReference, V extends ResourceReference> void convert(T from, V to) {
+        to.setLocation(from.getLocation());
+        to.setName(from.getName());
+        to.setType(from.getType());
+        to.setDescription(from.getDescription());
+        to.setMimeType(from.getMimeType());
+        to.setType(from.getType());
     }
 }

@@ -23,11 +23,7 @@ public interface ToolReferenceRepository extends WanakuRepository<ToolReference,
     @Override
     default ToolReference convertToModel(ToolReferenceEntity entity) {
         ToolReference model = new ToolReference();
-        model.setName(entity.getName());
-        model.setDescription(entity.getDescription());
-        model.setType(entity.getType());
-        model.setUri(entity.getUri());
-        model.setInputSchema(entity.getInputSchema());
+        convert(entity, model);
 
         return model;
     }
@@ -44,13 +40,16 @@ public interface ToolReferenceRepository extends WanakuRepository<ToolReference,
     @Override
     default ToolReferenceEntity convertToEntity(ToolReference model) {
         ToolReferenceEntity entity = new ToolReferenceEntity();
-        entity.setName(model.getName());
-        entity.setDescription(model.getDescription());
-        entity.setType(model.getType());
-        entity.setUri(model.getUri());
-        entity.setInputSchema(model.getInputSchema());
-        entity.setId(model.getName());
+        convert(model, entity);
 
         return entity;
+    }
+
+    private static <T extends ToolReference, V extends ToolReference> void convert(T from, V to) {
+        to.setName(from.getName());
+        to.setDescription(from.getDescription());
+        to.setType(from.getType());
+        to.setUri(from.getUri());
+        to.setInputSchema(from.getInputSchema());
     }
 }
