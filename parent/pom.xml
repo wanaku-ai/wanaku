@@ -46,7 +46,7 @@
         <quarkus.platform.version>3.19.2</quarkus.platform.version>
         <jackson.version>2.18.3</jackson.version>
         <junit-jupiter.version>5.12.1</junit-jupiter.version>
-        <quarkus-mcp-server.version>1.0.0.CR1</quarkus-mcp-server.version>
+        <quarkus-mcp-server.version>1.0.0</quarkus-mcp-server.version>
         <camel.version>4.10.0</camel.version>
         <picocli.version>4.7.6</picocli.version>
         <langchain4j.version>1.0.0-beta2</langchain4j.version>
