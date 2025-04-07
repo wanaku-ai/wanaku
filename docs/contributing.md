@@ -68,15 +68,6 @@ And run it:
 java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-
-After launching, then link the instance 
-
-```shell
-wanaku targets tools link --service=kafka --target=localhost:9190
-```
-
-**NOTE**: make sure to replace `kafka` with the actual service type you are exposing.
-
 ## Creating new Resource Providers
 
 
@@ -122,15 +113,6 @@ And run it:
 ```shell
 java -jar target/quarkus-app/quarkus-run.jar
 ```
-
-After launching, then link the instance
-
-```shell
-wanaku targets resources link --service=s3 --target=localhost:9190
-```
-
-**NOTE**: make sure to replace `s3` with the actual service type you are exposing.
-
 
 ## Building Containers
 
@@ -198,7 +180,7 @@ That should allow you to run more complex processing and transformation before c
 
 You can use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to easily test your tool or provider.
 
-Essentially, the process is to launch Wanaku MCP router, then link the tool/provider you created. 
+Essentially, the process is to launch Wanaku MCP router. 
 Then, launch the inspector and use its features to list and read resources and to list and invoke tools.
 
 
