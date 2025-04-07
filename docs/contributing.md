@@ -15,7 +15,9 @@ Here are some examples:
 * Reading a data object in a S3 bucket is a provider 
 * Exchanging data using request/reply over JMS is a tool
 
-**NOTE**: this is a generic explanation and the distinction may be specific to the problem domain. Therefore, there may be cases where this doesn't apply. 
+> [!NOTE]
+> this is a generic explanation and the distinction may be specific to the problem domain. 
+> Therefore, there may be cases where this doesn't apply. 
 
 ### Service types
 
@@ -33,17 +35,27 @@ For instance, to create one for Kafka:
 wanaku services create tool --name kafka
 ```
 
+> [!NOTE]
+> This can be used both to create a core tool, part of the Wanaku MCP router project,
+> or to create a custom one for your own needs. Also, this is the **recommended** way to 
+> create a new component for Wanaku.
+
+### Creating New Tools Using Maven
+
 Alternatively, if you don't have the CLI instanced, you can do so using Maven:
  
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool -DartifactId=wanaku-tool-service-kafka -Dname=Kafka -Dwanaku-version=0.0.2 -Dwanaku-service-type=camel
 ```
 
-**NOTE**: this can be used both to create a core tool, part of the Wanaku MCP router project, or to create a custom one for your own needs.
+> [!IMPORTANT]
+> When using the maven way, please make sure to adjust the version of Wanaku
+> to be used by correctly setting the `wanaku-version` property to the base Wanaku version to use.
 
-**NOTE**: make sure to adjust the version of Wanaku to be used by correctly setting the `wanaku-version` property to the base Wanaku version to use.
+### Adjusting the Tool Service
 
-Then, open the `pom.xml` file to add the dependencies for your project. Using the example above, we would include the following dependencies:
+After creating the service, open the `pom.xml` file to add the dependencies for your project. 
+Using the example above, we would include the following dependencies:
 
 ```xml
     <dependency>
@@ -54,7 +66,9 @@ Then, open the `pom.xml` file to add the dependencies for your project. Using th
 
 Adjust the gPRC port in the `application.properties` file by adjusting the `quarkus.grpc.server.port` property.
 
-**NOTE**: you can also provide the port when launching (i.e., `java -Dquarkus.grpc.server.port=9190 -jar target/quarkus-app/quarkus-run.jar`)
+> [!NOTE]
+> You can also provide the port when launching 
+> (i.e., `java -Dquarkus.grpc.server.port=9190 -jar target/quarkus-app/quarkus-run.jar`)
 
 Then, build the project:
 
@@ -70,7 +84,6 @@ java -jar target/quarkus-app/quarkus-run.jar
 
 ## Creating new Resource Providers
 
-
 To create a new resource for Wanaku, you can start by creating a new project. 
 
 For instance, to create one for S3:
@@ -79,17 +92,27 @@ For instance, to create one for S3:
 wanaku services create resource --name s3
 ```
 
+> [!NOTE]
+> This can be used both to create a core tool, part of the Wanaku MCP router project,
+> or to create a custom one for your own needs. Also, this is the **recommended** way to
+> create a new component for Wanaku.
+
+### Creating New Resource Providers Using Maven
+
 Alternatively, if you don't have the CLI instanced, you can do so using Maven:
 
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=0.0.2 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S3 -Dwanaku-version=0.0.2 -Dwanaku-service-type=camel
 ```
 
-**NOTE**: this can be used both to create a core provider, part of the Wanaku MCP router project, or to create a custom one for your own needs.
+> [!IMPORTANT]
+> Make sure to adjust the version of Wanaku to be used by correctly setting the `wanaku-version` property to the base Wanaku 
+> version to use.
 
-**NOTE**: make sure to adjust the version of Wanaku to be used by correctly setting the `wanaku-version` property to the base Wanaku version to use.
+### Adjusting the Provider Service
 
-Then, open the `pom.xml` file to add the dependencies for your project. Using the example above, we would include the following dependencies:
+After creating the service, open the `pom.xml` file to add the dependencies for your project.
+Using the example above, we would include the following dependencies:
 
 ```xml
 <dependency>
@@ -100,7 +123,8 @@ Then, open the `pom.xml` file to add the dependencies for your project. Using th
 
 Adjust the gPRC port in the `application.properties` file by adjusting the `quarkus.grpc.server.port` property.
 
-**NOTE**: you can also provide the port when launching (i.e., `java -Dquarkus.grpc.server.port=9190 -jar target/quarkus-app/quarkus-run.jar`)
+> [!NOTE] 
+> You can also provide the port when launching (i.e., `java -Dquarkus.grpc.server.port=9190 -jar target/quarkus-app/quarkus-run.jar`)
 
 Then, build the project:
 
@@ -146,7 +170,20 @@ Or in the CLI:
 mvn -Pdist -Dquarkus.container-image.registry=quay.io -Dquarkus.container-image.group=my-group -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
 
-## Adding Routes to Providers and Tools
+## Service Types 
+
+Wanaku supports two types of services: 
+
+* Downstream services using gRPC. These services either be plain Quarkus or Camel Extension for Quarkus.
+* Other HTTP-based MCP servers (SSE). This allows integrating any MCP server with Wanaku.
+
+The type of service you create will depend on the type of problem you want to solve. Downstream services ofter
+greater integration with Wanaku (i.e.; including better discovery and configuration). On the other hand, plain MCP
+services are simpler to create and develop. 
+
+### Downstream Services Tips
+
+### Adding Routes to Providers and Tools
 
 In some cases, you may need something more complex than can be achieved using the `ProducerTemplate` from Camel.
 In those cases, then you can create a traditional Camel route and invoke it from the delegate. 
@@ -178,11 +215,12 @@ That should allow you to run more complex processing and transformation before c
 
 ## Testing
 
-You can use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to easily test your tool or provider.
+There are multiple ways you can test Wanaku and the integrations you develop. 
 
-Essentially, the process is to launch Wanaku MCP router. 
-Then, launch the inspector and use its features to list and read resources and to list and invoke tools.
-
+1. Wanaku's LLMchat page in the Web UI
+2. You can use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to easily test your tool or provider.
+3. Any of the scripts in the `tests` directory 
+4. Any agent application (such as [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat)) 
 
 ## Learn More
 
