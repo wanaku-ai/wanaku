@@ -13,7 +13,7 @@ hero:
 features:
   - title: Contributing
     details: Learn how to contribute to Wanaku
-    link: ./docs/contribute
+    link: ./docs/contributing
   - title: Providers
     details: View resource providers available in this version of Wanaku
     link: ./services/providers/README
