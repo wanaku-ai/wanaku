@@ -1,3 +1,7 @@
+---
+layout: home
+---
+
 # Available Tools Services
 
 The following tools services can be made available using Wanaku and used to provide access to specific services.

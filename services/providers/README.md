@@ -1,3 +1,7 @@
+---
+layout: home
+---
+
 # Available Resources Providers
 
 The following resources can be made available using Wanaku.
