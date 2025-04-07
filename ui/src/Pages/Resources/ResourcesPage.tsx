@@ -1,23 +1,9 @@
-import {
-  Column,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Button,
-  ToastNotification,
-  Modal,
-  TextInput,
-  Select,
-  SelectItem,
-} from "@carbon/react";
+import { ToastNotification } from "@carbon/react";
+import { AddResourceModal } from "./AddResourceModal";
+import { ResourcesTable } from "./ResourcesTable";
 import React, { useState, useEffect } from "react";
 import { ResourceReference } from "../../models";
 import { useResources } from "../../hooks/api/use-resources";
-import { TrashCan } from "@carbon/icons-react";
 
 export const ResourcesPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ResourceReference[]>([]);
@@ -71,56 +57,9 @@ export const ResourcesPage: React.FC = () => {
     }
   };
 
-  const headers = ["Name", "Location", "Type", "Description", "Actions"];
-  let resourcesList = <></>;
-
-  if (fetchedData) {
-    resourcesList = (
-      <Grid>
-        <Column lg={12} md={8} sm={4}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-            }}
-          >
-            <Button onClick={() => setIsAddModalOpen(true)}>Add Resource</Button>
-          </div>
-          <Table aria-label="Resources table">
-            <TableHead>
-              <TableRow>
-                {headers.map((header) => (
-                  <TableHeader id={header} key={header}>
-                    {header}
-                  </TableHeader>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {fetchedData.map((row: ResourceReference) => (
-                <TableRow key={row.name}>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.location}</TableCell>
-                  <TableCell>{row.type}</TableCell>
-                  <TableCell>{row.description}</TableCell>
-                  <TableCell>
-                    <Button
-                      kind="ghost"
-                      renderIcon={TrashCan}
-                      hasIconOnly
-                      iconDescription="Delete"
-                      onClick={() => onDelete(row.name)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Column>
-      </Grid>
-    );
-  }
+  const handleAddClick = () => {
+    setIsAddModalOpen(true);
+  };
 
   return (
     <div>
@@ -140,7 +79,13 @@ export const ResourcesPage: React.FC = () => {
         expose data and content to LLM clients
       </p>
       <div id="page-content">
-        {resourcesList}
+        {fetchedData && (
+          <ResourcesTable
+            resources={fetchedData}
+            onDelete={onDelete}
+            onAdd={handleAddClick}
+          />
+        )}
       </div>
       {isAddModalOpen && (
         <AddResourceModal
@@ -149,73 +94,5 @@ export const ResourcesPage: React.FC = () => {
         />
       )}
     </div>
-  );
-};
-
-interface AddResourceModalProps {
-  onRequestClose: () => void;
-  onSubmit: (newResource: ResourceReference) => void;
-}
-
-const AddResourceModal: React.FC<AddResourceModalProps> = ({
-  onRequestClose,
-  onSubmit,
-}) => {
-  const [resourceName, setResourceName] = useState("");
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [resourceType, setResourceType] = useState("file");
-
-  const handleSubmit = () => {
-    onSubmit({
-      name: resourceName,
-      description,
-      location,
-      type: resourceType,
-    });
-  };
-
-  return (
-    <Modal
-      open={true}
-      modalHeading="Add a Resource"
-      primaryButtonText="Add"
-      secondaryButtonText="Cancel"
-      onRequestClose={onRequestClose}
-      onRequestSubmit={handleSubmit}
-    >
-      <TextInput
-        id="resource-name"
-        labelText="Resource Name"
-        placeholder="e.g. example-resource"
-        value={resourceName}
-        onChange={(e) => setResourceName(e.target.value)}
-      />
-      <TextInput
-        id="resource-description"
-        labelText="Description"
-        placeholder="e.g. Description of the resource"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <TextInput
-        id="resource-location"
-        labelText="Location"
-        placeholder="e.g. /path/to/resource"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-      />
-      <Select
-        id="resource-type"
-        labelText="Type"
-        defaultValue="file"
-        value={resourceType}
-        onChange={(e) => setResourceType(e.target.value)}
-      >
-        <SelectItem value="file" text="Local file" />
-        <SelectItem value="aws2-s3" text="AWS S3" />
-        <SelectItem value="ftp" text="FTP" />
-      </Select>
-    </Modal>
   );
 };
