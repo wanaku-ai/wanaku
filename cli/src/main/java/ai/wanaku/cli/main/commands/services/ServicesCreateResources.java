@@ -17,7 +17,7 @@ public class ServicesCreateResources extends ServicesBase {
     public void run() {
         String baseCmd = config.resource().createCmd();
 
-        createProject(baseCmd, "wanaku-provider");
+        createProject(baseCmd, "ai.wanaku.provider", "wanaku-provider");
     }
 
 }

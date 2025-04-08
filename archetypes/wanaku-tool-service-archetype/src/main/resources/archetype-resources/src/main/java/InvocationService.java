@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package ai.wanaku.routing.service;
+package ${package};
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;

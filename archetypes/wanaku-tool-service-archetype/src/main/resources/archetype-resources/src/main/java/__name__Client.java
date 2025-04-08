@@ -1,4 +1,4 @@
-package ai.wanaku.routing.service;
+package ${package};
 
 import jakarta.enterprise.context.ApplicationScoped;
 

@@ -23,10 +23,11 @@ public abstract class ServicesBase extends BaseCommand {
     @CommandLine.Option(names = { "--type" }, description = "The service type (camel, quarkus, etc)", defaultValue = "camel", required = true, arity = "0..1")
     protected String type;
 
-    protected void createProject(String baseCmd, String baseArtifactId) {
+    protected void createProject(String baseCmd, String basePackage, String baseArtifactId) {
         String version = wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION;
-        String cmd = String.format("%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s -DarchetypeVersion=%s",
-                baseCmd, baseArtifactId, name.toLowerCase().replace("-", ""), name, version, type, version);
+        String packageName = String.format("%s.%s", basePackage, sanitizeName(name));
+        String cmd = String.format("%s -Dpackage=%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s -DarchetypeVersion=%s",
+                baseCmd, packageName, baseArtifactId, sanitizeName(name), replaceInvalid(name), version, type, version);
 
         String[] split = cmd.split(" ");
         final File projectDir = new File(path);
@@ -36,5 +37,13 @@ public abstract class ServicesBase extends BaseCommand {
             LOG.error(e.getMessage(), e);
             System.exit(-1);
         }
+    }
+
+    private static String replaceInvalid(String name) {
+        return name.replace("-", "");
+    }
+
+    private static String sanitizeName(String name) {
+        return replaceInvalid(name.toLowerCase());
     }
 }

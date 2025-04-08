@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package ai.wanaku.routing.service;
+package ${package};
 
 import java.util.List;
 

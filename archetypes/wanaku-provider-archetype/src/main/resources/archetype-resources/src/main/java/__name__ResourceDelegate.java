@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package ai.wanaku.provider;
+package ${package};
 
 import java.util.List;
 import java.util.Map;

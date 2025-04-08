@@ -45,7 +45,9 @@ wanaku services create tool --name kafka
 Alternatively, if you don't have the CLI instanced, you can do so using Maven:
  
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool -DartifactId=wanaku-tool-service-kafka -Dname=Kafka -Dwanaku-version=0.0.2 -Dwanaku-service-type=camel
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype \ 
+  -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool.kafka -DartifactId=wanaku-tool-service-kafka \
+  -Dname=Kafka -Dwanaku-version=0.0.3 -Dwanaku-service-type=camel
 ```
 
 > [!IMPORTANT]
@@ -102,7 +104,9 @@ wanaku services create resource --name s3
 Alternatively, if you don't have the CLI instanced, you can do so using Maven:
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype -DarchetypeVersion=0.0.2 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider -DartifactId=wanaku-provider-s3 -Dname=S3 -Dwanaku-version=0.0.2 -Dwanaku-service-type=camel
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype \
+  -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider.s3 -DartifactId=wanaku-provider-s3 \
+  -Dname=S3 -Dwanaku-version=0.0.3 -Dwanaku-service-type=camel
 ```
 
 > [!IMPORTANT]

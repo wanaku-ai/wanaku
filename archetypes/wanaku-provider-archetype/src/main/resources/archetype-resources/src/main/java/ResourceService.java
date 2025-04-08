@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package ai.wanaku.provider;
+package ${package};
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
