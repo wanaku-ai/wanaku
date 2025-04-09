@@ -20,8 +20,8 @@ gpg --list-public-keys --keyid-format LONG
 Repeat this for every machine to be used for the release.
 
 ```shell
-export CURRENT_DEVELOPMENT_VERSION=0.0.3
-export NEXT_DEVELOPMENT_VERSION=0.0.4
+export CURRENT_DEVELOPMENT_VERSION=0.0.4
+export NEXT_DEVELOPMENT_VERSION=0.0.5
 ```
 
 **NOTE**: there is no need to add `-SNAPSHOT` to the versions.
