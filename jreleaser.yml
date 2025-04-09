@@ -105,6 +105,12 @@ distributions:
         platform: osx-aarch_64
       - path: services/tools/wanaku-tool-service-sqs/target/distributions/wanaku-tool-service-sqs-{{projectVersion}}.zip
         platform: linux-x86_64
+  service-telegram:
+    artifacts:
+      - path: services/tools/wanaku-tool-service-telegram/target/distributions/wanaku-tool-service-telegram-{{projectVersion}}.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-tool-service-telegram/target/distributions/wanaku-tool-service-telegram-{{projectVersion}}.zip
+        platform: linux-x86_64
 
   cli-native:
     artifacts:
@@ -135,6 +141,12 @@ distributions:
       - path: services/tools/wanaku-tool-service-sqs/target/distributions/wanaku-tool-service-sqs-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
       - path: services/tools/wanaku-tool-service-sqs/target/distributions/wanaku-tool-service-sqs-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+  service-telegram-native:
+    artifacts:
+      - path: services/tools/wanaku-tool-service-telegram/target/distributions/wanaku-tool-service-telegram-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: services/tools/wanaku-tool-service-telegram/target/distributions/wanaku-tool-service-telegram-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
   provider-file-native:
     artifacts:

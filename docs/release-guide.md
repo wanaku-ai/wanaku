@@ -47,7 +47,7 @@ jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION
 Then, on your Linux host, build the project again and check if Linux artifacts can be released.
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION}-SNAPSHOT --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION}-SNAPSHOT --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram
 ```
 
 If everything goes alright, then it should be ready to release.
@@ -133,13 +133,13 @@ mvn -Pdist -Dnative clean package
 Check if all went well with a dry-run:
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --dry-run
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram --dry-run
 ```
 
 Then, run `jreleaser` filtering the source ones, and only publishing the Linux native deliverables on GitHub.
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp 
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram
 ```
 
 ## Containers
@@ -157,5 +157,5 @@ mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=t
 To release early builds, run: 
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64 --exclude-distribution=cli-native --exclude-distribution=router-native --exclude-distribution=service-kafka-native --exclude-distribution=service-http-native --exclude-distribution=provider-file-native --exclude-distribution=service-yaml-route-native --exclude-distribution=provider-ftp-native --exclude-distribution=service-exec-native --exclude-distribution=provider-s3-native --exclude-distribution=service-sqs-native -Djreleaser.project.snapshot.label="early-access"
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64 --exclude-distribution=cli-native --exclude-distribution=router-native --exclude-distribution=service-kafka-native --exclude-distribution=service-http-native --exclude-distribution=provider-file-native --exclude-distribution=service-yaml-route-native --exclude-distribution=provider-ftp-native --exclude-distribution=service-exec-native --exclude-distribution=provider-s3-native --exclude-distribution=service-sqs-native --exclude-distribution=service-telegram-native -Djreleaser.project.snapshot.label="early-access"
 ```
