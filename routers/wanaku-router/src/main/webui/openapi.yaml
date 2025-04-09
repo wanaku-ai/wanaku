@@ -483,7 +483,7 @@ paths:
       - Tools Resource
 info:
   title: wanaku-router API
-  version: 0.0.4-SNAPSHOT
+  version: 0.0.4
 servers:
 - url: http://localhost:8080
   description: Auto generated value
