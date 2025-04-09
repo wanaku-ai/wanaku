@@ -27,7 +27,7 @@ public abstract class ServicesBase extends BaseCommand {
         String version = wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION;
         String packageName = String.format("%s.%s", basePackage, sanitizeName(name));
         String cmd = String.format("%s -Dpackage=%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-service-type=%s -DarchetypeVersion=%s",
-                baseCmd, packageName, baseArtifactId, sanitizeName(name), replaceInvalid(name), version, type, version);
+                baseCmd, packageName, baseArtifactId, sanitizeName(name), capitalize(name), version, type, version);
 
         String[] split = cmd.split(" ");
         final File projectDir = new File(path);
@@ -37,6 +37,14 @@ public abstract class ServicesBase extends BaseCommand {
             LOG.error(e.getMessage(), e);
             System.exit(-1);
         }
+    }
+
+    private static String capitalize(String ret) {
+        final char[] chars = ret.toCharArray();
+
+        // OK here.
+        chars[0] = Character.toUpperCase(chars[0]);
+        return replaceInvalid(new String(chars));
     }
 
     private static String replaceInvalid(String name) {
