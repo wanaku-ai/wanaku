@@ -17,7 +17,6 @@ import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import java.util.List;

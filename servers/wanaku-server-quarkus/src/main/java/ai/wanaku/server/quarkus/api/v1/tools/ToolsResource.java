@@ -17,7 +17,6 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
-import java.util.ArrayList;
 import java.util.List;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;

@@ -48,7 +48,7 @@ public class TargetsResource {
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
     public Response toolsConfigure(@RestPath("service") String service, @QueryParam("option") String option,
-                                   @QueryParam("value") String value) throws IOException {
+                                   @QueryParam("value") String value) {
         targetsBean.configureTools(service, option, value);
         return Response.ok().build();
     }
@@ -63,7 +63,8 @@ public class TargetsResource {
     @Path("/resources/configure/{service}")
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
-    public Response resourcesConfigure(@RestPath("service") String service, @QueryParam("option") String option, @QueryParam("value") String value) throws ServiceNotFoundException, IOException, ConfigurationNotFoundException {
+    public Response resourcesConfigure(@RestPath("service") String service, @QueryParam("option") String option, @QueryParam("value") String value) throws ServiceNotFoundException,
+            ConfigurationNotFoundException {
         targetsBean.configureResources(service, option, value);
         return Response.ok().build();
     }
