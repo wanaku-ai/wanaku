@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import jakarta.inject.Inject;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
 
@@ -17,17 +18,11 @@ public class HttpClient implements Client {
 
     private static final Logger LOG = Logger.getLogger(HttpClient.class);
 
-    private final ProducerTemplate producer;
-
-    public HttpClient(ProducerTemplate producer) {
-        this.producer = producer;
-    }
-
+    @Inject
+    ProducerTemplate producer;
 
     @Override
     public Object exchange(ToolInvokeRequest request) throws WanakuException {
-        producer.start();
-
         ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
 
         LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
