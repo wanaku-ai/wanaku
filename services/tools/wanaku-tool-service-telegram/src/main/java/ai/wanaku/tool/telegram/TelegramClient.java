@@ -1,16 +1,12 @@
 package ai.wanaku.tool.telegram;
 
-import java.util.Map;
-
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.tool.Client;
-import jakarta.inject.Inject;
+import java.util.Map;
 import org.apache.camel.ProducerTemplate;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
