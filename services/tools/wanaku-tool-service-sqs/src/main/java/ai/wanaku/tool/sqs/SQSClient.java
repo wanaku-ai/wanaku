@@ -6,7 +6,7 @@ import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.tool.Client;
 
-import org.apache.camel.CamelContext;
+import jakarta.inject.Inject;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
@@ -17,15 +17,10 @@ import java.util.Map;
 public class SQSClient implements Client {
     private static final Logger LOG = Logger.getLogger(SQSClient.class);
 
-    private final ProducerTemplate producer;
-    private final ConsumerTemplate consumer;
-
-    public SQSClient(CamelContext camelContext) {
-        this.producer = camelContext.createProducerTemplate();
-        this.consumer = camelContext.createConsumerTemplate();
-
-        // Also create the consumer here, if needed
-    }
+    @Inject
+    ProducerTemplate producer;
+    @Inject
+    ConsumerTemplate consumer;
 
     @Override
     public Object exchange(ToolInvokeRequest request) {
@@ -41,17 +36,11 @@ public class SQSClient implements Client {
         String responseUri = String.format("aws2-sqs://%s?accessKey=RAW(%s)&secretKey=RAW(%s)&region=%s", queueNameOrArn, accessKey, secretKey, region);
 
         LOG.infof("Invoking tool at URI: %s", requestUri);
-        try {
-            producer.start();
-            consumer.start();
 
-            producer.sendBody(requestUri, parsedRequest.body());
+        producer.sendBody(requestUri, parsedRequest.body());
 
-            LOG.infof("Waiting for reply at at URI: %s", responseUri);
-            return consumer.receiveBody(responseUri);
-        } finally {
-            producer.stop();
-            consumer.stop();
-        }
+        LOG.infof("Waiting for reply at at URI: %s", responseUri);
+        return consumer.receiveBody(responseUri);
+
     }
 }

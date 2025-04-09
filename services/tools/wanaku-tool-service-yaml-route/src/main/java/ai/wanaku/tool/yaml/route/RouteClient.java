@@ -7,6 +7,7 @@ import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.config.WanakuToolConfig;
 import ai.wanaku.core.services.tool.Client;
+import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.Resource;
@@ -17,21 +18,18 @@ import org.jboss.logging.Logger;
 public class RouteClient implements Client {
     private static final Logger LOG = Logger.getLogger(RouteClient.class);
 
-
-
-    private final CamelContext camelContext;
-    private final ProducerTemplate producer;
+    @Inject
+    CamelContext camelContext;
+    @Inject
+    ProducerTemplate producer;
     private final WanakuToolConfig config;
 
-    public RouteClient(CamelContext camelContext, WanakuToolConfig config) {
-        this.camelContext = camelContext;
-        this.producer = camelContext.createProducerTemplate();
+    public RouteClient(WanakuToolConfig config) {
         this.config = config;
     }
 
     @Override
     public Object exchange(ToolInvokeRequest request) throws WanakuException {
-        producer.start();
 
         LOG.infof("Loading resource from URI: %s", request.getUri());
         Resource resource = PluginHelper.getResourceLoader(camelContext).resolveResource(request.getUri());
