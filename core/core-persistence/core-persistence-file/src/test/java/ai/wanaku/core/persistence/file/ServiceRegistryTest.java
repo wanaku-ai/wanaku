@@ -123,7 +123,8 @@ public class ServiceRegistryTest {
 
         serviceRegistry.deregister(TEST_SERVICE_NAME, ServiceType.TOOL_INVOKER);
 
-        Assertions.assertThrows(ServiceNotFoundException.class, () -> serviceRegistry.getService(TEST_SERVICE_NAME));
+        // De-registering a service with the file-based one, should not remove the entry (see issue #253).
+        Assertions.assertDoesNotThrow(() -> serviceRegistry.getService(TEST_SERVICE_NAME));
     }
 
     @Test
