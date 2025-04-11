@@ -157,5 +157,5 @@ mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=t
 To release early builds, run: 
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64 --exclude-distribution=cli-native --exclude-distribution=router-native --exclude-distribution=service-kafka-native --exclude-distribution=service-http-native --exclude-distribution=provider-file-native --exclude-distribution=service-yaml-route-native --exclude-distribution=provider-ftp-native --exclude-distribution=service-exec-native --exclude-distribution=provider-s3-native --exclude-distribution=service-sqs-native --exclude-distribution=service-telegram-native -Djreleaser.project.snapshot.label="early-access"
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64 --exclude-distribution=cli-native -Djreleaser.project.snapshot.label="early-access"
 ```
