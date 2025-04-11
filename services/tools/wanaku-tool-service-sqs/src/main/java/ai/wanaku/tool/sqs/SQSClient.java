@@ -37,10 +37,9 @@ public class SQSClient implements Client {
 
         LOG.infof("Invoking tool at URI: %s", requestUri);
 
-            producer.sendBody(requestUri, request.getBody());
+        producer.sendBody(requestUri, request.getBody());
 
         LOG.infof("Waiting for reply at at URI: %s", responseUri);
         return consumer.receiveBody(responseUri);
-
     }
 }
