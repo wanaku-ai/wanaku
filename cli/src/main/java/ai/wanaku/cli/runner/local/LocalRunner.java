@@ -80,7 +80,7 @@ public class LocalRunner {
         if (VersionHelper.VERSION.contains("SNAPSHOT")) {
             tag = config.earlyAccessTag();
         } else {
-            tag = VersionHelper.VERSION;
+            tag =  String.format("v%s", VersionHelper.VERSION);
         }
 
         return String.format(component.getValue(), tag, VersionHelper.VERSION);

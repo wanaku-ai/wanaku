@@ -15,7 +15,6 @@ import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
-import ai.wanaku.server.quarkus.api.v1.resources.ResourcesResource;
 import ai.wanaku.server.quarkus.common.ResourceHelper;
 import ai.wanaku.server.quarkus.common.ToolsHelper;
 import io.quarkiverse.mcp.server.ResourceManager;

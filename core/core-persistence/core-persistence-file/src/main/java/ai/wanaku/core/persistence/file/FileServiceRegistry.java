@@ -113,12 +113,6 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
                 entities.remove(entityFromFile);
 
                 entity.setConfigurations(entityFromFile.getConfigurations());
-
-                for (Map.Entry<String, String> entry : configurations.entrySet()) {
-                    Configuration c = new Configuration();
-                    c.setDescription(entry.getValue());
-                    entity.getConfigurations().putIfAbsent(entry.getKey(), c);
-                }
             } else {
                 entity.setConfigurations(configurations.entrySet().stream()
                         .collect(Collectors.toMap(Map.Entry::getKey, entry -> {
@@ -140,20 +134,8 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
 
     @Override
     public void deregister(String service, ServiceType serviceType) {
-        try {
-            String data = tryRead(file);
-            LOG.tracef("Deregistering service %s: %s", service, data);
-
-            List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, getEntityClass());
-
-            entities.removeIf(e -> e.getService().equals(service) && e.getServiceType().equals(serviceType));
-
-            String marshalledServiceTarget = wanakuMarshallerService.marshal(entities);
-
-            tryWrite(file, marshalledServiceTarget.getBytes());
-        } catch (IOException e) {
-            throw new WanakuException("Can't write to file " + file.toString(), e);
-        }
+        LOG.tracef("Not de-registering service %s because it is file-based and entries should persist",
+                service);
     }
 
     @Override
@@ -222,7 +204,8 @@ public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, S
 
             List<ServiceTargetEntity> entities = wanakuMarshallerService.unmarshal(data, ServiceTargetEntity.class);
 
-            return entities.stream().filter(entity -> serviceType.equals(entity.getServiceType()))
+            return entities.stream()
+                    .filter(entity -> serviceType.equals(entity.getServiceType()))
                     .collect(Collectors.toMap(ServiceTarget::getService, FileServiceRegistry::toService));
         } catch (IOException e) {
             throw new WanakuException("Can't read file " + file, e);

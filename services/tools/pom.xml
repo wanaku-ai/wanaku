@@ -3,7 +3,7 @@
   <parent>
     <groupId>ai.wanaku</groupId>
     <artifactId>services</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>tools</artifactId>
   <packaging>pom</packaging>
@@ -15,5 +15,6 @@
     <module>wanaku-tool-service-yaml-route</module>
     <module>wanaku-tool-service-tavily</module>
     <module>wanaku-tool-service-sqs</module>
+    <module>wanaku-tool-service-telegram</module>
   </modules>
 </project>

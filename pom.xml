@@ -10,7 +10,7 @@
     <url>https://github.com/wanaku-ai/wanaku</url>
     <description>Wanaku MCP Router</description>
 
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <developers>
