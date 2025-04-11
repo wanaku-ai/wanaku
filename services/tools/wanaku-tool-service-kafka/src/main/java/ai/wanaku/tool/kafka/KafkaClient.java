@@ -28,8 +28,9 @@ public class KafkaClient implements Client {
         Map<String, String> serviceConfigurationsMap = request.getServiceConfigurationsMap();
 
         String bootstrapServers = serviceConfigurationsMap.get("bootstrapHost");
+        String requestTopic = serviceConfigurationsMap.get("requestTopic");
         ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
-        String requestUri = String.format("%s?brokers=%s", parsedRequest.uri(), bootstrapServers);
+        String requestUri = String.format("kafka://%s?brokers=%s", requestTopic, bootstrapServers);
 
         String replyToTopic = serviceConfigurationsMap.get("replyToTopic");
         String responseUri = String.format("kafka://%s?brokers=%s", replyToTopic, bootstrapServers);
