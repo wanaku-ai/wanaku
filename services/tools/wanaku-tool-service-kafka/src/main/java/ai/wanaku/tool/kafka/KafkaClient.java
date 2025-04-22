@@ -7,7 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.tool.Client;
-import jakarta.inject.Inject;
+import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
@@ -17,11 +17,13 @@ import org.jboss.logging.Logger;
 public class KafkaClient implements Client {
     private static final Logger LOG = Logger.getLogger(KafkaClient.class);
 
-    @Inject
-    ProducerTemplate producer;
+    private final ProducerTemplate producer;
+    private final ConsumerTemplate consumer;
 
-    @Inject
-    ConsumerTemplate consumer;
+    public KafkaClient(CamelContext camelContext) {
+        this.producer = camelContext.createProducerTemplate();
+        this.consumer = camelContext.createConsumerTemplate();
+    }
 
     @Override
     public Object exchange(ToolInvokeRequest request) {
@@ -36,11 +38,17 @@ public class KafkaClient implements Client {
         String responseUri = String.format("kafka://%s?brokers=%s", replyToTopic, bootstrapServers);
 
         LOG.infof("Invoking tool at URI: %s", requestUri);
+        try {
+            producer.start();
+            consumer.start();
 
-        producer.sendBody(requestUri, parsedRequest.body());
+            producer.sendBody(requestUri, parsedRequest.body());
 
-        LOG.infof("Waiting for reply at at URI: %s", responseUri);
-        return consumer.receiveBody(responseUri);
-
+            LOG.infof("Waiting for reply at at URI: %s", responseUri);
+            return consumer.receiveBody(responseUri);
+        } finally {
+            producer.stop();
+            consumer.stop();
+        }
     }
 }

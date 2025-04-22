@@ -6,7 +6,6 @@ import ai.wanaku.core.services.tool.Client;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -16,15 +15,12 @@ import org.jboss.logging.Logger;
 public class TavilyClient implements Client {
     private static final Logger LOG = Logger.getLogger(TavilyClient.class);
 
-    @Inject
-    ProducerTemplate producer;
-
-    @Inject
-    CamelContext camelContext;
+    private final ProducerTemplate producer;
 
     WebSearchEngine tavilyWebSearchEngine;
 
-    public TavilyClient() {
+    public TavilyClient(CamelContext camelContext) {
+        this.producer = camelContext.createProducerTemplate();
 
         String tavilyApiKey = ConfigProvider.getConfig().getConfigValue("tavily.api.key").getValue();
 
@@ -38,13 +34,19 @@ public class TavilyClient implements Client {
 
     @Override
     public Object exchange(ToolInvokeRequest request) {
-        String baseUri = "langchain4j-web-search:test?webSearchEngine=#tavily&resultType=SNIPPET";
-        if (request.getArgumentsMap().containsKey("maxResults")) {
-            baseUri += "&maxResults={maxResults}";
+        try {
+            producer.start();
+
+            String baseUri = "langchain4j-web-search:test?webSearchEngine=#tavily&resultType=SNIPPET";
+            if (request.getArgumentsMap().containsKey("maxResults")) {
+                baseUri += "&maxResults={maxResults}";
+            }
+
+            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(baseUri, request);
+
+            return producer.requestBody(parsedRequest.uri(), parsedRequest.body());
+        } finally {
+            producer.stop();
         }
-
-        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(baseUri, request);
-        return producer.requestBody(parsedRequest.uri(), parsedRequest.body());
-
     }
 }
