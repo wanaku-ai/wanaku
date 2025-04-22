@@ -1,5 +1,7 @@
 package ai.wanaku.core.services.common;
 
+import ai.wanaku.core.exchange.InquireReply;
+import ai.wanaku.core.exchange.InvocationDelegate;
 import org.jboss.logging.Logger;
 
 public class ServicesHelper {
@@ -24,5 +26,11 @@ public class ServicesHelper {
             return 0;
         }
         return retries;
+    }
+
+    public static InquireReply buildInquireReply(InvocationDelegate delegate) {
+        return InquireReply.newBuilder()
+                .putAllProperties(delegate.properties())
+                .build();
     }
 }

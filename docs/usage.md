@@ -337,7 +337,36 @@ By using these CLI commands, you can manage resources and tools for your Wanaku 
 
 ## Tools
 
-### Creating URIs
+When adding a tool to Wanaku, there are two key considerations:
+
+1. Service Handling: Determine which service will handle the request and process the input data.
+2. Tool/Service Arguments: Identify any arguments (also known as properties) that the tool and/or service accept.
+
+### Simplified Tool Addition
+
+For some services, adding a new tool to Wanaku is straightforward and can be done using a command similar to this:
+
+```shell
+wanaku tools add -n "my-tools" --description "My specialized tool that does something special" --uri "mytool://name" --type my-tool-service-type
+```
+
+This method is suitable for services that provide their own endpoint definitions (i.e.: Kafka, Tavily, SQS, etc).
+
+### Flexible Input Data
+
+However, some services may require a more flexible definition of input data.
+
+For instance, consider HTTP endpoints with dynamic parameters:
+
+* `http://my-host/api/{someId}`
+* `http://my-host/api/{someId}/create`
+* `http://my-host/api/{someId}/link/to/{anotherId}`
+
+In cases where the service cannot predetermine the actual tool addresses, users must define them when creating the tool.
+
+This documentation should provide a clear understanding of the two key considerations and the process for adding tools to Wanaku.
+
+#### Creating URIs
 
 Building the URIs is not always as simple as defining their address. Sometimes, optional parameters need to be filtered out or
 query parameters need to be built. To help with that, Wanaku comes with a couple of expressions to build them.
@@ -370,7 +399,7 @@ file in the `samples` directory.
 To add that route as a tool, you can run something similar to this: 
 
 ```shell
-wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route --property "wanaku_body:string,The data to be passed to the route"
+wanaku tools add -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file:///$(HOME)/code/java/wanaku/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-route
 ```
 
 ### Special/Reserved Arguments

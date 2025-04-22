@@ -1,5 +1,6 @@
 package ai.wanaku.core.mcp.common.resolvers.util;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.ToolReference;
@@ -12,6 +13,11 @@ import io.quarkiverse.mcp.server.ToolResponse;
  * A resolver that does not to anything (mostly used for testing)
  */
 public class NoopToolsResolver implements ToolsResolver {
+    @Override
+    public void loadProperties(ToolReference toolReference) throws ServiceNotFoundException {
+
+    }
+
     @Override
     public Tool resolve(ToolReference toolReference) throws ToolNotFoundException {
         return new Tool() {

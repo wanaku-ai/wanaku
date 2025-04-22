@@ -17,8 +17,13 @@ message InquireRequest {
 
 }
 
+message PropertySchema {
+  string type = 1;
+  string description = 2;
+  bool required = 3;
+}
+
 // The invocation response message
 message InquireReply {
-  map<string, string> serviceConfigurations = 1;
-  map<string, string> credentialsConfigurations = 2;
+  map<string, PropertySchema> properties = 1;
 }
