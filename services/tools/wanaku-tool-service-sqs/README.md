@@ -41,7 +41,7 @@ wanaku targets tools configure --service=sqs --option=region --value=us-east-1
 6. Create the tool.
 
 ```shell
-wanaku tools add --name brazilian-barbecue-request --uri "sqs://barbecue"  --description 'Orders the delivery of a an authentic Brazilian barbecue' --property 'wanaku_body:string,All the items you want in your barbecue, written in plain text ' --required wanaku_body --type sqs
+wanaku tools add --name brazilian-barbecue-request --uri "sqs://barbecue"  --description 'Orders the delivery of a an authentic Brazilian barbecue' --type sqs
 ```
 
 > [!NOTE]

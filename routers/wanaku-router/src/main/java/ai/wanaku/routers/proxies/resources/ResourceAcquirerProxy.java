@@ -94,16 +94,4 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
         return blockingStub.resourceAcquire(request);
     }
-
-    @Override
-    public Map<String, String> getServiceConfigurations(String target) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(serviceRegistry.getService(target).getTarget())
-                .usePlaintext()
-                .build();
-
-        InquireRequest inquireRequest = InquireRequest.newBuilder().build();
-        InquirerGrpc.InquirerBlockingStub blockingStub = InquirerGrpc.newBlockingStub(channel);
-        InquireReply inquire = blockingStub.inquire(inquireRequest);
-        return inquire.getServiceConfigurationsMap();
-    }
 }

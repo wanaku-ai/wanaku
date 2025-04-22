@@ -1,5 +1,6 @@
 package ai.wanaku.routers.proxies.tools;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
@@ -9,6 +10,7 @@ import ai.wanaku.api.types.management.Service;
 import ai.wanaku.core.exchange.InquireReply;
 import ai.wanaku.core.exchange.InquireRequest;
 import ai.wanaku.core.exchange.InquirerGrpc;
+import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
@@ -90,7 +92,7 @@ public class InvokerProxy implements ToolsProxy {
         Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
-        Map<String, Property> inputSchema =toolReference
+        Map<String, Property> inputSchema = toolReference
                 .getInputSchema()
                 .getProperties();
 
@@ -159,15 +161,20 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     @Override
-    public Map<String, String> getServiceConfigurations(String target) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+    public Map<String, PropertySchema> getProperties(ToolReference toolReference) {
+        Service service = serviceRegistry.getService(toolReference.getType());
+        if (service == null) {
+            throw new ServiceNotFoundException("There is no host registered for service " + toolReference.getType());
+        }
+
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.getTarget())
                 .usePlaintext()
                 .build();
 
         InquireRequest inquireRequest = InquireRequest.newBuilder().build();
         InquirerGrpc.InquirerBlockingStub blockingStub = InquirerGrpc.newBlockingStub(channel);
         InquireReply inquire = blockingStub.inquire(inquireRequest);
-        return inquire.getServiceConfigurationsMap();
+        return inquire.getPropertiesMap();
     }
 
     @Override

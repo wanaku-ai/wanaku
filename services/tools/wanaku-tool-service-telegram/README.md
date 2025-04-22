@@ -15,18 +15,22 @@ Example of configuring the Authorization Token for the Telegram tool:
 wanaku targets tools configure --service=telegram --option=authorizationToken --value=1354733292
 ```
 
-## Using the tool to send messages to a particular user
-
-To add the tool to send messages to a particular user.
+## Using the tool
 
 ```shell
-wanaku tools add  --name telegram --uri "telegram://send-to-alice" --description 'Sends a message to Alice' --property 'message:string, the message to send to the user'  --required=message --type telegram
+wanaku tools add --name telegram --uri "telegram://send" --description 'Sends a message  to a user via a TelegramBot' --type telegram
+```
+
+## Using the tool to send messages to a particular user
+
+To add the tool to send messages to a particular user, make sure you configure the `telegramId` and then create the tool.
+
+```shell
+wanaku targets tools configure --service=telegram --option=telegramId --value=1354733292
 ```
 
 ## Using the tool to send messages to any telegram user
 
-To add the tool to send messages to any telegram user.
+To add the tool to send messages to any telegram user you don't need to configure the `telegramId`, however it must be provided
+when invoking the tool (as such, you need to adjust your prompt, so that the `telegramId` is set by the LLM invoking the tool).
 
-```shell
-wanaku tools add --name telegram --uri "telegram://send" --description 'Sends a message  to a user via a TelegramBot' --property 'telegramId:string, the telegram id of the telegram user' --property 'message:string, the message to send to the user'  --required='telegramId,message' --type telegram
-```

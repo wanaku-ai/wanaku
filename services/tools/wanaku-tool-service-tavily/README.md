@@ -8,5 +8,5 @@ To run set your API key using either one of:
 - the `tavily.api.key` property when running the application (i.e.,: `-Dtavily.api.key=my-key`)
 
 ```shell
-wanaku tools add -n "tavily-search" --description "Search on the internet using Tavily" --uri "tavily://search" --type tavily --property "wanaku_body:string,The search terms" --property "maxResults:int,The maxResults is the expected number of results to be found if the search request were made" --required "wanaku_body"
+wanaku tools add -n "tavily-search" --description "Search on the internet using Tavily" --uri "tavily://search" --type tavily
 ```

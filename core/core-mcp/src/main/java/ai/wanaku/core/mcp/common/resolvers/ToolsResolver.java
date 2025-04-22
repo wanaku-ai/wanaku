@@ -1,5 +1,6 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
@@ -9,6 +10,14 @@ import ai.wanaku.core.mcp.common.Tool;
  * should handle it
  */
 public interface ToolsResolver extends Resolver {
+
+    /**
+     * Given a reference, load properties (arguments) defined on the remote service capable of handling it
+     * @param toolReference the reference to the tool
+     * @throws ServiceNotFoundException if a service capable of handling such a tool cannot be found
+     */
+    void loadProperties(ToolReference toolReference) throws ServiceNotFoundException;
+
 
     /**
      * Given a reference, resolves what tool would call it

@@ -1,21 +1,25 @@
 package ai.wanaku.core.services.tool;
 
-import java.util.List;
-import java.util.Map;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.InvocationDelegate;
+import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import ai.wanaku.core.services.config.WanakuToolConfig;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -49,12 +53,11 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
      *
      * @param response the response
      * @return the response as a list of Strings
-     * @throws InvalidResponseTypeException if the response type is invalid (such as null)
+     * @throws InvalidResponseTypeException    if the response type is invalid (such as null)
      * @throws NonConvertableResponseException if the response cannot be converted
      */
     protected abstract List<String> coerceResponse(Object response)
             throws InvalidResponseTypeException, NonConvertableResponseException;
-
 
     @Override
     public ToolInvokeReply invoke(ToolInvokeRequest request) {
@@ -74,7 +77,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             }
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
-            LOG.errorf(e,stateMsg);
+            LOG.errorf(e, stateMsg);
             serviceRegistry.saveState(service, false, stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
@@ -88,7 +91,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                     .addAllContent(List.of(stateMsg)).build();
         } catch (Exception e) {
             String stateMsg = "Unable to invoke tool: " + e.getMessage();
-            LOG.errorf(e,stateMsg, e);
+            LOG.errorf(e, stateMsg, e);
             serviceRegistry.saveState(service, false, stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
@@ -133,5 +136,21 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     @Override
     public void deregister(String service, String address, int port) {
         serviceRegistry.deregister(service, ServiceType.TOOL_INVOKER);
+    }
+
+    @Override
+    public Map<String, PropertySchema> properties() {
+        final Set<WanakuServiceConfig.Service.Property> properties = config.service().properties();
+
+        return properties.stream().collect(Collectors.toMap(WanakuServiceConfig.Service.Property::name,
+                AbstractToolDelegate::toPropertySchema));
+    }
+
+    private static PropertySchema toPropertySchema(WanakuServiceConfig.Service.Property configProp) {
+        return PropertySchema.newBuilder()
+                .setDescription(configProp.description())
+                .setType(configProp.type())
+                .setRequired(configProp.required())
+                .build();
     }
 }

@@ -1,9 +1,11 @@
 package ai.wanaku.core.services.config;
 
 import io.smallrye.config.WithDefault;
+import java.util.List;
 import java.util.Map;
 
 import ai.wanaku.core.config.WanakuConfig;
+import java.util.Set;
 
 /**
  * Base configuration class for downstream services, extending {@link WanakuConfig}.
@@ -27,6 +29,46 @@ public interface WanakuServiceConfig extends WanakuConfig {
          * @return A map of custom configurations.
          */
         Map<String, String> configurations();
+
+        /**
+         * Returns the map of properties accepted by the service.
+         *
+         * @return the map of properties accepted by the service.
+         */
+        Set<Property> properties();
+
+        /**
+         * Represents a property in a schema or configuration.
+         */
+        interface Property {
+            /**
+             * Returns the human-readable name of this property.
+             *
+             * @return The property's name, not null.
+             */
+            String name();
+
+            /**
+             * Returns the data type associated with this property, as a string (e.g., "string", "integer").
+             *
+             * @return The property's data type, never null.
+             */
+            String type();
+
+            /**
+             * Returns a human-readable description of this property, including any relevant details about its configuration or usage.
+             *
+             * @return A descriptive text for the property, may be empty but never null.
+             */
+            String description();
+
+            /**
+             * Indicates whether this property is strictly required in the schema or configuration (true) or optional (false).
+             *
+             * @return Whether the property is required (true) or not (false).
+             */
+            boolean required();
+        }
     }
 
     /**
