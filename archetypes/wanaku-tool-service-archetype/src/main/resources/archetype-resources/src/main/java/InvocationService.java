@@ -28,6 +28,7 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvoker;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
+import ai.wanaku.core.services.common.ServicesHelper;
 import ai.wanaku.core.services.config.WanakuToolConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
@@ -59,12 +60,7 @@ public class InvocationService implements ToolInvoker, Inquirer {
 
     @Override
     public Uni<InquireReply> inquire(InquireRequest request) {
-        InquireReply reply = InquireReply.newBuilder()
-                .putAllServiceConfigurations(delegate.serviceConfigurations())
-                .putAllCredentialsConfigurations(delegate.credentialsConfigurations())
-                .build();
-
-        return Uni.createFrom().item(() -> reply);
+        return Uni.createFrom().item(() -> ServicesHelper.buildInquireReply(delegate));
     }
 
     @Scheduled(every="{wanaku.service.tool.registration.interval}", delayed = "{wanaku.service.tool.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
