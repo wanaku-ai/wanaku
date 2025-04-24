@@ -2,6 +2,7 @@ package ai.wanaku.server.quarkus.common;
 
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Property;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import java.util.List;
@@ -30,9 +31,19 @@ public class ToolsHelper {
         return required;
     }
 
-    // TODO:
-    private static Class<?> toType(CallableReference mcpResource) {
-        return String.class;
+    private static Class<?> toType(Property property) {
+        return switch (property.getType().toLowerCase()) {
+            case "string" -> String.class;
+            case "int", "integer" -> Integer.class;
+            case "boolean" -> Boolean.class;
+            case "number" -> Number.class;
+            default -> Object.class;
+        };
+    }
+
+    private static void addArgument(String key, Property value, ToolManager.ToolDefinition toolDefinition, boolean required) {
+        Class<?> type = toType(value);
+        toolDefinition.addArgument(key, value.getDescription(), required, type);
     }
 
     /**
@@ -54,16 +65,16 @@ public class ToolsHelper {
 
         final boolean required = isRequired(toolReference);
 
-        Class<?> type = toType(toolReference);
         InputSchema inputSchema = toolReference.getInputSchema();
         if (inputSchema != null) {
             inputSchema.getProperties().forEach((key, value) ->
-                    toolDefinition.addArgument(key, value.getDescription(), required, type));
+                            addArgument(key, value, toolDefinition, required)
+                    );
         }
-
-
         toolDefinition
                 .setHandler(ta ->  handler.apply(ta, toolReference))
                 .register();
     }
+
+
 }
