@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+RETVAL=0
+WANAKU_COMPONENT="wanaku-router"
+WANAKU_JAVA_OPTS="-Dwanaku.component=${WANAKU_COMPONENT}"
+
+localDir="$(dirname $0)"
+installDir="$(dirname "${localDir}")"
+launcher=wanaku-router
+
+RED="\e[0;31m"
+GREEN="\e[0;32m"
+RESET="\e[0m"
+
+function esuccess() {
+    echo -e "${GREEN} OK${RESET}"
+}
+
+function eerror() {
+    echo -e "${RED} failed${RESET} ($@)"
+}
+
+function start() {
+    echo -en "Starting the daemon: "
+    export WANAKU_JAVA_OPTS
+    nohup "${installDir}/${launcher}" ${@} >/dev/null 2>/dev/null &
+    if [[ $? != 0 ]] ; then
+        eerror "failed to daemonize the application"
+        exit 1
+    fi
+
+    sleep 1s
+
+    processCount=0
+    for pid in $(pgrep -U $(id -u) -f ".*wanaku.component=${WANAKU_COMPONENT}.*") ; do
+        if (( processCount == 0 )) ; then
+            esuccess
+        fi
+        echo -e "${WANAKU_COMPONENT} started:${GREEN} ${pid} ${RESET}"
+        ((processCount++))
+    done
+
+    if (( processCount == 0 )) ; then
+        eerror "${WANAKU_COMPONENT} did not start successfully"
+    fi
+}
+
+
+function stop() {
+    for pid in $(pgrep -U $(id -u) -f ".*wanaku.component=${WANAKU_COMPONENT}.*") ; do
+        echo "Killing ${WANAKU_COMPONENT} ${pid}"
+        kill -TERM ${pid}
+    done
+}
+
+function restart() {
+    stop
+    start
+}
+
+function printHelp() {
+    echo "Usage: ${0} [start|stop|restart]"
+}
+
+
+if [[ -z ${1} ]] ; then
+    printHelp
+    exit 2
+fi
+
+
+case "${1}" in
+	start)
+		start "${2}" "${3}"
+		;;
+	stop)
+		stop
+		;;
+	restart)
+		restart
+		;;
+	*)
+		printHelp
+		RETVAL=2
+esac
+
+exit ${RETVAL}

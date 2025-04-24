@@ -24,5 +24,15 @@
                 <include>**/*</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/scripts</directory>
+            <outputDirectory>./</outputDirectory>
+            <includes>
+                <include>**/*.*</include>
+                <include>**/launcher</include>
+                <include>**/service-launcher</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
     </fileSets>
 </assembly>
