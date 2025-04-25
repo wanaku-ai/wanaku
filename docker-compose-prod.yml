@@ -38,7 +38,6 @@ services:
   wanaku-tool-service-http:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-tool-service-http:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -50,7 +49,6 @@ services:
   wanaku-tool-service-yaml-route:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-tool-service-yaml-route:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -64,7 +62,6 @@ services:
   wanaku-tool-service-kafka:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-tool-service-kafka:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -77,7 +74,6 @@ services:
   wanaku-tool-service-tavily:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-tool-service-tavily:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -91,7 +87,6 @@ services:
   wanaku-provider-file:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-provider-file:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -104,7 +99,6 @@ services:
   wanaku-provider-ftp:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-provider-ftp:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -118,7 +112,6 @@ services:
   wanaku-provider-s3:
     depends_on:
       - valkey
-      - mongodb
     image: quay.io/wanaku/wanaku-provider-s3:wanaku-0.0.4
     environment:
       WANAKU_SERVICE_PERSISTENCE: valkey
@@ -130,13 +123,6 @@ services:
 
   wanaku-router:
     depends_on:
-      - wanaku-tool-service-http
-      - wanaku-tool-service-kafka
-      - wanaku-tool-service-tavily
-      - wanaku-tool-service-yaml-route
-      - wanaku-provider-file
-      - wanaku-provider-ftp
-      - wanaku-provider-s3
       - valkey
       - mongodb
     image: quay.io/wanaku/wanaku-router:wanaku-0.0.4
