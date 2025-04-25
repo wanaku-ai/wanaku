@@ -59,16 +59,22 @@ public class ForwardsBean {
         ForwardResolver forwardResolver = forwardRegistry.forService(reference);
         if (forwardResolver != null) {
             try {
-                forwardRegistry.unlink(reference);
-
                 List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
                 for (RemoteToolReference remoteToolReference : remoteToolReferences) {
                     LOG.infof("Removing remote tool %s", remoteToolReference);
-                    toolManager.removeTool(remoteToolReference.getName());
+                    try {
+                        toolManager.removeTool(remoteToolReference.getName());
+                    } catch (Exception e) {
+                        LOG.infof("Failed to remove forward tool %s (server restart may be necessary)",
+                                remoteToolReference.getName());
+                    }
                 }
             } finally {
-                forwardRegistry.unlink(reference);
-                forwardReferenceRepository.deleteById(reference.getName());
+                try {
+                    forwardRegistry.unlink(reference);
+                } finally {
+                    forwardReferenceRepository.deleteById(reference.getName());
+                }
             }
         }
     }
