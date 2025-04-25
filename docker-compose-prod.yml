@@ -135,6 +135,11 @@ services:
       WANAKU_PERSISTENCE: mongodb
     ports:
       - "8080:8080"
+    healthcheck:
+      test: curl -f localhost:8080/api/v1/management/info/version || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
 volumes:
   mongo:
