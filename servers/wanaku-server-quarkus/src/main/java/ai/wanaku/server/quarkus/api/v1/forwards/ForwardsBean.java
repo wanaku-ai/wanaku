@@ -56,7 +56,7 @@ public class ForwardsBean {
             return;
         }
 
-        ForwardResolver forwardResolver = forwardRegistry.forService(reference);
+        ForwardResolver forwardResolver = forwardRegistry.getResolver(reference);
         if (forwardResolver != null) {
             try {
                 removeRemoteTools(forwardResolver);
@@ -116,7 +116,7 @@ public class ForwardsBean {
     }
 
     private void registerForward(ForwardReference forwardReference) {
-        ForwardResolver forwardResolver = forwardRegistry.forService(forwardReference);
+        ForwardResolver forwardResolver = forwardRegistry.newResolverForService(forwardReference);
 
         List<ResourceReference> resourceReferences = forwardResolver.listResources();
         for (ResourceReference reference : resourceReferences) {
@@ -130,12 +130,14 @@ public class ForwardsBean {
             Tool tool = forwardResolver.resolve(reference);
             ToolsHelper.registerTool(reference, toolManager, tool::call);
         }
+
+        forwardRegistry.link(forwardReference, forwardResolver);
     }
 
     public List<ResourceReference> listAllResources() {
         List<ResourceReference> references = new ArrayList<>();
         for (ForwardReference service : forwardRegistry.services()) {
-            ForwardResolver forwardResolver = forwardRegistry.forService(service);
+            ForwardResolver forwardResolver = forwardRegistry.getResolver(service);
 
             List<ResourceReference> remoteToolReferences = forwardResolver.listResources();
             references.addAll(remoteToolReferences);
@@ -151,7 +153,7 @@ public class ForwardsBean {
     public List<RemoteToolReference> listAllTools() {
         List<RemoteToolReference> references = new ArrayList<>();
         for (ForwardReference service : forwardRegistry.services()) {
-            ForwardResolver forwardResolver = forwardRegistry.forService(service);
+            ForwardResolver forwardResolver = forwardRegistry.getResolver(service);
 
             List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
             references.addAll(remoteToolReferences);

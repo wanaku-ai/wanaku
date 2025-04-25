@@ -11,8 +11,18 @@ public class WanakuForwardRegistry implements ForwardRegistry {
     Map<ForwardReference, ForwardResolver> resolvers = new ConcurrentHashMap<>();
 
     @Override
-    public ForwardResolver forService(ForwardReference service) {
-        return resolvers.computeIfAbsent(service, v -> new WanakuForwardResolver(service));
+    public ForwardResolver newResolverForService(ForwardReference service) {
+        return new WanakuForwardResolver(service);
+    }
+
+    @Override
+    public ForwardResolver getResolver(ForwardReference service) {
+        return resolvers.get(service);
+    }
+
+    @Override
+    public void link(ForwardReference service, ForwardResolver resolver) {
+        resolvers.put(service, resolver);
     }
 
     @Override

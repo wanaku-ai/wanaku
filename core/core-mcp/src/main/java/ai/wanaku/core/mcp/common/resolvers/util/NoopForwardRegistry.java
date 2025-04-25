@@ -7,8 +7,18 @@ import java.util.Set;
 
 public class NoopForwardRegistry implements ForwardRegistry {
     @Override
-    public ForwardResolver forService(ForwardReference service) {
+    public ForwardResolver newResolverForService(ForwardReference service) {
         return new NoopForwardResolver();
+    }
+
+    @Override
+    public ForwardResolver getResolver(ForwardReference service) {
+        return new NoopForwardResolver();
+    }
+
+    @Override
+    public void link(ForwardReference service, ForwardResolver resolver) {
+
     }
 
     @Override
