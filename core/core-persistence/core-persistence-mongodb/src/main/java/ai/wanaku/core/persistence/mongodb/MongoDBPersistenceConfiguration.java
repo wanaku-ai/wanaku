@@ -1,6 +1,7 @@
 package ai.wanaku.core.persistence.mongodb;
 
 import ai.wanaku.core.persistence.WanakuMarshallerService;
+import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import com.mongodb.client.MongoClient;
@@ -23,5 +24,11 @@ public class MongoDBPersistenceConfiguration {
     @LookupIfProperty(name = "wanaku.persistence", stringValue = "mongodb")
     ToolReferenceRepository toolReferenceRepository() {
         return new MongoDBToolReferenceRepository(mongoClient, new WanakuMarshallerService());
+    }
+
+    @Produces
+    @LookupIfProperty(name = "wanaku.persistence", stringValue = "mongodb")
+    ForwardReferenceRepository forwardReferenceRepository() {
+        return new MongoDBForwardReferenceRepository(mongoClient, new WanakuMarshallerService());
     }
 }
