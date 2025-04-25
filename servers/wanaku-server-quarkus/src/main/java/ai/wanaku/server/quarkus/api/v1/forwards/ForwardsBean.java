@@ -59,22 +59,40 @@ public class ForwardsBean {
         ForwardResolver forwardResolver = forwardRegistry.forService(reference);
         if (forwardResolver != null) {
             try {
-                List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
-                for (RemoteToolReference remoteToolReference : remoteToolReferences) {
-                    LOG.infof("Removing remote tool %s", remoteToolReference);
-                    try {
-                        toolManager.removeTool(remoteToolReference.getName());
-                    } catch (Exception e) {
-                        LOG.infof("Failed to remove forward tool %s (server restart may be necessary)",
-                                remoteToolReference.getName());
-                    }
-                }
+                removeRemoteTools(forwardResolver);
+                removeRemoteResources(forwardResolver);
             } finally {
                 try {
                     forwardRegistry.unlink(reference);
                 } finally {
                     forwardReferenceRepository.deleteById(reference.getName());
                 }
+            }
+        }
+    }
+
+    private void removeRemoteResources(ForwardResolver forwardResolver) {
+        final List<ResourceReference> resourceReferences = forwardResolver.listResources();
+        for (ResourceReference remoteResource : resourceReferences) {
+            LOG.infof("Removing remote resource %s", remoteResource);
+            try {
+                resourceManager.removeResource(remoteResource.getLocation());
+            } catch (Exception e) {
+                LOG.infof("Failed to remove forward tool %s (server restart may be necessary)",
+                        remoteResource.getName());
+            }
+        }
+    }
+
+    private void removeRemoteTools(ForwardResolver forwardResolver) {
+        List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
+        for (RemoteToolReference remoteToolReference : remoteToolReferences) {
+            LOG.infof("Removing remote tool %s", remoteToolReference);
+            try {
+                toolManager.removeTool(remoteToolReference.getName());
+            } catch (Exception e) {
+                LOG.infof("Failed to remove forward tool %s (server restart may be necessary)",
+                        remoteToolReference.getName());
             }
         }
     }
