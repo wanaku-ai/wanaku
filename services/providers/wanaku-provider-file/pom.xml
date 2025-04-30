@@ -11,6 +11,7 @@
     <artifactId>wanaku-provider-file</artifactId>
     <name>Wanaku :: Services :: Providers :: File</name>
 
+
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
