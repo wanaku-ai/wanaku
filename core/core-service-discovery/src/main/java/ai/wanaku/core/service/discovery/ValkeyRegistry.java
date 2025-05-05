@@ -74,7 +74,7 @@ public class ValkeyRegistry implements ServiceRegistry {
             jedis.hset(serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_ADDRESS, serviceTarget.toAddress());
             jedis.hset(serviceTarget.getService(), ReservedKeys.WANAKU_TARGET_TYPE, serviceTarget.getServiceType().asValue());
 
-            LOG.infof("Service %s with target %s registered", serviceTarget.getService(), serviceTarget.toAddress());
+            LOG.debugf("Service %s with target %s registered", serviceTarget.getService(), serviceTarget.toAddress());
 
             for (var entry : configurations.entrySet()) {
                 if (!jedis.hexists(serviceTarget.getService(), entry.getKey())) {
