@@ -2,14 +2,14 @@ version: '3'
 
 services:
   wanaku-tool-service-http:
-    image: quay.io/wanaku/wanaku-tool-service-http:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-tool-service-http:wanaku-0.0.5
     ports:
       - "9000:9000"
     volumes:
       - ~/.wanaku/router:/home/default/.wanaku/router
 
   wanaku-tool-service-yaml-route:
-    image: quay.io/wanaku/wanaku-tool-service-yaml-route:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-tool-service-yaml-route:wanaku-0.0.5
     ports:
       - "9001:9000"
     volumes:
@@ -17,14 +17,14 @@ services:
 
   # Uncomment if you want to enable Kafka
   wanaku-tool-service-kafka:
-    image: quay.io/wanaku/wanaku-tool-service-kafka:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-tool-service-kafka:wanaku-0.0.5
     ports:
       - "9003:9000"
     volumes:
       - ~/.wanaku/router:/home/default/.wanaku/router
 
   wanaku-tool-service-tavily:
-    image: quay.io/wanaku/wanaku-tool-service-tavily:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-tool-service-tavily:wanaku-0.0.5
     #    environment:
     #      TAVILY_API_KEY: include-you-api-key-here
     ports:
@@ -33,14 +33,14 @@ services:
       - ~/.wanaku/router:/home/default/.wanaku/router
 
   wanaku-provider-file:
-    image: quay.io/wanaku/wanaku-provider-file:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-provider-file:wanaku-0.0.5
     ports:
       - "9002:9000"
     volumes:
       - ~/.wanaku/router:/home/default/.wanaku/router
 
   wanaku-provider-ftp:
-    image: quay.io/wanaku/wanaku-provider-ftp:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-provider-ftp:wanaku-0.0.5
     ports:
       - "9004:9000"
     volumes:
@@ -48,7 +48,7 @@ services:
 
   # Uncomment the lines below to enable access to AWS S3
   wanaku-provider-s3:
-    image: quay.io/wanaku/wanaku-provider-s3:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-provider-s3:wanaku-0.0.5
     ports:
       - "9005:9000"
     volumes:
@@ -63,7 +63,7 @@ services:
       - wanaku-provider-file
       - wanaku-provider-ftp
       - wanaku-provider-s3
-    image: quay.io/wanaku/wanaku-router:wanaku-0.0.4
+    image: quay.io/wanaku/wanaku-router:wanaku-0.0.5
     ports:
       - "8080:8080"
     volumes:

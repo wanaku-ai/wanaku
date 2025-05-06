@@ -179,8 +179,8 @@
                             <artifactId>maven-scm-plugin</artifactId>
                             <version>${maven-scm-plugin.version}</version>
                             <configuration>
-                                <message>[maven-scm-plugin] Update version in UI files</message>
-                                <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml</includes>
+                                <message>[maven-scm-plugin] Update version in files</message>
+                                <includes>ui/**/*.ts,routers/wanaku-router/src/main/webui/openapi.json,routers/wanaku-router/src/main/webui/openapi.yaml,docker-compose.yml,docker-compose-prod.yml</includes>
                                 <excludes>ui/node_modules/**</excludes>
                             </configuration>
                         </plugin>
