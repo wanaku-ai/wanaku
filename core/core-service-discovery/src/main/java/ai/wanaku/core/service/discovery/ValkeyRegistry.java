@@ -32,13 +32,13 @@ import org.jboss.logging.Logger;
 /**
  * Host information is stored as keys in a hashmap in Valkey. Suppose, for instance, a service
  * named "ftp". It would contain keys such as:
- *
+ * <p>
  * wanaku-target-address -> ip:port
  * wanaku-target-type -> tool-invoker
- *
+ * <p>
  * And also the configurations for the service as a hashmap
  * config1 -> description1, config2 -> description2, etc.
- *
+ * <p>
  * This class is basically iterating over the hashmap
  */
 @ApplicationScoped
@@ -52,7 +52,7 @@ public class ValkeyRegistry implements ServiceRegistry {
     /**
      * In case of a deregister event is not triggered (for example, kill -9),
      * The entry in Valkey will be removed after expireTime.
-     *
+     * <p>
      * NB {wanaku.service.expire-time} > {wanaku.service.provider.registration.interval}
      */
     @ConfigProperty(name = "wanaku.service.expire-time", defaultValue = "60")

@@ -4,9 +4,9 @@ import java.util.Map;
 
 /**
  * Interface used by delegates that can provide access to exchange-related properties.
- *
+ * <p>
  * Implementors of this interface should supply a {@code Map} of available properties, which are identified by their respective names or keys.
- *
+ * <p>
  * These properties will often be defined in the `application.properties` file and accessed via configuration wrappers.
  */
 public interface PropertyProvider {

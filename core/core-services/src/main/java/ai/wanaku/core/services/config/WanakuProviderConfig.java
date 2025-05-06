@@ -18,7 +18,7 @@ public interface WanakuProviderConfig extends WanakuServiceConfig {
 
     /**
      * Returns the base URI for the provider.
-     *
+     * <p>
      * This is a template string with placeholders for the scheme and host, which can be used to construct
      * the actual URI for the provider. By default, it will use the scheme and host format, but this value
      * can be overridden by providing a custom base URI in the settings.
@@ -38,7 +38,7 @@ public interface WanakuProviderConfig extends WanakuServiceConfig {
 
     /**
      * Returns the credentials used by the provider.
-     *
+     * <p>
      * These credentials can include authentication information such as username and password,
      * or other types of credentials like API keys. They will be used to construct the actual URI
      * for the provider based on the base URI template string provided above.
@@ -49,7 +49,7 @@ public interface WanakuProviderConfig extends WanakuServiceConfig {
 
     /**
      * Returns the registration information for the provider.
-     *
+     * <p>
      * This is used to adjust how the service handles registration with the service registry.
      *
      * @return The registration information for the provider.
