@@ -1,6 +1,5 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import ai.wanaku.api.types.CallableReference;
 import java.net.URI;
 import java.util.List;
 

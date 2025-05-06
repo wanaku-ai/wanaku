@@ -1,6 +1,5 @@
 package ai.wanaku.core.persistence.file;
 
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.api.types.management.State;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
