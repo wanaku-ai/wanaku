@@ -16,8 +16,7 @@ public class URLConverter implements CommandLine.ITypeConverter<URL> {
     @Override
     public URL convert(String value) throws Exception {
         try {
-            URL url = new URL(value);
-            return url;
+            return new URL(value);
         } catch (Exception e){
             // so it's not an URL, maybe a local path?
         }
