@@ -1,5 +1,6 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
+import ai.wanaku.core.util.support.TestIndexHelper;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class ServiceRegistrySaveTest {
         File indexFile = new File(RESOURCE_TARGETS_INDEX);
 
         // Save the index to a file
-        IndexHelper.saveTargetsIndex(indexFile, TargetsHelper.getResourceTargets());
+        TestIndexHelper.saveTargetsIndex(indexFile, TargetsHelper.getResourceTargets());
 
         // Verify that the file exists and is not empty
         assertTrue(indexFile.exists());
@@ -40,7 +41,7 @@ public class ServiceRegistrySaveTest {
         File indexFile = new File(RESOURCE_TARGETS_INDEX);
 
         // Save the index to a file
-        Map<String, Service> targets = IndexHelper.loadTargetsIndex(indexFile, Service.class);
+        Map<String, Service> targets = TestIndexHelper.loadTargetsIndex(indexFile, Service.class);
 
         assertEquals(1, targets.size());
     }
@@ -52,7 +53,7 @@ public class ServiceRegistrySaveTest {
         File indexFile = new File(TOOLS_TARGETS_INDEX);
 
         // Save the index to a file
-        IndexHelper.saveTargetsIndex(indexFile, TargetsHelper.getToolsTargets());
+        TestIndexHelper.saveTargetsIndex(indexFile, TargetsHelper.getToolsTargets());
 
         // Verify that the file exists and is not empty
         assertTrue(indexFile.exists());
@@ -66,7 +67,7 @@ public class ServiceRegistrySaveTest {
         File indexFile = new File(TOOLS_TARGETS_INDEX);
 
         // Save the index to a file
-        Map<String, Service> targets = IndexHelper.loadTargetsIndex(indexFile, Service.class);
+        Map<String, Service> targets = TestIndexHelper.loadTargetsIndex(indexFile, Service.class);
 
         assertEquals(2, targets.size());
     }
