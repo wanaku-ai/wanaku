@@ -81,7 +81,7 @@
 
     <profiles>
         <profile>
-            <id>native</id>
+            <id>native-services</id>
             <activation>
                 <property>
                     <name>native</name>
