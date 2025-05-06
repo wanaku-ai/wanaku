@@ -60,17 +60,17 @@ mvn release:clean
 mvn --batch-mode -Dtag=wanaku-${CURRENT_DEVELOPMENT_VERSION} release:prepare -DreleaseVersion=${CURRENT_DEVELOPMENT_VERSION} -DdevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}-SNAPSHOT
 ```
 
-Commit the auto-generated UI files:
-
-```shell
-mvn -PcommitFiles scm:checkin
-```
-
-Adjust the docker-compose files: 
+Adjust the docker-compose files:
 
 ```shell
 sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose.yml
 sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose-prod.yml
+```
+
+Commit the auto-generated UI files and the other version-specific files:
+
+```shell
+mvn -PcommitFiles scm:checkin
 ```
 
 **NOTE**: do not perform any other manual commit nor push the code. If necessary, append to the UI commit.
