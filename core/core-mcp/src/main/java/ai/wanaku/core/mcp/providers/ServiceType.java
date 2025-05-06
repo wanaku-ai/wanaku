@@ -22,7 +22,7 @@ public enum ServiceType {
 
     /**
      * The string value representing the service type
-     * @return
+     * @return the string value representing the service type
      */
     public String asValue() {
         return value;

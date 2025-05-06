@@ -49,7 +49,7 @@ public class URIHelper {
      * Build a URI from a base one
      * @param baseUri the base uri (i.e.; ftp://user@host/)
      * @param parameters the query parameters
-     * @return
+     * @return a URI as a string
      */
     public static String buildUri(String baseUri, Map<String, ?> parameters) {
         StringBuilder uri = new StringBuilder(baseUri);
@@ -62,7 +62,7 @@ public class URIHelper {
      * @param scheme URI scheme
      * @param path URI path
      * @param parameters query parameters as a Map
-     * @return
+     * @return a URI as a string
      */
     public static String buildUri(String scheme, String path, Map<String, ?> parameters) {
         StringBuilder uri = new StringBuilder(scheme);

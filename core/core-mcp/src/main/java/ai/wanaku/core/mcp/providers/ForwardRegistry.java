@@ -60,7 +60,7 @@ public interface ForwardRegistry {
      *
      * Provides programmatic access to the list of services for which forward resolvers have been created or retrieved.
      * This allows for iterative exploration of the registry's contents, useful in certain scenarios where explicit
-     * lookups or enumerations are not feasible or efficient.
+     * lookups or enumerations are not possible or efficient.
      *
      * @return a set of all registered ForwardReference instances managed by this registry
      */

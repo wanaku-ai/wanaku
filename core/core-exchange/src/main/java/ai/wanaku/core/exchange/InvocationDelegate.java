@@ -7,8 +7,8 @@ public interface InvocationDelegate extends ConfigurableDelegate, RegisterAware,
 
     /**
      * Invokes the tool
-     * @param request
-     * @return
+     * @param request the tool invocation request, including the body and parameters passed
+     * @return A ToolInvokeReply instance with details about the tool execution status
      */
     ToolInvokeReply invoke(ToolInvokeRequest request);
 }
