@@ -37,7 +37,7 @@ public class TelegramClient implements Client {
 
         } catch(Exception e){
             e.printStackTrace();
-            return String.format("Unexcpected error occured while sending the messege ");
+            return String.format("Unexpected error occurred while sending the message ");
         }
 
         return String.format("Message sent successfully to telegramId %s", chatId);
