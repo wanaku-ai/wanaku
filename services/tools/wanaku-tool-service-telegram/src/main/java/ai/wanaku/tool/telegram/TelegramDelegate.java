@@ -1,7 +1,6 @@
 package ai.wanaku.tool.telegram;
 
 import java.util.List;
-import java.util.Map;
 
 import ai.wanaku.core.services.tool.AbstractToolDelegate;
 import jakarta.enterprise.context.ApplicationScoped;

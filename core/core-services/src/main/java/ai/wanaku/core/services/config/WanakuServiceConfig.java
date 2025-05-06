@@ -1,7 +1,6 @@
 package ai.wanaku.core.services.config;
 
 import io.smallrye.config.WithDefault;
-import java.util.List;
 import java.util.Map;
 
 import ai.wanaku.core.config.WanakuConfig;

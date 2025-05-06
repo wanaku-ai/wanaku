@@ -9,7 +9,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.skyscreamer.jsonassert.JSONAssert;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.file.Files;
