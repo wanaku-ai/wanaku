@@ -6,7 +6,7 @@ import java.util.Set;
 
 /**
  * A registry for managing forwarded services and their resolvers.
- *
+ * <p>
  * This interface provides methods to create and retrieve forward resolvers,
  * link/unlink services with specific resolvers, and access a list of all registered services.
  */

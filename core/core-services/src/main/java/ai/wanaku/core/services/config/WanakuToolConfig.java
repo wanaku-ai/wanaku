@@ -5,7 +5,7 @@ import io.smallrye.config.WithDefault;
 
 /**
  * Configuration class for tool services.
- *
+ * <p>
  * This interface provides configuration options for tool services, including their name, base URI,
  * credentials, and registration information. Tool services are typically used to perform specific tasks
  * or operations on data, such as routing or processing.
@@ -15,7 +15,7 @@ public interface WanakuToolConfig extends WanakuServiceConfig {
 
     /**
      * Returns the name of the tool service.
-     *
+     * <p>
      * This is a required configuration option that identifies the tool service.
      *
      * @return The name of the tool service.
@@ -24,7 +24,7 @@ public interface WanakuToolConfig extends WanakuServiceConfig {
 
     /**
      * Returns the base URI for the tool service.
-     *
+     * <p>
      * This is a template string with placeholders for the scheme and host, which can be used to construct
      * the actual URI for the tool service. By default, it will use the scheme and host from the credentials,
      * but this value can be overridden by providing a custom base URI.
@@ -36,7 +36,7 @@ public interface WanakuToolConfig extends WanakuServiceConfig {
 
     /**
      * Returns the service associated with the tool service.
-     *
+     * <p>
      * This is an optional configuration option, but it's required if you want to register a service
      * with this provider. If not specified, the service will be automatically discovered based on the
      * name and credentials.
@@ -47,7 +47,7 @@ public interface WanakuToolConfig extends WanakuServiceConfig {
 
     /**
      * Returns the credentials for accessing the tool service.
-     *
+     * <p>
      * These credentials can include authentication information such as username and password,
      * or other types of credentials like API keys. They will be used to construct the actual URI
      * for the tool service based on the base URI template string provided above.
@@ -58,7 +58,7 @@ public interface WanakuToolConfig extends WanakuServiceConfig {
 
     /**
      * Returns the registration information for the tool service.
-     *
+     * <p>
      * This is an optional configuration option, but it's required if you want to register a service
      * with this provider. If not specified, the registration will be automatically generated based on
      * the name and credentials.
