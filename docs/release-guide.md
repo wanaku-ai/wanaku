@@ -20,8 +20,9 @@ gpg --list-public-keys --keyid-format LONG
 Repeat this for every machine to be used for the release.
 
 ```shell
-export CURRENT_DEVELOPMENT_VERSION=0.0.4
-export NEXT_DEVELOPMENT_VERSION=0.0.5
+export PREVIOUS_VERSION=0.0.4
+export CURRENT_DEVELOPMENT_VERSION=0.0.5
+export NEXT_DEVELOPMENT_VERSION=0.0.6
 ```
 
 **NOTE**: there is no need to add `-SNAPSHOT` to the versions.
@@ -63,6 +64,13 @@ Commit the auto-generated UI files:
 
 ```shell
 mvn -PcommitFiles scm:checkin
+```
+
+Adjust the docker-compose files: 
+
+```shell
+sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose.yml
+sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose-prod.yml
 ```
 
 **NOTE**: do not perform any other manual commit nor push the code. If necessary, append to the UI commit.
