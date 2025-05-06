@@ -7,12 +7,9 @@ import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.services.tool.Client;
 import java.util.Map;
 import org.apache.camel.ProducerTemplate;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TelegramClient implements Client {
-    private static final Logger LOG = Logger.getLogger(TelegramClient.class);
-
     @Inject
     ProducerTemplate producer;
 
@@ -32,14 +29,7 @@ public class TelegramClient implements Client {
         String baseUri = String.format("telegram:bots?authorizationToken=%s&chatId=%s", authToken, chatId);
 
         String message = request.getArgumentsMap().get("message");
-        try{
-            producer.sendBody(baseUri, message);
-
-        } catch(Exception e){
-            e.printStackTrace();
-            return String.format("Unexpected error occurred while sending the message ");
-        }
-
+        producer.sendBody(baseUri, message);
         return String.format("Message sent successfully to telegramId %s", chatId);
     }
 }
