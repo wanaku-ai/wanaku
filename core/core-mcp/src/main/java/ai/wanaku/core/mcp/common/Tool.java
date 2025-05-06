@@ -12,7 +12,7 @@ public interface Tool {
      * Call a tool
      * @param toolReference the tool reference
      * @param toolArguments the arguments to the tool
-     * @return
+     * @return The tool response instance containing details about its execution
      */
     ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
 }

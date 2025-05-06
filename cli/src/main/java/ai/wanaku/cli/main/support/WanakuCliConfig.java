@@ -36,7 +36,7 @@ public interface WanakuCliConfig extends WanakuConfig {
     /**
      * Every service needs its own gRPC port. The CLI increases it automatically
      * starting from this port number
-     * @return
+     * @return the port
      */
     @WithDefault("9000")
     int initialGrpcPort();

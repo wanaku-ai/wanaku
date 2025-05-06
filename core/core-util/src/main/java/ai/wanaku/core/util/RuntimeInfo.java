@@ -10,7 +10,7 @@ public class RuntimeInfo {
 
     /**
      * Tests if it is running on Windows
-     * @return
+     * @return true if it is Widows or false otherwise
      */
     public static boolean isWindows() {
         return OS.contains("win");
