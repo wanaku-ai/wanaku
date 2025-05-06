@@ -722,7 +722,7 @@
   },
   "info" : {
     "title" : "wanaku-router API",
-    "version" : "0.0.5-SNAPSHOT"
+    "version" : "0.0.5"
   },
   "servers" : [ {
     "url" : "http://localhost:8080",
