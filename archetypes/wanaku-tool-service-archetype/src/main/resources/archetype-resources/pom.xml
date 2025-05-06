@@ -107,7 +107,7 @@
             <id>native</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-services</name>
                 </property>
             </activation>
             <properties>
@@ -152,7 +152,7 @@
             <id>dist-native</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-services</name>
                 </property>
             </activation>
             <build>

@@ -7,7 +7,7 @@ Before running or deploying the Wanaku MCP Router, you need to build the project
 ## Prerequisites
 
 * [Apache Maven](https://maven.apache.org) 3.x is required to build and package the project.
-* For native CLI builds, please follow the [Quarkus instructions on how to set up your environment](https://quarkus.io/guides/building-native-image).
+* For (experimental) native CLI builds, please follow the [Quarkus instructions on how to set up your environment](https://quarkus.io/guides/building-native-image).
 
 ### Building the Project
 
@@ -33,16 +33,35 @@ To build the project with native CLI support, run:
 mvn -Pnative clean package
 ```
 
-> [!NOTE]
-> Wanaku also supports running natively, but this feature has not been fully tested.
+## Building with Native Router Support
+
+Wanaku Router also supports native mode, but this feature has not been fully tested.
 
 To enable native mode for the router, run:
 
 ```shell
-mvn -Pdist -Dnative clean package
+mvn -Pdist -Dnative -Dnative-router clean package
 ```
 
+> [!IMPORTANT]
+> Native support is experimental
+
+## Building with Native Services Support
+
+Wanaku services also supports native mode, but this feature has not been fully tested.
+
+To enable native mode for the router, run:
+
+```shell
+mvn -Pdist -Dnative -Dnative-services clean package
+```
+
+> [!IMPORTANT]
+> Native support is experimental
+
 By following these steps, you should be able to successfully build the Wanaku MCP Router project and prepare it for deployment.
+
+## Native build tips
 
 The project comes with rudimentary automation for native builds for development purposes. For instance, you can install the CLI 
 into your `$HOME/bin/` directory by running:

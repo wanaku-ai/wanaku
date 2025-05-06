@@ -128,7 +128,7 @@
             <id>native</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-router</name>
                 </property>
             </activation>
             <properties>
@@ -173,7 +173,7 @@
             <id>dist-native</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-router</name>
                 </property>
             </activation>
             <build>
