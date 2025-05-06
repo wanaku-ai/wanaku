@@ -10,7 +10,7 @@
     <url>https://github.com/wanaku-ai/wanaku</url>
     <description>Wanaku MCP Router</description>
 
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.5</version>
     <packaging>pom</packaging>
 
     <developers>
@@ -27,7 +27,7 @@
         <connection>scm:git:https://github.com/wanaku-ai/wanaku.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/wanaku-ai/wanaku.git</developerConnection>
         <url>https://github.com/wanaku-ai/wanaku</url>
-        <tag>HEAD</tag>
+        <tag>wanaku-0.0.5</tag>
     </scm>
 
     <licenses>
