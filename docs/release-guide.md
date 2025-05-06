@@ -48,7 +48,7 @@ jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION
 Then, on your Linux host, build the project again and check if Linux artifacts can be released.
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION}-SNAPSHOT --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION}-SNAPSHOT --select-platform=linux-x86_64 --dry-run --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram
 ```
 
 If everything goes alright, then it should be ready to release.
