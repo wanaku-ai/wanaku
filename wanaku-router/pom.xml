@@ -4,8 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
-        <artifactId>routers</artifactId>
+        <artifactId>parent</artifactId>
         <version>0.0.6-SNAPSHOT</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>wanaku-router</artifactId>
@@ -18,6 +19,29 @@
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-mcp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
             <artifactId>core-exchange</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -25,6 +49,38 @@
             <groupId>ai.wanaku</groupId>
             <artifactId>core-service-discovery</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-mcp-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-picocli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-jib</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>${quarkus-quinoa.version}</version>
         </dependency>
 
         <dependency>
@@ -40,24 +96,12 @@
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-mcp-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ai.wanaku</groupId>
             <artifactId>core-util</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>consul</artifactId>
-            <version>${test-containers.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>

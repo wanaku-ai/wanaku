@@ -22,6 +22,7 @@
         <module>core-runtimes</module>
         <module>core-persistence</module>
         <module>core-mcp-client</module>
+        <module>core-server</module>
     </modules>
 
 
