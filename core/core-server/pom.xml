@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
-        <artifactId>servers</artifactId>
+        <artifactId>core</artifactId>
         <version>0.0.6-SNAPSHOT</version>
     </parent>
 
-    <artifactId>wanaku-server-quarkus</artifactId>
-    <name>Wanaku :: Servers :: Quarkus</name>
+    <artifactId>core-server</artifactId>
+    <name>Wanaku :: Core :: Server</name>
 
     <dependencies>
         <dependency>
@@ -79,7 +79,7 @@
 
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
-            <artifactId>quarkus-mcp-server-sse</artifactId> <!-- use 'quarkus-mcp-server-stdio' if you want to use the STDIO transport instead of the SSE transport -->
+            <artifactId>quarkus-mcp-server-sse</artifactId>
             <version>${quarkus-mcp-server.version}</version>
         </dependency>
 

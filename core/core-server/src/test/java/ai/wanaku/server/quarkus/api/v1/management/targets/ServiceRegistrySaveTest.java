@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import ai.wanaku.api.types.management.Service;
-import ai.wanaku.core.util.IndexHelper;
 import ai.wanaku.server.quarkus.support.TargetsHelper;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;

@@ -15,7 +15,7 @@ import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.management.Service;
 import ai.wanaku.api.types.management.State;
-import java.io.IOException;
+
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
