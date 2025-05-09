@@ -47,9 +47,9 @@ distributions:
         platform: linux-x86_64
   router:
     artifacts:
-      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
+      - path: wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
         platform: osx-aarch_64
-      - path: routers/wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
+      - path: wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
         platform: linux-x86_64
   service-yaml-route:
     artifacts:

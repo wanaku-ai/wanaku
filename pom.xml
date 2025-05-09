@@ -100,8 +100,7 @@
         <module>parent</module>
         <module>api</module>
         <module>core</module>
-        <module>servers</module>
-        <module>routers</module>
+        <module>wanaku-router</module>
         <module>cli</module>
         <module>services</module>
         <module>archetypes</module>

@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>wanaku-tool-service-telegram</artifactId>
-    <name>Wanaku :: Service :: Tools :: Telegram</name>
+    <name>Wanaku :: Services :: Tools :: Telegram</name>
 
     <dependencyManagement>
         <dependencies>
