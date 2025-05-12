@@ -31,8 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 
 public class WanakuForwardResolver implements ForwardResolver {
+    private static final Logger LOG = Logger.getLogger(WanakuForwardResolver.class);
 
     private ForwardReference reference;
     private ReentrantLock lock = new ReentrantLock();
@@ -154,6 +156,8 @@ public class WanakuForwardResolver implements ForwardResolver {
     private class ForwardTool implements Tool {
         @Override
         public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+            LOG.infof("Calling tool on behalf of connection %s", toolArguments.connection().id());
+
             try {
                 lock.lock();
                 ToolExecutionRequest request = ToolExecutionRequest
@@ -166,6 +170,7 @@ public class WanakuForwardResolver implements ForwardResolver {
                     return ToolResponse.success(status);
                 }
             } catch (Exception e) {
+                LOG.errorf(e, "Unable to remote tool: %s (connection: %s)", e.getMessage(), toolArguments.connection().id());
                 return ToolResponse.error(e.getMessage());
             } finally {
                 lock.unlock();

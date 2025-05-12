@@ -37,6 +37,8 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
     @Override
     public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+        LOG.infof("Requesting resource on behalf of connection %s", arguments.connection().id());
+
         Service service = serviceRegistry.getService(mcpResource.getType());
         if (service == null) {
             String message = String.format("There is no service registered for service %s", mcpResource.getType());
@@ -50,6 +52,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.getTarget());
         final ResourceReply reply = acquireRemotely(mcpResource, arguments, service);
         if (reply.getIsError()) {
+            LOG.errorf("Unable to acquire resource for connection: %s", arguments.connection().id());
 
             TextResourceContents textResourceContents =
                     new TextResourceContents(arguments.requestUri().value(), reply.getContentList().get(0), "text/plain");

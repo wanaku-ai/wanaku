@@ -51,6 +51,7 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+        LOG.infof("Calling tool on behalf of connection %s", toolArguments.connection().id());
         if (toolReference instanceof ToolReference ref) {
             return call(toolArguments, ref);
         }
@@ -79,7 +80,7 @@ public class InvokerProxy implements ToolsProxy {
                 return ToolResponse.success(contents);
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Unable to call endpoint: %s", e.getMessage());
+            LOG.errorf(e, "Unable to call endpoint: %s (connection: %s)", e.getMessage(), toolArguments.connection().id());
             return ToolResponse.error(e.getMessage());
         }
     }
