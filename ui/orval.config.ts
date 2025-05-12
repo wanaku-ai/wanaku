@@ -2,7 +2,7 @@ import { defineConfig } from 'orval';
 
 export default defineConfig({
     wanaku: {
-        input: '../routers/wanaku-router/src/main/webui/openapi.json',
+        input: '../wanaku-router/src/main/webui/openapi.json',
         output: {
             mode: 'single',
             target: './src/api/wanaku-router-api.ts',

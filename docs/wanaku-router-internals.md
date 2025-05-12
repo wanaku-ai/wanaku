@@ -2,7 +2,7 @@
 
 The root abstraction for all operations within Wanaku MCP Router is the Proxy interface. All MCP
 operations within Wanaku are executed by implementations of a Proxy. For details, 
-see [`Proxy`](https://github.com/wanaku-ai/wanaku/blob/main/routers/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/Proxy.java) 
+see [`Proxy`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/Proxy.java) 
 interface. 
 Leveraging the `Proxy` interface, then we have the classes `ResourceAcquirerProxy` and `InvokerProxy` that use [gRPC](https://grpc.io/)
 to exchange data with the subcomponents providing access to the resources and tools exposed by the router.
