@@ -31,15 +31,15 @@ load-meta:
 	wanaku tools add -n "wanaku-resources-list" --description "List resources available on the Wanaku MCP router" --uri "http://localhost:8080/api/v1/resources/list" --type http
 
 test-resources:
-	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)/samples/data/test.txt --mimeType=text/plain --description="Sample resource added via CLI" --name="sample-file" --type=file
-	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)./samples/data/ --mimeType=text/plain --description="Sample resource dir added via CLI" --name="sample-dir" --type=file
+	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)/test/data/files/test.txt --mimeType=text/plain --description="Sample resource added via CLI" --name="sample-file" --type=file
+	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)./test/data/files --mimeType=text/plain --description="Sample resource dir added via CLI" --name="sample-dir" --type=file
 
 test-tools:
 	wanaku tools add --host $(API_ENDPOINT) -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --required count
 	wanaku tools add --host $(API_ENDPOINT) -n "dog-facts" --description "Retrieve random facts about dogs" --uri "https://dogapi.dog/api/v2/facts?limit={count or 1}" --type http  --property "count:int,The count of facts to retrieve" --required count
-	wanaku tools add --host $(API_ENDPOINT) -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file://$(mkfile_dir)/samples/routes/camel-route/hello-quote.camel.yaml" --type camel-yaml
+	wanaku tools add --host $(API_ENDPOINT) -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file://$(mkfile_dir)/tests/data/routes/camel-route/hello-quote.camel.yaml" --type camel-yaml
 	wanaku tools add --host $(API_ENDPOINT) -n "tavily-search" --description "Search on the internet using Tavily" --uri "tavily://search" --type tavily
-	wanaku tools add --host $(API_ENDPOINT) -n "laptop-order" --description "Use the request system to order a new laptop" --uri "$(HOME)/.jbang/bin/camel run --max-messages=1 $(mkfile_dir)/samples/routes/camel-route/camel-jbang-quote.camel.yaml" --type exec
+	wanaku tools add --host $(API_ENDPOINT) -n "laptop-order" --description "Use the request system to order a new laptop" --uri "$(HOME)/.jbang/bin/camel run --max-messages=1 $(mkfile_dir)/tests/data/routes/camel-route/camel-jbang-quote.camel.yaml" --type exec
 
 clean-test-tools:
 	wanaku tools remove --name "meow-facts"
