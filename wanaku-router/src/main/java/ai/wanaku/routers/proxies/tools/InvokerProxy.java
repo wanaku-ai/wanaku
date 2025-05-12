@@ -59,7 +59,7 @@ public class InvokerProxy implements ToolsProxy {
         throw new UnsupportedOperationException("Only local tool call references should be invoked by this proxy");
     }
 
-    public ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
+    private ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
         Service service = serviceRegistry.getService(toolReference.getType());
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
