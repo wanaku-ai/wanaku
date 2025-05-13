@@ -82,6 +82,8 @@ public class ValkeyRegistry implements ServiceRegistry {
                     Configuration configuration = new Configuration();
                     configuration.setDescription(entry.getValue());
                     jedis.hset(serviceTarget.getService(), entry.getKey(), configuration.toJson());
+                } else {
+                    LOG.infof("A configuration %s for service %s already exists", entry.getKey(), serviceTarget.getService());
                 }
             }
 
