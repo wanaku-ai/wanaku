@@ -1,0 +1,237 @@
+[ {
+  "name" : "GetChart",
+  "description" : null,
+  "uri" : "https://query1.finance.yahoo.com/v8/finance/chart/{parameter.value('symbol')}",
+  "type" : "http",
+  "inputSchema" : {
+    "type" : "object",
+    "properties" : {
+      "useYfid" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      ".tsrc" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "symbol" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "CamelHttpMethod" : {
+        "type" : "string",
+        "description" : "HTTP method to use when call the service.",
+        "target" : "header",
+        "scope" : "service",
+        "value" : "GET"
+      },
+      "interval" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "period2" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "period1" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "region" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "lang" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "includePrePost" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "events" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "corsDomain" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      }
+    },
+    "required" : [ "symbol", "interval", "period1", "period2" ]
+  }
+}, {
+  "name" : "GetQuote",
+  "description" : "Returns quotes for the specified symbols",
+  "uri" : "https://query1.finance.yahoo.com/v7/finance/quote",
+  "type" : "http",
+  "inputSchema" : {
+    "type" : "object",
+    "properties" : {
+      "formatted" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "CamelHttpMethod" : {
+        "type" : "string",
+        "description" : "HTTP method to use when call the service.",
+        "target" : "header",
+        "scope" : "service",
+        "value" : "GET"
+      },
+      "region" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "lang" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "fields" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "includePrePost" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "symbols" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "corsDomain" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      }
+    },
+    "required" : [ "symbols" ]
+  }
+}, {
+  "name" : "Spark",
+  "description" : null,
+  "uri" : "https://query1.finance.yahoo.com/v7/finance/spark",
+  "type" : "http",
+  "inputSchema" : {
+    "type" : "object",
+    "properties" : {
+      "includeTimestamps" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "CamelHttpMethod" : {
+        "type" : "string",
+        "description" : "HTTP method to use when call the service.",
+        "target" : "header",
+        "scope" : "service",
+        "value" : "GET"
+      },
+      "range" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "interval" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "lang" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "indicators" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "includePrePost" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "symbols" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      },
+      "corsDomain" : {
+        "type" : "string",
+        "description" : null,
+        "target" : null,
+        "scope" : "service",
+        "value" : null
+      }
+    },
+    "required" : [ "interval", "range", "symbols" ]
+  }
+} ]

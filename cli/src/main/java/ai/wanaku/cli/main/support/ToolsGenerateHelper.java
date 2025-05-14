@@ -192,11 +192,14 @@ public class ToolsGenerateHelper {
         String uri = determineOperationUri(operation, baseUrl);
         toolReference.setUri(toolReferenceUrl(uri, path));
 
+        List<Parameter> parameters = pathItem.getParameters() != null  ? pathItem.getParameters() : List.of();
+
+        if (operation.getParameters() != null) {
+            parameters = Stream.concat(operation.getParameters().stream(),parameters.stream()).toList();
+        }
+
         // Set input schema
-        InputSchema inputSchema = parameters2InputSchema(
-                pathItem.getParameters() != null ? pathItem.getParameters() : List.of(),
-                operation.getRequestBody()
-        );
+        InputSchema inputSchema = parameters2InputSchema(parameters, operation.getRequestBody());
 
         // Add HTTP method parameter
         addHttpMethodProperty(inputSchema, method);
