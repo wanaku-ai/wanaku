@@ -69,6 +69,13 @@
           "target": "header",
           "scope": "service",
           "value": "GET"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status values that need to be considered for filter",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
       "required": []
@@ -88,6 +95,13 @@
           "target": "header",
           "scope": "service",
           "value": "GET"
+        },
+        "tags": {
+          "type": "string",
+          "description": "Tags to filter by",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
       "required": []
@@ -101,6 +115,13 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "petId": {
+          "type": "string",
+          "description": "ID of pet to return",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
@@ -109,7 +130,9 @@
           "value": "GET"
         }
       },
-      "required": []
+      "required": [
+        "petId"
+      ]
     }
   },
   {
@@ -120,15 +143,38 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "petId": {
+          "type": "string",
+          "description": "ID of pet that needs to be updated",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
           "target": "header",
           "scope": "service",
           "value": "POST"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of pet that needs to be updated",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of pet that needs to be updated",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
-      "required": []
+      "required": [
+        "petId"
+      ]
     }
   },
   {
@@ -139,6 +185,20 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "petId": {
+          "type": "string",
+          "description": "Pet id to delete",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
+        "api_key": {
+          "type": "string",
+          "description": "",
+          "target": "header",
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
@@ -147,7 +207,9 @@
           "value": "DELETE"
         }
       },
-      "required": []
+      "required": [
+        "petId"
+      ]
     }
   },
   {
@@ -158,12 +220,26 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "petId": {
+          "type": "string",
+          "description": "ID of pet to update",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
           "target": "header",
           "scope": "service",
           "value": "POST"
+        },
+        "additionalMetadata": {
+          "type": "string",
+          "description": "Additional Metadata",
+          "target": null,
+          "scope": "service",
+          "value": null
         },
         "wanaku_body": {
           "type": "string",
@@ -173,7 +249,9 @@
           "value": null
         }
       },
-      "required": []
+      "required": [
+        "petId"
+      ]
     }
   },
   {
@@ -229,6 +307,13 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "ID of order that needs to be fetched",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
@@ -237,7 +322,9 @@
           "value": "GET"
         }
       },
-      "required": []
+      "required": [
+        "orderId"
+      ]
     }
   },
   {
@@ -248,6 +335,13 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "ID of the order that needs to be deleted",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
@@ -256,7 +350,9 @@
           "value": "DELETE"
         }
       },
-      "required": []
+      "required": [
+        "orderId"
+      ]
     }
   },
   {
@@ -319,12 +415,26 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "password": {
+          "type": "string",
+          "description": "The password for login in clear text",
+          "target": null,
+          "scope": "service",
+          "value": null
+        },
         "CamelHttpMethod": {
           "type": "string",
           "description": "HTTP method to use when call the service.",
           "target": "header",
           "scope": "service",
           "value": "GET"
+        },
+        "username": {
+          "type": "string",
+          "description": "The user name for login",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
       "required": []
@@ -363,9 +473,18 @@
           "target": "header",
           "scope": "service",
           "value": "GET"
+        },
+        "username": {
+          "type": "string",
+          "description": "The name that needs to be fetched. Use user1 for testing",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
-      "required": []
+      "required": [
+        "username"
+      ]
     }
   },
   {
@@ -389,9 +508,18 @@
           "target": null,
           "scope": null,
           "value": null
+        },
+        "username": {
+          "type": "string",
+          "description": "name that need to be deleted",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
-      "required": []
+      "required": [
+        "username"
+      ]
     }
   },
   {
@@ -408,9 +536,18 @@
           "target": "header",
           "scope": "service",
           "value": "DELETE"
+        },
+        "username": {
+          "type": "string",
+          "description": "The name that needs to be deleted",
+          "target": null,
+          "scope": "service",
+          "value": null
         }
       },
-      "required": []
+      "required": [
+        "username"
+      ]
     }
   }
 ]
