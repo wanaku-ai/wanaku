@@ -29,7 +29,7 @@ import java.util.Map;
 
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.addHttpMethodProperty;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.getOutputPrintWriter2;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.getOutputPrintWriter;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.interpolateServerUrl;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.operation2ToolReference;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.parameter2Property;
@@ -429,7 +429,7 @@ public class ToolsGenerateSupportTest {
         @DisplayName("Should return System.out when output is null")
         void shouldReturnSystemOutWhenOutputIsNull() throws Exception {
             // Act
-            try(PrintWriter writer = getOutputPrintWriter2(null)) {
+            try(PrintWriter writer = getOutputPrintWriter(null)) {
 
                 // Assert
                 assertNotNull(writer);
@@ -443,7 +443,7 @@ public class ToolsGenerateSupportTest {
             String dirPath = tempDir.toString();
 
             // Act
-           try(PrintWriter writer = getOutputPrintWriter2(dirPath)) {
+           try(PrintWriter writer = getOutputPrintWriter(dirPath)) {
 
                // Assert
                assertNotNull(writer);
@@ -460,7 +460,7 @@ public class ToolsGenerateSupportTest {
 
             // Act & Assert
             Exception exception = assertThrows(Exception.class, () -> {
-                getOutputPrintWriter2(filePath.toString());
+                getOutputPrintWriter(filePath.toString());
             });
 
             assertTrue(exception.getMessage().contains("already exists"));
