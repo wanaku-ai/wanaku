@@ -13,6 +13,8 @@ import ai.wanaku.cli.main.services.ToolsService;
 import ai.wanaku.core.util.IndexHelper;
 import picocli.CommandLine;
 
+import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
+
 @CommandLine.Command(name = "import",description = "Import a toolset")
 public class ToolsImport extends BaseCommand {
     private static final Logger LOG = Logger.getLogger(ToolsImport.class);
@@ -29,18 +31,17 @@ public class ToolsImport extends BaseCommand {
     @Override
     public void run() {
         try {
-            toolsService = QuarkusRestClientBuilder.newBuilder()
-                    .baseUri(URI.create(host))
-                    .build(ToolsService.class);
 
             List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(location);
 
-            for (var toolReference : toolReferences) {
-                toolsService.add(toolReference);
-            }
+            importToolset(toolReferences, host);
+
         } catch (Exception e) {
             LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
             throw new RuntimeException(e);
         }
     }
+
+
+
 }

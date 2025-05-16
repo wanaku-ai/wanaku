@@ -16,6 +16,7 @@ import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.util.ResolverFully;
 import org.jboss.logging.Logger;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -130,7 +131,7 @@ public class ToolsGenerateHelper {
      * @throws Exception If an error occurs during writing
      */
     public static void writeOutput(List<ToolReference> toolReferences, String output) throws Exception {
-        try (PrintWriter out = getOutputPrintWriter2(output)) {
+        try (PrintWriter out = getOutputPrintWriter(output)) {
             new ObjectMapper()
                     .writerWithDefaultPrettyPrinter()
                     .writeValue(out, toolReferences);
@@ -359,15 +360,15 @@ public class ToolsGenerateHelper {
     }
 
     /**
-     * Gets a PrintWriter for the specified output location.
-     * If output is null or empty, returns a PrintWriter for standard output.
+     * Gets a PrintWriter for the specified outputFile location.
+     * If outputFile is null or empty, returns a PrintWriter for standard outputFile.
      * Otherwise, returns a PrintWriter for the specified file.
      *
-     * @param output The output path or null for standard output
-     * @return A PrintWriter for the specified output
-     * @throws Exception If the output file cannot be created or written to
+     * @param output The outputFile path or null for standard outputFile
+     * @return A PrintWriter for the specified outputFile
+     * @throws Exception If the outputFile file cannot be created or written to
      */
-    public static PrintWriter getOutputPrintWriter2(String output) throws Exception {
+    public static PrintWriter getOutputPrintWriter(String output) throws Exception {
         if (isEmpty(output)) {
             // Write to STDOUT
             return new PrintWriter(System.out);
@@ -378,7 +379,7 @@ public class ToolsGenerateHelper {
         // Handle directory case
         if (Files.isDirectory(outputPath)) {
             String newFilePath = outputPath.resolve(DEFAULT_OUTPUT_FILENAME).toString();
-            System.err.println("Warning: output file " + output + " is a directory. The tools list will be written to " + newFilePath);
+            System.err.println("Warning: outputFile file " + output + " is a directory. The tools list will be written to " + newFilePath);
             outputPath = Paths.get(newFilePath);
         }
 
@@ -389,9 +390,11 @@ public class ToolsGenerateHelper {
             throw new Exception(errorMessage);
         }
 
+        Path parent = outputPath.getParent() == null ? Path.of(".") : outputPath.getParent();
+
         // Check if parent directory is writable
-        if (cannotWriteToDirectory(outputPath.getParent())) {
-            String errorMessage = "Cannot write to directory: " + outputPath.getParent();
+        if (cannotWriteToDirectory(parent)) {
+            String errorMessage = "Cannot write to directory: " + parent;
             System.err.println(errorMessage);
             throw new Exception(errorMessage);
         }
@@ -399,7 +402,7 @@ public class ToolsGenerateHelper {
         try {
             return new PrintWriter(new FileWriter(outputPath.toString()));
         } catch (IOException e) {
-            String errorMessage = "Could not open output file "+ output + " :" + e.getMessage();
+            String errorMessage = "Could not open outputFile file "+ output + " :" + e.getMessage();
             LOG.error(errorMessage);
             System.err.println(errorMessage);
             throw new Exception(errorMessage);
