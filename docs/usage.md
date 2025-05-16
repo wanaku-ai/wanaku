@@ -292,6 +292,8 @@ a warning message.
 If the specified file already exists, the command will return an error without overwriting the file.
 The parent directory of the specified file must exist and be writable by the current user.
 
+If the `--import` (or `-I`) option is set, the generated toolset is automatically imported into the router, equivalent 
+to running the generate command followed by the import command.
 
 ### Targets 
 

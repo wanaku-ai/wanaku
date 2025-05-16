@@ -1,11 +1,9 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
 import ai.wanaku.cli.main.converter.URLConverter;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -41,7 +39,4 @@ public class ToolsImport extends BaseCommand {
             throw new RuntimeException(e);
         }
     }
-
-
-
 }
