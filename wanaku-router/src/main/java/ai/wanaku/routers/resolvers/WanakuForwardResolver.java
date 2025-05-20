@@ -15,8 +15,9 @@ import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.ResourceRef;
-import dev.langchain4j.mcp.client.ResourceResponse;
+import dev.langchain4j.mcp.client.McpReadResourceResult;
+import dev.langchain4j.mcp.client.McpResource;
+import dev.langchain4j.mcp.client.McpResourceContents;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
@@ -46,7 +47,7 @@ public class WanakuForwardResolver implements ForwardResolver {
     @Override
     public List<ResourceReference> listResources() throws ServiceUnavailableException {
         try (McpClient client = ClientUtil.createClient(reference.getAddress())) {
-            List<ResourceRef> resourceRefs = client.listResources();
+            List<McpResource> resourceRefs = client.listResources();
 
             return resourceRefs.stream()
                     .map(WanakuForwardResolver::remoteToLocal).collect(Collectors.toList());
@@ -56,7 +57,7 @@ public class WanakuForwardResolver implements ForwardResolver {
 
     }
 
-    private static ResourceReference remoteToLocal(ResourceRef remoteRef) {
+    private static ResourceReference remoteToLocal(McpResource remoteRef) {
         ResourceReference ref = new ResourceReference();
         ref.setType("mcp-remote-resource");
         ref.setLocation(remoteRef.uri());
@@ -126,11 +127,11 @@ public class WanakuForwardResolver implements ForwardResolver {
     @Override
     public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         try (McpClient client = ClientUtil.createClient(reference.getAddress())) {
-            ResourceResponse resourceResponse = client.readResource(mcpResource.getLocation());
+            McpReadResourceResult resourceResponse = client.readResource(mcpResource.getLocation());
 
-            List<dev.langchain4j.mcp.client.ResourceContents> contents = resourceResponse.contents();
+            List<McpResourceContents> contents = resourceResponse.contents();
             TextResourceContents textResourceContents = TextResourceContents.create(mcpResource.getLocation(),
-                    contents.get(0).asText().text());
+                    contents.getFirst().toString());
 
             return List.of(textResourceContents);
         } catch (Exception e) {
