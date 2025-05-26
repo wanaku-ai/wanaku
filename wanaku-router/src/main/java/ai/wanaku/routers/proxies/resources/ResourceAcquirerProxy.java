@@ -4,13 +4,11 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.management.Configuration;
 import ai.wanaku.api.types.management.Configurations;
 import ai.wanaku.api.types.management.Service;
-import ai.wanaku.core.exchange.InquireReply;
-import ai.wanaku.core.exchange.InquireRequest;
-import ai.wanaku.core.exchange.InquirerGrpc;
 import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.routers.proxies.ResourceProxy;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
@@ -39,7 +37,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
     public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         LOG.infof("Requesting resource on behalf of connection %s", arguments.connection().id());
 
-        Service service = serviceRegistry.getService(mcpResource.getType());
+        Service service = serviceRegistry.getService(mcpResource.getType(), ServiceType.RESOURCE_PROVIDER);
         if (service == null) {
             String message = String.format("There is no service registered for service %s", mcpResource.getType());
             LOG.error(message);

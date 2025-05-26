@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import ai.wanaku.core.util.RuntimeInfo;
 import org.jboss.logging.Logger;
 
+@Deprecated
 public class FileServiceRegistry extends AbstractFileRepository<ServiceTarget, ServiceTargetEntity, String> implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(FileServiceRegistry.class);
 

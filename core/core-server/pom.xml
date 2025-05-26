@@ -46,7 +46,7 @@
         </dependency>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-persistence-mongodb</artifactId>
+            <artifactId>core-persistence-infinispan</artifactId>
             <version>${project.version}</version>
         </dependency>
 

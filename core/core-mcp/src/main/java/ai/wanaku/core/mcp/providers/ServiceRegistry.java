@@ -29,7 +29,17 @@ public interface ServiceRegistry {
      * @param service the name of the service
      * @return the service instance or null if not found
      */
+    @Deprecated
     Service getService(String service);
+
+    /**
+     * Gets a registered service by name
+     * @param service the name of the service
+     * @return the service instance or null if not found
+     */
+    default Service getService(String service, ServiceType serviceType) {
+        return getService(service);
+    }
 
     /**
      * Saves the current state of the service

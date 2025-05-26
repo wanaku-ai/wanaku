@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Deprecated
 public abstract class AbstractFileRepository<A, T extends WanakuEntity, K> implements WanakuRepository<A, T, K> {
 
     protected final WanakuMarshallerService wanakuMarshallerService;

@@ -43,6 +43,7 @@ import org.jboss.logging.Logger;
  */
 @ApplicationScoped
 @LookupIfProperty(name = "wanaku.service.persistence", stringValue = "valkey")
+@Deprecated
 public class ValkeyRegistry implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(ValkeyRegistry.class);
 
