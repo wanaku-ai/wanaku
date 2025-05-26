@@ -56,6 +56,7 @@
         <commons-pool2.version>2.12.1</commons-pool2.version>
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.32</swagger-core-version>
+        <quarkus-infinispan-embedded.version>1.0.2</quarkus-infinispan-embedded.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>

@@ -30,10 +30,7 @@ public class ToolsResourceTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        File indexFile = TestIndexHelper.createToolsIndex();
-
-        // Verify that the file exists and is not empty
-        Assumptions.assumeTrue(indexFile.exists(), "Cannot test because the index file does not exist");
+        TestIndexHelper.deleteRecursively("target/wanaku/router");
     }
 
     @Order(1)
@@ -45,7 +42,7 @@ public class ToolsResourceTest {
         );
 
         ToolReference toolReference1 = ToolsHelper.createToolReference(
-                "test-tool-3",
+                "test-tool-1",
                 "This is a description of the test tool 1.",
                 "https://example.com/test/tool-1",
                 inputSchema1
@@ -66,17 +63,17 @@ public class ToolsResourceTest {
                 .when().get("/api/v1/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(3),
-                        "data[0].name", is("Tool 1"),
+                .body("data.size()", is(1),
+                        "data[0].name", is("test-tool-1"),
                         "data[0].type", is("http"),
-                        "data[0].description", is("This is a description of Tool 1."));
+                        "data[0].description", is("This is a description of the test tool 1."));
     }
 
     @Order(3)
     @Test
     void testRemove() {
         given()
-                .when().put("/api/v1/tools/remove?tool=test-tool-3")
+                .when().put("/api/v1/tools/remove?tool=test-tool-1")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
@@ -84,10 +81,7 @@ public class ToolsResourceTest {
                 .when().get("/api/v1/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(2),
-                        "data[0].name", is("Tool 1"),
-                        "data[0].type", is("http"),
-                        "data[0].description", is("This is a description of Tool 1."));
+                .body("data.size()", is(0));
     }
 
     @Order(4)
@@ -116,8 +110,8 @@ public class ToolsResourceTest {
                 .when().get("/api/v1/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(3),
-                        "data[2].name", is("test-tool-3"),
-                        "data[2].type", is("http"));
+                .body("data.size()", is(1),
+                        "data[0].name", is("test-tool-3"),
+                        "data[0].type", is("http"));
     }
 }

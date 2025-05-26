@@ -15,6 +15,7 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.routers.proxies.ToolsProxy;
 import com.google.protobuf.ProtocolStringList;
@@ -61,7 +62,7 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     private ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
-        Service service = serviceRegistry.getService(toolReference.getType());
+        Service service = serviceRegistry.getService(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }
@@ -163,7 +164,7 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public Map<String, PropertySchema> getProperties(ToolReference toolReference) {
-        Service service = serviceRegistry.getService(toolReference.getType());
+        Service service = serviceRegistry.getService(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             throw new ServiceNotFoundException("There is no host registered for service " + toolReference.getType());
         }

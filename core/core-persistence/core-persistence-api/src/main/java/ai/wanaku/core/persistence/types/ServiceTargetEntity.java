@@ -6,6 +6,7 @@ import ai.wanaku.core.mcp.providers.ServiceType;
 
 import java.util.Map;
 
+@Deprecated
 public class ServiceTargetEntity extends ServiceTarget implements WanakuEntity {
 
     private Map<String, Configuration> configurations;
