@@ -15,6 +15,7 @@ import ai.wanaku.server.quarkus.common.ToolsHelper;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import java.util.List;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -37,7 +38,7 @@ public class ToolsBean {
         toolReferenceRepository = toolReferenceRepositoryInstance.get();
     }
 
-    public void add(ToolReference toolReference) {
+    public ToolReference add(ToolReference toolReference) {
         // First, merge properties (arguments) defined by the remote
         toolsResolver.loadProperties(toolReference);
 
@@ -45,7 +46,7 @@ public class ToolsBean {
         registerTool(toolReference);
 
         // if all goes well, persist the tool, so it can be loaded back when restarting
-        toolReferenceRepository.persist(toolReference);
+        return toolReferenceRepository.persist(toolReference);
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
@@ -67,10 +68,16 @@ public class ToolsBean {
     }
 
     public void remove(String name) {
-        try {
-            toolManager.removeTool(name);
-        } finally {
-            toolReferenceRepository.deleteById(name);
+        final List<ToolReference> toolReferences = toolReferenceRepository.listAll();
+        final Optional<ToolReference> first = toolReferences.stream().filter(t -> t.getName().equals(name)).findFirst();
+        if (first.isPresent()) {
+            ToolReference toolReference = first.get();
+
+            try {
+                toolManager.removeTool(name);
+            } finally {
+                toolReferenceRepository.deleteById(toolReference.getId());
+            }
         }
     }
 

@@ -5,8 +5,8 @@ import java.util.Objects;
 /**
  * This class represents a reference to a tool with various attributes such as name, description, URI, type, and input schema.
  */
-public class RemoteToolReference implements CallableReference {
-
+public class RemoteToolReference implements CallableReference, WanakuEntity<String> {
+    private String id;
     private String name;
     private String description;
     private String type;
@@ -89,22 +89,41 @@ public class RemoteToolReference implements CallableReference {
     }
 
     @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
         RemoteToolReference that = (RemoteToolReference) o;
-        return Objects.equals(name, that.name)
-                && Objects.equals(description, that.description)
-                && Objects.equals(type, that.type)
-                && Objects.equals(inputSchema, that.inputSchema);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
+                description, that.description) && Objects.equals(type, that.type) && Objects.equals(inputSchema,
+                that.inputSchema);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, description, type, inputSchema);
+        return Objects.hash(id, name, description, type, inputSchema);
     }
 
+    @Override
+    public String toString() {
+        return "RemoteToolReference{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", type='" + type + '\'' +
+                ", inputSchema=" + inputSchema +
+                '}';
+    }
 
     public static ToolReference asToolReference(RemoteToolReference ref) {
         ToolReference ret = new ToolReference();
@@ -114,6 +133,7 @@ public class RemoteToolReference implements CallableReference {
         ret.setName(ref.getName());
         ret.setType(ref.getType());
         ret.setUri("<remote>");
+        ret.setId(ref.getId());
 
         return ret;
     }

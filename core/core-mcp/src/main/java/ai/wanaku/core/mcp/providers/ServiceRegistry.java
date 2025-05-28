@@ -1,10 +1,11 @@
 package ai.wanaku.core.mcp.providers;
 
-import ai.wanaku.api.types.management.Service;
-import ai.wanaku.api.types.management.State;
+import ai.wanaku.api.types.discovery.ActivityRecord;
+import ai.wanaku.api.types.discovery.ServiceState;
 
+import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.api.types.providers.ServiceType;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Defines a registry of downstream services
@@ -14,55 +15,59 @@ public interface ServiceRegistry {
     /**
      * Register a service target in the registry
      * @param serviceTarget the service target
-     * @param configurations any configurations applicable for the service
+     * @return the updated service target with its newly created ID if not previously provided
      */
-    void register(ServiceTarget serviceTarget, Map<String, String> configurations);
+    ServiceTarget register(ServiceTarget serviceTarget);
 
     /**
      * De-register a service from the registry
-     * @param service the service name
+     * @param serviceTarget the service target
      */
-    void deregister(String service, ServiceType serviceType);
+    void deregister(ServiceTarget serviceTarget);
 
     /**
      * Gets a registered service by name
-     * @param service the name of the service
+     *
+     * @param service     the name of the service
+     * @param serviceType the service type
      * @return the service instance or null if not found
      */
-    @Deprecated
-    Service getService(String service);
+    ServiceTarget getServiceByName(String service, ServiceType serviceType);
 
-    /**
-     * Gets a registered service by name
-     * @param service the name of the service
-     * @return the service instance or null if not found
-     */
-    default Service getService(String service, ServiceType serviceType) {
-        return getService(service);
-    }
-
-    /**
-     * Saves the current state of the service
-     * @param service the service to save the state
-     * @param healthy whether it is healthy (true for healthy, false otherwise)
-     * @param message Optional state message (ignored if healthy)
-     */
-    void saveState(String service, boolean healthy, String message);
 
     /**
      * Gets the state of the given service
-     * @param service the service name
-     * @param count the number of states to get
+     *
+     * @param id the service ID
      * @return the last count states of the given service
      */
-    List<State> getState(String service, int count);
+    ActivityRecord getStates(String id);
 
     /**
      * Get a map of all registered services and their configurations
+     *
      * @param serviceType the type of service to get
      * @return a map of all registered services and their configurations
      */
-    Map<String, Service> getEntries(ServiceType serviceType);
+    List<ServiceTarget> getEntries(ServiceType serviceType);
 
-    void update(String target, String option, String value);
+
+    /**
+     * Update a registered service target in the registry
+     * @param serviceTarget the service target
+     */
+    void update(ServiceTarget serviceTarget);
+
+    /**
+     * Update a registered service target in the registry
+     * @param id the service ID
+     * @param state the state to record
+     */
+    void updateLastState(String id, ServiceState state);
+
+    /**
+     * Register a ping from a service
+     * @param id the service ID
+     */
+    void ping(String id);
 }

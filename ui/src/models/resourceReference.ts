@@ -7,6 +7,7 @@
 import type { Param } from "./param";
 
 export interface ResourceReference {
+  id?: string;
   location?: string;
   type?: string;
   name?: string;

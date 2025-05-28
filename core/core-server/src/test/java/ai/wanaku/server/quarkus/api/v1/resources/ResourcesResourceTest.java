@@ -4,11 +4,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.core.util.support.ResourcesHelper;
 import ai.wanaku.server.quarkus.support.TestIndexHelper;
 import io.quarkus.test.junit.QuarkusTest;
 import java.io.IOException;
-import java.util.List;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -22,8 +21,9 @@ import static org.hamcrest.CoreMatchers.is;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class ResourcesResourceTest {
+    private static final Logger LOG = Logger.getLogger(ResourcesResourceTest.class);
 
-    public static final List<ResourceReference> RESOURCE_REFERENCES = ResourcesHelper.testFixtures();
+    private static String createdName;
 
     @BeforeAll
     static void setup() throws IOException {
@@ -35,12 +35,20 @@ public class ResourcesResourceTest {
     public void testExposeResourceSuccessfully() {
         ResourceReference resource = createResource("/tmp/resource3.jpg", "image/jpeg", "resource3.jpg");
 
-        given()
+        final io.restassured.response.Response response = given()
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(resource)
-                .when().post("/api/v1/resources/expose")
+                .when().post("/api/v1/resources/expose");
+
+        LOG.infof("Response: %s", response.getBody().asString());
+
+        createdName = response
                 .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+                .statusCode(Response.Status.OK.getStatusCode())
+                .extract()
+                .path("data.name");
+
+        LOG.infof("Created record with name %s", createdName);
     }
 
     @Order(2)
@@ -60,7 +68,7 @@ public class ResourcesResourceTest {
     @Test
     void testRemove() {
         given()
-                .when().put("/api/v1/resources/remove?resource=resource3.jpg")
+                .when().put("/api/v1/resources/remove?resource=" + createdName)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 

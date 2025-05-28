@@ -34,9 +34,10 @@ public class ResourcesResource {
     @Path("/expose")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response expose(ResourceReference resource) throws WanakuException {
-        resourcesBean.expose(resource);
-        return Response.ok().build();
+    @Produces(MediaType.APPLICATION_JSON)
+    public RestResponse<WanakuResponse<ResourceReference>> expose(ResourceReference resource) throws WanakuException {
+        ResourceReference ret = resourcesBean.expose(resource);
+        return RestResponse.ok(new WanakuResponse<>(ret));
     }
 
     @Path("/list")

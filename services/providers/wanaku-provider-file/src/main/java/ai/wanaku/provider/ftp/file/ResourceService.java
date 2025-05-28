@@ -43,6 +43,6 @@ public class ResourceService implements ResourceAcquirer {
     void deregister(@Observes ShutdownEvent ev) {
         LOG.info("De-registering resource service");
 
-        delegate.deregister(config.name(), DiscoveryUtil.resolveRegistrationAddress(), port);
+        delegate.deregister();
     }
 }

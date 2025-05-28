@@ -52,6 +52,6 @@ public class InvocationService implements ToolInvoker, Inquirer {
     void deregister(@Observes ShutdownEvent ev) {
         LOG.info("De-registering tool service");
 
-        delegate.deregister(config.name(), DiscoveryUtil.resolveRegistrationAddress(), port);
+        delegate.deregister();
     }
 }

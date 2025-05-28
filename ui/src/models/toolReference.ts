@@ -7,6 +7,7 @@
 import type { InputSchema } from "./inputSchema";
 
 export interface ToolReference {
+  id?: string;
   name?: string;
   description?: string;
   uri?: string;

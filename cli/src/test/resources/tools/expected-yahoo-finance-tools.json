@@ -1,4 +1,5 @@
 [ {
+  "id": null,
   "name" : "GetChart",
   "description" : null,
   "uri" : "https://query1.finance.yahoo.com/v8/finance/chart/{parameter.value('symbol')}",
@@ -94,6 +95,7 @@
     "required" : [ "symbol", "interval", "period1", "period2" ]
   }
 }, {
+  "id": null,
   "name" : "GetQuote",
   "description" : "Returns quotes for the specified symbols",
   "uri" : "https://query1.finance.yahoo.com/v7/finance/quote",
@@ -161,6 +163,7 @@
     "required" : [ "symbols" ]
   }
 }, {
+  "id": null,
   "name" : "Spark",
   "description" : null,
   "uri" : "https://query1.finance.yahoo.com/v7/finance/spark",

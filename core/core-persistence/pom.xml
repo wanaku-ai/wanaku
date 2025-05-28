@@ -13,7 +13,6 @@
 
     <modules>
         <module>core-persistence-api</module>
-        <module>core-persistence-file</module>
         <module>core-persistence-infinispan</module>
     </modules>
 

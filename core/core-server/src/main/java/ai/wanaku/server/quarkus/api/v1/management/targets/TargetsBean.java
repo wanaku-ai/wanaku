@@ -5,10 +5,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import ai.wanaku.api.types.management.Service;
-import ai.wanaku.api.types.management.State;
+import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.core.mcp.providers.ServiceType;
+import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.api.types.providers.ServiceType;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,47 +27,37 @@ public class TargetsBean {
     @PostConstruct
     public void init() {
         serviceRegistry = serviceRegistryInstance.get();
-        LOG.info("Using service registry implementation " + serviceRegistry.getClass().getName());
+        LOG.infof("Using service registry implementation %s", serviceRegistry.getClass().getName());
     }
 
-    public void configureTools(String service, String option, String value) {
-        serviceRegistry.update(service, option, value);
-    }
-
-    public void configureResources(String service, String option, String value) {
-        serviceRegistry.update(service, option, value);
-    }
-
-    public Map<String, Service> toolList() {
+    public List<ServiceTarget> toolList() {
         return serviceRegistry.getEntries(ServiceType.TOOL_INVOKER);
     }
 
-    public Map<String, Service> resourcesList() {
+    public List<ServiceTarget> resourcesList() {
         return serviceRegistry.getEntries(ServiceType.RESOURCE_PROVIDER);
     }
 
-    public Map<String, List<State>> toolsState() {
-        Map<String, List<State>> states = new HashMap<>();
-        Map<String, Service> toolsServices = toolList();
-        buildState(toolsServices, states);
-
-        return states;
+    public Map<String, List<ActivityRecord>> toolsState() {
+        List<ServiceTarget> toolsServices = toolList();
+        return buildState(toolsServices);
     }
 
-    public Map<String, List<State>> resourcesState() {
-        Map<String, List<State>> states = new HashMap<>();
-
-        Map<String, Service> resourcesServices = resourcesList();
-        buildState(resourcesServices, states);
-
-        return states;
+    public Map<String, List<ActivityRecord>> resourcesState() {
+        List<ServiceTarget> resourcesServices = resourcesList();
+        return buildState(resourcesServices);
     }
 
-    private void buildState(Map<String, Service> stringServiceMap, Map<String, List<State>> states) {
-        for (var entry : stringServiceMap.entrySet()) {
-            List<State> state = serviceRegistry.getState(entry.getKey(), 10);
+    private Map<String, List<ActivityRecord>> buildState(List<ServiceTarget> serviceTargets) {
+        Map<String, List<ActivityRecord>> result = new HashMap<>();
 
-            states.put(entry.getKey(), state);
+        for (ServiceTarget service : serviceTargets) {
+            ActivityRecord state = serviceRegistry.getStates(service.getId());
+
+            final List<ActivityRecord> activityRecords = result.computeIfAbsent(service.getService(), k -> new ArrayList<>());
+            activityRecords.add(state);
         }
+
+        return result;
     }
 }

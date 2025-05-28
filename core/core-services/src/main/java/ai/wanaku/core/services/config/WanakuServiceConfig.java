@@ -11,6 +11,9 @@ import java.util.Set;
  */
 public interface WanakuServiceConfig extends WanakuConfig {
 
+    @WithDefault("${user.home}/.wanaku/services/")
+    String serviceHome();
+
     /**
      * Interface defining service-specific configurations.
      */
@@ -117,5 +120,12 @@ public interface WanakuServiceConfig extends WanakuConfig {
          */
         @WithDefault("1")
         int retryWaitSeconds();
+
+        /**
+         * The URI used for the registration service
+         * @return The URI used for the registration service
+         */
+        @WithDefault("http://localhost:8080")
+        String uri();
     }
 }

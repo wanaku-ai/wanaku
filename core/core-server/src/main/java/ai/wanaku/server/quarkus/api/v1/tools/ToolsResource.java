@@ -24,8 +24,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 @ApplicationScoped
 @Path("/api/v1/tools")
 public class ToolsResource {
-    private static final Logger LOG = Logger.getLogger(ToolsResource.class);
-
     @Inject
     ToolsBean toolsBean;
 
@@ -35,9 +33,10 @@ public class ToolsResource {
     @Path("/add")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response add(ToolReference resource) throws WanakuException {
-        toolsBean.add(resource);
-        return Response.ok().build();
+    @Produces(MediaType.APPLICATION_JSON)
+    public RestResponse<WanakuResponse<ToolReference>> add(ToolReference resource) throws WanakuException {
+        var ret = toolsBean.add(resource);
+        return RestResponse.ok(new WanakuResponse<>(ret));
     }
 
     @Path("/list")

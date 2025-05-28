@@ -4,9 +4,8 @@ import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.management.Configuration;
-import ai.wanaku.api.types.management.Configurations;
-import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.InquireReply;
 import ai.wanaku.core.exchange.InquireRequest;
 import ai.wanaku.core.exchange.InquirerGrpc;
@@ -15,7 +14,6 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.core.mcp.providers.ServiceType;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.routers.proxies.ToolsProxy;
 import com.google.protobuf.ProtocolStringList;
@@ -28,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
@@ -62,7 +59,7 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     private ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
-        Service service = serviceRegistry.getService(toolReference.getType(), ServiceType.TOOL_INVOKER);
+        ServiceTarget service = serviceRegistry.getServiceByName(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }
@@ -87,11 +84,10 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     private static ToolInvokeReply invokeRemotely(
-            ToolReference toolReference, ToolManager.ToolArguments toolArguments, Service service) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.getTarget()).usePlaintext().build();
+            ToolReference toolReference, ToolManager.ToolArguments toolArguments, ServiceTarget service) {
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress()).usePlaintext().build();
 
-        Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
-        Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
+        Map<String, String> serviceConfigurations = service.getConfigurations();
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
         Map<String, Property> inputSchema = toolReference
@@ -109,10 +105,6 @@ public class InvokerProxy implements ToolsProxy {
                             property.getScope().equals(SCOPE_SERVICE_ENDPOINT);
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
-
-        //override the global configuration with the invocation specific one.
-        serviceConfigurations.putAll(serviceEndpointConfiguration);
-
 
         // extract headers parameter
         Map<String, String> headers = inputSchema.entrySet()
@@ -164,12 +156,12 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public Map<String, PropertySchema> getProperties(ToolReference toolReference) {
-        Service service = serviceRegistry.getService(toolReference.getType(), ServiceType.TOOL_INVOKER);
+        ServiceTarget service = serviceRegistry.getServiceByName(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             throw new ServiceNotFoundException("There is no host registered for service " + toolReference.getType());
         }
 
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.getTarget())
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
                 .usePlaintext()
                 .build();
 

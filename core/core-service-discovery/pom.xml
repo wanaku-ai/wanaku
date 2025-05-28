@@ -12,30 +12,24 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>ai.wanaku</groupId>
             <artifactId>core-mcp</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>ai.wanaku</groupId>
-            <artifactId>core-persistence-file</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.valkey</groupId>
-            <artifactId>valkey-java</artifactId>
-            <version>${valkey-java.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
             <version>${commons-pool2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
         </dependency>
     </dependencies>
 

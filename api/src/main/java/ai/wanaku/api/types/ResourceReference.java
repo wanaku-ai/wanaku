@@ -1,11 +1,14 @@
 package ai.wanaku.api.types;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a resource reference, containing details such as location, type, and parameters.
  */
-public class ResourceReference {
+public class ResourceReference implements WanakuEntity<String> {
+    private String id;
+
     /**
      * The location of the resource (e.g., URL, file path).
      */
@@ -153,5 +156,45 @@ public class ResourceReference {
         public void setValue(String value) {
             this.value = value;
         }
+    }
+
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ResourceReference that = (ResourceReference) o;
+        return Objects.equals(id, that.id) && Objects.equals(location,
+                that.location) && Objects.equals(type, that.type) && Objects.equals(name,
+                that.name) && Objects.equals(description, that.description) && Objects.equals(mimeType,
+                that.mimeType) && Objects.equals(params, that.params);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, location, type, name, description, mimeType, params);
+    }
+
+    @Override
+    public String toString() {
+        return "ResourceReference{" +
+                "id='" + id + '\'' +
+                ", location='" + location + '\'' +
+                ", type='" + type + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", mimeType='" + mimeType + '\'' +
+                ", params=" + params +
+                '}';
     }
 }
