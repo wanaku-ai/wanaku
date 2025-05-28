@@ -7,6 +7,7 @@ import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -36,6 +37,7 @@ public class ResourceReferenceTest {
     public void insertThreeFiles() {
         for (int i = 1; i < 4; i++) {
             ResourceReference resourceReference = new ResourceReference();
+            resourceReference.setId("id" + i);
             resourceReference.setDescription("description" + i);
             resourceReference.setLocation("location" + i);
             resourceReference.setName("name" + i);
@@ -75,7 +77,7 @@ public class ResourceReferenceTest {
     @Test
     @Order(3)
     public void find() {
-        ResourceReference model = resourceReferenceRepository.findById("name1");
+        ResourceReference model = resourceReferenceRepository.findById("id1");
 
         Assertions.assertNotNull(model);
     }
@@ -92,7 +94,7 @@ public class ResourceReferenceTest {
     public void delete() {
         int initialSize = resourceReferenceRepository.listAll().size();
 
-        resourceReferenceRepository.deleteById("name2");
+        resourceReferenceRepository.deleteById("id2");
 
         int finalSize = resourceReferenceRepository.listAll().size();
 

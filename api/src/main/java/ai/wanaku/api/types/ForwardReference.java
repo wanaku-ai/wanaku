@@ -8,7 +8,8 @@ import java.util.Objects;
  * This class holds information about the address of the forward service,
  * allowing it to be easily accessed and modified.
  */
-public class ForwardReference {
+public class ForwardReference implements WanakuEntity<String> {
+    private String id;
     private String name;
     private String address;
 
@@ -44,6 +45,16 @@ public class ForwardReference {
      */
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(String id) {
+        this.id = id;
     }
 
     @Override

@@ -6,6 +6,7 @@
  */
 
 export interface ForwardReference {
+  id?: string;
   name?: string;
   address?: string;
 }

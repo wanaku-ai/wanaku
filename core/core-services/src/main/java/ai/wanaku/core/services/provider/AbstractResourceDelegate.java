@@ -1,8 +1,7 @@
 package ai.wanaku.core.services.provider;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
@@ -10,18 +9,20 @@ import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.core.mcp.providers.ServiceTarget;
-import ai.wanaku.core.mcp.providers.ServiceType;
+import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuProviderConfig;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
+import ai.wanaku.core.services.discovery.DefaultRegistrationManager;
+import ai.wanaku.core.services.discovery.RegistrationManager;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import java.io.File;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-
-import static ai.wanaku.core.services.common.ServicesHelper.waitAndRetry;
 
 /**
  * Base delegate class
@@ -35,15 +36,27 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @Inject
     ResourceConsumer consumer;
 
-    @Inject
-    Instance<ServiceRegistry> serviceRegistryInstance;
-
-    ServiceRegistry serviceRegistry;
+    private RegistrationManager registrationManager;
 
     @PostConstruct
     public void init() {
-        serviceRegistry = serviceRegistryInstance.get();
-        LOG.info("Using service registry implementation " + serviceRegistry.getClass().getName());
+        LOG.infof("Using registration service at %s", config.registration().uri());
+        DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(config.registration().uri()))
+                .build(DiscoveryService.class);
+
+        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.provider.name").getValue();
+        ServiceTarget serviceTarget = newServiceTarget(service, serviceConfigurations());
+
+        int retries = config.registration().retries();
+        int waitSeconds = config.registration().retryWaitSeconds();
+
+        final String serviceHome =
+                config.serviceHome().replace("${user.home}", System.getProperty("user.home"))
+                        + File.separator
+                        + config.name();
+
+        registrationManager = new DefaultRegistrationManager(discoveryService, serviceTarget, retries, waitSeconds, serviceHome);
     }
 
     /**
@@ -69,8 +82,6 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Override
     public ResourceReply acquire(ResourceRequest request) {
-        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.provider.name").getValue();
-
         try {
             Map<String, String> parameters = mergeParameters(request);
             String uri = getEndpointUri(request, parameters);
@@ -79,31 +90,28 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
             List<String> response = coerceResponse(obj);
 
-            try {
-                return ResourceReply.newBuilder()
+            registrationManager.lastAsSuccessful();
+            return ResourceReply.newBuilder()
                         .setIsError(false)
                         .addAllContent(response).build();
-            } finally {
-                serviceRegistry.saveState(service, true, null);
-            }
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
             LOG.errorf(e,stateMsg);
-            serviceRegistry.saveState(service, false, stateMsg);
+            registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.errorf(e,stateMsg);
-            serviceRegistry.saveState(service, false, stateMsg);
+            registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
         } catch (Exception e) {
             String stateMsg = "Unable to read or acquire resource: " + e.getMessage();
             LOG.errorf(e, stateMsg);
-            serviceRegistry.saveState(service, false, stateMsg);
+            registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
@@ -139,33 +147,21 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         }
     }
 
-    private void tryRegistering(String service, String address, int port) {
-        int retries = config.registration().retries();
-        boolean registered = false;
-        do {
-            try {
-                serviceRegistry.register(ServiceTarget.provider(service, address, port), serviceConfigurations());
-                registered = true;
-            } catch (Exception e) {
-                int waitSeconds = config.registration().retryWaitSeconds();
-                retries = waitAndRetry(service, e, retries, waitSeconds);
-            }
-        } while (!registered && (retries > 0));
-    }
-
     @Override
     public void register() {
-        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.provider.name").getValue();
-        String port = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
-
-        final String address = DiscoveryUtil.resolveRegistrationAddress();
-        LOG.debugf("Registering resource service %s with address %s:%s", service, address, port);
-
-        tryRegistering(service, address, Integer.parseInt(port));
+        registrationManager.register();
     }
 
     @Override
-    public void deregister(String service, String address, int port) {
-        serviceRegistry.deregister(service, ServiceType.RESOURCE_PROVIDER);
+    public void deregister() {
+        registrationManager.deregister();
+    }
+
+    private static ServiceTarget newServiceTarget(String service, Map<String, String> configurations) {
+        String portStr = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
+        final int port = Integer.parseInt(portStr);
+
+        final String address = DiscoveryUtil.resolveRegistrationAddress();
+        return ServiceTarget.provider(service, address, port, configurations);
     }
 }

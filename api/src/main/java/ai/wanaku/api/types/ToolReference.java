@@ -5,7 +5,8 @@ import java.util.Objects;
 /**
  * This class represents a reference to a tool with various attributes such as name, description, URI, type, and input schema.
  */
-public class ToolReference implements CallableReference {
+public class ToolReference implements CallableReference, WanakuEntity<String> {
+    private String id;
     private String name;
     private String description;
     private String uri;
@@ -111,21 +112,41 @@ public class ToolReference implements CallableReference {
     }
 
     @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
         ToolReference that = (ToolReference) o;
-        return Objects.equals(name, that.name)
-                && Objects.equals(description, that.description)
-                && Objects.equals(uri, that.uri)
-                && Objects.equals(type, that.type)
-                && Objects.equals(inputSchema, that.inputSchema);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
+                description, that.description) && Objects.equals(uri, that.uri) && Objects.equals(type,
+                that.type) && Objects.equals(inputSchema, that.inputSchema);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, description, uri, type, inputSchema);
+        return Objects.hash(id, name, description, uri, type, inputSchema);
+    }
+
+    @Override
+    public String toString() {
+        return "ToolReference{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", uri='" + uri + '\'' +
+                ", type='" + type + '\'' +
+                ", inputSchema=" + inputSchema +
+                '}';
     }
 }
 

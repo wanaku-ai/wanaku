@@ -31,8 +31,8 @@ load-meta:
 	wanaku tools add -n "wanaku-resources-list" --description "List resources available on the Wanaku MCP router" --uri "http://localhost:8080/api/v1/resources/list" --type http
 
 test-resources:
-	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)/test/data/files/test.txt --mimeType=text/plain --description="Sample resource added via CLI" --name="sample-file" --type=file
-	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)./test/data/files --mimeType=text/plain --description="Sample resource dir added via CLI" --name="sample-dir" --type=file
+	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)/tests/data/files/test.txt --mimeType=text/plain --description="Sample resource added via CLI" --name="sample-file" --type=file
+	wanaku resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)./tests/data/files --mimeType=text/plain --description="Sample resource dir added via CLI" --name="sample-dir" --type=file
 
 test-tools:
 	wanaku tools add --host $(API_ENDPOINT) -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --required count

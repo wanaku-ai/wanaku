@@ -1,10 +1,9 @@
 package ai.wanaku.cli.main.commands.targets.resources;
 
-import java.util.Map;
-
-import ai.wanaku.api.types.management.Service;
+import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.cli.main.commands.targets.AbstractTargetsList;
 import ai.wanaku.cli.main.support.PrettyPrinter;
+import java.util.List;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "list",
@@ -14,7 +13,7 @@ public class ResourcesLinkedList extends AbstractTargetsList {
     public void run() {
         initService();
 
-        Map<String, Service> list = targetsService.resourcesList().data();
+        List<ServiceTarget> list = targetsService.resourcesList().data();
         PrettyPrinter.printTargets(list);
     }
 }

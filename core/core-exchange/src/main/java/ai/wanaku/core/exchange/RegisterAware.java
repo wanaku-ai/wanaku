@@ -11,8 +11,6 @@ public interface RegisterAware {
 
     /**
      * Deregister a service with the router
-     * @param host the router host
-     * @param service the service to deregister
      */
-    void deregister(String host, String service, int port);
+    void deregister();
 }

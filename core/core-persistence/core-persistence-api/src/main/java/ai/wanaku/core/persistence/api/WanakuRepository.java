@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.core.persistence.types.WanakuEntity;
+import ai.wanaku.api.types.WanakuEntity;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,17 +12,17 @@ import java.util.stream.Collectors;
  * and managing entities in the Wanaku system.</p>
  *
  * @param <A> the model type
- * @param <B> the entity type which must extend IdEntity
  * @param <C> the ID type
  */
-public interface WanakuRepository<A, B extends WanakuEntity, C> {
+public interface WanakuRepository<A extends WanakuEntity, C> {
 
     /**
-     * Persists a model to the repository.
+     * Persists an entity to the repository.
      *
-     * @param model the model to persist
+     * @param entity the entity to persist
+     * @return the updated entity with the newly created ID if none was given
      */
-    void persist(A model);
+    A persist(A entity);
 
     /**
      * Retrieves all models from the repository.
@@ -48,39 +48,12 @@ public interface WanakuRepository<A, B extends WanakuEntity, C> {
     A findById(C id);
 
     /**
-     * Converts a model to its entity representation.
+     * Updates an entity to the repository.
      *
-     * @param model the model to convert
-     * @return the entity representation of the model
-     */
-    B convertToEntity(A model);
-
-    /**
-     * Converts an entity to its model representation.
-     *
-     * @param model the entity to convert
-     * @return the model representation of the entity
-     */
-    A convertToModel(B model);
-
-    /**
-     * Converts a list of entities to a list of models.
-     *
-     * <p>This default implementation uses the convertToModel method to convert each entity.</p>
-     *
-     * @param entities the list of entities to convert
-     * @return a list of models
-     */
-    default List<A> convertToModels(List<B> entities) {
-        return entities.stream().map(this::convertToModel).collect(Collectors.toList());
-    }
-
-
-    /**
-     * Updates a model to the repository.
-     *
-     * @param model the model to update
+     * @param entity the entity to update
      * @return true if the record was updated
      */
-    boolean update(C id, A model);
+    boolean update(C id, A entity);
+
+
 }

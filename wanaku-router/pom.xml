@@ -47,11 +47,6 @@
         </dependency>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-service-discovery</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.wanaku</groupId>
             <artifactId>core-mcp-client</artifactId>
             <version>${project.version}</version>
         </dependency>

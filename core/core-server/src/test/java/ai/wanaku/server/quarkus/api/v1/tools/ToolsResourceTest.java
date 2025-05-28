@@ -8,11 +8,9 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.util.support.ToolsHelper;
 import ai.wanaku.server.quarkus.support.TestIndexHelper;
 import io.quarkus.test.junit.QuarkusTest;
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
-import org.junit.jupiter.api.Assumptions;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -25,8 +23,9 @@ import static org.hamcrest.CoreMatchers.is;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class ToolsResourceTest {
+    private static final Logger LOG = Logger.getLogger(ToolsResourceTest.class);
 
-    public static final List<ToolReference> TOOL_REFERENCES = ToolsHelper.testFixtures();
+    private static String createdName;
 
     @BeforeAll
     static void setup() throws IOException {
@@ -48,12 +47,17 @@ public class ToolsResourceTest {
                 inputSchema1
         );
 
-        given()
+        final var response = given()
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(toolReference1)
-                .when().post("/api/v1/tools/add")
-                .then()
-                .statusCode(200);
+                .when().post("/api/v1/tools/add");
+
+        LOG.infof("Response: %s", response.getBody().asString());
+
+        createdName = response.then()
+                .statusCode(200)
+                .extract()
+                .path("data.name");
     }
 
     @Order(2)
@@ -73,7 +77,7 @@ public class ToolsResourceTest {
     @Test
     void testRemove() {
         given()
-                .when().put("/api/v1/tools/remove?tool=test-tool-1")
+                .when().put("/api/v1/tools/remove?tool=" + createdName)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 

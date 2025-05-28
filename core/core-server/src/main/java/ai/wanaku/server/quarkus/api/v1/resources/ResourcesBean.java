@@ -13,6 +13,7 @@ import ai.wanaku.server.quarkus.common.ResourceHelper;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
 import java.util.List;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -35,9 +36,9 @@ public class ResourcesBean {
         resourceReferenceRepository = resourceReferenceRepositoryInstance.get();
     }
 
-    public void expose(ResourceReference mcpResource) {
+    public ResourceReference expose(ResourceReference mcpResource) {
         doExposeResource(mcpResource);
-        resourceReferenceRepository.persist(mcpResource);
+        return resourceReferenceRepository.persist(mcpResource);
     }
 
     public List<ResourceReference> list() {
@@ -55,17 +56,21 @@ public class ResourcesBean {
     }
 
     public void remove(String name) {
-        ResourceReference resourceReference = resourceReferenceRepository.findById(name);
+        final List<ResourceReference> resourceReferences = resourceReferenceRepository.listAll();
+        final Optional<ResourceReference> first =
+                resourceReferences.stream().filter(r -> r.getName().equals(name)).findFirst();
 
-        try {
-            resourceManager.removeResource(resourceReference.getLocation());
-        } finally {
-            resourceReferenceRepository.deleteById(resourceReference.getName());
+        if (first.isPresent()) {
+            ResourceReference resourceReference = first.get();
+            try {
+                resourceManager.removeResource(resourceReference.getLocation());
+            } finally {
+                resourceReferenceRepository.deleteById(resourceReference.getId());
+            }
         }
-
     }
 
     public void update(ResourceReference resource) {
-        resourceReferenceRepository.update(resource.getName(), resource);
+        resourceReferenceRepository.update(resource.getId(), resource);
     }
 }

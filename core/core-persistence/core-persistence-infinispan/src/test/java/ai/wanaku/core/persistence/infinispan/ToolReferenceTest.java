@@ -33,6 +33,7 @@ public class ToolReferenceTest {
     public void insertThree() {
         for (int i = 1; i < 4; i++) {
             ToolReference toolReference = new ToolReference();
+            toolReference.setId("id" + i);
             toolReference.setName("name" + i);
             toolReference.setUri("uri" + i);
             toolReference.setDescription("description" + i);
@@ -60,7 +61,7 @@ public class ToolReferenceTest {
 
         assertEquals(3, entities.size());
         final Optional<ToolReference> refOpt =
-                entities.stream().filter(entity -> entity.getName().equals("name1")).findFirst();
+                entities.stream().filter(entity -> entity.getId().equals("id1")).findFirst();
 
         Assertions.assertTrue(refOpt.isPresent());
         ToolReference name1Entity = refOpt.get();
@@ -74,7 +75,7 @@ public class ToolReferenceTest {
     @Test
     @Order(3)
     public void find() {
-        ToolReference model = toolReferenceRepository.findById("name1");
+        ToolReference model = toolReferenceRepository.findById("id1");
 
         Assertions.assertNotNull(model);
     }
@@ -90,7 +91,7 @@ public class ToolReferenceTest {
     public void delete() {
         int initialSize = toolReferenceRepository.listAll().size();
 
-        toolReferenceRepository.deleteById("name2");
+        toolReferenceRepository.deleteById("id2");
 
         int finalSize = toolReferenceRepository.listAll().size();
 

@@ -4,13 +4,14 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.management.Service;
-import ai.wanaku.api.types.management.State;
+import ai.wanaku.api.types.discovery.ActivityRecord;
+import ai.wanaku.api.types.providers.ServiceTarget;
 import java.util.List;
 import java.util.Map;
 import org.jboss.resteasy.reactive.RestPath;
@@ -21,12 +22,13 @@ public interface TargetsService {
     @Path("/tools/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    WanakuResponse<Map<String, Service>> toolsList();
+    WanakuResponse<List<ServiceTarget>> toolsList();
 
     @Path("/tools/state")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    WanakuResponse<Map<String, List<State>>> toolsState();
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Map<String, List<ActivityRecord>>> toolsState();
 
     @Path("/tools/configure/{service}")
     @PUT
@@ -36,7 +38,7 @@ public interface TargetsService {
     @Path("/resources/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    WanakuResponse<Map<String, Service>> resourcesList();
+    WanakuResponse<List<ServiceTarget>> resourcesList();
 
     @Path("/resources/configure/{service}")
     @PUT
@@ -46,5 +48,6 @@ public interface TargetsService {
     @Path("/resources/state")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    WanakuResponse<Map<String, List<State>>> resourcesState();
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Map<String, List<ActivityRecord>>> resourcesState();
 }

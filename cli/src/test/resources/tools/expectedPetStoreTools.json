@@ -1,5 +1,6 @@
 [
   {
+    "id": null,
     "name": "addPet",
     "description": "Add a new pet to the store.",
     "uri": "https://petstore3.swagger.io/api/v3/pet",
@@ -28,6 +29,7 @@
     }
   },
   {
+    "id": null,
     "name": "updatePet",
     "description": "Update an existing pet by Id.",
     "uri": "https://petstore3.swagger.io/api/v3/pet",
@@ -56,6 +58,7 @@
     }
   },
   {
+    "id": null,
     "name": "findPetsByStatus",
     "description": "Multiple status values can be provided with comma separated strings.",
     "uri": "https://petstore3.swagger.io/api/v3/pet/findByStatus",
@@ -82,6 +85,7 @@
     }
   },
   {
+    "id": null,
     "name": "findPetsByTags",
     "description": "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
     "uri": "https://petstore3.swagger.io/api/v3/pet/findByTags",
@@ -108,6 +112,7 @@
     }
   },
   {
+    "id": null,
     "name": "getPetById",
     "description": "Returns a single pet.",
     "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}",
@@ -136,6 +141,7 @@
     }
   },
   {
+    "id": null,
     "name": "updatePetWithForm",
     "description": "Updates a pet resource based on the form data.",
     "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}",
@@ -178,6 +184,7 @@
     }
   },
   {
+    "id": null,
     "name": "deletePet",
     "description": "Delete a pet.",
     "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}",
@@ -213,6 +220,7 @@
     }
   },
   {
+    "id": null,
     "name": "uploadFile",
     "description": "Upload image of the pet.",
     "uri": "https://petstore3.swagger.io/api/v3/pet/{parameter.value('petId')}/uploadImage",
@@ -255,6 +263,7 @@
     }
   },
   {
+    "id": null,
     "name": "getInventory",
     "description": "Returns a map of status codes to quantities.",
     "uri": "https://petstore3.swagger.io/api/v3/store/inventory",
@@ -274,6 +283,7 @@
     }
   },
   {
+    "id": null,
     "name": "placeOrder",
     "description": "Place a new order in the store.",
     "uri": "https://petstore3.swagger.io/api/v3/store/order",
@@ -300,6 +310,7 @@
     }
   },
   {
+    "id": null,
     "name": "getOrderById",
     "description": "For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions.",
     "uri": "https://petstore3.swagger.io/api/v3/store/order/{parameter.value('orderId')}",
@@ -328,6 +339,7 @@
     }
   },
   {
+    "id": null,
     "name": "deleteOrder",
     "description": "For valid response try integer IDs with value < 1000. Anything above 1000 or non-integers will generate API errors.",
     "uri": "https://petstore3.swagger.io/api/v3/store/order/{parameter.value('orderId')}",
@@ -356,6 +368,7 @@
     }
   },
   {
+    "id": null,
     "name": "createUser",
     "description": "This can only be done by the logged in user.",
     "uri": "https://petstore3.swagger.io/api/v3/user",
@@ -382,6 +395,7 @@
     }
   },
   {
+    "id": null,
     "name": "createUsersWithListInput",
     "description": "Creates list of users with given input array.",
     "uri": "https://petstore3.swagger.io/api/v3/user/createWithList",
@@ -408,6 +422,7 @@
     }
   },
   {
+    "id": null,
     "name": "loginUser",
     "description": "Log into the system.",
     "uri": "https://petstore3.swagger.io/api/v3/user/login",
@@ -441,6 +456,7 @@
     }
   },
   {
+    "id": null,
     "name": "logoutUser",
     "description": "Log user out of the system.",
     "uri": "https://petstore3.swagger.io/api/v3/user/logout",
@@ -460,6 +476,7 @@
     }
   },
   {
+    "id": null,
     "name": "getUserByName",
     "description": "Get user detail based on username.",
     "uri": "https://petstore3.swagger.io/api/v3/user/{parameter.value('username')}",
@@ -488,6 +505,7 @@
     }
   },
   {
+    "id": null,
     "name": "updateUser",
     "description": "This can only be done by the logged in user.",
     "uri": "https://petstore3.swagger.io/api/v3/user/{parameter.value('username')}",
@@ -523,6 +541,7 @@
     }
   },
   {
+    "id": null,
     "name": "deleteUser",
     "description": "This can only be done by the logged in user.",
     "uri": "https://petstore3.swagger.io/api/v3/user/{parameter.value('username')}",
