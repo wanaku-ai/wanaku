@@ -1,14 +1,14 @@
+import asyncio
+
 from autogen_agentchat.agents import AssistantAgent
-from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.conditions import TextMentionTermination
+from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.ui import Console
-
 from autogen_ext.models.ollama import OllamaChatCompletionClient
-from autogen_ext.tools.mcp import SseMcpToolAdapter, SseServerParams, mcp_server_tools
-
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_ext.tools.mcp import SseServerParams, mcp_server_tools
 from pydantic import BaseModel
 
-import asyncio
 import os
 
 # Define output structure for the script
@@ -31,19 +31,35 @@ async def main():
     # Same thing for the model
     model_name = os.getenv("WANAKU_TEST_MODEL", "llama3.1:latest")
 
-    # Initialize Ollama client (if needed)
-    ollama_client = OllamaChatCompletionClient(
-        model=model_name,
-        api_key=api_key,  # Placeholder API key for local model
-        response_format=ScriptOutput,
-        base_url=base_url,
-        model_info={
-            "function_calling": True,
-            "json_output": True,
-            "vision": False,
-            "family": "unknown"
-        }
-    )
+    use_ollama_str = os.getenv("WANAKU_TEST_USE_OLLAMA", "false").lower()
+    use_ollama = (use_ollama_str == "true")
+
+    # Set base_url and model_name based on whether Ollama is used
+    if use_ollama:
+        model_client = OllamaChatCompletionClient(
+            model=model_name,
+            api_key=api_key,  # Placeholder API key for local model
+            response_format=ScriptOutput,
+            base_url=base_url,
+            model_info={
+                "function_calling": True,
+                "json_output": True,
+                "vision": False,
+                "family": "unknown"
+            }
+        )
+    else:
+        model_client = OpenAIChatCompletionClient(
+            model=model_name,
+            base_url=base_url,
+            api_key=api_key,
+            model_info={
+                "function_calling": True,
+                "json_output": True,
+                "vision": False,
+                "family": "unknown"
+            }
+        )
 
     # Create server params for the remote MCP service
     server_params = SseServerParams(
@@ -55,7 +71,7 @@ async def main():
 
     tester_assistant = AssistantAgent(
         name="tester_assistant",
-        model_client=ollama_client,  # Swap with ollama_client if needed
+        model_client=model_client,  # Swap with ollama_client if needed
         tools=adapter,
         system_message='''
             You are an assistant tasked with helping me with general questions. Your job consists of trying to answer the
@@ -66,6 +82,7 @@ async def main():
         reflect_on_tool_use=True,
     )
 
+
     # Set up termination condition
     termination = TextMentionTermination("TERMINATE")
 
@@ -73,7 +90,7 @@ async def main():
         "dog-facts": "Please give me 3 dog facts",
         "meow-facts": "Please give me 2 cat facts",
         "camel-rider-quote-generator": "Please give me a random quote from the Camel rider. Extract whatever text you receive from it.",
-#         "tavily-search": "Please search on the web, using Tavily, about Apache Spark",
+        # "tavily-search": "Please search on the web using Tavily 'What is Apache Spark?'. Then, summarize the results for me.",
         "laptop-order": "I need a new laptop. Please issue an order for a new one. If successful, provide me the order number",
     }
 
