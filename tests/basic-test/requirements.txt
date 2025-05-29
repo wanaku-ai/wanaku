@@ -3,6 +3,7 @@ anyio==4.9.0
 autogen-agentchat==0.4.9.2
 autogen-core==0.4.9.2
 autogen-ext==0.4.9.2
+autogen-ext[openai]==0.4.9.2
 certifi==2025.1.31
 charset-normalizer==3.4.1
 click==8.1.8
