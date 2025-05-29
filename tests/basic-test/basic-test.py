@@ -9,6 +9,7 @@ from autogen_ext.tools.mcp import SseMcpToolAdapter, SseServerParams, mcp_server
 from pydantic import BaseModel
 
 import asyncio
+import os
 
 # Define output structure for the script
 class ScriptOutput(BaseModel):
@@ -18,13 +19,24 @@ class ScriptOutput(BaseModel):
 
 async def main():
 
+    # Get API key from environment variable WANAKU_TEST_API_KEY
+    # Defaults to "placeholder" if WANAKU_TEST_API_KEY is not set
+    api_key = os.getenv("WANAKU_TEST_API_KEY", "placeholder")
+
+    # Get base URL from environment variable WANAKU_TEST_BASE_MODEL_URL
+    # It will be None if WANAKU_TEST_BASE_MODEL_URL is not set, which might cause issues if not handled.
+    # You might want to provide a default here as well if it's not strictly required to be set.
+    base_url = os.getenv("WANAKU_TEST_BASE_MODEL_URL", "http://localhost:11434/v1") # Added a default for robustness
+
+    # Same thing for the model
+    model_name = os.getenv("WANAKU_TEST_MODEL", "llama3.1:latest")
+
     # Initialize Ollama client (if needed)
     ollama_client = OllamaChatCompletionClient(
-        # model="granite3.2:8b-instruct-q4_K_M",
-        model="llama3.1:latest",
-        api_key="placeholder",  # Placeholder API key for local model
+        model=model_name,
+        api_key=api_key,  # Placeholder API key for local model
         response_format=ScriptOutput,
-        base_url="http://localhost:11434/v1",
+        base_url=base_url,
         model_info={
             "function_calling": True,
             "json_output": True,
@@ -46,8 +58,9 @@ async def main():
         model_client=ollama_client,  # Swap with ollama_client if needed
         tools=adapter,
         system_message='''
-            You are an assistant tasked with helping me test Wanaku MCP router. Your job consists of calling tools according to the
-            prompt I provide you.
+            You are an assistant tasked with helping me with general questions. Your job consists of trying to answer the
+            request to the best of your ability. You have tools at your disposal that you can call to answer them.
+            Upon receiving the answer, try to extract the data without modifying the original content.
             If you don't know which tool to call, then simply reply 'There is no tool available for this request'.
         ''',
         reflect_on_tool_use=True,
