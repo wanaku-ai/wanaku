@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
 import {
-  ToastNotification,
   Modal,
-  TextInput,
   Select,
   SelectItem,
-  TextArea,
   Stack,
+  TextArea,
+  TextInput,
+  ToastNotification,
 } from "@carbon/react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTools } from "../../hooks/api/use-tools";
 import { ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
@@ -20,19 +20,32 @@ export const ToolsPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { listTools, addTool, removeTool } = useTools();
 
-  useEffect(() => {
-    listTools().then((result) => {
-      setFetchedData(result.data.data!);
+  const updateTools = useCallback(async () => {
+    return listTools().then((result) => {
+      if (result.status !== 200 || !Array.isArray(result.data.data)) {
+        setErrorMessage("Failed to fetch tools. Please try again later.");
+        setFetchedData([]);
+      } else {
+        setFetchedData(result.data.data);
+      }
+
       setIsLoading(false);
     });
   }, [listTools]);
 
   useEffect(() => {
+    updateTools();
+  }, [updateTools]);
+
+  useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
         setErrorMessage(null);
-      }, 10000);
-      return () => clearTimeout(timer);
+      }, 10_000);
+
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [errorMessage]);
 
@@ -43,9 +56,8 @@ export const ToolsPage: React.FC = () => {
       await addTool(newTool);
       setIsAddModalOpen(false);
       setErrorMessage(null);
-      listTools().then((result) => {
-        setFetchedData(result.data.data!);
-      });
+
+      await updateTools();
     } catch (error) {
       console.error("Error adding tool:", error);
       setIsAddModalOpen(false);
@@ -64,17 +76,13 @@ export const ToolsPage: React.FC = () => {
       }
     }
     setIsImportModalOpen(false);
-    listTools().then((result) => {
-      setFetchedData(result.data.data!);
-    });
+    await updateTools();
   };
 
   const handleDeleteTool = async (toolName?: string) => {
     try {
       await removeTool({ tool: toolName });
-      listTools().then((result) => {
-        setFetchedData(result.data.data!);
-      });
+      await updateTools();
     } catch (error) {
       console.error("Error deleting tool:", error);
       setErrorMessage(`Failed to delete tool: ${toolName}`);
