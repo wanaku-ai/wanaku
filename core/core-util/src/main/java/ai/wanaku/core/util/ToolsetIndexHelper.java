@@ -1,6 +1,5 @@
 package ai.wanaku.core.util;
 
-import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.ToolReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
@@ -9,11 +8,11 @@ import java.net.URL;
 import java.util.List;
 
 /**
- * Helper class for dealing with the resources file
+ * Helper class for dealing with the toolset index file
  */
-public class IndexHelper {
+public class ToolsetIndexHelper {
 
-    private IndexHelper() {
+    private ToolsetIndexHelper() {
     }
 
     /**
@@ -48,28 +47,6 @@ public class IndexHelper {
         objectMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValue(indexFile, resourceReferences);
-    }
-
-    /**
-     * Load an index of resources
-     *
-     * @param indexFile
-     * @return
-     * @throws Exception
-     */
-    static List<ResourceReference> loadResourcesIndex(File indexFile) throws Exception {
-        return loadIndex(indexFile, ResourceReference.class);
-    }
-
-    /**
-     * Saves an index to a file
-     *
-     * @param indexFile
-     * @param resourceReferences
-     * @throws IOException
-     */
-    public static void saveResourcesIndex(File indexFile, List<ResourceReference> resourceReferences) throws IOException {
-        saveIndex(indexFile, resourceReferences);
     }
 
     /**

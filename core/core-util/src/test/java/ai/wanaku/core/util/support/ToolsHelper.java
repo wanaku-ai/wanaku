@@ -10,7 +10,7 @@ import java.util.Map;
 import ai.wanaku.api.types.ToolReference;
 
 public class ToolsHelper {
-    public static final String TOOLS_INDEX = "target/test-classes/tools.json";
+    public static final String TOOLSET_INDEX = "target/test-classes/toolset.json";
 
     public static ToolReference createToolReference(String name, String description, String uri, InputSchema inputSchema) {
         ToolReference toolReference = new ToolReference();

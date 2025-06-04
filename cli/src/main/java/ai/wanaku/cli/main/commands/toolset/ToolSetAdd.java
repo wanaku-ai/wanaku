@@ -5,7 +5,7 @@ import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.PropertyHelper;
-import ai.wanaku.core.util.IndexHelper;
+import ai.wanaku.core.util.ToolsetIndexHelper;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -80,14 +80,14 @@ public class ToolSetAdd extends BaseCommand {
             List<ToolReference> toolReferences;
             File indexFile = new File(path);
             if (indexFile.exists()) {
-                toolReferences = IndexHelper.loadToolsIndex(indexFile);
+                toolReferences = ToolsetIndexHelper.loadToolsIndex(indexFile);
             } else {
                 Files.createDirectories(indexFile.getParentFile().toPath());
                 toolReferences = new ArrayList<>();
             }
 
             toolReferences.add(toolReference);
-            IndexHelper.saveToolsIndex(indexFile, toolReferences);
+            ToolsetIndexHelper.saveToolsIndex(indexFile, toolReferences);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
             throw new RuntimeException(e);

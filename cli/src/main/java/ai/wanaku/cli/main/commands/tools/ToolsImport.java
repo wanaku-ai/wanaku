@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ToolsService;
-import ai.wanaku.core.util.IndexHelper;
+import ai.wanaku.core.util.ToolsetIndexHelper;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
@@ -30,7 +30,7 @@ public class ToolsImport extends BaseCommand {
     public void run() {
         try {
 
-            List<ToolReference> toolReferences = IndexHelper.loadToolsIndex(location);
+            List<ToolReference> toolReferences = ToolsetIndexHelper.loadToolsIndex(location);
 
             importToolset(toolReferences, host);
 

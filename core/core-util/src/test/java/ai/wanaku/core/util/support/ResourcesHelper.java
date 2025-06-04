@@ -1,14 +1,11 @@
 package ai.wanaku.core.util.support;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import ai.wanaku.api.types.ResourceReference;
 
 public class ResourcesHelper {
-    public static final String RESOURCES_INDEX = "target/test-classes/resources.json";
-
     public static ResourceReference createResource(String location, String type, String name) {
         ResourceReference resource = new ResourceReference();
 
@@ -36,12 +33,5 @@ public class ResourcesHelper {
         resource.setParams(params);
 
         return resource;
-    }
-
-    public static List<ResourceReference> testFixtures() {
-        return Arrays.asList(
-                createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg"),
-                createResource("/tmp/resource2.txt", "text/plain", "resource2.txt")
-        );
     }
 }
