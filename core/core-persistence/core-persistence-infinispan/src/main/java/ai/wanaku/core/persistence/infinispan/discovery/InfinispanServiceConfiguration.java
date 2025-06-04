@@ -31,7 +31,6 @@ public class InfinispanServiceConfiguration {
     Instance<InfinispanServiceRecordRepository> serviceRecordInstance;
 
     @Produces
-    @LookupIfProperty(name = "wanaku.persistence", stringValue = "infinispan")
     ServiceRegistry serviceRegistry() {
         InfinispanServiceRegistry registry = new InfinispanServiceRegistry(targetRepositoryInstance.get(), toolTargetRepositoryInstance.get(),
                 serviceRecordInstance.get());
