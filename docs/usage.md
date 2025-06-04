@@ -506,6 +506,28 @@ Wanaku implements the MCP protocol and, by definition, should support any client
 
 The details below describe how Wanaku MCP router can be used with some prominent MCP clients: 
 
+
+## Claude
+
+To integrate Wanaku with Claude Desktop, you will need to add an entry into the `claude_desktop_config.json` file - see [instructions for creating a Claude desktop configuration](https://modelcontextprotocol.io/quickstart/user) if you do not already have one.
+
+Claude Desktop does not currently support connecting to SSE-based endpoints, so you will have to configure wanaku using a stdio-to-sse wrapper.   Note that you will have to install ![uv](https://github.com/astral-sh/uv) for this purpose, and specify the SSE URL for your Wanaku instance in the arguments.
+
+```claude_desktop_config.json
+{
+  "mcpServers": {
+    "wanaku": {
+        "command": "uvx",
+        "args": [
+            "mcp-proxy",
+            "http://localhost:8080/mcp/sse/"
+        ]
+      }
+  }
+}
+```
+
+
 ### Embedded LLMChat for testing
 
 Wanaku Console includes simple LLMChat specificly designed for quick testing of the tools.
