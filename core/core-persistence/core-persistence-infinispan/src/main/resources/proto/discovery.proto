@@ -1,0 +1,20 @@
+package ai.wanaku.api.types.discovery;
+
+/*
+ * Represents a record of activity for a service.
+ */
+message ActivityRecord {
+  optional string id = 1;
+  required int64 lastSeen = 2; // Instant is typically marshalled as milliseconds since epoch
+  required bool active = 3;
+  repeated ServiceState states = 4;
+}
+
+/*
+ * Contains the state of the service for an specific point in time
+ */
+message ServiceState {
+  required int64 timestamp = 1; // Instant is typically marshalled as milliseconds since epoch
+  required bool healthy = 2;
+  optional string reason = 3;
+}
