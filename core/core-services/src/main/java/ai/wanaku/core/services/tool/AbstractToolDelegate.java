@@ -148,7 +148,12 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
         String portStr = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
         final int port = Integer.parseInt(portStr);
 
-        final String address = DiscoveryUtil.resolveRegistrationAddress();
+        String address = ConfigProvider.getConfig().getConfigValue("wanaku.service.tool.registration.announce-address").getValue();
+        if ("auto".equals(address)) {
+            LOG.infof("Using announce address %s ", address);
+            address = DiscoveryUtil.resolveRegistrationAddress();
+        }
+
         return ServiceTarget.toolInvoker(service, address, port, configurations);
     }
 }
