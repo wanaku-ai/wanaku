@@ -1,0 +1,3 @@
+ai.wanaku.core.persistence.infinispan.protostream.initializer.TypesSerializationContextInitializer
+ai.wanaku.core.persistence.infinispan.protostream.initializer.DiscoveryServiceContextInitializer
+ai.wanaku.core.persistence.infinispan.protostream.initializer.ProvidersSerializationContextInitializer
