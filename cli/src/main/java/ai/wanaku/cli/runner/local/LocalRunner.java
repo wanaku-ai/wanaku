@@ -8,6 +8,7 @@ import ai.wanaku.core.util.ProcessRunner;
 import ai.wanaku.core.util.VersionHelper;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -37,15 +38,19 @@ public class LocalRunner {
         CountDownLatch countDownLatch = new CountDownLatch(activeServices);
         int grpcPort = config.initialGrpcPort();
 
+        startRouter(RuntimeConstants.WANAKU_ROUTER, executorService, countDownLatch);
+        LOG.infof("Waiting %d seconds for the Wanaku Router to start", config.routerStartWaitSecs());
+        try {
+            Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.warn("Interrupted while waiting for Wanaku Router to start ... Aborting");
+            return;
+        }
+
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {
-                File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
-
-                String grpcPortArg = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
-                executorService.submit(() -> {
-                    ProcessRunner.run(componentDir, "java", grpcPortArg, "-jar", "quarkus-run.jar");
-                    countDownLatch.countDown();
-                });
+                startService(component, grpcPort, executorService, countDownLatch);
                 grpcPort++;
             }
         }
@@ -57,25 +62,51 @@ public class LocalRunner {
         }
     }
 
+    private static void startRouter(String component, ExecutorService executorService, CountDownLatch countDownLatch) {
+        File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component);
+
+        executorService.submit(() -> {
+            ProcessRunner.run(componentDir, "java", "-jar", "quarkus-run.jar");
+            countDownLatch.countDown();
+        });
+    }
+
+    private static void startService(
+            Map.Entry<String, String> component, int grpcPort, ExecutorService executorService, CountDownLatch countDownLatch) {
+        LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
+        File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
+
+        String grpcPortArg = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
+        executorService.submit(() -> {
+            ProcessRunner.run(componentDir, "java", grpcPortArg, "-jar", "quarkus-run.jar");
+            countDownLatch.countDown();
+        });
+    }
+
     private void deploy(List<String> services, Map<String, String> components) throws IOException {
+        downloadService(RuntimeConstants.WANAKU_ROUTER, components.get(RuntimeConstants.WANAKU_ROUTER));
+
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {
                 activeServices++;
-                String downloadUrl = getDownloadURL(component);
-                String componentName = component.getKey();
-
-                File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
-
-                LOG.infof("Downloading %s at %s", componentName, downloadUrl);
-                File downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir);
-
-                LOG.infof("Unpacking %s at %s", componentName, destinationDir);
-                ZipHelper.unzip(downloadedFile, RuntimeConstants.WANAKU_LOCAL_DIR, componentName);
+                downloadService(component.getKey(), component.getValue());
             }
         }
     }
 
-    private String getDownloadURL(Map.Entry<String, String> component) {
+    private void downloadService(String componentName, String urlFormat) throws IOException {
+        String downloadUrl = getDownloadURL(urlFormat);
+
+        File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
+
+        LOG.infof("Downloading %s at %s", componentName, downloadUrl);
+        File downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir);
+
+        LOG.infof("Unpacking %s at %s", componentName, destinationDir);
+        ZipHelper.unzip(downloadedFile, RuntimeConstants.WANAKU_LOCAL_DIR, componentName);
+    }
+
+    private String getDownloadURL(String urlFormat) {
         String tag;
         if (VersionHelper.VERSION.contains("SNAPSHOT")) {
             tag = config.earlyAccessTag();
@@ -83,14 +114,10 @@ public class LocalRunner {
             tag =  String.format("v%s", VersionHelper.VERSION);
         }
 
-        return String.format(component.getValue(), tag, VersionHelper.VERSION);
+        return String.format(urlFormat, tag, VersionHelper.VERSION);
     }
 
     private static boolean isEnabled(List<String> services, Map.Entry<String, String> component) {
-        if (component.getKey().equals("wanaku-router")) {
-            return true;
-        }
-
         if (!services.isEmpty()) {
             return services.contains(component.getKey());
         }
