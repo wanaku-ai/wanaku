@@ -127,5 +127,8 @@ public interface WanakuServiceConfig extends WanakuConfig {
          */
         @WithDefault("http://localhost:8080")
         String uri();
+
+        @WithDefault("auto")
+        String announceAddress();
     }
 }

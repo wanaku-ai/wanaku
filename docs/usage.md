@@ -680,3 +680,11 @@ For those cases, leverage the `.proto` files in the `core-exchange` module for c
 > [!NOTE]
 > For plain Java, you can still generate the project using the archetype, but in this case, you must implement your own 
 delegate from scratch and adjust the dependencies.
+
+
+### Adjusting the announcement address 
+
+You can adjust the address used to announce to the Router using either (depending on whether using a tool or a resource provider):
+
+* wanaku.service.tool.registration.announce-address=my-host
+* wanaku.service.provider.registration.announce-address=my-host
