@@ -81,8 +81,6 @@ services:
       - ~/.wanaku/services:/home/default/.wanaku/services
 
   wanaku-router:
-    depends_on:
-      - wanaku-router
     image: quay.io/wanaku/wanaku-router:wanaku-0.0.5
     ports:
       - "8080:8080"

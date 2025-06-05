@@ -88,8 +88,6 @@ services:
       - ~/.wanaku/services:/home/default/.wanaku/services
 
   wanaku-router:
-    depends_on:
-      - wanaku-router
     image: quay.io/wanaku/wanaku-router:latest
     pull_policy: always
     ports:
