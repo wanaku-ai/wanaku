@@ -75,4 +75,4 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ~/.wanaku/services:/home/default/.wanaku/services
+      - ~/.wanaku/router:/home/default/.wanaku/router
