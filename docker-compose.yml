@@ -1,9 +1,18 @@
 services:
+  init-myservice:
+    image: alpine # Or any small image with chown
+    user: "0:0"
+    command: sh -c "mkdir -p /home/default/.wanaku/services && mkdir -p /home/default/.wanaku/router  && chown -R 185:185 /home/default/.wanaku/"
+    volumes:
+      - ~/.wanaku/:/home/default/.wanaku/
   wanaku-tool-service-http:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-tool-service-http:latest
     pull_policy: always
     ports:
@@ -11,11 +20,15 @@ services:
     volumes:
       - ~/.wanaku/services:/home/default/.wanaku/services
 
+
   wanaku-tool-service-yaml-route:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-tool-service-yaml-route:latest
     pull_policy: always
     ports:
@@ -28,7 +41,10 @@ services:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-tool-service-kafka:latest
     pull_policy: always
     ports:
@@ -40,7 +56,10 @@ services:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-tool-service-tavily:latest
     pull_policy: always
     #    environment:
@@ -54,19 +73,25 @@ services:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-provider-file:latest
     pull_policy: always
     ports:
       - "9002:9000"
     volumes:
-      - ~/.wanaku/services:/home/default/.wanaku/services
+      - ~/.wanaku/:/home/default/.wanaku/
 
   wanaku-provider-ftp:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-provider-ftp:latest
     pull_policy: always
     ports:
@@ -79,7 +104,10 @@ services:
     environment:
       WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
-      - wanaku-router
+      wanaku-router:
+        condition: service_healthy
+      init-myservice:
+        condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-provider-s3:latest
     pull_policy: always
     ports:
@@ -94,6 +122,9 @@ services:
       - "8080:8080"
     volumes:
       - ~/.wanaku/router:/home/default/.wanaku/router
+    depends_on:
+      init-myservice:
+        condition: service_completed_successfully
     healthcheck:
       test: curl -f localhost:8080/api/v1/management/info/version || exit 1
       interval: 10s
