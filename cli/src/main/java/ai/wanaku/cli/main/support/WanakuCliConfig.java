@@ -41,4 +41,7 @@ public interface WanakuCliConfig extends WanakuConfig {
     @WithDefault("9000")
     int initialGrpcPort();
 
+    @WithDefault("5")
+    int routerStartWaitSecs();
+
 }
