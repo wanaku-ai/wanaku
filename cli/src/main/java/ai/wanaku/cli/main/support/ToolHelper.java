@@ -1,11 +1,16 @@
 package ai.wanaku.cli.main.support;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.services.ToolsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 
 import java.net.URI;
 import java.util.List;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 public class ToolHelper {
 
@@ -33,7 +38,19 @@ public class ToolHelper {
                 .build(ToolsService.class);
 
         for (var toolReference : toolReferences) {
-            toolsService.add(toolReference);
+            try (Response ignored = toolsService.add(toolReference)) {
+
+            } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                System.err.printf("There is no downstream service capable of handling requests of the given type (%s): %s%n",
+                        toolReference.getType(), response.getStatusInfo().getReasonPhrase());
+
+                System.exit(1);
+            } else {
+                commonResponseErrorHandler(response);
+            }
+        }
         }
     }
 
