@@ -24,12 +24,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>io.quarkiverse.infinispan</groupId>
             <artifactId>quarkus-infinispan-embedded</artifactId>
             <version>${quarkus-infinispan-embedded.version}</version>
