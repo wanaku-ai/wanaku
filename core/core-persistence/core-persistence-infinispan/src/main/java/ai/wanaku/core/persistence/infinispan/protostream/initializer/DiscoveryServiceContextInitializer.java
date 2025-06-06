@@ -1,44 +1,20 @@
 package ai.wanaku.core.persistence.infinispan.protostream.initializer;
 
-import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ActivityRecordMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ServiceStateMarshaller;
-import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.SerializationContext;
-import org.infinispan.protostream.SerializationContextInitializer;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Arrays;
 
-public class DiscoveryServiceContextInitializer implements SerializationContextInitializer {
-    @Override
-    public String getProtoFileName() {
-        return "discovery.proto";
-    }
+public class DiscoveryServiceContextInitializer extends AbstractSerializationContextInitializer {
 
-    @Override
-    public String getProtoFile() throws UncheckedIOException {
-        try {
-            Path path = Paths.get(getClass().getClassLoader().getResource("proto/discovery.proto").toURI());
-            return Files.readString(path);
-        } catch (IOException | URISyntaxException e) {
-            throw new WanakuException(e);
-        }
-    }
+    private static final String PROTO_FILE_NAME="discovery.proto";
 
-    @Override
-    public void registerSchema(SerializationContext serCtx) {
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
-    }
+    private static final String PROTO_FILE_PATH="proto/discovery.proto";
 
-    @Override
-    public void registerMarshallers(SerializationContext serCtx) {
-        serCtx.registerMarshaller(new ActivityRecordMarshaller());
-        serCtx.registerMarshaller(new ServiceStateMarshaller());
+    public DiscoveryServiceContextInitializer(){
+        super(PROTO_FILE_NAME, PROTO_FILE_PATH,
+                Arrays.asList(new ActivityRecordMarshaller(),
+                              new ServiceStateMarshaller()));
     }
 }
 
