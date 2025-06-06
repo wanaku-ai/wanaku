@@ -3,27 +3,21 @@ package ai.wanaku.core.persistence.infinispan;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.infinispan.Cache;
-import org.infinispan.configuration.cache.Configuration;
-import org.infinispan.manager.EmbeddedCacheManager;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import org.infinispan.Cache;
+import org.infinispan.configuration.cache.Configuration;
+import org.infinispan.manager.EmbeddedCacheManager;
 
-public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K> implements WanakuRepository<A, K> {
+public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K> implements WanakuRepository<A, K> {
 
     protected final EmbeddedCacheManager cacheManager;
-    private final ObjectMapper mapper;
     private final ReentrantLock lock = new ReentrantLock();
 
     protected AbstractInfinispanRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
         this.cacheManager = cacheManager;
-        mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
 
         configure(configuration);
     }
@@ -72,20 +66,12 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
     public boolean update(K id, A entity) {
         final Cache<Object, A> cache = cacheManager.getCache(entityName());
 
-      //  try {
-            try {
-                lock.lock();
-                cache.put(id, entity);
-                /*if (cache.put(id, mapper.writeValueAsString(entity)) != null) {
-                    return true;
-                }*/
-            } finally {
-                lock.unlock();
-            }
-
-    /*    } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }*/
+        try {
+            lock.lock();
+            cache.put(id, entity);
+        } finally {
+            lock.unlock();
+        }
 
         return false;
     }
@@ -93,27 +79,19 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
     public boolean update(K id, Consumer<A> consumer) {
         final Cache<Object, A> cache = cacheManager.getCache(entityName());
 
-     //   try {
-            try {
-                lock.lock();
-                A entity = findById(id);
-                if (entity == null) {
-                    entity = newEntity();
-                    entity.setId(id);
-                }
-
-                consumer.accept(entity);
-                cache.put(id, entity);
-                /*if (cache.put(id, mapper.writeValueAsString(entity)) != null) {
-                    return true;
-                }*/
-            } finally {
-                lock.unlock();
+        try {
+            lock.lock();
+            A entity = findById(id);
+            if (entity == null) {
+                entity = newEntity();
+                entity.setId(id);
             }
 
-       /* } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }*/
+            consumer.accept(entity);
+            cache.put(id, entity);
+        } finally {
+            lock.unlock();
+        }
 
         return false;
     }
@@ -136,12 +114,12 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
         } catch (NoSuchMethodException e) {
             throw new WanakuException(e);
         }
-    };
+    }
+    ;
 
     protected void configure(Configuration configuration) {
         cacheManager.defineConfiguration(entityName(), configuration);
     }
-
 
     // For testing only
     protected void deleteALl() {
