@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: wanaku-router
+  name: wanaku-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wanaku-router
+  template:
+    metadata:
+      labels:
+        app: wanaku-router
+    spec:
+      containers:
+        - name: wanaku-router
+          image: quay.io/wanaku/wanaku-router:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: router-volume
+              mountPath: /home/default/.wanaku/router
+          livenessProbe: # Using livenessProbe for healthcheck equivalent
+            httpGet:
+              path: /api/v1/management/info/version
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe: # Often good to have both liveness and readiness
+            httpGet:
+              path: /api/v1/management/info/version
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+      volumes:
+        - name: router-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: wanaku-router
+  name: wanaku-router
+spec:
+  ports:
+    - name: 8080-tcp
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: wanaku-router
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: wanaku-router
+  name: wanaku-router
+spec:
+  port:
+    targetPort: 8080-tcp
+  to:
+    kind: Service
+    name: wanaku-router
+    weight: 100
+  wildcardPolicy: None
