@@ -1,11 +1,16 @@
 package ai.wanaku.cli.main.commands.resources;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import java.net.URI;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ResourcesService;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "remove",description = "Remove exposed resources")
 public class ResourcesRemove extends BaseCommand {
@@ -25,6 +30,19 @@ public class ResourcesRemove extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ResourcesService.class);
 
-        resourcesService.remove(name);
+        try (Response response = resourcesService.remove(name)) {
+
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                System.err.printf("Resource not found (%s): %s%n",
+                        name, response.getStatusInfo().getReasonPhrase());
+
+                System.exit(1);
+            } else {
+                commonResponseErrorHandler(response);
+            }
+        }
+
     }
 }

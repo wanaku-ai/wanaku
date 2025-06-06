@@ -1,5 +1,9 @@
 package ai.wanaku.cli.main.commands.resources;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
+import ai.wanaku.api.types.WanakuResponse;
 import java.net.URI;
 import java.util.List;
 
@@ -8,7 +12,10 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ResourcesService;
 import ai.wanaku.cli.main.support.PrettyPrinter;
+import org.jboss.resteasy.reactive.RestResponse;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "list",description = "List resources")
 public class ResourcesList extends BaseCommand {
@@ -25,7 +32,14 @@ public class ResourcesList extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ResourcesService.class);
 
-        List<ResourceReference> list = resourcesService.list().getEntity().data();
-        PrettyPrinter.printResources(list);
+
+        try (RestResponse<WanakuResponse<List<ResourceReference>>> response = resourcesService.list()) {
+            List<ResourceReference> list = response.getEntity().data();
+            PrettyPrinter.printResources(list);
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            commonResponseErrorHandler(response);
+        }
+
     }
 }

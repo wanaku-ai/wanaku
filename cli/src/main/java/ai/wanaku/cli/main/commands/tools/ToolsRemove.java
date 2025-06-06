@@ -1,5 +1,8 @@
 package ai.wanaku.cli.main.commands.tools;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import java.net.URI;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -7,6 +10,8 @@ import org.jboss.logging.Logger;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ToolsService;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "remove",description = "Remove tools")
 public class ToolsRemove extends BaseCommand {
@@ -27,7 +32,20 @@ public class ToolsRemove extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
 
-        toolsService.remove(name);
+        try (Response ignored = toolsService.remove(name)) {
+
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                System.err.printf("Tool not found (%s): %s%n",
+                        name, response.getStatusInfo().getReasonPhrase());
+
+                System.exit(1);
+            } else {
+                commonResponseErrorHandler(response);
+            }
+        }
+
     }
 
 }

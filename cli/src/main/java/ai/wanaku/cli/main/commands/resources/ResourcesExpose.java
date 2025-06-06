@@ -1,5 +1,8 @@
 package ai.wanaku.cli.main.commands.resources;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +12,8 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ResourcesService;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "expose",description = "Expose resources")
 public class ResourcesExpose extends BaseCommand {
@@ -67,6 +72,11 @@ public class ResourcesExpose extends BaseCommand {
             resource.setParams(paramsList);
         }
 
-        resourcesService.expose(resource);
+        try (Response response = resourcesService.expose(resource)) {
+
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            commonResponseErrorHandler(response);
+        }
     }
 }

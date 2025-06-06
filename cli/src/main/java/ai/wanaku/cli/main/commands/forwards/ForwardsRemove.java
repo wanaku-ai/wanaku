@@ -1,11 +1,16 @@
 package ai.wanaku.cli.main.commands.forwards;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.services.ForwardsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.net.URI;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "remove",
         description = "Remove forward targets")
@@ -30,6 +35,11 @@ public class ForwardsRemove extends BaseCommand {
         reference.setName(name);
         reference.setAddress(service);
 
-        forwardsService.removeForward(reference);
+        try (Response ignored = forwardsService.removeForward(reference)) {
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            commonResponseErrorHandler(response);
+        }
+
     }
 }

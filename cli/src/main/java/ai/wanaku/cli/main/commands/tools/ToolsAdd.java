@@ -1,5 +1,8 @@
 package ai.wanaku.cli.main.commands.tools;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
@@ -11,6 +14,8 @@ import java.net.URI;
 import java.util.List;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "add",description = "Add tools")
 public class ToolsAdd extends BaseCommand {
@@ -81,7 +86,21 @@ public class ToolsAdd extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
 
-        toolsService.add(toolReference);
+        try (Response ignored = toolsService.add(toolReference)) {
+
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                System.err.printf("There is no downstream service capable of handling requests of the given type (%s): %s%n",
+                        type, response.getStatusInfo().getReasonPhrase());
+
+                System.exit(1);
+            } else {
+                commonResponseErrorHandler(response);
+            }
+        }
     }
+
+
 
 }
