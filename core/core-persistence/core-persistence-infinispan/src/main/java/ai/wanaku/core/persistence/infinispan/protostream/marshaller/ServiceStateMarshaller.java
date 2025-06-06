@@ -10,7 +10,7 @@ public class ServiceStateMarshaller implements MessageMarshaller<ServiceState> {
 
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.discovery.ServiceState";
+        return ServiceState.class.getCanonicalName();
     }
 
     @Override

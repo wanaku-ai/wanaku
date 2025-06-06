@@ -8,7 +8,7 @@ import java.io.IOException;
 public class WanakuErrorMarshaller implements MessageMarshaller<WanakuError> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.WanakuError";
+        return WanakuError.class.getCanonicalName();
     }
 
     @Override

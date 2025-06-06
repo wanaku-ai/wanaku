@@ -12,7 +12,7 @@ public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget>
 
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.providers.ServiceTarget";
+        return ServiceTarget.class.getCanonicalName();
     }
 
     @Override
