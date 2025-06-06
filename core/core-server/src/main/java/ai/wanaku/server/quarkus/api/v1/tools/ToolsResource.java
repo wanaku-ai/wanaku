@@ -1,5 +1,10 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
+import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -11,15 +16,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.core.util.CollectionsHelper;
-import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
-import java.util.List;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
+
+import java.util.List;
 
 @ApplicationScoped
 @Path("/api/v1/tools")
@@ -64,5 +63,16 @@ public class ToolsResource {
     public Response update(ToolReference resource) throws WanakuException {
         toolsBean.update(resource);
         return Response.ok().build();
+    }
+
+    @Path("/")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public  RestResponse<WanakuResponse<ToolReference>> getByName(@QueryParam("name") String name) throws WanakuException {
+        ToolReference tool = toolsBean.getByName(name);
+        if(tool == null) {
+            return RestResponse.notFound();
+        }
+        return RestResponse.ok(new WanakuResponse<>(tool));
     }
 }

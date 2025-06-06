@@ -54,6 +54,17 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-console-ui</artifactId>
+                <version>${jline-version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.swagger.parser.v3</groupId>
                 <artifactId>swagger-parser</artifactId>
                 <version>${swagger-parser.version}</version>
@@ -64,6 +75,19 @@
                 <artifactId>jsonassert</artifactId>
                 <version>${jsonassert-version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.googlecode.juniversalchardet</groupId>
+                <artifactId>juniversalchardet</artifactId>
+                <version>${juniversalchardet-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.fusesource.jansi</groupId>
+                <artifactId>jansi</artifactId>
+                <version>${jansi-version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -130,6 +154,26 @@
             <artifactId>swagger-models</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-console-ui</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.juniversalchardet</groupId>
+            <artifactId>juniversalchardet</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+
         <!-- tests -->
       <dependency>
             <groupId>io.quarkus</groupId>
@@ -181,8 +225,6 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-
-
         </plugins>
     </build>
 
@@ -197,6 +239,24 @@
             <properties>
                 <skipITs>false</skipITs>
                 <quarkus.native.enabled>true</quarkus.native.enabled>
+                <quarkus.native.additional-build-args>
+                    --initialize-at-run-time=org.jline.nativ.Kernel32,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$CONSOLE_SCREEN_BUFFER_INFO,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$CHAR_INFO,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$MOUSE_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$FOCUS_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$COORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$KEY_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$SMALL_RECT,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$WINDOW_BUFFER_SIZE_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$INPUT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$MENU_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.JLineLibrary,
+                    -H:ReflectionConfigurationFiles=reflection-config.json,
+                    -H:IncludeResourceBundles=consoleui_messages,
+                    -H:ResourceConfigurationFiles=resources-config.json
+                </quarkus.native.additional-build-args>
+
             </properties>
         </profile>
         <profile>

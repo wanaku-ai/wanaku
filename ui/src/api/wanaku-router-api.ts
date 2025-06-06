@@ -6,6 +6,7 @@
  */
 import type {
   ForwardReference,
+  PostApiV1ToolsParams,
   PutApiV1ResourcesRemoveParams,
   PutApiV1ToolsRemoveParams,
   ResourceReference,
@@ -658,6 +659,53 @@ export const postApiV1ResourcesUpdate = async (
       body: JSON.stringify(resourceReference),
     },
   );
+};
+
+/**
+ * @summary Get By Name
+ */
+export type postApiV1ToolsResponse200 = {
+  data: WanakuResponseToolReference;
+  status: 200;
+};
+
+export type postApiV1ToolsResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ToolsResponseComposite =
+  | postApiV1ToolsResponse200
+  | postApiV1ToolsResponse500;
+
+export type postApiV1ToolsResponse = postApiV1ToolsResponseComposite & {
+  headers: Headers;
+};
+
+export const getPostApiV1ToolsUrl = (params?: PostApiV1ToolsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/tools?${stringifiedParams}`
+    : `/api/v1/tools`;
+};
+
+export const postApiV1Tools = async (
+  params?: PostApiV1ToolsParams,
+  options?: RequestInit,
+): Promise<postApiV1ToolsResponse> => {
+  return customFetch<postApiV1ToolsResponse>(getPostApiV1ToolsUrl(params), {
+    ...options,
+    method: "POST",
+  });
 };
 
 /**

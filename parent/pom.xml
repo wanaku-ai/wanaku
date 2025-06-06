@@ -56,9 +56,12 @@
         <commons-pool2.version>2.12.1</commons-pool2.version>
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.32</swagger-core-version>
+        <jline-version>3.30.4</jline-version>
         <swagger-parser.version>2.1.27</swagger-parser.version>
         <quarkus-infinispan-embedded.version>1.0.2</quarkus-infinispan-embedded.version>
         <assertj-version>3.27.3</assertj-version>
+        <juniversalchardet-version>1.0.3</juniversalchardet-version>
+        <jansi-version>2.4.2</jansi-version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
