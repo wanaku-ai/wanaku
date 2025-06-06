@@ -14,10 +14,6 @@ import org.infinispan.protostream.SerializationContextInitializer;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class TypesSerializationContextInitializer implements SerializationContextInitializer {
 
@@ -29,9 +25,8 @@ public class TypesSerializationContextInitializer implements SerializationContex
     @Override
     public String getProtoFile() throws UncheckedIOException {
         try {
-            Path path = Paths.get(getClass().getClassLoader().getResource("proto/types.proto").toURI());
-            return Files.readString(path);
-        } catch (IOException | URISyntaxException e) {
+            return new String(getClass().getClassLoader().getResourceAsStream("proto/types.proto").readAllBytes());
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
