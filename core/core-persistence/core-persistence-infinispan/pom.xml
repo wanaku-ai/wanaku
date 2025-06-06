@@ -28,6 +28,12 @@
             <artifactId>quarkus-infinispan-embedded</artifactId>
             <version>${quarkus-infinispan-embedded.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-query</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

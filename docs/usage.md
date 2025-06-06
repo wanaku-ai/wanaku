@@ -295,6 +295,55 @@ The parent directory of the specified file must exist and be writable by the cur
 If the `--import` (or `-I`) option is set, the generated toolset is automatically imported into the router, equivalent 
 to running the generate command followed by the import command.
 
+### Edit Tools
+
+The edit command allows you to modify the definition of an existing tool registered with the Wanaku API. You can either
+specify the tool's name directly or select it from a list of available tools. The command utilizes the nano text editor
+for in-terminal editing of the tool's JSON definition.
+
+#### Usage
+
+```shell
+wanaku tools edit [options] [toolName]
+```
+
+#### Arguments 
+
+* toolName : (Optional) Specifies the exact name of the tool you wish to modify. If this argument is omitted, 
+the command will intelligently present you with an interactive, scrollable list of all currently registered tools, 
+allowing for easy selection.
+
+#### Options
+* host Defines the network address or URL of the Wanaku service API. This is crucial for directing the command to the correct backend instance. 
+  Default Value: http://localhost:8080 (This assumes a local development or testing environment.)
+
+#### Examples
+
+##### Edit a tool by name
+
+To directly load and edit a tool named my-custom-tool that is already registered, simply execute:
+
+```shell
+wanaku tools edit my-custom-tool
+```
+Upon execution, the command will retrieve the JSON definition of my-custom-tool and open it within the nano editor 
+directly in your terminal. After you have made your desired modifications, ensure you save your changes 
+(typically by pressing Ctrl+S) and then exit nano (Ctrl+X). Following your exit, the command will prompt you for a 
+final confirmation before applying the updates to the Wanaku API.
+
+##### Select and edit a tool from a list
+When you invoke the `edit` command without specifying a `toolName`, it becomes an interactive process, ideal for discovering 
+or selecting from multiple tools:
+
+```shell
+wanaku tools edit
+```
+
+This command will display a neatly formatted, interactive list of all available tools. You can effortlessly navigate 
+through this list using your keyboard's arrow keys. Once you've highlighted the tool you intend to edit, simply press Enter. 
+The command will then proceed to open the selected tool's JSON definition in nano for your modifications.
+
+
 ### Targets 
 
 #### Configuring Targets 
