@@ -1,5 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.protostream.initializer;
 
+import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ForwardReferenceMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.InputSchemaMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ParamMarshaller;
@@ -32,7 +33,7 @@ public class TypesSerializationContextInitializer implements SerializationContex
             Path path = Paths.get(getClass().getClassLoader().getResource("proto/types.proto").toURI());
             return Files.readString(path);
         } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new WanakuException(e);
         }
     }
 

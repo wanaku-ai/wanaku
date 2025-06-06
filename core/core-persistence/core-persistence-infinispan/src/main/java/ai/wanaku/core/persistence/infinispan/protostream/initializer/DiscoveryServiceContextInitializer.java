@@ -1,5 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.protostream.initializer;
 
+import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ActivityRecordMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ServiceStateMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
@@ -25,7 +26,7 @@ public class DiscoveryServiceContextInitializer implements SerializationContextI
             Path path = Paths.get(getClass().getClassLoader().getResource("proto/discovery.proto").toURI());
             return Files.readString(path);
         } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new WanakuException(e);
         }
     }
 
