@@ -56,6 +56,7 @@
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.32</swagger-core-version>
         <quarkus-infinispan-embedded.version>1.0.2</quarkus-infinispan-embedded.version>
+        <assertj-version>3.27.3</assertj-version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
