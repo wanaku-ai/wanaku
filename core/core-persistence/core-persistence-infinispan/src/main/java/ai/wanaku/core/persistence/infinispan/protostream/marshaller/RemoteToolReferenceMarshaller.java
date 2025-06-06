@@ -8,7 +8,7 @@ import java.io.IOException;
 public class RemoteToolReferenceMarshaller implements MessageMarshaller<RemoteToolReference> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.RemoteToolReference";
+        return RemoteToolReference.class.getCanonicalName();
     }
 
     @Override

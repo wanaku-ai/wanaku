@@ -11,7 +11,7 @@ public class ServiceTypeMarshaller implements EnumMarshaller<ServiceType> {
 
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.providers.ServiceType";
+        return ServiceType.class.getCanonicalName();
     }
 
     @Override

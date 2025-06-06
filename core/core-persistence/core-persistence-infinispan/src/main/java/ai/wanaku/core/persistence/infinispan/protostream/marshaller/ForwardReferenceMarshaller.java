@@ -7,7 +7,7 @@ import java.io.IOException;
 public class ForwardReferenceMarshaller implements MessageMarshaller<ForwardReference> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.ForwardReference";
+        return ForwardReference.class.getCanonicalName();
     }
 
     @Override

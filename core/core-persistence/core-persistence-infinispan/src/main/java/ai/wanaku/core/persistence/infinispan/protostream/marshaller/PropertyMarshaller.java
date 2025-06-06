@@ -7,7 +7,7 @@ import java.io.IOException;
 public class PropertyMarshaller implements MessageMarshaller<Property> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.Property";
+        return Property.class.getCanonicalName();
     }
 
     @Override

@@ -4,12 +4,11 @@ import ai.wanaku.api.types.ResourceReference;
 import org.infinispan.protostream.MessageMarshaller;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class ParamMarshaller implements MessageMarshaller<ResourceReference.Param> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.ResourceReference.Param";
+        return ResourceReference.Param.class.getCanonicalName();
     }
 
     @Override

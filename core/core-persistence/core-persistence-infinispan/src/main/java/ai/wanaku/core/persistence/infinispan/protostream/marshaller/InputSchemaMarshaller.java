@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class InputSchemaMarshaller implements MessageMarshaller<InputSchema> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.InputSchema";
+        return InputSchema.class.getCanonicalName();
     }
 
     @Override

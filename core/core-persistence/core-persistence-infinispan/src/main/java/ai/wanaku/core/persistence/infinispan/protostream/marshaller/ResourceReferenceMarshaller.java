@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceReference> {
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.ResourceReference";
+        return ResourceReference.class.getCanonicalName();
     }
 
     @Override

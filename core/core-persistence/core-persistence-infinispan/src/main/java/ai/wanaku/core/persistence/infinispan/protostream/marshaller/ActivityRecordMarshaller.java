@@ -13,7 +13,7 @@ public class ActivityRecordMarshaller implements MessageMarshaller<ActivityRecor
 
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.discovery.ActivityRecord";
+        return ActivityRecord.class.getCanonicalName();
     }
 
     @Override

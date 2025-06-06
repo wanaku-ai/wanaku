@@ -9,7 +9,7 @@ public class ToolReferenceMarshaller implements MessageMarshaller<ToolReference>
 
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.ToolReference";
+        return ToolReference.class.getCanonicalName();
     }
 
     @Override
