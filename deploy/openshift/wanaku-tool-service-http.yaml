@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: wanaku-tool-service-http
+  name: wanaku-tool-service-http
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wanaku-tool-service-http
+  template:
+    metadata:
+      labels:
+        app: wanaku-tool-service-http
+    spec:
+      containers:
+        - name: wanaku-tool-service-http
+          image: quay.io/wanaku/wanaku-tool-service-http:latest
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          env:
+            - name: WANAKU_SERVICE_TOOL_REGISTRATION_URI
+              value: http://wanaku-router:8080 # Uses the OpenShift service name
+          volumeMounts:
+            - name: services-volume
+              mountPath: /home/default/.wanaku/services
+      volumes:
+        - name: services-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: wanaku-tool-service-http
+  name: wanaku-tool-service-http
+spec:
+  ports:
+    - name: 9000-tcp
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+  selector:
+    app: wanaku-tool-service-http
+  sessionAffinity: None
+  type: ClusterIP
