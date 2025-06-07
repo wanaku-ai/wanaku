@@ -105,6 +105,7 @@
         <module>services</module>
         <module>archetypes</module>
         <module>jbang</module>
+        <module>test-base</module>
     </modules>
 
     <profiles>
