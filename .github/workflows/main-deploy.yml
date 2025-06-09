@@ -13,6 +13,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: Install CLI tools from GitHub
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        source: "mirror"
+        oc: "latest"
     - name: Authenticate and set context
       uses: redhat-actions/oc-login@v1
       with:
