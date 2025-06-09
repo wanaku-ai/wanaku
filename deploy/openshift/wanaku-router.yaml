@@ -17,6 +17,7 @@ spec:
       containers:
         - name: wanaku-router
           image: quay.io/wanaku/wanaku-router:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               protocol: TCP

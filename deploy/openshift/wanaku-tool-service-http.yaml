@@ -17,6 +17,7 @@ spec:
       containers:
         - name: wanaku-tool-service-http
           image: quay.io/wanaku/wanaku-tool-service-http:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 9000
               protocol: TCP
