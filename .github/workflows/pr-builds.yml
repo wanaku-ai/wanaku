@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Multiplatform OS Builds
+name: Multiplatform PR Builds
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [ubuntu-latest, macos-latest]
         experimental: [false]
         include:
           - os: [ windows-latest ]
