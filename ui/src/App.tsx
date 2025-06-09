@@ -58,6 +58,9 @@ function App() {
               <HeaderMenuItem as={Link} to={Links.LLMChat}>
                 LLMChat
               </HeaderMenuItem>
+              <HeaderMenuItem as={Link} to={Links.Targets}>
+                Targets (Downstream services)
+              </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>
               <HeaderGlobalAction

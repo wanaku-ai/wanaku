@@ -25,6 +25,10 @@ export const router = createHashRouter([
         path: Links.LLMChat,
         lazy: async () => import("./Pages/LLMChat"),
       },
+      {
+        path: Links.Targets,
+        lazy: async () => import("./Pages/Targets"),
+      },
     ],
   },
 ]);
