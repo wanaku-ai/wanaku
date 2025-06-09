@@ -26,5 +26,9 @@ jobs:
         openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
         insecure_skip_tls_verify: true
         namespace: ${{ secrets.OPENSHIFT_NAMESPACE }}
+    - name: Scale down HTTP service
+      run: oc scale deployment wanaku-tool-service-http --replicas=0
+    - name: Scale down the Router service
+      run: oc scale deployment wanaku-router --replicas=0
     - name: Deploy on the cloud
       run: oc apply -f deploy/openshift
