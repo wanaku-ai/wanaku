@@ -28,4 +28,4 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Deploy on the cloud
-      run: oc apply -f deploy/openshift
+      run: kubectl apply -f deploy/openshift
