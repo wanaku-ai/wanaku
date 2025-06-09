@@ -45,7 +45,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
         if (serviceTarget.getServiceType() == ServiceType.TOOL_INVOKER) {
             toolRepository.deleteById(serviceTarget.getId());
         } else {
-            resourceTargetRepository.deleteById(serviceTarget.getService());
+            resourceTargetRepository.deleteById(serviceTarget.getId());
         }
 
         activityRecordRepository.update(serviceTarget.getId(), a -> applyDeregistration(serviceTarget.getId(), a));
