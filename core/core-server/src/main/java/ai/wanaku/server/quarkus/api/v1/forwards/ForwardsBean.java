@@ -49,25 +49,26 @@ public class ForwardsBean {
         forwardReferenceRepository = forwardReferenceRepositoryInstance.get();
     }
 
-    public void remove(ForwardReference reference) {
-        ForwardReference byId = forwardReferenceRepository.findById(reference.getName());
-        if (byId == null) {
-            LOG.warnf("Forward reference %s not found", reference);
-            return;
+    public boolean removeReference(ForwardReference matching, ForwardReference test) {
+        if (matching.getName().equals(test.getName())) {
+            ForwardResolver forwardResolver = forwardRegistry.getResolver(test);
+            if (forwardResolver != null) {
+                try {
+                    removeRemoteTools(forwardResolver);
+                    removeRemoteResources(forwardResolver);
+                } finally {
+                    forwardRegistry.unlink(test);
+                }
+                return true;
+            }
         }
 
-        ForwardResolver forwardResolver = forwardRegistry.getResolver(reference);
-        if (forwardResolver != null) {
-            try {
-                removeRemoteTools(forwardResolver);
-                removeRemoteResources(forwardResolver);
-            } finally {
-                try {
-                    forwardRegistry.unlink(reference);
-                } finally {
-                    forwardReferenceRepository.deleteById(reference.getName());
-                }
-            }
+        return false;
+    }
+
+    public void remove(ForwardReference reference) {
+        if (!forwardReferenceRepository.remove(r -> removeReference(reference, r))) {
+            LOG.warnf("No references named %s where found", reference.getName());
         }
     }
 
