@@ -42,6 +42,45 @@ components:
       format: date-time
       examples:
       - 2022-03-10T16:15:50Z
+    MediaType:
+      type: object
+      properties:
+        type:
+          type: string
+        subtype:
+          type: string
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+        hash:
+          type: integer
+          format: int32
+        wildcardType:
+          type: boolean
+        wildcardSubtype:
+          type: boolean
+    OutboundSseEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        comment:
+          type: string
+        reconnectDelay:
+          type: integer
+          format: int64
+        reconnectDelaySet:
+          type: boolean
+        type:
+          type: object
+        genericType:
+          type: object
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        data: {}
     Param:
       type: object
       properties:
@@ -383,6 +422,20 @@ paths:
       summary: Version
       tags:
       - Info Resource
+  /api/v1/management/targets/notifications:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutboundSseEvent"
+      summary: Targets Event Stream
+      tags:
+      - Targets Resource
   /api/v1/management/targets/resources/list:
     get:
       responses:

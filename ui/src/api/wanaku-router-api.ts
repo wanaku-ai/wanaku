@@ -6,6 +6,7 @@
  */
 import type {
   ForwardReference,
+  OutboundSseEvent,
   PostApiV1ToolsParams,
   PutApiV1ResourcesRemoveParams,
   PutApiV1ToolsRemoveParams,
@@ -366,6 +367,38 @@ export const getApiV1ManagementInfoVersion = async (
 ): Promise<getApiV1ManagementInfoVersionResponse> => {
   return customFetch<getApiV1ManagementInfoVersionResponse>(
     getGetApiV1ManagementInfoVersionUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Targets Event Stream
+ */
+export type getApiV1ManagementTargetsNotificationsResponse200 = {
+  data: OutboundSseEvent[];
+  status: 200;
+};
+
+export type getApiV1ManagementTargetsNotificationsResponseComposite =
+  getApiV1ManagementTargetsNotificationsResponse200;
+
+export type getApiV1ManagementTargetsNotificationsResponse =
+  getApiV1ManagementTargetsNotificationsResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementTargetsNotificationsUrl = () => {
+  return `/api/v1/management/targets/notifications`;
+};
+
+export const getApiV1ManagementTargetsNotifications = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementTargetsNotificationsResponse> => {
+  return customFetch<getApiV1ManagementTargetsNotificationsResponse>(
+    getGetApiV1ManagementTargetsNotificationsUrl(),
     {
       ...options,
       method: "GET",
