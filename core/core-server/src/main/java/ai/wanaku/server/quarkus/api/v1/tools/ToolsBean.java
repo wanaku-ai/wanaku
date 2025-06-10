@@ -67,17 +67,23 @@ public class ToolsBean {
         }
     }
 
-    public void remove(String name) {
-        final List<ToolReference> toolReferences = toolReferenceRepository.listAll();
-        final Optional<ToolReference> first = toolReferences.stream().filter(t -> t.getName().equals(name)).findFirst();
-        if (first.isPresent()) {
-            ToolReference toolReference = first.get();
-
+    private boolean removeReference(String name, ToolReference toolReference) {
+        if (toolReference.getName().equals(name)) {
             try {
                 toolManager.removeTool(name);
             } finally {
                 toolReferenceRepository.deleteById(toolReference.getId());
             }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void remove(String name) {
+        if (!toolReferenceRepository.remove(ref -> removeReference(name, ref))) {
+            LOG.warnf("No references named %s where found", name);
         }
     }
 
