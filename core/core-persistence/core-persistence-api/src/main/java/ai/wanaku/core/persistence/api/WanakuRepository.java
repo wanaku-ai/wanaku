@@ -3,7 +3,7 @@ package ai.wanaku.core.persistence.api;
 import ai.wanaku.api.types.WanakuEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 /**
  * Repository interface for the Wanaku persistence layer.
@@ -55,5 +55,10 @@ public interface WanakuRepository<A extends WanakuEntity, C> {
      */
     boolean update(C id, A entity);
 
-
+    /**
+     * Remove entities matching a predicate
+     * @param matching the predicate to match
+     * @return true if records were removed or false otherwise
+     */
+    boolean remove(Predicate<A> matching);
 }

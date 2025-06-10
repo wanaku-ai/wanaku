@@ -22,8 +22,6 @@ public class ForwardsRemove extends BaseCommand {
     @CommandLine.Option(names = {"--name"}, description = "The name of the service to forward", required = true, arity = "0..1")
     protected String name;
 
-    @CommandLine.Option(names = {"--service"}, description = "The service to forward", required = true, arity = "0..1")
-    protected String service;
 
     @Override
     public void run() {
@@ -33,13 +31,13 @@ public class ForwardsRemove extends BaseCommand {
 
         ForwardReference reference = new ForwardReference();
         reference.setName(name);
-        reference.setAddress(service);
+
 
         try (Response ignored = forwardsService.removeForward(reference)) {
+
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
         }
-
     }
 }
