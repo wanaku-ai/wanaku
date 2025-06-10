@@ -70,9 +70,9 @@ export const TargetsPage: React.FC = () => {
           style={{ float: "right" }}
         />
       )}
-      <h1 className="title">Targets</h1>
+      <h1 className="title">Capabilities</h1>
       <p className="description">
-        Currently active Downstream Services
+        Capbilties (Downstream Services) connected to Wanaku.
       </p>
       <div id="page-content">
         {fetchedData && (
