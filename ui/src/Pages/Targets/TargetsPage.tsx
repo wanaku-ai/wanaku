@@ -3,6 +3,8 @@ import { TargetsTable } from "./TargetsTable";
 import React, { useState, useEffect } from "react";
 import { useTargets } from "../../hooks/api/use-targets";
 import { ServiceTargetState } from "./ServiceTargetState";
+import { getGetApiV1ManagementTargetsNotificationsUrl } from "../../api/wanaku-router-api";
+import { ServiceTargetEvent } from "../../models";
 
 export const TargetsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ServiceTargetState[]>([]);
@@ -41,10 +43,91 @@ export const TargetsPage: React.FC = () => {
     });
 
     setFetchedData(updatedData);
+
+    return updatedData as ServiceTargetState[];
   }
 
+  const setupSSE = (data: ServiceTargetState[]) => {
+    const baseUrl = VITE_API_URL || window.location.origin;
+    const eventSource = new EventSource(baseUrl + getGetApiV1ManagementTargetsNotificationsUrl());
+    
+    eventSource.onopen = () => {
+      console.log('SSE connection opened');
+    };
+
+    eventSource.addEventListener('UPDATE', (event) => {
+      const serviceTargetEvent = JSON.parse(event.data) as ServiceTargetEvent;
+
+      const updatedData = data.map((entry) => {
+        if (entry.id == serviceTargetEvent.id) {
+          entry.active = serviceTargetEvent.serviceState?.healthy; // TODO is this assumption true?
+          entry.lastSeen = serviceTargetEvent.serviceState?.timestamp;
+          entry.reason = serviceTargetEvent.serviceState?.reason;
+        }
+
+        return entry;
+      });
+
+      data = updatedData;
+      setFetchedData(updatedData);
+    });
+
+    eventSource.addEventListener('PING', (event) => {
+      const serviceTargetEvent = JSON.parse(event.data) as ServiceTargetEvent;
+
+      const updatedData = data.map((entry) => {
+        if (entry.id == serviceTargetEvent.id) {
+          entry.lastSeen = new Date().toString(); // TODO What to do with dates?!
+          entry.active = true; // TODO is this assumption true?
+        }
+
+        return entry;
+      });
+
+      data = updatedData;
+      setFetchedData(updatedData);
+    });
+
+    eventSource.addEventListener('REGISTER', (event) => {
+      const serviceTargetEvent = JSON.parse(event.data) as ServiceTargetEvent;
+
+      // Remove if already present, shuoldn't be, but better safe than sorry
+      let updatedData = data.filter((entry) => entry.id != serviceTargetEvent.id);
+
+      updatedData.push(serviceTargetEvent.serviceTarget as ServiceTargetState);
+
+      data = updatedData;
+      fetchState(updatedData);
+    });
+
+    eventSource.addEventListener('DEREGISTER', (event) => {
+      const serviceTargetEvent = JSON.parse(event.data) as ServiceTargetEvent;
+
+      const updatedData = data.filter((entry) => entry.id != serviceTargetEvent.id);
+
+      data = updatedData;
+      setFetchedData(updatedData);
+    });
+    
+    eventSource.onerror = (error) => {
+      console.error('SSE error:', error);
+    };
+    
+    return eventSource;
+  };
+
   useEffect(() => {
-    fetch().then((list) => fetchState(list));
+    let eventSource: EventSource | null = null;
+
+    fetch()
+      .then((list) => fetchState(list))
+      .then((list) => {
+        eventSource = setupSSE(list);
+      });
+
+    return () => {
+      eventSource?.close();
+    };
   }, []);
 
   useEffect(() => {
