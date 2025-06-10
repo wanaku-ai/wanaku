@@ -55,18 +55,23 @@ public class ResourcesBean {
         ResourceHelper.expose(resourceReference, resourceManager, resourceResolver::read);
     }
 
-    public void remove(String name) {
-        final List<ResourceReference> resourceReferences = resourceReferenceRepository.listAll();
-        final Optional<ResourceReference> first =
-                resourceReferences.stream().filter(r -> r.getName().equals(name)).findFirst();
-
-        if (first.isPresent()) {
-            ResourceReference resourceReference = first.get();
+    private boolean removeReference(String name, ResourceReference resourceReference) {
+        if (resourceReference.getName().equals(name)) {
             try {
                 resourceManager.removeResource(resourceReference.getLocation());
             } finally {
                 resourceReferenceRepository.deleteById(resourceReference.getId());
             }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void remove(String name) {
+        if (!resourceReferenceRepository.remove(ref -> removeReference(name, ref))) {
+            LOG.warnf("No references named %s where found", name);
         }
     }
 
