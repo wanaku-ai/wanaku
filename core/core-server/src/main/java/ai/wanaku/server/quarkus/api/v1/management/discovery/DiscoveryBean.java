@@ -22,7 +22,7 @@ public class DiscoveryBean {
     @PostConstruct
     public void init() {
         serviceRegistry = serviceRegistryInstance.get();
-        LOG.infof("Using service registry implementation %s", serviceRegistry.getClass().getName());
+        LOG.debugf("Using service registry implementation %s", serviceRegistry.getClass().getName());
     }
 
     public ServiceTarget registerService(ServiceTarget target) {

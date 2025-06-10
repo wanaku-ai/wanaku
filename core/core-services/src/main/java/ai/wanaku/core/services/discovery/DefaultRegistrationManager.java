@@ -116,14 +116,14 @@ public class DefaultRegistrationManager implements RegistrationManager {
     @Override
     public void ping() {
         if (target != null && target.getId() != null) {
-            LOG.debug("Pinging router ...");
+            LOG.tracef("Pinging router ...");
             try (var response = service.ping(target.getId())) {
                 if (response.getStatus() != 200) {
                     LOG.warnf("Pinging router failed with status %d", response.getStatus());
                 }
 
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Pinging router completed successfully");
+                    LOG.tracef("Pinging router completed successfully");
                 }
             } catch (Exception e) {
                 logServiceFailure(e, "Pinging router failed with %s");
