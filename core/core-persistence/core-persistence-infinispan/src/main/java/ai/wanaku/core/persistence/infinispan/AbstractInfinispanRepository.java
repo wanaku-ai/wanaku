@@ -69,12 +69,15 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
 
         try {
             lock.lock();
-            cache.put(id, entity);
+
+            if (cache.put(id, entity) != null)  {
+                return true;
+            }
         } finally {
             lock.unlock();
         }
 
-        return false;
+        return true;
     }
 
     public boolean update(K id, Consumer<A> consumer) {
@@ -89,7 +92,9 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
             }
 
             consumer.accept(entity);
-            cache.put(id, entity);
+            if (cache.put(id, entity) != null) {
+                return true;
+            }
         } finally {
             lock.unlock();
         }
