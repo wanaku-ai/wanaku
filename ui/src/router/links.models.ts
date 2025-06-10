@@ -3,7 +3,7 @@ export const enum Links {
   Tools = '/tools',
   Resources = "/resources",
   LLMChat = "/llmchat",
-  Targets = "/targets"
+  Capabilities = "/capabilities"
 }
 
 export const enum ExternalLinks {
