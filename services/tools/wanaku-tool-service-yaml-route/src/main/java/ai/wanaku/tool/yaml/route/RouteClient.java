@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.services.config.WanakuToolConfig;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import ai.wanaku.core.services.tool.Client;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
@@ -17,13 +17,11 @@ import org.jboss.logging.Logger;
 public class RouteClient implements Client {
     private static final Logger LOG = Logger.getLogger(RouteClient.class);
 
-
-
     private final CamelContext camelContext;
     private final ProducerTemplate producer;
-    private final WanakuToolConfig config;
+    private final WanakuServiceConfig config;
 
-    public RouteClient(CamelContext camelContext, WanakuToolConfig config) {
+    public RouteClient(CamelContext camelContext, WanakuServiceConfig config) {
         this.camelContext = camelContext;
         this.producer = camelContext.createProducerTemplate();
         this.config = config;

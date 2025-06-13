@@ -4,7 +4,7 @@ import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.services.common.ServiceOptions;
-import ai.wanaku.core.services.config.WanakuProviderConfig;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -18,7 +18,7 @@ import static ai.wanaku.core.uri.URIHelper.buildUri;
 public class S3ResourceDelegate  extends AbstractResourceDelegate {
 
     @Inject
-    WanakuProviderConfig config;
+    WanakuServiceConfig config;
 
     @Inject
     ServiceOptions serviceOptions;

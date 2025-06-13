@@ -13,7 +13,6 @@ import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.config.WanakuServiceConfig;
-import ai.wanaku.core.services.config.WanakuToolConfig;
 import ai.wanaku.core.services.discovery.DefaultRegistrationManager;
 import ai.wanaku.core.services.discovery.RegistrationManager;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -33,7 +32,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     private static final Logger LOG = Logger.getLogger(AbstractToolDelegate.class);
 
     @Inject
-    WanakuToolConfig config;
+    WanakuServiceConfig config;
 
     @Inject
     Client client;
@@ -47,7 +46,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                 .baseUri(URI.create(config.registration().uri()))
                 .build(DiscoveryService.class);
 
-        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.tool.name").getValue();
+        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.name").getValue();
         ServiceTarget serviceTarget = newServiceTarget(service, serviceConfigurations());
 
         int retries = config.registration().retries();
@@ -148,7 +147,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
         String portStr = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
         final int port = Integer.parseInt(portStr);
 
-        String address = ConfigProvider.getConfig().getConfigValue("wanaku.service.tool.registration.announce-address").getValue();
+        String address = ConfigProvider.getConfig().getConfigValue("wanaku.service.registration.announce-address").getValue();
         if ("auto".equals(address)) {
             LOG.infof("Using announce address %s ", address);
             address = DiscoveryUtil.resolveRegistrationAddress();

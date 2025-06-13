@@ -9,7 +9,7 @@ import jakarta.inject.Inject;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.services.config.WanakuProviderConfig;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.jboss.logging.Logger;
 
@@ -20,7 +20,7 @@ public class ${name}ResourceDelegate extends AbstractResourceDelegate {
     private static final Logger LOG = Logger.getLogger(${name}ResourceDelegate.class);
 
     @Inject
-    WanakuProviderConfig config;
+    WanakuServiceConfig config;
 
     @Override
     protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {

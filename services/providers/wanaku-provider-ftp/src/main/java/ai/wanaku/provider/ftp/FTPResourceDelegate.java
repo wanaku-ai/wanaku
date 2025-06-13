@@ -1,6 +1,7 @@
 package ai.wanaku.provider.ftp;
 
 import ai.wanaku.core.services.common.ServiceOptions;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import java.util.List;
 import java.util.Map;
 
@@ -10,7 +11,6 @@ import jakarta.inject.Inject;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.services.config.WanakuProviderConfig;
 import ai.wanaku.core.services.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
 import org.jboss.logging.Logger;
@@ -25,7 +25,7 @@ public class FTPResourceDelegate extends AbstractResourceDelegate {
     ServiceOptions serviceOptions;
 
     @Inject
-    WanakuProviderConfig config;
+    WanakuServiceConfig config;
 
     @Override
     protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {

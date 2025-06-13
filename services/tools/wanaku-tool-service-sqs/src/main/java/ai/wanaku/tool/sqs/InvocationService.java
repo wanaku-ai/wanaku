@@ -10,9 +10,8 @@ import ai.wanaku.core.exchange.InvocationDelegate;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvoker;
-import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import ai.wanaku.core.services.common.ServicesHelper;
-import ai.wanaku.core.services.config.WanakuToolConfig;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.scheduler.Scheduled;
@@ -30,7 +29,7 @@ public class InvocationService implements ToolInvoker, Inquirer {
     InvocationDelegate delegate;
 
     @Inject
-    WanakuToolConfig config;
+    WanakuServiceConfig config;
 
     @ConfigProperty(name = "quarkus.grpc.server.port")
     int port;
@@ -46,7 +45,7 @@ public class InvocationService implements ToolInvoker, Inquirer {
         return Uni.createFrom().item(() -> ServicesHelper.buildInquireReply(delegate));
     }
 
-    @Scheduled(every="{wanaku.service.tool.registration.interval}", delayed = "{wanaku.service.tool.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
+    @Scheduled(every="{wanaku.service.registration.interval}", delayed = "{wanaku.service.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
     void register() {
         delegate.register();
     }
