@@ -10,7 +10,18 @@ name: Multiplatform PR Builds
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
+    paths-ignore:
+      - .github/**
+      - docs/**
+      - artwork/**
+      - README.md
+      - docker-*
+      - index.md
+      - jbang-catalog.json
+      - Makefile
+      - LICENSE
 
 env:
   PROJECTS: ${{ github.workspace }}
