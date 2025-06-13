@@ -7,8 +7,7 @@ import ai.wanaku.core.exchange.ResourceAcquirer;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
-import ai.wanaku.core.services.config.WanakuProviderConfig;
+import ai.wanaku.core.services.config.WanakuServiceConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.scheduler.Scheduled;
@@ -26,7 +25,7 @@ public class ResourceService implements ResourceAcquirer {
     ResourceAcquirerDelegate delegate;
 
     @Inject
-    WanakuProviderConfig config;
+    WanakuServiceConfig config;
 
     @ConfigProperty(name = "quarkus.grpc.server.port")
     int port;
@@ -37,7 +36,7 @@ public class ResourceService implements ResourceAcquirer {
         return Uni.createFrom().item(() -> delegate.acquire(request));
     }
 
-    @Scheduled(every="{wanaku.service.provider.registration.interval}", delayed = "{wanaku.service.provider.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
+    @Scheduled(every="{wanaku.service.registration.interval}", delayed = "{wanaku.service.registration.delay-seconds}", delayUnit = TimeUnit.SECONDS)
     void register() {
         delegate.register();
     }

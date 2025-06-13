@@ -686,5 +686,4 @@ delegate from scratch and adjust the dependencies.
 
 You can adjust the address used to announce to the Router using either (depending on whether using a tool or a resource provider):
 
-* wanaku.service.tool.registration.announce-address=my-host
-* wanaku.service.provider.registration.announce-address=my-host
+* wanaku.service.registration.announce-address=my-host
