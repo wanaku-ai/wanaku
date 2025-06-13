@@ -1,0 +1,12 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "jnanorc$"
+      },
+      {
+        "pattern": "json\\.nanorc$"
+      }
+    ]
+  }
+}

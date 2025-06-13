@@ -72,7 +72,7 @@ public class ToolsGenerate implements Callable<Integer> {
             writeOutput(toolReferences, outputFile);
 
             if (importToolset) {
-                System.err.print("Importing toolset...");
+                System.err.print("\n\nImporting toolset...");
                 importToolset(toolReferences, host);
                 System.err.print("Done.");
             }

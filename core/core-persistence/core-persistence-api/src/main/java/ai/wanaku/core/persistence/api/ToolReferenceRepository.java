@@ -2,6 +2,8 @@ package ai.wanaku.core.persistence.api;
 
 import ai.wanaku.api.types.ToolReference;
 
+import java.util.List;
+
 /**
  * Repository interface for managing ToolReference entities.
  *
@@ -11,4 +13,5 @@ import ai.wanaku.api.types.ToolReference;
  */
 public interface ToolReferenceRepository extends WanakuRepository<ToolReference, String> {
 
+    List<ToolReference> findByName(String name);
 }

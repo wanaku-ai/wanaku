@@ -1,5 +1,6 @@
 package ai.wanaku.cli.main.services;
 
+import ai.wanaku.api.exceptions.WanakuException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -32,4 +33,16 @@ public interface ToolsService {
     @Path("/remove")
     @PUT
     Response remove(@QueryParam("tool") String tool);
+
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response update(ToolReference resource) throws WanakuException;
+
+
+    @Path("/")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    RestResponse<WanakuResponse<ToolReference>> getByName(@QueryParam("name") String name) throws WanakuException;
+
 }

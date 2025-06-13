@@ -88,6 +88,15 @@ public class ToolsBean {
     }
 
     public void update(ToolReference resource) {
-        toolReferenceRepository.update(resource.getName(), resource);
+        toolReferenceRepository.update(resource.getId(), resource);
+    }
+
+    public ToolReference getByName(String name) {
+        List<ToolReference> tools =  toolReferenceRepository.findByName(name);
+        return tools.isEmpty() ? null : tools.getFirst();
+    }
+
+    public ToolReference getById(String id) {
+        return toolReferenceRepository.findById(id);
     }
 }
