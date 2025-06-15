@@ -8,6 +8,8 @@ import {
   getApiV1ManagementTargetsResourcesListResponse,
   getApiV1ManagementTargetsToolsStateResponse,
   getApiV1ManagementTargetsResourcesStateResponse,
+  getApiV1ManagementTargetsNotificationsResponse200,
+  getApiV1ManagementTargetsNotifications,
 } from "../../api/wanaku-router-api";
 
 export const useTargets = () => {
@@ -55,6 +57,18 @@ export const useTargets = () => {
       options?: RequestInit
     ): Promise<getApiV1ManagementTargetsResourcesStateResponse> => {
       return getApiV1ManagementTargetsResourcesState(options);
+    },
+    []
+  );
+
+  /**
+   * Targets notifications
+   */
+  const targetsNotifications = useCallback(
+    (
+      options?: RequestInit
+    ): Promise<getApiV1ManagementTargetsNotificationsResponse200> => {
+      return getApiV1ManagementTargetsNotifications(options);
     },
     []
   );

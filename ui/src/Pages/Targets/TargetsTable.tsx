@@ -44,7 +44,8 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
           host: target.host,
           port: target.port,
           active: target.active ? "Active" : "Inactive",
-          lastSeen: target.lastSeen
+          lastSeen: target.lastSeen,
+          reason: target.reason
         }))}
         headers={[
           { key: 'service', header: 'Service' },
@@ -52,7 +53,8 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
           { key: 'host', header: 'Host' },
           { key: 'port', header: 'Port' },
           { key: 'active', header: 'Status' },
-          { key: 'lastSeen', header: 'Last Seen' }
+          { key: 'lastSeen', header: 'Last Seen' },
+          { key: 'reason', header: 'Reason' },
         ]}
       >
         {({ rows, headers, getTableProps, getHeaderProps, getRowProps, getExpandHeaderProps }) => (
