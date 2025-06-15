@@ -14,7 +14,6 @@ export * from "./forwardReference";
 export * from "./getApiV1ManagementTargetsForwardParams";
 export * from "./getApiV1ManagementTargetsResourcesList200";
 export * from "./getApiV1ManagementTargetsToolsList200";
-export * from "./getApiV1ToolsGetParams";
 export * from "./inputSchema";
 export * from "./inputSchemaProperties";
 export * from "./instant";
