@@ -57,7 +57,7 @@
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.33</swagger-core-version>
         <jline-version>3.30.4</jline-version>
-        <swagger-parser.version>2.1.27</swagger-parser.version>
+        <swagger-parser.version>2.1.29</swagger-parser.version>
         <quarkus-infinispan-embedded.version>1.0.2</quarkus-infinispan-embedded.version>
         <assertj-version>3.27.3</assertj-version>
         <juniversalchardet-version>1.0.3</juniversalchardet-version>
