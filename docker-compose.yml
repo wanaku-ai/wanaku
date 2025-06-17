@@ -7,7 +7,7 @@ services:
       - ~/.wanaku/:/home/default/.wanaku/
   wanaku-tool-service-http:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy
@@ -23,7 +23,7 @@ services:
 
   wanaku-tool-service-yaml-route:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
   # Uncomment if you want to enable Kafka
   wanaku-tool-service-kafka:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy
@@ -54,7 +54,7 @@ services:
 
   wanaku-tool-service-tavily:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
 
   wanaku-provider-file:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy
@@ -86,7 +86,7 @@ services:
 
   wanaku-provider-ftp:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy
@@ -102,7 +102,7 @@ services:
   # Uncomment the lines below to enable access to AWS S3
   wanaku-provider-s3:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       wanaku-router:
         condition: service_healthy

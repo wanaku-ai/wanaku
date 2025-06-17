@@ -1,7 +1,7 @@
 services:
   wanaku-tool-service-http:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-tool-service-http:wanaku-0.0.5
@@ -12,7 +12,7 @@ services:
 
   wanaku-tool-service-yaml-route:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-tool-service-yaml-route:wanaku-0.0.5
@@ -24,7 +24,7 @@ services:
   # Uncomment if you want to enable Kafka
   wanaku-tool-service-kafka:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-tool-service-kafka:wanaku-0.0.5
@@ -35,7 +35,7 @@ services:
 
   wanaku-tool-service-tavily:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-tool-service-tavily:wanaku-0.0.5
@@ -48,7 +48,7 @@ services:
 
   wanaku-provider-file:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-provider-file:wanaku-0.0.5
@@ -59,7 +59,7 @@ services:
 
   wanaku-provider-ftp:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-provider-ftp:wanaku-0.0.5
@@ -71,7 +71,7 @@ services:
   # Uncomment the lines below to enable access to AWS S3
   wanaku-provider-s3:
     environment:
-      WANAKU_SERVICE_TOOL_REGISTRATION_URI: http://wanaku-router:8080
+      WANAKU_SERVICE_REGISTRATION_URI: http://wanaku-router:8080
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-provider-s3:wanaku-0.0.5
