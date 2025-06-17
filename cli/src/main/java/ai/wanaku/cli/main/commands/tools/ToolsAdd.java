@@ -7,7 +7,7 @@ import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.ToolsService;
+import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.net.URI;

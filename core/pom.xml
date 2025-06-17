@@ -23,6 +23,7 @@
         <module>core-persistence</module>
         <module>core-mcp-client</module>
         <module>core-server</module>
+        <module>core-services-api</module>
     </modules>
 
 

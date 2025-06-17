@@ -4,7 +4,7 @@ import java.net.URI;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.TargetsService;
+import ai.wanaku.core.services.api.TargetsService;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "list",

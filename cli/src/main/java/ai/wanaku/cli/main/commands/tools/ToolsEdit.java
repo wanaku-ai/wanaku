@@ -2,7 +2,7 @@ package ai.wanaku.cli.main.commands.tools;
 
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.cli.main.services.ToolsService;
+import ai.wanaku.core.services.api.ToolsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.core.Response;
