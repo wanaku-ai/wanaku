@@ -22,7 +22,7 @@
                 <scope>import</scope>
             </dependency>
 
-#if ( $wanaku-service-type == "camel")
+#if ( $wanaku-capability-type == "camel")
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-camel-bom</artifactId>
@@ -34,7 +34,6 @@
         </dependencies>
     </dependencyManagement>
 
-
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
@@ -44,11 +43,11 @@
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-services</artifactId>
+            <artifactId>core-capabilities-base</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-#if ( $wanaku-service-type == "camel")
+#if ( $wanaku-capability-type == "camel")
         <dependency>
             <groupId>ai.wanaku</groupId>
             <artifactId>core-runtime-camel</artifactId>

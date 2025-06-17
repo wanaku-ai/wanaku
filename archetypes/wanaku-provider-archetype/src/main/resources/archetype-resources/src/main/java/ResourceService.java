@@ -7,7 +7,7 @@ import ai.wanaku.core.exchange.ResourceAcquirer;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.services.config.WanakuServiceConfig;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.scheduler.Scheduled;

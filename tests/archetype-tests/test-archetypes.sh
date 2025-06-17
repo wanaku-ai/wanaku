@@ -7,12 +7,12 @@ cliDir=${installDir}/cli/target/quarkus-app/
 cliJar=${cliDir}/quarkus-run.jar
 
 if [[ -d build ]] ; then
-  rm -r build
+  rm -rf build
 fi
 
 mkdir build && cd build
 
-java -jar ${cliJar} services create resource --name test
+java -jar ${cliJar} capabilities create resource --name test
 if [[ ! -d wanaku-provider-test ]] ; then
   echo "The generated directory is wrong"
   ls -1
@@ -29,7 +29,7 @@ fi
 
 cd "${workDir}"/build
 
-java -jar ${cliJar} services create tool --name test
+java -jar ${cliJar} capabilities create tool --name test
 if [[ ! -d wanaku-tool-service-test ]] ; then
   echo "The generated directory is wrong"
   exit 1

@@ -4,9 +4,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.services.tool.Client;
+import ai.wanaku.core.capabilities.tool.Client;
 
-#if ( $wanaku-service-type == "camel")
+#if ( $wanaku-capability-type == "camel")
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 #end
@@ -16,7 +16,7 @@ import org.jboss.logging.Logger;
 public class ${name}Client implements Client {
     private static final Logger LOG = Logger.getLogger(${name}Client.class);
 
-#if ( $wanaku-service-type == "camel")
+#if ( $wanaku-capability-type == "camel")
     private final ProducerTemplate producer;
 
     public ${name}Client(CamelContext camelContext) {

@@ -648,13 +648,13 @@ The application [super gateway](https://github.com/supercorp-ai/supergateway) ca
 npx -y supergateway --sse http://localhost:8080/mcp/sse
 ```
 
-## Available Resources Providers 
+## Available Resources Capabilities 
 
-Visit [this page](../services/providers/README.md) to check all the providers that come built-in with Wanaku.
+Visit [this page](../capabilities/providers/README.md) to check all the providers that come built-in with Wanaku.
 
-## Available Tools Services
+## Available Tools Capabilities
 
-Visit [this page](../services/tools/README.md) to check all the tools that come built-in with Wanaku.
+Visit [this page](../capabilities/tools/README.md) to check all the tools that come built-in with Wanaku.
 
 ## Adding Your Own Resource Provider or Tool Service
 
@@ -667,7 +667,7 @@ simple for users to create custom services that solve their particular need.
 To create a custom resource provider, you can run:
 
 ```shell
-wanaku services create resource --name y4
+wanaku capabilities create resource --name y4
 ```
 
 To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-provider-y4`),
@@ -689,7 +689,7 @@ You can check if the service was registered correctly using `wanaku targets reso
 To create a custom tool service, you can run:
 
 ```shell
-wanaku services create tool --name jms
+wanaku capabilities create tool --name jms
 ```
 
 To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-tool-service-jms`), then build the project using Maven (`mvn clean package`). 
