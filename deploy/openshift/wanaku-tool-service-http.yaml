@@ -22,7 +22,7 @@ spec:
             - containerPort: 9000
               protocol: TCP
           env:
-            - name: WANAKU_SERVICE_TOOL_REGISTRATION_URI
+            - name: WANAKU_SERVICE_REGISTRATION_URI
               value: http://wanaku-router:8080 # Uses the OpenShift service name
           volumeMounts:
             - name: services-volume
