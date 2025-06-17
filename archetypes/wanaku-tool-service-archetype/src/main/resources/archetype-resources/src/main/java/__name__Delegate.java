@@ -6,7 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
-import ai.wanaku.core.services.tool.AbstractToolDelegate;
+import ai.wanaku.core.capabilities.tool.AbstractToolDelegate;
 
 
 @ApplicationScoped

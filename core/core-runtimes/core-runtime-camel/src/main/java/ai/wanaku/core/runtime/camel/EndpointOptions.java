@@ -2,7 +2,7 @@ package ai.wanaku.core.runtime.camel;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import ai.wanaku.core.services.common.ServiceOptions;
+import ai.wanaku.core.capabilities.common.ServiceOptions;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

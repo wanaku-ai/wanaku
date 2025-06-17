@@ -33,7 +33,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-services</artifactId>
+            <artifactId>core-capabilities-base</artifactId>
             <version>${project.version}</version>
         </dependency>
 

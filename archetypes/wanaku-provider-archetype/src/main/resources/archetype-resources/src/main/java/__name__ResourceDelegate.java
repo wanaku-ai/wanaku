@@ -9,8 +9,8 @@ import jakarta.inject.Inject;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.services.config.WanakuServiceConfig;
-import ai.wanaku.core.services.provider.AbstractResourceDelegate;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
 import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.uri.URIHelper.buildUri;

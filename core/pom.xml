@@ -17,7 +17,7 @@
         <module>core-util</module>
         <module>core-mcp</module>
         <module>core-exchange</module>
-        <module>core-services</module>
+        <module>core-capabilities-base</module>
         <module>core-service-discovery</module>
         <module>core-runtimes</module>
         <module>core-persistence</module>
