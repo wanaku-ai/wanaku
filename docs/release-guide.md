@@ -67,6 +67,8 @@ sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" doc
 sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose-prod.yml
 ```
 
+**NOTE**: we must adjust the wanaku CLI version manually in Jbang catalog file.
+
 Commit the auto-generated UI files and the other version-specific files:
 
 ```shell
