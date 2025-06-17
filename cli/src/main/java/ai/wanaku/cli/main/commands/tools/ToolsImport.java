@@ -7,7 +7,7 @@ import ai.wanaku.cli.main.converter.URLConverter;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.ToolsService;
+import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.core.util.ToolsetIndexHelper;
 import picocli.CommandLine;
 

@@ -11,7 +11,7 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.ToolsService;
+import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.cli.main.support.PrettyPrinter;
 import org.jboss.resteasy.reactive.RestResponse;
 import picocli.CommandLine;

@@ -1,7 +1,7 @@
 package ai.wanaku.cli.main.commands.targets;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.TargetsService;
+import ai.wanaku.core.services.api.TargetsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.net.URI;
 import picocli.CommandLine;

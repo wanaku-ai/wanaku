@@ -1,4 +1,4 @@
-package ai.wanaku.cli.main.services;
+package ai.wanaku.core.services.api;
 
 import java.util.List;
 

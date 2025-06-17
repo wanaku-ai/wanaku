@@ -87,7 +87,6 @@
                 <artifactId>jansi</artifactId>
                 <version>${jansi-version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -105,27 +104,18 @@
         </dependency>
 
         <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-services-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
 
         <dependency>

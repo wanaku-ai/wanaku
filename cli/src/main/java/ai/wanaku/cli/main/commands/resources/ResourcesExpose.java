@@ -10,7 +10,7 @@ import java.util.List;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.ResourcesService;
+import ai.wanaku.core.services.api.ResourcesService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;

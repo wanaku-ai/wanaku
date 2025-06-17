@@ -2,13 +2,11 @@ package ai.wanaku.cli.main.commands.tools;
 
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.converter.URLConverter;
-import ai.wanaku.cli.main.services.ToolsService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import ai.wanaku.core.services.api.ToolsService;
 import io.swagger.v3.oas.models.OpenAPI;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
 
-import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;

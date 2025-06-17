@@ -5,7 +5,7 @@ import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.ForwardsService;
+import ai.wanaku.core.services.api.ForwardsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.net.URI;
 import picocli.CommandLine;

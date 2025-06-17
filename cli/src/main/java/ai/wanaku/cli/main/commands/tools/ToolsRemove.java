@@ -3,12 +3,12 @@ package ai.wanaku.cli.main.commands.tools;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import ai.wanaku.core.services.api.ToolsService;
 import java.net.URI;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import org.jboss.logging.Logger;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.services.ToolsService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
