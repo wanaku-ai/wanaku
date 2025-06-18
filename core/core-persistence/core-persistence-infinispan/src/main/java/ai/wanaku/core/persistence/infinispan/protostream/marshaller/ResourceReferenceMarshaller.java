@@ -24,7 +24,7 @@ public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceRe
         ref.setType(reader.readString("type"));
         ref.setName(reader.readString("name"));
         ref.setDescription(reader.readString("description"));
-        ref.setMimeType(reader.readString("mimeType"));
+        ref.setMimeType(reader.readString("mime_type"));
         ref.setParams(reader.readCollection("params", new ArrayList<>(),ResourceReference.Param.class));
         return ref;
     }
