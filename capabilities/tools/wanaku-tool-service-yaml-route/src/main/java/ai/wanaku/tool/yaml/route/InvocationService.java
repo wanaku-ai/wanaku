@@ -15,6 +15,7 @@ import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -33,6 +34,7 @@ public class InvocationService implements ToolInvoker, Inquirer {
     @ConfigProperty(name = "quarkus.grpc.server.port")
     int port;
 
+    @Blocking
     @Override
     public Uni<ToolInvokeReply> invokeTool(ToolInvokeRequest request) {
         return Uni.createFrom().item(() -> delegate.invoke(request));
