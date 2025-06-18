@@ -1,5 +1,6 @@
 package ai.wanaku.core.capabilities.discovery;
 
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.exceptions.WanakuException;
@@ -58,7 +59,8 @@ public class DefaultRegistrationManager implements RegistrationManager {
         do {
             try (final RestResponse<WanakuResponse<ServiceTarget>> response = service.register(target)) {
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    LOG.warnf("The service %s failed to register. Response code: %d", target.getService(), response.getStatus());
+                    LOG.warnf("The service %s failed to register. Response code: %d", target.getService(),
+                            response.getStatus());
                 }
 
                 final WanakuResponse<ServiceTarget> entity = response.getEntity();
@@ -70,10 +72,23 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 instanceDataManager.writeEntry(target);
                 registered = true;
                 LOG.debugf("The service %s successfully registered with ID %s.", target.getService(), target.getId());
+                break;
+            } catch (WebApplicationException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.warnf(e,"Unable to register service because of: %s (%d)", e.getMessage(), e.getResponse().getStatus());
+                } else {
+                    LOG.warnf("Unable to register service because of: %s (%d)", e.getMessage(), e.getResponse().getStatus());
+                }
+                retries = waitAndRetry(target.getService(), e, retries, waitSeconds);
             } catch (Exception e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.warnf(e,"Unable to register service because of: %s", e.getMessage());
+                } else {
+                    LOG.warnf("Unable to register service because of: %s", e.getMessage());
+                }
                 retries = waitAndRetry(target.getService(), e, retries, waitSeconds);
             }
-        } while (!registered && (retries > 0));
+        } while (retries > 0);
     }
 
     private boolean isRegistered() {
