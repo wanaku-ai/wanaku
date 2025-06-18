@@ -12,7 +12,6 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.core.services.api.ResourcesService;
 import ai.wanaku.cli.main.support.PrettyPrinter;
-import org.jboss.resteasy.reactive.RestResponse;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -33,8 +32,9 @@ public class ResourcesList extends BaseCommand {
                 .build(ResourcesService.class);
 
 
-        try (RestResponse<WanakuResponse<List<ResourceReference>>> response = resourcesService.list()) {
-            List<ResourceReference> list = response.getEntity().data();
+        try {
+            WanakuResponse<List<ResourceReference>> response = resourcesService.list();
+            List<ResourceReference> list = response.data();
             PrettyPrinter.printResources(list);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

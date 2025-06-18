@@ -1,5 +1,6 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
+import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
@@ -16,7 +17,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.RestResponse;
 
 import java.util.List;
 
@@ -33,21 +33,21 @@ public class ToolsResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public RestResponse<WanakuResponse<ToolReference>> add(ToolReference resource) throws WanakuException {
+    public WanakuResponse<ToolReference> add(ToolReference resource) throws WanakuException {
         var ret = toolsBean.add(resource);
-        return RestResponse.ok(new WanakuResponse<>(ret));
+        return new WanakuResponse<>(ret);
     }
 
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public RestResponse<WanakuResponse<List<ToolReference>>> list() throws WanakuException {
+    public WanakuResponse<List<ToolReference>> list() throws WanakuException {
         List<ToolReference> forwardTools = forwardsBean.listAllAsTools();
         List<ToolReference> tools = toolsBean.list();
 
         List<ToolReference> ret = CollectionsHelper.join(tools, forwardTools);
 
-        return RestResponse.ok(new WanakuResponse<>(ret));
+        return new WanakuResponse<>(ret);
     }
 
     @Path("/remove")
@@ -68,11 +68,11 @@ public class ToolsResource {
     @Path("/")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public  RestResponse<WanakuResponse<ToolReference>> getByName(@QueryParam("name") String name) throws WanakuException {
+    public  WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException {
         ToolReference tool = toolsBean.getByName(name);
-        if(tool == null) {
-            return RestResponse.notFound();
+        if (tool == null) {
+            throw new ToolNotFoundException(name);
         }
-        return RestResponse.ok(new WanakuResponse<>(tool));
+        return new WanakuResponse<>(tool);
     }
 }

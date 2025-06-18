@@ -11,7 +11,6 @@ import ai.wanaku.cli.main.support.PrettyPrinter;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.net.URI;
 import java.util.List;
-import org.jboss.resteasy.reactive.RestResponse;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -29,9 +28,9 @@ public class ForwardsList extends BaseCommand {
                 .baseUri(URI.create(host))
                 .build(ForwardsService.class);
 
-
-        try (RestResponse<WanakuResponse<List<ForwardReference>>> wanakuResponseRestResponse = forwardsService.listForwards()) {
-            List<ForwardReference> data = wanakuResponseRestResponse.getEntity().data();
+        try {
+            WanakuResponse<List<ForwardReference>> wanakuResponseRestResponse = forwardsService.listForwards();
+            List<ForwardReference> data = wanakuResponseRestResponse.data();
             PrettyPrinter.printForwards(data);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

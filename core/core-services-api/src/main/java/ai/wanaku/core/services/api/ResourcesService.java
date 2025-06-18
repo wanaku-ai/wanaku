@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ResourceReference;
-import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/api/v1/resources")
 public interface ResourcesService {
@@ -29,7 +28,7 @@ public interface ResourcesService {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    RestResponse<WanakuResponse<List<ResourceReference>>> list();
+    WanakuResponse<List<ResourceReference>> list();
 
     @Path("/remove")
     @PUT
