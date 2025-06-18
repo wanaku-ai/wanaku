@@ -6,7 +6,6 @@ import ai.wanaku.core.services.api.ToolsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.builtins.Nano;
 import org.jline.builtins.Options;
@@ -70,7 +69,7 @@ public class ToolsEdit implements Callable<Integer> {
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
 
-        List<ToolReference> list = toolsService.list().getEntity().data();
+        List<ToolReference> list = toolsService.list().data();
 
         // check if there is at least a tool registered
         if (list == null || list.isEmpty()) {
@@ -86,8 +85,8 @@ public class ToolsEdit implements Callable<Integer> {
                 tool = selectTool(terminal, list);
             } else {
                 try {
-                    RestResponse<WanakuResponse<ToolReference>> response = toolsService.getByName(toolName);
-                    tool = response.getEntity().data();
+                    WanakuResponse<ToolReference> response = toolsService.getByName(toolName);
+                    tool = response.data();
                 } catch (RuntimeException e) {
                     System.err.println("Error retrieving the tool '"+toolName+"': " + e.getMessage());
                     return 1;

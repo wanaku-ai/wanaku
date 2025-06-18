@@ -11,7 +11,6 @@ import jakarta.ws.rs.core.Response;
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.api.types.WanakuResponse;
 import java.util.List;
-import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/api/v1/forwards")
 public interface ForwardsService {
@@ -28,5 +27,5 @@ public interface ForwardsService {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    RestResponse<WanakuResponse<List<ForwardReference>>> listForwards();
+    WanakuResponse<List<ForwardReference>> listForwards();
 }

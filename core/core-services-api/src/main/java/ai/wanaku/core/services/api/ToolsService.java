@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.Response;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import java.util.List;
-import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/api/v1/tools")
 public interface ToolsService {
@@ -28,7 +27,7 @@ public interface ToolsService {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    RestResponse<WanakuResponse<List<ToolReference>>> list();
+    WanakuResponse<List<ToolReference>> list();
 
     @Path("/remove")
     @PUT
@@ -43,6 +42,6 @@ public interface ToolsService {
     @Path("/")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    RestResponse<WanakuResponse<ToolReference>> getByName(@QueryParam("name") String name) throws WanakuException;
+    WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException;
 
 }

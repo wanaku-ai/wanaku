@@ -13,7 +13,6 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.cli.main.support.PrettyPrinter;
-import org.jboss.resteasy.reactive.RestResponse;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -35,9 +34,9 @@ public class ToolsList extends BaseCommand {
                 .build(ToolsService.class);
 
 
-        try (RestResponse<WanakuResponse<List<ToolReference>>> response = toolsService.list()) {
-
-            List<ToolReference> list = response.getEntity().data();
+        try {
+            WanakuResponse<List<ToolReference>> response = toolsService.list();
+            List<ToolReference> list = response.data();
             PrettyPrinter.printTools(list);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

@@ -17,7 +17,6 @@ import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
-import org.jboss.resteasy.reactive.RestResponse;
 
 import java.util.List;
 
@@ -35,21 +34,21 @@ public class ResourcesResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public RestResponse<WanakuResponse<ResourceReference>> expose(ResourceReference resource) throws WanakuException {
+    public WanakuResponse<ResourceReference> expose(ResourceReference resource) throws WanakuException {
         ResourceReference ret = resourcesBean.expose(resource);
-        return RestResponse.ok(new WanakuResponse<>(ret));
+        return new WanakuResponse<>(ret);
     }
 
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public RestResponse<WanakuResponse<List<ResourceReference>>> list() throws WanakuException {
+    public WanakuResponse<List<ResourceReference>> list() throws WanakuException {
         List<ResourceReference> list = resourcesBean.list();
         List<ResourceReference> resourceReferences = forwardsBean.listAllResources();
 
         List<ResourceReference> ret = CollectionsHelper.join(list, resourceReferences);
 
-        return RestResponse.ok(new WanakuResponse<>(ret));
+        return new WanakuResponse<>(ret);
     }
 
     @Path("/remove")
