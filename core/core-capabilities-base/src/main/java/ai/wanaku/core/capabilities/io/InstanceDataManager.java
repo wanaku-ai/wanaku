@@ -8,8 +8,8 @@ import java.nio.file.Files;
 
 public class InstanceDataManager {
 
-    private String dataDir;
-    private String name;
+    private final String dataDir;
+    private final String name;
 
     public InstanceDataManager(String dataDir, String name) {
         this.dataDir = dataDir;
@@ -39,8 +39,7 @@ public class InstanceDataManager {
     }
 
     private File serviceFile() {
-        final File file = new File(dataDir, name + ".wanaku.dat");
-        return file;
+        return new File(dataDir, name + ".wanaku.dat");
     }
 
     public void writeEntry(ServiceTarget serviceTarget) {
@@ -49,17 +48,20 @@ public class InstanceDataManager {
             return;
         }
 
-        FileHeader fileHeader = null;
-        if (serviceTarget.getServiceType() == ServiceType.RESOURCE_PROVIDER) {
-            fileHeader = FileHeader.RESOURCE_PROVIDER;
-        } else {
-            fileHeader = FileHeader.TOOL_INVOKER;
-        }
+        final FileHeader fileHeader = newFileHeader(serviceTarget);
 
         try (InstanceDataWriter writer = new InstanceDataWriter(file, fileHeader)) {
             writer.write(new ServiceEntry(serviceTarget.getId()));
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static FileHeader newFileHeader(ServiceTarget serviceTarget) {
+        if (serviceTarget.getServiceType() == ServiceType.RESOURCE_PROVIDER) {
+            return FileHeader.RESOURCE_PROVIDER;
+        } else {
+            return FileHeader.TOOL_INVOKER;
         }
     }
 }

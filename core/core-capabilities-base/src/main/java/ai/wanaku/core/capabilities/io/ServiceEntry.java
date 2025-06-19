@@ -1,8 +1,8 @@
 package ai.wanaku.core.capabilities.io;
 
 public class ServiceEntry {
-    public static int ID_LENGTH = 36;
-    public static int BYTES = ID_LENGTH + 4;
+    public static final int ID_LENGTH = 36;
+    public static final int BYTES = ID_LENGTH + 4;
     private String id;
 
     ServiceEntry() {

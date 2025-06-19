@@ -35,9 +35,9 @@ public interface WanakuServiceConfig extends WanakuConfig {
         Map<String, String> configurations();
 
         /**
-         * Returns the map of properties accepted by the service.
+         * Returns the set of properties accepted by the service.
          *
-         * @return the map of properties accepted by the service.
+         * @return the set of properties accepted by the service.
          */
         Set<Property> properties();
 
