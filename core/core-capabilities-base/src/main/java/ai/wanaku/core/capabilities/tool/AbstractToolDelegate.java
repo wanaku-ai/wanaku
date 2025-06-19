@@ -5,24 +5,17 @@ import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.core.capabilities.common.ServicesHelper;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.capabilities.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.InvocationDelegate;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.core.service.discovery.client.DiscoveryService;
-import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
-import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
-import ai.wanaku.core.capabilities.discovery.RegistrationManager;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import java.io.File;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 /**
@@ -41,23 +34,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
     @PostConstruct
     public void init() {
-        LOG.infof("Using registration service at %s", config.registration().uri());
-        DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(config.registration().uri()))
-                .build(DiscoveryService.class);
-
-        String service = ConfigProvider.getConfig().getConfigValue("wanaku.service.name").getValue();
-        ServiceTarget serviceTarget = newServiceTarget(service, serviceConfigurations());
-
-        int retries = config.registration().retries();
-        int waitSeconds = config.registration().retryWaitSeconds();
-
-        final String serviceHome =
-                config.serviceHome().replace("${user.home}", System.getProperty("user.home"))
-                + File.separator
-                + config.name();
-
-        registrationManager = new DefaultRegistrationManager(discoveryService, serviceTarget, retries, waitSeconds, serviceHome);
+        registrationManager = ServicesHelper.newRegistrationManager(config, serviceConfigurations());
     }
 
     /**
@@ -141,18 +118,5 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                 .setType(configProp.type())
                 .setRequired(configProp.required())
                 .build();
-    }
-
-    private static ServiceTarget newServiceTarget(String service, Map<String, String> configurations) {
-        String portStr = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
-        final int port = Integer.parseInt(portStr);
-
-        String address = ConfigProvider.getConfig().getConfigValue("wanaku.service.registration.announce-address").getValue();
-        if ("auto".equals(address)) {
-            LOG.infof("Using announce address %s ", address);
-            address = DiscoveryUtil.resolveRegistrationAddress();
-        }
-
-        return ServiceTarget.toolInvoker(service, address, port, configurations);
     }
 }
