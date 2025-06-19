@@ -26,6 +26,8 @@ public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceRe
         ref.setDescription(reader.readString("description"));
         ref.setMimeType(reader.readString("mime_type"));
         ref.setParams(reader.readCollection("params", new ArrayList<>(),ResourceReference.Param.class));
+        ref.setConfigurationURI(reader.readString("configuration_uri"));
+        ref.setSecretsURI(reader.readString("secrets_uri"));
         return ref;
     }
 
@@ -38,5 +40,7 @@ public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceRe
         writer.writeString("description", ref.getDescription());
         writer.writeString("mime_type", ref.getMimeType());
         writer.writeCollection("params", ref.getParams(), ResourceReference.Param.class);
+        writer.writeString("configuration_uri", ref.getConfigurationURI());
+        writer.writeString("secrets_uri", ref.getSecretsURI());
     }
 }

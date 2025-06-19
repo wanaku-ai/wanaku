@@ -2,6 +2,7 @@ package ai.wanaku.provider.s3;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
+import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.capabilities.common.ServiceOptions;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
@@ -9,6 +10,7 @@ import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +26,8 @@ public class S3ResourceDelegate  extends AbstractResourceDelegate {
     ServiceOptions serviceOptions;
 
     @Override
-    protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
+    protected String getEndpointUri(ResourceRequest request, ConfigResource configResource) {
+        Map<String, String> parameters = CamelQueryParameterBuilder.build(configResource);
         String[] locations = request.getLocation().split("/");
 
         if (locations.length < 2) {
@@ -48,12 +51,5 @@ public class S3ResourceDelegate  extends AbstractResourceDelegate {
         }
 
         throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response.getClass().getName());
-    }
-
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        Map<String, String> configurations =  config.service().configurations();
-
-        return serviceOptions.merge(config.name(), configurations);
     }
 }

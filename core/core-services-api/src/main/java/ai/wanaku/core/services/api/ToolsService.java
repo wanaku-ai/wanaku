@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.io.ToolPayload;
 import java.util.List;
 
 @Path("/api/v1/tools")
@@ -22,7 +23,13 @@ public interface ToolsService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/add")
-    Response add(ToolReference toolReference);
+    WanakuResponse<ToolReference> add(ToolReference toolReference);
+
+    @Path("/addWithPayload")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException;
 
     @Path("/list")
     @GET

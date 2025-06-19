@@ -14,4 +14,6 @@ export interface ResourceReference {
   description?: string;
   mimeType?: string;
   params?: Param[];
+  configurationURI?: string;
+  secretsURI?: string;
 }

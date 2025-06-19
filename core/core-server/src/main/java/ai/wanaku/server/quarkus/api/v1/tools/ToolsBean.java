@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
@@ -15,7 +16,6 @@ import ai.wanaku.server.quarkus.common.ToolsHelper;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import java.util.List;
-import java.util.Optional;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -39,14 +39,18 @@ public class ToolsBean {
     }
 
     public ToolReference add(ToolReference toolReference) {
-        // First, merge properties (arguments) defined by the remote
-        toolsResolver.loadProperties(toolReference);
-
         // then registers the tool with the tool manager
         registerTool(toolReference);
 
         // if all goes well, persist the tool, so it can be loaded back when restarting
         return toolReferenceRepository.persist(toolReference);
+    }
+
+    public ToolReference add(ToolPayload toolPayload) {
+        // First, provision the tool (i.e.: configuration, secrets, etc) in the target defined by the remote
+        toolsResolver.provision(toolPayload);
+
+        return add(toolPayload.getToolReference());
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {

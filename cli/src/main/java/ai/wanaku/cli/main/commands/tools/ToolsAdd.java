@@ -6,12 +6,18 @@ import jakarta.ws.rs.core.Response;
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
 
@@ -50,6 +56,12 @@ public class ToolsAdd extends BaseCommand {
             description = "List of required property names (e.g., '-r foo bar')", arity = "0..*")
     private List<String> required;
 
+    @CommandLine.Option(names = {"--configuration-from-file"}, description="Configure the capability provider using the given file", arity = "0..1")
+    private String configurationFromFile;
+
+    @CommandLine.Option(names = {"--secrets-from-file"}, description="Add the given secrets to the capability provider using the given file", arity = "0..1")
+    private String secretsFromFile;
+
     ToolsService toolsService;
 
     @Override
@@ -82,11 +94,18 @@ public class ToolsAdd extends BaseCommand {
             inputSchema.setRequired(required);
         }
 
+        ToolPayload toolPayload = new ToolPayload();
+        toolPayload.setToolReference(toolReference);
+
+        loadConfigurationSources(configurationFromFile, toolPayload::setConfigurationData);
+        loadConfigurationSources(secretsFromFile, toolPayload::setSecretsData);
+
         toolsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
 
-        try (Response ignored = toolsService.add(toolReference)) {
+        try {
+            WanakuResponse<ToolReference> data = toolsService.addWithPayload(toolPayload);
 
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
@@ -101,6 +120,16 @@ public class ToolsAdd extends BaseCommand {
         }
     }
 
+    private void loadConfigurationSources(String source, Consumer<String> configSourceConsumer) {
+        if (source != null) {
+            try {
+                final String data = Files.readString(Path.of(source));
 
+                configSourceConsumer.accept(data);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
 }

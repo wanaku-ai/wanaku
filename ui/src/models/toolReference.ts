@@ -13,4 +13,6 @@ export interface ToolReference {
   uri?: string;
   type?: string;
   inputSchema?: InputSchema;
+  configurationURI?: string;
+  secretsURI?: string;
 }

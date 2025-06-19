@@ -28,13 +28,6 @@ public interface WanakuServiceConfig extends WanakuConfig {
         Map<String, String> defaults();
 
         /**
-         * Returns a map of custom configuration values for the service.
-         *
-         * @return A map of custom configurations.
-         */
-        Map<String, String> configurations();
-
-        /**
          * Returns the set of properties accepted by the service.
          *
          * @return the set of properties accepted by the service.
@@ -73,18 +66,6 @@ public interface WanakuServiceConfig extends WanakuConfig {
              */
             boolean required();
         }
-    }
-
-    /**
-     * Interface defining credentials-specific configurations.
-     */
-    interface Credentials {
-        /**
-         * Returns a map of custom configuration values for credentials.
-         *
-         * @return A map of custom configurations.
-         */
-        Map<String, String> configurations();
     }
 
     /**
@@ -163,17 +144,6 @@ public interface WanakuServiceConfig extends WanakuConfig {
      * @return The service associated with the tool service.
      */
     Service service();
-
-    /**
-     * Returns the credentials for accessing the tool service.
-     * <p>
-     * These credentials can include authentication information such as username and password,
-     * or other types of credentials like API keys. They will be used to construct the actual URI
-     * for the tool service based on the base URI template string provided above.
-     *
-     * @return The credentials for accessing the tool service.
-     */
-    Credentials credentials();
 
     /**
      * Returns the registration information for the tool service.

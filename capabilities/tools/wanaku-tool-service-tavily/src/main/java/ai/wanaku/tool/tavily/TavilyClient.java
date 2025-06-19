@@ -1,11 +1,15 @@
 package ai.wanaku.tool.tavily;
 
-import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.capabilities.tool.Client;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -16,33 +20,32 @@ public class TavilyClient implements Client {
     private static final Logger LOG = Logger.getLogger(TavilyClient.class);
 
     private final ProducerTemplate producer;
+    private final CamelContext camelContext;
 
-    WebSearchEngine tavilyWebSearchEngine;
+    @Inject
+    WanakuServiceConfig config;
 
     public TavilyClient(CamelContext camelContext) {
+        this.camelContext = camelContext;
         this.producer = camelContext.createProducerTemplate();
-
-        String tavilyApiKey = ConfigProvider.getConfig().getConfigValue("tavily.api.key").getValue();
-
-        tavilyWebSearchEngine = TavilyWebSearchEngine.builder()
-                .apiKey(tavilyApiKey)
-                .includeRawContent(false)
-                .build();
-
-         camelContext.getRegistry().bind("tavily", tavilyWebSearchEngine);
     }
 
     @Override
-    public Object exchange(ToolInvokeRequest request) {
+    public Object exchange(ToolInvokeRequest request, ConfigResource configResource) {
         try {
+            String tavilyApiKey = configResource.getSecret("tavily.api.key");
+
+            WebSearchEngine tavilyWebSearchEngine = TavilyWebSearchEngine.builder()
+                    .apiKey(tavilyApiKey)
+                    .includeRawContent(false)
+                    .build();
+
+            camelContext.getRegistry().bind("tavily", tavilyWebSearchEngine);
+
             producer.start();
 
-            String baseUri = "langchain4j-web-search:test?webSearchEngine=#tavily&resultType=SNIPPET";
-            if (request.getArgumentsMap().containsKey("maxResults")) {
-                baseUri += "&maxResults={maxResults}";
-            }
-
-            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(baseUri, request);
+            String baseUri = config.baseUri();
+            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(baseUri, request, configResource);
 
             return producer.requestBody(parsedRequest.uri(), parsedRequest.body());
         } finally {

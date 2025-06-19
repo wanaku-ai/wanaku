@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "ai.wanaku.core.exchange";
+option java_outer_classname = "ProvisionExchange";
+
+package tool;
+
+// The inquirer exchange service definition.
+service Provisioner {
+  // Invokes a tool
+  rpc Provision (ProvisionRequest) returns (ProvisionReply) {}
+}
+
+/**
+ * Defines the type of payload (i.e.: if it's a reference to a configuration, or the configuration
+ * itself, etc
+ */
+enum PayloadType {
+  REFERENCE = 0;
+
+  /**
+   * Invokes tools
+   */
+  BUILTIN = 1;
+}
+
+// Represents a configuration reference
+message Configuration {
+  PayloadType type = 1;
+  string name = 2;
+  string payload = 3;
+}
+
+// Represents a configuration reference
+message Secret {
+  PayloadType type = 1;
+  string name = 2;
+  string payload = 3;
+}
+
+// The provision request message
+message ProvisionRequest {
+  string uri = 1;
+  Configuration configuration = 2;
+  Secret secret = 3;
+}
+
+message PropertySchema {
+  string type = 1;
+  string description = 2;
+  bool required = 3;
+}
+
+// The invocation response message
+message ProvisionReply {
+  string configurationUri = 1;
+  string secretUri = 2;
+  map<string, PropertySchema> properties = 3;
+}

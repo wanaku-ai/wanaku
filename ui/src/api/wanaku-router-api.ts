@@ -12,6 +12,7 @@ import type {
   ResourceReference,
   ServiceState,
   ServiceTarget,
+  ToolPayload,
   ToolReference,
   WanakuResponse,
   WanakuResponseListForwardReference,
@@ -749,6 +750,53 @@ export const postApiV1ToolsAdd = async (
     headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(toolReference),
   });
+};
+
+/**
+ * @summary Add With Payload
+ */
+export type postApiV1ToolsAddWithPayloadResponse200 = {
+  data: WanakuResponseToolReference;
+  status: 200;
+};
+
+export type postApiV1ToolsAddWithPayloadResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ToolsAddWithPayloadResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ToolsAddWithPayloadResponseComposite =
+  | postApiV1ToolsAddWithPayloadResponse200
+  | postApiV1ToolsAddWithPayloadResponse400
+  | postApiV1ToolsAddWithPayloadResponse500;
+
+export type postApiV1ToolsAddWithPayloadResponse =
+  postApiV1ToolsAddWithPayloadResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ToolsAddWithPayloadUrl = () => {
+  return `/api/v1/tools/addWithPayload`;
+};
+
+export const postApiV1ToolsAddWithPayload = async (
+  toolPayload: ToolPayload,
+  options?: RequestInit,
+): Promise<postApiV1ToolsAddWithPayloadResponse> => {
+  return customFetch<postApiV1ToolsAddWithPayloadResponse>(
+    getPostApiV1ToolsAddWithPayloadUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(toolPayload),
+    },
+  );
 };
 
 /**

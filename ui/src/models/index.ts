@@ -35,6 +35,7 @@ export * from "./serviceTarget";
 export * from "./serviceTargetConfigurations";
 export * from "./serviceType";
 export * from "./state";
+export * from "./toolPayload";
 export * from "./toolReference";
 export * from "./wanakuError";
 export * from "./wanakuResponse";

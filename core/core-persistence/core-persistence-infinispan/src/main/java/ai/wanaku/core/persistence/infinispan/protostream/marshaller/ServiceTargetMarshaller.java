@@ -27,9 +27,8 @@ public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget>
         String host = reader.readString("host");
         int port = reader.readInt("port");
         ServiceType serviceType = reader.readEnum("serviceType", ServiceType.class);
-        Map<String, String> configurations = reader.readMap("configurations", new HashMap<>(), String.class, String.class);
 
-        ServiceTarget serviceTarget = new ServiceTarget(id, service, host, port, serviceType, configurations);
+        ServiceTarget serviceTarget = new ServiceTarget(id, service, host, port, serviceType);
         return serviceTarget;
     }
 
@@ -40,6 +39,5 @@ public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget>
         writer.writeString("host", serviceTarget.getHost());
         writer.writeInt("port", serviceTarget.getPort());
         writer.writeEnum("serviceType", serviceTarget.getServiceType());
-        writer.writeMap("configurations", serviceTarget.getConfigurations(),String.class,String.class);
     }
 }

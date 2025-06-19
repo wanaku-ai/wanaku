@@ -39,6 +39,9 @@ public class ResourceReference implements WanakuEntity<String> {
      */
     private List<Param> params;
 
+    private String configurationURI;
+    private String secretsURI;
+
     public String getLocation() {
         return location;
     }
@@ -117,6 +120,22 @@ public class ResourceReference implements WanakuEntity<String> {
         this.params = params;
     }
 
+    public String getConfigurationURI() {
+        return configurationURI;
+    }
+
+    public void setConfigurationURI(String configurationURI) {
+        this.configurationURI = configurationURI;
+    }
+
+    public String getSecretsURI() {
+        return secretsURI;
+    }
+
+    public void setSecretsURI(String secretsURI) {
+        this.secretsURI = secretsURI;
+    }
+
     /**
      * A nested class representing a parameter of the resource.
      */
@@ -177,12 +196,13 @@ public class ResourceReference implements WanakuEntity<String> {
         return Objects.equals(id, that.id) && Objects.equals(location,
                 that.location) && Objects.equals(type, that.type) && Objects.equals(name,
                 that.name) && Objects.equals(description, that.description) && Objects.equals(mimeType,
-                that.mimeType) && Objects.equals(params, that.params);
+                that.mimeType) && Objects.equals(params, that.params) && Objects.equals(configurationURI,
+                that.configurationURI) && Objects.equals(secretsURI, that.secretsURI);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, location, type, name, description, mimeType, params);
+        return Objects.hash(id, location, type, name, description, mimeType, params, configurationURI, secretsURI);
     }
 
     @Override
@@ -195,6 +215,8 @@ public class ResourceReference implements WanakuEntity<String> {
                 ", description='" + description + '\'' +
                 ", mimeType='" + mimeType + '\'' +
                 ", params=" + params +
+                ", configurations=" + configurationURI +
+                ", secrets=" + secretsURI +
                 '}';
     }
 }

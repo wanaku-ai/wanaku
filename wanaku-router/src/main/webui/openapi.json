@@ -118,6 +118,12 @@
             "items" : {
               "$ref" : "#/components/schemas/Param"
             }
+          },
+          "configurationURI" : {
+            "type" : "string"
+          },
+          "secretsURI" : {
+            "type" : "string"
           }
         }
       },
@@ -161,18 +167,26 @@
           },
           "serviceType" : {
             "$ref" : "#/components/schemas/ServiceType"
-          },
-          "configurations" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
           }
         }
       },
       "ServiceType" : {
         "type" : "string",
         "enum" : [ "RESOURCE_PROVIDER", "TOOL_INVOKER" ]
+      },
+      "ToolPayload" : {
+        "type" : "object",
+        "properties" : {
+          "toolReference" : {
+            "$ref" : "#/components/schemas/ToolReference"
+          },
+          "configurationData" : {
+            "type" : "string"
+          },
+          "secretsData" : {
+            "type" : "string"
+          }
+        }
       },
       "ToolReference" : {
         "type" : "object",
@@ -194,6 +208,12 @@
           },
           "inputSchema" : {
             "$ref" : "#/components/schemas/InputSchema"
+          },
+          "configurationURI" : {
+            "type" : "string"
+          },
+          "secretsURI" : {
+            "type" : "string"
           }
         }
       },
@@ -810,6 +830,47 @@
           }
         },
         "summary" : "Add",
+        "tags" : [ "Tools Resource" ]
+      }
+    },
+    "/api/v1/tools/addWithPayload" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ToolPayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add With Payload",
         "tags" : [ "Tools Resource" ]
       }
     },

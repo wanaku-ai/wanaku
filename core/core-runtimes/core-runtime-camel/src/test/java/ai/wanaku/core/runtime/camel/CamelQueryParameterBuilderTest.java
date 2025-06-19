@@ -1,0 +1,37 @@
+package ai.wanaku.core.runtime.camel;
+
+import ai.wanaku.core.config.provider.api.DefaultConfigResource;
+import ai.wanaku.core.config.provider.file.ConfigFileStore;
+import ai.wanaku.core.config.provider.file.SecretFileStore;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+public class CamelQueryParameterBuilderTest {
+
+    @Test
+    public void testUri() throws URISyntaxException {
+        CamelQueryParameterBuilder cpb = newParameterBuilder();
+
+        final Map<String, String> build = cpb.build();
+        build.forEach((k,v)->{ Assertions.assertFalse(k.startsWith("query."));} );
+        assertEquals(2, build.size());
+        assertNotNull(build.get("someSecretKey"));
+        assertEquals("RAW(someSecretValue)", build.get("someSecretKey"));
+    }
+
+    static CamelQueryParameterBuilder newParameterBuilder() throws URISyntaxException {
+        final URI sampleCap = CamelQueryParameterBuilderTest.class.getResource("/sample-capabilities.properties").toURI();
+        ConfigFileStore configFileStore = new ConfigFileStore(sampleCap);
+
+        final URI sampleSecret = CamelQueryParameterBuilderTest.class.getResource("/sample-secrets.properties").toURI();
+        SecretFileStore secretFileStore = new SecretFileStore(sampleSecret);
+
+        return new CamelQueryParameterBuilder(new DefaultConfigResource(configFileStore, secretFileStore));
+    }
+}

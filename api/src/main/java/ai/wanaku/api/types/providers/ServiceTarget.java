@@ -1,7 +1,6 @@
 package ai.wanaku.api.types.providers;
 
 import ai.wanaku.api.types.WanakuEntity;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -16,7 +15,6 @@ public class ServiceTarget implements WanakuEntity<String> {
     private String host;
     private int port;
     private ServiceType serviceType;
-    private Map<String, String> configurations;
 
     public ServiceTarget() {
     }
@@ -28,16 +26,13 @@ public class ServiceTarget implements WanakuEntity<String> {
      * @param host           The host address of the service.
      * @param port           The port number of the service.
      * @param serviceType    The type of service, either RESOURCE_PROVIDER or TOOL_INVOKER.
-     * @param configurations The available configuration options on the service
      */
-    public ServiceTarget(String id, String service, String host, int port, ServiceType serviceType,
-            Map<String, String> configurations) {
+    public ServiceTarget(String id, String service, String host, int port, ServiceType serviceType) {
         this.id = id;
         this.service = service;
         this.host = host;
         this.port = port;
         this.serviceType = serviceType;
-        this.configurations = configurations;
     }
 
     /**
@@ -85,10 +80,6 @@ public class ServiceTarget implements WanakuEntity<String> {
         return String.format("%s:%d", host, port);
     }
 
-    public Map<String, String> getConfigurations() {
-        return configurations;
-    }
-
     @Override
     public String getId() {
         return id;
@@ -107,12 +98,12 @@ public class ServiceTarget implements WanakuEntity<String> {
         ServiceTarget that = (ServiceTarget) o;
         return port == that.port && Objects.equals(id, that.id) && Objects.equals(service,
                 that.service) && Objects.equals(host,
-                that.host) && serviceType == that.serviceType && Objects.equals(configurations, that.configurations);
+                that.host) && serviceType == that.serviceType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, service, host, port, serviceType, configurations);
+        return Objects.hash(id, service, host, port, serviceType);
     }
 
     @Override
@@ -123,34 +114,19 @@ public class ServiceTarget implements WanakuEntity<String> {
                 ", host='" + host + '\'' +
                 ", port=" + port +
                 ", serviceType=" + serviceType +
-                ", configurations=" + configurations +
                 '}';
     }
 
     /**
-     * Creates a new instance of {@link ServiceTarget} with the specified parameters and a service type of RESOURCE_PROVIDER.
+     * Creates a new instance of {@link ServiceTarget} with the specified parameters with the given service type.
      *
      * @param service The name of the service.
      * @param address The host address of the service.
      * @param port The port number of the service.
-     * @param configurations The available configuration options on the service
      * @return A new instance of {@link ServiceTarget}.
      */
-    public static ServiceTarget provider(String service, String address, int port, Map<String, String> configurations) {
-        return new ServiceTarget(null, service, address, port, ServiceType.RESOURCE_PROVIDER, configurations);
-    }
-
-    /**
-     * Creates a new instance of {@link ServiceTarget} with the specified parameters and a service type of TOOL_INVOKER.
-     *
-     * @param service The name of the service.
-     * @param address The host address of the service.
-     * @param port The port number of the service.
-     * @param configurations The available configuration options on the service
-     * @return A new instance of {@link ServiceTarget}.
-     */
-    public static ServiceTarget toolInvoker(String service, String address, int port, Map<String, String> configurations) {
-        return new ServiceTarget(null, service, address, port, ServiceType.TOOL_INVOKER, configurations);
+    public static ServiceTarget newEmptyTarget(String service, String address, int port, ServiceType serviceType) {
+        return new ServiceTarget(null, service, address, port, serviceType);
     }
 
 

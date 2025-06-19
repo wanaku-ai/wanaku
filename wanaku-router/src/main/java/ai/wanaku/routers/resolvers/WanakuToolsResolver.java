@@ -3,10 +3,12 @@ package ai.wanaku.routers.resolvers;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.routers.proxies.ToolsProxy;
+import ai.wanaku.routers.support.ProvisioningReference;
 import java.util.Map;
 
 public class WanakuToolsResolver implements ToolsResolver {
@@ -22,16 +24,22 @@ public class WanakuToolsResolver implements ToolsResolver {
     }
 
     @Override
-    public void loadProperties(ToolReference toolReference) throws ToolNotFoundException {
+    public void provision(ToolPayload toolPayload) throws ToolNotFoundException {
         // Service-side
-        final Map<String, PropertySchema> serviceProperties = proxy.getProperties(toolReference);
+        final ProvisioningReference provisioningReference = proxy.provision(toolPayload);
+
+        final Map<String, PropertySchema> serviceProperties = provisioningReference.properties();
 
         // Client-side
+        ToolReference toolReference = toolPayload.getToolReference();
         final Map<String, Property> clientProperties = toolReference.getInputSchema().getProperties();
         for (var serviceProperty : serviceProperties.entrySet()) {
             clientProperties.computeIfAbsent(serviceProperty.getKey(),
                     v -> toProperty(serviceProperty, serviceProperties));
         }
+
+        toolReference.setConfigurationURI(provisioningReference.configurationURI().toString());
+        toolReference.setSecretsURI(provisioningReference.secretsURI().toString());
     }
 
     private static Property toProperty(

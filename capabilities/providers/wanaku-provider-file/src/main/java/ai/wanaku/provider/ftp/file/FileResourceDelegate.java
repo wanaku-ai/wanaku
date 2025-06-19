@@ -1,6 +1,8 @@
 package ai.wanaku.provider.ftp.file;
 
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,7 +27,9 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
     WanakuServiceConfig config;
 
     @Override
-    protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
+    protected String getEndpointUri(ResourceRequest request, ConfigResource configResource) {
+        Map<String, String> parameters = CamelQueryParameterBuilder.build(configResource);
+
         File file = new File(request.getLocation());
         String path;
         if (file.isDirectory()) {

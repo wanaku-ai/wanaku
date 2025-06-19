@@ -46,6 +46,12 @@
 
         <dependency>
             <groupId>ai.wanaku</groupId>
+            <artifactId>core-capabilities-tool</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
             <artifactId>core-runtime-camel</artifactId>
             <version>${project.version}</version>
         </dependency>

@@ -18,8 +18,8 @@ message ResourceRequest {
   string type = 2;
   string name = 3;
   map<string, string> params = 4;
-  map<string, string> serviceConfigurations = 5;
-  map<string, string> credentialsConfigurations = 6;
+  string configurationURI = 5;
+  string secretsURI = 6;
 }
 
 // The invocation response message

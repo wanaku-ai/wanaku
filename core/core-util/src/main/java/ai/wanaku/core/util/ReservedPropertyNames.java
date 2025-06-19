@@ -22,11 +22,17 @@ public class ReservedPropertyNames {
 
     /**
      * Indicate that the argument is intended to be used on the service
+     *
+     * This is NOOP, since configurations now need to be done via references
      */
+    @Deprecated(forRemoval = true)
     public static final String SCOPE_SERVICE = "service";
 
     /**
      * Indicate that the argument is intended to be used on the service endpoint
+     *
+     * This is NOOP, since configurations now need to be done via references
      */
+    @Deprecated(forRemoval = true)
     public static final String SCOPE_SERVICE_ENDPOINT = "service-endpoint";
 }

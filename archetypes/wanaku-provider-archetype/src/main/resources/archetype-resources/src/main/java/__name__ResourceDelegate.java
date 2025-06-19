@@ -11,7 +11,12 @@ import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
+import ai.wanaku.core.config.provider.api.ConfigResource;
 import org.jboss.logging.Logger;
+
+#if ( $wanaku-capability-type == "camel")
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
+#end
 
 import static ai.wanaku.core.uri.URIHelper.buildUri;
 
@@ -23,7 +28,7 @@ public class ${name}ResourceDelegate extends AbstractResourceDelegate {
     WanakuServiceConfig config;
 
     @Override
-    protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
+    protected String getEndpointUri(ResourceRequest request, ConfigResource configResource) {
         /*
          * Here you build the URI based on the request parameters.
          * The parameters are already merged w/ the requested ones, but
@@ -36,7 +41,12 @@ public class ${name}ResourceDelegate extends AbstractResourceDelegate {
          *
          * After the map has been adjusted, just call the buildUri from URIHelper
          */
-        return buildUri(config.baseUri(), request.getLocation(), parameters);
+#if ( $wanaku-capability-type == "camel")
+        Map<String, String> parameters = CamelQueryParameterBuilder.build(configResource);
+        return buildUri(request.getLocation(), parameters);
+#else
+        return buildUri(request.getLocation(), Map.of());
+#end
     }
 
     @Override

@@ -12,6 +12,8 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
     private String uri;
     private String type;
     private InputSchema inputSchema;
+    private String configurationURI;
+    private String secretsURI;
 
     /**
      * Gets the name of the tool.
@@ -111,6 +113,22 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
         this.inputSchema = inputSchema;
     }
 
+    public String getConfigurationURI() {
+        return configurationURI;
+    }
+
+    public void setConfigurationURI(String configurationURI) {
+        this.configurationURI = configurationURI;
+    }
+
+    public String getSecretsURI() {
+        return secretsURI;
+    }
+
+    public void setSecretsURI(String secretsURI) {
+        this.secretsURI = secretsURI;
+    }
+
     @Override
     public String getId() {
         return id;
@@ -129,12 +147,13 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
         ToolReference that = (ToolReference) o;
         return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
                 description, that.description) && Objects.equals(uri, that.uri) && Objects.equals(type,
-                that.type) && Objects.equals(inputSchema, that.inputSchema);
+                that.type) && Objects.equals(inputSchema, that.inputSchema) && Objects.equals(configurationURI,
+                that.configurationURI) && Objects.equals(secretsURI, that.secretsURI);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, uri, type, inputSchema);
+        return Objects.hash(id, name, description, uri, type, inputSchema, configurationURI, secretsURI);
     }
 
     @Override
@@ -146,6 +165,8 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
                 ", uri='" + uri + '\'' +
                 ", type='" + type + '\'' +
                 ", inputSchema=" + inputSchema +
+                ", configurations=" + configurationURI +
+                ", secrets=" + secretsURI +
                 '}';
     }
 }

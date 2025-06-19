@@ -26,6 +26,8 @@ public class ToolReferenceMarshaller implements MessageMarshaller<ToolReference>
         ref.setUri(reader.readString("uri"));
         ref.setType(reader.readString("type"));
         ref.setInputSchema(reader.readObject("input_schema", InputSchema.class));
+        ref.setConfigurationURI(reader.readString("configuration_uri"));
+        ref.setSecretsURI(reader.readString("secrets_uri"));
         return ref;
     }
 
@@ -37,5 +39,7 @@ public class ToolReferenceMarshaller implements MessageMarshaller<ToolReference>
         writer.writeString("uri", ref.getUri());
         writer.writeString("type", ref.getType());
         writer.writeObject("input_schema", ref.getInputSchema(), InputSchema.class);
+        writer.writeString("configuration_uri", ref.getConfigurationURI());
+        writer.writeString("secrets_uri", ref.getSecretsURI());
     }
 }

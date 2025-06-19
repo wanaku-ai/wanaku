@@ -4,6 +4,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ToolsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 
@@ -38,8 +39,8 @@ public class ToolHelper {
                 .build(ToolsService.class);
 
         for (var toolReference : toolReferences) {
-            try (Response ignored = toolsService.add(toolReference)) {
-
+            try {
+                WanakuResponse<ToolReference> ignored = toolsService.add(toolReference);
             } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
