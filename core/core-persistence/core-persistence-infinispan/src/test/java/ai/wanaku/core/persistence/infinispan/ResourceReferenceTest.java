@@ -7,7 +7,6 @@ import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -52,6 +51,8 @@ public class ResourceReferenceTest {
             param2.setValue("value2" + i);
 
             resourceReference.setParams(List.of(param1, param2));
+            resourceReference.setConfigurationURI("file://local");
+            resourceReference.setSecretsURI("file://local");
             resourceReferenceRepository.persist(resourceReference);
         }
     }

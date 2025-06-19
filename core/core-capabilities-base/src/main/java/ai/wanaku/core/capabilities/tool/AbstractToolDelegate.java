@@ -5,17 +5,21 @@ import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.core.capabilities.common.ConfigProvisionerLoader;
+import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.RegistrationManager;
+import ai.wanaku.core.config.provider.api.ConfigProvisioner;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.config.provider.api.ProvisionedConfig;
 import ai.wanaku.core.exchange.InvocationDelegate;
-import ai.wanaku.core.exchange.PropertySchema;
+import ai.wanaku.core.exchange.ProvisionReply;
+import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 /**
@@ -34,7 +38,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
     @PostConstruct
     public void init() {
-        registrationManager = ServicesHelper.newRegistrationManager(config, serviceConfigurations());
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER);
     }
 
     /**
@@ -51,7 +55,9 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     @Override
     public ToolInvokeReply invoke(ToolInvokeRequest request) {
         try {
-            Object obj = client.exchange(request);
+            ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
+
+            Object obj = client.exchange(request, configResource);
 
             List<String> response = coerceResponse(obj);
 
@@ -85,16 +91,6 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     }
 
     @Override
-    public Map<String, String> serviceConfigurations() {
-        return config.service().configurations();
-    }
-
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return config.credentials().configurations();
-    }
-
-    @Override
     public void register() {
         registrationManager.register();
     }
@@ -105,18 +101,18 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     }
 
     @Override
-    public Map<String, PropertySchema> properties() {
-        final Set<WanakuServiceConfig.Service.Property> properties = config.service().properties();
+    public ProvisionReply provision(ProvisionRequest request) {
 
-        return properties.stream().collect(Collectors.toMap(WanakuServiceConfig.Service.Property::name,
-                AbstractToolDelegate::toPropertySchema));
-    }
+        ConfigProvisioner provisioner = ConfigProvisionerLoader.newConfigProvisioner(request, config);
+        final ProvisionedConfig provision = ConfigProvisionerLoader.provision(request, provisioner);
 
-    private static PropertySchema toPropertySchema(WanakuServiceConfig.Service.Property configProp) {
-        return PropertySchema.newBuilder()
-                .setDescription(configProp.description())
-                .setType(configProp.type())
-                .setRequired(configProp.required())
+        return ProvisionReply
+                .newBuilder()
+                .putAllProperties(ServicesHelper.buildPropertiesMap(config))
+                .setConfigurationUri(provision.configurationsUri().toString())
+                .setSecretUri(provision.secretsUri().toString())
                 .build();
     }
+
+
 }

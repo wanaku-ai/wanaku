@@ -21,8 +21,6 @@ public class ToolsGenerate implements Callable<Integer> {
 
     private static final Logger LOG = Logger.getLogger(ToolsGenerate.class);
 
-
-
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "Display the help and sub-commands")
     private boolean helpRequested = false;
 

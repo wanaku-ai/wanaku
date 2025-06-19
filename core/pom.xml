@@ -14,16 +14,27 @@
     <name>Wanaku :: Core</name>
 
     <modules>
+        <!-- common -->
         <module>core-util</module>
         <module>core-mcp</module>
         <module>core-exchange</module>
-        <module>core-capabilities-base</module>
+        <module>core-services-api</module>
+
+        <!-- capabilities core -->
+        <module>core-config-provider</module>
         <module>core-service-discovery</module>
         <module>core-runtimes</module>
+        <module>core-capabilities-base</module>
+        <module>core-capabilities-tool</module>
+        <module>core-capabilities-provider</module>
+
+        <!-- router core -->
         <module>core-persistence</module>
         <module>core-mcp-client</module>
         <module>core-server</module>
-        <module>core-services-api</module>
+
+
+
     </modules>
 
 

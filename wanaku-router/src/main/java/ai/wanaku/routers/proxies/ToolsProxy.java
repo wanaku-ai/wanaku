@@ -1,8 +1,8 @@
 package ai.wanaku.routers.proxies;
 
 import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.exchange.PropertySchema;
-import java.util.Map;
+import ai.wanaku.api.types.io.ToolPayload;
+import ai.wanaku.routers.support.ProvisioningReference;
 
 import ai.wanaku.core.mcp.common.Tool;
 
@@ -11,9 +11,10 @@ import ai.wanaku.core.mcp.common.Tool;
  */
 public interface ToolsProxy extends Proxy, Tool {
     /**
-     * Retrieve tools properties (aka arguments) from the service
+     * Provision a tool in the service
+     *
      * @param toolReference given a tool reference, resolve the target service and retrieve the properties accepted by it
      * @return A map of properties and their descriptions
      */
-    Map<String, PropertySchema> getProperties(ToolReference toolReference);
+    ProvisioningReference provision(ToolPayload toolReference);
 }

@@ -81,6 +81,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Param"
+        configurationURI:
+          type: string
+        secretsURI:
+          type: string
     ServerInfo:
       type: object
       properties:
@@ -109,15 +113,20 @@ components:
           format: int32
         serviceType:
           $ref: "#/components/schemas/ServiceType"
-        configurations:
-          type: object
-          additionalProperties:
-            type: string
     ServiceType:
       type: string
       enum:
       - RESOURCE_PROVIDER
       - TOOL_INVOKER
+    ToolPayload:
+      type: object
+      properties:
+        toolReference:
+          $ref: "#/components/schemas/ToolReference"
+        configurationData:
+          type: string
+        secretsData:
+          type: string
     ToolReference:
       type: object
       properties:
@@ -133,6 +142,10 @@ components:
           type: string
         inputSchema:
           $ref: "#/components/schemas/InputSchema"
+        configurationURI:
+          type: string
+        secretsURI:
+          type: string
     WanakuError:
       type: object
       properties:
@@ -538,6 +551,32 @@ paths:
         "400":
           description: Bad Request
       summary: Add
+      tags:
+      - Tools Resource
+  /api/v1/tools/addWithPayload:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolPayload"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseToolReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Add With Payload
       tags:
       - Tools Resource
   /api/v1/tools/list:

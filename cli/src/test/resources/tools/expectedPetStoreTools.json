@@ -26,7 +26,9 @@
       "required": [
         "wanaku_body"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -55,7 +57,9 @@
       "required": [
         "wanaku_body"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -82,7 +86,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -109,7 +115,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -138,7 +146,9 @@
       "required": [
         "petId"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -181,7 +191,9 @@
       "required": [
         "petId"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -217,7 +229,9 @@
       "required": [
         "petId"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -260,7 +274,9 @@
       "required": [
         "petId"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -280,7 +296,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -307,7 +325,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -336,7 +356,9 @@
       "required": [
         "orderId"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -365,7 +387,9 @@
       "required": [
         "orderId"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -392,7 +416,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -419,7 +445,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -453,7 +481,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -473,7 +503,9 @@
         }
       },
       "required": []
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -502,7 +534,9 @@
       "required": [
         "username"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -538,7 +572,9 @@
       "required": [
         "username"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   },
   {
     "id": null,
@@ -567,6 +603,8 @@
       "required": [
         "username"
       ]
-    }
+    },
+    "configurationURI": null,
+    "secretsURI": null
   }
 ]

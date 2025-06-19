@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  
+
 } from "@carbon/react";
 import React from "react";
 import { ServiceTargetState } from "./ServiceTargetState";
@@ -23,8 +23,6 @@ interface TargetsTableProps {
 export const TargetsTable: React.FC<TargetsTableProps> = ({
   targets,
 }) => {
-  const configurationHeaders = ["Name", "Description"];
-
   return (
   <Grid>
     <Column lg={12} md={8} sm={4}>
@@ -55,7 +53,7 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
           { key: 'lastSeen', header: 'Last Seen' }
         ]}
       >
-        {({ rows, headers, getTableProps, getHeaderProps, getRowProps, getExpandHeaderProps }) => (
+{({ rows, headers, getTableProps, getHeaderProps, getRowProps, getExpandHeaderProps }) => (
           <Table {...getTableProps()} aria-label="Targets table">
             <TableHead>
               <TableRow>
@@ -68,7 +66,7 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row, index) => {
+              {rows.map((row) => {
                 const { key, ...rowProps } = getRowProps({ row });
                 return (
                   <React.Fragment key={row.id}>
@@ -81,25 +79,6 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
                       <TableExpandedRow colSpan={headers.length + 1}>
                         <div style={{ padding: '1rem' }}>
                           <h6 style={{ marginBottom: '1rem' }}>Configurations</h6>
-                          <Table aria-label="Configuration table" size="sm">
-                            <TableHead>
-                              <TableRow>
-                                {configurationHeaders.map((header) => (
-                                  <TableHeader key={header}>
-                                    {header}
-                                  </TableHeader>
-                                ))}
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {Object.entries(targets[index].configurations || {}).map(([key, value]) => (
-                                <TableRow key={key}>
-                                  <TableCell>{key}</TableCell>
-                                  <TableCell>{value}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
                         </div>
                       </TableExpandedRow>
                     )}

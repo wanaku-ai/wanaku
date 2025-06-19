@@ -6,9 +6,14 @@ import jakarta.inject.Inject;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
+import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.RegistrationManager;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.exchange.ProvisionReply;
+import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
@@ -33,7 +38,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @PostConstruct
     public void init() {
-        registrationManager = ServicesHelper.newRegistrationManager(config, serviceConfigurations());
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER);
     }
 
     /**
@@ -42,10 +47,9 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      * The parameters are already merged w/ the requested ones, but feel free to override or
      * add more if necessary.
      * @param request the request
-     * @param parameters the merged (between config and defaults) request parameters
      * @return the URI as a string
      */
-    protected abstract String getEndpointUri(ResourceRequest request, Map<String, String> parameters);
+    protected abstract String getEndpointUri(ResourceRequest request, ConfigResource configResource);
 
     /**
      * Convert the response in whatever format it is to a String
@@ -60,8 +64,9 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @Override
     public ResourceReply acquire(ResourceRequest request) {
         try {
-            Map<String, String> parameters = mergeParameters(request);
-            String uri = getEndpointUri(request, parameters);
+            ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
+
+            String uri = getEndpointUri(request, configResource);
             LOG.debugf("Acquiring resource: %s", uri);
             Object obj = consumer.consume(uri, request);
 
@@ -96,32 +101,8 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     }
 
     @Override
-    public Map<String, String> serviceConfigurations() {
-        return config.service().configurations();
-    }
-
-    @Override
-    public Map<String, String> credentialsConfigurations() {
-        return config.credentials().configurations();
-    }
-
-    protected Map<String, String> mergeParameters(ResourceRequest request) {
-        Map<String, String> defaults = config.service().defaults();
-        Map<String, String> requestParams = new HashMap<>(request.getParamsMap());
-
-        addToRequestParams(requestParams, defaults);
-        addToRequestParams(requestParams, request.getCredentialsConfigurationsMap());
-        addToRequestParams(requestParams, request.getServiceConfigurationsMap());
-
-        return requestParams;
-    }
-
-    private void addToRequestParams(Map<String, String> requestParams, Map<String, String> map) {
-        if (map != null) {
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                requestParams.putIfAbsent(entry.getKey(), entry.getValue());
-            }
-        }
+    public ProvisionReply provision(ProvisionRequest request) {
+        return null;
     }
 
     @Override

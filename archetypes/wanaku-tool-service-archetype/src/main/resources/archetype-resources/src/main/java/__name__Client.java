@@ -1,20 +1,31 @@
 package ${package};
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import ai.wanaku.core.exchange.ParsedToolInvokeRequest;
+import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.tool.Client;
 
 #if ( $wanaku-capability-type == "camel")
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 #end
 import org.jboss.logging.Logger;
+
+#if ( $wanaku-capability-type == "camel")
+import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
+#end
 
 @ApplicationScoped
 public class ${name}Client implements Client {
     private static final Logger LOG = Logger.getLogger(${name}Client.class);
+
+    @Inject
+    WanakuServiceConfig config;
 
 #if ( $wanaku-capability-type == "camel")
     private final ProducerTemplate producer;
@@ -26,12 +37,12 @@ public class ${name}Client implements Client {
     }
 
     @Override
-    public Object exchange(ToolInvokeRequest request) {
+    public Object exchange(ToolInvokeRequest request, ConfigResource configResource) {
         producer.start();
 
-        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
+        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request, configResource);
 
-        LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
+        LOG.infof("Invoking tool at URI: %s", safeLog(parsedRequest.uri()));
 
         String s;
         if (parsedRequest.body().isEmpty()) {
@@ -47,8 +58,8 @@ public class ${name}Client implements Client {
     }
 
     @Override
-    public Object exchange(ToolInvokeRequest request) {
-        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request);
+    public Object exchange(ToolInvokeRequest request, ConfigResource configResource) {
+        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request, configResource);
 
         LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
 

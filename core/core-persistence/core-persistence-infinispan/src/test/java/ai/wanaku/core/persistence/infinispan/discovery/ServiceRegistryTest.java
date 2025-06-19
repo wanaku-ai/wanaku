@@ -10,7 +10,6 @@ import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -42,7 +41,7 @@ public class ServiceRegistryTest {
     @Test
     @Order(1)
     public void register() {
-        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER, Map.of("myProperty", "myDescription"));
+        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
 
         Assertions.assertDoesNotThrow(() -> serviceRegistry.register(serviceTarget));
     }
@@ -70,7 +69,7 @@ public class ServiceRegistryTest {
     @Test
     @Order(4)
     public void updateProperty() {
-        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID,  TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER, Map.of("myProperty", "myDescription-2"));
+        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID,  TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
 
         serviceRegistry.update(serviceTarget);
 
@@ -80,14 +79,12 @@ public class ServiceRegistryTest {
         assertEquals(TEST_SERVICE_NAME, tools.getFirst().getService());
 
         final ServiceTarget service = tools.getFirst();
-
-        assertEquals("myDescription-2", service.getConfigurations().get("myProperty"));
     }
 
     @Test
     @Order(5)
     public void deregister() {
-        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 0, ServiceType.TOOL_INVOKER, Map.of());
+        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 0, ServiceType.TOOL_INVOKER);
 
         serviceRegistry.deregister(serviceTarget);
 

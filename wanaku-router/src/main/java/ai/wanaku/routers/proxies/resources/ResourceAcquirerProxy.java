@@ -16,7 +16,6 @@ import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.jboss.logging.Logger;
 
 /**
@@ -79,15 +78,13 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 .usePlaintext()
                 .build();
 
-//        Map<String, Configuration> configurations = service.getConfigurations().getConfigurations();
-//        Map<String, String> serviceConfigurations = Configurations.toStringMap(configurations);
-
         ResourceRequest request = ResourceRequest
                 .newBuilder()
                 .setLocation(mcpResource.getLocation())
                 .setType(mcpResource.getType())
                 .setName(mcpResource.getName())
-                .putAllServiceConfigurations(Map.of())
+                .setConfigurationURI(mcpResource.getConfigurationURI())
+                .setSecretsURI(mcpResource.getSecretsURI())
                 .build();
 
         ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);

@@ -47,6 +47,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-capabilities-tool</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
 #if ( $wanaku-capability-type == "camel")
         <dependency>
             <groupId>ai.wanaku</groupId>

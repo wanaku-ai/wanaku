@@ -1,17 +1,19 @@
 package ai.wanaku.core.capabilities.common;
 
 import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.core.capabilities.discovery.RegistrationManager;
-import ai.wanaku.core.exchange.InquireReply;
-import ai.wanaku.core.exchange.InvocationDelegate;
+import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.io.File;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -39,34 +41,47 @@ public class ServicesHelper {
         return retries;
     }
 
-    public static InquireReply buildInquireReply(InvocationDelegate delegate) {
-        return InquireReply.newBuilder()
-                .putAllProperties(delegate.properties())
+    public static Map<String, PropertySchema> buildPropertiesMap(WanakuServiceConfig config) {
+        final Set<WanakuServiceConfig.Service.Property> properties = config.service().properties();
+
+        Map<String, PropertySchema> props = properties.stream().collect(Collectors.toMap(WanakuServiceConfig.Service.Property::name,
+                ServicesHelper::toPropertySchema));
+
+        return props;
+    }
+
+    private static PropertySchema toPropertySchema(WanakuServiceConfig.Service.Property configProp) {
+        return PropertySchema.newBuilder()
+                .setDescription(configProp.description())
+                .setType(configProp.type())
+                .setRequired(configProp.required())
                 .build();
     }
 
-    public static RegistrationManager newRegistrationManager(WanakuServiceConfig config, Map<String, String> serviceConfigurations) {
+    public static RegistrationManager newRegistrationManager(WanakuServiceConfig config, ServiceType  serviceType) {
         LOG.infof("Using registration service at %s", config.registration().uri());
         DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(config.registration().uri()))
                 .build(DiscoveryService.class);
 
-
         String service = config.name();
-        ServiceTarget serviceTarget = newServiceTarget(config, service, serviceConfigurations);
+        ServiceTarget serviceTarget = newServiceTarget(config, service, serviceType);
 
         int retries = config.registration().retries();
         int waitSeconds = config.registration().retryWaitSeconds();
 
-        final String serviceHome =
-                config.serviceHome().replace("${user.home}", System.getProperty("user.home"))
-                        + File.separator
-                        + config.name();
+        final String serviceHome = getCanonicalServiceHome(config);
 
         return new DefaultRegistrationManager(discoveryService, serviceTarget, retries, waitSeconds, serviceHome);
     }
 
-    private static ServiceTarget newServiceTarget(WanakuServiceConfig config, String service, Map<String, String> configurations) {
+    public static String getCanonicalServiceHome(WanakuServiceConfig config) {
+        return config.serviceHome().replace("${user.home}", System.getProperty("user.home"))
+                + File.separator
+                + config.name();
+    }
+
+    private static ServiceTarget newServiceTarget(WanakuServiceConfig config, String service, ServiceType serviceType) {
         String portStr = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
         final int port = Integer.parseInt(portStr);
 
@@ -77,6 +92,6 @@ public class ServicesHelper {
             address = DiscoveryUtil.resolveRegistrationAddress();
         }
 
-        return ServiceTarget.provider(service, address, port, configurations);
+        return ServiceTarget.newEmptyTarget(service, address, port, serviceType);
     }
 }

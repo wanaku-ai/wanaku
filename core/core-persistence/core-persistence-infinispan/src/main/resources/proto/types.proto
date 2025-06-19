@@ -51,6 +51,8 @@ message ResourceReference {
     string name = 1;
     string value = 2;
   }
+  string configuration_uri = 8;
+  string secrets_uri = 9;
 }
 
 // This message represents a reference to a tool with various attributes.
@@ -61,6 +63,8 @@ message ToolReference {
   string uri = 4;
   string type = 5;
   InputSchema input_schema = 6;
+  string configuration_uri = 7;
+  string secrets_uri = 8;
 }
 
 // Represents an error response from a WANAKU API or service.

@@ -4,34 +4,39 @@ import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
-import ai.wanaku.core.exchange.InquireReply;
-import ai.wanaku.core.exchange.InquireRequest;
-import ai.wanaku.core.exchange.InquirerGrpc;
+import ai.wanaku.core.exchange.PayloadType;
+import ai.wanaku.core.exchange.ProvisionReply;
+import ai.wanaku.core.exchange.ProvisionRequest;
+import ai.wanaku.core.exchange.ProvisionerGrpc;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.exchange.Configuration;
+import ai.wanaku.core.exchange.Secret;
 import ai.wanaku.routers.proxies.ToolsProxy;
+import ai.wanaku.routers.support.ProvisioningReference;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
-import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE_ENDPOINT;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_CONFIGURATION;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
 /**
@@ -87,24 +92,11 @@ public class InvokerProxy implements ToolsProxy {
             ToolReference toolReference, ToolManager.ToolArguments toolArguments, ServiceTarget service) {
         ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress()).usePlaintext().build();
 
-        Map<String, String> serviceConfigurations = service.getConfigurations();
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
         Map<String, Property> inputSchema = toolReference
                 .getInputSchema()
                 .getProperties();
-
-        Map<String,String> serviceEndpointConfiguration = inputSchema.entrySet()
-                .stream()
-                .filter(entry -> {
-                    Property property = entry.getValue();
-                    return property !=null &&
-                            property.getTarget() != null &&
-                            property.getScope() != null &&
-                            property.getTarget().equals(TARGET_CONFIGURATION) &&
-                            property.getScope().equals(SCOPE_SERVICE_ENDPOINT);
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
 
         // extract headers parameter
         Map<String, String> headers = inputSchema.entrySet()
@@ -125,7 +117,8 @@ public class InvokerProxy implements ToolsProxy {
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody(body)
                 .setUri(toolReference.getUri())
-                .putAllServiceConfigurations(serviceConfigurations)
+                .setConfigurationURI(toolReference.getConfigurationURI())
+                .setSecretsURI(toolReference.getSecretsURI())
                 .putAllHeaders(headers)
                 .putAllArguments(argumentsMap)
                 .build();
@@ -155,7 +148,9 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     @Override
-    public Map<String, PropertySchema> getProperties(ToolReference toolReference) {
+    public ProvisioningReference provision(ToolPayload toolPayload) {
+        ToolReference toolReference = toolPayload.getToolReference();
+
         ServiceTarget service = serviceRegistry.getServiceByName(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             throw new ServiceNotFoundException("There is no host registered for service " + toolReference.getType());
@@ -165,10 +160,31 @@ public class InvokerProxy implements ToolsProxy {
                 .usePlaintext()
                 .build();
 
-        InquireRequest inquireRequest = InquireRequest.newBuilder().build();
-        InquirerGrpc.InquirerBlockingStub blockingStub = InquirerGrpc.newBlockingStub(channel);
-        InquireReply inquire = blockingStub.inquire(inquireRequest);
-        return inquire.getPropertiesMap();
+
+
+        final Configuration cfg = Configuration.newBuilder()
+                .setType(PayloadType.BUILTIN)
+                .setName(toolReference.getName())
+                .setPayload(Objects.requireNonNullElse(toolPayload.getConfigurationData(), ""))
+                .build();
+
+        final Secret secret = Secret.newBuilder()
+                .setType(PayloadType.BUILTIN)
+                .setName(toolReference.getName())
+                .setPayload(Objects.requireNonNullElse(toolPayload.getSecretsData(), ""))
+                .build();
+
+        ProvisionRequest inquireRequest = ProvisionRequest.newBuilder()
+                .setConfiguration(cfg)
+                .setSecret(secret)
+                .build();
+        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
+        ProvisionReply inquire = blockingStub.provision(inquireRequest);
+        final String configurationUri = inquire.getConfigurationUri();
+        final String secretUri = inquire.getSecretUri();
+        final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
+
+        return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
     }
 
     @Override

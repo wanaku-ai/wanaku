@@ -2,6 +2,8 @@ package ai.wanaku.provider.ftp;
 
 import ai.wanaku.core.capabilities.common.ServiceOptions;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +30,8 @@ public class FTPResourceDelegate extends AbstractResourceDelegate {
     WanakuServiceConfig config;
 
     @Override
-    protected String getEndpointUri(ResourceRequest request, Map<String, String> parameters) {
+    protected String getEndpointUri(ResourceRequest request, ConfigResource configResource) {
+        Map<String, String> parameters = CamelQueryParameterBuilder.build(configResource);
         return buildUri(request.getLocation(), parameters);
     }
 
@@ -45,12 +48,5 @@ public class FTPResourceDelegate extends AbstractResourceDelegate {
         }
 
         throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response.getClass().getName());
-    }
-
-    @Override
-    public Map<String, String> serviceConfigurations() {
-        Map<String, String> configurations =  config.service().configurations();
-
-        return serviceOptions.merge(config.name(), configurations);
     }
 }

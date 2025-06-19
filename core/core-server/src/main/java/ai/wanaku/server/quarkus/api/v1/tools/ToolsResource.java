@@ -4,6 +4,7 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,6 +35,15 @@ public class ToolsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolReference> add(ToolReference resource) throws WanakuException {
+        var ret = toolsBean.add(resource);
+        return new WanakuResponse<>(ret);
+    }
+
+    @Path("/addWithPayload")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException {
         var ret = toolsBean.add(resource);
         return new WanakuResponse<>(ret);
     }

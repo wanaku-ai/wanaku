@@ -53,9 +53,7 @@ public class PrettyPrinter {
     }
 
     public static void printTarget(ServiceTarget service) {
-        Map<String, String> configurations = service.getConfigurations();
-        String strings = configurations.keySet().stream().sorted().collect(Collectors.joining(", "));
-        System.out.printf("%-37s => %-20s => %-30s => %-30s%n", service.getId(), service.getService(), service.getHost(), strings);
+        System.out.printf("%-37s => %-20s => %-30s%n", service.getId(), service.getService(), service.getHost(), service.getPort());
     }
 
     /**
@@ -63,8 +61,8 @@ public class PrettyPrinter {
      * @param map the map of entries
      */
     public static void printTargets(final List<ServiceTarget> map) {
-        System.out.printf("%-37s    %-20s    %-30s    %-30s%n",
-                "ID", "SERVICE", "TARGET", "CONFIGURATIONS");
+        System.out.printf("%-37s    %-20s    %-30s%n",
+                "ID", "SERVICE", "HOST");
 
         map.forEach(PrettyPrinter::printTarget);
     }

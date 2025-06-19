@@ -5,7 +5,6 @@
  * OpenAPI spec version: 0.0.6-SNAPSHOT
  */
 import type { ServiceType } from "./serviceType";
-import type { ServiceTargetConfigurations } from "./serviceTargetConfigurations";
 
 export interface ServiceTarget {
   id?: string;
@@ -13,5 +12,4 @@ export interface ServiceTarget {
   host?: string;
   port?: number;
   serviceType?: ServiceType;
-  configurations?: ServiceTargetConfigurations;
 }

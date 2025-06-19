@@ -3,7 +3,7 @@ package ai.wanaku.core.exchange;
 /**
  * A delegate that can be used by services that invoke tools
  */
-public interface InvocationDelegate extends ConfigurableDelegate, RegisterAware, PropertyProvider {
+public interface InvocationDelegate extends RegisterAware, ProvisionAware {
 
     /**
      * Invokes the tool
