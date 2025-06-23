@@ -52,7 +52,7 @@
         <langchain4j.version>1.1.0</langchain4j.version>
         <langchain4j-mcp.version>1.1.0-beta7</langchain4j-mcp.version>
         <quarkus-quinoa.version>2.5.4</quarkus-quinoa.version>
-        <test-containers.version>1.21.1</test-containers.version>
+        <test-containers.version>1.21.2</test-containers.version>
         <commons-pool2.version>2.12.1</commons-pool2.version>
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.33</swagger-core-version>
