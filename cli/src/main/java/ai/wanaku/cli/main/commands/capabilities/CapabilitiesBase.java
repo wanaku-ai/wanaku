@@ -1,4 +1,4 @@
-package ai.wanaku.cli.main.commands.services;
+package ai.wanaku.cli.main.commands.capabilities;
 
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.cli.main.commands.BaseCommand;

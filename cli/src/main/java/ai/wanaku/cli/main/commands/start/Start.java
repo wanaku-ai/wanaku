@@ -8,7 +8,8 @@ import picocli.CommandLine;
 public class Start extends BaseCommand {
 
     @Override
-    public void run() {
+    public Integer call() throws Exception {
         CommandLine.usage(this, System.out);
+        return EXIT_ERROR;
     }
 }

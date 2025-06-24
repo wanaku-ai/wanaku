@@ -16,7 +16,7 @@ import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
-@CommandLine.Command(name = "list",description = "List resources")
+@CommandLine.Command(name = "list", description = "List resources")
 public class ResourcesList extends BaseCommand {
 
     @CommandLine.Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
@@ -26,7 +26,7 @@ public class ResourcesList extends BaseCommand {
     ResourcesService resourcesService;
 
     @Override
-    public void run() {
+    public Integer call() {
         resourcesService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ResourcesService.class);
@@ -39,7 +39,8 @@ public class ResourcesList extends BaseCommand {
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
+            return EXIT_ERROR;
         }
-
+        return EXIT_OK;
     }
 }

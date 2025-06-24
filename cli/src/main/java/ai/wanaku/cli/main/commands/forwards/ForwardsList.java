@@ -1,17 +1,17 @@
 package ai.wanaku.cli.main.commands.forwards;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.core.services.api.ForwardsService;
 import ai.wanaku.cli.main.support.PrettyPrinter;
+import ai.wanaku.core.services.api.ForwardsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import picocli.CommandLine;
+
 import java.net.URI;
 import java.util.List;
-import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
@@ -23,7 +23,7 @@ public class ForwardsList extends BaseCommand {
     protected String host;
 
     @Override
-    public void run() {
+    public Integer call() {
         ForwardsService forwardsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ForwardsService.class);
@@ -35,7 +35,9 @@ public class ForwardsList extends BaseCommand {
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
+            return EXIT_ERROR;
         }
 
+        return EXIT_OK;
     }
 }

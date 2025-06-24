@@ -726,6 +726,116 @@ wanaku forwards list
 By leveraging the MCP bridge feature, you can create a centralized endpoint for aggregating tools and resources from multiple
 external MCP servers, simplifying management and increasing the overall functionality of your Wanaku instance.
 
+### List Capabilities
+
+The `capabilities list` command provides a comprehensive view of all service capabilities available in the Wanaku Router.
+It discovers and displays both management tools and resource providers, along with their current operational status and
+activity information.
+
+The command combines data from multiple API endpoints to present a unified view of the system's capabilities in an
+easy-to-read table format.
+
+#### Options
+
+| Option | Description | Default Value | Required |
+|--------|-------------|---------------|----------|
+| `--host` | The API host URL to connect to | `http://localhost:8080` | No |
+
+#### Output Format
+
+The command displays results in a table with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| **service** | Name of the service |
+| **serviceType** | Type/category of the service |
+| **host** | Hostname or IP address where the service runs |
+| **port** | Port number the service listens on |
+| **status** | Current operational status (`active`, `inactive`, or `-`) |
+| **lastSeen** | Formatted timestamp of last activity |
+
+#### Examples
+
+#### Basic Usage
+
+List all capabilities using the default host:
+
+```bash
+wanaku capabilities list
+```
+
+List capabilities specifying API host:
+
+```bash
+wanaku capabilities list --host https://api.wanaku.example.com:8443
+```
+
+#### Sample Output
+![img.png](imgs/cli-capabilities-list.png)
+
+### Capabilities Show
+Display detailed information about a specific service capability in the Wanaku system.
+
+#### Usage
+
+```bash
+wanaku capabilities show <service> [--host <url>]
+```
+
+#### Arguments
+
+- `<service>` - The service name to show details for (e.g., http, sqs, file)
+
+#### Options
+
+- `--host <url>` - The API host URL (default: http://localhost:8080)
+
+#### Description
+
+The `capabilities show` command displays comprehensive details about a specific service type, including its configuration parameters, status, and connection information. When multiple instances of the same service exist, an interactive selection menu allows you to choose which instance to view.
+
+#### Examples
+
+```bash
+# Show details for HTTP service
+wanaku capabilities show http
+
+# Show details for SQS service from specific host
+wanaku capabilities show sqs --host http://api.example.com:8080
+```
+
+#### Output
+
+The command displays two main sections:
+
+1. **Capability Summary** - Basic service information in table format:
+- Service name and type
+- Host and port
+- Current status
+- Last seen timestamp
+
+2. **Configurations** - Detailed configuration parameters:
+- Parameter names
+- Parameter descriptions
+
+![img.png](imgs/capabilities-show.png)
+
+
+#### Interactive Selection
+
+When multiple instances of the same service are found, you'll see:
+- A warning message indicating multiple matches
+- An interactive selection prompt with service details
+- Choose your desired instance using arrow keys and Enter
+
+![img.png](imgs/capabilities-show-choose.png)
+
+#### Exit Codes
+
+- `0` - Success
+- `1` - Error (e.g., no capabilities found, API connection issues)
+
+
 ## Understanding URIs
 
 Universal Resource Identifiers (URI) are central to Wanaku.
@@ -994,3 +1104,6 @@ Visit [this page](../capabilities/tools/README.md) to check all the tools that c
 All CLI commands use the Wanaku management API under the hood. If you need more advanced functionality or want to automate tasks, you may be able to use this API directly.
 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
+
+
+

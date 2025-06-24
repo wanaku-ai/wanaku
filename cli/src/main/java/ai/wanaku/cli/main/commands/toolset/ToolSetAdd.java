@@ -46,7 +46,7 @@ public class ToolSetAdd extends BaseCommand {
     private List<String> required;
 
     @Override
-    public void run() {
+    public Integer call() {
         ToolReference toolReference = new ToolReference();
 
         toolReference.setName(name);
@@ -92,6 +92,7 @@ public class ToolSetAdd extends BaseCommand {
             LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
             throw new RuntimeException(e);
         }
+        return EXIT_OK;
 
     }
 

@@ -65,7 +65,7 @@ public class ToolsAdd extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public void run() {
+    public Integer call() {
         ToolReference toolReference = new ToolReference();
 
         toolReference.setName(name);
@@ -116,8 +116,10 @@ public class ToolsAdd extends BaseCommand {
                 System.exit(1);
             } else {
                 commonResponseErrorHandler(response);
+                return EXIT_ERROR;
             }
         }
+        return EXIT_OK;
     }
 
     private void loadConfigurationSources(String source, Consumer<String> configSourceConsumer) {

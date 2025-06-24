@@ -26,7 +26,7 @@ public class ForwardsAdd extends BaseCommand {
     protected String service;
 
     @Override
-    public void run() {
+    public Integer call() {
         ForwardsService forwardsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ForwardsService.class);
@@ -39,6 +39,8 @@ public class ForwardsAdd extends BaseCommand {
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
+            return EXIT_ERROR;
         }
+        return EXIT_OK;
     }
 }

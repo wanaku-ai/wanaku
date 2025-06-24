@@ -1,8 +1,8 @@
 package ai.wanaku.cli.main.commands.tools;
 
 import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.converter.URLConverter;
-import ai.wanaku.core.services.api.ToolsService;
 import io.swagger.v3.oas.models.OpenAPI;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
@@ -11,18 +11,17 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.*;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.generateToolReferences;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.loadAndResolveOpenAPI;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.writeOutput;
 
 @CommandLine.Command(name = "generate", description = "generate tools from an OpenApi specification")
-public class ToolsGenerate implements Callable<Integer> {
+public class ToolsGenerate extends BaseCommand {
 
     private static final Logger LOG = Logger.getLogger(ToolsGenerate.class);
-
-    @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "Display the help and sub-commands")
-    private boolean helpRequested = false;
 
     @CommandLine.Option(names = {"--server-url", "-u"}, description = "Override the OpenAPI server base url", arity = "0..1")
     protected String serverUrl;
@@ -55,7 +54,7 @@ public class ToolsGenerate implements Callable<Integer> {
 
             if (openAPI == null || openAPI.getPaths() == null || openAPI.getPaths().isEmpty()) {
                 LOG.warn("No paths found in the OpenAPI specification");
-                return 3;
+                return EXIT_ERROR;
             }
 
             // Determine base URL to use
@@ -74,8 +73,8 @@ public class ToolsGenerate implements Callable<Integer> {
             }
         } catch (Exception e) {
             System.err.println("Error processing OpenAPI specification: " + e.getMessage());
-            return 2;
+            return EXIT_ERROR;
         }
-        return 0;
+        return EXIT_OK;
     }
 }

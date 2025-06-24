@@ -25,7 +25,7 @@ public class ResourcesRemove extends BaseCommand {
     ResourcesService resourcesService;
 
     @Override
-    public void run() {
+    public Integer call() {
         resourcesService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ResourcesService.class);
@@ -41,8 +41,9 @@ public class ResourcesRemove extends BaseCommand {
                 System.exit(1);
             } else {
                 commonResponseErrorHandler(response);
+                return EXIT_ERROR;
             }
         }
-
+        return EXIT_OK;
     }
 }

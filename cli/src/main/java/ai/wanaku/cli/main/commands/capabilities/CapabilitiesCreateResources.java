@@ -1,4 +1,4 @@
-package ai.wanaku.cli.main.commands.services;
+package ai.wanaku.cli.main.commands.capabilities;
 
 import jakarta.inject.Inject;
 
@@ -14,10 +14,11 @@ public class CapabilitiesCreateResources extends CapabilitiesBase {
     WanakuCliConfig config;
 
     @Override
-    public void run() {
+    public Integer call() {
         String baseCmd = config.resource().createCmd();
 
         createProject(baseCmd, "ai.wanaku.provider", "wanaku-provider");
+        return 0;
     }
 
 }
