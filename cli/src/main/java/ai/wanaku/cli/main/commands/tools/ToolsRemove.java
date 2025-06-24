@@ -1,15 +1,14 @@
 package ai.wanaku.cli.main.commands.tools;
 
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.core.services.api.ToolsService;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.core.services.api.ToolsService;
-import java.net.URI;
-
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import org.jboss.logging.Logger;
-import ai.wanaku.cli.main.commands.BaseCommand;
 import picocli.CommandLine;
+
+import java.net.URI;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
@@ -27,7 +26,7 @@ public class ToolsRemove extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public void run() {
+    public Integer call() {
         toolsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
@@ -43,9 +42,9 @@ public class ToolsRemove extends BaseCommand {
                 System.exit(1);
             } else {
                 commonResponseErrorHandler(response);
+                return EXIT_ERROR;
             }
         }
-
+        return EXIT_OK;
     }
-
 }

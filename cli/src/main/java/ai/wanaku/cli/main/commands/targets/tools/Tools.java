@@ -7,7 +7,8 @@ import picocli.CommandLine;
         description = "Manage targets", subcommands = { ToolsLinkedList.class, ToolsConfigure.class, ToolsState.class })
 public class Tools extends BaseCommand {
     @Override
-    public void run() {
-
+    public Integer call() {
+        CommandLine.usage(this, System.out);
+        return EXIT_ERROR;
     }
 }

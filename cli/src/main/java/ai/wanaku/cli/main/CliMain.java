@@ -1,10 +1,11 @@
 package ai.wanaku.cli.main;
 
+import ai.wanaku.cli.main.commands.BaseCommand;
 import jakarta.inject.Inject;
 
 import ai.wanaku.cli.main.commands.forwards.Forwards;
 import ai.wanaku.cli.main.commands.resources.Resources;
-import ai.wanaku.cli.main.commands.services.Capabilities;
+import ai.wanaku.cli.main.commands.capabilities.Capabilities;
 import ai.wanaku.cli.main.commands.start.Start;
 import ai.wanaku.cli.main.commands.targets.Targets;
 import ai.wanaku.cli.main.commands.tools.Tools;
@@ -14,11 +15,12 @@ import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;
 
+import java.util.concurrent.Callable;
 
 
 @TopCommand
 @CommandLine.Command(name = "wanaku", subcommands = { Forwards.class, Resources.class, Start.class, Capabilities.class, Targets.class, Tools.class, ToolSet.class,  })
-public class CliMain implements Runnable, QuarkusApplication {
+public class CliMain implements Callable<Integer>, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
@@ -34,11 +36,12 @@ public class CliMain implements Runnable, QuarkusApplication {
     }
 
     @Override
-    public void run() {
+    public Integer call() {
         if (versionRequested) {
             System.out.println("Wanaku CLI version " + VersionHelper.VERSION);
         }
 
         CommandLine.usage(this, System.out);
+        return BaseCommand.EXIT_ERROR;
     }
 }

@@ -1,4 +1,4 @@
-package ai.wanaku.cli.main.commands.services;
+package ai.wanaku.cli.main.commands.capabilities;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
 import picocli.CommandLine;
@@ -9,7 +9,8 @@ import picocli.CommandLine;
 public class CapabilitiesCreate extends BaseCommand {
 
     @Override
-    public void run() {
+    public Integer call() {
         CommandLine.usage(this, System.out);
+        return EXIT_ERROR;
     }
 }

@@ -11,10 +11,11 @@ import picocli.CommandLine;
         description = "List targeted services")
 public class ToolsLinkedList extends AbstractTargetsList {
     @Override
-    public void run() {
+    public Integer call() {
         initService();
 
         List<ServiceTarget> list = targetsService.toolsList().data();
         PrettyPrinter.printTargets(list);
+        return EXIT_OK;
     }
 }

@@ -44,7 +44,7 @@ public class ResourcesExpose extends BaseCommand {
     ResourcesService resourcesService;
 
     @Override
-    public void run() {
+    public Integer call() {
         resourcesService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ResourcesService.class);
@@ -77,6 +77,8 @@ public class ResourcesExpose extends BaseCommand {
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
+            return EXIT_ERROR;
         }
+        return EXIT_OK;
     }
 }

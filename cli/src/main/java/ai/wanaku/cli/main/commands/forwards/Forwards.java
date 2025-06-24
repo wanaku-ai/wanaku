@@ -7,7 +7,8 @@ import picocli.CommandLine;
         description = "Manage forwards", subcommands = { ForwardsAdd.class, ForwardsRemove.class, ForwardsList.class })
 public class Forwards extends BaseCommand {
     @Override
-    public void run() {
+    public Integer call() {
         CommandLine.usage(this, System.out);
+        return EXIT_ERROR;
     }
 }

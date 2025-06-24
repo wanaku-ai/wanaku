@@ -16,6 +16,7 @@ import picocli.CommandLine;
 
 @CommandLine.Command(name = "local", description = "Create a new tool service")
 public class StartLocal extends StartBase {
+
     private static final Logger LOG = Logger.getLogger(StartLocal.class);
 
     @Inject
@@ -59,7 +60,7 @@ public class StartLocal extends StartBase {
     }
 
     @Override
-    public void run() {
+    public Integer call() {
         if (exclusive != null && exclusive.exclusiveNonStart != null) {
             if (exclusive.exclusiveNonStart.listServices) {
                 Map<String, String> components = config.components();
@@ -68,7 +69,7 @@ public class StartLocal extends StartBase {
                         System.out.println(" - " + component);
                     }
                 }
-                return;
+                return EXIT_OK;
             }
 
             if (exclusive.exclusiveNonStart.clean) {
@@ -78,11 +79,12 @@ public class StartLocal extends StartBase {
                 System.out.println("Removing Wanaku local instance directory");
                 deleteDirectory(new File(RuntimeConstants.WANAKU_LOCAL_DIR));
 
-                return;
+                return EXIT_OK;
             }
         }
 
 
         startWanaku();
+        return EXIT_OK;
     }
 }

@@ -2,6 +2,8 @@ package ai.wanaku.cli.main.commands.tools;
 
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -32,7 +34,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 @CommandLine.Command(name = "edit", description = "edit tool")
 
-public class ToolsEdit implements Callable<Integer> {
+public class ToolsEdit extends BaseCommand {
 
     @CommandLine.Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080", arity = "0..1")
     protected String host;
@@ -59,7 +61,7 @@ public class ToolsEdit implements Callable<Integer> {
      * or by selecting from a list of registered tools.
      * It uses the Nano editor for modifying the tool definition and prompts for confirmation before saving.
      *
-     * @return 0 if the operation was successful, 1 otherwise.
+     * @return EXIT_OK; if the operation was successful, 1 otherwise.
      * @throws Exception if an error occurs during the operation.
      */
     @Override
@@ -74,10 +76,10 @@ public class ToolsEdit implements Callable<Integer> {
         // check if there is at least a tool registered
         if (list == null || list.isEmpty()) {
             System.out.println("No tools registered yet");
-            return 1;
+            return EXIT_ERROR;
         }
 
-        try (Terminal terminal = TerminalBuilder.builder().system(true).build()) {
+        try (Terminal terminal = WanakuPrinter.terminalInstance()) {
             ToolReference tool;
             if (toolName == null) {
                 // if no tool name provided as parameter, let the user choose from the list
@@ -89,7 +91,7 @@ public class ToolsEdit implements Callable<Integer> {
                     tool = response.data();
                 } catch (RuntimeException e) {
                     System.err.println("Error retrieving the tool '"+toolName+"': " + e.getMessage());
-                    return 1;
+                    return EXIT_ERROR;
                 }
             }
 
@@ -99,7 +101,7 @@ public class ToolsEdit implements Callable<Integer> {
             boolean wasModified = !toolString.equals(modifiedContent);
             if(!wasModified){
                 System.out.println("No changes detected!");
-                return 0;
+                return EXIT_OK;
             }
             //Ask for confirmation
             boolean save = confirm(terminal, tool);
@@ -116,7 +118,7 @@ public class ToolsEdit implements Callable<Integer> {
                 System.out.println("done");
             }
         }
-        return 0;
+        return EXIT_OK;
     }
 
 

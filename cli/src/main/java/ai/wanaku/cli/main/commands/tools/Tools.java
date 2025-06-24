@@ -7,7 +7,8 @@ import picocli.CommandLine;
         description = "Manage tools", subcommands = { ToolsEdit.class,ToolsAdd.class, ToolsRemove.class, ToolsList.class, ToolsImport.class, ToolsGenerate.class})
 public class Tools extends BaseCommand {
     @Override
-    public void run() {
+    public Integer call() {
         CommandLine.usage(this, System.out);
+        return EXIT_OK;
     }
 }

@@ -7,7 +7,8 @@ import picocli.CommandLine;
         description = "Manage toolsets", subcommands = { ToolSetAdd.class})
 public class ToolSet extends BaseCommand {
     @Override
-    public void run() {
+    public Integer call() {
         CommandLine.usage(this, System.out);
+        return EXIT_ERROR;
     }
 }

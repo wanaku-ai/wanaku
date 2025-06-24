@@ -27,7 +27,7 @@ public class ToolsImport extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public void run() {
+    public Integer call() {
         try {
 
             List<ToolReference> toolReferences = ToolsetIndexHelper.loadToolsIndex(location);
@@ -38,5 +38,6 @@ public class ToolsImport extends BaseCommand {
             LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
             throw new RuntimeException(e);
         }
+        return EXIT_OK;
     }
 }

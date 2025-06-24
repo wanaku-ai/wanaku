@@ -13,7 +13,7 @@ import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandl
 public class ToolsConfigure extends AbstractTargetsConfigure {
 
     @Override
-    public void run() {
+    public Integer call() {
         initService();
 
         try (Response ignored = targetsService.toolsConfigure(service, option, value)) {
@@ -26,8 +26,9 @@ public class ToolsConfigure extends AbstractTargetsConfigure {
                 System.exit(1);
             } else {
                 commonResponseErrorHandler(response);
+                return EXIT_ERROR;
             }
         }
-
+        return EXIT_OK;
     }
 }
