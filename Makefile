@@ -16,7 +16,7 @@ prepare:
 
 cli-native:
 	export GRAALVM_HOME=$(JAVA_HOME)
-	mvn -Dnative clean package
+	mvn -DskipTests -Dnative clean package
 
 dist-native:
 	export GRAALVM_HOME=$(JAVA_HOME)
