@@ -6,9 +6,19 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+/**
+ * Contains the definitions of parameters to be parsed/used
+ */
 @SuppressWarnings("unused")
 public class Parameter {
+    /**
+     * Reserved keyword
+     */
     public static final String KEY_NAME = "parameter";
+
+    /**
+     * An empty map of parameters
+     */
     public static final Parameter EMPTY = new Parameter(Map.of());
 
     public final SortedMap<String, Object> parameters;

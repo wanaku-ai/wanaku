@@ -24,6 +24,16 @@ public class CollectionsHelper {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
     }
 
+    /**
+     * Joins two lists of the same type into a new list. The order of elements from the first list
+     * is preserved, followed by the order of elements from the second list.
+     *
+     * @param <T> The type of elements in the lists.
+     * @param list1 The first list to be joined. Must not be null.
+     * @param list2 The second list to be joined. Must not be null.
+     * @return A new {@code List} containing all elements from {@code list1} followed by all
+     * elements from {@code list2}. Returns an empty list if both input lists are empty.
+     */
     public static <T> List<T> join(List<T> list1, List<T> list2) {
         List<T> dest = new ArrayList<>(list1.size() + list2.size());
         dest.addAll(list1);
