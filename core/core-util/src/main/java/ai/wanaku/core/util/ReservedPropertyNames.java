@@ -3,7 +3,7 @@ package ai.wanaku.core.util;
 /**
  * Reserved argument names
  */
-public class ReservedPropertyNames {
+public final class ReservedPropertyNames {
 
     /**
      * Indicate that the argument is intended to use as a tool/service configuration
@@ -35,4 +35,6 @@ public class ReservedPropertyNames {
      */
     @Deprecated(forRemoval = true)
     public static final String SCOPE_SERVICE_ENDPOINT = "service-endpoint";
+
+    private ReservedPropertyNames() {}
 }
