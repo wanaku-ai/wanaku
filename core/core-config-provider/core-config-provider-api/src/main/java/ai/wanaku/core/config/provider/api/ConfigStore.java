@@ -32,7 +32,7 @@ public interface ConfigStore {
      * Retrieves the configuration entry associated with the given name.
      *
      * @param name The exact name of the configuration entry to retrieve. Must not be null.
-     * @return The String value of the configuration entry, or {@link null} if no entry
+     * @return The String value of the configuration entry, or {@code null} if no entry
      * with the specified name is found.
      */
     String get(String name);
