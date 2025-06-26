@@ -25,6 +25,7 @@ public class ForwardsResource {
 
     @Path("/add")
     @POST
+    @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addForward(ForwardReference reference) throws WanakuException {
         forwardsBean.forward(reference);

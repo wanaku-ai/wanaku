@@ -100,7 +100,7 @@ public class ToolsHelper {
         }
 
         if (namespace != null) {
-            LOG.debugf("Registering tool %s in namespace %s", toolReference.getName(), toolReference.getNamespace());
+            LOG.debugf("Registering tool %s in namespace %s with path %s", toolReference.getName(), namespace.getName(), namespace.getPath());
             toolDefinition
                     .setServerName(namespace.getPath())
                     .setHandler(ta ->  handler.apply(ta, toolReference))

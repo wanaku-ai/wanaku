@@ -1,6 +1,7 @@
 package ai.wanaku.routers.resolvers;
 
 import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
 import java.util.Map;
@@ -8,30 +9,30 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WanakuForwardRegistry implements ForwardRegistry {
-    private final Map<ForwardReference, ForwardResolver> resolvers = new ConcurrentHashMap<>();
+    private final Map<NameNamespacePair, ForwardResolver> resolvers = new ConcurrentHashMap<>();
 
     @Override
-    public ForwardResolver newResolverForService(ForwardReference service) {
-        return new WanakuForwardResolver(service);
+    public ForwardResolver newResolverForService(NameNamespacePair namespacePair, ForwardReference forwardReference) {
+        return new WanakuForwardResolver(namespacePair, forwardReference);
     }
 
     @Override
-    public ForwardResolver getResolver(ForwardReference service) {
+    public ForwardResolver getResolver(NameNamespacePair service) {
         return resolvers.get(service);
     }
 
     @Override
-    public void link(ForwardReference service, ForwardResolver resolver) {
+    public void link(NameNamespacePair service, ForwardResolver resolver) {
         resolvers.put(service, resolver);
     }
 
     @Override
-    public void unlink(ForwardReference service) {
+    public void unlink(NameNamespacePair service) {
         resolvers.remove(service);
     }
 
     @Override
-    public Set<ForwardReference> services() {
+    public Set<NameNamespacePair> services() {
         return resolvers.keySet();
     }
 }

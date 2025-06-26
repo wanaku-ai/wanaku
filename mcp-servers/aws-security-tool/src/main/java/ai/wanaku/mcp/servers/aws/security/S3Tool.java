@@ -1,5 +1,10 @@
 package ai.wanaku.mcp.servers.aws.security;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
+import ai.wanaku.core.forward.discovery.client.AutoDiscoveryClient;
+import ai.wanaku.core.forward.discovery.client.ForwardRegistrationManager;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,6 +20,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 public class S3Tool {
+    @Inject
+    Instance<ForwardRegistrationManager> registrationManager;
 
     @Tool(description = "Get Bucket list for a region.")
     String getBuckets(@ToolArg(description = "AWS Region") String region) {

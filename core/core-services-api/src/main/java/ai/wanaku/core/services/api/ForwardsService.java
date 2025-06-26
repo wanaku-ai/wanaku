@@ -1,5 +1,6 @@
 package ai.wanaku.core.services.api;
 
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -17,6 +18,7 @@ public interface ForwardsService {
     @Path("/add")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
     Response addForward(ForwardReference reference);
 
     @Path("/remove")
