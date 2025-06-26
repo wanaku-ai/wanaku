@@ -42,10 +42,24 @@ export const TargetsPage: React.FC = () => {
       return entry;
     });
 
+    updatedData?.forEach((t: ServiceTargetState) => {
+      t.lastSeen = dateFormatter.format(new Date(t.lastSeen ?? new Date()));
+    })
+
     setFetchedData(updatedData);
 
     return updatedData as ServiceTargetState[];
   }
+
+  const dateFormatter = new Intl.DateTimeFormat(undefined, {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  });
 
   const setupSSE = (data: ServiceTargetState[]) => {
     const baseUrl = VITE_API_URL || window.location.origin;
@@ -61,7 +75,8 @@ export const TargetsPage: React.FC = () => {
       const updatedData = data.map((entry) => {
         if (entry.id == serviceTargetEvent.id) {
           entry.active = serviceTargetEvent.serviceState?.healthy; // TODO is this assumption true?
-          entry.lastSeen = serviceTargetEvent.serviceState?.timestamp;
+          const date = new Date(serviceTargetEvent.serviceState?.timestamp ?? new Date());
+          entry.lastSeen = dateFormatter.format(date);
           entry.reason = serviceTargetEvent.serviceState?.reason;
         }
 
@@ -77,7 +92,7 @@ export const TargetsPage: React.FC = () => {
 
       const updatedData = data.map((entry) => {
         if (entry.id == serviceTargetEvent.id) {
-          entry.lastSeen = new Date().toString(); // TODO What to do with dates?!
+          entry.lastSeen = dateFormatter.format(new Date()); // TODO What to do with dates?!
           entry.active = true; // TODO is this assumption true?
         }
 
