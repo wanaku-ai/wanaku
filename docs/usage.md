@@ -631,6 +631,93 @@ These configurations are handled when adding a new tool to Wanaku MCP Router.
 > Check the "Configuring the Capabilities" section for additional details about this.
 
 
+### Listing Capabilities
+
+The `wanaku capabilities list` command provides a comprehensive view of all service capabilities available in the Wanaku Router.
+It discovers and displays both management tools and resource providers, along with their current operational status and
+activity information.
+
+The command combines data from multiple API endpoints to present a unified view of the system's capabilities in an
+easy-to-read table format.
+
+
+The command displays the results in a table with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| **service** | Name of the service |
+| **serviceType** | Type/category of the service |
+| **host** | Hostname or IP address where the service runs |
+| **port** | Port number the service listens on |
+| **status** | Current operational status (`active`, `inactive`, or `-`) |
+| **lastSeen** | Formatted timestamp of last activity |
+
+For instance, running the command, should present you with an output similar to this:
+
+#### Sample Output
+![img.png](imgs/cli-capabilities-list.png)
+
+### Displaying Service Capability Details
+
+The `wanaku capabilities show` command lets you view detailed information for a specific service capability within the 
+Wanaku MCP Router.
+
+This includes its configuration parameters, current status, and connection information.
+
+
+```bash
+wanaku capabilities show <service> [--host <url>]
+```
+
+* `<service>`: The service name to show details for (e.g., http, sqs, file)
+* `--host <url>`: The API host URL (default: http://localhost:8080)
+
+
+When you execute the command, Wanaku displays comprehensive details about the chosen service type. 
+If multiple instances of the same service exist, an interactive menu will appear, allowing you to select the specific instance 
+you wish to view.
+
+For example, to show the details for the HTTP service:
+
+```shell
+wanaku capabilities show http
+```
+
+Or, show details for SQS service linked with to a specific Wanaku MCP router running at `http://api.example.com:8080`:
+
+```shell
+wanaku capabilities show sqs --host http://api.example.com:8080
+```
+
+The command displays two main sections:
+
+1. **Capability Summary**: Basic service information in table format:
+- Service name and type
+- Host and port
+- Current status
+- Last seen timestamp
+
+2. **Configurations**: Detailed configuration parameters:
+- Parameter names
+- Parameter descriptions
+
+![img.png](imgs/capabilities-show.png)
+
+
+#### Interactive Selection
+
+When multiple instances of the same service are found, you'll see:
+- A warning message indicating multiple matches
+- An interactive selection prompt with service details
+- Choose your desired instance using arrow keys and Enter
+
+![img.png](imgs/capabilities-show-choose.png)
+
+> [NOTE]
+> The Wanaku CLI provides clear exit codes to indicate the outcome of a command:
+> - `0`: The command executed successfully.
+> - `1`: An error occurred (e.g., no capabilities were found, or there were issues connecting to the API).
+
 ### Listing Targets
 
 You can view linked targets by using either the `wanaku targets tools list` command (to see targets for tools) or the
@@ -645,6 +732,11 @@ eaf7a675-2225-40da-965b-d576c1439b92  => kafka                => 192.168.1.137
 92380df9-bcd3-43cb-a4c2-eabe7b06b415  => tavily               => 192.168.1.137                 
 2b70d26b-6d87-4931-8415-684c0d8ca45e  => camel-yaml           => 192.168.1.137                  
 ```
+
+> [NOTE]
+> The difference between `wanaku targets (tools|resources) list` and the `wanaku capabilities list` is that the 
+> listing targets print the ID, which can be helpful when extending Wanaku. For most cases, users should rely on the 
+> `wanaku capabilities list` feature. 
 
 ## Accessing Other MCP servers (MCP Forwards)
 
@@ -734,114 +826,7 @@ wanaku forwards list
 By leveraging the MCP bridge feature, you can create a centralized endpoint for aggregating tools and resources from multiple
 external MCP servers, simplifying management and increasing the overall functionality of your Wanaku instance.
 
-### List Capabilities
 
-The `capabilities list` command provides a comprehensive view of all service capabilities available in the Wanaku Router.
-It discovers and displays both management tools and resource providers, along with their current operational status and
-activity information.
-
-The command combines data from multiple API endpoints to present a unified view of the system's capabilities in an
-easy-to-read table format.
-
-#### Options
-
-| Option | Description | Default Value | Required |
-|--------|-------------|---------------|----------|
-| `--host` | The API host URL to connect to | `http://localhost:8080` | No |
-
-#### Output Format
-
-The command displays results in a table with the following columns:
-
-| Column | Description |
-|--------|-------------|
-| **service** | Name of the service |
-| **serviceType** | Type/category of the service |
-| **host** | Hostname or IP address where the service runs |
-| **port** | Port number the service listens on |
-| **status** | Current operational status (`active`, `inactive`, or `-`) |
-| **lastSeen** | Formatted timestamp of last activity |
-
-#### Examples
-
-#### Basic Usage
-
-List all capabilities using the default host:
-
-```bash
-wanaku capabilities list
-```
-
-List capabilities specifying API host:
-
-```bash
-wanaku capabilities list --host https://api.wanaku.example.com:8443
-```
-
-#### Sample Output
-![img.png](imgs/cli-capabilities-list.png)
-
-### Capabilities Show
-Display detailed information about a specific service capability in the Wanaku system.
-
-#### Usage
-
-```bash
-wanaku capabilities show <service> [--host <url>]
-```
-
-#### Arguments
-
-- `<service>` - The service name to show details for (e.g., http, sqs, file)
-
-#### Options
-
-- `--host <url>` - The API host URL (default: http://localhost:8080)
-
-#### Description
-
-The `capabilities show` command displays comprehensive details about a specific service type, including its configuration parameters, status, and connection information. When multiple instances of the same service exist, an interactive selection menu allows you to choose which instance to view.
-
-#### Examples
-
-```bash
-# Show details for HTTP service
-wanaku capabilities show http
-
-# Show details for SQS service from specific host
-wanaku capabilities show sqs --host http://api.example.com:8080
-```
-
-#### Output
-
-The command displays two main sections:
-
-1. **Capability Summary** - Basic service information in table format:
-- Service name and type
-- Host and port
-- Current status
-- Last seen timestamp
-
-2. **Configurations** - Detailed configuration parameters:
-- Parameter names
-- Parameter descriptions
-
-![img.png](imgs/capabilities-show.png)
-
-
-#### Interactive Selection
-
-When multiple instances of the same service are found, you'll see:
-- A warning message indicating multiple matches
-- An interactive selection prompt with service details
-- Choose your desired instance using arrow keys and Enter
-
-![img.png](imgs/capabilities-show-choose.png)
-
-#### Exit Codes
-
-- `0` - Success
-- `1` - Error (e.g., no capabilities found, API connection issues)
 
 
 ## Understanding URIs
