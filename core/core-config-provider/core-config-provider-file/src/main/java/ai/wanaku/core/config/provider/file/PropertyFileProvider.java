@@ -15,7 +15,7 @@ import java.util.Properties;
  * Java properties file format.
  */
 public class PropertyFileProvider implements PropertyProvider {
-    private Properties properties;
+    private final Properties properties;
 
     /**
      * Constructs a new {@link PropertyFileProvider} and attempts to load properties from
@@ -37,8 +37,6 @@ public class PropertyFileProvider implements PropertyProvider {
             properties = new Properties();
             try (FileInputStream fis = new FileInputStream(file)) {
                 properties.load(fis);
-            } catch (FileNotFoundException e) {
-                throw new WanakuException(e);
             } catch (IOException e) {
                 throw new WanakuException(e);
             }

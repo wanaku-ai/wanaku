@@ -111,13 +111,7 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
     protected A newEntity() {
         try {
             return entityType().getDeclaredConstructor().newInstance();
-        } catch (InstantiationException e) {
-            throw new WanakuException(e);
-        } catch (IllegalAccessException e) {
-            throw new WanakuException(e);
-        } catch (InvocationTargetException e) {
-            throw new WanakuException(e);
-        } catch (NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new WanakuException(e);
         }
     }

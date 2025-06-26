@@ -37,8 +37,8 @@ import org.jboss.logging.Logger;
 public class WanakuForwardResolver implements ForwardResolver {
     private static final Logger LOG = Logger.getLogger(WanakuForwardResolver.class);
 
-    private ForwardReference reference;
-    private ReentrantLock lock = new ReentrantLock();
+    private final ForwardReference reference;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public WanakuForwardResolver(ForwardReference reference) {
         this.reference = reference;

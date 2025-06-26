@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WanakuForwardRegistry implements ForwardRegistry {
-    Map<ForwardReference, ForwardResolver> resolvers = new ConcurrentHashMap<>();
+    private final Map<ForwardReference, ForwardResolver> resolvers = new ConcurrentHashMap<>();
 
     @Override
     public ForwardResolver newResolverForService(ForwardReference service) {

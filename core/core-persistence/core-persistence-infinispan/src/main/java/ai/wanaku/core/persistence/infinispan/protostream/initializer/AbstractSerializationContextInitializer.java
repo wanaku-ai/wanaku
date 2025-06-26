@@ -13,9 +13,9 @@ import java.util.List;
 
 public abstract class AbstractSerializationContextInitializer implements SerializationContextInitializer {
 
-    private String protoFileName;
-    private String protoFileFullPath;
-    private List<BaseMarshaller> marshallers;
+    private final String protoFileName;
+    private final String protoFileFullPath;
+    private final List<BaseMarshaller> marshallers;
 
     protected AbstractSerializationContextInitializer(String protoFileName, String protoFileFullPath, List<BaseMarshaller> marshallers) {
         this.protoFileName = protoFileName;

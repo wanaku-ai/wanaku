@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class InstanceDataWriterTest {
+    private static final String TEST_ID = UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
     private File instanceDataFile;
-    private static String TEST_ID = UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
 
     void clean() {
         if (instanceDataFile != null && instanceDataFile.exists()) {

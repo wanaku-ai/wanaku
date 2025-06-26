@@ -28,7 +28,7 @@ public class ResourceReferenceTest {
 
     @BeforeAll
     public void setup() {
-        ((AbstractInfinispanRepository) resourceReferenceRepository).deleteALl();
+        ((AbstractInfinispanRepository<?, ?>) resourceReferenceRepository).deleteALl();
     }
 
     @Test

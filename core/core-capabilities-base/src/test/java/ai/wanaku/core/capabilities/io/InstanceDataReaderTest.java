@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class InstanceDataReaderTest {
-    private static String TEST_ID = UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
+    private static final String TEST_ID = UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
     private File instanceDataFile;
 
 

@@ -28,6 +28,6 @@ public class TelegramClient implements Client {
 
         String message = request.getArgumentsMap().get("message");
         producer.sendBody(parsedRequest.uri(), message);
-        return String.format("Message sent successfully to telegram");
+        return "Message sent successfully to telegram";
     }
 }

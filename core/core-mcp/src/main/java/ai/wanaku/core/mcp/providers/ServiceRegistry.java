@@ -44,10 +44,10 @@ public interface ServiceRegistry {
     ActivityRecord getStates(String id);
 
     /**
-     * Get a map of all registered services and their configurations
+     * Get all registered services and their configurations
      *
      * @param serviceType the type of service to get
-     * @return a map of all registered services and their configurations
+     * @return a set of all registered services and their configurations
      */
     List<ServiceTarget> getEntries(ServiceType serviceType);
 

@@ -108,7 +108,7 @@ public class ToolsGenerateTest {
     }
 
 
-    private String copyFromResourceToTempDir(String resourcePath, String resource) throws IOException, URISyntaxException {
+    private String copyFromResourceToTempDir(String resourcePath, String resource) throws IOException {
         InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourcePath + "/" + resource);
         Path tempDirDestinationPath = Paths.get(tempDir.toString(), resource);
         Files.copy(resourceStream, tempDirDestinationPath, StandardCopyOption.REPLACE_EXISTING);

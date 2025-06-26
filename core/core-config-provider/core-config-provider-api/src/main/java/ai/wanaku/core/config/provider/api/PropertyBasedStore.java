@@ -15,7 +15,7 @@ import static ai.wanaku.core.config.provider.api.ReservedConfigs.CONFIG_QUERY_PA
  */
 public abstract class PropertyBasedStore implements ConfigStore {
 
-    protected Properties properties;
+    protected final Properties properties;
 
     /**
      * Constructs a new {@link PropertyBasedStore} with the given {@link PropertyProvider}.
