@@ -35,21 +35,21 @@ and introduces how it works.
 
 Using Wanaku MCP Router involves three key actions:
 
-1. Adding new capabilities via downstream services
+1. Adding tools or resources to the MCP router
 2. Forwarding other MCP servers via the MCP forwarder 
-3. Adding tools or resources that leverage those capabilities
+3. Adding new capabilities via downstream services
 
-### Adding new capabilities via downstream services
+### Adding tools or resources that use those capabilities
 
-This refers to extending the router's functionality by integrating with various external systems. 
+Adding tools and resources to the Wanaku MCP Router expands the functionality available to agents using Wanaku. 
 
-Wanaku leverages Quarkus and Apache Camel to provide connectivity to a vast range of services and platforms. 
-This allows users to create custom services to solve particular needs. 
-These services can be implemented in any language that supports gRPC for communication with the Wanaku MCP Router.
+* MCP tools equip an agent with capabilities not inherently present in its native models. 
+* MCP resources, on the other hand, allow an AI agent to consume data—such as files or records—and inject additional information into its context.
 
-> [!NOTE]
-> It is also possible to create and run services in Java and other languages, such as Go or Python, although the process is not 
-> entirely documented at the moment.
+Both tools and resources depend on capabilities that can be dynamically added to or removed from the Wanaku MCP Router. 
+Once these capabilities are integrated, either through downstream services or by connecting to other MCP servers, users can then 
+incorporate new tools and resources into Wanaku. 
+These additions can then leverage the newly integrated capabilities to interact with enterprise systems and cloud services.
 
 ### Forwarding other MCP servers via the MCP forwarder
 
@@ -57,11 +57,19 @@ Wanaku can act as a central gateway or proxy to other MCP servers that use HTTP 
 This feature allows for a centralized endpoint to aggregate tools and resources provided by other MCP servers, making them 
 accessible as if they were local to the Wanaku instance.
 
-### Adding tools or resources that leverage those capabilities
+### Adding new capabilities via downstream services
 
-Once capabilities are added, either through downstream services or by forwarding other MCP servers, users can then add new tools
-and resources to Wanaku. These tools and resources can then use the newly integrated capabilities to interact with enterprise
-systems and cloud services.
+This refers to extending the router's functionality by integrating with various external systems.
+
+Wanaku leverages Quarkus and Apache Camel to provide connectivity to a vast range of services and platforms.
+This allows users to create custom services to solve particular needs.
+These services can be implemented in any language that supports gRPC for communication with the Wanaku MCP Router.
+
+> [!NOTE]
+> It is also possible to create and run services in Java and other languages, such as Go or Python, although the process is not
+> entirely documented at the moment.
+
+
 
 # Installing Wanaku
 
@@ -150,7 +158,15 @@ Open your browser at http://localhost:8080, and you should have access to the UI
 It is also possible to run Wanaku on Kubernetes distributions, such as OpenShift. This is not documented at this moment, but 
 you can look at our [deployment files](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift) for details.
 
-### Overview
+When running Wanaku locally, such as via `wanaku start local` or via the Docker compose file, the capabilities should discover
+the address of the Wanaku MCP router automatically. However, that doesn't happen automatically on the cloud. You must set the 
+address of the router using settings such as `wanaku.service.registration.uri` or the environment variable
+`WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router. 
+
+> [IMPORTANT]
+> This can also be required when running the router and the services on different hosts.
+
+### Installing the Command Line Interface (CLI)
 
 In addition to installing the Wanaku MCP Router, it is also necessary to install the CLI used to manage the router.
 The Wanaku MCP Router CLI provides a simple way to manage resources and tools for your Wanaku MCP Router instance.
@@ -162,9 +178,10 @@ The Wanaku MCP Router CLI provides a simple way to manage resources and tools fo
 The MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
 locally, that would mean `http://localhost:8080/mcp/sse`)
 
+
 # Using the Wanaku MCP Router
 
-## Capabilities (aka Downstream Services)
+## Understanding Capabilities
 
 Wanaku itself does not have any builtin MCP tool, resource or functionality itself. The router itself is just a blank MCP server. 
 
@@ -180,14 +197,6 @@ For instance, by adding a "Kafka" capability to Wanaku, it allows it to talk to 
 > Capabilities were, at some point, also called "Downstream services" or "targets". You may still see that terminology used in 
 > some places, specially in older documentation.
 
-When running Wanaku locally, such as via `wanaku start `local` or via the Docker compose file, the capabilities should discover 
-the address of the Wanaku MCP router automatically. 
-
-> [!IMPORTANT]
-> If the router is not found, you can use settings such as `wanaku.service.registration.uri` or the environment variable 
-> `WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router. This can be particularly useful when running 
-> Wanaku on OpenShift.
-
 You should see a list of capabilities available in the UI, in the Capabilities page. Something similar to this:
 
 ![Wanaku Capabilities](imgs/capabilities-list.png)
@@ -201,7 +210,6 @@ bee5f297-4f7a-4d1c-b0c6-0ac372fcae2c  => exec                 => 192.168.1.137
 2b70d26b-6d87-4931-8415-684c0d8ca45e  => camel-yaml           => 192.168.1.137
 dcf9acdf-1bee-42db-b440-b64caf77a469  => kafka                => 192.168.1.137
 ```
-
 
 And the command `wanaku targets resources list`, lists the capabilities available for MCP resources:
 
@@ -786,7 +794,7 @@ Currently special arguments:
 
 ## Extending Wanaku: Adding Your Own Capabilities
 
-Wanaku leverages Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org) to provide connectivity to a vast 
+Wanaku leverages [Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org) to provide connectivity to a vast 
 range of services and platforms. 
 
 Although we aim to provide many of them out-of-the box, not all of them will fit all the use cases.
