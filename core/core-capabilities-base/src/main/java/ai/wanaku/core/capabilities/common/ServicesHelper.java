@@ -7,7 +7,7 @@ import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.core.capabilities.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
-import ai.wanaku.core.service.discovery.util.DiscoveryUtil;
+import ai.wanaku.core.util.discovery.DiscoveryUtil;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.io.File;
 import java.net.URI;
@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+
+import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
 public class ServicesHelper {
     private static final Logger LOG = Logger.getLogger(ServicesHelper.class);
@@ -86,11 +88,7 @@ public class ServicesHelper {
         final int port = Integer.parseInt(portStr);
 
 
-        String address = config.registration().announceAddress();
-        if ("auto".equals(address)) {
-            LOG.infof("Using announce address %s ", address);
-            address = DiscoveryUtil.resolveRegistrationAddress();
-        }
+        String address = resolveRegistrationAddress(config.registration().announceAddress());
 
         return ServiceTarget.newEmptyTarget(service, address, port, serviceType);
     }
