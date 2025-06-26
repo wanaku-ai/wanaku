@@ -1,5 +1,6 @@
 package ai.wanaku.server.quarkus.api.v1.forwards;
 
+import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.api.types.Namespace;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class ForwardsBean  extends AbstractBean<ForwardReference> {
+public class ForwardsBean extends AbstractBean<ForwardReference> {
     private static final Logger LOG = Logger.getLogger(ForwardsBean.class);
 
     @Inject
@@ -57,19 +58,23 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
         forwardReferenceRepository = forwardReferenceRepositoryInstance.get();
     }
 
-    public boolean removeReference(ForwardReference forwardReference) {
-        ForwardResolver forwardResolver = forwardRegistry.getResolver(forwardReference);
-        if (forwardResolver != null) {
-            try {
-                removeRemoteTools(forwardResolver);
-                removeRemoteResources(forwardResolver);
-            } finally {
-                forwardRegistry.unlink(forwardReference);
-            }
-            return true;
+    private boolean removeLinkedEntries(ForwardReference forwardReference) {
+        final NameNamespacePair nameNamespacePair =
+                new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
+
+        final ForwardResolver forwardResolver = forwardRegistry.getResolver(nameNamespacePair);
+        if (forwardResolver == null) {
+            return false;
         }
 
-        return false;
+        try {
+            removeRemoteTools(forwardResolver);
+            removeRemoteResources(forwardResolver);
+        } finally {
+            forwardRegistry.unlink(nameNamespacePair);
+        }
+
+        return true;
     }
 
     private void removeRemoteResources(ForwardResolver forwardResolver) {
@@ -98,22 +103,29 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
         }
     }
 
-    public int remove(ForwardReference reference) {
-        int deleteCount = removeByName(reference.getName());
-        if (deleteCount > 0) {
-            if (!removeReference(reference)) {
-                LOG.warnf("Failed to remove tools and resources references for %s", reference.getName());
-            }
+    public int remove(ForwardReference forwardReferenceHint) {
+        // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
+        final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReferenceHint.getName());
+        if (references.isEmpty()) {
+            LOG.warnf("Forward reference does not exist", forwardReferenceHint.getName());
+            return 0;
         }
 
-        return deleteCount;
+        final ForwardReference forwardReference = references.getFirst();
+        if (!removeLinkedEntries(forwardReference)) {
+            LOG.warnf("Failed to remove tools and resources references for %s", forwardReference.getName());
+        }
+
+        // Remove from the repository
+        return removeByName(forwardReference.getName());
     }
 
     public void forward(ForwardReference forwardReference) {
         try {
-            ForwardReference byId = forwardReferenceRepository.findById(forwardReference.getName());
-            if (byId != null) {
-                LOG.infof("Forward reference %s already exists", forwardReference);
+            // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
+            final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReference.getName());
+            if (!references.isEmpty()) {
+                LOG.warnf("Forward reference %s already exists", forwardReference.getName());
                 return;
             }
 
@@ -128,14 +140,17 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
     }
 
     private void registerForward(ForwardReference forwardReference) {
-        ForwardResolver forwardResolver = forwardRegistry.newResolverForService(forwardReference);
-
         Namespace ns = null;
 
         if (!StringHelper.isEmpty(forwardReference.getNamespace())) {
             ns = namespacesBean.alocateNamespace(forwardReference.getNamespace());
         }
 
+        final NameNamespacePair nameNamespacePair =
+                new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
+
+
+        ForwardResolver forwardResolver = forwardRegistry.newResolverForService(nameNamespacePair, forwardReference);
         List<ResourceReference> resourceReferences = forwardResolver.listResources();
         for (ResourceReference reference : resourceReferences) {
             LOG.debugf("Exposing remote resource %s", reference.getName());
@@ -149,12 +164,12 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
             ToolsHelper.registerTool(reference, toolManager, ns, tool::call);
         }
 
-        forwardRegistry.link(forwardReference, forwardResolver);
+        forwardRegistry.link(nameNamespacePair, forwardResolver);
     }
 
     public List<ResourceReference> listAllResources() {
         List<ResourceReference> references = new ArrayList<>();
-        for (ForwardReference service : forwardRegistry.services()) {
+        for (NameNamespacePair service : forwardRegistry.services()) {
             ForwardResolver forwardResolver = forwardRegistry.getResolver(service);
 
             List<ResourceReference> remoteToolReferences = forwardResolver.listResources();
@@ -170,7 +185,7 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
      */
     public List<RemoteToolReference> listAllTools() {
         List<RemoteToolReference> references = new ArrayList<>();
-        for (ForwardReference service : forwardRegistry.services()) {
+        for (NameNamespacePair service : forwardRegistry.services()) {
             ForwardResolver forwardResolver = forwardRegistry.getResolver(service);
 
             List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
@@ -196,9 +211,7 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
     }
 
     public List<ForwardReference> listForwards() {
-        Set<ForwardReference> services = forwardRegistry.services();
-
-        return services.stream().toList();
+        return forwardReferenceRepository.listAll();
     }
 
     public void update(ForwardReference resource) {

@@ -1,6 +1,7 @@
 package ai.wanaku.core.mcp.providers;
 
 import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import java.util.Set;
 
@@ -13,16 +14,17 @@ import java.util.Set;
 public interface ForwardRegistry {
 
     /**
-     * Creates a new forward resolver instance for the specified service reference.
+     * Creates a new forward resolver instance for the specified namespacePair reference.
      *
-     * This method creates a new resolver instance associated with the given service reference,
+     * This method creates a new resolver instance associated with the given namespacePair reference,
      * which can then be used to resolve forwarded requests. The newly created resolver is not yet
-     * linked to any service; use {@link #link(ForwardReference, ForwardResolver)} to establish this connection.
+     * linked to any namespacePair; use {@link #link(NameNamespacePair, ForwardResolver)} to establish this connection.
      *
-     * @param service the service reference for which a new resolver is being created
-     * @return a newly created forward resolver instance associated with the given service reference
+     * @param namespacePair the namespacePair reference for which a new resolver is being created
+     * @param forwardReference The forward reference associated with this resolver.
+     * @return a newly created forward resolver instance associated with the given namespacePair reference
      */
-    ForwardResolver newResolverForService(ForwardReference service);
+    ForwardResolver newResolverForService(NameNamespacePair namespacePair, ForwardReference forwardReference);
 
     /**
      * Retrieves an existing forward resolver for the specified service reference.
@@ -32,7 +34,7 @@ public interface ForwardRegistry {
      * @param service the service reference for which a resolver instance is being retrieved
      * @return an existing forward resolver instance associated with the given service reference, or null if not present
      */
-    ForwardResolver getResolver(ForwardReference service);
+    ForwardResolver getResolver(NameNamespacePair service);
 
     /**
      * Links a service reference with its corresponding forward resolver.
@@ -43,7 +45,7 @@ public interface ForwardRegistry {
      * @param service  the service reference to link with a resolver
      * @param resolver the resolver instance to associate with the given service reference
      */
-    void link(ForwardReference service, ForwardResolver resolver);
+    void link(NameNamespacePair service, ForwardResolver resolver);
 
     /**
      * Unlinks a service reference from its associated forward resolver.
@@ -53,7 +55,7 @@ public interface ForwardRegistry {
      *
      * @param service  the service reference to unlink from its resolver
      */
-    void unlink(ForwardReference service);
+    void unlink(NameNamespacePair service);
 
     /**
      * Retrieves a collection of all registered services in this registry.
@@ -64,5 +66,5 @@ public interface ForwardRegistry {
      *
      * @return a set of all registered ForwardReference instances managed by this registry
      */
-    Set<ForwardReference> services();
+    Set<NameNamespacePair> services();
 }

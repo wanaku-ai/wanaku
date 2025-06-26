@@ -5,6 +5,7 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.RemoteToolReference;
@@ -37,22 +38,24 @@ import org.jboss.logging.Logger;
 public class WanakuForwardResolver implements ForwardResolver {
     private static final Logger LOG = Logger.getLogger(WanakuForwardResolver.class);
 
-    private final ForwardReference reference;
+    private final NameNamespacePair reference;
+    private final ForwardReference forwardReference;
     private final ReentrantLock lock = new ReentrantLock();
 
-    public WanakuForwardResolver(ForwardReference reference) {
+    public WanakuForwardResolver(NameNamespacePair reference, ForwardReference forwardReference) {
         this.reference = reference;
+        this.forwardReference = forwardReference;
     }
 
     @Override
     public List<ResourceReference> listResources() throws ServiceUnavailableException {
-        try (McpClient client = ClientUtil.createClient(reference.getAddress())) {
+        try (McpClient client = ClientUtil.createClient(forwardReference.getAddress())) {
             List<McpResource> resourceRefs = client.listResources();
 
             return resourceRefs.stream()
                     .map(WanakuForwardResolver::remoteToLocal).collect(Collectors.toList());
         } catch (Exception e) {
-            throw ServiceUnavailableException.forName(reference.getAddress());
+            throw ServiceUnavailableException.forName(forwardReference.getAddress());
         }
 
     }
@@ -69,7 +72,7 @@ public class WanakuForwardResolver implements ForwardResolver {
 
     @Override
     public List<RemoteToolReference> listTools() throws ServiceUnavailableException {
-        try (McpClient client = ClientUtil.createClient(reference.getAddress())) {
+        try (McpClient client = ClientUtil.createClient(forwardReference.getAddress())) {
 
             List<RemoteToolReference> references = new ArrayList<>();
             List<ToolSpecification> toolSpecifications = client.listTools();
@@ -80,7 +83,7 @@ public class WanakuForwardResolver implements ForwardResolver {
 
             return references;
         } catch (Exception e) {
-            throw ServiceUnavailableException.forName(reference.getAddress());
+            throw ServiceUnavailableException.forName(forwardReference.getAddress());
         }
     }
 
@@ -126,7 +129,7 @@ public class WanakuForwardResolver implements ForwardResolver {
 
     @Override
     public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-        try (McpClient client = ClientUtil.createClient(reference.getAddress())) {
+        try (McpClient client = ClientUtil.createClient(forwardReference.getAddress())) {
             McpReadResourceResult resourceResponse = client.readResource(mcpResource.getLocation());
 
             List<McpResourceContents> contents = resourceResponse.contents();
@@ -166,7 +169,7 @@ public class WanakuForwardResolver implements ForwardResolver {
                         .name(toolReference.getName())
                         .arguments(serializeArguments(toolArguments.args()))
                         .build();
-                try (McpClient client = ClientUtil.createClient(reference.getAddress())) {
+                try (McpClient client = ClientUtil.createClient(forwardReference.getAddress())) {
                     String status = client.executeTool(request);
                     return ToolResponse.success(status);
                 }

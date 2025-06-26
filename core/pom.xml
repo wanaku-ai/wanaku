@@ -27,14 +27,12 @@
         <module>core-capabilities-base</module>
         <module>core-capabilities-tool</module>
         <module>core-capabilities-provider</module>
+        <module>core-forward-discovery</module>
 
         <!-- router core -->
         <module>core-persistence</module>
         <module>core-mcp-client</module>
         <module>core-server</module>
-
-
-
     </modules>
 
 
