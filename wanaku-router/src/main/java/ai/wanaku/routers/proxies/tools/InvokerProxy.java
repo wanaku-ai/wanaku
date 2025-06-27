@@ -160,18 +160,18 @@ public class InvokerProxy implements ToolsProxy {
                 .usePlaintext()
                 .build();
 
-
-
+        final String configData = Objects.requireNonNullElse(toolPayload.getConfigurationData(), "a=a");
         final Configuration cfg = Configuration.newBuilder()
                 .setType(PayloadType.BUILTIN)
                 .setName(toolReference.getName())
-                .setPayload(Objects.requireNonNullElse(toolPayload.getConfigurationData(), ""))
+                .setPayload(configData)
                 .build();
 
+        final String secretsData = Objects.requireNonNullElse(toolPayload.getSecretsData(), "b=b");
         final Secret secret = Secret.newBuilder()
                 .setType(PayloadType.BUILTIN)
                 .setName(toolReference.getName())
-                .setPayload(Objects.requireNonNullElse(toolPayload.getSecretsData(), ""))
+                .setPayload(secretsData)
                 .build();
 
         ProvisionRequest inquireRequest = ProvisionRequest.newBuilder()

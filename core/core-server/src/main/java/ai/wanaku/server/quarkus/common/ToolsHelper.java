@@ -2,6 +2,7 @@ package ai.wanaku.server.quarkus.common;
 
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.Property;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
@@ -55,8 +56,34 @@ public class ToolsHelper {
      * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
      *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
      */
+
+    /**
+     * Registers a tool with the given tool manager by applying the provided handler function
+     * to expose the tool's functionality.
+     *
+     * @param toolReference The reference to the tool being registered
+     * @param toolManager   The tool manager instance responsible for managing tools
+     * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
+     *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
+     */
     public static void registerTool(
             CallableReference toolReference, ToolManager toolManager,
+            BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {
+        registerTool(toolReference, toolManager, null, handler);
+    }
+
+    /**
+     * Registers a tool with the given tool manager by applying the provided handler function
+     * to expose the tool's functionality.
+     *
+     * @param toolReference The reference to the tool being registered
+     * @param toolManager   The tool manager instance responsible for managing tools
+     * @param namespace     The namespace to use for registering the tool
+     * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
+     *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
+     */
+    public static void registerTool(
+            CallableReference toolReference, ToolManager toolManager, Namespace namespace,
             BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {
         LOG.debugf("Registering tool: %s", toolReference.getName());
 
@@ -71,9 +98,18 @@ public class ToolsHelper {
                             addArgument(key, value, toolDefinition, required)
                     );
         }
-        toolDefinition
-                .setHandler(ta ->  handler.apply(ta, toolReference))
-                .register();
+
+        if (namespace != null) {
+            LOG.infof("Setting namespace to %s", namespace.getPath());
+            toolDefinition
+                    .setServerName(namespace.getPath())
+                    .setHandler(ta ->  handler.apply(ta, toolReference))
+                    .register();
+        } else {
+            toolDefinition
+                    .setHandler(ta -> handler.apply(ta, toolReference))
+                    .register();
+        }
     }
 
 

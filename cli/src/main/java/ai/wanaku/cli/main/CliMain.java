@@ -4,6 +4,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import jakarta.inject.Inject;
 
 import ai.wanaku.cli.main.commands.forwards.Forwards;
+import ai.wanaku.cli.main.commands.namespaces.Namespaces;
 import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
 import ai.wanaku.cli.main.commands.start.Start;
@@ -19,7 +20,7 @@ import java.util.concurrent.Callable;
 
 
 @TopCommand
-@CommandLine.Command(name = "wanaku", subcommands = { Forwards.class, Resources.class, Start.class, Capabilities.class, Targets.class, Tools.class, ToolSet.class,  })
+@CommandLine.Command(name = "wanaku", subcommands = { Forwards.class, Resources.class, Start.class, Capabilities.class, Targets.class, Tools.class, ToolSet.class, Namespaces.class })
 public class CliMain implements Callable<Integer>, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;

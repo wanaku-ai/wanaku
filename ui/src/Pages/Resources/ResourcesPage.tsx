@@ -14,7 +14,7 @@ export const ResourcesPage: React.FC = () => {
 
   useEffect(() => {
     listResources().then((result) => {
-      setFetchedData(result.data.data!);
+      setFetchedData(result.data.data as ResourceReference[]);
       setIsLoading(false);
     });
   }, [listResources]);
@@ -36,7 +36,7 @@ export const ResourcesPage: React.FC = () => {
       setIsAddModalOpen(false);
       setErrorMessage(null);
       listResources().then((result) => {
-        setFetchedData(result.data.data!);
+        setFetchedData(result.data.data as ResourceReference[]);
       });
     } catch (error) {
       console.error("Error adding resource:", error);
@@ -49,7 +49,7 @@ export const ResourcesPage: React.FC = () => {
     try {
       await removeResource({ resource: resourceName });
       listResources().then((result) => {
-        setFetchedData(result.data.data!);
+        setFetchedData(result.data.data as ResourceReference[]);
       });
     } catch (error) {
       console.error("Error deleting resource:", error);

@@ -826,8 +826,66 @@ wanaku forwards list
 By leveraging the MCP bridge feature, you can create a centralized endpoint for aggregating tools and resources from multiple
 external MCP servers, simplifying management and increasing the overall functionality of your Wanaku instance.
 
+## Managing Namespaces
 
+Wanaku introduces the concept of namespaces to help users organize and isolate tools and resources, effectively managing the 
+Large Language Model (LLM) context. This prevents context bloat and improves the efficiency of your Wanaku deployments.
 
+### What Are Namespaces
+
+Namespaces provide a mechanism to group related tools and resources. 
+
+Each namespace acts as a separate logical container, ensuring that the LLM context for tools within one namespace does not 
+interfere with tools in another.
+This is particularly useful when you have a large number of tools or when different sets of tools are used for distinct purposes.
+
+Wanaku provides a fixed set of 10 available slots for namespaces, named from `ns-0` to `ns-9`.
+
+### Using Namespaces
+
+To associate a tool or resource with a specific namespace, use the `--namespace` option when adding it:
+
+```shell
+wanaku tools add -n "meow-facts-3" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --namespace test --required count
+```
+
+In the example above, the _`meow-facts-3`_ tool will be associated with the first freely available namespace. 
+
+When you provide a namespace name like _`test`_, Wanaku automatically associates it with an available numerical slot from ns-0 
+to ns-9.
+
+### Checking Namespace Assignments
+
+You can verify which namespace a tool or resource has been assigned to by using the `wanaku namespaces list` command.
+
+This command will display a list of all active namespaces, their unique IDs, and their corresponding paths.
+
+The output will look similar to this:
+
+```shell
+id                                   name path
+381d4276-c824-4bbe-9094-a962c6e8fc46 test http://localhost:8080/ns-9/mcp/sse
+4b7a5ec7-c1f3-4311-8067-10148daf3a10      http://localhost:8080/ns-3/mcp/sse
+dcf97b5e-8ff7-4d04-944c-194379f2e0e4      http://localhost:8080/ns-2/mcp/sse
+dd6f75ac-7b32-4f3b-b965-99040f4af6c2      http://localhost:8080/ns-8/mcp/sse
+59e92c00-04d5-4673-a631-d9244c3e07c1      http://localhost:8080/ns-0/mcp/sse
+e3ff6cd0-e73d-431f-96c9-327b3a498265      http://localhost:8080/ns-1/mcp/sse
+ffe8d322-6ebe-46f2-b913-ac792571fadc      http://localhost:8080/ns-7/mcp/sse
+82434059-45b4-442c-b945-385ae36f158d      http://localhost:8080/ns-6/mcp/sse
+901ea4d6-8e08-4e8b-8171-ce23ae1380d4      http://localhost:8080/ns-5/mcp/sse
+4b2403ca-1acd-419f-9e83-102bbf631536      http://localhost:8080/ns-4/mcp/sse
+<default>                                 http://localhost:8080//mcp/sse
+```
+
+In this output, you can see the mapping of internal namespace IDs to their corresponding ns-X paths.
+
+### The Default Namespace
+
+If you do not specify a namespace when adding a tool or resource, it will automatically be added to the default namespace.
+
+The default namespace acts as a general container for tools that don't require specific isolation.
+
+You can identify the default namespace in the wanaku namespaces list output by its `<default>` name.
 
 ## Understanding URIs
 

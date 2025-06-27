@@ -95,7 +95,8 @@
     "required" : [ "symbol", "interval", "period1", "period2" ]
   },
   "configurationURI": null,
-  "secretsURI": null
+  "secretsURI": null,
+  "namespace": null
 }, {
   "id": null,
   "name" : "GetQuote",
@@ -165,7 +166,8 @@
     "required" : [ "symbols" ]
   },
   "configurationURI": null,
-  "secretsURI": null
+  "secretsURI": null,
+  "namespace": null
 }, {
   "id": null,
   "name" : "Spark",
@@ -242,5 +244,6 @@
     "required" : [ "interval", "range", "symbols" ]
   },
   "configurationURI": null,
-  "secretsURI": null
+  "secretsURI": null,
+  "namespace": null
 } ]

@@ -17,6 +17,7 @@ import type {
   ToolReference,
   WanakuResponse,
   WanakuResponseListForwardReference,
+  WanakuResponseListNamespace,
   WanakuResponseListResourceReference,
   WanakuResponseListServiceTarget,
   WanakuResponseListToolReference,
@@ -535,6 +536,38 @@ export const getApiV1ManagementTargetsToolsState = async (
 };
 
 /**
+ * @summary List
+ */
+export type getApiV1NamespacesListResponse200 = {
+  data: WanakuResponseListNamespace;
+  status: 200;
+};
+
+export type getApiV1NamespacesListResponseComposite =
+  getApiV1NamespacesListResponse200;
+
+export type getApiV1NamespacesListResponse =
+  getApiV1NamespacesListResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1NamespacesListUrl = () => {
+  return `/api/v1/namespaces/list`;
+};
+
+export const getApiV1NamespacesList = async (
+  options?: RequestInit,
+): Promise<getApiV1NamespacesListResponse> => {
+  return customFetch<getApiV1NamespacesListResponse>(
+    getGetApiV1NamespacesListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
  * @summary Expose
  */
 export type postApiV1ResourcesExposeResponse200 = {
@@ -547,9 +580,15 @@ export type postApiV1ResourcesExposeResponse400 = {
   status: 400;
 };
 
+export type postApiV1ResourcesExposeResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
 export type postApiV1ResourcesExposeResponseComposite =
   | postApiV1ResourcesExposeResponse200
-  | postApiV1ResourcesExposeResponse400;
+  | postApiV1ResourcesExposeResponse400
+  | postApiV1ResourcesExposeResponse500;
 
 export type postApiV1ResourcesExposeResponse =
   postApiV1ResourcesExposeResponseComposite & {
@@ -583,8 +622,14 @@ export type getApiV1ResourcesListResponse200 = {
   status: 200;
 };
 
+export type getApiV1ResourcesListResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
 export type getApiV1ResourcesListResponseComposite =
-  getApiV1ResourcesListResponse200;
+  | getApiV1ResourcesListResponse200
+  | getApiV1ResourcesListResponse500;
 
 export type getApiV1ResourcesListResponse =
   getApiV1ResourcesListResponseComposite & {
@@ -615,8 +660,14 @@ export type putApiV1ResourcesRemoveResponse200 = {
   status: 200;
 };
 
+export type putApiV1ResourcesRemoveResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
 export type putApiV1ResourcesRemoveResponseComposite =
-  putApiV1ResourcesRemoveResponse200;
+  | putApiV1ResourcesRemoveResponse200
+  | putApiV1ResourcesRemoveResponse500;
 
 export type putApiV1ResourcesRemoveResponse =
   putApiV1ResourcesRemoveResponseComposite & {
@@ -667,9 +718,15 @@ export type postApiV1ResourcesUpdateResponse400 = {
   status: 400;
 };
 
+export type postApiV1ResourcesUpdateResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
 export type postApiV1ResourcesUpdateResponseComposite =
   | postApiV1ResourcesUpdateResponse200
-  | postApiV1ResourcesUpdateResponse400;
+  | postApiV1ResourcesUpdateResponse400
+  | postApiV1ResourcesUpdateResponse500;
 
 export type postApiV1ResourcesUpdateResponse =
   postApiV1ResourcesUpdateResponseComposite & {

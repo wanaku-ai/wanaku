@@ -2,6 +2,7 @@ package ai.wanaku.core.persistence.infinispan.protostream.initializer;
 
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ForwardReferenceMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.InputSchemaMarshaller;
+import ai.wanaku.core.persistence.infinispan.protostream.marshaller.NamespaceMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ParamMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.PropertyMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.RemoteToolReferenceMarshaller;
@@ -26,7 +27,8 @@ public class TypesSerializationContextInitializer extends AbstractSerializationC
                               new ParamMarshaller(),
                               new ResourceReferenceMarshaller(),
                               new WanakuErrorMarshaller(),
-                              new ToolReferenceMarshaller())
+                              new ToolReferenceMarshaller(),
+                              new NamespaceMarshaller())
 
         );
     }

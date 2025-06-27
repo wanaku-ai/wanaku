@@ -4,6 +4,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
+import ai.wanaku.core.persistence.api.NamespaceRepository;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import org.infinispan.configuration.cache.Configuration;
@@ -30,5 +31,10 @@ public class InfinispanPersistenceConfiguration {
     @Produces
     ForwardReferenceRepository forwardReferenceRepository() {
         return new InfinispanForwardReferenceRepository(cacheManager, configuration);
+    }
+
+    @Produces
+    NamespaceRepository namespaceRepository() {
+        return new InfinispanNamespaceRepository(cacheManager, configuration);
     }
 }

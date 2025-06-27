@@ -1,16 +1,20 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
-import ai.wanaku.core.persistence.api.WanakuRepository;
-import ai.wanaku.server.quarkus.common.AbstractBean;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.server.quarkus.common.AbstractBean;
+import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
+import ai.wanaku.core.util.StringHelper;
+import ai.wanaku.server.quarkus.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.server.quarkus.common.ResourceHelper;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
@@ -27,6 +31,9 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
 
     @Inject
     ResourceResolver resourceResolver;
+
+    @Inject
+    NamespacesBean namespacesBean;
 
     @Inject
     Instance<ResourceReferenceRepository> resourceReferenceRepositoryInstance;
@@ -48,13 +55,26 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
     }
 
     void loadResources(@Observes StartupEvent ev) {
+        // Preload data
+        namespacesBean.preload();
+
         for (ResourceReference resourceReference : list()) {
             doExposeResource(resourceReference);
         }
     }
 
     private void doExposeResource(ResourceReference resourceReference) {
-        ResourceHelper.expose(resourceReference, resourceManager, resourceResolver::read);
+        if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
+            LOG.debugf("Exposing resource %s in namespace %s", resourceReference.getName(), resourceReference.getNamespace());
+
+            final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
+
+            ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceResolver::read);
+        } else {
+            LOG.debugf("Exposing resource %s", resourceReference.getName());
+
+            ResourceHelper.expose(resourceReference, resourceManager, resourceResolver::read);
+        }
     }
 
     private boolean removeReference(String name, ResourceReference resourceReference) {
