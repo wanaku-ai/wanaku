@@ -61,4 +61,10 @@ public interface WanakuRepository<A extends WanakuEntity, C> {
      * @return true if records were removed or false otherwise
      */
     boolean remove(Predicate<A> matching);
+
+    /**
+     * Gets the size (number of records) of the repository
+     * @return the number of records in the repository
+     */
+    int size();
 }

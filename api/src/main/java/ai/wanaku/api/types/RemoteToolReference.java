@@ -11,6 +11,7 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
     private String description;
     private String type;
     private InputSchema inputSchema;
+    private String namespace;
 
     /**
      * Gets the name of the tool.
@@ -136,6 +137,15 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
         ret.setId(ref.getId());
 
         return ret;
+    }
+
+    @Override
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 }
 

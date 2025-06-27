@@ -12,6 +12,7 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
     private String uri;
     private String type;
     private InputSchema inputSchema;
+    private String namespace;
     private String configurationURI;
     private String secretsURI;
 
@@ -113,6 +114,19 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
         this.inputSchema = inputSchema;
     }
 
+    @Override
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
+    /**
+     * Gets the location for the tool configuration
+     * @return
+     */
     public String getConfigurationURI() {
         return configurationURI;
     }
@@ -121,6 +135,10 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
         this.configurationURI = configurationURI;
     }
 
+    /**
+     * Gets the location for the secrets associated with this tool
+     * @return
+     */
     public String getSecretsURI() {
         return secretsURI;
     }
