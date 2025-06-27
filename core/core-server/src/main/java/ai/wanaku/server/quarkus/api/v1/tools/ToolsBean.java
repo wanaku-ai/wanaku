@@ -9,11 +9,14 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.ToolNotFoundException;
+import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
+import ai.wanaku.core.util.StringHelper;
+import ai.wanaku.server.quarkus.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.server.quarkus.common.ToolsHelper;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
@@ -29,6 +32,9 @@ public class ToolsBean extends AbstractBean<ToolReference> {
 
     @Inject
     ToolsResolver toolsResolver;
+
+    @Inject
+    NamespacesBean namespacesBean;
 
     @Inject
     Instance<ToolReferenceRepository> toolReferenceRepositoryInstance;
@@ -56,10 +62,21 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
-        LOG.debugf("Registering tool: %s", toolReference.getName());
-        Tool tool = toolsResolver.resolve(toolReference);
 
-        ToolsHelper.registerTool(toolReference, toolManager, tool::call);
+        if (!StringHelper.isEmpty(toolReference.getNamespace())) {
+            LOG.debugf("Registering tool %s in namespace %s", toolReference.getName(), toolReference.getNamespace());
+
+            final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
+
+            Tool tool = toolsResolver.resolve(toolReference);
+            ToolsHelper.registerTool(toolReference, toolManager, namespace, tool::call);
+
+        } else {
+            LOG.debugf("Registering tool %s", toolReference.getName());
+
+            Tool tool = toolsResolver.resolve(toolReference);
+            ToolsHelper.registerTool(toolReference, toolManager, tool::call);
+        }
     }
 
 
@@ -68,6 +85,9 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     }
 
     void loadTools(@Observes StartupEvent ev) {
+        // Preload data
+        namespacesBean.preload();
+
         for (ToolReference toolReference : list()) {
             registerTool(toolReference);
         }

@@ -31,6 +31,9 @@ public class ResourcesExpose extends BaseCommand {
     @CommandLine.Option(names = { "--name" }, description = "A human-readable name for the resource", required = true, arity = "0..1")
     private String name;
 
+    @CommandLine.Option(names = {"-N", "--namespace"}, description="The namespace associated with the tool", defaultValue = "", required = true)
+    private String namespace;
+
     @CommandLine.Option(names = { "--description" }, description = "A brief description of the resource", required = true, arity = "0..1")
     private String description;
 
@@ -52,6 +55,7 @@ public class ResourcesExpose extends BaseCommand {
         resource.setName(name);
         resource.setDescription(description);
         resource.setMimeType(mimeType);
+        resource.setNamespace(namespace);
 
         if (params != null) {
             List<ResourceReference.Param> paramsList = new ArrayList<>();

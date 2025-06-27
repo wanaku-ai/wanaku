@@ -60,6 +60,15 @@ components:
           type: boolean
         wildcardSubtype:
           type: boolean
+    Namespace:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
     OutboundSseEvent:
       type: object
       properties:
@@ -124,6 +133,8 @@ components:
           type: string
         secretsURI:
           type: string
+        namespace:
+          type: string
     ServerInfo:
       type: object
       properties:
@@ -181,6 +192,8 @@ components:
           type: string
         inputSchema:
           $ref: "#/components/schemas/InputSchema"
+        namespace:
+          type: string
         configurationURI:
           type: string
         secretsURI:
@@ -205,6 +218,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ForwardReference"
+    WanakuResponseListNamespace:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Namespace"
     WanakuResponseListResourceReference:
       type: object
       properties:
@@ -484,6 +506,18 @@ paths:
       summary: Tools State
       tags:
       - Targets Resource
+  /api/v1/namespaces/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListNamespace"
+      summary: List
+      tags:
+      - Namespaces Resource
   /api/v1/resources/expose:
     post:
       requestBody:
@@ -501,7 +535,10 @@ paths:
                 $ref: "#/components/schemas/WanakuResponseResourceReference"
         "500":
           description: Wanaku error
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Expose
@@ -518,7 +555,10 @@ paths:
                 $ref: "#/components/schemas/WanakuResponseListResourceReference"
         "500":
           description: Wanaku error
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
       summary: List
       tags:
       - Resources Resource
@@ -534,7 +574,10 @@ paths:
           description: OK
         "500":
           description: Wanaku error
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
       summary: Remove
       tags:
       - Resources Resource
@@ -551,7 +594,10 @@ paths:
           description: OK
         "500":
           description: Wanaku error
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Update

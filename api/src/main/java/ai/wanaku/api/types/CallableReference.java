@@ -36,4 +36,10 @@ public interface CallableReference {
      * @return The input schema for this callable reference.
      */
     InputSchema getInputSchema();
+
+    /**
+     * Sets the namespace associated with this reference
+     * @return
+     */
+    String getNamespace();
 }

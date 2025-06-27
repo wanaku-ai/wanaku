@@ -41,6 +41,7 @@ public class ResourceReference implements WanakuEntity<String> {
 
     private String configurationURI;
     private String secretsURI;
+    private String namespace;
 
     public String getLocation() {
         return location;
@@ -136,6 +137,14 @@ public class ResourceReference implements WanakuEntity<String> {
         this.secretsURI = secretsURI;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     /**
      * A nested class representing a parameter of the resource.
      */
@@ -188,24 +197,6 @@ public class ResourceReference implements WanakuEntity<String> {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ResourceReference that = (ResourceReference) o;
-        return Objects.equals(id, that.id) && Objects.equals(location,
-                that.location) && Objects.equals(type, that.type) && Objects.equals(name,
-                that.name) && Objects.equals(description, that.description) && Objects.equals(mimeType,
-                that.mimeType) && Objects.equals(params, that.params) && Objects.equals(configurationURI,
-                that.configurationURI) && Objects.equals(secretsURI, that.secretsURI);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, location, type, name, description, mimeType, params, configurationURI, secretsURI);
-    }
-
-    @Override
     public String toString() {
         return "ResourceReference{" +
                 "id='" + id + '\'' +
@@ -215,8 +206,28 @@ public class ResourceReference implements WanakuEntity<String> {
                 ", description='" + description + '\'' +
                 ", mimeType='" + mimeType + '\'' +
                 ", params=" + params +
-                ", configurations=" + configurationURI +
-                ", secrets=" + secretsURI +
+                ", configurationURI='" + configurationURI + '\'' +
+                ", secretsURI='" + secretsURI + '\'' +
+                ", namespace='" + namespace + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ResourceReference that = (ResourceReference) o;
+        return Objects.equals(id, that.id) && Objects.equals(location,
+                that.location) && Objects.equals(type, that.type) && Objects.equals(name,
+                that.name) && Objects.equals(description, that.description) && Objects.equals(mimeType,
+                that.mimeType) && Objects.equals(params, that.params) && Objects.equals(configurationURI,
+                that.configurationURI) && Objects.equals(secretsURI, that.secretsURI) && Objects.equals(
+                namespace, that.namespace);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, location, type, name, description, mimeType, params, configurationURI, secretsURI, namespace);
     }
 }

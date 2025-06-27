@@ -88,6 +88,20 @@
           }
         }
       },
+      "Namespace" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "path" : {
+            "type" : "string"
+          }
+        }
+      },
       "OutboundSseEvent" : {
         "type" : "object",
         "properties" : {
@@ -182,6 +196,9 @@
           },
           "secretsURI" : {
             "type" : "string"
+          },
+          "namespace" : {
+            "type" : "string"
           }
         }
       },
@@ -267,6 +284,9 @@
           "inputSchema" : {
             "$ref" : "#/components/schemas/InputSchema"
           },
+          "namespace" : {
+            "type" : "string"
+          },
           "configurationURI" : {
             "type" : "string"
           },
@@ -302,6 +322,20 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/ForwardReference"
+            }
+          }
+        }
+      },
+      "WanakuResponseListNamespace" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Namespace"
             }
           }
         }
@@ -729,6 +763,24 @@
         "tags" : [ "Targets Resource" ]
       }
     },
+    "/api/v1/namespaces/list" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListNamespace"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Namespaces Resource" ]
+      }
+    },
     "/api/v1/resources/expose" : {
       "post" : {
         "requestBody" : {
@@ -754,7 +806,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Bad Request"
@@ -779,7 +837,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           }
         },
         "summary" : "List",
@@ -801,7 +865,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           }
         },
         "summary" : "Remove",
@@ -826,7 +896,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Bad Request"
