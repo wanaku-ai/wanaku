@@ -6,7 +6,6 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.core.Response;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.builtins.Nano;
@@ -17,18 +16,15 @@ import org.jline.consoleui.prompt.PromptResultItemIF;
 import org.jline.consoleui.prompt.builder.ListPromptBuilder;
 import org.jline.consoleui.prompt.builder.PromptBuilder;
 import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
@@ -50,9 +46,10 @@ public class ToolsEdit extends BaseCommand {
 
     private static final String NANO_CONFIG_FILE = "/nano/jnanorc";
 
-    private record Item( String id, String text) {}
+    private record Item(String id, String text) {
+    }
 
-    ObjectMapper mapper = new  ObjectMapper();
+    ObjectMapper mapper = new ObjectMapper();
 
 
     /**
@@ -65,11 +62,8 @@ public class ToolsEdit extends BaseCommand {
      * @throws Exception if an error occurs during the operation.
      */
     @Override
-    public Integer call() throws Exception {
-
-        toolsService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ToolsService.class);
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+        toolsService = initService(ToolsService.class, host);
 
         List<ToolReference> list = toolsService.list().data();
 
@@ -79,54 +73,51 @@ public class ToolsEdit extends BaseCommand {
             return EXIT_ERROR;
         }
 
-        try (Terminal terminal = WanakuPrinter.terminalInstance()) {
-            ToolReference tool;
-            if (toolName == null) {
-                // if no tool name provided as parameter, let the user choose from the list
-                // of registered tools.
-                tool = selectTool(terminal, list);
-            } else {
-                try {
-                    WanakuResponse<ToolReference> response = toolsService.getByName(toolName);
-                    tool = response.data();
-                } catch (RuntimeException e) {
-                    System.err.println("Error retrieving the tool '"+toolName+"': " + e.getMessage());
-                    return EXIT_ERROR;
-                }
+        ToolReference tool;
+        if (toolName == null) {
+            // if no tool name provided as parameter, let the user choose from the list
+            // of registered tools.
+            tool = selectTool(terminal, list);
+        } else {
+            try {
+                WanakuResponse<ToolReference> response = toolsService.getByName(toolName);
+                tool = response.data();
+            } catch (RuntimeException e) {
+                System.err.println("Error retrieving the tool '" + toolName + "': " + e.getMessage());
+                return EXIT_ERROR;
             }
+        }
 
-            //Run Nano Editor to modify the tool
-            String toolString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(tool);
-            String modifiedContent = edit(terminal, toolString, tool.getName());
-            boolean wasModified = !toolString.equals(modifiedContent);
-            if(!wasModified){
-                System.out.println("No changes detected!");
-                return EXIT_OK;
-            }
-            //Ask for confirmation
-            boolean save = confirm(terminal, tool);
+        //Run Nano Editor to modify the tool
+        String toolString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(tool);
+        String modifiedContent = edit(terminal, toolString, tool.getName());
+        boolean wasModified = !toolString.equals(modifiedContent);
+        if (!wasModified) {
+            printer.printWarningMessage("No changes detected!");
+            return EXIT_OK;
+        }
+        //Ask for confirmation
+        boolean save = confirm(terminal, tool);
 
-            if (save) {
-                System.out.print("saving '" + tool.getName() + "' tool...");
-                ToolReference toolModified = mapper.readValue(modifiedContent, ToolReference.class);
-                // Force the ID in case the user modified it.
-                toolModified.setId(tool.getId());
-                Response response = toolsService.update(toolModified);
-                if(response.getStatus() != OK.code()){
-                    System.err.println("error!");
-                }
-                System.out.println("done");
+        if (save) {
+            System.out.print("saving '" + tool.getName() + "' tool...");
+            ToolReference toolModified = mapper.readValue(modifiedContent, ToolReference.class);
+            // Force the ID in case the user modified it.
+            toolModified.setId(tool.getId());
+            Response response = toolsService.update(toolModified);
+            if (response.getStatus() != OK.code()) {
+                System.err.println("error!");
             }
+            System.out.println("done");
         }
         return EXIT_OK;
     }
-
 
     /**
      * Prompts the user for confirmation to update the specified tool.
      *
      * @param terminal The JLine terminal instance.
-     * @param tool The ToolReference object to be updated.
+     * @param tool     The ToolReference object to be updated.
      * @return true if the user confirms the update, false otherwise.
      * @throws IOException if an I/O error occurs during the prompt.
      */
@@ -137,12 +128,12 @@ public class ToolsEdit extends BaseCommand {
 
         builder.createConfirmPromp()
                 .name("continue")
-                .message("Do you want to update the '"+tool.getName()+"' tool?")
+                .message("Do you want to update the '" + tool.getName() + "' tool?")
                 .defaultValue(ConfirmChoice.ConfirmationValue.NO)
                 .addPrompt();
 
         Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
-       return "YES".equalsIgnoreCase(result.get("continue").getResult());
+        return "YES".equalsIgnoreCase(result.get("continue").getResult());
     }
 
 
@@ -150,9 +141,9 @@ public class ToolsEdit extends BaseCommand {
      * Runs the Nano editor to allow the user to modify the selected tool definition.
      * The tool definition is written to a temporary file, edited using Nano, and then the modified content is read back.
      *
-     * @param terminal The JLine terminal instance.
+     * @param terminal   The JLine terminal instance.
      * @param toolString The initial JSON string representation of the tool.
-     * @param toolName The name of the tool being edited.
+     * @param toolName   The name of the tool being edited.
      * @return The modified content of the tool definition as a String.
      * @throws IOException if an I/O error occurs during file operations or running Nano.
      */
@@ -163,10 +154,10 @@ public class ToolsEdit extends BaseCommand {
         Files.write(tempFile, toolString.getBytes());
         Options options = Options.compile(Nano.usage()).parse(new String[0]);
         Nano nano = new Nano(terminal, root, options, configPath);
-        nano.title="Edit Tool " + toolName;
-        nano.mouseSupport=true;
-        nano.matchBrackets="(<[{)>]}";
-        nano.printLineNumbers=true;
+        nano.title = "Edit Tool " + toolName;
+        nano.mouseSupport = true;
+        nano.matchBrackets = "(<[{)>]}";
+        nano.printLineNumbers = true;
         nano.open(tempFile.toAbsolutePath().toString());
         nano.run();
 
@@ -178,7 +169,7 @@ public class ToolsEdit extends BaseCommand {
      * The list is formatted for better readability in the terminal.
      *
      * @param terminal The JLine terminal instance.
-     * @param list A list of ToolReference objects to choose from.
+     * @param list     A list of ToolReference objects to choose from.
      * @return The selected ToolReference object.
      * @throws IOException if an I/O error occurs during the prompt.
      */
@@ -190,7 +181,7 @@ public class ToolsEdit extends BaseCommand {
         PromptBuilder builder = prompt.getPromptBuilder();
 
         ListPromptBuilder lpb = builder.createListPrompt().name("tool")
-                .message("Choose the tool you want to edit:").pageSize(10);
+                .message("Choose the tool you want to edit:").pageSize(5);
 
         List<Item> items = formatTable(list);
 
@@ -230,7 +221,7 @@ public class ToolsEdit extends BaseCommand {
                 .max()
                 .orElse(0);
 
-        final int  nameColumnWidth = Math.max(maxNameLength + COLUMN_PADDING, "Name".length() + COLUMN_PADDING);
+        final int nameColumnWidth = Math.max(maxNameLength + COLUMN_PADDING, "Name".length() + COLUMN_PADDING);
         final int descriptionColumnWidth = Math.max(maxDescriptionDisplayLength + COLUMN_PADDING, "Description".length() + COLUMN_PADDING);
 
         return list.stream().map(
@@ -245,7 +236,7 @@ public class ToolsEdit extends BaseCommand {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     PrintStream ps = new PrintStream(baos);
                     ps.printf("%-" + nameColumnWidth + "s %-" + descriptionColumnWidth + "s%n", name, description);
-                    return new Item(item.getId(),baos.toString());
+                    return new Item(item.getId(), baos.toString());
                 }
         ).toList();
     }

@@ -26,65 +26,60 @@ import static java.util.stream.Collectors.toMap;
 import static org.jline.console.Printer.TableRows.EVEN;
 
 /**
- * A specialized printer implementation that extends JLine's {@link DefaultPrinter} to provide
- * enhanced table printing capabilities with Jackson object mapping support.
+ * Enhanced printer utility for the Wanaku CLI application that provides formatted output capabilities.
  *
- * <p>This class provides convenient methods for printing collections of objects as
- * formatted tables in terminal output, with automatic object-to-map conversion using
- * Jackson's {@link ObjectMapper}. It supports customizable formatting options, column
- * selection, and styled message output for different log levels.</p>
+ * <p>This class extends JLine's {@link DefaultPrinter} to provide a rich set of printing methods
+ * with consistent styling and formatting for terminal output. It supports various output formats
+ * including styled messages, tables, and object representations.</p>
  *
- * <h3>Key Features:</h3>
+ * <p>Key features include:</p>
  * <ul>
- * <li>Automatic conversion of Java objects to printable table format using Jackson</li>
- * <li>Customizable table formatting options with sensible defaults</li>
- * <li>Column selection and filtering capabilities</li>
- * <li>Enhanced exception display formatting with stack trace control</li>
- * <li>Styled message output (error, warning, info, success)</li>
- * <li>Full integration with JLine terminal capabilities</li>
+ *   <li>Styled message printing (error, warning, info, success)</li>
+ *   <li>Table printing with customizable options and column selection</li>
+ *   <li>Object-to-map conversion and printing</li>
+ *   <li>Exception highlighting with configurable display modes</li>
+ *   <li>Terminal color and ANSI support</li>
  * </ul>
  *
- * <h3>Usage Examples:</h3>
+ * <p>Example usage:</p>
  * <pre>{@code
- * // Basic table printing
- * List<Person> people = Arrays.asList(new Person("John", 30), new Person("Jane", 25));
- * printer.printTable(people);
- *
- * // Table with specific columns
- * printer.printTable(people, "name", "age");
- *
- * // Custom formatting options
- * Map<String, Object> options = Map.of("maxColumnWidth", 20);
- * printer.printTable(options, people, "name");
- *
- * // Styled messages
- * printer.printErrorMessage("Operation failed");
+ * WanakuPrinter printer = new WanakuPrinter(configPath, terminal);
  * printer.printSuccessMessage("Operation completed successfully");
+ * printer.printTable(dataList, "name", "status", "timestamp");
+ * printer.printAsMap(configuration, "host", "port", "enabled");
  * }</pre>
  *
+ * @author Wanaku CLI Team
+ * @version 1.0
+ * @since 1.0
  * @see DefaultPrinter
- * @see ObjectMapper
  * @see Terminal
  */
 public class WanakuPrinter extends DefaultPrinter {
 
-    // Constants for styling
+    // Styling constants for different message types
+    /** Style for error messages - bold red text. */
     private static final AttributedStyle ERROR_STYLE = AttributedStyle.BOLD.foreground(AttributedStyle.RED);
+
+    /** Style for warning messages - yellow text. */
     private static final AttributedStyle WARNING_STYLE = AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW);
+
+    /** Style for informational messages - blue text. */
     private static final AttributedStyle INFO_STYLE = AttributedStyle.DEFAULT.foreground(AttributedStyle.BLUE);
+
+    /** Style for success messages - bold green text. */
     private static final AttributedStyle SUCCESS_STYLE = AttributedStyle.BOLD.foreground(AttributedStyle.GREEN);
 
+    // Table formatting constants
+    /** Exception display mode for stack trace output. */
+    private static final String EXCEPTION_MODE_STACK = "stack";
+
+    /** Default exception display mode configuration key. */
+    private static final String EXCEPTION_OPTION_KEY = "exception";
+
     /**
-     * Default printing options applied to all table operations unless explicitly overridden.
-     *
-     * <p>Default configuration:</p>
-     * <ul>
-     * <li>{@code STRUCT_ON_TABLE}: {@code true} - Enables structured table display</li>
-     * <li>{@code ROW_HIGHLIGHT}: {@code EVEN} - Highlights even-numbered rows for better readability</li>
-     * <li>{@code ONE_ROW_TABLE}: {@code true} - Optimizes display for single-row tables</li>
-     * </ul>
-     *
-     * @see #printTable(Map, List, Function, String...)
+     * Default options for table printing.
+     * Configures structured table display with row highlighting and single-row table support.
      */
     private static final Map<String, Object> DEFAULT_TABLE_OPTIONS = Collections.unmodifiableMap(
             Map.of(
@@ -95,21 +90,14 @@ public class WanakuPrinter extends DefaultPrinter {
     );
 
     /**
-     * Default options for map printing operations.
-     *
-     * <p>Configuration for object-to-map display:</p>
-     * <ul>
-     * <li>{@code STRUCT_ON_TABLE}: {@code false} - Flattens objects for map display</li>
-     * <li>{@code ROW_HIGHLIGHT}: {@code EVEN} - Highlights even-numbered rows</li>
-     * <li>{@code ONE_ROW_TABLE}: {@code false} - Display one row data on table.</li>
-     * </ul>
+     * Default options for map printing.
+     * Configures unstructured display without special table formatting.
      */
     private static final Map<String, Object> DEFAULT_MAP_OPTIONS = Map.of(
             STRUCT_ON_TABLE, FALSE,
             ROW_HIGHLIGHT, EVEN,
             ONE_ROW_TABLE, FALSE
     );
-
 
     /** The terminal instance used for all output operations. */
     private final Terminal terminal;
@@ -120,12 +108,9 @@ public class WanakuPrinter extends DefaultPrinter {
     /**
      * Constructs a new WanakuPrinter with the specified configuration and terminal.
      *
-     * <p>The printer is initialized with a new {@link ObjectMapper} instance using default
-     * Jackson configuration. The terminal instance will be used for all output operations.</p>
-     *
-     * @param configPath the configuration path for printer settings, must not be {@code null}
-     * @param terminal   the terminal instance to use for output operations, must not be {@code null}
-     * @throws IllegalArgumentException if configPath or terminal is {@code null}
+     * @param configPath the configuration path for printer settings
+     * @param terminal the terminal instance to use for output operations
+     * @throws IllegalArgumentException if terminal is null
      */
     public WanakuPrinter(ConfigurationPath configPath, Terminal terminal) {
         super(configPath);
@@ -134,26 +119,16 @@ public class WanakuPrinter extends DefaultPrinter {
     }
 
     /**
-     * Creates and returns a JLine 3 Terminal instance configured for system use.
+     * Creates a new terminal instance with system integration, Jansi support, and color support enabled.
      *
-     * <p>This method constructs a terminal with the following configuration:
-     * <ul>
-     * <li>System terminal mode enabled - uses the actual system terminal</li>
-     * <li>Jansi support enabled - provides ANSI escape sequence handling on Windows</li>
-     * <li>Color support enabled - allows colored output in the terminal</li>
-     * </ul>
+     * <p>This factory method provides a pre-configured terminal suitable for CLI applications
+     * that require color output and system integration.</p>
      *
-     * <p>The terminal instance can be used for advanced console input/output operations,
-     * including reading user input, displaying colored text, and handling special key
-     * sequences.
-     *
-     * @return a configured Terminal instance ready for use
-     * @throws IOException if the terminal cannot be created or initialized
-     * @see org.jline.terminal.Terminal
-     * @see org.jline.terminal.TerminalBuilder
+     * @return a new terminal instance with standard CLI configuration
+     * @throws IOException if the terminal cannot be created due to I/O issues
      */
     public static Terminal terminalInstance() throws IOException {
-        return  TerminalBuilder
+        return TerminalBuilder
                 .builder()
                 .system(true)
                 .jansi(true)
@@ -162,111 +137,69 @@ public class WanakuPrinter extends DefaultPrinter {
     }
 
     /**
-     * Returns the terminal instance associated with this printer.
+     * Returns the terminal instance used by this printer.
      *
-     * <p>This method is used internally by the parent {@link DefaultPrinter} class
-     * to access the terminal for output operations.</p>
-     *
-     * @return the terminal used for output operations, never {@code null}
+     * @return the terminal instance for output operations
      */
     @Override
     protected Terminal terminal() {
         return terminal;
     }
 
-    // Table Printing Methods
-
     /**
-     * Prints a collection of objects as a formatted table using default settings.
+     * Prints a list of objects as a table with all available columns.
      *
-     * <p>This is the simplest table printing method. It uses automatic Jackson-based
-     * object-to-map conversion and default formatting options. All object properties
-     * will be displayed as columns in the table.</p>
+     * <p>This is a convenience method that displays all properties of the objects
+     * in the list as table columns using default table formatting options.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * List<User> users = userService.getAllUsers();
-     * printer.printTable(users);
-     * }</pre>
-     *
-     * @param <T>        the type of objects to print
-     * @param printables the collection of objects to display; {@code null} collections are ignored
-     * @see #printTable(List, String...)
-     * @see #printTable(Map, List, String...)
+     * @param <T> the type of objects in the list
+     * @param printables the list of objects to display as a table
      */
     public <T> void printTable(List<T> printables) {
         printTable(printables, new String[]{});
     }
 
     /**
-     * Prints a collection of objects as a formatted table with column selection.
+     * Prints a list of objects as a table with specified columns.
      *
-     * <p>Uses automatic Jackson-based object-to-map conversion and default formatting
-     * options, but allows specification of which columns to display. This is useful
-     * when you want to show only specific properties of your objects.</p>
+     * <p>Displays only the specified columns from the objects in the list.
+     * Uses default table formatting options.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * List<User> users = userService.getAllUsers();
-     * printer.printTable(users, "username", "email", "lastLogin");
-     * }</pre>
-     *
-     * @param <T>        the type of objects to print
-     * @param printables the collection of objects to display; {@code null} collections are ignored
-     * @param columns    column names to display; if empty, all columns are shown
-     * @see #printTable(Map, List, String...)
+     * @param <T> the type of objects in the list
+     * @param printables the list of objects to display as a table
+     * @param columns the column names to include in the table output
      */
     public <T> void printTable(List<T> printables, String... columns) {
         printTable(DEFAULT_TABLE_OPTIONS, printables, columns);
     }
 
     /**
-     * Prints a collection of objects as a formatted table with custom options and column selection.
+     * Prints a list of objects as a table with custom formatting options and specified columns.
      *
-     * <p>Uses automatic Jackson-based object-to-map conversion but allows customization of
-     * formatting options and column selection. This method provides a balance between
-     * convenience and customization.</p>
+     * <p>Provides full control over table appearance through custom options while
+     * using the default object-to-map conversion strategy.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * Map<String, Object> options = Map.of("maxColumnWidth", 30, "truncate", true);
-     * List<Product> products = productService.getProducts();
-     * printer.printTable(options, products, "name", "price", "category");
-     * }</pre>
-     *
-     * @param <T>        the type of objects to print
-     * @param options    formatting options to apply; these are merged with default options
-     * @param printables the collection of objects to display; {@code null} collections are ignored
-     * @param columns    column names to display; if empty, all columns are shown
-     * @see #printTable(Map, List, Function, String...)
+     * @param <T> the type of objects in the list
+     * @param options custom formatting options for table display
+     * @param printables the list of objects to display as a table
+     * @param columns the column names to include in the table output
      */
     public <T> void printTable(Map<String, Object> options, List<T> printables, String... columns) {
         printTable(options, printables, this::convertToMap, columns);
     }
 
     /**
-     * Prints a collection of objects as a formatted table with full customization options.
+     * Prints a list of objects as a table with full customization options.
      *
-     * <p>This is the most flexible table printing method, allowing complete control over
-     * formatting options, object-to-map conversion, and column selection. Use this method
-     * when you need custom object conversion logic or advanced formatting control.</p>
+     * <p>This is the most flexible table printing method, allowing custom formatting options,
+     * custom object-to-map conversion logic, and column selection. Handles empty or null
+     * input gracefully and provides error handling for conversion failures.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * Map<String, Object> options = Map.of("rowHighlight", "ODD", "border", true);
-     * Function<Person, Map<String, Object>> customMapper = person -> Map.of(
-     *     "fullName", person.getFirstName() + " " + person.getLastName(),
-     *     "ageGroup", person.getAge() < 30 ? "Young" : "Adult"
-     * );
-     * printer.printTable(options, people, customMapper, "fullName", "ageGroup");
-     * }</pre>
-     *
-     * @param <T>            the type of objects to print
-     * @param options        formatting options to apply; these are merged with default options
-     * @param objectsToPrint the collection of objects to display; {@code null} collections are ignored
-     * @param toMap          function to convert each object to a Map for table display
-     * @param columns        column names to display; if empty, all columns are shown
-     * @throws IllegalArgumentException if the conversion function fails for any object
+     * @param <T> the type of objects in the list
+     * @param options custom formatting options for table display
+     * @param objectsToPrint the list of objects to display as a table
+     * @param toMap function to convert objects to map representation
+     * @param columns the column names to include in the table output
      */
     public <T> void printTable(Map<String, Object> options, List<T> objectsToPrint,
                                Function<T, Map<String, Object>> toMap, String... columns) {
@@ -291,74 +224,28 @@ public class WanakuPrinter extends DefaultPrinter {
         }
     }
 
-    // Object Display Methods
-
     /**
-     * Prints an object as a structured map display.
+     * Prints an object as a map with all available properties.
      *
-     * <p>This method converts the object to a map representation using Jackson and
-     * displays it in a structured format. It's particularly useful for displaying
-     * single objects or detailed object information.</p>
+     * <p>Converts the object to a map representation and displays all key-value pairs
+     * using default map formatting options.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * User currentUser = userService.getCurrentUser();
-     * printer.printAsMap(currentUser);
-     * }</pre>
-     *
-     * @param <T>    the type of object to print
-     * @param object the object to display; {@code null} objects are ignored
-     * @see #convertToMap(Object)
+     * @param <T> the type of the object to print
+     * @param object the object to display as a map
      */
     public <T> void printAsMap(T object) {
         printAsMap(object, new String[]{});
     }
 
     /**
-     * Prints an object as a formatted key-value map to the terminal.
+     * Prints an object as a map with only specified keys.
      *
-     * <p>This method converts any Java object into a map representation using Jackson's
-     * ObjectMapper and displays it in a formatted key-value layout. The method supports
-     * selective field display by allowing specification of which object properties to include
-     * in the output.</p>
+     * <p>Converts the object to a map representation and displays only the key-value
+     * pairs for the specified keys. Keys not present in the object are silently ignored.</p>
      *
-     * <p>The display format presents each property as a key-value pair, making it ideal
-     * for showing detailed object information in a readable format. This is particularly
-     * useful for displaying configuration details, object summaries, or debug information.</p>
-     *
-     * <p>Key features:</p>
-     * <ul>
-     *   <li>Automatic object-to-map conversion using Jackson</li>
-     *   <li>Optional field filtering to show only specified properties</li>
-     *   <li>Graceful handling of null objects (silently ignored)</li>
-     *   <li>Error handling with user-friendly error messages</li>
-     * </ul>
-     *
-     * <p>Example usage:</p>
-     * <pre>
-     * // Print all object properties
-     * printer.printAsMap(myObject);
-     *
-     * // Print only specific properties
-     * printer.printAsMap(myObject, "name", "status", "lastModified");
-     * </pre>
-     *
-     * <p>Example output format:</p>
-     * <pre>
-     * name         : MyService
-     * status       : active
-     * lastModified : 2025-06-26T10:30:00
-     * </pre>
-     *
-     * @param <T> the type of object to print
-     * @param object the object to display as a map; if null, the method returns silently
-     * @param keys optional array of property names to include in the output; if not provided
-     *            or empty, all object properties will be displayed. Keys are case-sensitive
-     *            and must match the exact property names of the object
-     * @throws IllegalArgumentException if the object cannot be converted to a Map representation
-     * @see #convertToMap(Object)
-     * @see #println(Map, Object)
-     * @see #printErrorMessage(String)
+     * @param <T> the type of the object to print
+     * @param object the object to display as a map
+     * @param keys the specific keys to include in the output
      */
     public <T> void printAsMap(T object, String... keys) {
         if (object == null) {
@@ -366,14 +253,14 @@ public class WanakuPrinter extends DefaultPrinter {
         }
 
         Map<String, Object> map = convertToMap(object);
-        if(keys != null && keys.length > 0) {
+        if (keys != null && keys.length > 0) {
             Set<String> keySet = Set.of(keys);
             map = map.entrySet()
                     .stream()
                     .filter(entry -> keySet.contains(entry.getKey()))
-                    .collect(
-                    toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
+
         try {
             println(DEFAULT_MAP_OPTIONS, map);
         } catch (Exception e) {
@@ -381,22 +268,12 @@ public class WanakuPrinter extends DefaultPrinter {
         }
     }
 
-
-    // Styled Message Methods
-
     /**
-     * Prints an error message with red bold styling.
+     * Prints an error message with red styling.
      *
-     * <p>Use this method for critical errors, failures, or any message that indicates
-     * a problem that requires immediate attention.</p>
+     * <p>Uses bold red text to display error messages. Null messages are silently ignored.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * printer.printErrorMessage("Failed to connect to database: Connection timeout");
-     * }</pre>
-     *
-     * @param message the error message to display; {@code null} messages are ignored
-     * @see #ERROR_STYLE
+     * @param message the error message to display, null values are ignored
      */
     public void printErrorMessage(String message) {
         if (message != null) {
@@ -407,16 +284,9 @@ public class WanakuPrinter extends DefaultPrinter {
     /**
      * Prints a warning message with yellow styling.
      *
-     * <p>Use this method for warnings, deprecated features, or situations that might
-     * require attention but are not critical errors.</p>
+     * <p>Uses yellow text to display warning messages. Null messages are silently ignored.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * printer.printWarningMessage("API key will expire in 7 days");
-     * }</pre>
-     *
-     * @param message the warning message to display; {@code null} messages are ignored
-     * @see #WARNING_STYLE
+     * @param message the warning message to display, null values are ignored
      */
     public void printWarningMessage(String message) {
         if (message != null) {
@@ -427,16 +297,9 @@ public class WanakuPrinter extends DefaultPrinter {
     /**
      * Prints an informational message with blue styling.
      *
-     * <p>Use this method for general information, status updates, or helpful hints
-     * that enhance the user experience.</p>
+     * <p>Uses blue text to display informational messages. Null messages are silently ignored.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * printer.printInfoMessage("Processing 150 records...");
-     * }</pre>
-     *
-     * @param message the informational message to display; {@code null} messages are ignored
-     * @see #INFO_STYLE
+     * @param message the informational message to display, null values are ignored
      */
     public void printInfoMessage(String message) {
         if (message != null) {
@@ -445,18 +308,11 @@ public class WanakuPrinter extends DefaultPrinter {
     }
 
     /**
-     * Prints a success message with green bold styling.
+     * Prints a success message with green styling.
      *
-     * <p>Use this method for successful operations, completions, or any positive
-     * feedback that indicates successful execution.</p>
+     * <p>Uses bold green text to display success messages. Null messages are silently ignored.</p>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * printer.printSuccessMessage("Configuration updated successfully");
-     * }</pre>
-     *
-     * @param message the success message to display; {@code null} messages are ignored
-     * @see #SUCCESS_STYLE
+     * @param message the success message to display, null values are ignored
      */
     public void printSuccessMessage(String message) {
         if (message != null) {
@@ -464,25 +320,19 @@ public class WanakuPrinter extends DefaultPrinter {
         }
     }
 
-    // Exception Handling
-
     /**
-     * Highlights and prints exception information to the terminal.
+     * Highlights and prints exception information based on configured display mode.
      *
-     * <p>The display format is controlled by the "exception" option in the provided options map:</p>
+     * <p>Supports two display modes:</p>
      * <ul>
-     * <li><strong>"stack"</strong> (default): Prints the full stack trace to stderr</li>
-     * <li><strong>Any other value</strong>: Prints only the exception message with emphasis styling</li>
+     *   <li><strong>stack</strong> (default): Prints full stack trace to stderr</li>
+     *   <li><strong>message</strong>: Prints only the exception message with emphasis styling</li>
      * </ul>
      *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * Map<String, Object> options = Map.of("exception", "message");
-     * printer.highlightAndPrint(options, new RuntimeException("Something went wrong"));
-     * }</pre>
+     * <p>The display mode is controlled by the "exception" option in the provided options map.</p>
      *
-     * @param options   formatting options; may contain an "exception" key to control display format
-     * @param exception the exception to display; {@code null} exceptions are ignored
+     * @param options configuration options including exception display mode
+     * @param exception the exception to display, null exceptions are silently ignored
      */
     @Override
     protected void highlightAndPrint(Map<String, Object> options, Throwable exception) {
@@ -490,9 +340,9 @@ public class WanakuPrinter extends DefaultPrinter {
             return;
         }
 
-        String exceptionMode = (String) options.getOrDefault("exception", "stack");
+        String exceptionMode = (String) options.getOrDefault(EXCEPTION_OPTION_KEY, EXCEPTION_MODE_STACK);
 
-        if ("stack".equals(exceptionMode)) {
+        if (EXCEPTION_MODE_STACK.equals(exceptionMode)) {
             exception.printStackTrace();
         } else {
             AttributedStringBuilder builder = new AttributedStringBuilder();
@@ -501,19 +351,16 @@ public class WanakuPrinter extends DefaultPrinter {
         }
     }
 
-    // Private Helper Methods
-
     /**
-     * Converts an object to a Map representation using Jackson's ObjectMapper.
+     * Converts an object to a Map representation for table/map display.
      *
-     * <p>This method is used internally to transform Java objects into a format
-     * suitable for table display. The conversion preserves object properties as
-     * key-value pairs in the resulting map, handling nested objects and collections
-     * according to Jackson's default serialization rules.</p>
+     * <p>Uses Jackson ObjectMapper to perform the conversion, which handles most
+     * Java objects including POJOs, records, and collections. The conversion
+     * respects Jackson annotations if present on the object.</p>
      *
-     * @param obj the object to convert; {@code null} objects return empty maps
-     * @return a Map representation of the object's properties, never {@code null}
-     * @throws IllegalArgumentException if the object cannot be converted to a Map
+     * @param obj the object to convert to a map
+     * @return a map representation of the object, empty map if input is null
+     * @throws IllegalArgumentException if the object cannot be converted to a map
      */
     private Map<String, Object> convertToMap(Object obj) {
         if (obj == null) {
@@ -521,21 +368,20 @@ public class WanakuPrinter extends DefaultPrinter {
         }
 
         try {
-            return objectMapper.convertValue(obj, new TypeReference<>() {
-            });
+            return objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to convert object to map: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Prints a message with the specified styling to the terminal.
+     * Prints a message with the specified styling.
      *
-     * <p>This method handles the low-level details of applying styles and ensuring
-     * proper terminal output with flushing.</p>
+     * <p>Applies the given AttributedStyle to the message and outputs it to the terminal
+     * with proper ANSI escape sequences. Ensures the output is immediately flushed.</p>
      *
-     * @param message the message to print; assumed to be non-null
-     * @param style   the AttributedStyle to apply to the message
+     * @param message the message to print
+     * @param style the styling to apply to the message
      */
     private void printStyledMessage(String message, AttributedStyle style) {
         AttributedString styledMessage = new AttributedStringBuilder()
@@ -543,17 +389,18 @@ public class WanakuPrinter extends DefaultPrinter {
                 .append(message)
                 .toAttributedString();
 
-        terminal.writer().println(styledMessage);
+        terminal.writer().println(styledMessage.toAnsi());
         terminal.flush();
     }
 
     /**
-     * Creates a merged options map by combining default options with user-provided options.
+     * Creates a new options map by merging custom options with default table options.
      *
-     * <p>User-provided options take precedence over default options.</p>
+     * <p>Default options are applied first, then custom options override any conflicting
+     * settings. This ensures consistent baseline behavior while allowing customization.</p>
      *
-     * @param customOptions the custom options to merge; may be {@code null}
-     * @return a new map containing merged options, never {@code null}
+     * @param customOptions custom options to merge with defaults, null is handled gracefully
+     * @return a new map containing merged options
      */
     private Map<String, Object> createMergedOptions(Map<String, Object> customOptions) {
         Map<String, Object> merged = new HashMap<>(DEFAULT_TABLE_OPTIONS);
@@ -566,10 +413,13 @@ public class WanakuPrinter extends DefaultPrinter {
     /**
      * Validates that an object is not null and returns it.
      *
-     * @param <T>     the type of the object
-     * @param object  the object to validate
-     * @param message the error message if the object is null
-     * @return the object if it's not null
+     * <p>This utility method provides consistent null validation with custom error messages
+     * throughout the class.</p>
+     *
+     * @param <T> the type of the object to validate
+     * @param object the object to validate
+     * @param message the error message to use if validation fails
+     * @return the validated object
      * @throws IllegalArgumentException if the object is null
      */
     private static <T> T validateNotNull(T object, String message) {

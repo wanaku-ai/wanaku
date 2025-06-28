@@ -1,6 +1,8 @@
 package ai.wanaku.cli.main.commands.start;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "start",
@@ -8,7 +10,7 @@ import picocli.CommandLine;
 public class Start extends BaseCommand {
 
     @Override
-    public Integer call() throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         CommandLine.usage(this, System.out);
         return EXIT_ERROR;
     }

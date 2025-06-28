@@ -3,41 +3,42 @@ package ai.wanaku.cli.main.commands.forwards;
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.PrettyPrinter;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import picocli.CommandLine;
+import org.jline.terminal.Terminal;
 
-import java.net.URI;
+import java.io.IOException;
 import java.util.List;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
 
-@CommandLine.Command(name = "list",
+@Command(name = "list",
         description = "List forward targets")
 public class ForwardsList extends BaseCommand {
-    @CommandLine.Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
+
+    @Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
             arity = "0..1")
     protected String host;
 
     @Override
-    public Integer call() {
-        ForwardsService forwardsService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ForwardsService.class);
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+
+        ForwardsService forwardsService = initService(ForwardsService.class, host);
 
         try {
             WanakuResponse<List<ForwardReference>> wanakuResponseRestResponse = forwardsService.listForwards();
             List<ForwardReference> data = wanakuResponseRestResponse.data();
-            PrettyPrinter.printForwards(data);
+            printer.printTable(data, "name","address");
+
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
             return EXIT_ERROR;
         }
-
         return EXIT_OK;
     }
 }

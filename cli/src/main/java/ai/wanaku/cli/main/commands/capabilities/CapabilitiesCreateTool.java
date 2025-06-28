@@ -1,12 +1,16 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import jakarta.inject.Inject;
-
 import ai.wanaku.cli.main.support.WanakuCliConfig;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
-import picocli.CommandLine;
+import org.jline.terminal.Terminal;
 
-@CommandLine.Command(name = "tool",description = "Create a new tool service")
+import java.io.IOException;
+
+import static picocli.CommandLine.Command;
+
+@Command(name = "tool",description = "Create a new tool service")
 public class CapabilitiesCreateTool extends CapabilitiesBase {
     private static final Logger LOG = Logger.getLogger(CapabilitiesCreateTool.class);
 
@@ -14,11 +18,9 @@ public class CapabilitiesCreateTool extends CapabilitiesBase {
     WanakuCliConfig config;
 
     @Override
-    public Integer call() {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
         String baseCmd = config.tool().createCmd();
-
         createProject(baseCmd, "ai.wanaku.tool", "wanaku-tool-service");
-
         return EXIT_OK;
     }
 }

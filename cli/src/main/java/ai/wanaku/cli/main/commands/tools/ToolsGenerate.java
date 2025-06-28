@@ -3,8 +3,10 @@ package ai.wanaku.cli.main.commands.tools;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.converter.URLConverter;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import io.swagger.v3.oas.models.OpenAPI;
 import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 import java.net.URL;
@@ -47,7 +49,7 @@ public class ToolsGenerate extends BaseCommand {
 
 
     @Override
-    public Integer call() {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         try {
             // Load and resolve OpenAPI Spec
             OpenAPI openAPI = loadAndResolveOpenAPI(specLocation.toString());
@@ -56,13 +58,10 @@ public class ToolsGenerate extends BaseCommand {
                 LOG.warn("No paths found in the OpenAPI specification");
                 return EXIT_ERROR;
             }
-
             // Determine base URL to use
             String baseUrl = determineBaseUrl(openAPI, serverUrl, serverIndex, serverVariables);
-
             // Generate tool references
             List<ToolReference> toolReferences = generateToolReferences(openAPI, baseUrl);
-
             // Write output
             writeOutput(toolReferences, outputFile);
 
