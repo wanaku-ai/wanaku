@@ -1,14 +1,13 @@
 package ai.wanaku.cli.main.commands.tools;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
 import picocli.CommandLine;
-
-import java.net.URI;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
@@ -26,24 +25,19 @@ public class ToolsRemove extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public Integer call() {
-        toolsService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ToolsService.class);
-
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+        toolsService = initService(ToolsService.class, host);
         try (Response ignored = toolsService.remove(name)) {
-
+            printer.printSuccessMessage("Successfully removed tool reference '" + name+"'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                System.err.printf("Tool not found (%s): %s%n",
-                        name, response.getStatusInfo().getReasonPhrase());
-
-                System.exit(1);
+                String warningMessage = String.format("Tool not found (%s): %s%n", name, response.getStatusInfo().getReasonPhrase());
+                printer.printWarningMessage(warningMessage);
             } else {
                 commonResponseErrorHandler(response);
-                return EXIT_ERROR;
             }
+            return EXIT_ERROR;
         }
         return EXIT_OK;
     }

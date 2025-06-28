@@ -1,25 +1,25 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.cli.main.support.PropertyHelper;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.ToolsService;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
+import picocli.CommandLine;
+
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
-import org.jboss.logging.Logger;
-import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
@@ -65,9 +65,9 @@ public class ToolsAdd extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public Integer call() {
-        ToolReference toolReference = new ToolReference();
+        public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
+        ToolReference toolReference = new ToolReference();
         toolReference.setName(name);
         toolReference.setDescription(description);
         toolReference.setUri(uri);
@@ -100,9 +100,7 @@ public class ToolsAdd extends BaseCommand {
         loadConfigurationSources(configurationFromFile, toolPayload::setConfigurationData);
         loadConfigurationSources(secretsFromFile, toolPayload::setSecretsData);
 
-        toolsService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ToolsService.class);
+        toolsService = initService(ToolsService.class,host);
 
         try {
             WanakuResponse<ToolReference> data = toolsService.addWithPayload(toolPayload);

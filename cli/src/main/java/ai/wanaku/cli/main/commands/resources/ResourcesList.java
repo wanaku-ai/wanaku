@@ -1,41 +1,36 @@
 package ai.wanaku.cli.main.commands.resources;
 
+import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.ResourcesService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import org.jline.terminal.Terminal;
 
-import ai.wanaku.api.types.WanakuResponse;
-import java.net.URI;
 import java.util.List;
 
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.core.services.api.ResourcesService;
-import ai.wanaku.cli.main.support.PrettyPrinter;
-import picocli.CommandLine;
-
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
 
-@CommandLine.Command(name = "list", description = "List resources")
+@Command(name = "list", description = "List resources")
 public class ResourcesList extends BaseCommand {
 
-    @CommandLine.Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
+    @Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
             arity = "0..1")
     protected String host;
 
     ResourcesService resourcesService;
 
     @Override
-    public Integer call() {
-        resourcesService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ResourcesService.class);
-
-
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+        resourcesService = initService(ResourcesService.class, host);
         try {
             WanakuResponse<List<ResourceReference>> response = resourcesService.list();
             List<ResourceReference> list = response.data();
-            PrettyPrinter.printResources(list);
+            printer.printTable(list, "name", "type", "description", "location");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);

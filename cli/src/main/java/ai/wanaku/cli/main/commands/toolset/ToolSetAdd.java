@@ -5,13 +5,16 @@ import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.PropertyHelper;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.util.ToolsetIndexHelper;
+import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
+import picocli.CommandLine;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import org.jboss.logging.Logger;
-import picocli.CommandLine;
 
 @CommandLine.Command(name = "add",description = "Add tools to a toolset")
 public class ToolSetAdd extends BaseCommand {
@@ -46,9 +49,9 @@ public class ToolSetAdd extends BaseCommand {
     private List<String> required;
 
     @Override
-    public Integer call() {
-        ToolReference toolReference = new ToolReference();
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
+        ToolReference toolReference = new ToolReference();
         toolReference.setName(name);
         toolReference.setDescription(description);
         toolReference.setUri(uri);
@@ -89,11 +92,9 @@ public class ToolSetAdd extends BaseCommand {
             toolReferences.add(toolReference);
             ToolsetIndexHelper.saveToolsIndex(indexFile, toolReferences);
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
+            printer.printErrorMessage(String.format("Failed to load tools index: %s", e.getMessage()));
             throw new RuntimeException(e);
         }
         return EXIT_OK;
-
     }
-
 }

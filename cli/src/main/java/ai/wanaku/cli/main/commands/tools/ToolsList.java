@@ -5,14 +5,12 @@ import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-import java.net.URI;
 import java.util.List;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -28,14 +26,9 @@ public class ToolsList extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public Integer call() throws  Exception {
-        toolsService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ToolsService.class);
-
-
-        try (Terminal terminal = WanakuPrinter.terminalInstance() ){
-            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+        toolsService = initService(ToolsService.class, host);
+        try {
             WanakuResponse<List<ToolReference>> response = toolsService.list();
             List<ToolReference> list = response.data();
             printer.printTable(list, "name","type","uri");
@@ -46,5 +39,4 @@ public class ToolsList extends BaseCommand {
         }
         return EXIT_OK;
     }
-
 }

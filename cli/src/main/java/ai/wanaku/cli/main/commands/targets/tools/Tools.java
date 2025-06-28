@@ -1,14 +1,20 @@
 package ai.wanaku.cli.main.commands.targets.tools;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
-import picocli.CommandLine;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import org.jline.terminal.Terminal;
 
-@CommandLine.Command(name = "tools",
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.usage;
+
+@Deprecated
+@Command(name = "tools",
         description = "Manage targets", subcommands = { ToolsLinkedList.class, ToolsConfigure.class, ToolsState.class })
 public class Tools extends BaseCommand {
+
     @Override
-    public Integer call() {
-        CommandLine.usage(this, System.out);
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+        usage(this, System.out);
         return EXIT_ERROR;
     }
 }

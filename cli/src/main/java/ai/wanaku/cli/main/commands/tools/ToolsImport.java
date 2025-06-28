@@ -1,15 +1,17 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import java.net.URL;
-import java.util.List;
-
-import ai.wanaku.cli.main.converter.URLConverter;
-import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.converter.URLConverter;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.core.util.ToolsetIndexHelper;
+import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import java.net.URL;
+import java.util.List;
 
 import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
 
@@ -27,15 +29,12 @@ public class ToolsImport extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public Integer call() {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         try {
-
             List<ToolReference> toolReferences = ToolsetIndexHelper.loadToolsIndex(location);
-
             importToolset(toolReferences, host);
-
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to load tools index: %s", e.getMessage());
+            printer.printErrorMessage(String.format("Failed to load tools index: %s", e.getMessage()));
             throw new RuntimeException(e);
         }
         return EXIT_OK;

@@ -8,6 +8,7 @@ import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ToolsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class ToolHelper {
      * @throws IllegalArgumentException if the host URI is invalid
      * @throws RuntimeException if there's an error connecting to or communicating with the service
      */
-    public static void importToolset (List<ToolReference> toolReferences, String host) {
+    public static void importToolset (List<ToolReference> toolReferences, String host) throws IOException {
         ToolsService toolsService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(host))
                 .build(ToolsService.class);
@@ -68,7 +69,7 @@ public class ToolHelper {
      * @throws RuntimeException if there's an error connecting to or communicating with the service
      * @see #importToolset(List, String)
      */
-    public static void importToolset (ToolReference toolReference, String host) {
+    public static void importToolset (ToolReference toolReference, String host) throws IOException {
         importToolset(List.of(toolReference), host);
     }
 

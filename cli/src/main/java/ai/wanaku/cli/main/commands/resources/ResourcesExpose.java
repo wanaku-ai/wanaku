@@ -1,17 +1,17 @@
 package ai.wanaku.cli.main.commands.resources;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
@@ -44,11 +44,8 @@ public class ResourcesExpose extends BaseCommand {
     ResourcesService resourcesService;
 
     @Override
-    public Integer call() {
-        resourcesService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ResourcesService.class);
-
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+        resourcesService = initService(ResourcesService.class, host);
         ResourceReference resource = new ResourceReference();
         resource.setLocation(location);
         resource.setType(type);
