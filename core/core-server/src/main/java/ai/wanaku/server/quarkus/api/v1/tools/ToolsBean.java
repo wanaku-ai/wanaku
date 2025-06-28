@@ -1,5 +1,7 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.server.quarkus.common.AbstractBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -19,7 +21,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class ToolsBean {
+public class ToolsBean extends AbstractBean<ToolReference> {
     private static final Logger LOG = Logger.getLogger(ToolsBean.class);
 
     @Inject
@@ -85,12 +87,6 @@ public class ToolsBean {
         return false;
     }
 
-    public void remove(String name) {
-        if (!toolReferenceRepository.remove(ref -> removeReference(name, ref))) {
-            LOG.warnf("No references named %s where found", name);
-        }
-    }
-
     public void update(ToolReference resource) {
         toolReferenceRepository.update(resource.getId(), resource);
     }
@@ -102,5 +98,10 @@ public class ToolsBean {
 
     public ToolReference getById(String id) {
         return toolReferenceRepository.findById(id);
+    }
+
+    @Override
+    protected  WanakuRepository<ToolReference, String> getRepository() {
+        return toolReferenceRepository;
     }
 }
