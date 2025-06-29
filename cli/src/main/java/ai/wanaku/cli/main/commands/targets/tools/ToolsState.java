@@ -21,13 +21,12 @@ public class ToolsState extends AbstractTargets {
     /**
      * Executes the tools state command.
      *
-     * <p>This method performs the following operations:
+     * This method performs the following operations:
      * <ol>
      *   <li>Initializes the targets service</li>
      *   <li>Retrieves the current tools state from the service</li>
      *   <li>Formats and prints the tools state in a tabular format</li>
      * </ol>
-     * </p>
      *
      * @return {@link #EXIT_OK} (0) on successful execution, or appropriate error code
      *         if an exception occurs during processing

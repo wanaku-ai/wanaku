@@ -24,14 +24,14 @@ public abstract class BaseCommand implements Callable<Integer> {
      * The client is configured with appropriate timeouts and error handling for reliable
      * communication with the Wanaku API endpoints.</p>
      *
+     * @param <T> the type of the service interface
+     * @param clazz the Class object representing the service interface
      * @param host the base URL of the Wanaku service API (must be a valid URI)
      * @return a configured Service instance ready for API calls
      * @throws IllegalArgumentException if the host URL is invalid or malformed
      * @throws NullPointerException if host is null
-     *
-     *
      */
-    protected static  <T> T initService(Class<T> clazz, String host) {
+    protected static <T> T initService(Class<T> clazz, String host) {
         if (host == null) {
             throw new NullPointerException("Host URL cannot be null");
         }
