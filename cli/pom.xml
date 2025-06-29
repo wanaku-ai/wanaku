@@ -115,11 +115,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport-zerodep</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-core</artifactId>
         </dependency>
@@ -236,8 +231,15 @@
                     -H:IncludeResourceBundles=consoleui_messages,
                     -H:ResourceConfigurationFiles=resources-config.json
                 </quarkus.native.additional-build-args>
-
             </properties>
+            <dependencies>
+                <!-- Required for jline to build/work in native mode -->
+                <dependency>
+                    <groupId>net.java.dev.jna</groupId>
+                    <artifactId>jna</artifactId>
+                    <version>${jna.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>dist</id>

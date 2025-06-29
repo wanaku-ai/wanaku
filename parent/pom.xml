@@ -62,6 +62,7 @@
         <assertj-version>3.27.3</assertj-version>
         <juniversalchardet-version>1.0.3</juniversalchardet-version>
         <jansi-version>2.4.2</jansi-version>
+        <jna.version>5.8.0</jna.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
