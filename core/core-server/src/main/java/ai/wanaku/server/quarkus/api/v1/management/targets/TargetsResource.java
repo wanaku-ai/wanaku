@@ -1,5 +1,11 @@
 package ai.wanaku.server.quarkus.api.v1.management.targets;
 
+import java.util.List;
+import java.util.Map;
+
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.discovery.ActivityRecord;
+import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.server.quarkus.common.ServiceTargetEvent;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.PostConstruct;
@@ -8,29 +14,14 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ActivityRecord;
-
-import ai.wanaku.api.types.providers.ServiceTarget;
-import java.util.List;
-import java.util.Map;
-
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
-import jakarta.ws.rs.sse.SseEventSink;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @ApplicationScoped
