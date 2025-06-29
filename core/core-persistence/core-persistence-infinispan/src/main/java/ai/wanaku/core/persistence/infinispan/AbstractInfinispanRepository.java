@@ -1,6 +1,7 @@
 package ai.wanaku.core.persistence.infinispan;
 
 import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import java.lang.reflect.InvocationTargetException;
@@ -143,5 +144,12 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public int size() {
+        final Cache<Object, Namespace> cache = cacheManager.getCache(entityName());
+
+        return cache.size();
     }
 }

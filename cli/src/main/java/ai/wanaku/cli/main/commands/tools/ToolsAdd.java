@@ -34,6 +34,9 @@ public class ToolsAdd extends BaseCommand {
     @CommandLine.Option(names = {"-n", "--name"}, description="Name of the tool", required = true)
     private String name;
 
+    @CommandLine.Option(names = {"-N", "--namespace"}, description="The namespace associated with the tool", defaultValue = "", required = true)
+    private String namespace;
+
     @CommandLine.Option(names = {"-d", "--description"}, description="Description of the tool", required = true)
     private String description;
 
@@ -72,6 +75,7 @@ public class ToolsAdd extends BaseCommand {
         toolReference.setDescription(description);
         toolReference.setUri(uri);
         toolReference.setType(type);
+        toolReference.setNamespace(namespace);
 
         InputSchema inputSchema = new InputSchema();
         inputSchema.setType(inputSchemaType);

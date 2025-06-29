@@ -28,7 +28,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -59,7 +60,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -88,7 +90,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -117,7 +120,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -148,7 +152,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -193,7 +198,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -231,7 +237,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -276,7 +283,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -298,7 +306,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -327,7 +336,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -358,7 +368,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -389,7 +400,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -418,7 +430,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -447,7 +460,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -483,7 +497,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -505,7 +520,8 @@
       "required": []
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -536,7 +552,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -574,7 +591,8 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   },
   {
     "id": null,
@@ -605,6 +623,7 @@
       ]
     },
     "configurationURI": null,
-    "secretsURI": null
+    "secretsURI": null,
+    "namespace": null
   }
 ]
