@@ -16,6 +16,7 @@ import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ServiceState;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -29,6 +30,7 @@ public class DiscoveryResource {
 
     @Inject
     @Channel("service-target-event")
+    @OnOverflow(OnOverflow.Strategy.DROP)
     MutinyEmitter<ServiceTargetEvent> serviceTargetEventEmitter;
 
     @Path("/register")
@@ -36,7 +38,8 @@ public class DiscoveryResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public RestResponse<WanakuResponse<ServiceTarget>> register(ServiceTarget serviceTarget) {
         var ret = discoveryBean.registerService(serviceTarget);
-        serviceTargetEventEmitter.sendAndForget(ServiceTargetEvent.register(ret));
+
+        emitEvent(ServiceTargetEvent.register(ret));
         return RestResponse.ok(new WanakuResponse<>(ret));
     }
 
@@ -45,7 +48,7 @@ public class DiscoveryResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response deregister(ServiceTarget serviceTarget) {
         discoveryBean.deregisterService(serviceTarget);
-        serviceTargetEventEmitter.sendAndForget(ServiceTargetEvent.deregister(serviceTarget));
+        emitEvent(ServiceTargetEvent.deregister(serviceTarget));
         return Response.ok().build();
     }
 
@@ -55,7 +58,7 @@ public class DiscoveryResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateState(@PathParam("id") String id, ServiceState serviceState) {
         discoveryBean.updateState(id, serviceState);
-        serviceTargetEventEmitter.sendAndForget(ServiceTargetEvent.update(id, serviceState));
+        emitEvent(ServiceTargetEvent.update(id, serviceState));
         return Response.ok().build();
     }
 
@@ -65,7 +68,19 @@ public class DiscoveryResource {
     public Response ping(String id) {
         LOG.tracef("Service %s is pinging", id);
         discoveryBean.ping(id);
-        serviceTargetEventEmitter.sendAndForget(ServiceTargetEvent.ping(id));
+        emitEvent(ServiceTargetEvent.ping(id));
+
         return Response.ok().build();
+    }
+
+
+    private void emitEvent(ServiceTargetEvent event) {
+        boolean hasRequests = serviceTargetEventEmitter.hasRequests();
+        if (hasRequests) {
+            serviceTargetEventEmitter
+                    .sendAndForget(event);
+        } else {
+            LOG.trace("No pending consumers to send the request");
+        }
     }
 }
