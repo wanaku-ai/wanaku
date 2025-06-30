@@ -1,4 +1,4 @@
-package com.github.oscerd;
+package ai.wanaku.mcp.servers.aws.security;
 
 import java.util.List;
 import java.util.Map;
