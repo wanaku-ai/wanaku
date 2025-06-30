@@ -5,9 +5,12 @@ import ai.wanaku.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
@@ -17,11 +20,16 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
     protected final EmbeddedCacheManager cacheManager;
     private final ReentrantLock lock = new ReentrantLock();
 
+    private static final String DEFAULT_DELETE_TEMPLATE = "DELETE FROM %s r WHERE %s";
+
+
     protected AbstractInfinispanRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
         this.cacheManager = cacheManager;
 
         configure(configuration);
     }
+
+
 
     @Override
     public A persist(A entity) {
@@ -134,6 +142,7 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
     }
 
     @Override
+    @Deprecated
     public boolean remove(Predicate<A> matching) {
         final Cache<Object, A> cache = cacheManager.getCache(entityName());
 
@@ -144,4 +153,48 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
             lock.unlock();
         }
     }
+
+    /**
+     * Removes entities where the specified field matches the given value.
+     * Uses an Ickle query for efficient bulk deletion.
+     *
+     * @param fieldName the name of the field to match against, must not be null or blank
+     * @param fieldValue the value that the field must equal for removal, must not be null
+     * @return the number of entities removed
+     * @throws IllegalArgumentException if fieldName is null/blank or fieldValue is null
+     * @throws WanakuException if the query execution fails
+     */
+    public int removeByField(String fieldName, Object fieldValue) {
+        return removeByFields(Map.of(fieldName, fieldValue));
+    }
+
+    /**
+     * Removes entities where all specified fields match their corresponding values.
+     * Uses an Ickle query with AND conditions for efficient bulk deletion.
+     *
+     * @param fields map of field names to their required values for removal
+     * @return the number of entities removed
+     * @throws IllegalArgumentException if fields map is null or empty
+     * @throws WanakuException if the query execution fails
+     */
+    public int removeByFields(Map<String, Object> fields){
+        if (fields == null || fields.isEmpty()) {
+            throw new IllegalArgumentException("Fields map cannot be null or empty");
+        }
+        var cache = cacheManager.getCache(entityName());
+        var whereClause = fields.keySet().stream()
+                .map(field -> "r.%s = :%s".formatted(field, field))
+                .collect(Collectors.joining(" AND "));
+
+        var queryString = DEFAULT_DELETE_TEMPLATE.formatted(
+                entityType().getCanonicalName(),
+                whereClause);
+        var query = cache.query(queryString);
+
+        // Set all parameters
+        fields.forEach(query::setParameter);
+
+        return query.executeStatement();
+    }
+
 }

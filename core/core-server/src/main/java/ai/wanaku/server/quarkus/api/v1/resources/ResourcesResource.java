@@ -54,8 +54,12 @@ public class ResourcesResource {
     @Path("/remove")
     @PUT
     public Response remove(@QueryParam("resource") String resource) throws WanakuException {
-        resourcesBean.remove(resource);
-        return Response.ok().build();
+        int deleteCount = resourcesBean.removeByName(resource);
+        if (deleteCount > 0) {
+            return Response.ok().build();
+        }else{
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 
     @Path("/update")

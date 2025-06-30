@@ -3,6 +3,7 @@ package ai.wanaku.core.persistence.api;
 import ai.wanaku.api.types.WanakuEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -57,8 +58,30 @@ public interface WanakuRepository<A extends WanakuEntity, C> {
 
     /**
      * Remove entities matching a predicate
+     *
      * @param matching the predicate to match
      * @return true if records were removed or false otherwise
      */
     boolean remove(Predicate<A> matching);
+
+
+    /**
+     * Removes entities from the cache where the specified field matches the given value.
+     * Uses an Ickle query to perform bulk deletion based on field criteria.
+     *
+     * @param fieldName  the name of the field to match against
+     * @param fieldValue the value that the field must equal for removal
+     * @return the number of entities removed from the cache
+     */
+    int removeByField(String fieldName, Object fieldValue);
+
+    /**
+     * Removes entities from the cache where all specified fields match their corresponding values.
+     * Uses an Ickle query with AND conditions for multiple field criteria.
+     *
+     * @param fields map of field names to their required values for removal
+     * @return the number of entities removed from the cache
+     * @throws IllegalArgumentException if fields map is null or empty
+     */
+    int removeByFields(Map<String, Object> fields);
 }

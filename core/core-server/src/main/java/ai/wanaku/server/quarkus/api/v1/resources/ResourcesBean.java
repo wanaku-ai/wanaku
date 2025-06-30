@@ -1,5 +1,7 @@
 package ai.wanaku.server.quarkus.api.v1.resources;
 
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.server.quarkus.common.AbstractBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -13,11 +15,11 @@ import ai.wanaku.server.quarkus.common.ResourceHelper;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
 import java.util.List;
-import java.util.Optional;
+
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class ResourcesBean {
+public class ResourcesBean  extends AbstractBean<ResourceReference> {
     private static final Logger LOG = Logger.getLogger(ResourcesBean.class);
 
     @Inject
@@ -70,12 +72,17 @@ public class ResourcesBean {
     }
 
     public void remove(String name) {
-        if (!resourceReferenceRepository.remove(ref -> removeReference(name, ref))) {
+        if ( resourceReferenceRepository.removeByField("name", name) == 0) {
             LOG.warnf("No references named %s where found", name);
         }
     }
 
     public void update(ResourceReference resource) {
         resourceReferenceRepository.update(resource.getId(), resource);
+    }
+
+    @Override
+    protected  WanakuRepository<ResourceReference, String> getRepository() {
+        return resourceReferenceRepository;
     }
 }

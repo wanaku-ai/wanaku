@@ -63,8 +63,12 @@ public class ToolsResource {
     @Path("/remove")
     @PUT
     public Response remove(@QueryParam("tool") String tool) throws WanakuException {
-        toolsBean.remove(tool);
-        return Response.ok().build();
+        int deleteCount = toolsBean.removeByName(tool);
+        if (deleteCount > 0) {
+            return Response.ok().build();
+        }else{
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 
     @Path("/update")
@@ -73,6 +77,7 @@ public class ToolsResource {
     public Response update(ToolReference resource) throws WanakuException {
         toolsBean.update(resource);
         return Response.ok().build();
+
     }
 
     @Path("/")

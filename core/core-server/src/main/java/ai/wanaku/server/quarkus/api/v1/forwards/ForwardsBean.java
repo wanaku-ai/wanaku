@@ -1,5 +1,7 @@
 package ai.wanaku.server.quarkus.api.v1.forwards;
 
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.server.quarkus.common.AbstractBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -27,7 +29,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class ForwardsBean {
+public class ForwardsBean  extends AbstractBean<ForwardReference> {
     private static final Logger LOG = Logger.getLogger(ForwardsBean.class);
 
     @Inject
@@ -62,14 +64,7 @@ public class ForwardsBean {
                 return true;
             }
         }
-
         return false;
-    }
-
-    public void remove(ForwardReference reference) {
-        if (!forwardReferenceRepository.remove(r -> removeReference(reference, r))) {
-            LOG.warnf("No references named %s where found", reference.getName());
-        }
     }
 
     private void removeRemoteResources(ForwardResolver forwardResolver) {
@@ -186,5 +181,10 @@ public class ForwardsBean {
 
     public void update(ForwardReference resource) {
         forwardReferenceRepository.update(resource.getName(), resource);
+    }
+
+    @Override
+    protected  WanakuRepository<ForwardReference, String> getRepository() {
+        return forwardReferenceRepository;
     }
 }
