@@ -105,6 +105,7 @@
         <module>capabilities</module>
         <module>archetypes</module>
         <module>jbang</module>
+        <module>mcp-servers</module>
     </modules>
 
     <profiles>
