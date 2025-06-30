@@ -1,0 +1,4 @@
+2025-06-26 14:33:24,767 ghost /home/oscerd/.sdkman/candidates/java/17.0.8-tem/bin/java[33190] INFO  [io.quarkus] (main) aws-security-tool 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.20.0) started in 1.247s. 
+2025-06-26 14:33:24,775 ghost /home/oscerd/.sdkman/candidates/java/17.0.8-tem/bin/java[33190] INFO  [io.quarkus] (main) Profile prod activated. 
+2025-06-26 14:33:24,775 ghost /home/oscerd/.sdkman/candidates/java/17.0.8-tem/bin/java[33190] INFO  [io.quarkus] (main) Installed features: [cdi, mcp-server-stdio, qute, smallrye-context-propagation, vertx]
+2025-06-26 14:48:16,025 ghost /home/oscerd/.sdkman/candidates/java/17.0.8-tem/bin/java[33190] INFO  [io.quarkus] (main) aws-security-tool stopped in 0.022s
