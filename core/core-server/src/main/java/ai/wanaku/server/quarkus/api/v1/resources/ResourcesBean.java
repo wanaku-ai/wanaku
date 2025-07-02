@@ -65,14 +65,10 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
 
     private void doExposeResource(ResourceReference resourceReference) {
         if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
-            LOG.debugf("Exposing resource %s in namespace %s", resourceReference.getName(), resourceReference.getNamespace());
-
             final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
 
             ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceResolver::read);
         } else {
-            LOG.debugf("Exposing resource %s", resourceReference.getName());
-
             ResourceHelper.expose(resourceReference, resourceManager, resourceResolver::read);
         }
     }

@@ -52,10 +52,12 @@ public final class ResourceHelper {
                     new ResourceResponse(handler.apply(args, resourceReference)));
 
         if (namespace != null) {
+            LOG.debugf("Exposing resource %s in namespace %s", resourceReference.getName(), resourceReference.getNamespace());
             resourceDefinition
                     .setServerName(namespace.getPath())
                     .register();
         } else {
+            LOG.debugf("Exposing resource %s", resourceReference.getName());
             resourceDefinition
                     .register();
         }
