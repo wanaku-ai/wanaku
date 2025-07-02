@@ -64,16 +64,12 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
 
         if (!StringHelper.isEmpty(toolReference.getNamespace())) {
-            LOG.debugf("Registering tool %s in namespace %s", toolReference.getName(), toolReference.getNamespace());
-
             final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
 
             Tool tool = toolsResolver.resolve(toolReference);
             ToolsHelper.registerTool(toolReference, toolManager, namespace, tool::call);
 
         } else {
-            LOG.debugf("Registering tool %s", toolReference.getName());
-
             Tool tool = toolsResolver.resolve(toolReference);
             ToolsHelper.registerTool(toolReference, toolManager, tool::call);
         }

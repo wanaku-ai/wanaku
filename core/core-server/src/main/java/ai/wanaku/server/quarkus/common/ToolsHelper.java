@@ -85,7 +85,7 @@ public class ToolsHelper {
     public static void registerTool(
             CallableReference toolReference, ToolManager toolManager, Namespace namespace,
             BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {
-        LOG.debugf("Registering tool: %s", toolReference.getName());
+
 
         ToolManager.ToolDefinition toolDefinition = toolManager.newTool(toolReference.getName())
                 .setDescription(toolReference.getDescription());
@@ -100,12 +100,13 @@ public class ToolsHelper {
         }
 
         if (namespace != null) {
-            LOG.infof("Setting namespace to %s", namespace.getPath());
+            LOG.debugf("Registering tool %s in namespace %s", toolReference.getName(), toolReference.getNamespace());
             toolDefinition
                     .setServerName(namespace.getPath())
                     .setHandler(ta ->  handler.apply(ta, toolReference))
                     .register();
         } else {
+            LOG.debugf("Registering tool %s", toolReference.getName());
             toolDefinition
                     .setHandler(ta -> handler.apply(ta, toolReference))
                     .register();
