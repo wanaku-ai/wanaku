@@ -35,12 +35,12 @@ public class ForwardsResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response removeForward(ForwardReference reference) {
-        int deleteCount = forwardsBean.removeByName(reference.getName());
+        int deleteCount = forwardsBean.remove(reference);
         if (deleteCount > 0) {
             return Response.ok().build();
-        }else{
-            return Response.status(Response.Status.NOT_FOUND).build();
         }
+
+        return Response.status(Response.Status.NOT_FOUND).build();
     }
 
 
