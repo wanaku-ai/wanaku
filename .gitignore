@@ -18,6 +18,7 @@ wanaku-router/.quinoa/
 *.iws
 *.iml
 *.ipr
+*aws*.log.*
 
 ### Eclipse ###
 .apt_generated
