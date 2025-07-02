@@ -103,9 +103,9 @@
         <module>wanaku-router</module>
         <module>cli</module>
         <module>capabilities</module>
+        <module>mcp-servers</module>
         <module>archetypes</module>
         <module>jbang</module>
-        <module>mcp-servers</module>
     </modules>
 
     <profiles>
