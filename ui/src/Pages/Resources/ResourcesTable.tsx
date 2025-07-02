@@ -24,7 +24,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
   onDelete,
   onAdd,
 }) => {
-  const headers = ["Name", "Location", "Type", "Description", "Actions"];
+  const headers = ["Name", "Location", "Type", "Description", "Namespace", "Actions"];
 
   return (
     <Grid>
@@ -55,6 +55,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
                 <TableCell>{row.location}</TableCell>
                 <TableCell>{row.type}</TableCell>
                 <TableCell>{row.description}</TableCell>
+                <TableCell>{row.namespace || "default"}</TableCell>
                 <TableCell>
                   <Button
                     kind="ghost"
