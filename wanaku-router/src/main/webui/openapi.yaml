@@ -24,6 +24,8 @@ components:
           type: string
         address:
           type: string
+        namespace:
+          type: string
     InputSchema:
       type: object
       properties:

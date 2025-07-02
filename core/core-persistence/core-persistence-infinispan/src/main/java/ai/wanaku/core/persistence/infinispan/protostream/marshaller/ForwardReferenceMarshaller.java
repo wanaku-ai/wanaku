@@ -21,6 +21,7 @@ public class ForwardReferenceMarshaller implements MessageMarshaller<ForwardRefe
         ref.setId(reader.readString("id"));
         ref.setName(reader.readString("name"));
         ref.setAddress(reader.readString("address"));
+        ref.setNamespace(reader.readString("namespace"));
         return ref;
     }
 
@@ -29,5 +30,6 @@ public class ForwardReferenceMarshaller implements MessageMarshaller<ForwardRefe
         writer.writeString("id", ref.getId());
         writer.writeString("name", ref.getName());
         writer.writeString("address", ref.getAddress());
+        writer.writeString("namespace", ref.getNamespace());
     }
 }

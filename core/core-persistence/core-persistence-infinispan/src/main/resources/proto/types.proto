@@ -7,6 +7,7 @@ message ForwardReference {
   string id = 1;
   string name = 2;
   string address = 3;
+  string namespace = 4;
 }
 
 // Represents the input schema for a tool, including type, properties, and required fields.
