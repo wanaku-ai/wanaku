@@ -51,19 +51,18 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
         forwardReferenceRepository = forwardReferenceRepositoryInstance.get();
     }
 
-    public boolean removeReference(ForwardReference matching, ForwardReference test) {
-        if (matching.getName().equals(test.getName())) {
-            ForwardResolver forwardResolver = forwardRegistry.getResolver(test);
-            if (forwardResolver != null) {
-                try {
-                    removeRemoteTools(forwardResolver);
-                    removeRemoteResources(forwardResolver);
-                } finally {
-                    forwardRegistry.unlink(test);
-                }
-                return true;
+    public boolean removeReference(ForwardReference forwardReference) {
+        ForwardResolver forwardResolver = forwardRegistry.getResolver(forwardReference);
+        if (forwardResolver != null) {
+            try {
+                removeRemoteTools(forwardResolver);
+                removeRemoteResources(forwardResolver);
+            } finally {
+                forwardRegistry.unlink(forwardReference);
             }
+            return true;
         }
+
         return false;
     }
 
@@ -91,6 +90,17 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
                         remoteToolReference.getName());
             }
         }
+    }
+
+    public int remove(ForwardReference reference) {
+        int deleteCount = removeByName(reference.getName());
+        if (deleteCount > 0) {
+            if (!removeReference(reference)) {
+                LOG.warnf("Failed to remove tools and resources references for %s", reference.getName());
+            }
+        }
+
+        return deleteCount;
     }
 
     public void forward(ForwardReference forwardReference) {
