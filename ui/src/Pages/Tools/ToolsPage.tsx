@@ -9,8 +9,9 @@ import {
 } from "@carbon/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTools } from "../../hooks/api/use-tools";
-import { ToolReference } from "../../models";
+import { Namespace, ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
+import { useNamespaces } from "../../hooks/api/use-namespaces";
 
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
@@ -147,6 +148,19 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
   const [uri, setUri] = useState("");
   const [toolType, setToolType] = useState("http");
   const [inputSchema, setInputSchema] = useState("");
+  const { listNamespaces } = useNamespaces();
+  const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([]);
+  const [selectedNamespace, setSelectedNamespace] = useState('');
+    
+    useEffect(() => {
+      listNamespaces().then((result) => {
+      setFetchedNamespaceData(result.data.data as Namespace[]);
+      });
+    }, [listNamespaces]);
+  
+    const handleSelectionChange = (event) => {
+      setSelectedNamespace(event.target.value);
+    };
 
   const handleSubmit = () => {
     try {
@@ -157,6 +171,7 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
         uri,
         type: toolType,
         inputSchema: schema,
+        namespace: selectedNamespace,
       });
     } catch (error) {
       console.error("Invalid JSON in input schema:", error);
@@ -211,6 +226,23 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
         value={inputSchema}
         onChange={(e) => setInputSchema(e.target.value)}
       />
+      <Select
+        id="namespace"
+        labelText="Select a Namespace"
+        helperText="Choose a Namespace from the list"
+        value={selectedNamespace}
+        onChange={handleSelectionChange}
+      >
+        <SelectItem text="Choose an option" value="" />
+        {fetchedNamespaceData.map((namespace) => (
+          <SelectItem
+            key={namespace.id}
+            id={namespace.id}
+            text={namespace.path || "default"}
+            value={namespace.id}
+          />
+        ))}
+      </Select>
     </Modal>
   );
 };

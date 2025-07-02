@@ -44,6 +44,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
     "Description",
     "URI",
     "Input Schema",
+    "Namespace",
     "Actions",
   ];
 
@@ -86,6 +87,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                 <TableCell style={{ fontSize: "14px" }}>
                   {formatInputSchema(row.inputSchema)}
                 </TableCell>
+                <TableCell>{row.namespace || "default"}</TableCell>
                 <TableCell>
                   <Button
                     kind="ghost"

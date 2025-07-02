@@ -61,6 +61,9 @@ function App() {
               <HeaderMenuItem as={Link} to={Links.Capabilities}>
                 Capabilities
               </HeaderMenuItem>
+              <HeaderMenuItem as={Link} to={Links.Namespaces}>
+                Namespaces
+              </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>
               <HeaderGlobalAction

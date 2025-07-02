@@ -4,8 +4,9 @@ import {
   Select,
   SelectItem,
 } from "@carbon/react";
-import React, { useState } from "react";
-import { ResourceReference } from "../../models";
+import React, { useEffect, useState } from "react";
+import { Namespace, ResourceReference } from "../../models";
+import { useNamespaces } from "../../hooks/api/use-namespaces";
 
 interface AddResourceModalProps {
   onRequestClose: () => void;
@@ -20,6 +21,19 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [resourceType, setResourceType] = useState("file");
+  const { listNamespaces } = useNamespaces();
+  const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
+  const [selectedNamespace, setSelectedNamespace] = useState('');
+  
+  useEffect(() => {
+    listNamespaces().then((result) => {
+    setFetchedData(result.data.data as Namespace[]);
+    });
+  }, [listNamespaces]);
+
+  const handleSelectionChange = (event) => {
+    setSelectedNamespace(event.target.value);
+  };
 
   const handleSubmit = () => {
     onSubmit({
@@ -27,6 +41,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       description,
       location,
       type: resourceType,
+      namespace: selectedNamespace,
     });
   };
 
@@ -70,6 +85,22 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         <SelectItem value="file" text="Local file" />
         <SelectItem value="aws2-s3" text="AWS S3" />
         <SelectItem value="ftp" text="FTP" />
+      </Select>
+      <Select
+        id="namespace"
+        labelText="Select a Namespace"
+        helperText="Choose a Namespace from the list"
+        value={selectedNamespace}
+        onChange={handleSelectionChange}
+      >
+        <SelectItem text="Choose an option" value="" />
+        {fetchedData.map((namespace) => (
+          <SelectItem
+            id={namespace.id}
+            text={namespace.path || "default"}
+            value={namespace.id}
+          />
+        ))}
       </Select>
     </Modal>
   );
