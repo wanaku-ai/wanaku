@@ -33,6 +33,9 @@
           },
           "address" : {
             "type" : "string"
+          },
+          "namespace" : {
+            "type" : "string"
           }
         }
       },

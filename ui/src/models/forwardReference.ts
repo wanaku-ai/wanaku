@@ -9,4 +9,5 @@ export interface ForwardReference {
   id?: string;
   name?: string;
   address?: string;
+  namespace?: string;
 }

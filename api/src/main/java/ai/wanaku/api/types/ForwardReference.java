@@ -12,6 +12,7 @@ public class ForwardReference implements WanakuEntity<String> {
     private String id;
     private String name;
     private String address;
+    private String namespace;
 
     /**
      * The name of the reference
@@ -57,25 +58,36 @@ public class ForwardReference implements WanakuEntity<String> {
         this.id = id;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
         ForwardReference that = (ForwardReference) o;
-        return Objects.equals(name, that.name) && Objects.equals(address, that.address);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
+                address, that.address) && Objects.equals(namespace, that.namespace);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, address);
+        return Objects.hash(id, name, address, namespace);
     }
 
     @Override
     public String toString() {
         return "ForwardReference{" +
-                "name='" + name + '\'' +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
                 ", address='" + address + '\'' +
+                ", namespace='" + namespace + '\'' +
                 '}';
     }
 }

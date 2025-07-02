@@ -1,6 +1,9 @@
 package ai.wanaku.server.quarkus.api.v1.forwards;
 
+import ai.wanaku.api.types.Namespace;
 import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.core.util.StringHelper;
+import ai.wanaku.server.quarkus.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.server.quarkus.common.AbstractBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,6 +43,9 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
 
     @Inject
     ForwardRegistry forwardRegistry;
+
+    @Inject
+    NamespacesBean namespacesBean;
 
     @Inject
     Instance<ForwardReferenceRepository> forwardReferenceRepositoryInstance;
@@ -124,17 +130,23 @@ public class ForwardsBean  extends AbstractBean<ForwardReference> {
     private void registerForward(ForwardReference forwardReference) {
         ForwardResolver forwardResolver = forwardRegistry.newResolverForService(forwardReference);
 
+        Namespace ns = null;
+
+        if (!StringHelper.isEmpty(forwardReference.getNamespace())) {
+            ns = namespacesBean.alocateNamespace(forwardReference.getNamespace());
+        }
+
         List<ResourceReference> resourceReferences = forwardResolver.listResources();
         for (ResourceReference reference : resourceReferences) {
-            LOG.infof("Exposing remote resource %s", reference.getName());
-            ResourceHelper.expose(reference, resourceManager, forwardResolver::read);
+            LOG.debugf("Exposing remote resource %s", reference.getName());
+            ResourceHelper.expose(reference, resourceManager, ns, forwardResolver::read);
         }
 
         List<RemoteToolReference> toolReferences = forwardResolver.listTools();
         for (RemoteToolReference reference : toolReferences) {
             LOG.infof("Binding remote tool %s", reference.getName());
             Tool tool = forwardResolver.resolve(reference);
-            ToolsHelper.registerTool(reference, toolManager, tool::call);
+            ToolsHelper.registerTool(reference, toolManager, ns, tool::call);
         }
 
         forwardRegistry.link(forwardReference, forwardResolver);
