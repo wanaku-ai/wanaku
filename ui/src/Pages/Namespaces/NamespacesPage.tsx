@@ -1,30 +1,39 @@
 import { ToastNotification } from "@carbon/react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Namespace } from "../../models";
 import { NamespaceTable } from "./NamespacesTable";
-import { useNamespaces } from "../../hooks/api/use-namespaces";
+import { listNamespaces } from "../../hooks/api/use-namespaces";
 
 export const NamespacesPage: React.FC = () => {
-  const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { listNamespaces } = useNamespaces();
+  const [namespaces, setNamespaces] = useState<Namespace[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Use useCallback to memoize the fetch function
+  const loadNamespaces = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const result = await listNamespaces(null);
+      setNamespaces(result.data.data as Namespace[]);
+    } catch (error) {
+      setErrorMessage('Failed to load namespaces');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty dependency array since getCachedNamespacesList handles its own caching
 
   useEffect(() => {
-    listNamespaces().then((result) => {
-    setFetchedData(result.data.data as Namespace[]);
-    setIsLoading(false);
-    });
-  }, [listNamespaces]);
+    loadNamespaces();
+  }, [loadNamespaces]);
 
   useEffect(() => {
     if (errorMessage) {
-        const timer = setTimeout(() => {
+      const timer = setTimeout(() => {
         setErrorMessage(null);
-        }, 10000);
-        return () => clearTimeout(timer);
+      }, 10000);
+      return () => clearTimeout(timer);
     }
-    }, [errorMessage]);
+  }, [errorMessage]);
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -47,11 +56,7 @@ export const NamespacesPage: React.FC = () => {
         Each namespace acts as a separate logical container to ensure tools don't interfere with each other.
       </p>
       <div id="page-content">
-        {fetchedData && (
-          <NamespaceTable
-            namespaces={fetchedData}
-          />
-        )}
+        <NamespaceTable namespaces={namespaces} />
       </div>
     </div>
   );

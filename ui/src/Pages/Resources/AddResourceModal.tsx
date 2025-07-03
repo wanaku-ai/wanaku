@@ -6,7 +6,7 @@ import {
 } from "@carbon/react";
 import React, { useEffect, useState } from "react";
 import { Namespace, ResourceReference } from "../../models";
-import { useNamespaces } from "../../hooks/api/use-namespaces";
+import { listNamespaces } from "../../hooks/api/use-namespaces";
 
 interface AddResourceModalProps {
   onRequestClose: () => void;
@@ -21,13 +21,12 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [resourceType, setResourceType] = useState("file");
-  const { listNamespaces } = useNamespaces();
   const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
   
   useEffect(() => {
     listNamespaces().then((result) => {
-    setFetchedData(result.data.data as Namespace[]);
+      setFetchedData(result.data.data as Namespace[]);
     });
   }, [listNamespaces]);
 
