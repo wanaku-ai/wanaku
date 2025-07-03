@@ -12,6 +12,7 @@ import {
 } from "@carbon/react";
 import { FunctionComponent } from "react";
 import { ToolReference } from "../../models";
+import { getNamespacePathById } from "../../hooks/api/use-namespaces";
 
 interface ToolListProps {
   fetchedData: ToolReference[];
@@ -87,7 +88,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                 <TableCell style={{ fontSize: "14px" }}>
                   {formatInputSchema(row.inputSchema)}
                 </TableCell>
-                <TableCell>{row.namespace || "default"}</TableCell>
+                <TableCell>{getNamespacePathById(row.namespace) || "default"}</TableCell>
                 <TableCell>
                   <Button
                     kind="ghost"

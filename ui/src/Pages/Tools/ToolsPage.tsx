@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTools } from "../../hooks/api/use-tools";
 import { Namespace, ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
-import { useNamespaces } from "../../hooks/api/use-namespaces";
+import { listNamespaces } from "../../hooks/api/use-namespaces";
 
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
@@ -148,7 +148,6 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
   const [uri, setUri] = useState("");
   const [toolType, setToolType] = useState("http");
   const [inputSchema, setInputSchema] = useState("");
-  const { listNamespaces } = useNamespaces();
   const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
     

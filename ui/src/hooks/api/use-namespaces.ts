@@ -1,18 +1,45 @@
-import { useCallback } from "react"
-import { getApiV1NamespacesList, getApiV1NamespacesListResponse } from "../../api/wanaku-router-api";
+import { getApiV1NamespacesList } from "../../api/wanaku-router-api";
+import { Namespace } from "../../models";
 
-export const useNamespaces = () => {
+// Simple in-memory cache for Client Components
+let namespacesCache: {
+  data: any;
+  timestamp: number;
+} | null = null;
 
-    const listNamespaces = useCallback(
-        (
-          options?: RequestInit
-        ): Promise<getApiV1NamespacesListResponse> => {
-          return getApiV1NamespacesList(options);
-        },
-        []
-    ); 
+export const listNamespaces = async (options: any = null) => {
+  const now = Date.now();
+  
+  // Check if we have valid cached data
+  if (namespacesCache) {
+    console.log('Returning cached namespaces data');
+    return namespacesCache.data;
+  }
+  
+  // Fetch fresh data
+  console.log('Fetching fresh namespaces data');
+  const result = await getApiV1NamespacesList(options);
+  
+  // Cache the result
+  namespacesCache = {
+    data: result,
+    timestamp: now
+  };
+  
+  return result;
+};
 
-    return {
-        listNamespaces
-    };
+// Function to clear cache if needed
+export const clearNamespacesCache = () => {
+  namespacesCache = null;
+};
+
+export const getNamespacePathById = (id: any) => {
+  if (namespacesCache) {
+    const data = namespacesCache.data.data.data as Namespace[];
+
+    return data.find(namespace => namespace.id == id)?.path;
+  }
+
+  return id;
 }
