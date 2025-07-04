@@ -10,9 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@carbon/react";
-import { FunctionComponent } from "react";
+import { FunctionComponent, useContext } from "react";
 import { ToolReference } from "../../models";
 import { getNamespacePathById } from "../../hooks/api/use-namespaces";
+import { NamespaceContext } from "../../contexts/NamespaceContext";
 
 interface ToolListProps {
   fetchedData: ToolReference[];
@@ -49,6 +50,14 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
     "Actions",
   ];
 
+  const namespaceContext = useContext(NamespaceContext);
+
+  const filteredData = namespaceContext?.selectedNamespace
+    ? fetchedData.filter(
+        (tool) => tool.namespace === namespaceContext.selectedNamespace
+      )
+    : fetchedData;
+
   return (
     <Grid>
       <Column lg={12} md={8} sm={4}>
@@ -77,7 +86,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {fetchedData.map((row: ToolReference) => (
+            {filteredData.map((row: ToolReference) => (
               <TableRow key={row.name}>
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.type}</TableCell>

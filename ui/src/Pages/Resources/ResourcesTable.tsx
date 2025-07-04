@@ -10,9 +10,10 @@ import {
   Button,
 } from "@carbon/react";
 import { TrashCan } from "@carbon/icons-react";
-import React from "react";
+import React, { useContext } from "react";
 import { ResourceReference } from "../../models";
 import { getNamespacePathById } from "../../hooks/api/use-namespaces";
+import { NamespaceContext } from "../../contexts/NamespaceContext";
 
 interface ResourcesTableProps {
   resources: ResourceReference[];
@@ -26,6 +27,14 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
   onAdd,
 }) => {
   const headers = ["Name", "Location", "Type", "Description", "Namespace", "Actions"];
+
+  const namespaceContext = useContext(NamespaceContext);
+
+  const filteredResources = namespaceContext?.selectedNamespace
+    ? resources.filter(
+        (resource) => resource.namespace === namespaceContext.selectedNamespace
+      )
+    : resources;
 
   return (
     <Grid>
@@ -50,7 +59,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {resources.map((row: ResourceReference) => (
+            {filteredResources.map((row: ResourceReference) => (
               <TableRow key={row.name}>
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.location}</TableCell>

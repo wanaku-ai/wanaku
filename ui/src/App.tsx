@@ -17,6 +17,7 @@ import {
 import { Link, Outlet } from "react-router-dom";
 import "./App.scss";
 import { ExternalLinks, Links } from "./router/links.models";
+import { NamespaceSelect } from "./components/Namespace/NamespaceSelect";
 import wanakuLogo from "./assets/wanaku.svg";
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
               </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>
+              <NamespaceSelect />
               <HeaderGlobalAction
                 aria-label="Search"
                 onClick={action("search click")}
