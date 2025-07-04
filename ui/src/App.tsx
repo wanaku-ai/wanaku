@@ -18,11 +18,14 @@ import { Link, Outlet } from "react-router-dom";
 import "./App.scss";
 import { ExternalLinks, Links } from "./router/links.models";
 import wanakuLogo from "./assets/wanaku.svg";
+import { listNamespaces } from "./hooks/api/use-namespaces";
 
 function App() {
   const action = (click: string) => () => {
     console.log(click);
   };
+
+  listNamespaces(); // pre load namespaces and instatiate singleton during startup
 
   return (
     <HeaderContainer

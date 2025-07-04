@@ -7,6 +7,8 @@ import {
 import React, { useEffect, useState } from "react";
 import { Namespace, ResourceReference } from "../../models";
 import { listNamespaces } from "../../hooks/api/use-namespaces";
+import { useTargets } from "../../hooks/api/use-targets";
+import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
 
 interface AddResourceModalProps {
   onRequestClose: () => void;
@@ -23,6 +25,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [resourceType, setResourceType] = useState("file");
   const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
+  const { listManagementResources } = useTargets();
   
   useEffect(() => {
     listNamespaces().then((result) => {
@@ -74,17 +77,11 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         value={location}
         onChange={(e) => setLocation(e.target.value)}
       />
-      <Select
-        id="resource-type"
-        labelText="Type"
-        defaultValue="file"
+      <TargetTypeSelect
         value={resourceType}
-        onChange={(e) => setResourceType(e.target.value)}
-      >
-        <SelectItem value="file" text="Local file" />
-        <SelectItem value="aws2-s3" text="AWS S3" />
-        <SelectItem value="ftp" text="FTP" />
-      </Select>
+        onChange={setResourceType}
+        apiCall={listManagementResources}
+      />
       <Select
         id="namespace"
         labelText="Select a Namespace"

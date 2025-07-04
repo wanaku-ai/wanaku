@@ -1,5 +1,5 @@
 import { ToastNotification } from "@carbon/react";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Namespace } from "../../models";
 import { NamespaceTable } from "./NamespacesTable";
 import { listNamespaces } from "../../hooks/api/use-namespaces";
@@ -9,22 +9,13 @@ export const NamespacesPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<Namespace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use useCallback to memoize the fetch function
-  const loadNamespaces = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const result = await listNamespaces(null);
-      setNamespaces(result.data.data as Namespace[]);
-    } catch (error) {
-      setErrorMessage('Failed to load namespaces');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []); // Empty dependency array since getCachedNamespacesList handles its own caching
-
   useEffect(() => {
-    loadNamespaces();
-  }, [loadNamespaces]);
+    listNamespaces().then((result) => {
+      setNamespaces(result.data.data as Namespace[]);
+      setIsLoading(false);
+    });
+
+  }, [listNamespaces]);
 
   useEffect(() => {
     if (errorMessage) {

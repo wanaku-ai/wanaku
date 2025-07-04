@@ -12,6 +12,8 @@ import { useTools } from "../../hooks/api/use-tools";
 import { Namespace, ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
 import { listNamespaces } from "../../hooks/api/use-namespaces";
+import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
+import { useTargets } from "../../hooks/api/use-targets";
 
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
@@ -150,6 +152,7 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
   const [inputSchema, setInputSchema] = useState("");
   const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
+  const { listManagementTools } = useTargets();
     
     useEffect(() => {
       listNamespaces().then((result) => {
@@ -207,17 +210,11 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
         value={uri}
         onChange={(e) => setUri(e.target.value)}
       />
-      <Select
-        id="tool-type"
-        labelText="Type"
-        defaultValue="http"
+      <TargetTypeSelect
         value={toolType}
-        onChange={(e) => setToolType(e.target.value)}
-      >
-        <SelectItem value="http" text="HTTP" />
-        <SelectItem value="kafka" text="Kafka" />
-        <SelectItem value="camel-route" text="Camel Route (for prototyping)" />
-      </Select>
+        onChange={setToolType}
+        apiCall={listManagementTools}
+      />
       <TextInput
         id="input-schema"
         labelText="Input Schema"
