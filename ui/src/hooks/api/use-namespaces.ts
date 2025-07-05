@@ -34,11 +34,15 @@ export const clearNamespacesCache = () => {
   namespacesCache = null;
 };
 
-export const getNamespacePathById = (id: any) => {
+export const getNamespacePathById = (id?: string): string | undefined => {
+  if (!id) {
+    return undefined;
+  }
+
   if (namespacesCache) {
     const data = namespacesCache.data.data.data as Namespace[];
-
-    return data.find(namespace => namespace.id == id)?.path;
+    const path = data.find(namespace => namespace.id === id)?.path;
+    return path ?? id;
   }
 
   return id;
