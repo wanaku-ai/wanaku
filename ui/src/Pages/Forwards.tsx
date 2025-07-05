@@ -7,6 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableToolbar,
+  TableToolbarContent,
 } from "@carbon/react";
 import { useEffect, useState } from "react";
 import { listForwards } from "../hooks/api/use-forwards";
@@ -52,6 +54,17 @@ export const Component = () => {
           title="Forwards"
           description="A list of forwards registered in the system."
         >
+          <TableToolbar>
+            <TableToolbarContent>
+              {/* <TableToolbarSearch
+                value={""}
+                onChange={function Va(e: ChangeEvent<HTMLInputElement>): void {
+                  throw new Error("Function not implemented.");
+                }}
+                id={"search-forwards"}
+              ></TableToolbarSearch> */}
+            </TableToolbarContent>
+          </TableToolbar>
           <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
