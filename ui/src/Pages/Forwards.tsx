@@ -48,24 +48,26 @@ export const Component = () => {
   }, []);
 
   return (
-    <DataTable rows={forwards} headers={headers}>
-      {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
-        <TableContainer
-          title="Forwards"
-          description="A list of forwards registered in the system."
-        >
-          <TableToolbar>
-            <TableToolbarContent>
-              {/* <TableToolbarSearch
+    <>
+      <h1 className="page-title">Forwards</h1>
+      <p className="page-description">
+        A list of forwards registered in the system.
+      </p>
+      <DataTable rows={forwards} headers={headers}>
+        {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
+          <TableContainer>
+            <TableToolbar>
+              <TableToolbarContent>
+                {/* <TableToolbarSearch
                 value={""}
                 onChange={function Va(e: ChangeEvent<HTMLInputElement>): void {
                   throw new Error("Function not implemented.");
                 }}
                 id={"search-forwards"}
               ></TableToolbarSearch> */}
-            </TableToolbarContent>
-          </TableToolbar>
-          <Table {...getTableProps()}>
+              </TableToolbarContent>
+            </TableToolbar>
+            <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
                 {headers.map((header) => (
@@ -88,5 +90,6 @@ export const Component = () => {
         </TableContainer>
       )}
     </DataTable>
+    </>
   );
 };
