@@ -20,15 +20,18 @@ const headers = [
 ];
 
 export const Component = () => {
-  const [forwards, setForwards] = useState<ForwardReference[]>([]);
+  const [forwards, setForwards] = useState<(ForwardReference & { id: string })[]>([]);
 
   useEffect(() => {
     listForwards().then((response) => {
       if (response.data?.data) {
-        const forwardsData = response.data.data.map((f: ForwardReference) => ({
-          ...f,
-          namespace: getNamespacePathById(f.namespace),
-        }));
+        const forwardsData = response.data.data
+          .filter((f: ForwardReference) => f.id)
+          .map((f: ForwardReference) => ({
+            ...f,
+            id: f.id!,
+            namespace: getNamespacePathById(f.namespace),
+          }));
         setForwards(forwardsData);
       }
     });
