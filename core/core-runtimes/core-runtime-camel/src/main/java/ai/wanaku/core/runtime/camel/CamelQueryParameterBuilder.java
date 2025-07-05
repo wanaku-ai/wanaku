@@ -4,7 +4,6 @@ import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.config.provider.api.ReservedConfigs;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class CamelQueryParameterBuilder {
     private final ConfigResource configResource;

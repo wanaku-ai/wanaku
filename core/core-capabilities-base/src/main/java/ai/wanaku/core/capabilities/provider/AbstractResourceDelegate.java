@@ -17,9 +17,9 @@ import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import java.util.HashMap;
+
 import java.util.List;
-import java.util.Map;
+
 import org.jboss.logging.Logger;
 
 /**

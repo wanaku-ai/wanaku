@@ -4,7 +4,6 @@ import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.config.provider.api.PropertyProvider;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;

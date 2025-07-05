@@ -19,7 +19,7 @@ public class NamespacesBean {
 
     private NamespaceRepository namespaceRepository;
 
-    private int maxNamespaces = 10;
+    private final int maxNamespaces = 10;
 
     @PostConstruct
     void init() {
