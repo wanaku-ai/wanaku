@@ -7,7 +7,6 @@ import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.core.capabilities.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
-import ai.wanaku.core.util.discovery.DiscoveryUtil;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.io.File;
 import java.net.URI;

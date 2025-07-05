@@ -56,16 +56,6 @@ public class ToolsHelper {
      * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
      *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
      */
-
-    /**
-     * Registers a tool with the given tool manager by applying the provided handler function
-     * to expose the tool's functionality.
-     *
-     * @param toolReference The reference to the tool being registered
-     * @param toolManager   The tool manager instance responsible for managing tools
-     * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
-     *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
-     */
     public static void registerTool(
             CallableReference toolReference, ToolManager toolManager,
             BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {

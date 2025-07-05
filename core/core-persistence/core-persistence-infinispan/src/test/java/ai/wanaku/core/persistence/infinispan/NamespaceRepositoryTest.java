@@ -25,7 +25,7 @@ public class NamespaceRepositoryTest {
     @Inject
     NamespaceRepository namespaceRepository;
 
-    private int maxNamespaces = 10;
+    private final int maxNamespaces = 10;
 
     @BeforeAll
     void setup() {

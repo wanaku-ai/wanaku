@@ -5,7 +5,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import io.quarkus.arc.lookup.LookupIfProperty;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;

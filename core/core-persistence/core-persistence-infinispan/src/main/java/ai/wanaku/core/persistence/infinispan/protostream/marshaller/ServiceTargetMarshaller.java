@@ -5,8 +5,6 @@ import ai.wanaku.api.types.providers.ServiceType;
 import org.infinispan.protostream.MessageMarshaller;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget> {
 

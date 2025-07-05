@@ -28,7 +28,6 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
