@@ -7,7 +7,7 @@ public enum EventType {
     UPDATE("update"),
     PING("ping");
 
-    private String value;
+    private final String value;
 
     EventType(String value) {
         this.value = value;

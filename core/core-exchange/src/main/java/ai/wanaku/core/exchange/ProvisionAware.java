@@ -1,7 +1,5 @@
 package ai.wanaku.core.exchange;
 
-import java.util.Map;
-
 /**
  * Interface used by delegates that can provide access to exchange-related properties.
  * <p>

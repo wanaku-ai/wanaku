@@ -9,7 +9,6 @@ import ai.wanaku.core.config.provider.file.SecretFileStore;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import java.net.URI;
-import java.util.List;
 
 public final class ConfigResourceLoader {
     private ConfigResourceLoader() {}
