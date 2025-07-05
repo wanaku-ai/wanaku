@@ -24,11 +24,13 @@ export const Component = () => {
 
   useEffect(() => {
     listForwards().then((response) => {
-      const forwardsData = response.data.data.map((f: ForwardReference) => ({
-        ...f,
-        namespace: getNamespacePathById(f.namespace),
-      }));
-      setForwards(forwardsData);
+      if (response.data?.data) {
+        const forwardsData = response.data.data.map((f: ForwardReference) => ({
+          ...f,
+          namespace: getNamespacePathById(f.namespace),
+        }));
+        setForwards(forwardsData);
+      }
     });
   }, []);
 
