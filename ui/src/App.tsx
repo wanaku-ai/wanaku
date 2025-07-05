@@ -67,6 +67,9 @@ function App() {
               <HeaderMenuItem as={Link} to={Links.Namespaces}>
                 Namespaces
               </HeaderMenuItem>
+              <HeaderMenuItem as={Link} to={Links.Forwards}>
+                Forwards
+              </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>
               <HeaderGlobalAction
@@ -127,6 +130,13 @@ function App() {
                 onClick={onClickSideNavExpand}
               >
                 LLMChat
+              </SideNavMenuItem>
+              <SideNavMenuItem
+                element={Link}
+                to="/forwards"
+                onClick={onClickSideNavExpand}
+              >
+                Forwards
               </SideNavMenuItem>
             </SideNavItems>
           </SideNav>

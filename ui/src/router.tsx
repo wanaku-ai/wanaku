@@ -33,6 +33,10 @@ export const router = createHashRouter([
         path: Links.Namespaces,
         lazy: async () => import("./Pages/Namespaces"),
       },
+      {
+        path: Links.Forwards,
+        lazy: async () => import("./Pages/Forwards"),
+      },
     ],
   },
 ]);

@@ -4,7 +4,8 @@ export const enum Links {
   Resources = "/resources",
   LLMChat = "/llmchat",
   Capabilities = "/capabilities",
-  Namespaces = "/namespaces"
+  Namespaces = "/namespaces",
+  Forwards = "/forwards"
 }
 
 export const enum ExternalLinks {
