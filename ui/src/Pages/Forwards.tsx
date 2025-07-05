@@ -19,17 +19,25 @@ const headers = [
   { key: "namespace", header: "Namespace" },
 ];
 
+interface ForwardRow {
+  id: string;
+  name?: string;
+  address?: string;
+  namespace?: string;
+}
+
 export const Component = () => {
-  const [forwards, setForwards] = useState<(ForwardReference & { id: string })[]>([]);
+  const [forwards, setForwards] = useState<ForwardRow[]>([]);
 
   useEffect(() => {
     listForwards().then((response) => {
       if (response.data?.data) {
-        const forwardsData = response.data.data
+        const forwardsData: ForwardRow[] = response.data.data
           .filter((f: ForwardReference) => f.id)
           .map((f: ForwardReference) => ({
-            ...f,
             id: f.id!,
+            name: f.name,
+            address: f.address,
             namespace: getNamespacePathById(f.namespace),
           }));
         setForwards(forwardsData);
