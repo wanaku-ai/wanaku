@@ -133,7 +133,7 @@ function App() {
               </SideNavMenuItem>
               <SideNavMenuItem
                 element={Link}
-                to="/forwards"
+                to={Links.Forwards}
                 onClick={onClickSideNavExpand}
               >
                 Forwards

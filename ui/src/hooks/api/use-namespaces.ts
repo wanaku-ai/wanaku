@@ -4,26 +4,26 @@ import { Namespace } from "../../models";
 // Simple in-memory cache for Client Components
 let namespacesCache: {
   data: any;
-  timestamp: number;
 } | null = null;
 
 export const listNamespaces = async (options: any = null) => {
-  const now = Date.now();
-  
   // Check if we have valid cached data
   if (namespacesCache) {
-    console.log('Returning cached namespaces data');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Returning cached namespaces data');
+    }
     return namespacesCache.data;
   }
   
   // Fetch fresh data
-  console.log('Fetching fresh namespaces data');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Fetching fresh namespaces data');
+  }
   const result = await getApiV1NamespacesList(options);
   
   // Cache the result
   namespacesCache = {
-    data: result,
-    timestamp: now
+    data: result
   };
   
   return result;
@@ -42,8 +42,8 @@ export const getNamespacePathById = (id?: string): string | undefined => {
   if (namespacesCache) {
     const data = namespacesCache.data.data.data as Namespace[];
     const path = data.find(namespace => namespace.id === id)?.path;
-    return path ?? id;
+    return path;
   }
 
-  return id;
+  return undefined;
 }
