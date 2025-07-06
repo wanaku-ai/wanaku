@@ -28,7 +28,53 @@ interface ForwardRow {
     namespace?: string;
 }
 
-export const Component = () => {
+interface ForwardsTableProps {
+    rows: ForwardRow[];
+}
+
+const ForwardsTable = ({ rows }: ForwardsTableProps) => {
+    return (
+        <DataTable rows={rows} headers={headers}>
+            {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
+                <TableContainer>
+                    <TableToolbar>
+                        <TableToolbarContent>
+                            {/* <TableToolbarSearch
+                value={""}
+                onChange={function Va(e: ChangeEvent<HTMLInputElement>): void {
+                  throw new Error("Function not implemented.");
+                }}
+                id={"search-forwards"}
+              ></TableToolbarSearch> */}
+                        </TableToolbarContent>
+                    </TableToolbar>
+                    <Table {...getTableProps()}>
+                        <TableHead>
+                            <TableRow>
+                                {headers.map((header) => (
+                                    <TableHeader {...getHeaderProps({header})}>
+                                        {header.header}
+                                    </TableHeader>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {rows.map((row) => (
+                                <TableRow {...getRowProps({row})}>
+                                    {row.cells.map((cell) => (
+                                        <TableCell key={cell.id}>{cell.value}</TableCell>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+        </DataTable>
+    );
+};
+
+const ForwardsPage = () => {
     const [forwards, setForwards] = useState<ForwardRow[]>([]);
 
     useEffect(() => {
@@ -54,44 +100,10 @@ export const Component = () => {
                 A list of forwards registered in the system.
             </p>
             <div id="page-content">
-                <DataTable rows={forwards} headers={headers}>
-                    {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
-                        <TableContainer>
-                            <TableToolbar>
-                                <TableToolbarContent>
-                                    {/* <TableToolbarSearch
-                value={""}
-                onChange={function Va(e: ChangeEvent<HTMLInputElement>): void {
-                  throw new Error("Function not implemented.");
-                }}
-                id={"search-forwards"}
-              ></TableToolbarSearch> */}
-                                </TableToolbarContent>
-                            </TableToolbar>
-                            <Table {...getTableProps()}>
-                                <TableHead>
-                                    <TableRow>
-                                        {headers.map((header) => (
-                                            <TableHeader {...getHeaderProps({header})}>
-                                                {header.header}
-                                            </TableHeader>
-                                        ))}
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {rows.map((row) => (
-                                        <TableRow {...getRowProps({row})}>
-                                            {row.cells.map((cell) => (
-                                                <TableCell key={cell.id}>{cell.value}</TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    )}
-                </DataTable>
+                <ForwardsTable rows={forwards} />
             </div>
         </div>
     );
 };
+
+export const Component = ForwardsPage;
