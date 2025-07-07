@@ -3,6 +3,7 @@ package ai.wanaku.core.capabilities.discovery;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ServiceState;

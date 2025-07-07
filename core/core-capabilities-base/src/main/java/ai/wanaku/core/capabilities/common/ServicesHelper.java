@@ -4,7 +4,7 @@ import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
-import ai.wanaku.core.capabilities.discovery.RegistrationManager;
+import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;

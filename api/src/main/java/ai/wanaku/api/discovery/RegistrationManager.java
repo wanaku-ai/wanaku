@@ -1,4 +1,4 @@
-package ai.wanaku.core.capabilities.discovery;
+package ai.wanaku.api.discovery;
 
 /**
  * The `RegistrationManager` interface defines the contract for a class responsible for managing the lifecycle
