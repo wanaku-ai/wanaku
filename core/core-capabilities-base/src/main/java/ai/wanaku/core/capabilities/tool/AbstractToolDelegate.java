@@ -10,7 +10,7 @@ import ai.wanaku.core.capabilities.common.ConfigProvisionerLoader;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.capabilities.discovery.RegistrationManager;
+import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.config.provider.api.ConfigProvisioner;
 import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.config.provider.api.ProvisionedConfig;
