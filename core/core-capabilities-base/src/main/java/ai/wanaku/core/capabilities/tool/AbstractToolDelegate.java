@@ -68,21 +68,21 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             return builder.build();
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
-            LOG.errorf(e, stateMsg);
+            LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
-            LOG.errorf(e, stateMsg);
+            LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
         } catch (Exception e) {
             String stateMsg = "Unable to invoke tool: " + e.getMessage();
-            LOG.errorf(e, stateMsg, e);
+            LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)

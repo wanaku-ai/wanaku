@@ -78,21 +78,21 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
                         .addAllContent(response).build();
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
-            LOG.errorf(e,stateMsg);
+            LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
-            LOG.errorf(e,stateMsg);
+            LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
                     .addAllContent(List.of(stateMsg)).build();
         } catch (Exception e) {
             String stateMsg = "Unable to read or acquire resource: " + e.getMessage();
-            LOG.errorf(e, stateMsg);
+            LOG.error(stateMsg, e);;
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
