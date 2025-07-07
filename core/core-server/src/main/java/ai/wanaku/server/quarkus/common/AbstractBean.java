@@ -13,46 +13,22 @@ public abstract class AbstractBean<R extends WanakuEntity> {
      *
      * <p>This method performs a bulk removal operation for all entities
      * where the name field matches the specified value. If no entities
-     * are found with the given name, a warning is logged.</p>
+     * are found with the given name, a warning is logged.
+     * This is meant for internal use, as it only removes from the repositories
+     * but not from the tool/resource managers that actually contain the
+     * references</p>
      *
      * @param name the name of the entity/entities to remove, must not be null
      * @return the number of entities removed from the repository
      * @throws IllegalArgumentException if name is null or blank
      * @throws RuntimeException if the repository operation fails
      */
-
-    public int removeByName(String name) {
-
+    protected int removeByName(String name) {
         int removedCount = getRepository().removeByField("name", name);
         if (removedCount == 0) {
             LOG.warnf("No entities named '%s' were found for removal", name);
         } else {
             LOG.infof("Successfully removed %d entity(ies) with name '%s'", removedCount, name);
-        }
-
-        return removedCount;
-    }
-
-
-    /**
-     * Removes an entity from the repository by its unique identifier.
-     *
-     * <p>This method removes a single entity matching the specified ID.
-     * If no entity is found with the given ID, a warning is logged.</p>
-     *
-     * @param id the unique identifier of the entity to remove, must not be null
-     * @return the number of entities removed (0 or 1)
-     * @throws IllegalArgumentException if id is null or blank
-     * @throws RuntimeException if the repository operation fails
-     */
-    public int removeById(String id) {
-        LOG.debugf("Attempting to remove entity with id: %s", id);
-        int removedCount = getRepository().removeByField("id", id);
-
-        if (removedCount == 0) {
-            LOG.warnf("No entity with id '%s' was found for removal", id);
-        } else {
-            LOG.infof("Successfully removed entity with id '%s'", id);
         }
 
         return removedCount;
@@ -70,7 +46,4 @@ public abstract class AbstractBean<R extends WanakuEntity> {
      * @return the repository instance for type R with identifier type I
      */
     protected abstract <I> WanakuRepository<R,I> getRepository();
-
-
-
 }

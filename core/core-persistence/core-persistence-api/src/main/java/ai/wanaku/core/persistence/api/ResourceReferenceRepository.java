@@ -1,6 +1,7 @@
 package ai.wanaku.core.persistence.api;
 
 import ai.wanaku.api.types.ResourceReference;
+import java.util.List;
 
 /**
  * Repository interface for managing ResourceReference entities.
@@ -10,5 +11,5 @@ import ai.wanaku.api.types.ResourceReference;
  * between model and entity representations.</p>
  */
 public interface ResourceReferenceRepository extends WanakuRepository<ResourceReference, String> {
-
+    List<ResourceReference> findByName(String name);
 }
