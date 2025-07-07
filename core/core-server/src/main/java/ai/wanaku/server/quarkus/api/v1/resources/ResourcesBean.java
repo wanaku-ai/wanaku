@@ -7,6 +7,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.server.quarkus.common.AbstractBean;
 import ai.wanaku.api.types.Namespace;
@@ -73,24 +74,33 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
         }
     }
 
-    private boolean removeReference(String name, ResourceReference resourceReference) {
-        if (resourceReference.getName().equals(name)) {
-            try {
-                resourceManager.removeResource(resourceReference.getLocation());
-            } finally {
-                resourceReferenceRepository.deleteById(resourceReference.getId());
-            }
+    private int removeReference(String name, ResourceReference resourceReference) {
+        int removed = 0;
 
-            return true;
+        try {
+            removed = resourceReferenceRepository.removeByField("name", name);
+        } finally {
+            if (removed > 0) {
+                resourceManager.removeResource(resourceReference.getLocation());
+            }
         }
 
-        return false;
+        return removed;
     }
 
-    public void remove(String name) {
-        if ( resourceReferenceRepository.removeByField("name", name) == 0) {
-            LOG.warnf("No references named %s where found", name);
+
+    public int remove(String name) {
+        ResourceReference ref = getByName(name);
+        if (ref == null) {
+            return 0;
         }
+
+        return removeReference(name, ref);
+    }
+
+    public ResourceReference getByName(String name) {
+        List<ResourceReference> resources =  resourceReferenceRepository.findByName(name);
+        return resources.isEmpty() ? null : resources.getFirst();
     }
 
     public void update(ResourceReference resource) {

@@ -1,5 +1,6 @@
 package ai.wanaku.server.quarkus.api.v1.tools;
 
+import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.server.quarkus.common.AbstractBean;
 import jakarta.annotation.PostConstruct;
@@ -89,18 +90,17 @@ public class ToolsBean extends AbstractBean<ToolReference> {
         }
     }
 
-    private boolean removeReference(String name, ToolReference toolReference) {
-        if (toolReference.getName().equals(name)) {
-            try {
+    public int remove(String name) throws WanakuException {
+        int removed = 0;
+        try {
+             removed = removeByName(name);
+        } finally {
+            if (removed > 0) {
                 toolManager.removeTool(name);
-            } finally {
-                toolReferenceRepository.deleteById(toolReference.getId());
             }
-
-            return true;
         }
 
-        return false;
+        return removed;
     }
 
     public void update(ToolReference resource) {
@@ -110,10 +110,6 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     public ToolReference getByName(String name) {
         List<ToolReference> tools =  toolReferenceRepository.findByName(name);
         return tools.isEmpty() ? null : tools.getFirst();
-    }
-
-    public ToolReference getById(String id) {
-        return toolReferenceRepository.findById(id);
     }
 
     @Override
