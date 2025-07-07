@@ -5,6 +5,7 @@ import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.capabilities.tool.Client;
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -45,7 +46,8 @@ public class TavilyClient implements Client {
             producer.start();
 
             String baseUri = config.baseUri();
-            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(baseUri, request, configResource);
+            CamelQueryParameterBuilder parameterBuilder = new CamelQueryParameterBuilder(configResource);
+            ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(baseUri, request, parameterBuilder::build);
 
             return producer.requestBody(parsedRequest.uri(), parsedRequest.body());
         } finally {
