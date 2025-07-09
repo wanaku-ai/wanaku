@@ -215,6 +215,20 @@
                 <skipITs>false</skipITs>
                 <quarkus.native.enabled>true</quarkus.native.enabled>
                 <quarkus.native.additional-build-args>
+                    <!-- initialize at build time -->
+                    --initialize-at-build-time=com.sun.jna.internal.Cleaner,
+                    --initialize-at-build-time=com.sun.jna.internal.Cleaner$CleanerThread,
+                    <!-- trace object instantiation -->
+                    --trace-object-instantiation=com.sun.jna.internal.Cleaner$CleanerThread,
+                    <!-- initialize at run time -->
+                    --initialize-at-run-time=org.jline.nativ.Kernel32,
+                    --initialize-at-run-time=com.sun.jna.Native,
+                    --initialize-at-run-time=com.sun.jna.Structure$FFIType,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.osx.OsXNativePty,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.linux.LinuxNativePty,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.linux.LinuxNativePty$UtilLibrary,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.freebsd.FreeBsdNativePty,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.solaris.SolarisNativePty,
                     --initialize-at-run-time=org.jline.nativ.Kernel32,
                     --initialize-at-run-time=org.jline.nativ.Kernel32$CONSOLE_SCREEN_BUFFER_INFO,
                     --initialize-at-run-time=org.jline.nativ.Kernel32$CHAR_INFO,
