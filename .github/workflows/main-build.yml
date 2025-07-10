@@ -41,4 +41,5 @@ jobs:
         mvn -B clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
+          -Dquarkus.container-image.additional-tags=${{ github.ref_name }} \
           -Pdist
