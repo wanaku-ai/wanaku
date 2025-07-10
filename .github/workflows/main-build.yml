@@ -10,7 +10,11 @@ name: Build Main
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+        - main
+        - release-prep
+    tags:
+      - wanaku-*
 
 env:
   PROJECTS: ${{ github.workspace }}
