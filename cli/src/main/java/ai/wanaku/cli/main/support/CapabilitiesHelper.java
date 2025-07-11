@@ -170,12 +170,22 @@ public final class CapabilitiesHelper {
                 )
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> List.copyOf(entry.getValue()), // Create immutable copy
+                        CapabilitiesHelper::getActivityRecords, // Create immutable copy
                         (existingList, newList) -> Stream.concat(
                                 existingList.stream(),
                                 newList.stream()
                         ).toList()
                 ));
+    }
+
+    private static List<ActivityRecord> getActivityRecords(Map.Entry<String, List<ActivityRecord>> entry) {
+        final List<ActivityRecord> value = entry.getValue();
+        if (!value.isEmpty()) {
+            // We need to filter orphaned records without activity state
+            return value.stream().filter(Objects::nonNull).toList();
+        }
+
+        return List.of();
     }
 
     /**
