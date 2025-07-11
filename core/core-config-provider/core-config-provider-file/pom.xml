@@ -4,7 +4,7 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>core-config-provider</artifactId>
-        <version>0.0.6</version>
+        <version>0.0.7-SNAPSHOT</version>
     </parent>
 
     <artifactId>core-config-provider-file</artifactId>
