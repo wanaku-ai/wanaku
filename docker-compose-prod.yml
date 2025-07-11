@@ -39,8 +39,6 @@ services:
     depends_on:
       - wanaku-router
     image: quay.io/wanaku/wanaku-tool-service-tavily:wanaku-0.0.5
-    #    environment:
-    #      TAVILY_API_KEY: include-you-api-key-here
     ports:
       - "9006:9000"
     volumes:

@@ -62,8 +62,6 @@ services:
         condition: service_completed_successfully
     image: quay.io/wanaku/wanaku-tool-service-tavily:latest
     pull_policy: always
-    #    environment:
-    #      TAVILY_API_KEY: include-you-api-key-here
     ports:
       - "9006:9000"
     volumes:
