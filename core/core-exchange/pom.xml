@@ -28,6 +28,9 @@
             <resource>
                 <directory>src/main/proto</directory>
             </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
         </resources>
         <plugins>
             <plugin>
