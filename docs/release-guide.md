@@ -135,7 +135,7 @@ jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION
 If you are not running this on the machine where you cut the release, then fetch the tags
 
 ```shell
-git fetch --all --tags
+git fetch --all --tags && git checkout git checkout wanaku-${CURRENT_DEVELOPMENT_VERSION}
 ```
 
 Now, build the native artifacts for macOS (aarch64):
@@ -147,13 +147,13 @@ mvn -Pdist -Dnative clean package
 Check if all went well with a dry-run:
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram --dry-run
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram --exclude-distribution=service-exec --exclude-distribution=service-tavily --exclude-distribution=provider-s3 --dry-run
 ```
 
 Then, run `jreleaser` filtering the source ones, and only publishing the Linux native deliverables on GitHub.
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram
+jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram --exclude-distribution=service-exec --exclude-distribution=service-tavily --exclude-distribution=provider-s3
 ```
 
 ## Containers
