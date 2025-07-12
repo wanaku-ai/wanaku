@@ -101,7 +101,7 @@ git push upstream wanaku-${CURRENT_DEVELOPMENT_VERSION}
 
 Now continue with the release:
 
-```
+```shell
 mvn -Pdist release:perform
 ```
 
