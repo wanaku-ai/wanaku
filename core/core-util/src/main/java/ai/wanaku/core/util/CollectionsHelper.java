@@ -2,6 +2,7 @@ package ai.wanaku.core.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,6 +23,16 @@ public class CollectionsHelper {
         return map.entrySet().stream()
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+    }
+
+    /**
+     * Convert a map of String keys and unspecified type to String (value must be
+     * convertible to String using toString())
+     * @param map the map of String keys and unspecified type
+     * @return A Map of String keys and String values
+     */
+    public static Map<String, Object> toStringObjectMap(Map<String, String> map) {
+        return new HashMap<>(map);
     }
 
     /**

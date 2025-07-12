@@ -2,6 +2,8 @@ package ai.wanaku.tool.http;
 
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.capabilities.tool.Client;
+import ai.wanaku.core.config.provider.api.ReservedConfigs;
+import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.core.config.provider.api.ConfigResource;
@@ -11,7 +13,6 @@ import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
@@ -35,9 +36,14 @@ public class HttpClient implements Client {
         ParsedToolInvokeRequest parsedRequest =
                 ParsedToolInvokeRequest.parseRequest(request.getUri(), request, parameterBuilder::build);
 
-        LOG.infof("Invoking tool at URI: %s", safeLog(parsedRequest.uri()));
+        Map<String, Object> headers =
+                CollectionsHelper.toStringObjectMap(configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX));
 
-        Map<String,Object> headers = new HashMap<>(request.getHeadersMap());
+        if (headers.isEmpty()) {
+            headers.put("CamelHttpMethod", "GET");
+        }
+
+        LOG.infof("Invoking tool at URI: %s", safeLog(parsedRequest.uri()));
 
         return producer.requestBodyAndHeaders(parsedRequest.uri(), parsedRequest.body(), headers, String.class);
     }
