@@ -2,6 +2,10 @@ name: early-access
 
 on:
   workflow_dispatch:
+    inputs:
+      currentDevelopmentVersion:
+        description: 'The current development version'
+        required: true
 
 jobs:
   pre-release-build-linux:
