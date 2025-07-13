@@ -3,6 +3,11 @@ name: early-access
 on:
   workflow_dispatch:
 
+# See https://iocanel.com/2021/09/using-sdkman-in-github-actions/
+defaults:
+  run:
+    shell: bash -ieo pipefail {0}
+
 jobs:
   pre-release-build-linux:
     name: Early Access
@@ -16,21 +21,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Configure build steps as you'd normally do
-
-      - name: Setup SDKMan
-        uses: sdkman/sdkman-action@v1
-        id: sdkman
-        with:
-          candidate: java
-          version: 21.0.2-graalce
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'jdkfile'
-          jdkFile: ${{ steps.sdkman.outputs.file }}
+      - name: Setup sdkman
+        run: |
+          curl -s "https://get.sdkman.io" | bash
+          source "$HOME/.sdkman/bin/sdkman-init.sh"
+          sdkman_auto_answer=false
+          sdkman_selfupdate_enable=false
+      - name: Setup java
+        run: |
+          sdk install java 21.0.2-graalce
+          sdk default java 21.0.2-graalce
 
       - name: Create an early access release
         run: |
@@ -65,21 +65,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Configure build steps as you'd normally do
-
-      - name: Setup SDKMan
-        uses: sdkman/sdkman-action@v1
-        id: sdkman
-        with:
-          candidate: java
-          version: 21.0.2-graalce
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'jdkfile'
-          jdkFile: ${{ steps.sdkman.outputs.file }}
+      - name: Setup sdkman
+        run: |
+          curl -s "https://get.sdkman.io" | bash
+          source "$HOME/.sdkman/bin/sdkman-init.sh"
+          sdkman_auto_answer=false
+          sdkman_selfupdate_enable=false
+      - name: Setup java
+        run: |
+          sdk install java 21.0.2-graalce
+          sdk default java 21.0.2-graalce
 
       - name: Create an early access release
         run: |
@@ -98,7 +93,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-release
+          name: jreleaser-release-linux
           path: |
             out/jreleaser/trace.log
             out/jreleaser/output.properties
