@@ -1,11 +1,11 @@
-name: release
+name: early-access
 
 on:
   workflow_dispatch:
 
 jobs:
-  release-linux:
-    name: Release
+  pre-release-build-linux:
+    name: Early Access
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,52 +53,52 @@ jobs:
           path: |
             out/jreleaser/trace.log
             out/jreleaser/output.properties
-    release-macos:
-      name: Release
-      runs-on: macos-latest
-      permissions:
-        contents: write
+  pre-release-build-macos:
+    name: Release
+    runs-on: macos-latest
+    permissions:
+      contents: write
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        # Configure build steps as you'd normally do
+      # Configure build steps as you'd normally do
 
-        - name: Setup SDKMan
-          uses: sdkman/sdkman-action@v1
-          id: sdkman
-          with:
-            candidate: java
-            version: 21.0.2-graalce
+      - name: Setup SDKMan
+        uses: sdkman/sdkman-action@v1
+        id: sdkman
+        with:
+          candidate: java
+          version: 21.0.2-graalce
 
-        - name: Setup Java
-          uses: actions/setup-java@v4
-          with:
-            java-version: 21
-            distribution: 'jdkfile'
-            jdkFile: ${{ steps.sdkman.outputs.file }}
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'jdkfile'
+          jdkFile: ${{ steps.sdkman.outputs.file }}
 
-        - name: Create an early access release
-          run: |
-            mvn -Dnative -Pdist clean package
+      - name: Create an early access release
+        run: |
+          mvn -Dnative -Pdist clean package
 
-        - name: Run JReleaser
-          uses: jreleaser/release-action@v2
-          env:
-            JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
-            JRELEASER_SELECT_CURRENT_PLATFORM: true
+      - name: Run JReleaser
+        uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
+          JRELEASER_SELECT_CURRENT_PLATFORM: true
 
-        # Persist logs
+      # Persist logs
 
-        - name: JReleaser release output
-          if: always()
-          uses: actions/upload-artifact@v4
-          with:
-            name: jreleaser-release
-            path: |
-              out/jreleaser/trace.log
-              out/jreleaser/output.properties
+      - name: JReleaser release output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-release
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
