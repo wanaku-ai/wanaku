@@ -3,17 +3,15 @@ name: early-access
 on:
   workflow_dispatch:
 
-# See https://iocanel.com/2021/09/using-sdkman-in-github-actions/
-defaults:
-  run:
-    shell: bash -ieo pipefail {0}
-
 jobs:
   pre-release-build-linux:
     name: Early Access
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest ]
 
     steps:
       - name: Checkout
@@ -21,60 +19,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup sdkman
-        run: |
-          curl -s "https://get.sdkman.io" | bash
-          source "$HOME/.sdkman/bin/sdkman-init.sh"
-          sdkman_auto_answer=false
-          sdkman_selfupdate_enable=false
-      - name: Setup java
-        run: |
-          sdk install java 21.0.2-graalce
-          sdk default java 21.0.2-graalce
-
-      - name: Create an early access release
-        run: |
-          mvn -Dnative -Pdist clean package
-
-      - name: Run JReleaser
-        uses: jreleaser/release-action@v2
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
-          JRELEASER_SELECT_CURRENT_PLATFORM: true
-
-      # Persist logs
-
-      - name: JReleaser release output
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: graalvm/setup-graalvm@v1.3.4
         with:
-          name: jreleaser-release-linux
-          path: |
-            out/jreleaser/trace.log
-            out/jreleaser/output.properties
-  pre-release-build-macos:
-    name: Release
-    runs-on: macos-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup sdkman
-        run: |
-          curl -s "https://get.sdkman.io" | bash
-          source "$HOME/.sdkman/bin/sdkman-init.sh"
-          sdkman_auto_answer=false
-          sdkman_selfupdate_enable=false
-      - name: Setup java
-        run: |
-          sdk install java 21.0.2-graalce
-          sdk default java 21.0.2-graalce
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
 
       - name: Create an early access release
         run: |
