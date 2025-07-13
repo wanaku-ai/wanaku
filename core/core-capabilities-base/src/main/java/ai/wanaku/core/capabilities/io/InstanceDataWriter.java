@@ -16,12 +16,12 @@ public class InstanceDataWriter implements AutoCloseable {
 
     /**
      * Constructor
-     * @param reportFile the rate report file name
+     * @param file the file to write to
      * @param fileHeader the file header
      * @throws IOException in case of I/O errors
      */
-    InstanceDataWriter(final File reportFile, final FileHeader fileHeader) throws IOException {
-        fileChannel = new FileOutputStream(reportFile).getChannel();
+    InstanceDataWriter(final File file, final FileHeader fileHeader) throws IOException {
+        fileChannel = new FileOutputStream(file).getChannel();
 
         writeHeader(fileHeader);
     }
@@ -62,9 +62,10 @@ public class InstanceDataWriter implements AutoCloseable {
     private void checkBufferCapacity() throws IOException {
         final int remaining = byteBuffer.remaining();
 
+
         if (remaining < ServiceEntry.BYTES) {
             if (LOG.isTraceEnabled()) {
-                LOG.tracef("There is not enough space on the buffer for a rate entry: %s", remaining);
+                LOG.tracef("There is not enough space on the buffer for a new entry: %s", remaining);
             }
 
             write();

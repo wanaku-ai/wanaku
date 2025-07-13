@@ -23,11 +23,11 @@ public class InstanceDataReader implements AutoCloseable {
 
     /**
      * Constructor
-     * @param fileName the report file name
+     * @param file the file to read from
      * @throws IOException in case of I/O errors
      */
-    InstanceDataReader(final File fileName) throws IOException {
-        fileChannel = new FileInputStream(fileName).getChannel();
+    InstanceDataReader(final File file) throws IOException {
+        fileChannel = new FileInputStream(file).getChannel();
 
         fileHeader = readHeader();
     }
@@ -65,7 +65,7 @@ public class InstanceDataReader implements AutoCloseable {
 
     /**
      * Read an entry from the file
-     * @return A rate entry from the file or null on end-of-file
+     * @return An entry from the file or null on end-of-file
      * @throws IOException if unable to read the entry
      */
     public ServiceEntry readEntry() throws IOException {
