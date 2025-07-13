@@ -25,7 +25,7 @@
 
     <scm>
         <connection>scm:git:https://github.com/wanaku-ai/wanaku.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/wanaku-ai/wanaku.git</developerConnection>
+        <developerConnection>scm:git:https://github.com/wanaku-ai/wanaku.git</developerConnection>
         <url>https://github.com/wanaku-ai/wanaku</url>
         <tag>HEAD</tag>
     </scm>
