@@ -171,5 +171,5 @@ mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=t
 To release early builds, run: 
 
 ```shell
-jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64 --exclude-distribution=cli-native -Djreleaser.project.snapshot.label="early-access"
+gh workflow run early-access -f currentDevelopmentVersion=0.0.7-SNAPSHOT
 ```
