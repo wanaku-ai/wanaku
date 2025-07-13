@@ -1,0 +1,80 @@
+name: release-artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      currentDevelopmentVersion:
+        description: 'The current development version'
+        required: true
+
+jobs:
+  pre-release-build:
+    name: Release artifacts
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        experimental: [ false ]
+        include:
+          - os: [ macos-latest ]
+            experimental: true
+      fail-fast: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
+
+      - uses: graalvm/setup-graalvm@v1.3.4
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+          cache: maven
+
+      - name: Login to Container Registry
+        if: matrix.os == 'ubuntu-latest' && github.repository == 'wanaku-ai/wanaku'
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Create a snapshot build (with container push)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mvn -Dnative -Pdist \
+          -Dquarkus.container-image.build=true \
+          -Dquarkus.container-image.push=true \
+          -Dquarkus.container-image.additional-tags=${{ github.event.inputs.currentDevelopmentVersion }} \
+          clean package
+      - name: Create a snapshot build
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          mvn -Dnative -Pdist clean package
+
+      - name: Run JReleaser
+        uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
+          JRELEASER_SELECT_CURRENT_PLATFORM: true
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      # Persist logs
+
+      - name: JReleaser release output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-release-${{ matrix.os }}
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
