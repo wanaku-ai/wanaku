@@ -41,6 +41,8 @@ jobs:
           JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
           JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
           JRELEASER_SELECT_CURRENT_PLATFORM: true
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
       # Persist logs
 
