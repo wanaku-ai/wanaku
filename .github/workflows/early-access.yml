@@ -34,6 +34,7 @@ jobs:
         uses: jreleaser/release-action@v2
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
           JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
           JRELEASER_SELECT_CURRENT_PLATFORM: true
 
