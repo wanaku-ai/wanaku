@@ -29,7 +29,7 @@ public final class ResourceHelper {
     public static void expose(ResourceReference resourceReference, ResourceManager resourceManager,
             BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler)
     {
-
+        expose(resourceReference, resourceManager, null, handler);
     }
 
     /**

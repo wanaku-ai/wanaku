@@ -1,5 +1,6 @@
 package ai.wanaku.core.services.api;
 
+import ai.wanaku.api.types.io.ResourcePayload;
 import java.util.List;
 
 import ai.wanaku.api.types.WanakuResponse;
@@ -18,6 +19,12 @@ import ai.wanaku.api.types.ResourceReference;
 
 @Path("/api/v1/resources")
 public interface ResourcesService {
+
+    @Path("/exposeWithPayload")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    Response exposeWithPayload(ResourcePayload resourceReference);
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)

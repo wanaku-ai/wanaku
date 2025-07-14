@@ -59,7 +59,7 @@ public class ToolsBean extends AbstractBean<ToolReference> {
         // First, provision the tool (i.e.: configuration, secrets, etc) in the target defined by the remote
         toolsResolver.provision(toolPayload);
 
-        return add(toolPayload.getToolReference());
+        return add(toolPayload.getPayload());
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {

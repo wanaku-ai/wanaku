@@ -149,7 +149,7 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public ProvisioningReference provision(ToolPayload toolPayload) {
-        ToolReference toolReference = toolPayload.getToolReference();
+        ToolReference toolReference = toolPayload.getPayload();
 
         ServiceTarget service = serviceRegistry.getServiceByName(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
@@ -160,14 +160,14 @@ public class InvokerProxy implements ToolsProxy {
                 .usePlaintext()
                 .build();
 
-        final String configData = Objects.requireNonNullElse(toolPayload.getConfigurationData(), "a=a");
+        final String configData = Objects.requireNonNullElse(toolPayload.getConfigurationData(), "");
         final Configuration cfg = Configuration.newBuilder()
                 .setType(PayloadType.BUILTIN)
                 .setName(toolReference.getName())
                 .setPayload(configData)
                 .build();
 
-        final String secretsData = Objects.requireNonNullElse(toolPayload.getSecretsData(), "b=b");
+        final String secretsData = Objects.requireNonNullElse(toolPayload.getSecretsData(), "");
         final Secret secret = Secret.newBuilder()
                 .setType(PayloadType.BUILTIN)
                 .setName(toolReference.getName())

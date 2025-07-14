@@ -10,6 +10,7 @@ import type {
   PostApiV1ToolsParams,
   PutApiV1ResourcesRemoveParams,
   PutApiV1ToolsRemoveParams,
+  ResourcePayload,
   ResourceReference,
   ServiceState,
   ServiceTarget,
@@ -610,6 +611,53 @@ export const postApiV1ResourcesExpose = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(resourceReference),
+    },
+  );
+};
+
+/**
+ * @summary Expose With Payload
+ */
+export type postApiV1ResourcesExposeWithPayloadResponse200 = {
+  data: WanakuResponseResourceReference;
+  status: 200;
+};
+
+export type postApiV1ResourcesExposeWithPayloadResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ResourcesExposeWithPayloadResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ResourcesExposeWithPayloadResponseComposite =
+  | postApiV1ResourcesExposeWithPayloadResponse200
+  | postApiV1ResourcesExposeWithPayloadResponse400
+  | postApiV1ResourcesExposeWithPayloadResponse500;
+
+export type postApiV1ResourcesExposeWithPayloadResponse =
+  postApiV1ResourcesExposeWithPayloadResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ResourcesExposeWithPayloadUrl = () => {
+  return `/api/v1/resources/exposeWithPayload`;
+};
+
+export const postApiV1ResourcesExposeWithPayload = async (
+  resourcePayload: ResourcePayload,
+  options?: RequestInit,
+): Promise<postApiV1ResourcesExposeWithPayloadResponse> => {
+  return customFetch<postApiV1ResourcesExposeWithPayloadResponse>(
+    getPostApiV1ResourcesExposeWithPayloadUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(resourcePayload),
     },
   );
 };

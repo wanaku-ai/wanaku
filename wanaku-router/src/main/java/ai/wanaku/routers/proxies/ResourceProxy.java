@@ -1,5 +1,7 @@
 package ai.wanaku.routers.proxies;
 
+import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.routers.support.ProvisioningReference;
 import java.util.List;
 
 import io.quarkiverse.mcp.server.ResourceContents;
@@ -10,6 +12,14 @@ import io.quarkiverse.mcp.server.ResourceManager;
  * Proxies between MCP URIs and Camel components capable of handling them
  */
 public interface ResourceProxy extends Proxy {
+
+    /**
+     * Provision a configuration in the service
+     *
+     * @param payload the payload to provision in the service
+     * @return A provisioning reference instance
+     */
+    ProvisioningReference provision(ResourcePayload payload);
 
 
     /**

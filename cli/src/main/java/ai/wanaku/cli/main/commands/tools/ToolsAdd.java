@@ -6,6 +6,7 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
@@ -15,11 +16,7 @@ import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
@@ -99,10 +96,10 @@ public class ToolsAdd extends BaseCommand {
         }
 
         ToolPayload toolPayload = new ToolPayload();
-        toolPayload.setToolReference(toolReference);
+        toolPayload.setPayload(toolReference);
 
-        loadConfigurationSources(configurationFromFile, toolPayload::setConfigurationData);
-        loadConfigurationSources(secretsFromFile, toolPayload::setSecretsData);
+        FileHelper.loadConfigurationSources(configurationFromFile, toolPayload::setConfigurationData);
+        FileHelper.loadConfigurationSources(secretsFromFile, toolPayload::setSecretsData);
 
         toolsService = initService(ToolsService.class,host);
 
@@ -122,18 +119,6 @@ public class ToolsAdd extends BaseCommand {
             }
         }
         return EXIT_OK;
-    }
-
-    private void loadConfigurationSources(String source, Consumer<String> configSourceConsumer) {
-        if (source != null) {
-            try {
-                final String data = Files.readString(Path.of(source));
-
-                configSourceConsumer.accept(data);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
 }

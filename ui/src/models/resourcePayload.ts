@@ -4,11 +4,11 @@
  * wanaku-router API
  * OpenAPI spec version: 0.0.7-SNAPSHOT
  */
-import type { ToolReference } from "./toolReference";
+import type { ResourceReference } from "./resourceReference";
 
-export interface ToolPayload {
-  toolReference?: ToolReference;
+export interface ResourcePayload {
+  resourceReference?: ResourceReference;
   configurationData?: string;
   secretsData?: string;
-  payload?: ToolReference;
+  payload?: ResourceReference;
 }

@@ -7,7 +7,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.server.quarkus.common.AbstractBean;
 import ai.wanaku.api.types.Namespace;
@@ -49,6 +49,12 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
     public ResourceReference expose(ResourceReference mcpResource) {
         doExposeResource(mcpResource);
         return resourceReferenceRepository.persist(mcpResource);
+    }
+
+    public ResourceReference expose(ResourcePayload resourcePayload) {
+        resourceResolver.provision(resourcePayload);
+
+        return expose(resourcePayload.getPayload());
     }
 
     public List<ResourceReference> list() {
@@ -111,4 +117,6 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
     protected  WanakuRepository<ResourceReference, String> getRepository() {
         return resourceReferenceRepository;
     }
+
+
 }
