@@ -46,46 +46,57 @@ distributions:
   router:
     artifacts:
       - path: wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-yaml-route:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-yaml-route/target/distributions/wanaku-tool-service-yaml-route-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-kafka:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-kafka/target/distributions/wanaku-tool-service-kafka-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-http:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   provider-file:
     artifacts:
       - path: capabilities/providers/wanaku-provider-file/target/distributions/wanaku-provider-file-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   provider-ftp:
     artifacts:
       - path: capabilities/providers/wanaku-provider-ftp/target/distributions/wanaku-provider-ftp-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   provider-s3:
     artifacts:
       - path: capabilities/providers/wanaku-provider-s3/target/distributions/wanaku-provider-s3-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-tavily:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-tavily/target/distributions/wanaku-tool-service-tavily-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-exec:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-sqs:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-sqs/target/distributions/wanaku-tool-service-sqs-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
   service-telegram:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-telegram/target/distributions/wanaku-tool-service-telegram-{{projectVersion}}.zip
+        platform: linux-x86_64
     type: JAVA_BINARY
 
   cli-native:
