@@ -31,7 +31,7 @@ public class WanakuToolsResolver implements ToolsResolver {
         final Map<String, PropertySchema> serviceProperties = provisioningReference.properties();
 
         // Client-side
-        ToolReference toolReference = toolPayload.getToolReference();
+        ToolReference toolReference = toolPayload.getPayload();
         final Map<String, Property> clientProperties = toolReference.getInputSchema().getProperties();
         for (var serviceProperty : serviceProperties.entrySet()) {
             clientProperties.computeIfAbsent(serviceProperty.getKey(),

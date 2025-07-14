@@ -1,5 +1,6 @@
 package ai.wanaku.routers.resolvers;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
@@ -10,6 +11,7 @@ import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.RemoteToolReference;
 import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
@@ -125,6 +127,11 @@ public class WanakuForwardResolver implements ForwardResolver {
         property.setType("string");
 
         inputSchema.getProperties().put(key, property);
+    }
+
+    @Override
+    public void provision(ResourcePayload resourcePayload) throws ServiceNotFoundException {
+        // This is NO-OP for forwarded resources as they cannot be configured
     }
 
     @Override

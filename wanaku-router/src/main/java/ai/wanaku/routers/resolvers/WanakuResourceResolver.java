@@ -1,9 +1,14 @@
 package ai.wanaku.routers.resolvers;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.types.Property;
+import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.routers.support.ProvisioningReference;
 import java.util.List;
 
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
@@ -18,6 +23,15 @@ public class WanakuResourceResolver implements ResourceResolver {
 
     public WanakuResourceResolver(ResourceProxy proxy) {
         this.proxy = proxy;
+    }
+
+    @Override
+    public void provision(ResourcePayload resourcePayload) throws ServiceNotFoundException {
+        final ProvisioningReference provisioningReference = proxy.provision(resourcePayload);
+
+        resourcePayload.getPayload().setConfigurationURI(provisioningReference.configurationURI().toString());
+        resourcePayload.getPayload().setSecretsURI(provisioningReference.secretsURI().toString());
+
     }
 
     @Override

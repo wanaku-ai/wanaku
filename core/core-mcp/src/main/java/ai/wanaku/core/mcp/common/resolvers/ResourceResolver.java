@@ -1,5 +1,7 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.types.io.ResourcePayload;
 import java.util.List;
 
 import io.quarkiverse.mcp.server.ResourceContents;
@@ -11,6 +13,13 @@ import io.quarkiverse.mcp.server.ResourceManager;
  * should handle it
  */
 public interface ResourceResolver extends Resolver {
+
+    /**
+     * Given a reference, load properties (arguments) defined on the remote service capable of handling it
+     * @param resourcePayload the resource payload
+     * @throws ServiceNotFoundException if a service capable of handling such a resource cannot be found
+     */
+    void provision(ResourcePayload resourcePayload) throws ServiceNotFoundException;
 
     /**
      * Read resources

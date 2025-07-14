@@ -1,21 +1,34 @@
 package ai.wanaku.routers.proxies.resources;
 
+import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.core.exchange.Configuration;
+import ai.wanaku.core.exchange.PayloadType;
+import ai.wanaku.core.exchange.PropertySchema;
+import ai.wanaku.core.exchange.ProvisionReply;
+import ai.wanaku.core.exchange.ProvisionRequest;
+import ai.wanaku.core.exchange.ProvisionerGrpc;
 import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.exchange.Secret;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.routers.proxies.ResourceProxy;
+import ai.wanaku.routers.support.ProvisioningReference;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.jboss.logging.Logger;
 
 /**
@@ -89,5 +102,45 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
         ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
         return blockingStub.resourceAcquire(request);
+    }
+
+    @Override
+    public ProvisioningReference provision(ResourcePayload payload) {
+        ResourceReference resourceReference = payload.getPayload();
+
+        ServiceTarget service = serviceRegistry.getServiceByName(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER);
+        if (service == null) {
+            throw new ServiceNotFoundException("There is no host registered for service " + resourceReference.getType());
+        }
+
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
+                .usePlaintext()
+                .build();
+
+        final String configData = Objects.requireNonNullElse(payload.getConfigurationData(), "");
+        final Configuration cfg = Configuration.newBuilder()
+                .setType(PayloadType.BUILTIN)
+                .setName(resourceReference.getName())
+                .setPayload(configData)
+                .build();
+
+        final String secretsData = Objects.requireNonNullElse(payload.getSecretsData(), "");
+        final Secret secret = Secret.newBuilder()
+                .setType(PayloadType.BUILTIN)
+                .setName(resourceReference.getName())
+                .setPayload(secretsData)
+                .build();
+
+        ProvisionRequest inquireRequest = ProvisionRequest.newBuilder()
+                .setConfiguration(cfg)
+                .setSecret(secret)
+                .build();
+        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
+        ProvisionReply inquire = blockingStub.provision(inquireRequest);
+        final String configurationUri = inquire.getConfigurationUri();
+        final String secretUri = inquire.getSecretUri();
+        final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
+
+        return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
     }
 }

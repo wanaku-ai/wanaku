@@ -7,11 +7,14 @@ import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.core.capabilities.common.ConfigProvisionerLoader;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.api.discovery.RegistrationManager;
+import ai.wanaku.core.config.provider.api.ConfigProvisioner;
 import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.config.provider.api.ProvisionedConfig;
 import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
@@ -102,7 +105,15 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @Override
     public ProvisionReply provision(ProvisionRequest request) {
-        return null;
+        ConfigProvisioner provisioner = ConfigProvisionerLoader.newConfigProvisioner(request, config);
+        final ProvisionedConfig provision = ConfigProvisionerLoader.provision(request, provisioner);
+
+        return ProvisionReply
+                .newBuilder()
+                .putAllProperties(ServicesHelper.buildPropertiesMap(config))
+                .setConfigurationUri(provision.configurationsUri().toString())
+                .setSecretUri(provision.secretsUri().toString())
+                .build();
     }
 
     @Override

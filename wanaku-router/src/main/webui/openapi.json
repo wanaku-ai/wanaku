@@ -167,6 +167,23 @@
           }
         }
       },
+      "ResourcePayload" : {
+        "type" : "object",
+        "properties" : {
+          "resourceReference" : {
+            "$ref" : "#/components/schemas/ResourceReference"
+          },
+          "configurationData" : {
+            "type" : "string"
+          },
+          "secretsData" : {
+            "type" : "string"
+          },
+          "payload" : {
+            "$ref" : "#/components/schemas/ResourceReference"
+          }
+        }
+      },
       "ResourceReference" : {
         "type" : "object",
         "properties" : {
@@ -263,6 +280,9 @@
           },
           "secretsData" : {
             "type" : "string"
+          },
+          "payload" : {
+            "$ref" : "#/components/schemas/ToolReference"
           }
         }
       },
@@ -822,6 +842,47 @@
           }
         },
         "summary" : "Expose",
+        "tags" : [ "Resources Resource" ]
+      }
+    },
+    "/api/v1/resources/exposeWithPayload" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourcePayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Expose With Payload",
         "tags" : [ "Resources Resource" ]
       }
     },

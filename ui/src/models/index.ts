@@ -34,6 +34,7 @@ export * from "./putApiV1ManagementTargetsToolsLinkParams";
 export * from "./putApiV1ManagementTargetsToolsUnlinkParams";
 export * from "./putApiV1ResourcesRemoveParams";
 export * from "./putApiV1ToolsRemoveParams";
+export * from "./resourcePayload";
 export * from "./resourceReference";
 export * from "./serverInfo";
 export * from "./service";

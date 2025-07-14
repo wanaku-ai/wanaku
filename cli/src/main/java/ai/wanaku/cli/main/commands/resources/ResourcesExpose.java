@@ -1,7 +1,9 @@
 package ai.wanaku.cli.main.commands.resources;
 
 import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
 import jakarta.ws.rs.WebApplicationException;
@@ -44,6 +46,12 @@ public class ResourcesExpose extends BaseCommand {
     @CommandLine.Option(names = { "--param" }, description = "One or more parameters for the resource", arity = "0..n")
     private List<String> params;
 
+    @CommandLine.Option(names = {"--configuration-from-file"}, description="Configure the capability provider using the given file", arity = "0..1")
+    private String configurationFromFile;
+
+    @CommandLine.Option(names = {"--secrets-from-file"}, description="Add the given secrets to the capability provider using the given file", arity = "0..1")
+    private String secretsFromFile;
+
     ResourcesService resourcesService;
 
     @Override
@@ -56,6 +64,13 @@ public class ResourcesExpose extends BaseCommand {
         resource.setDescription(description);
         resource.setMimeType(mimeType);
         resource.setNamespace(namespace);
+
+        ResourcePayload resourcePayload = new ResourcePayload();
+        resourcePayload.setPayload(resource);
+
+        FileHelper.loadConfigurationSources(configurationFromFile, resourcePayload::setConfigurationData);
+        FileHelper.loadConfigurationSources(secretsFromFile, resourcePayload::setSecretsData);
+
 
         if (params != null) {
             List<ResourceReference.Param> paramsList = new ArrayList<>();
@@ -73,7 +88,7 @@ public class ResourcesExpose extends BaseCommand {
             resource.setParams(paramsList);
         }
 
-        try (Response response = resourcesService.expose(resource)) {
+        try (Response response = resourcesService.exposeWithPayload(resourcePayload)) {
 
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

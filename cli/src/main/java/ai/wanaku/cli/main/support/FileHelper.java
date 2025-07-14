@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.support;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public class FileHelper {
 
@@ -23,5 +24,17 @@ public class FileHelper {
 
     public static boolean cannotWriteToDirectory(Path dir) {
         return !canWriteToDirectory(dir);
+    }
+
+    public static void loadConfigurationSources(String source, Consumer<String> configSourceConsumer) {
+        if (source != null) {
+            try {
+                final String data = Files.readString(Path.of(source));
+
+                configSourceConsumer.accept(data);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

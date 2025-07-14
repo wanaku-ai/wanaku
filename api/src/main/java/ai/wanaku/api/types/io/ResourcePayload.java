@@ -1,19 +1,19 @@
 package ai.wanaku.api.types.io;
 
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.ResourceReference;
 
-public final class ToolPayload implements ProvisionAwarePayload<ToolReference> {
-    private ToolReference toolReference;
+public class ResourcePayload implements ProvisionAwarePayload<ResourceReference> {
+    private ResourceReference resourceReference;
     private String configurationData;
     private String secretsData;
 
     @Override
-    public ToolReference getPayload() {
-        return toolReference;
+    public ResourceReference getPayload() {
+        return resourceReference;
     }
 
-    public void setPayload(ToolReference toolReference) {
-        this.toolReference = toolReference;
+    public void setPayload(ResourceReference resourceReference) {
+        this.resourceReference = resourceReference;
     }
 
     @Override

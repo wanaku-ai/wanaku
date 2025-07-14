@@ -4,6 +4,7 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.io.ProvisionAwarePayload;
 import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
@@ -45,7 +46,17 @@ public class ToolsResource {
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException {
         var ret = toolsBean.add(resource);
+        validatePayload(resource);
         return new WanakuResponse<>(ret);
+    }
+
+    private void validatePayload(ProvisionAwarePayload<?> resource) throws WanakuException {
+        if (resource == null) {
+            throw new WanakuException("The request itself must not be null");
+        }
+        if (resource.getPayload() == null) {
+            throw new WanakuException("The 'payload' is required for this request");
+        }
     }
 
     @Path("/list")

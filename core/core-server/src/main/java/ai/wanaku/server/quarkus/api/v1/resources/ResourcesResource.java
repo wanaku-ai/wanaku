@@ -15,6 +15,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import ai.wanaku.api.types.io.ProvisionAwarePayload;
+import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.server.quarkus.api.v1.forwards.ForwardsBean;
 
@@ -29,6 +31,25 @@ public class ResourcesResource {
 
     @Inject
     ForwardsBean forwardsBean;
+
+    @Path("/exposeWithPayload")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resource) throws WanakuException {
+        ResourceReference ret = resourcesBean.expose(resource);
+        validatePayload(resource);
+        return new WanakuResponse<>(ret);
+    }
+
+    private void validatePayload(ProvisionAwarePayload<?> resource) throws WanakuException {
+        if (resource == null) {
+            throw new WanakuException("The request itself must not be null");
+        }
+        if (resource.getPayload() == null) {
+            throw new WanakuException("The 'payload' is required for this request");
+        }
+    }
 
     @Path("/expose")
     @POST
