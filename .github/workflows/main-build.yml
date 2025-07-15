@@ -15,6 +15,16 @@ on:
         - release-prep
     tags:
       - wanaku-*
+    paths-ignore:
+      - .github/**
+      - docs/**
+      - artwork/**
+      - README.md
+      - docker-*
+      - index.md
+      - jbang-catalog.json
+      - Makefile
+      - LICENSE
 
 env:
   PROJECTS: ${{ github.workspace }}
