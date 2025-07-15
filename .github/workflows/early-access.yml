@@ -35,6 +35,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
 
+      - name: Login to Container Registry
+        if: github.repository == 'wanaku-ai/wanaku'
+        if: matrix.os == 'ubuntu-latest'
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
       - name: Create a snapshot build (with container push)
         if: matrix.os == 'ubuntu-latest'
         run: |
