@@ -28,7 +28,10 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
 
     @Override
     protected String getEndpointUri(ResourceRequest request, ConfigResource configResource) {
-        Map<String, String> parameters = CamelQueryParameterBuilder.build(configResource);
+        final Map<String, String> parameters = config.service().defaults();
+
+        Map<String, String> toolsParameters = CamelQueryParameterBuilder.build(configResource);
+        parameters.putAll(toolsParameters);
 
         File file = new File(request.getLocation());
         String path;
