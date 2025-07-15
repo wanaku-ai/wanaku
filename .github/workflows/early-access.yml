@@ -35,7 +35,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
 
-      - name: Create an early access release
+      - name: Create a snapshot build (with container push)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mvn -Dnative -Pdist \
+          -Dquarkus.container-image.build=true \
+          -Dquarkus.container-image.push=true \
+          -Dquarkus.container-image.additional-tags=${{ github.event.inputs.currentDevelopmentVersion }} \
+          clean package
+      - name: Create a snapshot build
+        if: matrix.os != 'ubuntu-latest'
         run: |
           mvn -Dnative -Pdist clean package
 
