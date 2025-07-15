@@ -8,7 +8,7 @@ on:
         required: true
 
 jobs:
-  pre-release-build-linux:
+  pre-release-build:
     name: Early Access
     runs-on: ${{ matrix.os }}
     permissions:
@@ -20,7 +20,7 @@ jobs:
         include:
           - os: [ macos-latest ]
             experimental: true
-        fail-fast: true
+      fail-fast: true
 
     steps:
       - name: Checkout
