@@ -25,6 +25,7 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
+          cache: maven
 
       - name: Login to Container Registry
         uses: docker/login-action@v3
@@ -81,6 +82,7 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
+          cache: maven
 
       - name: Create a snapshot build
         run: |
