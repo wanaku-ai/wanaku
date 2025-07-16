@@ -63,6 +63,9 @@
                             <systemPropertyVariables>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             </systemPropertyVariables>
+                            <excludes>
+                                <exclude>**ManualIT**</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

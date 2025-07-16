@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static ai.wanaku.mcp.CLIHelper.*;
+
 @QuarkusTest
 public class WanakuHttpToolIT extends WanakuIntegrationBase {
 
@@ -16,10 +18,11 @@ public class WanakuHttpToolIT extends WanakuIntegrationBase {
 
         Assertions.assertThat(response.getJsonObject("result").getJsonArray("tools")).isEmpty();
 
+        String host = String.format("http://localhost:%d", router.getMappedPort(8080));
         executeWanakuCliCommand(List.of("wanaku",
                 "tools",
                 "import",
-                "https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/refs/heads/main/toolsets/currency.json"));
+                "https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/refs/heads/main/toolsets/currency.json"), host);
 
         response = mcpExtension.listTools();
 

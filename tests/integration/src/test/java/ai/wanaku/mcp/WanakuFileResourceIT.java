@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+
 @QuarkusTest
 public class WanakuFileResourceIT extends WanakuIntegrationBase {
 
@@ -18,6 +20,8 @@ public class WanakuFileResourceIT extends WanakuIntegrationBase {
                 .getJsonObject("result")
                 .getJsonArray("resources")).isEmpty();
 
+        String host = String.format("http://localhost:%d", router.getMappedPort(8080));
+
         executeWanakuCliCommand(List.of("wanaku",
                 "resources",
                 "expose",
@@ -25,7 +29,7 @@ public class WanakuFileResourceIT extends WanakuIntegrationBase {
                 "--mimeType=text/plain",
                 "--description=\"Sample test resource added via CLI\"",
                 "--name=test-file-resource",
-                "--type=file"));
+                "--type=file"), host);
 
         response = mcpExtension.listResources();
 

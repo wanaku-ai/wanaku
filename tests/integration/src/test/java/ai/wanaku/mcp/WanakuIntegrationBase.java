@@ -2,7 +2,6 @@ package ai.wanaku.mcp;
 
 import ai.wanaku.cli.main.CliMain;
 import ai.wanaku.mcp.inspector.ModelContextProtocolExtension;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,9 +14,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import picocli.CommandLine;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -109,43 +105,6 @@ public abstract class WanakuIntegrationBase {
      * @return A list of {@link WanakuContainerDownstreamService}s to be started.
      */
     public abstract List<WanakuContainerDownstreamService> activeWanakuDownstreamServices();
-
-    /**
-     * Executes a command using the Wanaku CLI.
-     *
-     * @param command The command to execute, as a list of strings.
-     * @return The exit code of the command.
-     */
-    public int executeWanakuCliCommand(List<String> command) {
-        List<String> executableCommand = new ArrayList<>(command);
-        if ("wanaku".equals(executableCommand.get(0))) {
-            executableCommand.remove(0);
-        }
-
-        executableCommand.add(String.format("--host=http://localhost:%d", router.getMappedPort(8080)));
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        PrintWriter printOut = new PrintWriter(out);
-        PrintWriter printErr = new PrintWriter(err);
-
-        CommandLine cmd = new CommandLine(cliMain)
-                .setOut(printOut)
-                .setErr(printErr);
-
-        LOG.debug("Executing command via wanaku CLI: {}", executableCommand);
-
-        int result = cmd.execute(executableCommand.toArray(new String[0]));
-
-        LOG.info("Wanaku command out: {}", out);
-        LOG.error("Wanaku command err: {}", err);
-
-        Assertions.assertThat(result)
-                .as("The command: " + executableCommand + " didn't run successfully")
-                .isEqualTo(0);
-
-        return result;
-    }
 
     /**
      * Stops all running containers after all tests have completed.
