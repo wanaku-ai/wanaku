@@ -15,6 +15,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import picocli.CommandLine;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -83,7 +84,7 @@ public abstract class WanakuIntegrationBase {
      */
     @BeforeEach
     public void startServices() {
-        activeWanakuDownstreamServices().parallelStream().forEach(service -> {
+        activeWanakuDownstreamServices().stream().forEach(service -> {
             services.add(service.getContainer());
             if (!service.getContainer().isRunning()) {
                 service.getContainer()
@@ -123,13 +124,22 @@ public abstract class WanakuIntegrationBase {
 
         executableCommand.add(String.format("--host=http://localhost:%d", router.getMappedPort(8080)));
 
-        PrintWriter printOut = new PrintWriter(System.out);
-        PrintWriter printErr = new PrintWriter(System.err);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        PrintWriter printOut = new PrintWriter(out);
+        PrintWriter printErr = new PrintWriter(err);
 
         CommandLine cmd = new CommandLine(cliMain)
                 .setOut(printOut)
                 .setErr(printErr);
+
+        LOG.debug("Executing command via wanaku CLI: {}", executableCommand);
+
         int result = cmd.execute(executableCommand.toArray(new String[0]));
+
+        LOG.info("Wanaku command out: {}", out);
+        LOG.error("Wanaku command err: {}", err);
+
         Assertions.assertThat(result)
                 .as("The command: " + executableCommand + " didn't run successfully")
                 .isEqualTo(0);
@@ -143,6 +153,7 @@ public abstract class WanakuIntegrationBase {
     @AfterAll
     static void stopContainers() {
         router.stop();
-        services.parallelStream().forEach(GenericContainer::stop);
+        services.stream().forEach(GenericContainer::stop);
+        services = new HashSet<>();
     }
 }
