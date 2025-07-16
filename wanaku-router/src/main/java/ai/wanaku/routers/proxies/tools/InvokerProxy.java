@@ -45,6 +45,7 @@ import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
     private static final String EMPTY_BODY = "";
+    private static final String EMPTY_ARGUMENT= "";
 
     private final ServiceRegistry serviceRegistry;
 
@@ -117,8 +118,8 @@ public class InvokerProxy implements ToolsProxy {
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody(body)
                 .setUri(toolReference.getUri())
-                .setConfigurationURI(toolReference.getConfigurationURI())
-                .setSecretsURI(toolReference.getSecretsURI())
+                .setConfigurationURI(Objects.requireNonNullElse(toolReference.getConfigurationURI(), EMPTY_ARGUMENT))
+                .setSecretsURI(Objects.requireNonNullElse(toolReference.getSecretsURI(), EMPTY_ARGUMENT))
                 .putAllHeaders(headers)
                 .putAllArguments(argumentsMap)
                 .build();
