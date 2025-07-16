@@ -4,12 +4,12 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>mcp-servers</artifactId>
-        <version>0.0.7</version>
+        <version>0.0.8-SNAPSHOT</version>
     </parent>         
     
     <artifactId>aws-security-tool</artifactId>
     <name>Wanaku :: MCP Servers :: AWS Security Tool</name>
-    <version>0.0.7</version>
+    <version>0.0.8-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
