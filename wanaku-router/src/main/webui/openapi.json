@@ -1186,7 +1186,7 @@
   },
   "info" : {
     "title" : "wanaku-router API",
-    "version" : "0.0.7"
+    "version" : "0.0.8-SNAPSHOT"
   },
   "servers" : [ {
     "url" : "http://localhost:8080",
