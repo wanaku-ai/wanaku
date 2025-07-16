@@ -34,6 +34,7 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
+          cache: maven
 
       - name: Login to Container Registry
         if: matrix.os == 'ubuntu-latest' && github.repository == 'wanaku-ai/wanaku'
