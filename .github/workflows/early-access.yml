@@ -9,7 +9,7 @@ on:
 
 jobs:
   pre-release-build:
-    name: Early Access
+    name: Build Pre-release Artifacts
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -56,7 +56,12 @@ jobs:
         run: |
           mvn -Dnative -Pdist clean package
 
-      - name: Run JReleaser
+  release-to-github-linux:
+    name: Release to GitHub (Linux and Common Artifacts)
+    needs: pre-release-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run JReleaser (Linux)
         uses: jreleaser/release-action@v2
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -73,7 +78,37 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-release-${{ matrix.os }}
+          name: jreleaser-release-linux
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
+
+# We need to run this one after the linux one, to prevent jreleaser from dropping the release.
+# That is why we set the JRELEASER_OVERWRITE to false
+  release-to-github-macos:
+    name: Release to GitHub (macOS Binaries)
+    needs: release-to-github-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run JReleaser (Linux)
+        uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
+          JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
+          JRELEASER_SELECT_CURRENT_PLATFORM: true
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          JRELEASER_OVERWRITE: false
+
+      # Persist logs
+
+      - name: JReleaser release output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-release-macos
           path: |
             out/jreleaser/trace.log
             out/jreleaser/output.properties
