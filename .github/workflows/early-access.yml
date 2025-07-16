@@ -89,7 +89,7 @@ jobs:
   release-to-github-macos:
     name: Release to GitHub (macOS Binaries)
     needs: release-to-github-linux
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Run JReleaser (Linux)
         uses: jreleaser/release-action@v2
