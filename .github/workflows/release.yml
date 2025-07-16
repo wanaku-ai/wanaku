@@ -14,19 +14,16 @@ on:
         required: true
 
 jobs:
-  release:
+  perform-release:
     name: Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # Configure build steps as you'd normally do
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -38,6 +35,11 @@ jobs:
           server-password: MAVEN_CENTRAL_TOKEN
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: maven
+
+#         We need to do this because there are some files that are auto-generated/auto-updated during the build.
+#         When creating the release, we want to make sure that any version referenced in there is actually related to
+#         the version being released. So, the process involves adjusting the versioned files, then recreating the tag
       - name: Create release
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
@@ -47,32 +49,14 @@ jobs:
           export GPG_TTY=$(tty)
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
-#         We need to do this because there are some files that are auto-generated/auto-updated during the build.
-#         When creating the release, we want to make sure that any version referenced in there is actually related to
-#         the version being released.
-
-#         Prepare the release
           mvn --batch-mode -Dtag=wanaku-${{ github.event.inputs.currentDevelopmentVersion }} -DreleaseVersion=${{ github.event.inputs.currentDevelopmentVersion }} -DdevelopmentVersion=${{ github.event.inputs.nextDevelopmentVersion }}-SNAPSHOT release:prepare
-               
-#         Adjust the docker-compose files
           sed -i -e "s/wanaku-${{ github.event.inputs.previousDevelopmentVersion }}/wanaku-${{ github.event.inputs.currentDevelopmentVersion }}/g" docker-compose.yml
           sed -i -e "s/wanaku-${{ github.event.inputs.previousDevelopmentVersion }}/wanaku-${{ github.event.inputs.currentDevelopmentVersion }}/g" docker-compose-prod.yml
-               
-#         Adjust the Jbang catalog file
           sed -i -e "s/${{ github.event.inputs.previousDevelopmentVersion }}/${{ github.event.inputs.currentDevelopmentVersion }}/g" jbang-catalog.json
-               
-#         Commit the auto-generated UI files and the other version-specific files
           mvn -PcommitFiles scm:checkin
-               
-#         Erase the tag created incorrectly by Maven
           git tag -d wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
-               
-#         Recreate the release tag by marking tagging at exactly two commits before HEAD (i.: ignoring the version bumps from maven)      
           git tag wanaku-${{ github.event.inputs.currentDevelopmentVersion }} HEAD~2
-          
-#         Continue the release
           mvn -Pdist release:perform
-      # Create a release
 
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
@@ -83,8 +67,6 @@ jobs:
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-
-      # Persist logs
 
       - name: JReleaser release output
         if: always()
