@@ -8,20 +8,11 @@ on:
         required: true
 
 jobs:
-  pre-release-build:
-    name: Build Pre-release Artifacts
-    runs-on: ${{ matrix.os }}
+  pre-release-build-linux:
+    name: Build Pre-release Artifacts (Linux)
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        experimental: [ false ]
-        include:
-          - os: [ macos-latest ]
-            experimental: true
-      fail-fast: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,10 +25,8 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
-          cache: maven
 
       - name: Login to Container Registry
-        if: matrix.os == 'ubuntu-latest' && github.repository == 'wanaku-ai/wanaku'
         uses: docker/login-action@v3
         with:
           registry: quay.io
@@ -45,23 +34,13 @@ jobs:
           password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Create a snapshot build (with container push)
-        if: matrix.os == 'ubuntu-latest'
         run: |
           mvn -Dnative -Pdist \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.additional-tags=${{ github.event.inputs.currentDevelopmentVersion }} \
           clean package
-      - name: Create a snapshot build
-        if: matrix.os != 'ubuntu-latest'
-        run: |
-          mvn -Dnative -Pdist clean package
 
-  release-to-github-linux:
-    name: Release to GitHub (Linux and Common Artifacts)
-    needs: pre-release-build
-    runs-on: ubuntu-latest
-    steps:
       - name: Run JReleaser (Linux)
         uses: jreleaser/release-action@v2
         env:
@@ -79,18 +58,34 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-release-linux
+          name: jreleaser-release-${{ matrix.os }}
           path: |
             out/jreleaser/trace.log
             out/jreleaser/output.properties
 
-# We need to run this one after the linux one, to prevent jreleaser from dropping the release.
-# That is why we set the JRELEASER_OVERWRITE to false
-  release-to-github-macos:
-    name: Release to GitHub (macOS Binaries)
-    needs: release-to-github-linux
+  pre-release-build-macos:
+    name: Build Pre-release Artifacts (macOS)
+    needs: pre-release-build-linux
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: graalvm/setup-graalvm@v1.3.4
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+      - name: Create a snapshot build
+        run: |
+          mvn -Dnative -Pdist clean package
+
       - name: Run JReleaser (Linux)
         uses: jreleaser/release-action@v2
         env:
@@ -109,7 +104,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jreleaser-release-macos
+          name: jreleaser-release-${{ matrix.os }}
           path: |
             out/jreleaser/trace.log
             out/jreleaser/output.properties
