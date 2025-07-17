@@ -37,6 +37,7 @@ release:
       enabled: true
     update:
       enabled: true
+    skipTag: true
 
 distributions:
   cli:
