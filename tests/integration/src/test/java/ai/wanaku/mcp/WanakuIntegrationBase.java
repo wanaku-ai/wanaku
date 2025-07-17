@@ -92,6 +92,7 @@ public abstract class WanakuIntegrationBase {
             if (!service.getContainer().isRunning()) {
                 service.getContainer()
                         .withNetwork(network)
+                        .withExposedPorts(8080)
                         .waitingFor(Wait.forLogMessage(".*Using registration service.*", 1))
                         .withFileSystemBind(
                                 this.getClass().getClassLoader().getResource("").getPath(),
