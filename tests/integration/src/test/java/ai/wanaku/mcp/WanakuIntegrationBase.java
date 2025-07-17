@@ -1,7 +1,7 @@
 package ai.wanaku.mcp;
 
 import ai.wanaku.cli.main.CliMain;
-import ai.wanaku.mcp.inspector.ModelContextProtocolExtension;
+import io.quarkiverse.mcp.server.test.McpAssured;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +12,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import picocli.CommandLine;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,7 +43,7 @@ public abstract class WanakuIntegrationBase {
     /**
      * Extension for interacting with the Model Context Protocol.
      */
-    protected static ModelContextProtocolExtension mcpExtension;
+    protected static McpAssured.McpSseTestClient client;
 
     /**
      * The main entry point for the Wanaku CLI.
@@ -66,10 +67,16 @@ public abstract class WanakuIntegrationBase {
      * Starts the main router container before any tests are run.
      */
     @BeforeAll
-    static void startContainers() {
+    static void startContainers() throws URISyntaxException {
         router.start();
         router.followOutput(logConsumer);
-        mcpExtension = new ModelContextProtocolExtension(router.getMappedPort(8080));
+
+        client = McpAssured.newSseClient()
+                .setBaseUri(new URI("http://localhost:" + router.getMappedPort(8080) + "/"))
+                .setSsePath("mcp/sse")
+                .build();
+
+        client.connect();
     }
 
     /**
