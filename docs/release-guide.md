@@ -1,11 +1,50 @@
 # Wanaku Release Guide
 
-## Prepare the environment 
+## Automated Release Process
+
+Start by setting the versions. 
+
+```shell
+export PREVIOUS_VERSION=0.0.7
+export CURRENT_DEVELOPMENT_VERSION=0.0.8
+export NEXT_DEVELOPMENT_VERSION=0.0.9
+```
+
+Trigger a release build: 
+
+```shell
+gh workflow run release -f previousDevelopmentVersion=${PREVIOUS_VERSION} -f currentDevelopmentVersion=${CURRENT_DEVELOPMENT_VERSION} -f nextDevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}
+```
+
+The release build can take up to 30 minutes to complete. This will:
+
+1. Validate the artifacts 
+2. Publish the files to the Maven Central.
+
+> [IMPORTANT]
+> It is **absolutely mandatory** for the artifacts to be validated for the release to proceed.
+
+After the upload is complete, go to [Maven Central](https://central.sonatype.com/publishing/deployments) and publish the deployment.
+
+The publication to Maven Central should take another 30 minutes. 
+
+In the meantime, you can release the artifacts. This will build the zip files and tarballs with each 
+component, the native executables and also will publish the containers to Quay.
+
+```
+gh workflow run release-artifacts -f currentDevelopmentVersion=0.0.7
+```
+
+After this is completed successfully, you can announce the release.
+
+## Manual Release Process
+
+### Prepare the environment 
 
 * Tools required: GraalVM, jreleaser, gpg (with your keys installed and available) and Apache Maven.
 * Hardware: Linux (x86 64) and macOS (aarch64)
 
-### Keys 
+#### Keys 
 
 Make sure you have your GPG keys installed. You can check with the following command:
 
@@ -27,7 +66,7 @@ export NEXT_DEVELOPMENT_VERSION=0.0.7
 
 **NOTE**: there is no need to add `-SNAPSHOT` to the versions.
 
-## Pre-Release Checks / Dry Run 
+### Pre-Release Checks / Dry Run 
 
 **NOTE**: The steps assume you are primarily building on macOS, with a secondary step on a x86-64 Linux machine.
 
@@ -53,7 +92,7 @@ jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION
 
 If everything goes alright, then it should be ready to release.
 
-## Release Maven artifacts
+### Release Maven artifacts
 
 ```shell
 mvn release:clean
@@ -107,9 +146,9 @@ mvn -Pdist release:perform
 
 After the upload is complete, go to [Maven Central](https://central.sonatype.com/publishing/deployments) and publish the deployment.
 
-## Native Artifacts
+### Native Artifacts
 
-### Publish the native artifacts for macOS (aarch64)
+#### Publish the native artifacts for macOS (aarch64)
 
 Now, build the native artifacts for macOS (aarch64) and publish them on GitHub.
 
@@ -128,7 +167,7 @@ If everything is OK, then publish:
 jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64
 ```
 
-### Publish the native artifacts for Linux (x86 64)
+#### Publish the native artifacts for Linux (x86 64)
 
 **NOTE**: this guide assumes the main build was performed on a macOS. 
 
@@ -156,7 +195,7 @@ Then, run `jreleaser` filtering the source ones, and only publishing the Linux n
 jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=linux-x86_64 --exclude-distribution=cli --exclude-distribution=router --exclude-distribution=service-kafka --exclude-distribution=service-http --exclude-distribution=provider-file --exclude-distribution=service-yaml-route --exclude-distribution=provider-ftp --exclude-distribution=service-sqs --exclude-distribution=service-telegram --exclude-distribution=service-exec --exclude-distribution=service-tavily --exclude-distribution=provider-s3
 ```
 
-## Containers
+### Containers
 
 This process is automated, but if there is a need to run it manually, then it can be done using the following:
 
@@ -166,10 +205,10 @@ mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=t
 
 **NOTE**: you must be logged in in Quay.io with the Podman (preferred) or Docker CLI.
 
-## Early Builds
+### Early Builds
 
 To release early builds, run: 
 
 ```shell
-gh workflow run early-access -f currentDevelopmentVersion=0.0.7-SNAPSHOT
+gh workflow run early-access -f currentDevelopmentVersion=$(cat core/core-util/target/classes/version.txt)
 ```
