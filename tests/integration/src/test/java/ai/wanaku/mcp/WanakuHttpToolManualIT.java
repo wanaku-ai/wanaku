@@ -1,11 +1,13 @@
 package ai.wanaku.mcp;
 
-import ai.wanaku.mcp.inspector.ModelContextProtocolExtension;
+import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.json.JsonObject;
-import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
 
 import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
 
@@ -14,7 +16,7 @@ public class WanakuHttpToolManualIT {
 
 
     @Test
-    void manuTest() {
+    void manuTest() throws URISyntaxException {
         try {
             testInvocation();
         } finally {
@@ -22,8 +24,13 @@ public class WanakuHttpToolManualIT {
         }
     }
 
-    private static void testInvocation() {
-        ModelContextProtocolExtension mcpExtension = new ModelContextProtocolExtension(8080);
+    private static void testInvocation() throws URISyntaxException {
+        McpAssured.McpSseTestClient client = McpAssured.newSseClient()
+                .setBaseUri(new URI("http://localhost:8080/"))
+                .setSsePath("mcp/sse")
+                .build();
+
+        client.connect();
 
         executeWanakuCliCommand(List.of("wanaku",
                 "tools",
@@ -37,15 +44,15 @@ public class WanakuHttpToolManualIT {
                 "--type",
                 "http"), "http://localhost:8080");
 
-        JsonObject response = mcpExtension.callTool(new JsonObject()
-                .put("name", "providence"));
-
-        Assertions.assertThat(response.getJsonObject("result").getBoolean("isError"))
-                .isFalse();
-        Assertions.assertThat(response
-                        .getJsonObject("result")
-                        .getJsonArray("content")
-                        .getJsonObject(0))
-                .isNotNull();
+        client.when().toolsCall("providence")
+                .withAssert(toolResponse -> {
+                    Assertions.assertThat(toolResponse.isError())
+                            .isFalse();
+                    Assertions.assertThat(toolResponse
+                                    .content()
+                                    .get(0))
+                            .isNotNull();
+                })
+                .send();
     }
 }

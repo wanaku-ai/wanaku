@@ -1,10 +1,12 @@
 package ai.wanaku.mcp;
 
+import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.json.JsonObject;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.net.URISyntaxException;
 import java.util.List;
 
 import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
@@ -13,12 +15,11 @@ import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
 public class WanakuFileResourceIT extends WanakuIntegrationBase {
 
     @Test
-    public void exposeFileResource() {
-        JsonObject response = mcpExtension.listResources();
-
-        Assertions.assertThat(response
-                .getJsonObject("result")
-                .getJsonArray("resources")).isEmpty();
+    public void exposeFileResource() throws URISyntaxException {
+        client.when()
+                .resourcesList()
+                .withAssert(resourcesPage -> Assertions.assertThat(resourcesPage.resources()).isEmpty())
+                .send();
 
         String host = String.format("http://localhost:%d", router.getMappedPort(8080));
 
@@ -31,29 +32,22 @@ public class WanakuFileResourceIT extends WanakuIntegrationBase {
                 "--name=test-file-resource",
                 "--type=file"), host);
 
-        response = mcpExtension.listResources();
-
-        Assertions.assertThat(response
-                        .getJsonObject("result")
-                        .getJsonArray("resources")
-                        .getJsonObject(0)
-                        .getString("name"))
-                .isEqualTo("test-file-resource");
+        McpAssured.Snapshot snapshot = client.when().resourcesList()
+                .withAssert(resourcesPage ->
+                        Assertions.assertThat(resourcesPage.resources().get(0).name()).isEqualTo("test-file-resource"))
+                .send()
+                .thenAssertResults();
+        JsonObject response = snapshot.responses().get(snapshot.responses().size() - 1);
 
         String uri = response.getJsonObject("result")
                 .getJsonArray("resources")
                 .getJsonObject(0)
                 .getString("uri");
 
-        response = mcpExtension.readResource(uri);
-
-        Assertions.assertThat(
-                        response
-                                .getJsonObject("result")
-                                .getJsonArray("contents")
-                                .getJsonObject(0)
-                                .getString("text"))
-                .contains("Wanaku!!");
+        client.when().resourcesRead(uri)
+                .withAssert(resourceResponse ->
+                        Assertions.assertThat(resourceResponse.contents().get(0).asText().text()).contains("Wanaku!!"))
+                .send();
     }
 
     @Override

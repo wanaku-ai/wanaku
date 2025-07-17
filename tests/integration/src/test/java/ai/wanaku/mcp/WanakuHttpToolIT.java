@@ -1,22 +1,22 @@
 package ai.wanaku.mcp;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.json.JsonObject;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
-import static ai.wanaku.mcp.CLIHelper.*;
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
 
 @QuarkusTest
 public class WanakuHttpToolIT extends WanakuIntegrationBase {
 
     @Test
     void toolHttpImport() {
-        JsonObject response = mcpExtension.listTools();
-
-        Assertions.assertThat(response.getJsonObject("result").getJsonArray("tools")).isEmpty();
+        client.when().toolsList()
+                .withAssert(toolsPage -> Assertions.assertThat(toolsPage.tools()).isEmpty())
+                .send();
 
         String host = String.format("http://localhost:%d", router.getMappedPort(8080));
         executeWanakuCliCommand(List.of("wanaku",
@@ -24,24 +24,20 @@ public class WanakuHttpToolIT extends WanakuIntegrationBase {
                 "import",
                 "https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/refs/heads/main/toolsets/currency.json"), host);
 
-        response = mcpExtension.listTools();
+        client.when().toolsList()
+                .withAssert(toolsPage ->
+                        Assertions.assertThat(toolsPage.tools().get(0).name()).isEqualTo("free-currency-conversion-tool"))
+                .send();
 
-        Assertions.assertThat(response.getJsonObject("result").getJsonArray("tools").getJsonObject(0).getString("name"))
-                .isEqualTo("free-currency-conversion-tool");
-
-        response = mcpExtension.callTool(new JsonObject()
-                .put("name", "free-currency-conversion-tool")
-                .put("arguments", new JsonObject()
-                        .put("toCurrency", "USD")
-                        .put("fromCurrency", "EUR")));
-
-        Assertions.assertThat(response.getJsonObject("result").getBoolean("isError"))
-                .isFalse();
-        Assertions.assertThat(response
-                        .getJsonObject("result")
-                        .getJsonArray("content")
-                        .getJsonObject(0))
-                .isNotNull();
+        client
+                .when().toolsCall("free-currency-conversion-tool")
+                .withArguments(Map.of("toCurrency", "USD",
+                        "fromCurrency", "EUR"))
+                .withAssert(toolResponse -> {
+                    Assertions.assertThat(toolResponse.isError()).isFalse();
+                    Assertions.assertThat(toolResponse.content().get(0)).isNotNull();
+                })
+                .send();
     }
 
     @Override
