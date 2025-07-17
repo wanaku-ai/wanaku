@@ -108,7 +108,7 @@ distributions:
 
 packagers:
   brew:
-    active: ALWAYS
+    active: NEVER
     repository:
       owner: wanaku-ai
       name: homebrew-wanaku
