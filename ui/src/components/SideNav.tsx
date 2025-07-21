@@ -50,6 +50,20 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 </SideNavMenuItem>
                 <SideNavMenuItem
                     element={Link}
+                    to="/capabilities"
+                    onClick={onClickSideNavExpand}
+                >
+                    Capabilities
+                </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
+                    to="/namespaces"
+                    onClick={onClickSideNavExpand}
+                >
+                    Namespaces
+                </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
                     to={Links.Forwards}
                     onClick={onClickSideNavExpand}
                 >
