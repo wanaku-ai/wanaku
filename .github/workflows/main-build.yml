@@ -55,11 +55,21 @@ jobs:
         registry: quay.io
         username: ${{ secrets.QUAY_USERNAME }}
         password: ${{ secrets.QUAY_PASSWORD }}
-    - name: Build and Publish
-      if: github.repository == 'wanaku-ai/wanaku'
+    - name: Build and Publish (x86)
+      if: matrix.os == 'ubuntu-latest' && github.repository == 'wanaku-ai/wanaku'
       run: |
         mvn -B clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.additional-tags=${{ github.ref_name }},${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+          -Dquarkus.jib.platforms=linux/amd64 \
+          -Pdist
+    - name: Build and Publish (arm)
+      if: matrix.os == 'ubuntu-24.04-arm' && github.repository == 'wanaku-ai/wanaku'
+      run: |
+        mvn -B clean package \
+          -Dquarkus.container-image.build=true \
+          -Dquarkus.container-image.push=true \
+          -Dquarkus.container-image.additional-tags=${{ github.ref_name }},${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+          -Dquarkus.jib.platforms=linux/arm64/v8 \
           -Pdist
