@@ -31,7 +31,11 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
@@ -40,8 +44,9 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+    - name: Set arch
+      id: arch
+      run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
     - name: Login to Container Registry
       if: github.repository == 'wanaku-ai/wanaku'
       uses: docker/login-action@v3
@@ -49,11 +54,11 @@ jobs:
         registry: quay.io
         username: ${{ secrets.QUAY_USERNAME }}
         password: ${{ secrets.QUAY_PASSWORD }}
-    - name: Publish
+    - name: Build and Publish
       if: github.repository == 'wanaku-ai/wanaku'
       run: |
         mvn -B clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
-          -Dquarkus.container-image.additional-tags=${{ github.ref_name }} \
+          -Dquarkus.container-image.additional-tags=${{ github.ref_name }},${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Pdist
