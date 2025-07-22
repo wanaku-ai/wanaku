@@ -61,7 +61,7 @@ jobs:
         mvn -B clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
-          -Dquarkus.container-image.additional-tags=${{ github.ref_name }},${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+          -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/amd64 \
           -Pdist
     - name: Build and Publish (arm)
@@ -70,6 +70,24 @@ jobs:
         mvn -B clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
-          -Dquarkus.container-image.additional-tags=${{ github.ref_name }},${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+          -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/arm64/v8 \
           -Pdist
+
+
+  createManifests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Container Registry
+        if: github.repository == 'wanaku-ai/wanaku'
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Build and Publish (x86)
+        if: github.repository == 'wanaku-ai/wanaku'
+        run: |
+          ./build-manifests.sh ${{ github.ref_name }}
