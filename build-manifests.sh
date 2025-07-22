@@ -4,8 +4,8 @@ branch=${1:-main}
 manifests=$(cat docker-compose.yml | grep image | grep wanaku | cut -d ' ' -f 6)
 
 for manifest in $manifests ; do
-  aarch64Image=$(echo "${manifest}" | sed "s/:latest/:${branch}-aarch64/")
-  x864Image=$(echo "${manifest}" | sed "s/:latest/:${branch}-x86_64/")
+  aarch64Image=$(echo "${manifest}" | sed "s/:[^:]*$/:${branch}-aarch64/")
+  x864Image=$(echo "${manifest}" | sed "s/:[^:]*$/:${branch}-x86_64/")
 
   echo "Pulling ${aarch64Image}"
   podman pull ${aarch64Image}
