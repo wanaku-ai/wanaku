@@ -16,8 +16,8 @@ features:
     link: ./docs/contributing
   - title: Providers
     details: View resource providers available in this version of Wanaku
-    link: ./services/providers/README
+    link: ./capabilities/providers/README
   - title: Tools
     details: View tool services available in this version of Wanaku
-    link: ./services/tools/README
+    link: ./capabilities/tools/README
 ---
