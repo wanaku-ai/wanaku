@@ -308,11 +308,6 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/ToolReference"
-  securitySchemes:
-    SecurityScheme:
-      type: openIdConnect
-      openIdConnectUrl: https://localhost:8543/realms/wanaku/.well-known/openid-configuration
-      description: Authentication
 paths:
   /api/v1/forwards/add:
     post:

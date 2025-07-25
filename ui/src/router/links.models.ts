@@ -5,7 +5,8 @@ export const enum Links {
   LLMChat = "/llmchat",
   Capabilities = "/capabilities",
   Namespaces = "/namespaces",
-  Forwards = "/forwards"
+  Forwards = "/forwards",
+  Logout = "/logout"
 }
 
 export const enum ExternalLinks {
