@@ -21,6 +21,7 @@ import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 
+import io.quarkus.oidc.client.Tokens;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -37,11 +38,16 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @Inject
     ResourceConsumer consumer;
 
+    @Inject
+    Tokens tokens;
+
     private RegistrationManager registrationManager;
 
     @PostConstruct
     public void init() {
-        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER);
+        final String accessToken = tokens.getAccessToken();
+
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER, accessToken);
     }
 
     /**
