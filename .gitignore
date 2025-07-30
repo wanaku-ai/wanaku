@@ -3,7 +3,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 out
-wanaku-router/.quinoa/
+wanaku-router-web/.quinoa/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

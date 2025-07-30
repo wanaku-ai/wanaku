@@ -32,7 +32,6 @@
         <!-- router core -->
         <module>core-persistence</module>
         <module>core-mcp-client</module>
-        <module>core-server</module>
     </modules>
 
 
