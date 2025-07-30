@@ -89,13 +89,15 @@
         <module>parent</module>
         <module>api</module>
         <module>core</module>
-        <module>wanaku-router</module>
+        <module>wanaku-router-backend</module>
+        <module>wanaku-router-web</module>
         <module>cli</module>
         <module>capabilities</module>
         <module>mcp-servers</module>
         <module>archetypes</module>
         <module>jbang</module>
         <module>tests</module>
+
     </modules>
 
     <profiles>
