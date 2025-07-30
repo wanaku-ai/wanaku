@@ -19,6 +19,7 @@ import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import io.quarkus.oidc.client.Tokens;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -34,11 +35,16 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     @Inject
     Client client;
 
+    @Inject
+    Tokens tokens;
+
     private RegistrationManager registrationManager;
 
     @PostConstruct
     public void init() {
-        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER);
+        final String accessToken = tokens.getAccessToken();
+
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER, accessToken);
     }
 
     /**
