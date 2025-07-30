@@ -61,10 +61,6 @@
             <artifactId>quarkus-messaging</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-picocli</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
