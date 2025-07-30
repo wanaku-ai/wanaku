@@ -172,7 +172,7 @@
                             <version>${maven-scm-plugin.version}</version>
                             <configuration>
                                 <message>[maven-scm-plugin] Update version in files</message>
-                                <includes>ui/**/*.ts,wanaku-router/src/main/webui/openapi.json,wanaku-router/src/main/webui/openapi.yaml,docker-compose.yml,docker-compose-prod.yml,jbang-catalog.json</includes>
+                                <includes>ui/**/*.ts,wanaku-router-web/src/main/webui/openapi.json,wanaku-router-web/src/main/webui/openapi.yaml,docker-compose.yml,docker-compose-prod.yml,jbang-catalog.json</includes>
                                 <excludes>ui/node_modules/**</excludes>
                             </configuration>
                         </plugin>

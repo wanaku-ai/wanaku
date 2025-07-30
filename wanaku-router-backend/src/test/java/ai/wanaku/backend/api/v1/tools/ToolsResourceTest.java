@@ -5,8 +5,10 @@ import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.util.support.ToolsHelper;
 import ai.wanaku.backend.support.TestIndexHelper;
+import ai.wanaku.backend.support.WanakuKeycloakTestResource;
+import ai.wanaku.core.util.support.ToolsHelper;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.io.IOException;
 import java.util.Collections;
@@ -22,6 +24,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
+@QuarkusTestResource(WanakuKeycloakTestResource.class)
 public class ToolsResourceTest {
     private static final Logger LOG = Logger.getLogger(ToolsResourceTest.class);
 

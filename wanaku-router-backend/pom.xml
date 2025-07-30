@@ -12,6 +12,10 @@
     <artifactId>wanaku-router-backend</artifactId>
     <name>Wanaku :: Router :: Backend</name>
 
+    <properties>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:26.3.1</keycloak.docker.image>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
@@ -83,6 +87,10 @@
             <artifactId>quarkus-container-image-jib</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
@@ -113,6 +121,12 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${test-containers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -150,6 +164,7 @@
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
