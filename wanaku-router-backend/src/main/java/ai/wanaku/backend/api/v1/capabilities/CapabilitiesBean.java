@@ -1,4 +1,4 @@
-package ai.wanaku.backend.api.v1.management.targets;
+package ai.wanaku.backend.api.v1.capabilities;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,8 +16,8 @@ import java.util.Map;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class TargetsBean {
-    private static final Logger LOG = Logger.getLogger(TargetsBean.class);
+public class CapabilitiesBean {
+    private static final Logger LOG = Logger.getLogger(CapabilitiesBean.class);
 
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
