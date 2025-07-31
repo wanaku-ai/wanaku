@@ -1,4 +1,4 @@
-package ai.wanaku.backend.api.v1.management.targets;
+package ai.wanaku.backend.api.v1.capabilities;
 
 import java.util.List;
 import java.util.Map;
@@ -25,12 +25,12 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @ApplicationScoped
-@Path("/api/v1/management/targets")
-public class TargetsResource {
-    private static final Logger LOG = Logger.getLogger(TargetsResource.class);
+@Path("/api/v1/capabilities")
+public class CapabilitiesResource {
+    private static final Logger LOG = Logger.getLogger(CapabilitiesResource.class);
 
     @Inject
-    TargetsBean targetsBean;
+    CapabilitiesBean capabilitiesBean;
 
     @Inject
     @Channel("service-target-event")
@@ -47,7 +47,7 @@ public class TargetsResource {
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
     public WanakuResponse<List<ServiceTarget>> toolList() {
-        return new WanakuResponse<>(targetsBean.toolList());
+        return new WanakuResponse<>(capabilitiesBean.toolList());
     }
 
     @Path("/tools/state")
@@ -55,14 +55,14 @@ public class TargetsResource {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, List<ActivityRecord>>> toolsState() {
-        return new WanakuResponse<>(targetsBean.toolsState());
+        return new WanakuResponse<>(capabilitiesBean.toolsState());
     }
 
     @Path("/resources/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
     public WanakuResponse<List<ServiceTarget>> resourcesList() {
-        return new WanakuResponse<>(targetsBean.resourcesList());
+        return new WanakuResponse<>(capabilitiesBean.resourcesList());
     }
 
     @Path("/resources/state")
@@ -70,7 +70,7 @@ public class TargetsResource {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, List<ActivityRecord>>> resourcesState() {
-        return new WanakuResponse<>(targetsBean.resourcesState());
+        return new WanakuResponse<>(capabilitiesBean.resourcesState());
     }
 
     @Path("/notifications")
