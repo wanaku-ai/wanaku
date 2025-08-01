@@ -1,13 +1,12 @@
 import { useCallback } from "react";
 import {
-  getApiV1ManagementTargetsResourcesList,
+  getApiV1CapabilitiesResourcesList,
   postApiV1ResourcesExpose,
   getApiV1ResourcesList,
   putApiV1ResourcesRemove,
-  getApiV1ManagementTargetsResourcesListResponse,
   postApiV1ResourcesExposeResponse,
   getApiV1ResourcesListResponse,
-  putApiV1ResourcesRemoveResponse
+  putApiV1ResourcesRemoveResponse, getApiV1CapabilitiesResourcesListResponse
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ResourcesRemoveParams,
@@ -23,8 +22,8 @@ export const useResources = () => {
   const listManagementResources = useCallback(
     (
       options?: RequestInit
-    ): Promise<getApiV1ManagementTargetsResourcesListResponse> => {
-      return getApiV1ManagementTargetsResourcesList(options);
+    ): Promise<getApiV1CapabilitiesResourcesListResponse> => {
+      return getApiV1CapabilitiesResourcesList(options);
     },
     []
   );

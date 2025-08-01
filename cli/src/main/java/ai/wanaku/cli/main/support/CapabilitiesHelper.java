@@ -5,7 +5,7 @@ import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
-import ai.wanaku.core.services.api.TargetsService;
+import ai.wanaku.core.services.api.CapabilitiesService;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 
@@ -89,21 +89,21 @@ public final class CapabilitiesHelper {
      * along with their respective activity states, to create a unified list of
      * printable capabilities.
      *
-     * @param targetsService the service used to fetch target information
+     * @param capabilitiesService the service used to fetch target information
      * @return a {@link Uni} emitting a list of {@link PrintableCapability} objects
      * @throws NullPointerException if targetsService is null
      * @see #combineDataIntoCapabilities(List)
      */
-    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
+    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
 
         return Uni.combine()
                 .all()
                 .unis(
-                        fetchManagementTools(targetsService),
-                        fetchToolsActivityState(targetsService),
-                        fetchResourceProviders(targetsService),
-                        fetchResourcesActivityState(targetsService)
+                        fetchManagementTools(capabilitiesService),
+                        fetchToolsActivityState(capabilitiesService),
+                        fetchResourceProviders(capabilitiesService),
+                        fetchResourcesActivityState(capabilitiesService)
                 )
                 .with(CapabilitiesHelper::combineDataIntoCapabilities);
     }
@@ -251,49 +251,49 @@ public final class CapabilitiesHelper {
     /**
      * Fetches the list of management tools from the targets service.
      *
-     * @param targetsService the service to fetch management tools from
+     * @param capabilitiesService the service to fetch management tools from
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<List<ServiceTarget>> fetchManagementTools(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::toolsList, List.of());
+    public static Uni<List<ServiceTarget>> fetchManagementTools(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::toolsList, List.of());
     }
 
     /**
      * Fetches the activity state for management tools.
      *
-     * @param targetsService the service to fetch activity state from
+     * @param capabilitiesService the service to fetch activity state from
      * @return a {@link Uni} emitting a map of service names to activity records
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<Map<String, List<ActivityRecord>>> fetchToolsActivityState(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::toolsState, Map.of());
+    public static Uni<Map<String, List<ActivityRecord>>> fetchToolsActivityState(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::toolsState, Map.of());
     }
 
     /**
      * Fetches the list of resource providers from the targets service.
      *
-     * @param targetsService the service to fetch resource providers from
+     * @param capabilitiesService the service to fetch resource providers from
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<List<ServiceTarget>> fetchResourceProviders(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::resourcesList, List.of());
+    public static Uni<List<ServiceTarget>> fetchResourceProviders(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::resourcesList, List.of());
     }
 
     /**
      * Fetches the activity state for resource providers.
      *
-     * @param targetsService the service to fetch activity state from
+     * @param capabilitiesService the service to fetch activity state from
      * @return a {@link Uni} emitting a map of service names to activity records
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<Map<String, List<ActivityRecord>>> fetchResourcesActivityState(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::resourcesState, Map.of());
+    public static Uni<Map<String, List<ActivityRecord>>> fetchResourcesActivityState(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::resourcesState, Map.of());
     }
 
     /**

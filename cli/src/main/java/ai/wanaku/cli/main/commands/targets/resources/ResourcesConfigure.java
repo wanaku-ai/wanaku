@@ -2,7 +2,7 @@ package ai.wanaku.cli.main.commands.targets.resources;
 
 import ai.wanaku.cli.main.commands.targets.AbstractTargets;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.TargetsService;
+import ai.wanaku.core.services.api.CapabilitiesService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
@@ -30,9 +30,9 @@ public class ResourcesConfigure extends AbstractTargets {
     @Override
     public Integer  doTargetCall(WanakuPrinter printer)  throws IOException {
 
-        targetsService = initService(TargetsService.class, host);
+        capabilitiesService = initService(CapabilitiesService.class, host);
 
-        try (Response ignored = targetsService.resourcesConfigure(service, option, value)) {
+        try (Response ignored = capabilitiesService.resourcesConfigure(service, option, value)) {
         } catch (WebApplicationException e) {
             Response response = e.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {

@@ -15,7 +15,7 @@ public class ToolsLinkedList extends AbstractTargets {
 
     @Override
     protected Integer doTargetCall(WanakuPrinter printer) throws IOException {
-        List<ServiceTarget> list = targetsService.toolsList().data();
+        List<ServiceTarget> list = capabilitiesService.toolsList().data();
         printer.printTable(list);
         return EXIT_OK;
     }

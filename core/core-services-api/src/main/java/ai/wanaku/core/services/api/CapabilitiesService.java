@@ -16,8 +16,8 @@ import ai.wanaku.api.types.providers.ServiceTarget;
 import java.util.List;
 import java.util.Map;
 
-@Path("/api/v1/management/targets")
-public interface TargetsService {
+@Path("/api/v1/capabilities")
+public interface CapabilitiesService {
 
     @Path("/tools/list")
     @GET
