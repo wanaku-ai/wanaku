@@ -2,7 +2,7 @@ package ai.wanaku.cli.main.commands.targets;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.TargetsService;
+import ai.wanaku.core.services.api.CapabilitiesService;
 import org.jline.terminal.Terminal;
 
 import static picocli.CommandLine.Command;
@@ -15,12 +15,12 @@ public abstract class AbstractTargets extends BaseCommand {
     @Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080", arity = "0..1")
     protected String host;
 
-    protected TargetsService targetsService;
+    protected CapabilitiesService capabilitiesService;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         printer.printWarningMessage("`wanaku targets` is deprecated, use `wanaku capabilities` instead");
-        targetsService = initService(TargetsService.class, host);
+        capabilitiesService = initService(CapabilitiesService.class, host);
         return doTargetCall(printer);
     }
 

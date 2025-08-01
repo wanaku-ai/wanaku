@@ -3,7 +3,7 @@ package ai.wanaku.cli.main.commands.targets.resources;
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.cli.main.commands.targets.AbstractTargets;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.TargetsService;
+import ai.wanaku.core.services.api.CapabilitiesService;
 import picocli.CommandLine;
 
 import java.io.IOException;
@@ -27,8 +27,8 @@ public class ResourcesState extends AbstractTargets {
 
     @Override
     public Integer doTargetCall(WanakuPrinter printer) throws IOException {
-        TargetsService targetsService = initService(TargetsService.class, host);
-        Map<String, List<ActivityRecord>> states = targetsService.resourcesState().data();
+        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
+        Map<String, List<ActivityRecord>> states = capabilitiesService.resourcesState().data();
         List<Map<String, String>> printableStates = getPrintableTargets(states);
         printer.printTable(printableStates, COLUMNS);
         return EXIT_OK;

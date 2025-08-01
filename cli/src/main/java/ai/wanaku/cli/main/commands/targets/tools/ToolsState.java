@@ -37,7 +37,7 @@ public class ToolsState extends AbstractTargets {
      */
     @Override
     protected Integer doTargetCall(WanakuPrinter printer) throws Exception {
-            Map<String, List<ActivityRecord>> states = targetsService.toolsState().data();
+            Map<String, List<ActivityRecord>> states = capabilitiesService.toolsState().data();
             List<Map<String, String>> printableStates = getPrintableTargets(states);
             printer.printTable(printableStates, COLUMS);
             return EXIT_OK;

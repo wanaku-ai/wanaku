@@ -3,7 +3,7 @@ package ai.wanaku.cli.main.commands.capabilities;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.CapabilitiesHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.TargetsService;
+import ai.wanaku.core.services.api.CapabilitiesService;
 import org.jline.consoleui.prompt.ConsolePrompt;
 import org.jline.consoleui.prompt.PromptResultItemIF;
 import org.jline.consoleui.prompt.builder.ListPromptBuilder;
@@ -89,7 +89,7 @@ public class CapabilitiesShow extends BaseCommand {
      * Service instance for interacting with the targets API.
      * Initialized during command execution with the specified host configuration.
      */
-    private TargetsService targetsService;
+    private CapabilitiesService capabilitiesService;
 
     /**
      * Executes the capabilities show command.
@@ -110,10 +110,10 @@ public class CapabilitiesShow extends BaseCommand {
      */
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
-        targetsService = initService(TargetsService.class, host);
+        capabilitiesService = initService(CapabilitiesService.class, host);
 
         // Fetch and filter capabilities by service name
-        List<CapabilitiesHelper.PrintableCapability> capabilities = fetchAndMergeCapabilities(targetsService)
+        List<CapabilitiesHelper.PrintableCapability> capabilities = fetchAndMergeCapabilities(capabilitiesService)
                 .await()
                 .atMost(API_TIMEOUT)
                 .stream()

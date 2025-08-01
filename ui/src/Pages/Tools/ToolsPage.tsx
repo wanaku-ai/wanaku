@@ -13,7 +13,7 @@ import { Namespace, ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
 import { listNamespaces } from "../../hooks/api/use-namespaces";
 import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
-import { useTargets } from "../../hooks/api/use-targets";
+import { useCapabilities } from "../../hooks/api/use-capabilities";
 
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
@@ -152,7 +152,7 @@ const AddToolModal: React.FC<AddToolModalProps> = ({
   const [inputSchema, setInputSchema] = useState("");
   const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
-  const { listManagementTools } = useTargets();
+  const { listManagementTools } = useCapabilities();
     
     useEffect(() => {
       listNamespaces().then((result) => {

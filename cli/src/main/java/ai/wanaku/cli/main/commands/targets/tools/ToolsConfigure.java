@@ -27,7 +27,7 @@ public class ToolsConfigure extends AbstractTargets {
 
     @Override
     protected Integer doTargetCall(WanakuPrinter printer) throws IOException {
-        try (Response ignored = targetsService.toolsConfigure(service, option, value)) {
+        try (Response ignored = capabilitiesService.toolsConfigure(service, option, value)) {
         } catch (WebApplicationException e) {
             Response response = e.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
