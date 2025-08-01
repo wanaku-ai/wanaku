@@ -466,9 +466,109 @@
           }
         }
       }
+    },
+    "securitySchemes" : {
+      "SecurityScheme" : {
+        "type" : "openIdConnect",
+        "openIdConnectUrl" : "http://localhost:8543/realms/wanaku/.well-known/openid-configuration",
+        "description" : "Authentication"
+      }
     }
   },
   "paths" : {
+    "/api/v1/capabilities/notifications" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OutboundSseEvent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Targets Event Stream",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/resources/list" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Resources List",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/resources/state" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringListActivityRecord"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Resources State",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/tools/list" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Tool List",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/tools/state" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringListActivityRecord"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Tools State",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
     "/api/v1/forwards/add" : {
       "post" : {
         "requestBody" : {
@@ -691,99 +791,6 @@
         },
         "summary" : "Version",
         "tags" : [ "Info Resource" ]
-      }
-    },
-    "/api/v1/management/targets/notifications" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "text/event-stream" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/OutboundSseEvent"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Targets Event Stream",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
-    "/api/v1/management/targets/resources/list" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Resources List",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
-    "/api/v1/management/targets/resources/state" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseMapStringListActivityRecord"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Resources State",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
-    "/api/v1/management/targets/tools/list" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Tool List",
-        "tags" : [ "Targets Resource" ]
-      }
-    },
-    "/api/v1/management/targets/tools/state" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseMapStringListActivityRecord"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Tools State",
-        "tags" : [ "Targets Resource" ]
       }
     },
     "/api/v1/namespaces/list" : {
@@ -1185,7 +1192,7 @@
     }
   },
   "info" : {
-    "title" : "wanaku-router API",
+    "title" : "wanaku-router-backend API",
     "version" : "0.0.8-SNAPSHOT"
   },
   "servers" : [ {
