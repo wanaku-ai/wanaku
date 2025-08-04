@@ -15,8 +15,4 @@ public class RuntimeInfo {
     public static boolean isWindows() {
         return OS.contains("win");
     }
-
-    public static boolean isMac() {
-        return OS.contains("mac");
-    }
 }
