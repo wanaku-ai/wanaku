@@ -65,7 +65,7 @@ public class StartLocal extends StartBase {
             if (exclusive.exclusiveNonStart.listServices) {
                 Map<String, String> components = config.components();
                 for (String component : components.keySet()) {
-                    if (!component.equals("wanaku-router")) {
+                    if (!component.startsWith("wanaku-router")) {
                         printer.printInfoMessage(" - " + component);
                     }
                 }
