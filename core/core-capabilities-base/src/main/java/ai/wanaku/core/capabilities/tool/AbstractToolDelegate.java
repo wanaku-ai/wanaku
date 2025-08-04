@@ -1,6 +1,7 @@
 package ai.wanaku.core.capabilities.tool;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -19,8 +20,11 @@ import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.security.SecurityHelper;
 import io.quarkus.oidc.client.Tokens;
 import java.util.List;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
@@ -36,15 +40,24 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     Client client;
 
     @Inject
-    Tokens tokens;
+    Instance<Tokens> tokensInstance;
 
     private RegistrationManager registrationManager;
 
     @PostConstruct
     public void init() {
-        final String accessToken = tokens.getAccessToken();
+        final String accessToken = retrieveAccessToken();
 
         registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER, accessToken);
+    }
+
+    private String retrieveAccessToken() {
+        if (SecurityHelper.isAuthEnabled()) {
+            Tokens tokens = tokensInstance.get();
+            return tokens.getAccessToken();
+        } else {
+            return null;
+        }
     }
 
     /**
