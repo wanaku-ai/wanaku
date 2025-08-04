@@ -5,8 +5,6 @@ import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.backend.support.TestIndexHelper;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.io.IOException;
 import org.jboss.logging.Logger;
