@@ -1199,4 +1199,127 @@ All CLI commands use the Wanaku management API under the hood. If you need more 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
 
 
+# Securing the Wanaku MCP Router
 
+Security in Wanaku involves controlling access to the management APIs and web interface while ensuring that only authorized users can modify tools, resources, and configurations. 
+
+This section covers how to integrate Wanaku with [KeyCloak](https://keycloak.org) for authentication and authorization.
+
+> [!NOTE]
+> Authentication and authorization currently apply only to the management APIs and UI, not to the MCP endpoints themselves. 
+> This feature is experimental and under active development.
+
+## Understanding Wanaku Security Model
+
+Wanaku's security model focuses on:
+
+- **API Protection**: Securing management operations for tools, resources, and configuration
+- **UI Access Control**: Restricting access to the web console
+- **Service Authentication**: Ensuring capability services can authenticate with the router
+
+## Setting Up Authentication with KeyCloak
+
+### Prerequisites
+
+Before configuring security, ensure you have:
+- A running Wanaku instance
+- Access to deploy and configure KeyCloak
+- Administrative permissions for both systems
+
+### Installing and Configuring KeyCloak
+
+1. **Start KeyCloak**: For development environments, you can start KeyCloak using:
+
+```shell
+podman run -d -p 127.0.0.1:8543:8080 \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+  -v keycloak-dev:/opt/keycloak/data \
+  quay.io/keycloak/keycloak:26.3.1 start-dev
+```
+
+2. **Import Wanaku Configuration**: Load the pre-configured realm by importing the `wanaku-config.json` file from the `deploy/auth` directory in the Wanaku repository.
+
+3. **Complete Realm Configuration**: 
+   - Set up user accounts and roles
+   - Configure client credentials for capability services
+   - Adjust security policies as needed for your environment
+
+### Configuring Wanaku Components
+
+Each Wanaku component requires a specific set of configurations to enable authentication. The configuration varies depending on the component's role in the system.
+
+#### Wanaku Router Backend
+
+The backend service handles API operations and requires full OIDC configuration with service credentials:
+
+```properties
+# Enable OIDC authentication support
+quarkus.oidc.enabled=true
+
+# Address of the KeyCloak authentication server - adjust to your KeyCloak instance
+quarkus.oidc.auth-server-url=http://localhost:8543/realms/wanaku
+
+# Client identifier configured in KeyCloak for the backend service
+quarkus.oidc.client-id=wanaku-service
+
+# Client secret from KeyCloak - replace with your actual secret
+quarkus.oidc.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
+
+# Enable Wanaku's internal authorization policies
+wanaku.enable.authorization=true
+```
+
+#### Wanaku Router Web UI
+
+The web interface requires additional configuration for user authentication flows and logout handling:
+
+```properties
+# Enable OIDC authentication support
+quarkus.oidc.enabled=true
+# Address of the KeyCloak authentication server - adjust to your KeyCloak instance
+quarkus.oidc.auth-server-url=http://localhost:8543/realms/wanaku
+# Enable Wanaku's internal authorization policies
+wanaku.enable.authorization=true
+```
+
+#### Capability Services
+
+Capability services act as OIDC clients and authenticate with the router using client credentials:
+
+```properties
+# Enable OIDC client support for service-to-service authentication
+quarkus.oidc-client.enabled=true
+
+# Address of the KeyCloak authentication server - adjust to your KeyCloak instance
+quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/wanaku
+
+# Client identifier configured in KeyCloak for capability services
+quarkus.oidc-client.client-id=wanaku-service
+
+# Client secret from KeyCloak for service authentication - replace with your actual secret
+quarkus.oidc-client.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
+```
+
+> [!IMPORTANT]
+> - Capability services use the OIDC *client* component (`quarkus.oidc-client.*`), which differs from the main router configuration
+> - The client secret values shown here are examples from the default configuration - replace them with your actual KeyCloak client secrets
+> - Ensure the auth-server-url points to your actual KeyCloak instance
+
+### Environment Variable Configuration
+
+All settings can also be configured using environment variables:
+- `QUARKUS_OIDC_ENABLED=true`
+- `WANAKU_ENABLE_AUTHORIZATION=true`  
+- `QUARKUS_OIDC_CLIENT_ENABLED=true` (for capability services)
+
+## Troubleshooting Security Configuration
+
+Common issues when setting up authentication:
+
+- **Services fail to register**: Ensure capability services have valid OIDC client credentials
+- **UI access denied**: Verify user roles and permissions in KeyCloak
+- **API authentication errors**: Check OIDC configuration and network connectivity
+
+> [!CAUTION]
+> This security implementation is experimental. For production deployments, thoroughly test the configuration and consider additional security measures such as network-level access controls.
