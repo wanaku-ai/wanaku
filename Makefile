@@ -36,16 +36,24 @@ test-resources:
 	$(WANAKU_CLI_CMD) resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)/tests/data/files/wanaku.txt --mimeType=text/plain --description="Sample resource added via CLI" --name="sample-file" --type=file
 	$(WANAKU_CLI_CMD) resources expose --host $(API_ENDPOINT) --location=$(mkfile_dir)./tests/data/files --mimeType=text/plain --description="Sample resource dir added via CLI" --name="sample-dir" --type=file
 
-test-tools:
+test-tools-http-ns1:
+	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "meow-facts-ns1" --namespace "restricted" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --required count
+	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "dog-facts-ns1" --namespace "restricted" --description "Retrieve random facts about dogs" --uri "https://dogapi.dog/api/v2/facts?limit={count or 1}" --type http  --property "count:int,The count of facts to retrieve" --required count
+
+test-tools-http:
 	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --required count
 	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "dog-facts" --description "Retrieve random facts about dogs" --uri "https://dogapi.dog/api/v2/facts?limit={count or 1}" --type http  --property "count:int,The count of facts to retrieve" --required count
+
+test-tools: test-tools-http
 	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "camel-rider-quote-generator" --description "Generate a random quote from a Camel rider" --uri "file://$(mkfile_dir)/tests/data/routes/camel-route/hello-quote.camel.yaml" --type camel-yaml
 	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "tavily-search" --description "Search on the internet using Tavily" --uri "tavily://search" --type tavily --configuration-from-file $(WANAKU_LOCAL_CONFIG_DIR)/tavily-configuration.properties --secrets-from-file $(WANAKU_LOCAL_CONFIG_DIR)/tavily-secrets.properties
 	$(WANAKU_CLI_CMD) tools add --host $(API_ENDPOINT) -n "laptop-order" --description "Use the request system to order a new laptop" --uri "$(HOME)/.jbang/bin/camel run --max-messages=1 $(mkfile_dir)/tests/data/routes/camel-route/camel-jbang-quote.camel.yaml" --type exec
 
-clean-test-tools:
+clean-http-test-tools:
 	$(WANAKU_CLI_CMD) tools remove --name "meow-facts"
 	$(WANAKU_CLI_CMD) tools remove --name "dog-facts"
+
+clean-test-tools: clean-http-test-tools
 	$(WANAKU_CLI_CMD) tools remove --name "camel-rider-quote-generator"
 	$(WANAKU_CLI_CMD) tools remove --name "tavily-search"
 	$(WANAKU_CLI_CMD) tools remove --name "laptop-order"
