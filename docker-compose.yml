@@ -123,8 +123,8 @@ services:
       timeout: 10s
       retries: 5
 
-  wanaku-router:
-    image: quay.io/wanaku/wanaku-router:latest
+  wanaku-router-web:
+    image: quay.io/wanaku/wanaku-router-web:latest
     pull_policy: always
     depends_on:
       - wanaku-router-backend
