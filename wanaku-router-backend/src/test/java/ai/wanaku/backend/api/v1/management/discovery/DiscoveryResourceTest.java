@@ -8,6 +8,7 @@ import ai.wanaku.api.types.discovery.ServiceState;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.TestIndexHelper;
+import ai.wanaku.core.util.RuntimeInfo;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -28,12 +30,24 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 @QuarkusTestResource(WanakuKeycloakTestResource.class)
+@EnabledIf(value = "isContainerRunnable", disabledReason = "Docker environment is not available")
 public class DiscoveryResourceTest {
     private static final Logger LOG = Logger.getLogger(DiscoveryResourceTest.class);
 
     private static String serviceId;
 
     private static KeycloakTestClient keycloakClient;
+
+    public static boolean isContainerRunnable() {
+        if (RuntimeInfo.isMac()) {
+            String githubActions = System.getenv("GITHUB_ACTIONS");
+            if ("true".equalsIgnoreCase(githubActions)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private String getAccessToken() {
         return keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");

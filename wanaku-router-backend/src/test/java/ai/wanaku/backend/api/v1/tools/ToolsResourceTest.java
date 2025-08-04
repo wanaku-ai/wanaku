@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.is;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@QuarkusTestResource(WanakuKeycloakTestResource.class)
 public class ToolsResourceTest {
     private static final Logger LOG = Logger.getLogger(ToolsResourceTest.class);
 
