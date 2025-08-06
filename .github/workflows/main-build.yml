@@ -59,6 +59,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && github.repository == 'wanaku-ai/wanaku'
       run: |
         mvn -B clean package \
+          -Dci.env.name=github.com \ 
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
@@ -68,6 +69,7 @@ jobs:
       if: matrix.os == 'ubuntu-24.04-arm' && github.repository == 'wanaku-ai/wanaku'
       run: |
         mvn -B clean package \
+          -Dci.env.name=github.com \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
