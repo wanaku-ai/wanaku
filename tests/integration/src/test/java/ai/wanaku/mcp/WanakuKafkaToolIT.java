@@ -6,6 +6,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.junit.jupiter.Container;
@@ -13,11 +14,26 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Properties;
+
+import static java.lang.Thread.sleep;
+
+
 
 import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
 
@@ -35,6 +51,10 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
 
     private static String bootStrapHost;
 
+    private static Thread responderThread;
+
+    private static final AtomicBoolean keepRunning = new AtomicBoolean(true);
+
     @TempDir
     static Path tempDir;
 
@@ -44,6 +64,51 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
         bootStrapHost = kafkaContainer.getBootstrapServers();
         createKafkaTopics();
         createCapabilityFile();
+        startMockKafkaResponder();
+    }
+
+    /**
+     * Mock responder for request–reply
+     */
+    private static void startMockKafkaResponder() {
+        responderThread = new Thread(() -> {
+            try (KafkaConsumer<String, String> consumer = createConsumer(bootStrapHost);
+                 KafkaProducer<String, String> producer = createProducer(bootStrapHost)) {
+
+                consumer.subscribe(List.of("request-topic"));
+                while (keepRunning.get()) {
+                    var records = consumer.poll(Duration.ofMillis(500));
+                    for (var record : records) {
+                        String response = "Processed: " + record.value();
+                        sleep(2000);
+                        producer.send(new ProducerRecord<>("response-topic", response));
+                        producer.flush();
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }, "mock-kafka-responder");
+        responderThread.start();
+    }
+
+
+    private static KafkaProducer<String, String> createProducer(String broker) {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        return new KafkaProducer<>(props);
+    }
+
+    private static KafkaConsumer<String, String> createConsumer(String broker) {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-consumer");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        return new KafkaConsumer<>(props);
     }
 
     private static void createCapabilityFile() throws Exception {
@@ -112,5 +177,14 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
     @Override
     public List<WanakuContainerDownstreamService> activeWanakuDownstreamServices() {
         return List.of(WanakuContainerDownstreamService.KAFKA);
+    }
+
+    @AfterAll
+    static void stopKafka() throws Exception {
+        keepRunning.set(false);
+        // Stop responder thread cleanly
+        if (responderThread != null) {
+            responderThread.join(1000L);
+        }
     }
 }
