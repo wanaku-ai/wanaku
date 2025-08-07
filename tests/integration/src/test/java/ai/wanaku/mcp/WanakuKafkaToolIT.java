@@ -33,7 +33,7 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
             .withListener("kafka:19092")
             .withNetworkAliases("kafka");
 
-    static String bootStrapHost;
+    private static String bootStrapHost;
 
     @TempDir
     static Path tempDir;
@@ -47,13 +47,13 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
     }
 
     private static void createCapabilityFile() throws Exception {
-        String content = String.format("""
-                bootstrapHost=%s
+        String content = """
+                bootstrapHost=kafka:19092
                 requestTopic=request-topic
-                """, bootStrapHost);
+                replyToTopic=response-topic
+                """;
 
         Files.writeString(tempDir.resolve("capabilities.properties"), content);
-        System.out.println("Capabilities file created with bootstrapHost=" + bootStrapHost);
     }
 
 
