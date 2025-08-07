@@ -1068,6 +1068,48 @@ open http://localhost:8080
 2. Select tools
 3. Enter prompt and send
 
+### Creating New MCP Server Using Maven
+ 
+```shell
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-mcp-servers-archetype \ 
+  -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.mcp.servers.s3 -DartifactId=wanaku-mcp-servers-s3 \
+  -Dname=S3 -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
+```
+
+> [!IMPORTANT]
+> When using the maven way, please make sure to adjust the version of Wanaku
+> to be used by correctly setting the `wanaku-version` property to the base Wanaku version to use.
+
+### Adjusting the MCP Server
+
+After creating the mcp server, open the `pom.xml` file to add the dependencies for your project. 
+Using the example above, we would include the following dependencies:
+
+```xml
+    <dependency>
+      <groupId>org.apache.camel.quarkus</groupId>
+      <artifactId>camel-quarkus-aws-s3</artifactId>
+    </dependency>
+```
+
+Adjust the gPRC port in the `application.properties` file by adjusting the `quarkus.grpc.server.port` property.
+
+> [!NOTE]
+> You can also provide the port when launching 
+> (i.e., `java -Dquarkus.grpc.server.port=9190 -jar target/quarkus-app/quarkus-run.jar`)
+
+Then, build the project:
+
+```shell
+mvn clean package
+```
+
+And run it: 
+
+```shell
+java -jar target/quarkus-app/quarkus-run.jar
+```
+
 ### Claude
 
 To integrate Wanaku with Claude Desktop, you will need to add an entry into the `claude_desktop_config.json` file - see [instructions for creating a Claude desktop configuration](https://modelcontextprotocol.io/quickstart/user) if you do not already have one.
