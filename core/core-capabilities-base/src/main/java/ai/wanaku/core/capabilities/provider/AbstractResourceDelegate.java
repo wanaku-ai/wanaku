@@ -54,8 +54,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     private String retrieveAccessToken() {
         if (SecurityHelper.isAuthEnabled()) {
-            Tokens tokens = tokensInstance.get();
-            return tokens.getAccessToken();
+            return ServicesHelper.retrieveAccessToken(tokensInstance);
         } else {
             return null;
         }

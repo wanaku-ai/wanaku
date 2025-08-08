@@ -1,5 +1,6 @@
 package ai.wanaku.core.capabilities.common;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
@@ -10,6 +11,7 @@ import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
+import io.quarkus.oidc.client.Tokens;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.io.File;
 import java.net.URI;
@@ -100,17 +102,31 @@ public class ServicesHelper {
     private record ServiceClientHeadersFactory(String accessToken) implements ClientHeadersFactory {
 
         @Override
-            public MultivaluedMap<String, String> update(
-                    MultivaluedMap<String, String> incomingHeaders,
-                    MultivaluedMap<String, String> outgoingHeaders) {
+        public MultivaluedMap<String, String> update(
+                MultivaluedMap<String, String> incomingHeaders,
+                MultivaluedMap<String, String> outgoingHeaders) {
 
             if (accessToken == null) {
                 return outgoingHeaders;
             }
 
-                MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
-                headers.add("Authorization", String.format("Bearer %s", accessToken));
-                return headers;
-            }
+            MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
+            headers.add("Authorization", String.format("Bearer %s", accessToken));
+            return headers;
         }
+    }
+
+    public static String retrieveAccessToken(Instance<Tokens> tokensInstance) {
+        try {
+            Tokens tokens = tokensInstance.get();
+            if (tokens == null) {
+                LOG.warn("Tokens instance is null while authorization is enabled.");
+                return null;
+            }
+            return tokens.getAccessToken();
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to obtain Tokens instance for access token retrieval: {}", e.getMessage());
+            return null;
+        }
+    }
 }
