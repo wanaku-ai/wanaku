@@ -110,9 +110,8 @@ public class ServicesHelper {
                 return outgoingHeaders;
             }
 
-            MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
-            headers.add("Authorization", String.format("Bearer %s", accessToken));
-            return headers;
+            outgoingHeaders.add("Authorization", String.format("Bearer %s", accessToken));
+            return outgoingHeaders;
         }
     }
 
