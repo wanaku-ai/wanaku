@@ -121,7 +121,7 @@ capabilities by default — continue reading the documentation below for details
 After downloading the CLI, simply run `wanaku start local` and the CLI should download, deploy and start Wanaku with the main
 server, a file provider and an HTTP provider. 
 
-If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
+If that is successful, open your browser at http://localhost:8081, and you should have access to the UI.
 
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details. 
@@ -151,7 +151,7 @@ podman compose up -d
 
 Open Wanaku Console to easily import toolsets, add new tools, resources, and test tools using simple LLMChat:
 
-Open your browser at http://localhost:8080, and you should have access to the UI if Wanaku was launched successfully.
+Open your browser at http://localhost:8081, and you should have access to the UI if Wanaku was launched successfully.
 
 ### Installing and Running Wanaku on OpenShift or Kubernetes
 
@@ -239,7 +239,7 @@ A capability service is required to be available at the moment when a new tool i
 
 ### Adding Tools Using the CLI
 
-To add a new tool to a Wanaku MCP Router instance running locally on http://localhost:8080, use the following command:
+To add a new tool to a Wanaku MCP Router Backend instance running locally on http://localhost:8080, use the following command:
 
 ```shell
 wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}" --type http --property "count:int,The count of facts to retrieve" --required count
@@ -1059,7 +1059,7 @@ Wanaku Console includes simple LLMChat specificly designed for quick testing of 
 > At the moment, the Embedded LLMChat supports only the tools.
 
 ```shell
-open http://localhost:8080
+open http://localhost:8081
 ```
 
 ![Embedded LLMChat for testing](https://github.com/user-attachments/assets/7a80aacd-0da8-435b-8cd9-75cc073dfc79)
