@@ -104,9 +104,9 @@ public class ServicesHelper {
                     MultivaluedMap<String, String> incomingHeaders,
                     MultivaluedMap<String, String> outgoingHeaders) {
 
-                if (accessToken == null) {
-                    return new MultivaluedHashMap<>();
-                }
+            if (accessToken == null) {
+                return outgoingHeaders;
+            }
 
                 MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
                 headers.add("Authorization", String.format("Bearer %s", accessToken));
