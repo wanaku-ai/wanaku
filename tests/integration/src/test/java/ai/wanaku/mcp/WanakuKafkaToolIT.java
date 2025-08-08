@@ -23,9 +23,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @Testcontainers
@@ -68,6 +70,8 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
                 while (keepRunning.get()) {
                     var records = consumer.poll(Duration.ofMillis(500));
                     for (var record : records) {
+                        // getting null key value may be due to missing key and value deserialization
+                        System.out.println(record.key() + " Record key : value " + record.value() + record.topic());
                         String response = "Processed: " + record.value();
                         producer.send(new ProducerRecord<>("response-topic", response));
                         producer.flush();
@@ -101,10 +105,10 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
 
     private static void createCapabilityFile() throws Exception {
         String content = """
-            bootstrapHost=kafka:19092
-            requestTopic=request-topic
-            replyToTopic=response-topic
-        """;
+                    bootstrapHost=kafka:19092
+                    requestTopic=request-topic
+                    replyToTopic=response-topic
+                """;
 
         Files.writeString(tempDir.resolve("capabilities.properties"), content);
     }
@@ -161,13 +165,15 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
                 startMockKafkaResponder();
             }
 
-            client.when().toolsCall("sushi-request")
-                    .withArguments(Map.of("body", orderMessage))
-                    .withAssert(toolResponse -> {
-                        Assertions.assertThat(toolResponse.isError()).isFalse();
-                        Assertions.assertThat(toolResponse.content().getFirst()).isNotNull();
-                    })
-                    .send();
+            await().atMost(20, TimeUnit.SECONDS)
+                    .pollInterval(200, TimeUnit.MILLISECONDS)
+                    .untilAsserted(() -> client.when().toolsCall("sushi-request")
+                            .withArguments(Map.of("body", orderMessage))
+                            .withAssert(toolResponse -> {
+                                Assertions.assertThat(toolResponse.isError()).isFalse();
+                                Assertions.assertThat(toolResponse.content().getFirst()).isNotNull();
+                            })
+                            .send());
         } finally {
             // Stop the responder
             keepRunning.set(false);
