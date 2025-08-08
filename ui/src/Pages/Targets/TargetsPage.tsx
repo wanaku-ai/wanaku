@@ -1,16 +1,16 @@
 import { ToastNotification } from "@carbon/react";
 import { TargetsTable } from "./TargetsTable";
 import React, { useState, useEffect } from "react";
-import { useTargets } from "../../hooks/api/use-targets";
+import { useCapabilities } from "../../hooks/api/use-capabilities";
 import { ServiceTargetState } from "./ServiceTargetState";
-import { getGetApiV1ManagementTargetsNotificationsUrl } from "../../api/wanaku-router-api";
+import { getGetApiV1CapabilitiesNotificationsUrl } from "../../api/wanaku-router-api";
 import { ServiceTargetEvent } from "../../models";
 
 export const TargetsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ServiceTargetState[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { listManagementResources, listManagementTools, listManagementToolsState, listManagementResourcesState } = useTargets();
+  const { listManagementResources, listManagementTools, listManagementToolsState, listManagementResourcesState } = useCapabilities();
 
   const fetch = async () => {
     setIsLoading(true);
@@ -63,7 +63,7 @@ export const TargetsPage: React.FC = () => {
 
   const setupSSE = (data: ServiceTargetState[]) => {
     const baseUrl = VITE_API_URL || window.location.origin;
-    const eventSource = new EventSource(baseUrl + getGetApiV1ManagementTargetsNotificationsUrl());
+    const eventSource = new EventSource(baseUrl + getGetApiV1CapabilitiesNotificationsUrl());
     
     eventSource.onopen = () => {
       console.log('SSE connection opened');

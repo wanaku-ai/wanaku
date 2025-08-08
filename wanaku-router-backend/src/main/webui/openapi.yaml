@@ -1,0 +1,793 @@
+---
+openapi: 3.1.0
+components:
+  schemas:
+    ActivityRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        lastSeen:
+          $ref: "#/components/schemas/Instant"
+        active:
+          type: boolean
+        states:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceState"
+    ForwardReference:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        namespace:
+          type: string
+    InputSchema:
+      type: object
+      properties:
+        type:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Property"
+        required:
+          type: array
+          items:
+            type: string
+    Instant:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T16:15:50Z
+    MediaType:
+      type: object
+      properties:
+        type:
+          type: string
+        subtype:
+          type: string
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+        hash:
+          type: integer
+          format: int32
+        wildcardType:
+          type: boolean
+        wildcardSubtype:
+          type: boolean
+    Namespace:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+    OutboundSseEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        comment:
+          type: string
+        reconnectDelay:
+          type: integer
+          format: int64
+        reconnectDelaySet:
+          type: boolean
+        type:
+          type: object
+        genericType:
+          type: object
+        mediaType:
+          $ref: "#/components/schemas/MediaType"
+        data: {}
+    Param:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    Property:
+      type: object
+      properties:
+        type:
+          type: string
+        description:
+          type: string
+        target:
+          type: string
+        scope:
+          type: string
+        value:
+          type: string
+    ResourcePayload:
+      type: object
+      properties:
+        resourceReference:
+          $ref: "#/components/schemas/ResourceReference"
+        configurationData:
+          type: string
+        secretsData:
+          type: string
+        payload:
+          $ref: "#/components/schemas/ResourceReference"
+    ResourceReference:
+      type: object
+      properties:
+        id:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        mimeType:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: "#/components/schemas/Param"
+        configurationURI:
+          type: string
+        secretsURI:
+          type: string
+        namespace:
+          type: string
+    ServerInfo:
+      type: object
+      properties:
+        version:
+          type: string
+    ServiceState:
+      type: object
+      properties:
+        timestamp:
+          $ref: "#/components/schemas/Instant"
+        healthy:
+          type: boolean
+        reason:
+          type: string
+    ServiceTarget:
+      type: object
+      properties:
+        id:
+          type: string
+        service:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+          format: int32
+        serviceType:
+          $ref: "#/components/schemas/ServiceType"
+    ServiceType:
+      type: string
+      enum:
+      - RESOURCE_PROVIDER
+      - TOOL_INVOKER
+    ToolPayload:
+      type: object
+      properties:
+        toolReference:
+          $ref: "#/components/schemas/ToolReference"
+        configurationData:
+          type: string
+        secretsData:
+          type: string
+        payload:
+          $ref: "#/components/schemas/ToolReference"
+    ToolReference:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        uri:
+          type: string
+        type:
+          type: string
+        inputSchema:
+          $ref: "#/components/schemas/InputSchema"
+        namespace:
+          type: string
+        configurationURI:
+          type: string
+        secretsURI:
+          type: string
+    WanakuError:
+      type: object
+      properties:
+        message:
+          type: string
+    WanakuResponse:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data: {}
+    WanakuResponseListForwardReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForwardReference"
+    WanakuResponseListNamespace:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Namespace"
+    WanakuResponseListResourceReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourceReference"
+    WanakuResponseListServiceTarget:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceTarget"
+    WanakuResponseListToolReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolReference"
+    WanakuResponseMapStringListActivityRecord:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/ActivityRecord"
+    WanakuResponseResourceReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ResourceReference"
+    WanakuResponseServerInfo:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ServerInfo"
+    WanakuResponseServiceTarget:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ServiceTarget"
+    WanakuResponseToolReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ToolReference"
+  securitySchemes:
+    SecurityScheme:
+      type: openIdConnect
+      openIdConnectUrl: http://localhost:8543/realms/wanaku/.well-known/openid-configuration
+      description: Authentication
+paths:
+  /api/v1/capabilities/notifications:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutboundSseEvent"
+      summary: Targets Event Stream
+      tags:
+      - Capabilities Resource
+  /api/v1/capabilities/resources/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListServiceTarget"
+      summary: Resources List
+      tags:
+      - Capabilities Resource
+  /api/v1/capabilities/resources/state:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseMapStringListActivityRecord"
+      summary: Resources State
+      tags:
+      - Capabilities Resource
+  /api/v1/capabilities/tools/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListServiceTarget"
+      summary: Tool List
+      tags:
+      - Capabilities Resource
+  /api/v1/capabilities/tools/state:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseMapStringListActivityRecord"
+      summary: Tools State
+      tags:
+      - Capabilities Resource
+  /api/v1/forwards/add:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content: {}
+        "400":
+          description: Bad Request
+      summary: Add Forward
+      tags:
+      - Forwards Resource
+  /api/v1/forwards/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListForwardReference"
+      summary: List Forwards
+      tags:
+      - Forwards Resource
+  /api/v1/forwards/remove:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+      summary: Remove Forward
+      tags:
+      - Forwards Resource
+  /api/v1/forwards/update:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content: {}
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Forwards Resource
+  /api/v1/management/discovery/deregister:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceTarget"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+      summary: Deregister
+      tags:
+      - Discovery Resource
+  /api/v1/management/discovery/ping:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+      summary: Ping
+      tags:
+      - Discovery Resource
+  /api/v1/management/discovery/register:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceTarget"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseServiceTarget"
+        "400":
+          description: Bad Request
+      summary: Register
+      tags:
+      - Discovery Resource
+  /api/v1/management/discovery/update/{id}:
+    post:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceState"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+      summary: Update State
+      tags:
+      - Discovery Resource
+  /api/v1/management/info/version:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseServerInfo"
+      summary: Version
+      tags:
+      - Info Resource
+  /api/v1/namespaces/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListNamespace"
+      summary: List
+      tags:
+      - Namespaces Resource
+  /api/v1/resources/expose:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseResourceReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Expose
+      tags:
+      - Resources Resource
+  /api/v1/resources/exposeWithPayload:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourcePayload"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseResourceReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Expose With Payload
+      tags:
+      - Resources Resource
+  /api/v1/resources/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListResourceReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: List
+      tags:
+      - Resources Resource
+  /api/v1/resources/remove:
+    put:
+      parameters:
+      - name: resource
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove
+      tags:
+      - Resources Resource
+  /api/v1/resources/update:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Resources Resource
+  /api/v1/tools:
+    post:
+      parameters:
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseToolReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get By Name
+      tags:
+      - Tools Resource
+  /api/v1/tools/add:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseToolReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Add
+      tags:
+      - Tools Resource
+  /api/v1/tools/addWithPayload:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolPayload"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseToolReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Add With Payload
+      tags:
+      - Tools Resource
+  /api/v1/tools/list:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListToolReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: List
+      tags:
+      - Tools Resource
+  /api/v1/tools/remove:
+    put:
+      parameters:
+      - name: tool
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove
+      tags:
+      - Tools Resource
+  /api/v1/tools/update:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Tools Resource
+info:
+  title: wanaku-router-backend API
+  version: 0.0.8-SNAPSHOT
+servers:
+- url: http://localhost:8080
+  description: Auto generated value
+- url: http://0.0.0.0:8080
+  description: Auto generated value

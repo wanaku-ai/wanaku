@@ -14,7 +14,7 @@ public class ResourcesLinkedList extends AbstractTargets {
 
     @Override
     protected Integer doTargetCall(WanakuPrinter printer) throws Exception {
-        List<ServiceTarget> list = targetsService.resourcesList().data();
+        List<ServiceTarget> list = capabilitiesService.resourcesList().data();
         printer.printTable(list, "id", "service", "host");
         return EXIT_OK;
     }

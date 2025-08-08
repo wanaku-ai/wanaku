@@ -1,5 +1,9 @@
 package ai.wanaku.core.capabilities.common;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
@@ -7,6 +11,7 @@ import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
+import io.quarkus.oidc.client.Tokens;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.io.File;
 import java.net.URI;
@@ -14,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
@@ -59,10 +65,19 @@ public class ServicesHelper {
                 .build();
     }
 
-    public static RegistrationManager newRegistrationManager(WanakuServiceConfig config, ServiceType  serviceType) {
+    /**
+     * Creates a new RegistrationManager instance for the given configuration and service type.
+     *
+     * @param config the Wanaku service configuration
+     * @param serviceType the type of service to register
+     * @param accessToken the access token used for authenticating requests to the registration service
+     * @return a new RegistrationManager instance
+     */
+    public static RegistrationManager newRegistrationManager(WanakuServiceConfig config, ServiceType  serviceType, String accessToken) {
         LOG.infof("Using registration service at %s", config.registration().uri());
         DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(config.registration().uri()))
+                .clientHeadersFactory(new ServiceClientHeadersFactory(accessToken))
                 .build(DiscoveryService.class);
 
         String service = config.name();
@@ -90,5 +105,35 @@ public class ServicesHelper {
         String address = resolveRegistrationAddress(config.registration().announceAddress());
 
         return ServiceTarget.newEmptyTarget(service, address, port, serviceType);
+    }
+
+    private record ServiceClientHeadersFactory(String accessToken) implements ClientHeadersFactory {
+
+        @Override
+        public MultivaluedMap<String, String> update(
+                MultivaluedMap<String, String> incomingHeaders,
+                MultivaluedMap<String, String> outgoingHeaders) {
+
+            if (accessToken == null) {
+                return outgoingHeaders;
+            }
+
+            outgoingHeaders.add("Authorization", String.format("Bearer %s", accessToken));
+            return outgoingHeaders;
+        }
+    }
+
+    public static String retrieveAccessToken(Instance<Tokens> tokensInstance) {
+        try {
+            Tokens tokens = tokensInstance.get();
+            if (tokens == null) {
+                LOG.warn("Tokens instance is null while authorization is enabled.");
+                return null;
+            }
+            return tokens.getAccessToken();
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to obtain Tokens instance for access token retrieval: {}", e.getMessage());
+            return null;
+        }
     }
 }

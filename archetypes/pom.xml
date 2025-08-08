@@ -15,6 +15,7 @@
     <modules>
         <module>wanaku-tool-service-archetype</module>
         <module>wanaku-provider-archetype</module>
+        <module>wanaku-mcp-servers-archetype</module>
     </modules>
 
 

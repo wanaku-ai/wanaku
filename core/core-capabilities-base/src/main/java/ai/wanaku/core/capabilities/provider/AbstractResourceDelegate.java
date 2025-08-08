@@ -1,6 +1,7 @@
 package ai.wanaku.core.capabilities.provider;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
@@ -21,6 +22,8 @@ import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 
+import ai.wanaku.core.security.SecurityHelper;
+import io.quarkus.oidc.client.Tokens;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -37,11 +40,24 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @Inject
     ResourceConsumer consumer;
 
+    @Inject
+    Instance<Tokens> tokensInstance;
+
     private RegistrationManager registrationManager;
 
     @PostConstruct
     public void init() {
-        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER);
+        final String accessToken = retrieveAccessToken();
+
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER, accessToken);
+    }
+
+    private String retrieveAccessToken() {
+        if (SecurityHelper.isAuthEnabled()) {
+            return ServicesHelper.retrieveAccessToken(tokensInstance);
+        } else {
+            return null;
+        }
     }
 
     /**

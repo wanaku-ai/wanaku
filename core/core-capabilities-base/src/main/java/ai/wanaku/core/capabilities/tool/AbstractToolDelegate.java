@@ -1,8 +1,10 @@
 package ai.wanaku.core.capabilities.tool;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.api.types.providers.ServiceType;
@@ -10,7 +12,6 @@ import ai.wanaku.core.capabilities.common.ConfigProvisionerLoader;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.config.provider.api.ConfigProvisioner;
 import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.config.provider.api.ProvisionedConfig;
@@ -19,6 +20,8 @@ import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.security.SecurityHelper;
+import io.quarkus.oidc.client.Tokens;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -34,11 +37,24 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     @Inject
     Client client;
 
+    @Inject
+    Instance<Tokens> tokensInstance;
+
     private RegistrationManager registrationManager;
 
     @PostConstruct
     public void init() {
-        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER);
+        final String accessToken = retrieveAccessToken();
+
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER, accessToken);
+    }
+
+    private String retrieveAccessToken() {
+        if (SecurityHelper.isAuthEnabled()) {
+            return ServicesHelper.retrieveAccessToken(tokensInstance);
+        } else {
+            return null;
+        }
     }
 
     /**
