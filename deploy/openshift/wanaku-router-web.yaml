@@ -19,12 +19,12 @@ spec:
           image: quay.io/wanaku/wanaku-router-web:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /
-              port: 8080
+              port: 8081
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 10
@@ -32,7 +32,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /
-              port: 8080
+              port: 8081
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5
@@ -45,10 +45,10 @@ metadata:
   name: wanaku-router-web
 spec:
   ports:
-    - name: 8080-tcp
+    - name: 8081-tcp
       protocol: TCP
-      port: 8080
-      targetPort: 8080
+      port: 8081
+      targetPort: 8081
   selector:
     app: wanaku-router-web
   sessionAffinity: None
@@ -62,7 +62,7 @@ metadata:
   name: wanaku-router-web
 spec:
   port:
-    targetPort: 8080-tcp
+    targetPort: 8081-tcp
   to:
     kind: Service
     name: wanaku-router-web
