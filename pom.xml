@@ -68,18 +68,6 @@
                     <pushChanges>false</pushChanges>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
-                <configuration>
-                    <release>${maven.compiler.release}</release>
-                    <!-- These two are optional when release is set,
-                         but explicitly adding avoids IntelliJ confusion -->
-                    <source>${maven.compiler.release}</source>
-                    <target>${maven.compiler.release}</target>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -143,7 +131,6 @@
                                 </goals>
                                 <configuration>
                                     <attach>true</attach>
-                                    <defaultManifestFile/>
                                 </configuration>
                             </execution>
                         </executions>
