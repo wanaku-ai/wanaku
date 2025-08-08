@@ -65,6 +65,14 @@ public class ServicesHelper {
                 .build();
     }
 
+    /**
+     * Creates a new RegistrationManager instance for the given configuration and service type.
+     *
+     * @param config the Wanaku service configuration
+     * @param serviceType the type of service to register
+     * @param accessToken the access token used for authenticating requests to the registration service
+     * @return a new RegistrationManager instance
+     */
     public static RegistrationManager newRegistrationManager(WanakuServiceConfig config, ServiceType  serviceType, String accessToken) {
         LOG.infof("Using registration service at %s", config.registration().uri());
         DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
