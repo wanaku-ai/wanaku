@@ -1,6 +1,9 @@
 package ai.wanaku.mcp;
 
 import io.quarkus.test.junit.QuarkusTest;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -70,9 +73,8 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
                 while (keepRunning.get()) {
                     var records = consumer.poll(Duration.ofMillis(500));
                     for (var record : records) {
-                        // getting null key value may be due to missing key and value deserialization
-                        System.out.println(record.key() + " Record key : value " + record.value() + record.topic());
                         String response = "Processed: " + record.value();
+                        Thread.sleep(2000);
                         producer.send(new ProducerRecord<>("response-topic", response));
                         producer.flush();
                     }
@@ -114,15 +116,13 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
     }
 
     private static void createKafkaTopics() throws Exception {
-        kafkaContainer.execInContainer("/kafka/bin/kafka-topics.sh",
-                "--create", "--topic", "request-topic",
-                "--bootstrap-server", "localhost:9092",
-                "--partitions", "1", "--replication-factor", "1");
-
-        kafkaContainer.execInContainer("/kafka/bin/kafka-topics.sh",
-                "--create", "--topic", "response-topic",
-                "--bootstrap-server", "localhost:9092",
-                "--partitions", "1", "--replication-factor", "1");
+        try (AdminClient admin = AdminClient.create(
+                Map.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootStrapHost))) {
+            admin.createTopics(List.of(
+                    new NewTopic("request-topic", 1, (short) 1),
+                    new NewTopic("response-topic", 1, (short) 1)
+            )).all().get();
+        }
     }
 
     @Test
@@ -141,8 +141,6 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
                 "--description", "Orders the delivery of authentic Japanese sushi",
                 "--uri", "",
                 "--type", "kafka",
-                "--input-schema-type", "string",
-                "--property", "body:string,All the items you want in your sushi order",
                 "--configuration-from-file=" + tempDir.resolve("capabilities.properties")
         ), host);
 
@@ -152,8 +150,14 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
 
         // Verify tool is registered
         client.when().toolsList()
-                .withAssert(toolsPage ->
-                        Assertions.assertThat(toolsPage.tools().getFirst().name()).isEqualTo("sushi-request"))
+                .withAssert(toolsPage -> {
+                    Assertions.assertThat(toolsPage.tools())
+                            .as("Tool list should contain exactly one tool")
+                            .hasSize(1);
+                    Assertions.assertThat(toolsPage.tools().getFirst().name())
+                            .as("Registered tool should have the expected name")
+                            .isEqualTo("sushi-request");
+                })
                 .send();
 
         // Call the tool and validate response
@@ -168,10 +172,11 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
             await().atMost(20, TimeUnit.SECONDS)
                     .pollInterval(200, TimeUnit.MILLISECONDS)
                     .untilAsserted(() -> client.when().toolsCall("sushi-request")
-                            .withArguments(Map.of("body", orderMessage))
+                            .withArguments(Map.of("wanaku_body", orderMessage))
                             .withAssert(toolResponse -> {
                                 Assertions.assertThat(toolResponse.isError()).isFalse();
-                                Assertions.assertThat(toolResponse.content().getFirst()).isNotNull();
+                                Assertions.assertThat(toolResponse.content().getFirst().asText()
+                                        .text().equalsIgnoreCase("Processed: Order 1 sushi roll")).isTrue();
                             })
                             .send());
         } finally {
