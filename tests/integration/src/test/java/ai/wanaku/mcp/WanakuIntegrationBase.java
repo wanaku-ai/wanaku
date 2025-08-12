@@ -34,7 +34,7 @@ public abstract class WanakuIntegrationBase {
     /**
      * The main Wanaku router container.
      */
-    protected static final GenericContainer<?> router = new GenericContainer<>("quay.io/wanaku/wanaku-router")
+    protected static final GenericContainer<?> router = new GenericContainer<>("quay.io/wanaku/wanaku-router-backend")
             .withExposedPorts(8080)
             .withNetwork(network)
             .withNetworkAliases("wanaku-router");
