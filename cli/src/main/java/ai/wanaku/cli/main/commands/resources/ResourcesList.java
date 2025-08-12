@@ -1,5 +1,9 @@
 package ai.wanaku.cli.main.commands.resources;
 
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
+
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -7,18 +11,16 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import org.jline.terminal.Terminal;
-
 import java.util.List;
-
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
+import org.jline.terminal.Terminal;
 
 @Command(name = "list", description = "List resources")
 public class ResourcesList extends BaseCommand {
 
-    @Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
+    @Option(
+            names = {"--host"},
+            description = "The API host",
+            defaultValue = "http://localhost:8080",
             arity = "0..1")
     protected String host;
 

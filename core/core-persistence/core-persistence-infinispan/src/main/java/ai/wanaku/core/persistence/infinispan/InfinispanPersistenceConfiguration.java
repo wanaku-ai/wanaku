@@ -1,12 +1,11 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
-
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 

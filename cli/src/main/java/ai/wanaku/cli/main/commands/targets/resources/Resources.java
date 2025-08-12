@@ -5,8 +5,10 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "resources",
-        description = "Manage targets", subcommands = { ResourcesLinkedList.class, ResourcesConfigure.class, ResourcesState.class })
+@CommandLine.Command(
+        name = "resources",
+        description = "Manage targets",
+        subcommands = {ResourcesLinkedList.class, ResourcesConfigure.class, ResourcesState.class})
 @Deprecated
 public class Resources extends BaseCommand {
 
@@ -15,5 +17,4 @@ public class Resources extends BaseCommand {
         CommandLine.usage(this, System.out);
         return EXIT_ERROR;
     }
-
 }

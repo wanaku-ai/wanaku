@@ -1,10 +1,8 @@
 package ai.wanaku.core.services.api;
 
-import ai.wanaku.api.types.io.ResourcePayload;
-import java.util.List;
-
+import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.WanakuResponse;
-
+import ai.wanaku.api.types.io.ResourcePayload;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -14,8 +12,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.types.ResourceReference;
+import java.util.List;
 
 @Path("/api/v1/resources")
 public interface ResourcesService {

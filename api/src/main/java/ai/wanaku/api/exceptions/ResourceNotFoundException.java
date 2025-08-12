@@ -11,8 +11,7 @@ public class ResourceNotFoundException extends WanakuException {
     /**
      * Default constructor for the exception, providing no additional information.
      */
-    public ResourceNotFoundException() {
-    }
+    public ResourceNotFoundException() {}
 
     /**
      * Constructor that allows specifying a custom error message for the exception.
@@ -51,7 +50,8 @@ public class ResourceNotFoundException extends WanakuException {
      * @param enableSuppression Whether to allow suppressing this exception during exception propagation.
      * @param writableStackTrace Whether to include a stack trace with this exception.
      */
-    public ResourceNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public ResourceNotFoundException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

@@ -1,30 +1,27 @@
 package ai.wanaku.backend.api.v1.resources;
 
-
+import ai.wanaku.api.types.Namespace;
+import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
+import ai.wanaku.backend.common.AbstractBean;
+import ai.wanaku.backend.common.ResourceHelper;
+import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
+import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.core.util.StringHelper;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
-import ai.wanaku.api.types.io.ResourcePayload;
-import ai.wanaku.core.persistence.api.WanakuRepository;
-import ai.wanaku.backend.common.AbstractBean;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
-import ai.wanaku.core.util.StringHelper;
-import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
-import ai.wanaku.backend.common.ResourceHelper;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkus.runtime.StartupEvent;
 import java.util.List;
-
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class ResourcesBean  extends AbstractBean<ResourceReference> {
+public class ResourcesBean extends AbstractBean<ResourceReference> {
     private static final Logger LOG = Logger.getLogger(ResourcesBean.class);
 
     @Inject
@@ -94,7 +91,6 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
         return removed;
     }
 
-
     public int remove(String name) {
         ResourceReference ref = getByName(name);
         if (ref == null) {
@@ -105,7 +101,7 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
     }
 
     public ResourceReference getByName(String name) {
-        List<ResourceReference> resources =  resourceReferenceRepository.findByName(name);
+        List<ResourceReference> resources = resourceReferenceRepository.findByName(name);
         return resources.isEmpty() ? null : resources.getFirst();
     }
 
@@ -114,9 +110,7 @@ public class ResourcesBean  extends AbstractBean<ResourceReference> {
     }
 
     @Override
-    protected  WanakuRepository<ResourceReference, String> getRepository() {
+    protected WanakuRepository<ResourceReference, String> getRepository() {
         return resourceReferenceRepository;
     }
-
-
 }

@@ -1,5 +1,9 @@
 package ai.wanaku.backend.proxies;
 
+import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
+
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.Property;
@@ -8,18 +12,18 @@ import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
+import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ProvisionerGrpc;
-import ai.wanaku.core.exchange.PropertySchema;
+import ai.wanaku.core.exchange.Secret;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.CollectionsHelper;
-import ai.wanaku.core.exchange.Configuration;
-import ai.wanaku.core.exchange.Secret;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -34,17 +38,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
-import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
-import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
-
 /**
  * A proxy class for invoking tools
  */
 public class InvokerProxy implements ToolsProxy {
     private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
     private static final String EMPTY_BODY = "";
-    private static final String EMPTY_ARGUMENT= "";
+    private static final String EMPTY_ARGUMENT = "";
 
     private final ServiceRegistry serviceRegistry;
 
@@ -54,12 +54,16 @@ public class InvokerProxy implements ToolsProxy {
 
     @Override
     public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-        LOG.infof("Calling tool on behalf of connection %s", toolArguments.connection().id());
+        LOG.infof(
+                "Calling tool on behalf of connection %s",
+                toolArguments.connection().id());
         if (toolReference instanceof ToolReference ref) {
             return call(toolArguments, ref);
         }
 
-        LOG.errorf("Tool reference %s not supported", toolReference == null ? "null" : toolReference.getClass().getName());
+        LOG.errorf(
+                "Tool reference %s not supported",
+                toolReference == null ? "null" : toolReference.getClass().getName());
         throw new UnsupportedOperationException("Only local tool call references should be invoked by this proxy");
     }
 
@@ -77,40 +81,44 @@ public class InvokerProxy implements ToolsProxy {
                 return ToolResponse.error(invokeReply.getContentList().get(0));
             } else {
                 ProtocolStringList contentList = invokeReply.getContentList();
-                List<TextContent> contents = new ArrayList<>(invokeReply.getContentList().size());
+                List<TextContent> contents =
+                        new ArrayList<>(invokeReply.getContentList().size());
                 contentList.stream().map(TextContent::new).forEach(contents::add);
 
                 return ToolResponse.success(contents);
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Unable to call endpoint: %s (connection: %s)", e.getMessage(), toolArguments.connection().id());
+            LOG.errorf(
+                    e,
+                    "Unable to call endpoint: %s (connection: %s)",
+                    e.getMessage(),
+                    toolArguments.connection().id());
             return ToolResponse.error(e.getMessage());
         }
     }
 
     private static ToolInvokeReply invokeRemotely(
             ToolReference toolReference, ToolManager.ToolArguments toolArguments, ServiceTarget service) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress()).usePlaintext().build();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
+                .usePlaintext()
+                .build();
 
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
-        Map<String, Property> inputSchema = toolReference
-                .getInputSchema()
-                .getProperties();
+        Map<String, Property> inputSchema = toolReference.getInputSchema().getProperties();
 
         // extract headers parameter
-        Map<String, String> headers = inputSchema.entrySet()
-                .stream()
+        Map<String, String> headers = inputSchema.entrySet().stream()
                 .filter(entry -> {
                     Property property = entry.getValue();
-                    return  property !=null &&
-                            property.getTarget() != null &&
-                            property.getScope() != null &&
-                            property.getTarget().equals(TARGET_HEADER) &&
-                            property.getScope().equals(SCOPE_SERVICE);
+                    return property != null
+                            && property.getTarget() != null
+                            && property.getScope() != null
+                            && property.getTarget().equals(TARGET_HEADER)
+                            && property.getScope().equals(SCOPE_SERVICE);
                 })
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
-
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, entry -> entry.getValue().getValue()));
 
         String body = extractBody(toolReference, toolArguments);
 

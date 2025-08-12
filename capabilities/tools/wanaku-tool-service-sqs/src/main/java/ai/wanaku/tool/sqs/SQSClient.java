@@ -1,7 +1,6 @@
 package ai.wanaku.tool.sqs;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
@@ -9,12 +8,12 @@ import ai.wanaku.core.capabilities.tool.Client;
 import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
-
-import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 @ApplicationScoped
 public class SQSClient implements Client {

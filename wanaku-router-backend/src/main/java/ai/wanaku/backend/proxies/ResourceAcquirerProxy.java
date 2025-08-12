@@ -44,7 +44,9 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
     @Override
     public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-        LOG.infof("Requesting resource on behalf of connection %s", arguments.connection().id());
+        LOG.infof(
+                "Requesting resource on behalf of connection %s",
+                arguments.connection().id());
 
         ServiceTarget service = serviceRegistry.getServiceByName(mcpResource.getType(), ServiceType.RESOURCE_PROVIDER);
         if (service == null) {
@@ -59,10 +61,12 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.toAddress());
         final ResourceReply reply = acquireRemotely(mcpResource, arguments, service);
         if (reply.getIsError()) {
-            LOG.errorf("Unable to acquire resource for connection: %s", arguments.connection().id());
+            LOG.errorf(
+                    "Unable to acquire resource for connection: %s",
+                    arguments.connection().id());
 
-            TextResourceContents textResourceContents =
-                    new TextResourceContents(arguments.requestUri().value(), reply.getContentList().get(0), "text/plain");
+            TextResourceContents textResourceContents = new TextResourceContents(
+                    arguments.requestUri().value(), reply.getContentList().get(0), "text/plain");
             return List.of(textResourceContents);
         } else {
             ProtocolStringList contentList = reply.getContentList();
@@ -70,8 +74,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
 
             for (String content : contentList) {
                 TextResourceContents textResourceContents =
-                        new TextResourceContents(arguments.requestUri().value(), content,
-                                mcpResource.getMimeType());
+                        new TextResourceContents(arguments.requestUri().value(), content, mcpResource.getMimeType());
 
                 textResourceContentsList.add(textResourceContents);
             }
@@ -85,13 +88,13 @@ public class ResourceAcquirerProxy implements ResourceProxy {
         return "resource-acquirer";
     }
 
-    private ResourceReply acquireRemotely(ResourceReference mcpResource, ResourceManager.ResourceArguments arguments, ServiceTarget service) {
+    private ResourceReply acquireRemotely(
+            ResourceReference mcpResource, ResourceManager.ResourceArguments arguments, ServiceTarget service) {
         ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
                 .usePlaintext()
                 .build();
 
-        ResourceRequest request = ResourceRequest
-                .newBuilder()
+        ResourceRequest request = ResourceRequest.newBuilder()
                 .setLocation(mcpResource.getLocation())
                 .setType(mcpResource.getType())
                 .setName(mcpResource.getName())
@@ -107,9 +110,11 @@ public class ResourceAcquirerProxy implements ResourceProxy {
     public ProvisioningReference provision(ResourcePayload payload) {
         ResourceReference resourceReference = payload.getPayload();
 
-        ServiceTarget service = serviceRegistry.getServiceByName(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER);
+        ServiceTarget service =
+                serviceRegistry.getServiceByName(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER);
         if (service == null) {
-            throw new ServiceNotFoundException("There is no host registered for service " + resourceReference.getType());
+            throw new ServiceNotFoundException(
+                    "There is no host registered for service " + resourceReference.getType());
         }
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())

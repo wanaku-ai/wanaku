@@ -110,11 +110,11 @@ public class Property {
         }
 
         Property that = (Property) o;
-        return Objects.equals(type, that.type) &&
-                Objects.equals(description, that.description) &&
-                Objects.equals(target, that.target) &&
-                Objects.equals(scope, that.scope) &&
-                Objects.equals(value, that.value);
+        return Objects.equals(type, that.type)
+                && Objects.equals(description, that.description)
+                && Objects.equals(target, that.target)
+                && Objects.equals(scope, that.scope)
+                && Objects.equals(value, that.value);
     }
 
     @Override

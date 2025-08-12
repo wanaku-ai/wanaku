@@ -1,8 +1,8 @@
-
 package ai.wanaku.backend.api.v1.management.discovery;
 
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 
 import ai.wanaku.api.types.discovery.ServiceState;
 import ai.wanaku.api.types.providers.ServiceTarget;
@@ -11,6 +11,8 @@ import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import org.jboss.logging.Logger;
@@ -20,10 +22,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
@@ -54,23 +52,17 @@ public class DiscoveryResourceManualTest {
         Assertions.assertNotNull(accessToken);
 
         ServiceTarget serviceTarget = new ServiceTarget(
-                null,
-                "test-service",
-                "localhost",
-                8080,
-                ai.wanaku.api.types.providers.ServiceType.TOOL_INVOKER
-        );
+                null, "test-service", "localhost", 8080, ai.wanaku.api.types.providers.ServiceType.TOOL_INVOKER);
 
-        final var response = given()
-                .header("Content-Type", MediaType.APPLICATION_JSON)
+        final var response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceTarget)
-                .when().post("/api/v1/management/discovery/register");
+                .when()
+                .post("/api/v1/management/discovery/register");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
-        serviceId = response
-                .then()
+        serviceId = response.then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.id", notNullValue())
                 .extract()
@@ -78,13 +70,11 @@ public class DiscoveryResourceManualTest {
 
         LOG.infof("Created service with id %s", serviceId);
 
-        given()
-                .when().get("/api/v1/capabilities/tools/list")
+        given().when()
+                .get("/api/v1/capabilities/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(1),
-                        "data[0].id", is(serviceId),
-                        "data[0].service", is("test-service"));
+                .body("data.size()", is(1), "data[0].id", is(serviceId), "data[0].service", is("test-service"));
     }
 
     @Order(2)
@@ -93,11 +83,11 @@ public class DiscoveryResourceManualTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given()
-                .header("Content-Type", MediaType.APPLICATION_JSON)
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceId)
-                .when().post("/api/v1/management/discovery/ping")
+                .when()
+                .post("/api/v1/management/discovery/ping")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
@@ -110,21 +100,25 @@ public class DiscoveryResourceManualTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given()
-                .header("Content-Type", MediaType.APPLICATION_JSON)
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceState)
-                .when().post("/api/v1/management/discovery/update/" + serviceId)
+                .when()
+                .post("/api/v1/management/discovery/update/" + serviceId)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
-        given()
-                .when().get("/api/v1/capabilities/tools/state")
+        given().when()
+                .get("/api/v1/capabilities/tools/state")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(1),
-                        "data.test-service[0].id", is(serviceId),
-                        "data.test-service[0].states[0].healthy", is(false));
+                .body(
+                        "data.size()",
+                        is(1),
+                        "data.test-service[0].id",
+                        is(serviceId),
+                        "data.test-service[0].states[0].healthy",
+                        is(false));
     }
 
     @Order(4)
@@ -134,23 +128,18 @@ public class DiscoveryResourceManualTest {
         Assertions.assertNotNull(accessToken);
 
         ServiceTarget serviceTarget = new ServiceTarget(
-                serviceId,
-                "test-service",
-                "localhost",
-                8080,
-                ai.wanaku.api.types.providers.ServiceType.TOOL_INVOKER
-        );
+                serviceId, "test-service", "localhost", 8080, ai.wanaku.api.types.providers.ServiceType.TOOL_INVOKER);
 
-        given()
-                .header("Content-Type", MediaType.APPLICATION_JSON)
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceTarget)
-                .when().post("/api/v1/management/discovery/deregister")
+                .when()
+                .post("/api/v1/management/discovery/deregister")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
-        given()
-                .when().get("/api/v1/capabilities/tools/list")
+        given().when()
+                .get("/api/v1/capabilities/tools/list")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(0));

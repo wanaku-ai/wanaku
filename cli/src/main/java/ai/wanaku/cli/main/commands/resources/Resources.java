@@ -2,13 +2,14 @@ package ai.wanaku.cli.main.commands.resources;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import java.io.IOException;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-import java.io.IOException;
-
-@CommandLine.Command(name = "resources",
-        description = "Manage resources", subcommands = { ResourcesExpose.class, ResourcesRemove.class, ResourcesList.class})
+@CommandLine.Command(
+        name = "resources",
+        description = "Manage resources",
+        subcommands = {ResourcesExpose.class, ResourcesRemove.class, ResourcesList.class})
 public class Resources extends BaseCommand {
 
     @Override

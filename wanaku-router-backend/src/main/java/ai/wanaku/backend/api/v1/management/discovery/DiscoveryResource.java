@@ -1,5 +1,8 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.discovery.ServiceState;
+import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.common.ServiceTargetEvent;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,10 +14,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
@@ -73,12 +72,10 @@ public class DiscoveryResource {
         return Response.ok().build();
     }
 
-
     private void emitEvent(ServiceTargetEvent event) {
         boolean hasRequests = serviceTargetEventEmitter.hasRequests();
         if (hasRequests) {
-            serviceTargetEventEmitter
-                    .sendAndForget(event);
+            serviceTargetEventEmitter.sendAndForget(event);
         } else {
             LOG.trace("No pending consumers to send the request");
         }

@@ -198,18 +198,17 @@ public class ResourceReference implements WanakuEntity<String> {
 
     @Override
     public String toString() {
-        return "ResourceReference{" +
-                "id='" + id + '\'' +
-                ", location='" + location + '\'' +
-                ", type='" + type + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", mimeType='" + mimeType + '\'' +
-                ", params=" + params +
-                ", configurationURI='" + configurationURI + '\'' +
-                ", secretsURI='" + secretsURI + '\'' +
-                ", namespace='" + namespace + '\'' +
-                '}';
+        return "ResourceReference{" + "id='"
+                + id + '\'' + ", location='"
+                + location + '\'' + ", type='"
+                + type + '\'' + ", name='"
+                + name + '\'' + ", description='"
+                + description + '\'' + ", mimeType='"
+                + mimeType + '\'' + ", params="
+                + params + ", configurationURI='"
+                + configurationURI + '\'' + ", secretsURI='"
+                + secretsURI + '\'' + ", namespace='"
+                + namespace + '\'' + '}';
     }
 
     @Override
@@ -218,16 +217,21 @@ public class ResourceReference implements WanakuEntity<String> {
             return false;
         }
         ResourceReference that = (ResourceReference) o;
-        return Objects.equals(id, that.id) && Objects.equals(location,
-                that.location) && Objects.equals(type, that.type) && Objects.equals(name,
-                that.name) && Objects.equals(description, that.description) && Objects.equals(mimeType,
-                that.mimeType) && Objects.equals(params, that.params) && Objects.equals(configurationURI,
-                that.configurationURI) && Objects.equals(secretsURI, that.secretsURI) && Objects.equals(
-                namespace, that.namespace);
+        return Objects.equals(id, that.id)
+                && Objects.equals(location, that.location)
+                && Objects.equals(type, that.type)
+                && Objects.equals(name, that.name)
+                && Objects.equals(description, that.description)
+                && Objects.equals(mimeType, that.mimeType)
+                && Objects.equals(params, that.params)
+                && Objects.equals(configurationURI, that.configurationURI)
+                && Objects.equals(secretsURI, that.secretsURI)
+                && Objects.equals(namespace, that.namespace);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, location, type, name, description, mimeType, params, configurationURI, secretsURI, namespace);
+        return Objects.hash(
+                id, location, type, name, description, mimeType, params, configurationURI, secretsURI, namespace);
     }
 }

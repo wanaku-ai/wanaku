@@ -3,6 +3,10 @@ package ai.wanaku.backend.api.v1.resources;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.io.ProvisionAwarePayload;
+import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
+import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -14,12 +18,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.types.io.ProvisionAwarePayload;
-import ai.wanaku.api.types.io.ResourcePayload;
-import ai.wanaku.core.util.CollectionsHelper;
-import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
-
 import java.util.List;
 
 @ApplicationScoped
@@ -78,7 +76,7 @@ public class ResourcesResource {
         int deleteCount = resourcesBean.remove(resource);
         if (deleteCount > 0) {
             return Response.ok().build();
-        }else{
+        } else {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
     }

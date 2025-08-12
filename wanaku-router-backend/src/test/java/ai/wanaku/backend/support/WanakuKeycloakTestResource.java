@@ -14,17 +14,21 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
 
     @Override
     public Map<String, String> start() {
-        keycloak = new KeycloakContainer()
-                .withUseHttps(false);
+        keycloak = new KeycloakContainer().withUseHttps(false);
         keycloak.start();
 
-        final String path = DiscoveryResourceManualTest.class.getResource("/wanaku-realm.json").getPath();
+        final String path = DiscoveryResourceManualTest.class
+                .getResource("/wanaku-realm.json")
+                .getPath();
 
         KeycloakTestClient keycloakClient = new KeycloakTestClient(keycloak.getServerUrl());
 
         final RealmRepresentation realmRepresentation = keycloakClient.readRealmFile(path);
-        realmRepresentation.getClients().stream().filter(c -> c.getClientId().equals("wanaku-service"))
-                .findFirst().get().setSecret("secret");
+        realmRepresentation.getClients().stream()
+                .filter(c -> c.getClientId().equals("wanaku-service"))
+                .findFirst()
+                .get()
+                .setSecret("secret");
 
         keycloakClient.createRealm(realmRepresentation);
 
@@ -32,7 +36,7 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
         conf.put("keycloak.url", keycloak.getServerUrl());
         conf.put("quarkus.oidc.auth-server-url", String.format("%s/realms/%s", keycloak.getServerUrl(), "wanaku"));
 
-        conf.put("quarkus.oidc.credentials.secret",  "secret");
+        conf.put("quarkus.oidc.credentials.secret", "secret");
         conf.put("quarkus.oidc.client-id", "wanaku-service");
 
         return conf;

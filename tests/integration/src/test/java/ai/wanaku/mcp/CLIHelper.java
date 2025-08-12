@@ -36,9 +36,8 @@ public class CLIHelper {
         PrintWriter printOut = new PrintWriter(out);
         PrintWriter printErr = new PrintWriter(err);
 
-        CommandLine cmd = new CommandLine(WanakuIntegrationBase.cliMain)
-                .setOut(printOut)
-                .setErr(printErr);
+        CommandLine cmd =
+                new CommandLine(WanakuIntegrationBase.cliMain).setOut(printOut).setErr(printErr);
 
         LOG.debug("Executing command via wanaku CLI: {}", executableCommand);
 

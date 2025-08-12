@@ -26,9 +26,10 @@ public final class ResourceHelper {
      * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
      *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
      */
-    public static void expose(ResourceReference resourceReference, ResourceManager resourceManager,
-            BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler)
-    {
+    public static void expose(
+            ResourceReference resourceReference,
+            ResourceManager resourceManager,
+            BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler) {
         expose(resourceReference, resourceManager, null, handler);
     }
 
@@ -41,25 +42,26 @@ public final class ResourceHelper {
      * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
      *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
      */
-    public static void expose(ResourceReference resourceReference, ResourceManager resourceManager,
-            Namespace namespace, BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler)
-    {
-        final ResourceManager.ResourceDefinition resourceDefinition = resourceManager.newResource(resourceReference.getName())
+    public static void expose(
+            ResourceReference resourceReference,
+            ResourceManager resourceManager,
+            Namespace namespace,
+            BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler) {
+        final ResourceManager.ResourceDefinition resourceDefinition = resourceManager
+                .newResource(resourceReference.getName())
                 .setUri(resourceReference.getLocation())
                 .setMimeType(resourceReference.getMimeType())
                 .setDescription(resourceReference.getDescription())
-                .setHandler(args ->
-                    new ResourceResponse(handler.apply(args, resourceReference)));
+                .setHandler(args -> new ResourceResponse(handler.apply(args, resourceReference)));
 
         if (namespace != null) {
-            LOG.debugf("Exposing resource %s in namespace %s", resourceReference.getName(), resourceReference.getNamespace());
-            resourceDefinition
-                    .setServerName(namespace.getPath())
-                    .register();
+            LOG.debugf(
+                    "Exposing resource %s in namespace %s",
+                    resourceReference.getName(), resourceReference.getNamespace());
+            resourceDefinition.setServerName(namespace.getPath()).register();
         } else {
             LOG.debugf("Exposing resource %s", resourceReference.getName());
-            resourceDefinition
-                    .register();
+            resourceDefinition.register();
         }
     }
 }

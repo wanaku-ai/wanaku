@@ -16,8 +16,7 @@ public class ServiceTarget implements WanakuEntity<String> {
     private int port;
     private ServiceType serviceType;
 
-    public ServiceTarget() {
-    }
+    public ServiceTarget() {}
 
     /**
      * Constructs a new instance of {@link ServiceTarget}.
@@ -96,9 +95,11 @@ public class ServiceTarget implements WanakuEntity<String> {
             return false;
         }
         ServiceTarget that = (ServiceTarget) o;
-        return port == that.port && Objects.equals(id, that.id) && Objects.equals(service,
-                that.service) && Objects.equals(host,
-                that.host) && serviceType == that.serviceType;
+        return port == that.port
+                && Objects.equals(id, that.id)
+                && Objects.equals(service, that.service)
+                && Objects.equals(host, that.host)
+                && serviceType == that.serviceType;
     }
 
     @Override
@@ -108,13 +109,12 @@ public class ServiceTarget implements WanakuEntity<String> {
 
     @Override
     public String toString() {
-        return "ServiceTarget{" +
-                "id='" + id + '\'' +
-                ", service='" + service + '\'' +
-                ", host='" + host + '\'' +
-                ", port=" + port +
-                ", serviceType=" + serviceType +
-                '}';
+        return "ServiceTarget{" + "id='"
+                + id + '\'' + ", service='"
+                + service + '\'' + ", host='"
+                + host + '\'' + ", port="
+                + port + ", serviceType="
+                + serviceType + '}';
     }
 
     /**
@@ -128,6 +128,4 @@ public class ServiceTarget implements WanakuEntity<String> {
     public static ServiceTarget newEmptyTarget(String service, String address, int port, ServiceType serviceType) {
         return new ServiceTarget(null, service, address, port, serviceType);
     }
-
-
 }

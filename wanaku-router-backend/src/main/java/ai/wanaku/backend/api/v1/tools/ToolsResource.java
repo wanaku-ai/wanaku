@@ -6,8 +6,8 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.io.ProvisionAwarePayload;
 import ai.wanaku.api.types.io.ToolPayload;
-import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
+import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -19,7 +19,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
 import java.util.List;
 
 @ApplicationScoped
@@ -77,7 +76,7 @@ public class ToolsResource {
         int deleteCount = toolsBean.remove(tool);
         if (deleteCount > 0) {
             return Response.ok().build();
-        }else{
+        } else {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
     }
@@ -88,13 +87,12 @@ public class ToolsResource {
     public Response update(ToolReference resource) throws WanakuException {
         toolsBean.update(resource);
         return Response.ok().build();
-
     }
 
     @Path("/")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public  WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException {
+    public WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException {
         ToolReference tool = toolsBean.getByName(name);
         if (tool == null) {
             throw new ToolNotFoundException(name);

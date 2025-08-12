@@ -6,8 +6,8 @@ import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.RemoteToolReference;
 import ai.wanaku.api.types.ResourceReference;
@@ -55,11 +55,11 @@ public class WanakuForwardResolver implements ForwardResolver {
             List<McpResource> resourceRefs = client.listResources();
 
             return resourceRefs.stream()
-                    .map(WanakuForwardResolver::remoteToLocal).collect(Collectors.toList());
+                    .map(WanakuForwardResolver::remoteToLocal)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             throw ServiceUnavailableException.forName(forwardReference.getAddress());
         }
-
     }
 
     private static ResourceReference remoteToLocal(McpResource remoteRef) {
@@ -110,7 +110,9 @@ public class WanakuForwardResolver implements ForwardResolver {
     }
 
     private static void createProperties(
-            Map.Entry<String, JsonSchemaElement> entry, Map<String, JsonSchemaElement> properties, InputSchema inputSchema) {
+            Map.Entry<String, JsonSchemaElement> entry,
+            Map<String, JsonSchemaElement> properties,
+            InputSchema inputSchema) {
         String key = entry.getKey();
 
         JsonSchemaElement jsonSchemaElement = properties.get(key);
@@ -140,8 +142,8 @@ public class WanakuForwardResolver implements ForwardResolver {
             McpReadResourceResult resourceResponse = client.readResource(mcpResource.getLocation());
 
             List<McpResourceContents> contents = resourceResponse.contents();
-            TextResourceContents textResourceContents = TextResourceContents.create(mcpResource.getLocation(),
-                    contents.getFirst().toString());
+            TextResourceContents textResourceContents = TextResourceContents.create(
+                    mcpResource.getLocation(), contents.getFirst().toString());
 
             return List.of(textResourceContents);
         } catch (Exception e) {
@@ -167,12 +169,13 @@ public class WanakuForwardResolver implements ForwardResolver {
     private class ForwardTool implements Tool {
         @Override
         public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-            LOG.infof("Calling tool on behalf of connection %s", toolArguments.connection().id());
+            LOG.infof(
+                    "Calling tool on behalf of connection %s",
+                    toolArguments.connection().id());
 
             try {
                 lock.lock();
-                ToolExecutionRequest request = ToolExecutionRequest
-                        .builder()
+                ToolExecutionRequest request = ToolExecutionRequest.builder()
                         .name(toolReference.getName())
                         .arguments(serializeArguments(toolArguments.args()))
                         .build();
@@ -181,7 +184,11 @@ public class WanakuForwardResolver implements ForwardResolver {
                     return ToolResponse.success(status);
                 }
             } catch (Exception e) {
-                LOG.errorf(e, "Unable to remote tool: %s (connection: %s)", e.getMessage(), toolArguments.connection().id());
+                LOG.errorf(
+                        e,
+                        "Unable to remote tool: %s (connection: %s)",
+                        e.getMessage(),
+                        toolArguments.connection().id());
                 return ToolResponse.error(e.getMessage());
             } finally {
                 lock.unlock();

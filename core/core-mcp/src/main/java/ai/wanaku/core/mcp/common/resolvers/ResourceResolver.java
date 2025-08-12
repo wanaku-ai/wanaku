@@ -1,12 +1,11 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.types.io.ResourcePayload;
-import java.util.List;
-
-import io.quarkiverse.mcp.server.ResourceContents;
 import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.io.ResourcePayload;
+import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
+import java.util.List;
 
 /**
  * A resolver that consumes MCP requests and resolves what type of resource acquirer

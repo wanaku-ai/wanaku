@@ -13,14 +13,12 @@ public class TestIndexHelper {
             return;
         }
 
-        Files.walk(dir)
-                .sorted(Comparator.reverseOrder())
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+        Files.walk(dir).sorted(Comparator.reverseOrder()).forEach(path -> {
+            try {
+                Files.delete(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

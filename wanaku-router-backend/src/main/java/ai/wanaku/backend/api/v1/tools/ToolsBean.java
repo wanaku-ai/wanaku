@@ -1,26 +1,25 @@
 package ai.wanaku.backend.api.v1.tools;
 
+import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.api.types.Namespace;
+import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.api.types.io.ToolPayload;
+import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
+import ai.wanaku.backend.common.ToolsHelper;
+import ai.wanaku.core.mcp.common.Tool;
+import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import ai.wanaku.core.persistence.api.ToolReferenceRepository;
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.core.util.StringHelper;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.io.ToolPayload;
-import ai.wanaku.core.mcp.common.Tool;
-import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import ai.wanaku.core.persistence.api.ToolReferenceRepository;
-import ai.wanaku.core.util.StringHelper;
-import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
-import ai.wanaku.backend.common.ToolsHelper;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkus.runtime.StartupEvent;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -76,7 +75,6 @@ public class ToolsBean extends AbstractBean<ToolReference> {
         }
     }
 
-
     public List<ToolReference> list() {
         return toolReferenceRepository.listAll();
     }
@@ -93,7 +91,7 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     public int remove(String name) throws WanakuException {
         int removed = 0;
         try {
-             removed = removeByName(name);
+            removed = removeByName(name);
         } finally {
             if (removed > 0) {
                 toolManager.removeTool(name);
@@ -108,12 +106,12 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     }
 
     public ToolReference getByName(String name) {
-        List<ToolReference> tools =  toolReferenceRepository.findByName(name);
+        List<ToolReference> tools = toolReferenceRepository.findByName(name);
         return tools.isEmpty() ? null : tools.getFirst();
     }
 
     @Override
-    protected  WanakuRepository<ToolReference, String> getRepository() {
+    protected WanakuRepository<ToolReference, String> getRepository() {
         return toolReferenceRepository;
     }
 }

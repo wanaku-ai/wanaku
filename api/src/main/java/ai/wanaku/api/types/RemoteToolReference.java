@@ -105,9 +105,11 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
             return false;
         }
         RemoteToolReference that = (RemoteToolReference) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
-                description, that.description) && Objects.equals(type, that.type) && Objects.equals(inputSchema,
-                that.inputSchema);
+        return Objects.equals(id, that.id)
+                && Objects.equals(name, that.name)
+                && Objects.equals(description, that.description)
+                && Objects.equals(type, that.type)
+                && Objects.equals(inputSchema, that.inputSchema);
     }
 
     @Override
@@ -117,13 +119,12 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
 
     @Override
     public String toString() {
-        return "RemoteToolReference{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", type='" + type + '\'' +
-                ", inputSchema=" + inputSchema +
-                '}';
+        return "RemoteToolReference{" + "id='"
+                + id + '\'' + ", name='"
+                + name + '\'' + ", description='"
+                + description + '\'' + ", type='"
+                + type + '\'' + ", inputSchema="
+                + inputSchema + '}';
     }
 
     public static ToolReference asToolReference(RemoteToolReference ref) {
@@ -148,4 +149,3 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
         this.namespace = namespace;
     }
 }
-

@@ -1,9 +1,5 @@
 package ai.wanaku.core.capabilities.tool;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
 import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
@@ -22,6 +18,9 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.security.SecurityHelper;
 import io.quarkus.oidc.client.Tokens;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -88,21 +87,24 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(stateMsg)).build();
+                    .addAllContent(List.of(stateMsg))
+                    .build();
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(stateMsg)).build();
+                    .addAllContent(List.of(stateMsg))
+                    .build();
         } catch (Exception e) {
             String stateMsg = "Unable to invoke tool: " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(stateMsg)).build();
+                    .addAllContent(List.of(stateMsg))
+                    .build();
         }
     }
 
@@ -122,13 +124,10 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
         ConfigProvisioner provisioner = ConfigProvisionerLoader.newConfigProvisioner(request, config);
         final ProvisionedConfig provision = ConfigProvisionerLoader.provision(request, provisioner);
 
-        return ProvisionReply
-                .newBuilder()
+        return ProvisionReply.newBuilder()
                 .putAllProperties(ServicesHelper.buildPropertiesMap(config))
                 .setConfigurationUri(provision.configurationsUri().toString())
                 .setSecretUri(provision.secretsUri().toString())
                 .build();
     }
-
-
 }

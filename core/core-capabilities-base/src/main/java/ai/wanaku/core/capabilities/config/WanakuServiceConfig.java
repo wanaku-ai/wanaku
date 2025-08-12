@@ -1,10 +1,9 @@
 package ai.wanaku.core.capabilities.config;
 
+import ai.wanaku.core.config.WanakuConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import java.util.Map;
-
-import ai.wanaku.core.config.WanakuConfig;
 import java.util.Set;
 
 /**

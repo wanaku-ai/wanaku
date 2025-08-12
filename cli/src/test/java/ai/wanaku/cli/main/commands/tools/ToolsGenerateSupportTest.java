@@ -1,32 +1,5 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.Property;
-import ai.wanaku.api.types.ToolReference;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.parameters.RequestBody;
-import io.swagger.v3.oas.models.servers.Server;
-import io.swagger.v3.oas.models.servers.ServerVariable;
-import io.swagger.v3.oas.models.servers.ServerVariables;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.addHttpMethodProperty;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.getOutputPrintWriter;
@@ -48,6 +21,32 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import ai.wanaku.api.types.InputSchema;
+import ai.wanaku.api.types.Property;
+import ai.wanaku.api.types.ToolReference;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.servers.ServerVariable;
+import io.swagger.v3.oas.models.servers.ServerVariables;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 public class ToolsGenerateSupportTest {
 
@@ -62,7 +61,6 @@ public class ToolsGenerateSupportTest {
 
     @Mock
     private PathItem pathItem;
-
 
     @Nested
     @DisplayName("interpolateServerUrl tests")
@@ -177,7 +175,9 @@ public class ToolsGenerateSupportTest {
             String result = toolReferenceUrl(baseUrl, path);
 
             // Assert
-            assertEquals("https://api.example.com/users/{parameter.value('userId')}/posts/{parameter.value('postId')}", result);
+            assertEquals(
+                    "https://api.example.com/users/{parameter.value('userId')}/posts/{parameter.value('postId')}",
+                    result);
         }
 
         @Test
@@ -207,7 +207,6 @@ public class ToolsGenerateSupportTest {
             parameter.setIn("header");
             parameter.setDescription("API Key for authentication");
             parameter.setRequired(true);
-
 
             // Act
             Property property = parameter2Property(parameter);
@@ -429,7 +428,7 @@ public class ToolsGenerateSupportTest {
         @DisplayName("Should return System.out when output is null")
         void shouldReturnSystemOutWhenOutputIsNull() throws Exception {
             // Act
-            try(PrintWriter writer = getOutputPrintWriter(null)) {
+            try (PrintWriter writer = getOutputPrintWriter(null)) {
 
                 // Assert
                 assertNotNull(writer);
@@ -443,12 +442,12 @@ public class ToolsGenerateSupportTest {
             String dirPath = tempDir.toString();
 
             // Act
-           try(PrintWriter writer = getOutputPrintWriter(dirPath)) {
+            try (PrintWriter writer = getOutputPrintWriter(dirPath)) {
 
-               // Assert
-               assertNotNull(writer);
-               assertTrue(Files.exists(tempDir.resolve(DEFAULT_OUTPUT_FILENAME)));
-           }
+                // Assert
+                assertNotNull(writer);
+                assertTrue(Files.exists(tempDir.resolve(DEFAULT_OUTPUT_FILENAME)));
+            }
         }
 
         @Test
@@ -524,6 +523,4 @@ public class ToolsGenerateSupportTest {
             assertEquals("https://prod.example.com", result);
         }
     }
-
-
 }

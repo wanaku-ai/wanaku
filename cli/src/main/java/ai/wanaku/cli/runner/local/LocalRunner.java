@@ -82,7 +82,10 @@ public class LocalRunner {
     }
 
     private static void startService(
-            Map.Entry<String, String> component, int grpcPort, ExecutorService executorService, CountDownLatch countDownLatch) {
+            Map.Entry<String, String> component,
+            int grpcPort,
+            ExecutorService executorService,
+            CountDownLatch countDownLatch) {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
 
@@ -122,7 +125,7 @@ public class LocalRunner {
         if (VersionHelper.VERSION.contains("SNAPSHOT")) {
             tag = config.earlyAccessTag();
         } else {
-            tag =  String.format("v%s", VersionHelper.VERSION);
+            tag = String.format("v%s", VersionHelper.VERSION);
         }
 
         return String.format(urlFormat, tag, VersionHelper.VERSION);
@@ -135,5 +138,4 @@ public class LocalRunner {
 
         return true;
     }
-
 }

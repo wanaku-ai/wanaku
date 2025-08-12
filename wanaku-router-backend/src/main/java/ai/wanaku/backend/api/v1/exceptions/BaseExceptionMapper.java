@@ -19,15 +19,15 @@ public class BaseExceptionMapper implements ExceptionMapper<Exception> {
     private static final String GENERIC_ERROR = "Generic error";
 
     @APIResponse(
-        responseCode = "500",
-        description = "Generic error",
-        content = @Content(schema = @Schema(implementation = WanakuResponse.class))
-    )
+            responseCode = "500",
+            description = "Generic error",
+            content = @Content(schema = @Schema(implementation = WanakuResponse.class)))
     @Override
     public Response toResponse(Exception e) {
         LOG.error(e.getMessage(), e);
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                        .entity(new WanakuResponse<Void>(GENERIC_ERROR)).build();
+                .entity(new WanakuResponse<Void>(GENERIC_ERROR))
+                .build();
     }
 }

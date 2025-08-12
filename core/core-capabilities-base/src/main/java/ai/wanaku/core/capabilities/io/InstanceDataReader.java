@@ -16,10 +16,9 @@ public class InstanceDataReader implements AutoCloseable {
     private final FileHeader fileHeader;
 
     static {
-        assert (((FileHeader.BYTES + ServiceEntry.BYTES) % 20) == 0):
-                "File header and the rate entries must be aligned on a 20 bytes boundary";
+        assert (((FileHeader.BYTES + ServiceEntry.BYTES) % 20) == 0)
+                : "File header and the rate entries must be aligned on a 20 bytes boundary";
     }
-
 
     /**
      * Constructor

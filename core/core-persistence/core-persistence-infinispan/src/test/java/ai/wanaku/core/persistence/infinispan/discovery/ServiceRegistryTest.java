@@ -1,6 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
-import jakarta.inject.Inject;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.discovery.ServiceState;
@@ -9,6 +11,7 @@ import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -17,10 +20,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -41,7 +40,8 @@ public class ServiceRegistryTest {
     @Test
     @Order(1)
     public void register() {
-        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
+        ServiceTarget serviceTarget =
+                new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
 
         Assertions.assertDoesNotThrow(() -> serviceRegistry.register(serviceTarget));
     }
@@ -69,7 +69,8 @@ public class ServiceRegistryTest {
     @Test
     @Order(4)
     public void updateProperty() {
-        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID,  TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
+        ServiceTarget serviceTarget =
+                new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 8081, ServiceType.TOOL_INVOKER);
 
         serviceRegistry.update(serviceTarget);
 
@@ -84,7 +85,8 @@ public class ServiceRegistryTest {
     @Test
     @Order(5)
     public void deregister() {
-        ServiceTarget serviceTarget = new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 0, ServiceType.TOOL_INVOKER);
+        ServiceTarget serviceTarget =
+                new ServiceTarget(TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 0, ServiceType.TOOL_INVOKER);
 
         serviceRegistry.deregister(serviceTarget);
 
@@ -95,13 +97,15 @@ public class ServiceRegistryTest {
     @Test
     @Order(6)
     void testUpdateStateHealthy() {
-        Assertions.assertDoesNotThrow(() -> serviceRegistry.updateLastState(TEST_SERVICE_ID, ServiceState.newHealthy()));
+        Assertions.assertDoesNotThrow(
+                () -> serviceRegistry.updateLastState(TEST_SERVICE_ID, ServiceState.newHealthy()));
     }
 
     @Test
     @Order(7)
     void testUpdateStateUnhealthy() {
-        Assertions.assertDoesNotThrow(() -> serviceRegistry.updateLastState(TEST_SERVICE_ID, ServiceState.newUnhealthy("test")));
+        Assertions.assertDoesNotThrow(
+                () -> serviceRegistry.updateLastState(TEST_SERVICE_ID, ServiceState.newUnhealthy("test")));
     }
 
     @Test
@@ -121,5 +125,4 @@ public class ServiceRegistryTest {
         assertEquals("test", second.getReason());
         assertFalse(second.isHealthy());
     }
-
 }

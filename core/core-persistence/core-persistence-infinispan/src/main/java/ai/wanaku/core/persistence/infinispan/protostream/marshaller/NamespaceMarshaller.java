@@ -4,7 +4,7 @@ import ai.wanaku.api.types.Namespace;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
 
-public class NamespaceMarshaller  implements MessageMarshaller<Namespace> {
+public class NamespaceMarshaller implements MessageMarshaller<Namespace> {
     @Override
     public Namespace readFrom(ProtoStreamReader reader) throws IOException {
         Namespace namespace = new Namespace();

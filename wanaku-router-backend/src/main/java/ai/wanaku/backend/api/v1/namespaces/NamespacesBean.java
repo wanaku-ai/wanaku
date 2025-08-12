@@ -1,12 +1,11 @@
 package ai.wanaku.backend.api.v1.namespaces;
 
+import ai.wanaku.api.types.Namespace;
+import ai.wanaku.core.persistence.api.NamespaceRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.core.persistence.api.NamespaceRepository;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -31,7 +30,7 @@ public class NamespacesBean {
         if (namespaceRepository.size() < maxNamespaces) {
             for (int i = 0; i < maxNamespaces; i++) {
                 final String namespacePath = String.format("ns-%d", i);
-                Namespace namespace  = new Namespace();
+                Namespace namespace = new Namespace();
                 namespace.setPath(namespacePath);
                 namespace.setName(null);
 

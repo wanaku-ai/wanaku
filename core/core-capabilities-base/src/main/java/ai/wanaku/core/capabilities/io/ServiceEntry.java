@@ -5,8 +5,7 @@ public class ServiceEntry {
     public static final int BYTES = ID_LENGTH + 4;
     private String id;
 
-    ServiceEntry() {
-    }
+    ServiceEntry() {}
 
     ServiceEntry(String id) {
         this.id = id;

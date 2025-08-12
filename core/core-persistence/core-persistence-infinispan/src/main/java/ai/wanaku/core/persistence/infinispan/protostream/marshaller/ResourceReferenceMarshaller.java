@@ -1,9 +1,9 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.ResourceReference;
-import org.infinispan.protostream.MessageMarshaller;
 import java.io.IOException;
 import java.util.ArrayList;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceReference> {
     @Override
@@ -25,7 +25,7 @@ public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceRe
         ref.setName(reader.readString("name"));
         ref.setDescription(reader.readString("description"));
         ref.setMimeType(reader.readString("mime_type"));
-        ref.setParams(reader.readCollection("params", new ArrayList<>(),ResourceReference.Param.class));
+        ref.setParams(reader.readCollection("params", new ArrayList<>(), ResourceReference.Param.class));
         ref.setConfigurationURI(reader.readString("configuration_uri"));
         ref.setSecretsURI(reader.readString("secrets_uri"));
         ref.setNamespace(reader.readString("namespace"));

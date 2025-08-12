@@ -29,14 +29,10 @@ public class NoopForwardResolver implements ForwardResolver {
     }
 
     @Override
-    public void provision(ResourcePayload resourcePayload) throws ServiceNotFoundException {
-
-    }
+    public void provision(ResourcePayload resourcePayload) throws ServiceNotFoundException {}
 
     @Override
     public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         return List.of();
     }
-
-
 }

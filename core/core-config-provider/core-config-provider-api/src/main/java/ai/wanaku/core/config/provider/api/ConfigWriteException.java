@@ -9,8 +9,7 @@ import ai.wanaku.api.exceptions.WanakuException;
  * configuration information.
  */
 public class ConfigWriteException extends WanakuException {
-    public ConfigWriteException() {
-    }
+    public ConfigWriteException() {}
 
     public ConfigWriteException(String message) {
         super(message);
@@ -24,7 +23,8 @@ public class ConfigWriteException extends WanakuException {
         super(cause);
     }
 
-    public ConfigWriteException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public ConfigWriteException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

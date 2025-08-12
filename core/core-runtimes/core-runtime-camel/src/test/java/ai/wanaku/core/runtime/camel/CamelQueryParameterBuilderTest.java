@@ -1,5 +1,8 @@
 package ai.wanaku.core.runtime.camel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import ai.wanaku.core.config.provider.api.DefaultConfigResource;
 import ai.wanaku.core.config.provider.file.ConfigFileStore;
 import ai.wanaku.core.config.provider.file.SecretFileStore;
@@ -10,9 +13,6 @@ import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class CamelQueryParameterBuilderTest {
 
     @Test
@@ -20,7 +20,7 @@ public class CamelQueryParameterBuilderTest {
         CamelQueryParameterBuilder cpb = newParameterBuilder();
 
         final Map<String, String> build = cpb.build();
-        build.forEach((k,v)-> Assertions.assertFalse(k.startsWith("query.")));
+        build.forEach((k, v) -> Assertions.assertFalse(k.startsWith("query.")));
         assertEquals(2, build.size());
         assertNotNull(build.get("someSecretKey"));
         assertEquals("RAW(someSecretValue)", build.get("someSecretKey"));
@@ -28,10 +28,13 @@ public class CamelQueryParameterBuilderTest {
 
     static CamelQueryParameterBuilder newParameterBuilder() throws URISyntaxException {
         final URI sampleCap = Objects.requireNonNull(
-                CamelQueryParameterBuilderTest.class.getResource("/sample-capabilities.properties")).toURI();
+                        CamelQueryParameterBuilderTest.class.getResource("/sample-capabilities.properties"))
+                .toURI();
         ConfigFileStore configFileStore = new ConfigFileStore(sampleCap);
 
-        final URI sampleSecret = CamelQueryParameterBuilderTest.class.getResource("/sample-secrets.properties").toURI();
+        final URI sampleSecret = CamelQueryParameterBuilderTest.class
+                .getResource("/sample-secrets.properties")
+                .toURI();
         SecretFileStore secretFileStore = new SecretFileStore(sampleSecret);
 
         return new CamelQueryParameterBuilder(new DefaultConfigResource(configFileStore, secretFileStore));

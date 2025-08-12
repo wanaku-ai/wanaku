@@ -1,21 +1,19 @@
 package ai.wanaku.tool.http;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.core.capabilities.tool.Client;
-import ai.wanaku.core.config.provider.api.ReservedConfigs;
-import ai.wanaku.core.util.CollectionsHelper;
-import jakarta.enterprise.context.ApplicationScoped;
+import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
-import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
+import ai.wanaku.core.capabilities.tool.Client;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.config.provider.api.ReservedConfigs;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
+import ai.wanaku.core.util.CollectionsHelper;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Map;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
-
-import java.util.Map;
-
-import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 @ApplicationScoped
 public class HttpClient implements Client {
@@ -36,8 +34,8 @@ public class HttpClient implements Client {
         ParsedToolInvokeRequest parsedRequest =
                 ParsedToolInvokeRequest.parseRequest(request.getUri(), request, parameterBuilder::build);
 
-        Map<String, Object> headers =
-                CollectionsHelper.toStringObjectMap(configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX));
+        Map<String, Object> headers = CollectionsHelper.toStringObjectMap(
+                configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX));
 
         if (headers.isEmpty()) {
             headers.put("CamelHttpMethod", "GET");
@@ -47,7 +45,4 @@ public class HttpClient implements Client {
 
         return producer.requestBodyAndHeaders(parsedRequest.uri(), parsedRequest.body(), headers, String.class);
     }
-
-
-
 }

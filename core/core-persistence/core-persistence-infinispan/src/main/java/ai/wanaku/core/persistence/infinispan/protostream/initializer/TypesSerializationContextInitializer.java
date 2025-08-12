@@ -9,27 +9,27 @@ import ai.wanaku.core.persistence.infinispan.protostream.marshaller.RemoteToolRe
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ResourceReferenceMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ToolReferenceMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.WanakuErrorMarshaller;
-
 import java.util.Arrays;
 
 public class TypesSerializationContextInitializer extends AbstractSerializationContextInitializer {
 
-    private static final String PROTO_FILE_NAME="types.proto";
+    private static final String PROTO_FILE_NAME = "types.proto";
 
-    private static final String PROTO_FILE_PATH="proto/types.proto";
+    private static final String PROTO_FILE_PATH = "proto/types.proto";
 
-    public TypesSerializationContextInitializer(){
-        super(PROTO_FILE_NAME, PROTO_FILE_PATH,
-                Arrays.asList(new ForwardReferenceMarshaller(),
-                              new InputSchemaMarshaller(),
-                              new PropertyMarshaller(),
-                              new RemoteToolReferenceMarshaller(),
-                              new ParamMarshaller(),
-                              new ResourceReferenceMarshaller(),
-                              new WanakuErrorMarshaller(),
-                              new ToolReferenceMarshaller(),
-                              new NamespaceMarshaller())
-
-        );
+    public TypesSerializationContextInitializer() {
+        super(
+                PROTO_FILE_NAME,
+                PROTO_FILE_PATH,
+                Arrays.asList(
+                        new ForwardReferenceMarshaller(),
+                        new InputSchemaMarshaller(),
+                        new PropertyMarshaller(),
+                        new RemoteToolReferenceMarshaller(),
+                        new ParamMarshaller(),
+                        new ResourceReferenceMarshaller(),
+                        new WanakuErrorMarshaller(),
+                        new ToolReferenceMarshaller(),
+                        new NamespaceMarshaller()));
     }
 }

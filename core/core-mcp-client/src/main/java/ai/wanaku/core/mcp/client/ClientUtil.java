@@ -14,8 +14,6 @@ public class ClientUtil {
                 .logResponses(true)
                 .build();
 
-        return new DefaultMcpClient.Builder()
-                .transport(transport)
-                .build();
+        return new DefaultMcpClient.Builder().transport(transport).build();
     }
 }

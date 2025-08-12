@@ -16,6 +16,4 @@ public final class ReservedConfigs {
     public static final String CONFIG_HEADER_PARAMETERS_PREFIX = "header.";
 
     private ReservedConfigs() {}
-
-
 }

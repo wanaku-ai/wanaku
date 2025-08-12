@@ -1,7 +1,6 @@
 package ai.wanaku.backend.common;
 
 public enum EventType {
-
     REGISTER("register"),
     DEREGISTER("deregister"),
     UPDATE("update"),

@@ -42,7 +42,8 @@ public class ToolsHelper {
         };
     }
 
-    private static void addArgument(String key, Property value, ToolManager.ToolDefinition toolDefinition, boolean required) {
+    private static void addArgument(
+            String key, Property value, ToolManager.ToolDefinition toolDefinition, boolean required) {
         Class<?> type = toType(value);
         toolDefinition.addArgument(key, value.getDescription(), required, type);
     }
@@ -57,7 +58,8 @@ public class ToolsHelper {
      *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
      */
     public static void registerTool(
-            CallableReference toolReference, ToolManager toolManager,
+            CallableReference toolReference,
+            ToolManager toolManager,
             BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {
         registerTool(toolReference, toolManager, null, handler);
     }
@@ -73,35 +75,32 @@ public class ToolsHelper {
      *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
      */
     public static void registerTool(
-            CallableReference toolReference, ToolManager toolManager, Namespace namespace,
+            CallableReference toolReference,
+            ToolManager toolManager,
+            Namespace namespace,
             BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {
 
-
-        ToolManager.ToolDefinition toolDefinition = toolManager.newTool(toolReference.getName())
-                .setDescription(toolReference.getDescription());
+        ToolManager.ToolDefinition toolDefinition =
+                toolManager.newTool(toolReference.getName()).setDescription(toolReference.getDescription());
 
         final boolean required = isRequired(toolReference);
 
         InputSchema inputSchema = toolReference.getInputSchema();
         if (inputSchema != null) {
-            inputSchema.getProperties().forEach((key, value) ->
-                            addArgument(key, value, toolDefinition, required)
-                    );
+            inputSchema.getProperties().forEach((key, value) -> addArgument(key, value, toolDefinition, required));
         }
 
         if (namespace != null) {
-            LOG.debugf("Registering tool %s in namespace %s with path %s", toolReference.getName(), namespace.getName(), namespace.getPath());
+            LOG.debugf(
+                    "Registering tool %s in namespace %s with path %s",
+                    toolReference.getName(), namespace.getName(), namespace.getPath());
             toolDefinition
                     .setServerName(namespace.getPath())
-                    .setHandler(ta ->  handler.apply(ta, toolReference))
+                    .setHandler(ta -> handler.apply(ta, toolReference))
                     .register();
         } else {
             LOG.debugf("Registering tool %s", toolReference.getName());
-            toolDefinition
-                    .setHandler(ta -> handler.apply(ta, toolReference))
-                    .register();
+            toolDefinition.setHandler(ta -> handler.apply(ta, toolReference)).register();
         }
     }
-
-
 }

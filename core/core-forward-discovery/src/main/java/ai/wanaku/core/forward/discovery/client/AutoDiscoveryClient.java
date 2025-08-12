@@ -1,17 +1,16 @@
 package ai.wanaku.core.forward.discovery.client;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
+import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.core.services.api.ForwardsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
-
-import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
 public class AutoDiscoveryClient implements ForwardDiscoveryClient {
     private static final Logger LOG = Logger.getLogger(AutoDiscoveryClient.class);
@@ -58,12 +57,10 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
                 } else {
                     LOG.errorf("Unable to register forward service %s", reference.getName());
                 }
-
             }
         } finally {
             lock.unlock();
         }
-
     }
 
     @Override
@@ -84,7 +81,6 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
                 } else {
                     LOG.errorf("Unable to deregister forward service %s", reference.getName());
                 }
-
             }
         } finally {
             lock.unlock();

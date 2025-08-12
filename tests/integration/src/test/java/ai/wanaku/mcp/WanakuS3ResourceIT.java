@@ -1,8 +1,16 @@
 package ai.wanaku.mcp;
 
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.json.JsonObject;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -13,15 +21,6 @@ import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-
-import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
 
 /**
  * Integration test for Wanaku MCP Router's AWS S3 resource capabilities.
@@ -54,13 +53,14 @@ import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
 @Testcontainers
 public class WanakuS3ResourceIT extends WanakuIntegrationBase {
     private static final String BUCKET_NAME = "myBucket";
+
     @TempDir
     private static Path tempDir;
 
     @Container
     static LocalStackContainer localStack = new LocalStackContainer(
-            DockerImageName.parse("localstack/localstack:s3-latest")
-    ).withServices(LocalStackContainer.Service.S3);
+                    DockerImageName.parse("localstack/localstack:s3-latest"))
+            .withServices(LocalStackContainer.Service.S3);
 
     /**
      * Sets up the test environment by creating S3 resources and configuration files.
@@ -89,23 +89,37 @@ public class WanakuS3ResourceIT extends WanakuIntegrationBase {
     @BeforeAll
     static void addFileToS3() throws IOException, InterruptedException {
         localStack.execInContainer("awslocal", "s3api", "create-bucket", "--bucket", BUCKET_NAME);
-        localStack.execInContainer("awslocal",  "s3api", "put-object", "--bucket", BUCKET_NAME,
-                "--key", "test.txt", "--body", WanakuS3ResourceIT.class.getResource("/test.txt").getPath());
+        localStack.execInContainer(
+                "awslocal",
+                "s3api",
+                "put-object",
+                "--bucket",
+                BUCKET_NAME,
+                "--key",
+                "test.txt",
+                "--body",
+                WanakuS3ResourceIT.class.getResource("/test.txt").getPath());
 
         Path capabilities = tempDir.resolve("capabilities.properties");
         Path secrets = tempDir.resolve("secrets.properties");
 
-        Files.write(capabilities, """
+        Files.write(
+                capabilities,
+                """
                 region=%s
                 deleteAfterRead=%s
-                """.formatted(localStack.getRegion(), "false")
-                .getBytes(StandardCharsets.UTF_8));
+                """
+                        .formatted(localStack.getRegion(), "false")
+                        .getBytes(StandardCharsets.UTF_8));
 
-        Files.write(secrets, """
+        Files.write(
+                secrets,
+                """
                 accessKey=%s
                 secretKey=%s
-                """.formatted(localStack.getAccessKey(), localStack.getSecretKey())
-                .getBytes(StandardCharsets.UTF_8));
+                """
+                        .formatted(localStack.getAccessKey(), localStack.getSecretKey())
+                        .getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -150,20 +164,25 @@ public class WanakuS3ResourceIT extends WanakuIntegrationBase {
         Awaitility.await()
                 .ignoreException(AssertionFailedError.class)
                 .timeout(Duration.ofSeconds(10))
-                .until(() ->
-                        executeWanakuCliCommand(List.of("wanaku",
-                                "resources",
-                                "expose",
-                                "--location=" + BUCKET_NAME + "/test.txt",
-                                "--description=\"S3 Sample test resource added via CLI\"",
-                                "--name=test-s3-resource",
-                                "--type=aws2-s3",
-                                "--configuration-from-file=" + tempDir.resolve("capabilities.properties"),
-                                "--secrets-from-file=" + tempDir.resolve("secrets.properties")), host) == 0);
+                .until(() -> executeWanakuCliCommand(
+                                List.of(
+                                        "wanaku",
+                                        "resources",
+                                        "expose",
+                                        "--location=" + BUCKET_NAME + "/test.txt",
+                                        "--description=\"S3 Sample test resource added via CLI\"",
+                                        "--name=test-s3-resource",
+                                        "--type=aws2-s3",
+                                        "--configuration-from-file=" + tempDir.resolve("capabilities.properties"),
+                                        "--secrets-from-file=" + tempDir.resolve("secrets.properties")),
+                                host)
+                        == 0);
 
-        McpAssured.Snapshot snapshot = client.when().resourcesList()
-                .withAssert(resourcesPage ->
-                        Assertions.assertThat(resourcesPage.resources().get(0).name()).isEqualTo("test-s3-resource"))
+        McpAssured.Snapshot snapshot = client.when()
+                .resourcesList()
+                .withAssert(resourcesPage -> Assertions.assertThat(
+                                resourcesPage.resources().get(0).name())
+                        .isEqualTo("test-s3-resource"))
                 .send()
                 .thenAssertResults();
         JsonObject response = snapshot.responses().get(snapshot.responses().size() - 1);
@@ -173,9 +192,11 @@ public class WanakuS3ResourceIT extends WanakuIntegrationBase {
                 .getJsonObject(0)
                 .getString("uri");
 
-        client.when().resourcesRead(uri)
-                .withAssert(resourceResponse ->
-                        Assertions.assertThat(resourceResponse.contents().get(0).asText().text()).contains("Wanaku!!"))
+        client.when()
+                .resourcesRead(uri)
+                .withAssert(resourceResponse -> Assertions.assertThat(
+                                resourceResponse.contents().get(0).asText().text())
+                        .contains("Wanaku!!"))
                 .send();
     }
 

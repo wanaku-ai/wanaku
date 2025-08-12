@@ -31,7 +31,7 @@ public class InstanceDataManager {
             return null;
         }
 
-        try (InstanceDataReader reader = new InstanceDataReader(file))  {
+        try (InstanceDataReader reader = new InstanceDataReader(file)) {
             return reader.readEntry();
         } catch (IOException e) {
             throw new RuntimeException(e);

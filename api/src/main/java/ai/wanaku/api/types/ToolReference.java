@@ -163,10 +163,14 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
             return false;
         }
         ToolReference that = (ToolReference) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
-                description, that.description) && Objects.equals(uri, that.uri) && Objects.equals(type,
-                that.type) && Objects.equals(inputSchema, that.inputSchema) && Objects.equals(configurationURI,
-                that.configurationURI) && Objects.equals(secretsURI, that.secretsURI);
+        return Objects.equals(id, that.id)
+                && Objects.equals(name, that.name)
+                && Objects.equals(description, that.description)
+                && Objects.equals(uri, that.uri)
+                && Objects.equals(type, that.type)
+                && Objects.equals(inputSchema, that.inputSchema)
+                && Objects.equals(configurationURI, that.configurationURI)
+                && Objects.equals(secretsURI, that.secretsURI);
     }
 
     @Override
@@ -176,16 +180,14 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
 
     @Override
     public String toString() {
-        return "ToolReference{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", uri='" + uri + '\'' +
-                ", type='" + type + '\'' +
-                ", inputSchema=" + inputSchema +
-                ", configurations=" + configurationURI +
-                ", secrets=" + secretsURI +
-                '}';
+        return "ToolReference{" + "id='"
+                + id + '\'' + ", name='"
+                + name + '\'' + ", description='"
+                + description + '\'' + ", uri='"
+                + uri + '\'' + ", type='"
+                + type + '\'' + ", inputSchema="
+                + inputSchema + ", configurations="
+                + configurationURI + ", secrets="
+                + secretsURI + '}';
     }
 }
-

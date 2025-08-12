@@ -1,25 +1,23 @@
 package ai.wanaku.provider.ftp.file;
 
+import static ai.wanaku.core.uri.URIHelper.buildUri;
+
+import ai.wanaku.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
 import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-import ai.wanaku.api.exceptions.InvalidResponseTypeException;
-import ai.wanaku.api.exceptions.NonConvertableResponseException;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
 import org.apache.camel.component.file.GenericFile;
-
-import static ai.wanaku.core.uri.URIHelper.buildUri;
 
 @ApplicationScoped
 public class FileResourceDelegate extends AbstractResourceDelegate {
@@ -47,7 +45,8 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
     }
 
     @Override
-    protected List<String> coerceResponse(Object response) throws InvalidResponseTypeException, NonConvertableResponseException {
+    protected List<String> coerceResponse(Object response)
+            throws InvalidResponseTypeException, NonConvertableResponseException {
         if (response instanceof GenericFile<?> genericFile) {
             String fileName = genericFile.getAbsoluteFilePath();
 
@@ -68,6 +67,7 @@ public class FileResourceDelegate extends AbstractResourceDelegate {
             throw new InvalidResponseTypeException("Unable the read the file: no response (does the file exist?)");
         }
 
-        throw new InvalidResponseTypeException("Invalid response type from the consumer: " + response.getClass().getName());
+        throw new InvalidResponseTypeException("Invalid response type from the consumer: "
+                + response.getClass().getName());
     }
 }

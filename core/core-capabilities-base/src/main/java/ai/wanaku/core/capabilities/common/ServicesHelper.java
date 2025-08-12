@@ -1,18 +1,18 @@
 package ai.wanaku.core.capabilities.common;
 
-import jakarta.enterprise.inject.Instance;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
+import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
+import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
-import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import jakarta.enterprise.inject.Instance;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.File;
 import java.net.URI;
 import java.util.Map;
@@ -22,13 +22,10 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.jboss.logging.Logger;
 
-import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
-
 public class ServicesHelper {
     private static final Logger LOG = Logger.getLogger(ServicesHelper.class);
 
     private ServicesHelper() {}
-
 
     public static int waitAndRetry(String service, Exception e, int retries, int waitSeconds) {
         retries--;
@@ -49,10 +46,12 @@ public class ServicesHelper {
     }
 
     public static Map<String, PropertySchema> buildPropertiesMap(WanakuServiceConfig config) {
-        final Set<WanakuServiceConfig.Service.Property> properties = config.service().properties();
+        final Set<WanakuServiceConfig.Service.Property> properties =
+                config.service().properties();
 
-        Map<String, PropertySchema> props = properties.stream().collect(Collectors.toMap(WanakuServiceConfig.Service.Property::name,
-                ServicesHelper::toPropertySchema));
+        Map<String, PropertySchema> props = properties.stream()
+                .collect(
+                        Collectors.toMap(WanakuServiceConfig.Service.Property::name, ServicesHelper::toPropertySchema));
 
         return props;
     }
@@ -73,7 +72,8 @@ public class ServicesHelper {
      * @param accessToken the access token used for authenticating requests to the registration service
      * @return a new RegistrationManager instance
      */
-    public static RegistrationManager newRegistrationManager(WanakuServiceConfig config, ServiceType  serviceType, String accessToken) {
+    public static RegistrationManager newRegistrationManager(
+            WanakuServiceConfig config, ServiceType serviceType, String accessToken) {
         LOG.infof("Using registration service at %s", config.registration().uri());
         DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(config.registration().uri()))
@@ -98,9 +98,10 @@ public class ServicesHelper {
     }
 
     private static ServiceTarget newServiceTarget(WanakuServiceConfig config, String service, ServiceType serviceType) {
-        String portStr = ConfigProvider.getConfig().getConfigValue("quarkus.grpc.server.port").getValue();
+        String portStr = ConfigProvider.getConfig()
+                .getConfigValue("quarkus.grpc.server.port")
+                .getValue();
         final int port = Integer.parseInt(portStr);
-
 
         String address = resolveRegistrationAddress(config.registration().announceAddress());
 
@@ -111,8 +112,7 @@ public class ServicesHelper {
 
         @Override
         public MultivaluedMap<String, String> update(
-                MultivaluedMap<String, String> incomingHeaders,
-                MultivaluedMap<String, String> outgoingHeaders) {
+                MultivaluedMap<String, String> incomingHeaders, MultivaluedMap<String, String> outgoingHeaders) {
 
             if (accessToken == null) {
                 return outgoingHeaders;

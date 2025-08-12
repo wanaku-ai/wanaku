@@ -34,7 +34,6 @@ public abstract class AbstractBean<R extends WanakuEntity> {
         return removedCount;
     }
 
-
     /**
      * Retrieves the repository instance for the managed entity type.
      *
@@ -45,5 +44,5 @@ public abstract class AbstractBean<R extends WanakuEntity> {
      * @param <I> the type of the entity identifier
      * @return the repository instance for type R with identifier type I
      */
-    protected abstract <I> WanakuRepository<R,I> getRepository();
+    protected abstract <I> WanakuRepository<R, I> getRepository();
 }

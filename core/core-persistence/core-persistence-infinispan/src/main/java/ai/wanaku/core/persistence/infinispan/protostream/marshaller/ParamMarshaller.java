@@ -1,9 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.ResourceReference;
-import org.infinispan.protostream.MessageMarshaller;
-
 import java.io.IOException;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class ParamMarshaller implements MessageMarshaller<ResourceReference.Param> {
     @Override

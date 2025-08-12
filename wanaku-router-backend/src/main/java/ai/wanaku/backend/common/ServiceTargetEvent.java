@@ -25,7 +25,7 @@ public class ServiceTargetEvent {
         this.eventType = EventType.PING;
         this.id = id;
     }
-    
+
     public static ServiceTargetEvent register(ServiceTarget serviceTarget) {
         return new ServiceTargetEvent(EventType.REGISTER, serviceTarget);
     }

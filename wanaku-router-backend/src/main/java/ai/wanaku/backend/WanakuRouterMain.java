@@ -1,10 +1,9 @@
 package ai.wanaku.backend;
 
-import jakarta.inject.Inject;
-
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
+import jakarta.inject.Inject;
 import picocli.CommandLine;
 
 /**
@@ -16,7 +15,10 @@ public class WanakuRouterMain implements Runnable, QuarkusApplication {
     @Inject
     CommandLine.IFactory factory;
 
-    @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
+    @CommandLine.Option(
+            names = {"-h", "--help"},
+            usageHelp = true,
+            description = "display a help message")
     private boolean helpRequested = false;
 
     public static void main(String[] args) {

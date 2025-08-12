@@ -1,8 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.providers;
 
-import jakarta.enterprise.inject.Produces;
-
 import ai.wanaku.api.exceptions.WanakuException;
+import jakarta.enterprise.inject.Produces;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -26,7 +25,8 @@ public class InfinispanConfigurationProvider {
         }
 
         return new ConfigurationBuilder()
-                .clustering().cacheMode(CacheMode.LOCAL)
+                .clustering()
+                .cacheMode(CacheMode.LOCAL)
                 .persistence()
                 .passivation(false)
                 .addStore(SingleFileStoreConfigurationBuilder.class)

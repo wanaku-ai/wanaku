@@ -1,5 +1,7 @@
 package ai.wanaku.cli.main.commands.tools;
 
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
@@ -12,60 +14,86 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-import java.util.List;
-
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-
-@CommandLine.Command(name = "add",description = "Add tools")
+@CommandLine.Command(name = "add", description = "Add tools")
 public class ToolsAdd extends BaseCommand {
     private static final Logger LOG = Logger.getLogger(ToolsAdd.class);
 
-    @CommandLine.Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080",
+    @CommandLine.Option(
+            names = {"--host"},
+            description = "The API host",
+            defaultValue = "http://localhost:8080",
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(names = {"-n", "--name"}, description="Name of the tool", required = true)
+    @CommandLine.Option(
+            names = {"-n", "--name"},
+            description = "Name of the tool",
+            required = true)
     private String name;
 
-    @CommandLine.Option(names = {"-N", "--namespace"}, description="The namespace associated with the tool", defaultValue = "", required = true)
+    @CommandLine.Option(
+            names = {"-N", "--namespace"},
+            description = "The namespace associated with the tool",
+            defaultValue = "",
+            required = true)
     private String namespace;
 
-    @CommandLine.Option(names = {"-d", "--description"}, description="Description of the tool", required = true)
+    @CommandLine.Option(
+            names = {"-d", "--description"},
+            description = "Description of the tool",
+            required = true)
     private String description;
 
-    @CommandLine.Option(names = {"-u", "--uri"}, description="URI of the tool", required = true)
+    @CommandLine.Option(
+            names = {"-u", "--uri"},
+            description = "URI of the tool",
+            required = true)
     private String uri;
 
-    @CommandLine.Option(names = {"--type"}, description="Type of the tool (i.e: http)", required = true)
+    @CommandLine.Option(
+            names = {"--type"},
+            description = "Type of the tool (i.e: http)",
+            required = true)
     private String type;
 
-    @CommandLine.Option(names = {"--input-schema-type"},
+    @CommandLine.Option(
+            names = {"--input-schema-type"},
             description = "Type of input schema (e.g., 'string', 'object')",
             defaultValue = "object")
     private String inputSchemaType;
 
-    @CommandLine.Option(names = {"-p", "--property"},
+    @CommandLine.Option(
+            names = {"-p", "--property"},
             description = "Property name and value (e.g., '--property name:type,description)")
     private List<String> properties;
 
-    @CommandLine.Option(names = {"-r", "--required"},
-            description = "List of required property names (e.g., '-r foo bar')", arity = "0..*")
+    @CommandLine.Option(
+            names = {"-r", "--required"},
+            description = "List of required property names (e.g., '-r foo bar')",
+            arity = "0..*")
     private List<String> required;
 
-    @CommandLine.Option(names = {"--configuration-from-file"}, description="Configure the capability provider using the given file", arity = "0..1")
+    @CommandLine.Option(
+            names = {"--configuration-from-file"},
+            description = "Configure the capability provider using the given file",
+            arity = "0..1")
     private String configurationFromFile;
 
-    @CommandLine.Option(names = {"--secrets-from-file"}, description="Add the given secrets to the capability provider using the given file", arity = "0..1")
+    @CommandLine.Option(
+            names = {"--secrets-from-file"},
+            description = "Add the given secrets to the capability provider using the given file",
+            arity = "0..1")
     private String secretsFromFile;
 
     ToolsService toolsService;
 
     @Override
-        public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
         ToolReference toolReference = new ToolReference();
         toolReference.setName(name);
@@ -101,7 +129,7 @@ public class ToolsAdd extends BaseCommand {
         FileHelper.loadConfigurationSources(configurationFromFile, toolPayload::setConfigurationData);
         FileHelper.loadConfigurationSources(secretsFromFile, toolPayload::setSecretsData);
 
-        toolsService = initService(ToolsService.class,host);
+        toolsService = initService(ToolsService.class, host);
 
         try {
             WanakuResponse<ToolReference> data = toolsService.addWithPayload(toolPayload);
@@ -109,7 +137,8 @@ public class ToolsAdd extends BaseCommand {
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                System.err.printf("There is no downstream service capable of handling requests of the given type (%s): %s%n",
+                System.err.printf(
+                        "There is no downstream service capable of handling requests of the given type (%s): %s%n",
                         type, response.getStatusInfo().getReasonPhrase());
 
                 System.exit(1);
@@ -120,5 +149,4 @@ public class ToolsAdd extends BaseCommand {
         }
         return EXIT_OK;
     }
-
 }

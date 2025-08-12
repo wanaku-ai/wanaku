@@ -1,25 +1,24 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.CapabilitiesHelper;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.CapabilitiesService;
-import org.jline.consoleui.prompt.ConsolePrompt;
-import org.jline.consoleui.prompt.PromptResultItemIF;
-import org.jline.consoleui.prompt.builder.ListPromptBuilder;
-import org.jline.consoleui.prompt.builder.PromptBuilder;
-import org.jline.terminal.Terminal;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapability;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Parameters;
+
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.CapabilitiesHelper;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.CapabilitiesService;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import org.jline.consoleui.prompt.ConsolePrompt;
+import org.jline.consoleui.prompt.PromptResultItemIF;
+import org.jline.consoleui.prompt.builder.ListPromptBuilder;
+import org.jline.consoleui.prompt.builder.PromptBuilder;
+import org.jline.terminal.Terminal;
 
 /**
  * Command implementation for displaying detailed information about specific service capabilities.
@@ -71,18 +70,14 @@ public class CapabilitiesShow extends BaseCommand {
     @Option(
             names = {"--host"},
             description = "The API host URL (default: " + DEFAULT_HOST + ")",
-            defaultValue = DEFAULT_HOST
-    )
+            defaultValue = DEFAULT_HOST)
     private String host;
 
     /**
      * The service name to show capability details for.
      * Must be exactly one service name (e.g., "http", "sqs", "file").
      */
-    @Parameters(
-            description = "The service name to show details for (e.g., http, sqs, file)",
-            arity = "1..1"
-    )
+    @Parameters(description = "The service name to show details for (e.g., http, sqs, file)", arity = "1..1")
     private String service;
 
     /**
@@ -113,12 +108,10 @@ public class CapabilitiesShow extends BaseCommand {
         capabilitiesService = initService(CapabilitiesService.class, host);
 
         // Fetch and filter capabilities by service name
-        List<CapabilitiesHelper.PrintableCapability> capabilities = fetchAndMergeCapabilities(capabilitiesService)
-                .await()
-                .atMost(API_TIMEOUT)
-                .stream()
-                .filter(capability -> capability.service().equals(service))
-                .toList();
+        List<CapabilitiesHelper.PrintableCapability> capabilities =
+                fetchAndMergeCapabilities(capabilitiesService).await().atMost(API_TIMEOUT).stream()
+                        .filter(capability -> capability.service().equals(service))
+                        .toList();
 
         // Handle different capability count scenarios using enhanced switch expression
         return switch (capabilities.size()) {
@@ -149,8 +142,8 @@ public class CapabilitiesShow extends BaseCommand {
      * @return {@link #EXIT_OK} on successful display
      * @throws Exception if an error occurs while printing capability details
      */
-    private Integer handleSingleCapability(WanakuPrinter printer,
-                                           CapabilitiesHelper.PrintableCapability capability) throws Exception {
+    private Integer handleSingleCapability(WanakuPrinter printer, CapabilitiesHelper.PrintableCapability capability)
+            throws Exception {
         printCapabilityDetails(printer, capability);
         return EXIT_OK;
     }
@@ -168,13 +161,11 @@ public class CapabilitiesShow extends BaseCommand {
      * @return {@link #EXIT_OK} on successful selection and display, {@link #EXIT_ERROR} on failure
      * @throws Exception if an error occurs during user interaction or capability display
      */
-    private Integer handleMultipleCapabilities(Terminal terminal,
-                                               WanakuPrinter printer,
-                                               List<CapabilitiesHelper.PrintableCapability> capabilities)
+    private Integer handleMultipleCapabilities(
+            Terminal terminal, WanakuPrinter printer, List<CapabilitiesHelper.PrintableCapability> capabilities)
             throws Exception {
 
-        printer.printWarningMessage("Multiple capabilities found for the " + service +
-                " service. Please choose one.");
+        printer.printWarningMessage("Multiple capabilities found for the " + service + " service. Please choose one.");
 
         ConsolePrompt.UiConfig uiConfig = new ConsolePrompt.UiConfig("=> ", "[]", "[x]", "-");
         ConsolePrompt prompt = new ConsolePrompt(terminal, uiConfig);
@@ -182,25 +173,22 @@ public class CapabilitiesShow extends BaseCommand {
         PromptBuilder builder = prompt.getPromptBuilder();
 
         // Create interactive selection prompt
-        ListPromptBuilder listPromptBuilder = builder.createListPrompt()
-                .name(SELECTION_PROMPT_NAME)
-                .message("Select a capability instance:");
+        ListPromptBuilder listPromptBuilder =
+                builder.createListPrompt().name(SELECTION_PROMPT_NAME).message("Select a capability instance:");
 
         // Add each capability as a selectable option with formatted display text
         for (int i = 0; i < capabilities.size(); i++) {
             CapabilitiesHelper.PrintableCapability capability = capabilities.get(i);
             String displayText = formatCapabilityChoice(capability);
 
-            listPromptBuilder
-                    .newItem(String.valueOf(i))
-                    .text(displayText)
-                    .add();
+            listPromptBuilder.newItem(String.valueOf(i)).text(displayText).add();
         }
         listPromptBuilder.addPrompt();
 
         try {
             Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
-            int selectedIndex = Integer.parseInt(result.get(SELECTION_PROMPT_NAME).getResult());
+            int selectedIndex =
+                    Integer.parseInt(result.get(SELECTION_PROMPT_NAME).getResult());
             printCapabilityDetails(printer, capabilities.get(selectedIndex));
             return EXIT_OK;
         } catch (Exception e) {
@@ -216,7 +204,8 @@ public class CapabilitiesShow extends BaseCommand {
      * @return formatted string containing service type, host, port, status, and last seen information
      */
     private String formatCapabilityChoice(CapabilitiesHelper.PrintableCapability capability) {
-        return String.format(CAPABILITY_CHOICE_FORMAT,
+        return String.format(
+                CAPABILITY_CHOICE_FORMAT,
                 capability.serviceType(),
                 capability.host(),
                 capability.port(),
@@ -234,8 +223,8 @@ public class CapabilitiesShow extends BaseCommand {
      * @param capability the capability whose details should be printed
      * @throws Exception if an error occurs while printing the capability details or configurations
      */
-    private void printCapabilityDetails(WanakuPrinter printer,
-                                        CapabilitiesHelper.PrintableCapability capability) throws Exception {
+    private void printCapabilityDetails(WanakuPrinter printer, CapabilitiesHelper.PrintableCapability capability)
+            throws Exception {
         printer.printInfoMessage("Capability Details:");
         printCapability(capability, printer);
 

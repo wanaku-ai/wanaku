@@ -1,8 +1,5 @@
 package ai.wanaku.backend.api.v1.capabilities;
 
-import java.util.List;
-import java.util.Map;
-
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.providers.ServiceTarget;
@@ -20,6 +17,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
@@ -81,7 +80,10 @@ public class CapabilitiesResource {
     public Multi<OutboundSseEvent> targetsEventStream(@Context Sse sse) {
         return serviceTargetEvents.map(event -> sse.newEventBuilder()
                 .name(event.getEventType().name())
-                .id(event.getId() != null ? event.getId() : event.getServiceTarget().getId())
+                .id(
+                        event.getId() != null
+                                ? event.getId()
+                                : event.getServiceTarget().getId())
                 .data(event)
                 .build());
     }

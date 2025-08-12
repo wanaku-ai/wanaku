@@ -1,20 +1,18 @@
 package ai.wanaku.tool.kafka;
 
-import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.config.provider.api.ConfigResource;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.tool.Client;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.exchange.ToolInvokeRequest;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
-
-import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 @ApplicationScoped
 public class KafkaClient implements Client {
@@ -22,6 +20,7 @@ public class KafkaClient implements Client {
 
     private final ProducerTemplate producer;
     private final ConsumerTemplate consumer;
+
     @Inject
     WanakuServiceConfig config;
 
@@ -33,7 +32,8 @@ public class KafkaClient implements Client {
     @Override
     public Object exchange(ToolInvokeRequest request, ConfigResource configResource) {
         final String requestUri = buildRequestUri(configResource);
-        ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(requestUri, request, configResource);
+        ParsedToolInvokeRequest parsedRequest =
+                ParsedToolInvokeRequest.parseRequest(requestUri, request, configResource);
 
         final String responseUri = buildResponseUri(configResource);
 

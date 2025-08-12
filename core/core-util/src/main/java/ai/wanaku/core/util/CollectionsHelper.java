@@ -76,7 +76,7 @@ public class CollectionsHelper {
      * @param map the {@link Map} to check, may be null
      * @return {@code true } if {@code map} is not null and not empty, {@code false} otherwise.
      */
-    public static boolean isNotEmpty(Map<?,?> map) {
+    public static boolean isNotEmpty(Map<?, ?> map) {
         return !isEmpty(map);
     }
 
@@ -85,8 +85,7 @@ public class CollectionsHelper {
      * @param map the {@link Map} to check, may be null
      * @return {@code true } if {@code map} is null or empty, {@code false} otherwise.
      */
-    public static boolean isEmpty(Map<?,?> map) {
+    public static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
     }
-
 }

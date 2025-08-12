@@ -1,8 +1,7 @@
 package ai.wanaku.core.runtime.camel;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import ai.wanaku.core.capabilities.common.ServiceOptions;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,13 +28,14 @@ public class EndpointOptions implements ServiceOptions {
         }
         final List<ComponentModel.EndpointOptionModel> options = componentModel.getEndpointParameterOptions();
         for (BaseOptionModel option : options) {
-            if (option.getLabel().contains("consumer") || option.getLabel().contains("common") ||
-                    option.getGroup().contains("common") || option.getLabel().contains("security")) {
+            if (option.getLabel().contains("consumer")
+                    || option.getLabel().contains("common")
+                    || option.getGroup().contains("common")
+                    || option.getLabel().contains("security")) {
                 staticOpt.put(option.getName(), option.getDescription());
             }
         }
 
         return staticOpt;
     }
-
 }

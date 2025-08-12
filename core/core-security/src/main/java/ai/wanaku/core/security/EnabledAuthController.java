@@ -1,11 +1,10 @@
 package ai.wanaku.core.security;
 
+import io.quarkus.security.spi.runtime.AuthorizationController;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.interceptor.Interceptor;
-
-import io.quarkus.security.spi.runtime.AuthorizationController;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @Alternative
@@ -19,6 +18,4 @@ public class EnabledAuthController extends AuthorizationController {
     public boolean isAuthorizationEnabled() {
         return enableAuthorization;
     }
-
-
 }

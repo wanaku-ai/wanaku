@@ -1,5 +1,15 @@
 package ai.wanaku.cli.main.support;
 
+import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
+import static ai.wanaku.cli.main.support.StringHelper.isEmpty;
+import static ai.wanaku.cli.main.support.StringHelper.isNotEmpty;
+import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
@@ -14,9 +24,6 @@ import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.util.ResolverFully;
-import org.jboss.logging.Logger;
-
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,16 +38,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
-import static ai.wanaku.cli.main.support.StringHelper.isEmpty;
-import static ai.wanaku.cli.main.support.StringHelper.isNotEmpty;
-import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
-import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import org.jboss.logging.Logger;
 
 public class ToolsGenerateHelper {
 
@@ -49,8 +47,7 @@ public class ToolsGenerateHelper {
     private static final String DEFAULT_OUTPUT_FILENAME = "out.json";
     private static final Pattern PARAMETER_PATTERN = Pattern.compile("\\{(.+?)\\}");
 
-    private ToolsGenerateHelper() {
-    }
+    private ToolsGenerateHelper() {}
 
     /**
      * Loads and resolves an OpenAPI specification from the given location.
@@ -72,7 +69,6 @@ public class ToolsGenerateHelper {
         return openAPI;
     }
 
-
     /**
      * Determines the base URL to use for API calls based on available information.
      * First checks if a server URL is explicitly provided, then falls back to servers defined in the OpenAPI spec.
@@ -83,7 +79,8 @@ public class ToolsGenerateHelper {
      * @param serverVariables Map of variable names to values for server URL templating
      * @return The resolved base URL for API calls
      */
-    public static String determineBaseUrl(OpenAPI openAPI, String serverUrl, Integer serverIndex, Map<String, String> serverVariables) {
+    public static String determineBaseUrl(
+            OpenAPI openAPI, String serverUrl, Integer serverIndex, Map<String, String> serverVariables) {
         // If serverUrl is specified, use it
         if (isNotBlank(serverUrl)) {
             return serverUrl;
@@ -92,7 +89,8 @@ public class ToolsGenerateHelper {
         // Otherwise, use servers from the OpenAPI specification
         if (CollectionsHelper.isEmpty(openAPI.getServers())) {
             LOG.error("No servers found in the OpenAPI specification");
-            System.err.println("No servers found in the OpenAPI specification or specified in the 'serverUrl' parameter");
+            System.err.println(
+                    "No servers found in the OpenAPI specification or specified in the 'serverUrl' parameter");
             System.exit(-1);
         }
 
@@ -132,9 +130,7 @@ public class ToolsGenerateHelper {
      */
     public static void writeOutput(List<ToolReference> toolReferences, String output) throws Exception {
         try (PrintWriter out = getOutputPrintWriter(output)) {
-            new ObjectMapper()
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValue(out, toolReferences);
+            new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(out, toolReferences);
         } catch (Exception e) {
             LOG.trace("Error writing toolset", e);
             throw e;
@@ -164,8 +160,7 @@ public class ToolsGenerateHelper {
                         new OperationEntry("PATCH", pathItem.getPatch()),
                         new OperationEntry("OPTIONS", pathItem.getOptions()),
                         new OperationEntry("HEAD", pathItem.getHead()),
-                        new OperationEntry("TRACE", pathItem.getTrace())
-                )
+                        new OperationEntry("TRACE", pathItem.getTrace()))
                 .filter(entry -> entry.operation() != null)
                 .map(entry -> operation2ToolReference(pathItem, entry.operation(), baseUrl, path, entry.method()))
                 .toList();
@@ -181,7 +176,8 @@ public class ToolsGenerateHelper {
      * @param method The HTTP method for this operation
      * @return A ToolReference representing the operation
      */
-    public static ToolReference operation2ToolReference(PathItem pathItem, Operation operation, String baseUrl, String path, String method) {
+    public static ToolReference operation2ToolReference(
+            PathItem pathItem, Operation operation, String baseUrl, String path, String method) {
         ToolReference toolReference = new ToolReference();
 
         // Set basic properties
@@ -193,10 +189,11 @@ public class ToolsGenerateHelper {
         String uri = determineOperationUri(operation, baseUrl);
         toolReference.setUri(toolReferenceUrl(uri, path));
 
-        List<Parameter> parameters = pathItem.getParameters() != null  ? pathItem.getParameters() : List.of();
+        List<Parameter> parameters = pathItem.getParameters() != null ? pathItem.getParameters() : List.of();
 
         if (operation.getParameters() != null) {
-            parameters = Stream.concat(operation.getParameters().stream(),parameters.stream()).toList();
+            parameters = Stream.concat(operation.getParameters().stream(), parameters.stream())
+                    .toList();
         }
 
         // Set input schema
@@ -218,18 +215,14 @@ public class ToolsGenerateHelper {
      * @return The URI to use for this operation
      */
     public static String determineOperationUri(Operation operation, String baseUrl) {
-        return Optional.ofNullable(baseUrl)
-                .orElseGet(() ->
-                        Optional.ofNullable(operation.getServers())
-                                .filter(CollectionsHelper::isNotEmpty)
-                                .flatMap(servers -> servers.stream()
-                                        .filter(server -> isNotEmpty(server.getUrl()))
-                                        .findFirst()
-                                        .map(Server::getUrl))
-                                .orElse(baseUrl)
-                );
+        return Optional.ofNullable(baseUrl).orElseGet(() -> Optional.ofNullable(operation.getServers())
+                .filter(CollectionsHelper::isNotEmpty)
+                .flatMap(servers -> servers.stream()
+                        .filter(server -> isNotEmpty(server.getUrl()))
+                        .findFirst()
+                        .map(Server::getUrl))
+                .orElse(baseUrl));
     }
-
 
     /**
      * Adds the HTTP method as a property to the input schema.
@@ -302,7 +295,7 @@ public class ToolsGenerateHelper {
         switch (parameter.getIn()) {
             case "header" -> property.setTarget(TARGET_HEADER);
             case "cookie" -> property.setTarget(TARGET_COOKIE);
-            // Other cases (query, path) don't need special handling
+                // Other cases (query, path) don't need special handling
         }
 
         return property;
@@ -316,10 +309,10 @@ public class ToolsGenerateHelper {
      * @return A URL template for the tool reference
      */
     public static String toolReferenceUrl(String baseUrl, String path) {
-        return baseUrl + PARAMETER_PATTERN.matcher(path)
-                .replaceAll(matchResult ->
-                        String.format("{parameter.value('%s')}", matchResult.group(1))
-                );
+        return baseUrl
+                + PARAMETER_PATTERN
+                        .matcher(path)
+                        .replaceAll(matchResult -> String.format("{parameter.value('%s')}", matchResult.group(1)));
     }
 
     /**
@@ -337,18 +330,16 @@ public class ToolsGenerateHelper {
             return result;
         }
 
-        Map<String, String> replacements = server.getVariables().entrySet()
-                .stream()
+        Map<String, String> replacements = server.getVariables().entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), e.getValue().getDefault()))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-
 
         if (CollectionsHelper.isNotEmpty(variables)) {
             variables = variables.entrySet().stream()
                     .filter(e -> isNotEmpty(e.getKey()) && isNotEmpty(e.getValue()))
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            //Replace
+            // Replace
             replacements.putAll(variables);
         }
 
@@ -379,7 +370,8 @@ public class ToolsGenerateHelper {
         // Handle directory case
         if (Files.isDirectory(outputPath)) {
             String newFilePath = outputPath.resolve(DEFAULT_OUTPUT_FILENAME).toString();
-            System.err.println("Warning: outputFile file " + output + " is a directory. The tools list will be written to " + newFilePath);
+            System.err.println("Warning: outputFile file " + output
+                    + " is a directory. The tools list will be written to " + newFilePath);
             outputPath = Paths.get(newFilePath);
         }
 
@@ -402,7 +394,7 @@ public class ToolsGenerateHelper {
         try {
             return new PrintWriter(new FileWriter(outputPath.toString()));
         } catch (IOException e) {
-            String errorMessage = "Could not open outputFile file "+ output + " :" + e.getMessage();
+            String errorMessage = "Could not open outputFile file " + output + " :" + e.getMessage();
             LOG.error(errorMessage);
             System.err.println(errorMessage);
             throw new Exception(errorMessage);

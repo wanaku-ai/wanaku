@@ -1,19 +1,17 @@
 package ai.wanaku.mcp;
 
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkus.test.junit.QuarkusTest;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-
-import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class WanakuHttpToolManualIT {
-
 
     @Test
     void manuTest() throws URISyntaxException {
@@ -32,26 +30,26 @@ public class WanakuHttpToolManualIT {
 
         client.connect();
 
-        executeWanakuCliCommand(List.of("wanaku",
-                "tools",
-                "add",
-                "-n",
-                "providence",
-                "--description",
-                "Retrieve reading content from yesterday",
-                "--uri",
-                "http://192.168.1.12:9096/api/curated/yesterday",
-                "--type",
-                "http"), "http://localhost:8080");
+        executeWanakuCliCommand(
+                List.of(
+                        "wanaku",
+                        "tools",
+                        "add",
+                        "-n",
+                        "providence",
+                        "--description",
+                        "Retrieve reading content from yesterday",
+                        "--uri",
+                        "http://192.168.1.12:9096/api/curated/yesterday",
+                        "--type",
+                        "http"),
+                "http://localhost:8080");
 
-        client.when().toolsCall("providence")
+        client.when()
+                .toolsCall("providence")
                 .withAssert(toolResponse -> {
-                    Assertions.assertThat(toolResponse.isError())
-                            .isFalse();
-                    Assertions.assertThat(toolResponse
-                                    .content()
-                                    .get(0))
-                            .isNotNull();
+                    Assertions.assertThat(toolResponse.isError()).isFalse();
+                    Assertions.assertThat(toolResponse.content().get(0)).isNotNull();
                 })
                 .send();
     }

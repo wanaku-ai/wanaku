@@ -1,22 +1,20 @@
 package ai.wanaku.cli.main.commands.targets.tools;
 
+import static ai.wanaku.cli.main.support.TargetsHelper.getPrintableTargets;
+
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.cli.main.commands.targets.AbstractTargets;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import picocli.CommandLine.Command;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import picocli.CommandLine.Command;
 
-import static ai.wanaku.cli.main.support.TargetsHelper.getPrintableTargets;
-
-@Command(name = "state",
-        description = "List services states")
+@Command(name = "state", description = "List services states")
 @Deprecated
 public class ToolsState extends AbstractTargets {
 
-    private static final String [] COLUMS = {"id","service", "active", "lastSeen"};
+    private static final String[] COLUMS = {"id", "service", "active", "lastSeen"};
 
     /**
      * Executes the tools state command.
@@ -37,11 +35,10 @@ public class ToolsState extends AbstractTargets {
      */
     @Override
     protected Integer doTargetCall(WanakuPrinter printer) throws Exception {
-            Map<String, List<ActivityRecord>> states = capabilitiesService.toolsState().data();
-            List<Map<String, String>> printableStates = getPrintableTargets(states);
-            printer.printTable(printableStates, COLUMS);
-            return EXIT_OK;
+        Map<String, List<ActivityRecord>> states =
+                capabilitiesService.toolsState().data();
+        List<Map<String, String>> printableStates = getPrintableTargets(states);
+        printer.printTable(printableStates, COLUMS);
+        return EXIT_OK;
     }
-
-
 }

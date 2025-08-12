@@ -1,5 +1,8 @@
 package ai.wanaku.backend.api.v1.forwards;
 
+import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -10,10 +13,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.WanakuResponse;
 import java.util.List;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -43,7 +42,6 @@ public class ForwardsResource {
 
         return Response.status(Response.Status.NOT_FOUND).build();
     }
-
 
     @Path("/list")
     @GET

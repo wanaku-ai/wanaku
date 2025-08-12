@@ -52,8 +52,10 @@ public class ActivityRecord implements WanakuEntity<String> {
             return false;
         }
         ActivityRecord that = (ActivityRecord) o;
-        return active == that.active && Objects.equals(id, that.id) && Objects.equals(lastSeen,
-                that.lastSeen) && Objects.equals(states, that.states);
+        return active == that.active
+                && Objects.equals(id, that.id)
+                && Objects.equals(lastSeen, that.lastSeen)
+                && Objects.equals(states, that.states);
     }
 
     @Override
@@ -63,11 +65,10 @@ public class ActivityRecord implements WanakuEntity<String> {
 
     @Override
     public String toString() {
-        return "ActivityRecord{" +
-                "id='" + id + '\'' +
-                ", lastSeen=" + lastSeen +
-                ", active=" + active +
-                ", states=" + states +
-                '}';
+        return "ActivityRecord{" + "id='"
+                + id + '\'' + ", lastSeen="
+                + lastSeen + ", active="
+                + active + ", states="
+                + states + '}';
     }
 }

@@ -2,7 +2,6 @@ package ai.wanaku.core.forward.discovery.client;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.Produces;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -20,7 +19,6 @@ public class ForwardDiscoveryClientProvider {
 
     @ConfigProperty(name = "wanaku.service.registration.mcp-forward-address", defaultValue = "auto")
     String forwardAddress;
-
 
     @ApplicationScoped
     @Produces

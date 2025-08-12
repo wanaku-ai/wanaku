@@ -12,8 +12,7 @@ import java.util.List;
  */
 public class ToolsetIndexHelper {
 
-    private ToolsetIndexHelper() {
-    }
+    private ToolsetIndexHelper() {}
 
     /**
      * Load an index
@@ -24,8 +23,8 @@ public class ToolsetIndexHelper {
      */
     private static <T> List<T> loadIndex(File indexFile, Class<T> clazz) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(indexFile,
-                objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
+        return objectMapper.readValue(
+                indexFile, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
     /**
@@ -37,16 +36,14 @@ public class ToolsetIndexHelper {
      */
     private static <T> List<T> loadIndex(URL indexURL, Class<T> clazz) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(indexURL,
-                objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
+        return objectMapper.readValue(
+                indexURL, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
     private static <T> void saveIndex(File indexFile, List<T> resourceReferences) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        objectMapper
-                .writerWithDefaultPrettyPrinter()
-                .writeValue(indexFile, resourceReferences);
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(indexFile, resourceReferences);
     }
 
     /**

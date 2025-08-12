@@ -17,13 +17,13 @@ public class WanakuExceptionMapper implements ExceptionMapper<WanakuException> {
     @APIResponse(
             responseCode = "500",
             description = "Wanaku error",
-            content = @Content(schema = @Schema(implementation = WanakuResponse.class))
-    )
+            content = @Content(schema = @Schema(implementation = WanakuResponse.class)))
     @Override
     public Response toResponse(WanakuException e) {
         LOG.error(e);
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new WanakuResponse<Void>(e.getMessage())).build();
+                .entity(new WanakuResponse<Void>(e.getMessage()))
+                .build();
     }
 }

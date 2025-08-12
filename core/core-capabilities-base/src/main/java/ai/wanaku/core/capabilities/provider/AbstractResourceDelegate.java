@@ -1,9 +1,6 @@
 package ai.wanaku.core.capabilities.provider;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
+import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
@@ -12,7 +9,6 @@ import ai.wanaku.core.capabilities.common.ConfigProvisionerLoader;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.core.config.provider.api.ConfigProvisioner;
 import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.config.provider.api.ProvisionedConfig;
@@ -21,11 +17,12 @@ import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-
 import ai.wanaku.core.security.SecurityHelper;
 import io.quarkus.oidc.client.Tokens;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import java.util.List;
-
 import org.jboss.logging.Logger;
 
 /**
@@ -93,29 +90,34 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
             registrationManager.lastAsSuccessful();
             return ResourceReply.newBuilder()
-                        .setIsError(false)
-                        .addAllContent(response).build();
+                    .setIsError(false)
+                    .addAllContent(response)
+                    .build();
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(stateMsg)).build();
+                    .addAllContent(List.of(stateMsg))
+                    .build();
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(stateMsg)).build();
+                    .addAllContent(List.of(stateMsg))
+                    .build();
         } catch (Exception e) {
             String stateMsg = "Unable to read or acquire resource: " + e.getMessage();
-            LOG.error(stateMsg, e);;
+            LOG.error(stateMsg, e);
+            ;
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)
-                    .addAllContent(List.of(stateMsg)).build();
+                    .addAllContent(List.of(stateMsg))
+                    .build();
         }
     }
 
@@ -124,8 +126,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         ConfigProvisioner provisioner = ConfigProvisionerLoader.newConfigProvisioner(request, config);
         final ProvisionedConfig provision = ConfigProvisionerLoader.provision(request, provisioner);
 
-        return ProvisionReply
-                .newBuilder()
+        return ProvisionReply.newBuilder()
                 .putAllProperties(ServicesHelper.buildPropertiesMap(config))
                 .setConfigurationUri(provision.configurationsUri().toString())
                 .setSecretUri(provision.secretsUri().toString())

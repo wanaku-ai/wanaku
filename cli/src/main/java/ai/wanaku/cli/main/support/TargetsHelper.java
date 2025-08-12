@@ -1,21 +1,19 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.api.types.discovery.ActivityRecord;
+import static ai.wanaku.cli.main.support.CapabilitiesHelper.formatLastSeenTimestamp;
 
+import ai.wanaku.api.types.discovery.ActivityRecord;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.formatLastSeenTimestamp;
 
 public class TargetsHelper {
 
     /**
      * Private constructor to prevent instantiation of this utility class.
      */
-    private TargetsHelper(){}
-
+    private TargetsHelper() {}
 
     /**
      * Converts a map of service states to a list of printable target representations.
@@ -40,22 +38,17 @@ public class TargetsHelper {
      * @see ActivityRecord
      * @since 1.0
      */
-    public static List<Map<String, String>> getPrintableTargets(
-            Map<String, List<ActivityRecord>> states) {
+    public static List<Map<String, String>> getPrintableTargets(Map<String, List<ActivityRecord>> states) {
 
         if (states == null) {
             throw new IllegalArgumentException("States map cannot be null");
         }
 
-        return states.entrySet()
-                .stream()
+        return states.entrySet().stream()
                 .filter(entry -> entry.getValue() != null)
-                .flatMap(entry ->
-                        entry.getValue()
-                                .stream()
-                                .filter(Objects::nonNull)
-                                .map(activityRecord -> createTargetMap(entry.getKey(), activityRecord))
-                )
+                .flatMap(entry -> entry.getValue().stream()
+                        .filter(Objects::nonNull)
+                        .map(activityRecord -> createTargetMap(entry.getKey(), activityRecord)))
                 .toList();
     }
 

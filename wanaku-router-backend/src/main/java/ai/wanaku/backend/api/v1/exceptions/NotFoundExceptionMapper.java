@@ -13,9 +13,7 @@ import org.jboss.logging.Logger;
 public abstract class NotFoundExceptionMapper<T extends Throwable> implements ExceptionMapper<T> {
     private static final Logger LOG = Logger.getLogger(NotFoundExceptionMapper.class);
 
-    @APIResponse(
-        responseCode = "404"
-    )
+    @APIResponse(responseCode = "404")
     @Override
     public Response toResponse(T exception) {
         LOG.error(exception);
@@ -26,9 +24,12 @@ public abstract class NotFoundExceptionMapper<T extends Throwable> implements Ex
 
 @Provider
 class ResourceNotFoundExceptionMapper extends NotFoundExceptionMapper<ResourceNotFoundException> {}
+
 @Provider
 class ToolNotFoundExceptionMapper extends NotFoundExceptionMapper<ToolNotFoundException> {}
+
 @Provider
 class ServiceNotFoundExceptionMapper extends NotFoundExceptionMapper<ServiceNotFoundException> {}
+
 @Provider
 class ConfigurationNotFoundExceptionMapper extends NotFoundExceptionMapper<ConfigurationNotFoundException> {}

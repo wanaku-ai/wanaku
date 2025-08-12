@@ -50,7 +50,8 @@ public class ToolNotFoundException extends WanakuException {
      * @param enableSuppression whether or not suppression is enabled or disabled
      * @param writableStackTrace  whether or not the stack trace should be writable
      */
-    public ToolNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public ToolNotFoundException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

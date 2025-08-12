@@ -42,7 +42,7 @@ public class ZipHelper {
                             in.transferTo(out);
 
                         } catch (IOException e) {
-                            LOG.errorf(e,"Error writing to file: %s", e.getMessage());
+                            LOG.errorf(e, "Error writing to file: %s", e.getMessage());
                         }
                     } catch (IOException e) {
                         LOG.errorf(e, "Error reading from entry: %s", e.getMessage());

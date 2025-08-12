@@ -12,7 +12,7 @@ public class ProcessRunner {
 
     private ProcessRunner() {}
 
-    public static String runWithOutput(String...command) {
+    public static String runWithOutput(String... command) {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             // Redirect output and error streams to a pipe
@@ -46,7 +46,7 @@ public class ProcessRunner {
         return output.toString();
     }
 
-    public static void run(File directory, String...command) {
+    public static void run(File directory, String... command) {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.command(command);

@@ -1,31 +1,30 @@
 package ai.wanaku.backend.api.v1.forwards;
 
+import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.api.types.Namespace;
-import ai.wanaku.core.persistence.api.WanakuRepository;
-import ai.wanaku.core.util.StringHelper;
+import ai.wanaku.api.types.RemoteToolReference;
+import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
+import ai.wanaku.backend.common.ResourceHelper;
+import ai.wanaku.backend.common.ToolsHelper;
+import ai.wanaku.core.mcp.common.Tool;
+import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
+import ai.wanaku.core.mcp.providers.ForwardRegistry;
+import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
+import ai.wanaku.core.persistence.api.WanakuRepository;
+import ai.wanaku.core.util.StringHelper;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.RemoteToolReference;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.core.mcp.common.Tool;
-import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
-import ai.wanaku.core.mcp.providers.ForwardRegistry;
-import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
-import ai.wanaku.backend.common.ResourceHelper;
-import ai.wanaku.backend.common.ToolsHelper;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkus.runtime.StartupEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,8 +82,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             try {
                 resourceManager.removeResource(remoteResource.getLocation());
             } catch (Exception e) {
-                LOG.infof("Failed to remove forward tool %s (server restart may be necessary)",
-                        remoteResource.getName());
+                LOG.infof(
+                        "Failed to remove forward tool %s (server restart may be necessary)", remoteResource.getName());
             }
         }
     }
@@ -96,7 +95,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             try {
                 toolManager.removeTool(remoteToolReference.getName());
             } catch (Exception e) {
-                LOG.infof("Failed to remove forward tool %s (server restart may be necessary)",
+                LOG.infof(
+                        "Failed to remove forward tool %s (server restart may be necessary)",
                         remoteToolReference.getName());
             }
         }
@@ -148,7 +148,6 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         final NameNamespacePair nameNamespacePair =
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
-
         ForwardResolver forwardResolver = forwardRegistry.newResolverForService(nameNamespacePair, forwardReference);
         List<ResourceReference> resourceReferences = forwardResolver.listResources();
         for (ResourceReference reference : resourceReferences) {
@@ -195,8 +194,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     public List<ToolReference> listAllAsTools() {
-        return listAllTools().stream().map(RemoteToolReference::asToolReference)
-                        .collect(Collectors.toList());
+        return listAllTools().stream().map(RemoteToolReference::asToolReference).collect(Collectors.toList());
     }
 
     void loadForwards(@Observes StartupEvent event) {
@@ -218,7 +216,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     @Override
-    protected  WanakuRepository<ForwardReference, String> getRepository() {
+    protected WanakuRepository<ForwardReference, String> getRepository() {
         return forwardReferenceRepository;
     }
 }

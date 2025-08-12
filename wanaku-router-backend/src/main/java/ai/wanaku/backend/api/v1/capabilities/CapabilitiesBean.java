@@ -1,14 +1,13 @@
 package ai.wanaku.backend.api.v1.capabilities;
 
+import ai.wanaku.api.types.discovery.ActivityRecord;
+import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +26,9 @@ public class CapabilitiesBean {
     @PostConstruct
     public void init() {
         serviceRegistry = serviceRegistryInstance.get();
-        LOG.infof("Using service registry implementation %s", serviceRegistry.getClass().getName());
+        LOG.infof(
+                "Using service registry implementation %s",
+                serviceRegistry.getClass().getName());
     }
 
     public List<ServiceTarget> toolList() {
@@ -54,7 +55,8 @@ public class CapabilitiesBean {
         for (ServiceTarget service : serviceTargets) {
             ActivityRecord state = serviceRegistry.getStates(service.getId());
 
-            final List<ActivityRecord> activityRecords = result.computeIfAbsent(service.getService(), k -> new ArrayList<>());
+            final List<ActivityRecord> activityRecords =
+                    result.computeIfAbsent(service.getService(), k -> new ArrayList<>());
             activityRecords.add(state);
         }
 

@@ -2,7 +2,6 @@ package ai.wanaku.core.mcp.providers;
 
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.discovery.ServiceState;
-
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
 import java.util.List;
@@ -34,7 +33,6 @@ public interface ServiceRegistry {
      */
     ServiceTarget getServiceByName(String service, ServiceType serviceType);
 
-
     /**
      * Gets the state of the given service
      *
@@ -50,7 +48,6 @@ public interface ServiceRegistry {
      * @return a set of all registered services and their configurations
      */
     List<ServiceTarget> getEntries(ServiceType serviceType);
-
 
     /**
      * Update a registered service target in the registry

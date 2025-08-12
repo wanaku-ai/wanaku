@@ -37,5 +37,4 @@ public interface ForwardResolver extends ResourceResolver {
      * @throws ServiceUnavailableException if the service responsible for listing tools is unavailable.
      */
     List<RemoteToolReference> listTools() throws ServiceUnavailableException;
-
 }

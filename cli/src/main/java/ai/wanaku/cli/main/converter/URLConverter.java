@@ -1,9 +1,8 @@
 package ai.wanaku.cli.main.converter;
 
-import picocli.CommandLine;
-
 import java.io.File;
 import java.net.URL;
+import picocli.CommandLine;
 
 public class URLConverter implements CommandLine.ITypeConverter<URL> {
 
@@ -17,7 +16,7 @@ public class URLConverter implements CommandLine.ITypeConverter<URL> {
     public URL convert(String value) throws Exception {
         try {
             return new URL(value);
-        } catch (Exception e){
+        } catch (Exception e) {
             // so it's not an URL, maybe a local path?
         }
         // try if is a local path

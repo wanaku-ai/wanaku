@@ -1,5 +1,8 @@
 package ai.wanaku.core.services.api;
 
+import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.api.types.discovery.ActivityRecord;
+import ai.wanaku.api.types.providers.ServiceTarget;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -9,10 +12,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.providers.ServiceTarget;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +32,10 @@ public interface CapabilitiesService {
     @Path("/tools/configure/{service}")
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
-    Response toolsConfigure(@PathParam("service") String service, @QueryParam("option") String option, @QueryParam("value") String value);
+    Response toolsConfigure(
+            @PathParam("service") String service,
+            @QueryParam("option") String option,
+            @QueryParam("value") String value);
 
     @Path("/resources/list")
     @GET
@@ -43,7 +45,10 @@ public interface CapabilitiesService {
     @Path("/resources/configure/{service}")
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
-    Response resourcesConfigure(@PathParam("service") String service, @QueryParam("option") String option, @QueryParam("value") String value);
+    Response resourcesConfigure(
+            @PathParam("service") String service,
+            @QueryParam("option") String option,
+            @QueryParam("value") String value);
 
     @Path("/resources/state")
     @GET

@@ -1,5 +1,7 @@
 package ai.wanaku.core.capabilities.io;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import ai.wanaku.api.types.providers.ServiceType;
 import java.io.File;
 import java.io.IOException;
@@ -8,12 +10,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class InstanceDataReaderTest {
-    private static final String TEST_ID = UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
+    private static final String TEST_ID =
+            UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
     private File instanceDataFile;
-
 
     @AfterEach
     void clean() {
@@ -26,14 +26,13 @@ public class InstanceDataReaderTest {
         String path = this.getClass().getResource(".").getPath();
         instanceDataFile = new File(path, "testReadHeader.dat");
 
-
-        try (InstanceDataWriter binaryRateWriter = new InstanceDataWriter(instanceDataFile, FileHeader.RESOURCE_PROVIDER)) {
+        try (InstanceDataWriter binaryRateWriter =
+                new InstanceDataWriter(instanceDataFile, FileHeader.RESOURCE_PROVIDER)) {
             ServiceEntry serviceEntry = new ServiceEntry(TEST_ID);
 
             binaryRateWriter.write(serviceEntry);
         }
     }
-
 
     @Test
     public void testHeader() {

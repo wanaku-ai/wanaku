@@ -1,6 +1,17 @@
 package ai.wanaku.mcp;
 
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+import static org.awaitility.Awaitility.await;
+
 import io.quarkus.test.junit.QuarkusTest;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -19,18 +30,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
-import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @Testcontainers
@@ -63,26 +62,26 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
      * It listens on the 'request-topic' and responds on 'response-topic'.
      */
     private static void startMockKafkaResponder() {
-        responderThread = new Thread(() -> {
-            try (
-                    KafkaConsumer<String, String> consumer = createConsumer(bootStrapHost);
-                    KafkaProducer<String, String> producer = createProducer(bootStrapHost)
-            ) {
-                consumer.subscribe(List.of("request-topic"));
+        responderThread = new Thread(
+                () -> {
+                    try (KafkaConsumer<String, String> consumer = createConsumer(bootStrapHost);
+                            KafkaProducer<String, String> producer = createProducer(bootStrapHost)) {
+                        consumer.subscribe(List.of("request-topic"));
 
-                while (keepRunning.get()) {
-                    var records = consumer.poll(Duration.ofMillis(500));
-                    for (var record : records) {
-                        String response = "Processed: " + record.value();
-                        Thread.sleep(2000);
-                        producer.send(new ProducerRecord<>("response-topic", response));
-                        producer.flush();
+                        while (keepRunning.get()) {
+                            var records = consumer.poll(Duration.ofMillis(500));
+                            for (var record : records) {
+                                String response = "Processed: " + record.value();
+                                Thread.sleep(2000);
+                                producer.send(new ProducerRecord<>("response-topic", response));
+                                producer.flush();
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Kafka responder error: " + e.getMessage());
                     }
-                }
-            } catch (Exception e) {
-                System.out.println("Kafka responder error: " + e.getMessage());
-            }
-        }, "mock-kafka-responder");
+                },
+                "mock-kafka-responder");
 
         responderThread.start();
     }
@@ -106,7 +105,8 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
     }
 
     private static void createCapabilityFile() throws Exception {
-        String content = """
+        String content =
+                """
                     bootstrapHost=kafka:19092
                     requestTopic=request-topic
                     replyToTopic=response-topic
@@ -116,40 +116,50 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
     }
 
     private static void createKafkaTopics() throws Exception {
-        try (AdminClient admin = AdminClient.create(
-                Map.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootStrapHost))) {
+        try (AdminClient admin =
+                AdminClient.create(Map.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootStrapHost))) {
             admin.createTopics(List.of(
-                    new NewTopic("request-topic", 1, (short) 1),
-                    new NewTopic("response-topic", 1, (short) 1)
-            )).all().get();
+                            new NewTopic("request-topic", 1, (short) 1), new NewTopic("response-topic", 1, (short) 1)))
+                    .all()
+                    .get();
         }
     }
 
     @Test
     void kafkaToolAdditionAndVerification() throws Exception {
         // Ensure tools list is initially empty
-        client.when().toolsList()
-                .withAssert(toolsPage -> Assertions.assertThat(toolsPage.tools()).isEmpty())
+        client.when()
+                .toolsList()
+                .withAssert(
+                        toolsPage -> Assertions.assertThat(toolsPage.tools()).isEmpty())
                 .send();
 
         // Add Kafka tool via CLI
         String host = String.format("http://localhost:%d", router.getMappedPort(8080));
 
-        int addToolExit = executeWanakuCliCommand(List.of(
-                "wanaku", "tools", "add",
-                "-n", "sushi-request",
-                "--description", "Orders the delivery of authentic Japanese sushi",
-                "--uri", "",
-                "--type", "kafka",
-                "--configuration-from-file=" + tempDir.resolve("capabilities.properties")
-        ), host);
+        int addToolExit = executeWanakuCliCommand(
+                List.of(
+                        "wanaku",
+                        "tools",
+                        "add",
+                        "-n",
+                        "sushi-request",
+                        "--description",
+                        "Orders the delivery of authentic Japanese sushi",
+                        "--uri",
+                        "",
+                        "--type",
+                        "kafka",
+                        "--configuration-from-file=" + tempDir.resolve("capabilities.properties")),
+                host);
 
         Assertions.assertThat(addToolExit)
                 .as("Failed to add Kafka tool via CLI")
                 .isEqualTo(0);
 
         // Verify tool is registered
-        client.when().toolsList()
+        client.when()
+                .toolsList()
                 .withAssert(toolsPage -> {
                     Assertions.assertThat(toolsPage.tools())
                             .as("Tool list should contain exactly one tool")
@@ -171,12 +181,18 @@ public class WanakuKafkaToolIT extends WanakuIntegrationBase {
 
             await().atMost(20, TimeUnit.SECONDS)
                     .pollInterval(200, TimeUnit.MILLISECONDS)
-                    .untilAsserted(() -> client.when().toolsCall("sushi-request")
+                    .untilAsserted(() -> client.when()
+                            .toolsCall("sushi-request")
                             .withArguments(Map.of("wanaku_body", orderMessage))
                             .withAssert(toolResponse -> {
                                 Assertions.assertThat(toolResponse.isError()).isFalse();
-                                Assertions.assertThat(toolResponse.content().getFirst().asText()
-                                        .text().equalsIgnoreCase("Processed: Order 1 sushi roll")).isTrue();
+                                Assertions.assertThat(toolResponse
+                                                .content()
+                                                .getFirst()
+                                                .asText()
+                                                .text()
+                                                .equalsIgnoreCase("Processed: Order 1 sushi roll"))
+                                        .isTrue();
                             })
                             .send());
         } finally {

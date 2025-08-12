@@ -1,9 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.WanakuError;
-import org.infinispan.protostream.MessageMarshaller;
-
 import java.io.IOException;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class WanakuErrorMarshaller implements MessageMarshaller<WanakuError> {
     @Override
@@ -19,7 +18,6 @@ public class WanakuErrorMarshaller implements MessageMarshaller<WanakuError> {
     @Override
     public WanakuError readFrom(ProtoStreamReader reader) throws IOException {
         return new WanakuError(reader.readString("message"));
-
     }
 
     @Override

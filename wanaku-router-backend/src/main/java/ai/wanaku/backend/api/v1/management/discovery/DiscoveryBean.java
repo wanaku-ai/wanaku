@@ -1,13 +1,12 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
+import ai.wanaku.api.types.discovery.ServiceState;
+import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -22,7 +21,9 @@ public class DiscoveryBean {
     @PostConstruct
     public void init() {
         serviceRegistry = serviceRegistryInstance.get();
-        LOG.debugf("Using service registry implementation %s", serviceRegistry.getClass().getName());
+        LOG.debugf(
+                "Using service registry implementation %s",
+                serviceRegistry.getClass().getName());
     }
 
     public ServiceTarget registerService(ServiceTarget target) {

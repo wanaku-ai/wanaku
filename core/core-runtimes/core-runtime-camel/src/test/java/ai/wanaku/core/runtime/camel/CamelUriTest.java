@@ -1,18 +1,16 @@
 package ai.wanaku.core.runtime.camel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import java.net.URISyntaxException;
 import java.util.Map;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class CamelUriTest {
-
 
     @DisplayName("Tests that building Camel URIs work and ")
     @Test

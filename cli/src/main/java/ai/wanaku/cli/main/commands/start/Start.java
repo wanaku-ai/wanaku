@@ -5,8 +5,10 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "start",
-        description = "Start Wanaku", subcommands = { StartLocal.class})
+@CommandLine.Command(
+        name = "start",
+        description = "Start Wanaku",
+        subcommands = {StartLocal.class})
 public class Start extends BaseCommand {
 
     @Override
