@@ -2,9 +2,15 @@
 
 The root abstraction for all operations within Wanaku MCP Router is the Proxy interface. All MCP
 operations within Wanaku are executed by implementations of a Proxy. For details, 
-see [`Proxy`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router/src/main/java/org/wanaku/routers/camel/proxies/Proxy.java) 
+see [`Proxy`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/proxies/Proxy.java) 
 interface. 
-Leveraging the `Proxy` interface, then we have the classes `ResourceAcquirerProxy` and `InvokerProxy` that use [gRPC](https://grpc.io/)
+
+The proxy architecture is organized into specialized interfaces:
+
+* [`ResourceProxy`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/proxies/ResourceProxy.java) - Extended interface for resource-specific operations with provisioning and evaluation capabilities
+* [`ToolsProxy`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/proxies/ToolsProxy.java) - Extended interface for tool-specific operations with provisioning capabilities
+
+Leveraging these specialized interfaces, we have the classes `ResourceAcquirerProxy` and `InvokerProxy` that use [gRPC](https://grpc.io/)
 to exchange data with the subcomponents providing access to the resources and tools exposed by the router.
  
 ## Resources 
@@ -25,6 +31,12 @@ consuming files isolated from other providers:
 ```
 +-----------------------+
 |         Proxy         |
++-----------------------+
+            |
+            |
+            v
++-----------------------+
+|    ResourceProxy      |
 +-----------------------+
             |
             |
@@ -66,6 +78,12 @@ talk to the service that provides the tool.
             |
             v
 +-----------------------+
+|      ToolsProxy       |
++-----------------------+
+            |
+            |
+            v
++-----------------------+
 |     InvokerProxy      |
 +-----------------------+
             |
@@ -76,3 +94,13 @@ talk to the service that provides the tool.
 | (Any tool provider)   |
 +-----------------------+
 ```
+
+## Configuration and Secrets Provisioning System
+
+Both resource providers and tool services support a provisioning system that handles configuration and secret management. This system allows runtime configuration of services through gRPC-based provisioning requests that establish:
+
+* Configuration URIs for service-specific settings
+* Secret URIs for sensitive credentials
+* Property schemas defining the expected configuration structure
+
+The provisioning system enables dynamic service configuration without requiring service restarts, supporting flexible deployment scenarios and secure credential management.
