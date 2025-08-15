@@ -2,12 +2,11 @@ package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.discovery.ServiceState;
-import org.infinispan.protostream.MessageMarshaller;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class ActivityRecordMarshaller implements MessageMarshaller<ActivityRecord> {
 

@@ -22,7 +22,7 @@ public class CamelQueryParameterBuilder {
 
         final Map<String, String> secrets = configResource.getSecrets(ReservedConfigs.CONFIG_QUERY_PARAMETERS_PREFIX);
         for (var entry : secrets.entrySet()) {
-            params.put(entry.getKey().substring(6), String.format("RAW(%s)",entry.getValue()));
+            params.put(entry.getKey().substring(6), String.format("RAW(%s)", entry.getValue()));
         }
 
         return params;

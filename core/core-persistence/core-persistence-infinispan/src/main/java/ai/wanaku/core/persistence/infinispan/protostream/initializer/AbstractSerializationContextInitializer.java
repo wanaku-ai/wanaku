@@ -1,15 +1,14 @@
 package ai.wanaku.core.persistence.infinispan.protostream.initializer;
 
 import ai.wanaku.api.exceptions.WanakuException;
-import org.infinispan.protostream.BaseMarshaller;
-import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.SerializationContext;
-import org.infinispan.protostream.SerializationContextInitializer;
-
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.infinispan.protostream.BaseMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.SerializationContext;
+import org.infinispan.protostream.SerializationContextInitializer;
 
 public abstract class AbstractSerializationContextInitializer implements SerializationContextInitializer {
 
@@ -17,7 +16,8 @@ public abstract class AbstractSerializationContextInitializer implements Seriali
     private final String protoFileFullPath;
     private final List<BaseMarshaller> marshallers;
 
-    protected AbstractSerializationContextInitializer(String protoFileName, String protoFileFullPath, List<BaseMarshaller> marshallers) {
+    protected AbstractSerializationContextInitializer(
+            String protoFileName, String protoFileFullPath, List<BaseMarshaller> marshallers) {
         this.protoFileName = protoFileName;
         this.protoFileFullPath = protoFileFullPath;
         this.marshallers = marshallers;

@@ -1,8 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.ForwardReference;
-import org.infinispan.protostream.MessageMarshaller;
 import java.io.IOException;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class ForwardReferenceMarshaller implements MessageMarshaller<ForwardReference> {
     @Override

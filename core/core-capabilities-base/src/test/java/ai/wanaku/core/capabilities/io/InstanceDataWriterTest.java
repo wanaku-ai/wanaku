@@ -1,5 +1,8 @@
 package ai.wanaku.core.capabilities.io;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import ai.wanaku.api.types.providers.ServiceType;
 import java.io.File;
 import java.io.IOException;
@@ -8,11 +11,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class InstanceDataWriterTest {
-    private static final String TEST_ID = UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
+    private static final String TEST_ID =
+            UUID.nameUUIDFromBytes("test-id".getBytes()).toString();
     private File instanceDataFile;
 
     void clean() {
@@ -25,14 +26,12 @@ public class InstanceDataWriterTest {
         String path = this.getClass().getResource(".").getPath();
         instanceDataFile = new File(path, "testWriteHeader.dat");
 
-
         try (InstanceDataWriter binaryRateWriter = new InstanceDataWriter(instanceDataFile, FileHeader.TOOL_INVOKER)) {
             ServiceEntry serviceEntry = new ServiceEntry(TEST_ID);
 
             binaryRateWriter.write(serviceEntry);
         }
     }
-
 
     @Test
     public void testHeader() {
@@ -53,7 +52,6 @@ public class InstanceDataWriterTest {
         }
     }
 
-
     @Test
     public void testHeaderReadWriteRecords() throws IOException {
         Assertions.assertDoesNotThrow(this::generateDataFilePredictable);
@@ -69,11 +67,8 @@ public class InstanceDataWriterTest {
             ServiceEntry entry = reader.readEntry();
             assertNotNull(entry);
             assertEquals(TEST_ID, entry.getId());
-        }
-        finally {
+        } finally {
             clean();
         }
     }
 }
-
-

@@ -1,10 +1,9 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import jakarta.inject.Inject;
-
 import ai.wanaku.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.util.List;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;

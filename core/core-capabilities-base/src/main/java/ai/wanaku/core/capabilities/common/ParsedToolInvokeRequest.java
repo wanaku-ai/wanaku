@@ -1,5 +1,6 @@
 package ai.wanaku.core.capabilities.common;
 
+import static ai.wanaku.core.config.provider.api.ReservedConfigs.CONFIG_QUERY_PARAMETERS_PREFIX;
 
 import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
@@ -10,8 +11,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static ai.wanaku.core.config.provider.api.ReservedConfigs.CONFIG_QUERY_PARAMETERS_PREFIX;
 
 /**
  * Represents a parsed tool invocation request containing the URI and its body.
@@ -24,7 +23,8 @@ public record ParsedToolInvokeRequest(String uri, String body) {
      * @param configResource the configuration resource to use for this tool invocation
      * @return the parsed URI and its body
      */
-    public static ParsedToolInvokeRequest parseRequest(ToolInvokeRequest toolInvokeRequest, ConfigResource configResource) {
+    public static ParsedToolInvokeRequest parseRequest(
+            ToolInvokeRequest toolInvokeRequest, ConfigResource configResource) {
         String uri = toolInvokeRequest.getUri();
         return parseRequest(uri, toolInvokeRequest, configResource);
     }
@@ -38,7 +38,8 @@ public record ParsedToolInvokeRequest(String uri, String body) {
      * @return the parsed URI and its body
      */
     @SuppressWarnings("unchecked")
-    public static ParsedToolInvokeRequest parseRequest(String uri, ToolInvokeRequest toolInvokeRequest, ConfigResource configResource) {
+    public static ParsedToolInvokeRequest parseRequest(
+            String uri, ToolInvokeRequest toolInvokeRequest, ConfigResource configResource) {
         Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
 
         if (argumentsMap == null) {
@@ -50,7 +51,7 @@ public record ParsedToolInvokeRequest(String uri, String body) {
 
         String parsedUri = URIParser.parse(uri, map);
 
-        //Add additional configuration
+        // Add additional configuration
         final Map<String, String> queryParameters = configResource.getConfigs(CONFIG_QUERY_PARAMETERS_PREFIX);
         parsedUri = URIHelper.addQueryParameters(parsedUri, queryParameters);
 
@@ -68,7 +69,8 @@ public record ParsedToolInvokeRequest(String uri, String body) {
      * @return the parsed URI and its body
      */
     @SuppressWarnings("unchecked")
-    public static ParsedToolInvokeRequest parseRequest(String uri, ToolInvokeRequest toolInvokeRequest, Supplier<Map<String, String>> queryParametersSupplier) {
+    public static ParsedToolInvokeRequest parseRequest(
+            String uri, ToolInvokeRequest toolInvokeRequest, Supplier<Map<String, String>> queryParametersSupplier) {
         Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
 
         if (argumentsMap == null) {
@@ -80,7 +82,7 @@ public record ParsedToolInvokeRequest(String uri, String body) {
 
         String parsedUri = URIParser.parse(uri, map);
 
-        //Add additional configuration
+        // Add additional configuration
         final Map<String, String> queryParameters = queryParametersSupplier.get();
         parsedUri = URIHelper.addQueryParameters(parsedUri, queryParameters);
 

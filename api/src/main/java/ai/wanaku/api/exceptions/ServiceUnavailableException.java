@@ -51,7 +51,8 @@ public class ServiceUnavailableException extends WanakuException {
      * @param enableSuppression whether suppression is enabled or disabled
      * @param writableStackTrace  whether the stack trace should be writable
      */
-    public ServiceUnavailableException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public ServiceUnavailableException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

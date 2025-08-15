@@ -8,8 +8,8 @@ import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-public class InfinispanForwardReferenceRepository extends AbstractInfinispanRepository<ForwardReference, String> implements
-        ForwardReferenceRepository {
+public class InfinispanForwardReferenceRepository extends AbstractInfinispanRepository<ForwardReference, String>
+        implements ForwardReferenceRepository {
 
     public InfinispanForwardReferenceRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
         super(cacheManager, configuration);
@@ -32,8 +32,10 @@ public class InfinispanForwardReferenceRepository extends AbstractInfinispanRepo
 
     @Override
     public List<ForwardReference> findByName(String name) {
-      Query<ForwardReference> query = cacheManager.getCache(entityName()).query("from ai.wanaku.api.types.ForwardReference t where t.name = :name");
-      query.setParameter("name", name);
-      return query.execute().list();
+        Query<ForwardReference> query = cacheManager
+                .getCache(entityName())
+                .query("from ai.wanaku.api.types.ForwardReference t where t.name = :name");
+        query.setParameter("name", name);
+        return query.execute().list();
     }
 }

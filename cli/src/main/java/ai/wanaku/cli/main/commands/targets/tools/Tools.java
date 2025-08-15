@@ -1,15 +1,17 @@
 package ai.wanaku.cli.main.commands.targets.tools;
 
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.usage;
+
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import org.jline.terminal.Terminal;
 
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.usage;
-
 @Deprecated
-@Command(name = "tools",
-        description = "Manage targets", subcommands = { ToolsLinkedList.class, ToolsConfigure.class, ToolsState.class })
+@Command(
+        name = "tools",
+        description = "Manage targets",
+        subcommands = {ToolsLinkedList.class, ToolsConfigure.class, ToolsState.class})
 public class Tools extends BaseCommand {
 
     @Override

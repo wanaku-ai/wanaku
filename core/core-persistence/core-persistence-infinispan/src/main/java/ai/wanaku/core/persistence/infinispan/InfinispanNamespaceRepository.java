@@ -9,12 +9,10 @@ import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-public class InfinispanNamespaceRepository extends AbstractInfinispanRepository<Namespace, String> implements
-        NamespaceRepository {
+public class InfinispanNamespaceRepository extends AbstractInfinispanRepository<Namespace, String>
+        implements NamespaceRepository {
 
-    protected InfinispanNamespaceRepository(
-            EmbeddedCacheManager cacheManager,
-            Configuration configuration) {
+    protected InfinispanNamespaceRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
         super(cacheManager, configuration);
     }
 
@@ -35,16 +33,17 @@ public class InfinispanNamespaceRepository extends AbstractInfinispanRepository<
 
     @Override
     public List<Namespace> findByName(String name) {
-        Query<Namespace> query = cacheManager.getCache(entityName()).query("from ai.wanaku.api.types.Namespace t where t.name = :name");
+        Query<Namespace> query =
+                cacheManager.getCache(entityName()).query("from ai.wanaku.api.types.Namespace t where t.name = :name");
         query.setParameter("name", name);
         return query.execute().list();
     }
 
-
     @Override
     public List<Namespace> findFirstAvailable(String name) {
         final Cache<Object, Namespace> cache = cacheManager.getCache(entityName());
-        Query<Namespace> query = cache.query("from ai.wanaku.api.types.Namespace t where t.name = :name OR (t.path != '' AND t.name is NULL)");
+        Query<Namespace> query = cache.query(
+                "from ai.wanaku.api.types.Namespace t where t.name = :name OR (t.path != '' AND t.name is NULL)");
 
         query.setParameter("name", name);
         return query.maxResults(1).execute().list();

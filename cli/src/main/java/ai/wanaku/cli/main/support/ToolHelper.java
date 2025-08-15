@@ -1,26 +1,23 @@
 package ai.wanaku.cli.main.support;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ToolsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 public class ToolHelper {
 
     /**
      * Private constructor to prevent instantiation of this utility class.
      */
-    private ToolHelper(){}
-
+    private ToolHelper() {}
 
     /**
      * Imports a list of tool references to the specified host.
@@ -34,25 +31,25 @@ public class ToolHelper {
      * @throws IllegalArgumentException if the host URI is invalid
      * @throws RuntimeException if there's an error connecting to or communicating with the service
      */
-    public static void importToolset (List<ToolReference> toolReferences, String host) throws IOException {
-        ToolsService toolsService = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(host))
-                .build(ToolsService.class);
+    public static void importToolset(List<ToolReference> toolReferences, String host) throws IOException {
+        ToolsService toolsService =
+                QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host)).build(ToolsService.class);
 
         for (var toolReference : toolReferences) {
             try {
                 WanakuResponse<ToolReference> ignored = toolsService.add(toolReference);
             } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                System.err.printf("There is no downstream service capable of handling requests of the given type (%s): %s%n",
-                        toolReference.getType(), response.getStatusInfo().getReasonPhrase());
+                Response response = ex.getResponse();
+                if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                    System.err.printf(
+                            "There is no downstream service capable of handling requests of the given type (%s): %s%n",
+                            toolReference.getType(), response.getStatusInfo().getReasonPhrase());
 
-                System.exit(1);
-            } else {
-                commonResponseErrorHandler(response);
+                    System.exit(1);
+                } else {
+                    commonResponseErrorHandler(response);
+                }
             }
-        }
         }
     }
 
@@ -69,8 +66,7 @@ public class ToolHelper {
      * @throws RuntimeException if there's an error connecting to or communicating with the service
      * @see #importToolset(List, String)
      */
-    public static void importToolset (ToolReference toolReference, String host) throws IOException {
+    public static void importToolset(ToolReference toolReference, String host) throws IOException {
         importToolset(List.of(toolReference), host);
     }
-
 }

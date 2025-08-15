@@ -11,8 +11,7 @@ public class InvalidResponseTypeException extends WanakuException {
     /**
      * Constructs a new instance of this exception without a message or cause.
      */
-    public InvalidResponseTypeException() {
-    }
+    public InvalidResponseTypeException() {}
 
     /**
      * Constructs a new instance of this exception with the specified detail message.
@@ -51,7 +50,8 @@ public class InvalidResponseTypeException extends WanakuException {
      * @param enableSuppression whether suppression is enabled
      * @param writableStackTrace whether stack traces should be writtable
      */
-    public InvalidResponseTypeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public InvalidResponseTypeException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

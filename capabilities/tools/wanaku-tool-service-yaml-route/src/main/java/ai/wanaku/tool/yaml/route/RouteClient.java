@@ -1,20 +1,19 @@
 package ai.wanaku.tool.yaml.route;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.core.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.tool.Client;
+import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.core.exchange.ToolInvokeRequest;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.Resource;
 import org.apache.camel.support.PluginHelper;
 import org.jboss.logging.Logger;
-
-import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 @ApplicationScoped
 public class RouteClient implements Client {

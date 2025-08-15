@@ -37,7 +37,6 @@ public class InstanceDataWriter implements AutoCloseable {
         byteBuffer.clear();
     }
 
-
     private void writeHeader(final FileHeader header) throws IOException {
         byteBuffer.clear();
         byteBuffer.put(header.getFormatName().getBytes());
@@ -46,7 +45,6 @@ public class InstanceDataWriter implements AutoCloseable {
 
         write();
     }
-
 
     /**
      * Writes an entry to the file
@@ -61,7 +59,6 @@ public class InstanceDataWriter implements AutoCloseable {
 
     private void checkBufferCapacity() throws IOException {
         final int remaining = byteBuffer.remaining();
-
 
         if (remaining < ServiceEntry.BYTES) {
             if (LOG.isTraceEnabled()) {

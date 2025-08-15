@@ -72,8 +72,10 @@ public class ForwardReference implements WanakuEntity<String> {
             return false;
         }
         ForwardReference that = (ForwardReference) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(
-                address, that.address) && Objects.equals(namespace, that.namespace);
+        return Objects.equals(id, that.id)
+                && Objects.equals(name, that.name)
+                && Objects.equals(address, that.address)
+                && Objects.equals(namespace, that.namespace);
     }
 
     @Override
@@ -83,11 +85,10 @@ public class ForwardReference implements WanakuEntity<String> {
 
     @Override
     public String toString() {
-        return "ForwardReference{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", address='" + address + '\'' +
-                ", namespace='" + namespace + '\'' +
-                '}';
+        return "ForwardReference{" + "id='"
+                + id + '\'' + ", name='"
+                + name + '\'' + ", address='"
+                + address + '\'' + ", namespace='"
+                + namespace + '\'' + '}';
     }
 }

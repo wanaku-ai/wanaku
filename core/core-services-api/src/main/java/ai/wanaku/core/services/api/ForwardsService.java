@@ -1,5 +1,7 @@
 package ai.wanaku.core.services.api;
 
+import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.api.types.WanakuResponse;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -8,9 +10,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.WanakuResponse;
 import java.util.List;
 
 @Path("/api/v1/forwards")

@@ -6,5 +6,6 @@ import java.util.List;
 public interface NamespaceRepository extends WanakuRepository<Namespace, String> {
 
     List<Namespace> findByName(String name);
+
     List<Namespace> findFirstAvailable(String name);
 }

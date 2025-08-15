@@ -5,10 +5,9 @@ import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
-import ai.wanaku.core.services.api.TargetsService;
+import ai.wanaku.core.services.api.CapabilitiesService;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
-
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -71,7 +70,7 @@ public final class CapabilitiesHelper {
      * capabilities in table or map format. The order matches the fields
      * in {@link PrintableCapability}.
      */
-    public static final String [] COLUMNS = {"service", "serviceType", "host", "port", "status", "lastSeen"};
+    public static final String[] COLUMNS = {"service", "serviceType", "host", "port", "status", "lastSeen"};
 
     /**
      * Private constructor to prevent instantiation of this utility class.
@@ -89,22 +88,21 @@ public final class CapabilitiesHelper {
      * along with their respective activity states, to create a unified list of
      * printable capabilities.
      *
-     * @param targetsService the service used to fetch target information
+     * @param capabilitiesService the service used to fetch target information
      * @return a {@link Uni} emitting a list of {@link PrintableCapability} objects
      * @throws NullPointerException if targetsService is null
      * @see #combineDataIntoCapabilities(List)
      */
-    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
+    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
 
         return Uni.combine()
                 .all()
                 .unis(
-                        fetchManagementTools(targetsService),
-                        fetchToolsActivityState(targetsService),
-                        fetchResourceProviders(targetsService),
-                        fetchResourcesActivityState(targetsService)
-                )
+                        fetchManagementTools(capabilitiesService),
+                        fetchToolsActivityState(capabilitiesService),
+                        fetchResourceProviders(capabilitiesService),
+                        fetchResourcesActivityState(capabilitiesService))
                 .with(CapabilitiesHelper::combineDataIntoCapabilities);
     }
 
@@ -136,10 +134,8 @@ public final class CapabilitiesHelper {
         var resourcesActivityState = (Map<String, List<ActivityRecord>>) responses.get(3);
 
         var mergedActivityStates = mergeActivityStates(toolsActivityState, resourcesActivityState);
-        var allServiceTargets = Stream.concat(
-                managementTools.stream(),
-                resourceProviders.stream()
-        ).toList();
+        var allServiceTargets = Stream.concat(managementTools.stream(), resourceProviders.stream())
+                .toList();
 
         return allServiceTargets.stream()
                 .map(target -> createPrintableCapability(target, mergedActivityStates))
@@ -164,18 +160,12 @@ public final class CapabilitiesHelper {
         Objects.requireNonNull(toolsActivityState, "Tools activity state map cannot be null");
         Objects.requireNonNull(resourcesActivityState, "Resources activity state map cannot be null");
 
-        return Stream.concat(
-                        toolsActivityState.entrySet().stream(),
-                        resourcesActivityState.entrySet().stream()
-                )
+        return Stream.concat(toolsActivityState.entrySet().stream(), resourcesActivityState.entrySet().stream())
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         CapabilitiesHelper::getActivityRecords, // Create immutable copy
-                        (existingList, newList) -> Stream.concat(
-                                existingList.stream(),
-                                newList.stream()
-                        ).toList()
-                ));
+                        (existingList, newList) -> Stream.concat(existingList.stream(), newList.stream())
+                                .toList()));
     }
 
     private static List<ActivityRecord> getActivityRecords(Map.Entry<String, List<ActivityRecord>> entry) {
@@ -200,15 +190,12 @@ public final class CapabilitiesHelper {
      * @throws NullPointerException if either parameter is null
      */
     public static ActivityRecord findActivityRecord(
-            ServiceTarget serviceTarget,
-            Map<String, List<ActivityRecord>> activityStates) {
+            ServiceTarget serviceTarget, Map<String, List<ActivityRecord>> activityStates) {
 
         Objects.requireNonNull(serviceTarget, "ServiceTarget cannot be null");
         Objects.requireNonNull(activityStates, "Activity states map cannot be null");
 
-        return Optional.ofNullable(activityStates.get(serviceTarget.getService()))
-                .orElse(List.of())
-                .stream()
+        return Optional.ofNullable(activityStates.get(serviceTarget.getService())).orElse(List.of()).stream()
                 .filter(record -> record.getId().equals(serviceTarget.getId()))
                 .findFirst()
                 .orElse(null);
@@ -226,8 +213,7 @@ public final class CapabilitiesHelper {
      * @throws NullPointerException if either parameter is null
      */
     public static PrintableCapability createPrintableCapability(
-            ServiceTarget serviceTarget,
-            Map<String, List<ActivityRecord>> activityStates) {
+            ServiceTarget serviceTarget, Map<String, List<ActivityRecord>> activityStates) {
 
         Objects.requireNonNull(serviceTarget, "ServiceTarget cannot be null");
         Objects.requireNonNull(activityStates, "Activity states map cannot be null");
@@ -244,56 +230,57 @@ public final class CapabilitiesHelper {
                 determineServiceStatus(activityRecord),
                 formatLastSeenTimestamp(activityRecord),
                 // TODO: Implement configuration processing when requirements are clarified
-                processServiceConfigurations(Map.of())
-        );
+                processServiceConfigurations(Map.of()));
     }
 
     /**
      * Fetches the list of management tools from the targets service.
      *
-     * @param targetsService the service to fetch management tools from
+     * @param capabilitiesService the service to fetch management tools from
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<List<ServiceTarget>> fetchManagementTools(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::toolsList, List.of());
+    public static Uni<List<ServiceTarget>> fetchManagementTools(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::toolsList, List.of());
     }
 
     /**
      * Fetches the activity state for management tools.
      *
-     * @param targetsService the service to fetch activity state from
+     * @param capabilitiesService the service to fetch activity state from
      * @return a {@link Uni} emitting a map of service names to activity records
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<Map<String, List<ActivityRecord>>> fetchToolsActivityState(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::toolsState, Map.of());
+    public static Uni<Map<String, List<ActivityRecord>>> fetchToolsActivityState(
+            CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::toolsState, Map.of());
     }
 
     /**
      * Fetches the list of resource providers from the targets service.
      *
-     * @param targetsService the service to fetch resource providers from
+     * @param capabilitiesService the service to fetch resource providers from
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<List<ServiceTarget>> fetchResourceProviders(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::resourcesList, List.of());
+    public static Uni<List<ServiceTarget>> fetchResourceProviders(CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::resourcesList, List.of());
     }
 
     /**
      * Fetches the activity state for resource providers.
      *
-     * @param targetsService the service to fetch activity state from
+     * @param capabilitiesService the service to fetch activity state from
      * @return a {@link Uni} emitting a map of service names to activity records
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<Map<String, List<ActivityRecord>>> fetchResourcesActivityState(TargetsService targetsService) {
-        Objects.requireNonNull(targetsService, "TargetsService cannot be null");
-        return executeApiCall(targetsService::resourcesState, Map.of());
+    public static Uni<Map<String, List<ActivityRecord>>> fetchResourcesActivityState(
+            CapabilitiesService capabilitiesService) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(capabilitiesService::resourcesState, Map.of());
     }
 
     /**
@@ -371,11 +358,8 @@ public final class CapabilitiesHelper {
             return List.of();
         }
 
-        return configurations.entrySet()
-                .stream()
-                .map(entry -> new PrintableCapabilityConfiguration(
-                        entry.getKey(),
-                        entry.getValue()))
+        return configurations.entrySet().stream()
+                .map(entry -> new PrintableCapabilityConfiguration(entry.getKey(), entry.getValue()))
                 .toList();
     }
 

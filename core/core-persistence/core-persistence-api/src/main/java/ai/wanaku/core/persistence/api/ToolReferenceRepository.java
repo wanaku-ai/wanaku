@@ -1,7 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
 import ai.wanaku.api.types.ToolReference;
-
 import java.util.List;
 
 /**

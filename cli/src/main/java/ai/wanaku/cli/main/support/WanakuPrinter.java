@@ -1,16 +1,12 @@
 package ai.wanaku.cli.main.support;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toMap;
+import static org.jline.console.Printer.TableRows.EVEN;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jline.builtins.ConfigurationPath;
-import org.jline.builtins.Styles;
-import org.jline.console.impl.DefaultPrinter;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-import org.jline.utils.AttributedString;
-import org.jline.utils.AttributedStringBuilder;
-import org.jline.utils.AttributedStyle;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,11 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-import static java.util.stream.Collectors.toMap;
-import static org.jline.console.Printer.TableRows.EVEN;
+import org.jline.builtins.ConfigurationPath;
+import org.jline.builtins.Styles;
+import org.jline.console.impl.DefaultPrinter;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
 
 /**
  * Enhanced printer utility for the Wanaku CLI application that provides formatted output capabilities.
@@ -81,13 +80,10 @@ public class WanakuPrinter extends DefaultPrinter {
      * Default options for table printing.
      * Configures structured table display with row highlighting and single-row table support.
      */
-    private static final Map<String, Object> DEFAULT_TABLE_OPTIONS = Collections.unmodifiableMap(
-            Map.of(
-                    STRUCT_ON_TABLE, TRUE,
-                    ROW_HIGHLIGHT, EVEN,
-                    ONE_ROW_TABLE, TRUE
-            )
-    );
+    private static final Map<String, Object> DEFAULT_TABLE_OPTIONS = Collections.unmodifiableMap(Map.of(
+            STRUCT_ON_TABLE, TRUE,
+            ROW_HIGHLIGHT, EVEN,
+            ONE_ROW_TABLE, TRUE));
 
     /**
      * Default options for map printing.
@@ -96,8 +92,7 @@ public class WanakuPrinter extends DefaultPrinter {
     private static final Map<String, Object> DEFAULT_MAP_OPTIONS = Map.of(
             STRUCT_ON_TABLE, FALSE,
             ROW_HIGHLIGHT, EVEN,
-            ONE_ROW_TABLE, FALSE
-    );
+            ONE_ROW_TABLE, FALSE);
 
     /** The terminal instance used for all output operations. */
     private final Terminal terminal;
@@ -128,12 +123,7 @@ public class WanakuPrinter extends DefaultPrinter {
      * @throws IOException if the terminal cannot be created due to I/O issues
      */
     public static Terminal terminalInstance() throws IOException {
-        return TerminalBuilder
-                .builder()
-                .system(true)
-                .jansi(true)
-                .color(true)
-                .build();
+        return TerminalBuilder.builder().system(true).jansi(true).color(true).build();
     }
 
     /**
@@ -156,7 +146,7 @@ public class WanakuPrinter extends DefaultPrinter {
      * @param printables the list of objects to display as a table
      */
     public <T> void printTable(List<T> printables) {
-        printTable(printables, new String[]{});
+        printTable(printables, new String[] {});
     }
 
     /**
@@ -201,16 +191,18 @@ public class WanakuPrinter extends DefaultPrinter {
      * @param toMap function to convert objects to map representation
      * @param columns the column names to include in the table output
      */
-    public <T> void printTable(Map<String, Object> options, List<T> objectsToPrint,
-                               Function<T, Map<String, Object>> toMap, String... columns) {
+    public <T> void printTable(
+            Map<String, Object> options,
+            List<T> objectsToPrint,
+            Function<T, Map<String, Object>> toMap,
+            String... columns) {
         if (objectsToPrint == null || objectsToPrint.isEmpty()) {
             return;
         }
 
         try {
-            List<Map<String, Object>> mappedObjects = objectsToPrint.stream()
-                    .map(toMap)
-                    .toList();
+            List<Map<String, Object>> mappedObjects =
+                    objectsToPrint.stream().map(toMap).toList();
 
             Map<String, Object> mergedOptions = createMergedOptions(options);
 
@@ -234,7 +226,7 @@ public class WanakuPrinter extends DefaultPrinter {
      * @param object the object to display as a map
      */
     public <T> void printAsMap(T object) {
-        printAsMap(object, new String[]{});
+        printAsMap(object, new String[] {});
     }
 
     /**
@@ -255,8 +247,7 @@ public class WanakuPrinter extends DefaultPrinter {
         Map<String, Object> map = convertToMap(object);
         if (keys != null && keys.length > 0) {
             Set<String> keySet = Set.of(keys);
-            map = map.entrySet()
-                    .stream()
+            map = map.entrySet().stream()
                     .filter(entry -> keySet.contains(entry.getKey()))
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
@@ -384,10 +375,8 @@ public class WanakuPrinter extends DefaultPrinter {
      * @param style the styling to apply to the message
      */
     private void printStyledMessage(String message, AttributedStyle style) {
-        AttributedString styledMessage = new AttributedStringBuilder()
-                .style(style)
-                .append(message)
-                .toAttributedString();
+        AttributedString styledMessage =
+                new AttributedStringBuilder().style(style).append(message).toAttributedString();
 
         terminal.writer().println(styledMessage.toAnsi());
         terminal.flush();

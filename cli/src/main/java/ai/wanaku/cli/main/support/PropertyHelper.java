@@ -1,8 +1,7 @@
 package ai.wanaku.cli.main.support;
 
 public class PropertyHelper {
-    public record PropertyDescription(String propertyName, String dataType, String description) {
-    }
+    public record PropertyDescription(String propertyName, String dataType, String description) {}
 
     public static PropertyDescription parseProperty(String propertyStr) {
         int nameDelimiter = propertyStr.indexOf(":");

@@ -12,8 +12,10 @@ public class FileHeader {
     private final ServiceType serviceType;
     private final int fileVersion;
 
-    public static final FileHeader TOOL_INVOKER = new FileHeader(FORMAT_NAME, ServiceType.TOOL_INVOKER, CURRENT_FILE_VERSION);
-    public static final FileHeader RESOURCE_PROVIDER = new FileHeader(FORMAT_NAME, ServiceType.RESOURCE_PROVIDER, CURRENT_FILE_VERSION);
+    public static final FileHeader TOOL_INVOKER =
+            new FileHeader(FORMAT_NAME, ServiceType.TOOL_INVOKER, CURRENT_FILE_VERSION);
+    public static final FileHeader RESOURCE_PROVIDER =
+            new FileHeader(FORMAT_NAME, ServiceType.RESOURCE_PROVIDER, CURRENT_FILE_VERSION);
 
     static {
         // The underlying header size is format + file version + service type;

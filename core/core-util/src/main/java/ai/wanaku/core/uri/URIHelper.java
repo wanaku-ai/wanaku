@@ -1,6 +1,5 @@
 package ai.wanaku.core.uri;
 
-
 import java.util.Map;
 
 /**

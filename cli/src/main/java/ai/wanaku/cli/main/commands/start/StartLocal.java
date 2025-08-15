@@ -6,15 +6,14 @@ import ai.wanaku.cli.main.support.WanakuCliConfig;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.runner.local.LocalRunner;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
-import org.jline.terminal.Terminal;
-import picocli.CommandLine;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
+import picocli.CommandLine;
 
 @CommandLine.Command(name = "local", description = "Create a new tool service")
 public class StartLocal extends StartBase {
@@ -51,7 +50,7 @@ public class StartLocal extends StartBase {
             String[] children = dir.list();
             for (String child : Objects.requireNonNull(children)) {
                 File childDir = new File(dir, child);
-                deleteDirectory(printer,childDir);
+                deleteDirectory(printer, childDir);
             }
         }
         if (!dir.delete()) {
@@ -65,7 +64,7 @@ public class StartLocal extends StartBase {
             if (exclusive.exclusiveNonStart.listServices) {
                 Map<String, String> components = config.components();
                 for (String component : components.keySet()) {
-                    if (!component.equals("wanaku-router")) {
+                    if (!component.startsWith("wanaku-router")) {
                         printer.printInfoMessage(" - " + component);
                     }
                 }

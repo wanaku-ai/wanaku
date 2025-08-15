@@ -1,18 +1,17 @@
 // CapabilitiesList.java
 package ai.wanaku.cli.main.commands.capabilities;
 
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.TargetsService;
-import org.jline.terminal.Terminal;
-
-import java.io.IOException;
-
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapabilities;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
+
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.CapabilitiesService;
+import java.io.IOException;
+import org.jline.terminal.Terminal;
 
 /**
  * Command-line interface for listing all service capabilities in the Wanaku system.
@@ -76,7 +75,7 @@ public class CapabilitiesList extends BaseCommand {
      * REST client for communicating with the targets service API.
      * Initialized during command execution.
      */
-    private TargetsService targetsService;
+    private CapabilitiesService capabilitiesService;
 
     /**
      * Executes the capabilities listing command.
@@ -104,11 +103,10 @@ public class CapabilitiesList extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
 
-            targetsService = initService(TargetsService.class, host);
-            var capabilities = fetchAndMergeCapabilities(targetsService)
-                    .await()
-                    .atMost(API_TIMEOUT);
-            printCapabilities(capabilities, printer);
+        capabilitiesService = initService(CapabilitiesService.class, host);
+        var capabilities =
+                fetchAndMergeCapabilities(capabilitiesService).await().atMost(API_TIMEOUT);
+        printCapabilities(capabilities, printer);
 
         return EXIT_OK;
     }

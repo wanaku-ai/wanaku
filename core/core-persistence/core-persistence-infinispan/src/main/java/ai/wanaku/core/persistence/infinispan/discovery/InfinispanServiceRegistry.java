@@ -19,7 +19,9 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     private int maxStateCount;
 
-    public InfinispanServiceRegistry(InfinispanResourceTargetRepository resourceTargetRepository, InfinispanToolTargetRepository toolRepository,
+    public InfinispanServiceRegistry(
+            InfinispanResourceTargetRepository resourceTargetRepository,
+            InfinispanToolTargetRepository toolRepository,
             InfinispanServiceRecordRepository activityRecordRepository) {
         this.resourceTargetRepository = resourceTargetRepository;
         this.toolRepository = toolRepository;
@@ -49,7 +51,6 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
         }
 
         activityRecordRepository.update(serviceTarget.getId(), a -> applyDeregistration(serviceTarget.getId(), a));
-
     }
 
     private void applyDeregistration(String id, ActivityRecord activityRecord) {
@@ -70,8 +71,9 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     }
 
     private static ServiceTarget findService(String serviceId, List<ServiceTarget> serviceTargets) {
-        final Optional<ServiceTarget> first =
-                serviceTargets.stream().filter(s -> s.getService().equals(serviceId)).findFirst();
+        final Optional<ServiceTarget> first = serviceTargets.stream()
+                .filter(s -> s.getService().equals(serviceId))
+                .findFirst();
 
         return first.orElse(null);
     }

@@ -8,12 +8,8 @@ public class NoopDiscoveryClient implements ForwardDiscoveryClient {
     }
 
     @Override
-    public void register() {
-
-    }
+    public void register() {}
 
     @Override
-    public void deregister() {
-
-    }
+    public void deregister() {}
 }

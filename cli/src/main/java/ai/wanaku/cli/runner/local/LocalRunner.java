@@ -38,8 +38,18 @@ public class LocalRunner {
         CountDownLatch countDownLatch = new CountDownLatch(activeServices);
         int grpcPort = config.initialGrpcPort();
 
-        startRouter(RuntimeConstants.WANAKU_ROUTER, executorService, countDownLatch);
-        LOG.infof("Waiting %d seconds for the Wanaku Router to start", config.routerStartWaitSecs());
+        startRouter(RuntimeConstants.WANAKU_ROUTER_BACKEND, executorService, countDownLatch);
+        LOG.infof("Waiting %d seconds for the Wanaku Router Backend to start", config.routerStartWaitSecs());
+        try {
+            Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.warn("Interrupted while waiting for Wanaku Router to start ... Aborting");
+            return;
+        }
+
+        startRouter(RuntimeConstants.WANAKU_ROUTER_WEB, executorService, countDownLatch);
+        LOG.infof("Waiting %d seconds for the Wanaku Router Web UI to start", config.routerStartWaitSecs());
         try {
             Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
         } catch (InterruptedException e) {
@@ -72,7 +82,10 @@ public class LocalRunner {
     }
 
     private static void startService(
-            Map.Entry<String, String> component, int grpcPort, ExecutorService executorService, CountDownLatch countDownLatch) {
+            Map.Entry<String, String> component,
+            int grpcPort,
+            ExecutorService executorService,
+            CountDownLatch countDownLatch) {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
 
@@ -84,7 +97,8 @@ public class LocalRunner {
     }
 
     private void deploy(List<String> services, Map<String, String> components) throws IOException {
-        downloadService(RuntimeConstants.WANAKU_ROUTER, components.get(RuntimeConstants.WANAKU_ROUTER));
+        downloadService(RuntimeConstants.WANAKU_ROUTER_WEB, components.get(RuntimeConstants.WANAKU_ROUTER_WEB));
+        downloadService(RuntimeConstants.WANAKU_ROUTER_BACKEND, components.get(RuntimeConstants.WANAKU_ROUTER_BACKEND));
 
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {
@@ -111,7 +125,7 @@ public class LocalRunner {
         if (VersionHelper.VERSION.contains("SNAPSHOT")) {
             tag = config.earlyAccessTag();
         } else {
-            tag =  String.format("v%s", VersionHelper.VERSION);
+            tag = String.format("v%s", VersionHelper.VERSION);
         }
 
         return String.format(urlFormat, tag, VersionHelper.VERSION);
@@ -124,5 +138,4 @@ public class LocalRunner {
 
         return true;
     }
-
 }

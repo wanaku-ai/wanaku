@@ -8,8 +8,7 @@ public class StringHelper {
     /**
      * Constructor of utility class should be private.
      */
-    private StringHelper() {
-    }
+    private StringHelper() {}
 
     /**
      * Asserts whether the string is <b>not</b> empty.
@@ -29,6 +28,5 @@ public class StringHelper {
      */
     public static boolean isEmpty(String value) {
         return value == null || value.isBlank();
-
     }
 }

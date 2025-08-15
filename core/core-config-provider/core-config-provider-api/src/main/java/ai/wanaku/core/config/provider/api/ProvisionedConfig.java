@@ -16,5 +16,4 @@ import java.net.URI;
  * This may be {@code null} if no secrets were provisioned or if
  * the operation did not yield a specific URI for secrets.
  */
-public record ProvisionedConfig(URI configurationsUri, URI secretsUri) {
-}
+public record ProvisionedConfig(URI configurationsUri, URI secretsUri) {}

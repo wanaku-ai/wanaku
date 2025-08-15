@@ -11,8 +11,7 @@ public class NonConvertableResponseException extends WanakuException {
     /**
      * Constructs a new instance of this exception without a message or cause.
      */
-    public NonConvertableResponseException() {
-    }
+    public NonConvertableResponseException() {}
 
     /**
      * Constructs a new instance of this exception with the specified detail message.
@@ -51,7 +50,8 @@ public class NonConvertableResponseException extends WanakuException {
      * @param enableSuppression whether or not suppression is enabled
      * @param writableStackTrace whether or not stack traces should be writtable
      */
-    public NonConvertableResponseException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public NonConvertableResponseException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

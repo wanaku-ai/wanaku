@@ -1,10 +1,11 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import jakarta.inject.Inject;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -15,8 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -24,7 +23,6 @@ public class ResourceReferenceTest {
 
     @Inject
     ResourceReferenceRepository resourceReferenceRepository;
-
 
     @BeforeAll
     public void setup() {
@@ -63,8 +61,9 @@ public class ResourceReferenceTest {
         List<ResourceReference> entities = resourceReferenceRepository.listAll();
 
         assertEquals(3, entities.size());
-        final Optional<ResourceReference> refOpt =
-                entities.stream().filter(entity -> entity.getName().equals("name1")).findFirst();
+        final Optional<ResourceReference> refOpt = entities.stream()
+                .filter(entity -> entity.getName().equals("name1"))
+                .findFirst();
 
         Assertions.assertTrue(refOpt.isPresent());
         ResourceReference name1Entity = refOpt.get();

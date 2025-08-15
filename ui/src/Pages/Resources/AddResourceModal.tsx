@@ -7,7 +7,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { Namespace, ResourceReference } from "../../models";
 import { listNamespaces } from "../../hooks/api/use-namespaces";
-import { useTargets } from "../../hooks/api/use-targets";
+import { useCapabilities } from "../../hooks/api/use-capabilities";
 import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
 
 interface AddResourceModalProps {
@@ -25,7 +25,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [resourceType, setResourceType] = useState("file");
   const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
-  const { listManagementResources } = useTargets();
+  const { listManagementResources } = useCapabilities();
   
   useEffect(() => {
     listNamespaces().then((result) => {

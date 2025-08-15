@@ -15,9 +15,7 @@ import io.quarkiverse.mcp.server.ToolResponse;
  */
 public class NoopToolsResolver implements ToolsResolver {
     @Override
-    public void provision(ToolPayload toolPayload) throws ServiceNotFoundException {
-
-    }
+    public void provision(ToolPayload toolPayload) throws ServiceNotFoundException {}
 
     @Override
     public Tool resolve(ToolReference toolReference) throws ToolNotFoundException {

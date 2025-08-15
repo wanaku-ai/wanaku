@@ -2,9 +2,8 @@ package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
-import org.infinispan.protostream.MessageMarshaller;
-
 import java.io.IOException;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget> {
 

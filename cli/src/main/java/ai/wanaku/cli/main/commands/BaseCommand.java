@@ -2,20 +2,21 @@ package ai.wanaku.cli.main.commands;
 
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import java.net.URI;
+import java.util.concurrent.Callable;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-import java.net.URI;
-import java.util.concurrent.Callable;
-
 public abstract class BaseCommand implements Callable<Integer> {
 
-    public static final int  EXIT_OK = 0;
-    public static final int  EXIT_ERROR = 1;
+    public static final int EXIT_OK = 0;
+    public static final int EXIT_ERROR = 1;
 
-    @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "Display the help and sub-commands")
+    @CommandLine.Option(
+            names = {"-h", "--help"},
+            usageHelp = true,
+            description = "Display the help and sub-commands")
     private boolean helpRequested = false;
-
 
     /**
      * Initializes and configures the REST client for communicating with the Wanaku service.
@@ -47,9 +48,9 @@ public abstract class BaseCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        try (Terminal terminal = WanakuPrinter.terminalInstance() ) {
+        try (Terminal terminal = WanakuPrinter.terminalInstance()) {
             WanakuPrinter printer = new WanakuPrinter(null, terminal);
-            return  doCall(terminal, printer);
+            return doCall(terminal, printer);
         }
     }
 

@@ -11,8 +11,7 @@ public class ServiceState {
     private boolean healthy;
     private String reason;
 
-    public ServiceState() {
-    }
+    public ServiceState() {}
 
     /**
      * Saves the current state of the service
@@ -56,8 +55,9 @@ public class ServiceState {
             return false;
         }
         ServiceState that = (ServiceState) o;
-        return healthy == that.healthy && Objects.equals(timestamp, that.timestamp) && Objects.equals(reason,
-                that.reason);
+        return healthy == that.healthy
+                && Objects.equals(timestamp, that.timestamp)
+                && Objects.equals(reason, that.reason);
     }
 
     @Override
@@ -67,13 +67,8 @@ public class ServiceState {
 
     @Override
     public String toString() {
-        return "ServiceState{" +
-                "timestamp=" + timestamp +
-                ", healthy=" + healthy +
-                ", reason='" + reason + '\'' +
-                '}';
+        return "ServiceState{" + "timestamp=" + timestamp + ", healthy=" + healthy + ", reason='" + reason + '\'' + '}';
     }
-
 
     public static ServiceState newHealthy() {
         return new ServiceState(Instant.now(), true, StandardMessages.HEALTHY);

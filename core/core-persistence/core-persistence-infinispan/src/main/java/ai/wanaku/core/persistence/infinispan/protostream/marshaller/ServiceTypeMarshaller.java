@@ -1,4 +1,5 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
+
 import ai.wanaku.api.types.providers.ServiceType;
 import org.infinispan.protostream.EnumMarshaller;
 

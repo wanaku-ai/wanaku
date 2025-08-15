@@ -1,24 +1,23 @@
 package ai.wanaku.core.capabilities.discovery;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
+import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
 
 import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ServiceState;
 import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import ai.wanaku.core.capabilities.io.InstanceDataManager;
 import ai.wanaku.core.capabilities.io.ServiceEntry;
+import ai.wanaku.core.service.discovery.client.DiscoveryService;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
-
-import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
 
 public class DefaultRegistrationManager implements RegistrationManager {
     private static final Logger LOG = Logger.getLogger(DefaultRegistrationManager.class);
@@ -31,9 +30,8 @@ public class DefaultRegistrationManager implements RegistrationManager {
     private volatile boolean registered;
     private final ReentrantLock lock = new ReentrantLock();
 
-
-    public DefaultRegistrationManager(DiscoveryService service, ServiceTarget target,
-            int retries, int waitSeconds, String dataDir) {
+    public DefaultRegistrationManager(
+            DiscoveryService service, ServiceTarget target, int retries, int waitSeconds, String dataDir) {
         this.service = Objects.requireNonNull(service);
         this.target = Objects.requireNonNull(target);
 
@@ -60,13 +58,15 @@ public class DefaultRegistrationManager implements RegistrationManager {
         do {
             try (final RestResponse<WanakuResponse<ServiceTarget>> response = service.register(target)) {
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    LOG.warnf("The service %s failed to register. Response code: %d", target.getService(),
-                            response.getStatus());
+                    LOG.warnf(
+                            "The service %s failed to register. Response code: %d",
+                            target.getService(), response.getStatus());
                 }
 
                 final WanakuResponse<ServiceTarget> entity = response.getEntity();
                 if (entity == null || entity.data() == null) {
-                    throw new WanakuException("Could not register service because the provided response is null or invalid");
+                    throw new WanakuException(
+                            "Could not register service because the provided response is null or invalid");
                 }
 
                 target = entity.data();
@@ -76,14 +76,20 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 break;
             } catch (WebApplicationException e) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.warnf(e,"Unable to register service because of: %s (%d)", e.getMessage(), e.getResponse().getStatus());
+                    LOG.warnf(
+                            e,
+                            "Unable to register service because of: %s (%d)",
+                            e.getMessage(),
+                            e.getResponse().getStatus());
                 } else {
-                    LOG.warnf("Unable to register service because of: %s (%d)", e.getMessage(), e.getResponse().getStatus());
+                    LOG.warnf(
+                            "Unable to register service because of: %s (%d)",
+                            e.getMessage(), e.getResponse().getStatus());
                 }
                 retries = waitAndRetry(target.getService(), e, retries, waitSeconds);
             } catch (Exception e) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.warnf(e,"Unable to register service because of: %s", e.getMessage());
+                    LOG.warnf(e, "Unable to register service because of: %s", e.getMessage());
                 } else {
                     LOG.warnf("Unable to register service because of: %s", e.getMessage());
                 }
@@ -101,7 +107,9 @@ public class DefaultRegistrationManager implements RegistrationManager {
         if (isRegistered()) {
             ping();
         } else {
-            LOG.debugf("Registering %s service %s with address %s", target.getServiceType().asValue(), target.getService(), target.toAddress());
+            LOG.debugf(
+                    "Registering %s service %s with address %s",
+                    target.getServiceType().asValue(), target.getService(), target.toAddress());
             try {
                 if (!lock.tryLock(1, TimeUnit.SECONDS)) {
                     LOG.warnf("Could not obtain a registration lock in 1 second. Giving up ...");
@@ -121,7 +129,9 @@ public class DefaultRegistrationManager implements RegistrationManager {
         if (target != null && target.getId() != null) {
             try (Response response = service.deregister(target)) {
                 if (response.getStatus() != 200) {
-                    LOG.warnf("De-registering service %s failed with status %d", target.getServiceType().asValue(), response.getStatus());
+                    LOG.warnf(
+                            "De-registering service %s failed with status %d",
+                            target.getServiceType().asValue(), response.getStatus());
                 }
             } catch (Exception e) {
                 logServiceFailure(e, "De-registering failed with %s");
@@ -143,7 +153,6 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 }
             } catch (Exception e) {
                 logServiceFailure(e, "Pinging router failed with %s");
-
             }
         }
     }
@@ -187,7 +196,6 @@ public class DefaultRegistrationManager implements RegistrationManager {
             logServiceFailure(e, "Updating last status failed with %s");
         }
     }
-
 
     public int getRetries() {
         return retries;

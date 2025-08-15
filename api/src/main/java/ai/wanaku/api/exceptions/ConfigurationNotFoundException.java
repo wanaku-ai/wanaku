@@ -8,8 +8,7 @@ public class ConfigurationNotFoundException extends WanakuException {
     /**
      * Constructs a new instance of this exception without a message or cause.
      */
-    public ConfigurationNotFoundException() {
-    }
+    public ConfigurationNotFoundException() {}
 
     /**
      * Constructs a new instance of this exception with the specified detail message.

@@ -11,26 +11,22 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K> implements WanakuRepository<A, K> {
+public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K> implements WanakuRepository<A, K> {
 
     protected final EmbeddedCacheManager cacheManager;
     private final ReentrantLock lock = new ReentrantLock();
 
     private static final String DEFAULT_DELETE_TEMPLATE = "DELETE FROM %s r WHERE %s";
 
-
     protected AbstractInfinispanRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
         this.cacheManager = cacheManager;
 
         configure(configuration);
     }
-
-
 
     @Override
     public A persist(A entity) {
@@ -79,7 +75,7 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
         try {
             lock.lock();
 
-            if (cache.put(id, entity) != null)  {
+            if (cache.put(id, entity) != null) {
                 return true;
             }
         } finally {
@@ -120,7 +116,10 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
     protected A newEntity() {
         try {
             return entityType().getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException
+                | IllegalAccessException
+                | InvocationTargetException
+                | NoSuchMethodException e) {
             throw new WanakuException(e);
         }
     }
@@ -178,7 +177,7 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
      * @throws IllegalArgumentException if fields map is null or empty
      * @throws WanakuException if the query execution fails
      */
-    public int removeByFields(Map<String, Object> fields){
+    public int removeByFields(Map<String, Object> fields) {
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException("Fields map cannot be null or empty");
         }
@@ -187,9 +186,7 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
                 .map(field -> "r.%s = :%s".formatted(field, field))
                 .collect(Collectors.joining(" AND "));
 
-        var queryString = DEFAULT_DELETE_TEMPLATE.formatted(
-                entityType().getCanonicalName(),
-                whereClause);
+        var queryString = DEFAULT_DELETE_TEMPLATE.formatted(entityType().getCanonicalName(), whereClause);
         var query = cache.query(queryString);
 
         // Set all parameters
@@ -197,7 +194,6 @@ public abstract class AbstractInfinispanRepository <A extends WanakuEntity<K>, K
 
         return query.executeStatement();
     }
-
 
     @Override
     public int size() {

@@ -7,8 +7,10 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "targets",
-        description = "Manage targets", subcommands = { Tools.class, Resources.class})
+@CommandLine.Command(
+        name = "targets",
+        description = "Manage targets",
+        subcommands = {Tools.class, Resources.class})
 @Deprecated
 public class Targets extends BaseCommand {
 

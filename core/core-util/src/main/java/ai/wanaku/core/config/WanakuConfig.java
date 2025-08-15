@@ -6,5 +6,4 @@ import io.smallrye.config.ConfigMapping;
  * Base configuration class
  */
 @ConfigMapping(prefix = "wanaku")
-public interface WanakuConfig {
-}
+public interface WanakuConfig {}

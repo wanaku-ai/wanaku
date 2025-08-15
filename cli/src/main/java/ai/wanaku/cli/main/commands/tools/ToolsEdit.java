@@ -1,5 +1,7 @@
 package ai.wanaku.cli.main.commands.tools;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -7,6 +9,13 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.Response;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.builtins.Nano;
 import org.jline.builtins.Options;
@@ -18,21 +27,14 @@ import org.jline.consoleui.prompt.builder.PromptBuilder;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-
 @CommandLine.Command(name = "edit", description = "edit tool")
-
 public class ToolsEdit extends BaseCommand {
 
-    @CommandLine.Option(names = {"--host"}, description = "The API host", defaultValue = "http://localhost:8080", arity = "0..1")
+    @CommandLine.Option(
+            names = {"--host"},
+            description = "The API host",
+            defaultValue = "http://localhost:8080",
+            arity = "0..1")
     protected String host;
 
     @CommandLine.Parameters(description = "Tool name that you want to edit", arity = "0..1")
@@ -46,11 +48,9 @@ public class ToolsEdit extends BaseCommand {
 
     private static final String NANO_CONFIG_FILE = "/nano/jnanorc";
 
-    private record Item(String id, String text) {
-    }
+    private record Item(String id, String text) {}
 
     ObjectMapper mapper = new ObjectMapper();
-
 
     /**
      * This method is the entry point for the `edit` command.
@@ -88,7 +88,7 @@ public class ToolsEdit extends BaseCommand {
             }
         }
 
-        //Run Nano Editor to modify the tool
+        // Run Nano Editor to modify the tool
         String toolString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(tool);
         String modifiedContent = edit(terminal, toolString, tool.getName());
         boolean wasModified = !toolString.equals(modifiedContent);
@@ -96,7 +96,7 @@ public class ToolsEdit extends BaseCommand {
             printer.printWarningMessage("No changes detected!");
             return EXIT_OK;
         }
-        //Ask for confirmation
+        // Ask for confirmation
         boolean save = confirm(terminal, tool);
 
         if (save) {
@@ -135,7 +135,6 @@ public class ToolsEdit extends BaseCommand {
         Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
         return "YES".equalsIgnoreCase(result.get("continue").getResult());
     }
-
 
     /**
      * Runs the Nano editor to allow the user to modify the selected tool definition.
@@ -180,25 +179,21 @@ public class ToolsEdit extends BaseCommand {
 
         PromptBuilder builder = prompt.getPromptBuilder();
 
-        ListPromptBuilder lpb = builder.createListPrompt().name("tool")
-                .message("Choose the tool you want to edit:").pageSize(5);
+        ListPromptBuilder lpb = builder.createListPrompt()
+                .name("tool")
+                .message("Choose the tool you want to edit:")
+                .pageSize(5);
 
         List<Item> items = formatTable(list);
 
-        items.stream().forEach(
-                x -> lpb
-                        .newItem()
-                        .text(x.text)
-                        .name(x.id)
-                        .add()
-        );
+        items.stream().forEach(x -> lpb.newItem().text(x.text).name(x.id).add());
         lpb.addPrompt();
         Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
         String toolId = result.get("tool").getResult();
-        ToolReference tool = list.stream().filter(x -> x.getId().equals(toolId)).findFirst().orElse(null);
+        ToolReference tool =
+                list.stream().filter(x -> x.getId().equals(toolId)).findFirst().orElse(null);
         return tool;
     }
-
 
     /**
      * Formats a list of ToolReference objects into a human-readable table format
@@ -212,20 +207,19 @@ public class ToolsEdit extends BaseCommand {
         final int COLUMN_PADDING = 3;
         final String TRUNCATE_INDICATOR = "...";
 
-        int maxNameLength = list.stream()
-                .mapToInt(item -> item.getName().length())
-                .max()
-                .orElse(0);
+        int maxNameLength =
+                list.stream().mapToInt(item -> item.getName().length()).max().orElse(0);
         int maxDescriptionDisplayLength = list.stream()
                 .mapToInt(item -> Math.min(item.getDescription().length(), MAX_DESCRIPTION_DISPLAY_LENGTH))
                 .max()
                 .orElse(0);
 
         final int nameColumnWidth = Math.max(maxNameLength + COLUMN_PADDING, "Name".length() + COLUMN_PADDING);
-        final int descriptionColumnWidth = Math.max(maxDescriptionDisplayLength + COLUMN_PADDING, "Description".length() + COLUMN_PADDING);
+        final int descriptionColumnWidth =
+                Math.max(maxDescriptionDisplayLength + COLUMN_PADDING, "Description".length() + COLUMN_PADDING);
 
-        return list.stream().map(
-                item -> {
+        return list.stream()
+                .map(item -> {
                     String name = item.getName();
                     String description = item.getDescription();
                     if (description.length() > MAX_DESCRIPTION_DISPLAY_LENGTH) {
@@ -237,7 +231,7 @@ public class ToolsEdit extends BaseCommand {
                     PrintStream ps = new PrintStream(baos);
                     ps.printf("%-" + nameColumnWidth + "s %-" + descriptionColumnWidth + "s%n", name, description);
                     return new Item(item.getId(), baos.toString());
-                }
-        ).toList();
+                })
+                .toList();
     }
 }

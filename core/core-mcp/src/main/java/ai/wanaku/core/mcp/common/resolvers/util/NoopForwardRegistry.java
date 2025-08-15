@@ -18,14 +18,10 @@ public class NoopForwardRegistry implements ForwardRegistry {
     }
 
     @Override
-    public void link(NameNamespacePair service, ForwardResolver resolver) {
-
-    }
+    public void link(NameNamespacePair service, ForwardResolver resolver) {}
 
     @Override
-    public void unlink(NameNamespacePair service) {
-
-    }
+    public void unlink(NameNamespacePair service) {}
 
     @Override
     public Set<NameNamespacePair> services() {

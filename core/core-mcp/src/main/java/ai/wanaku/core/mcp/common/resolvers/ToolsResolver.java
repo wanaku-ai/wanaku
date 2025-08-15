@@ -19,7 +19,6 @@ public interface ToolsResolver extends Resolver {
      */
     void provision(ToolPayload toolPayload) throws ServiceNotFoundException;
 
-
     /**
      * Given a reference, resolves what tool would call it
      * @param toolReference the reference to the tool

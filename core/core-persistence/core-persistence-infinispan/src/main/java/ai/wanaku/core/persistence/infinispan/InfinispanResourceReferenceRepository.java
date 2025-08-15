@@ -8,8 +8,8 @@ import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-public class InfinispanResourceReferenceRepository extends AbstractInfinispanRepository<ResourceReference, String> implements
-        ResourceReferenceRepository {
+public class InfinispanResourceReferenceRepository extends AbstractInfinispanRepository<ResourceReference, String>
+        implements ResourceReferenceRepository {
 
     public InfinispanResourceReferenceRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
         super(cacheManager, configuration);
@@ -32,7 +32,9 @@ public class InfinispanResourceReferenceRepository extends AbstractInfinispanRep
 
     @Override
     public List<ResourceReference> findByName(String name) {
-        Query<ResourceReference> query = cacheManager.getCache(entityName()).query("from ai.wanaku.api.types.ResourceReference t where t.name = :name");
+        Query<ResourceReference> query = cacheManager
+                .getCache(entityName())
+                .query("from ai.wanaku.api.types.ResourceReference t where t.name = :name");
         query.setParameter("name", name);
         return query.execute().list();
     }

@@ -5,8 +5,17 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "tools",
-        description = "Manage tools", subcommands = { ToolsEdit.class,ToolsAdd.class, ToolsRemove.class, ToolsList.class, ToolsImport.class, ToolsGenerate.class})
+@CommandLine.Command(
+        name = "tools",
+        description = "Manage tools",
+        subcommands = {
+            ToolsEdit.class,
+            ToolsAdd.class,
+            ToolsRemove.class,
+            ToolsList.class,
+            ToolsImport.class,
+            ToolsGenerate.class
+        })
 public class Tools extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {

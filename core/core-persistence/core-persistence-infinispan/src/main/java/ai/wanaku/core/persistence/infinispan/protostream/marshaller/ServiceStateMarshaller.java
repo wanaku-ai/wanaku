@@ -1,10 +1,9 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.discovery.ServiceState;
-import org.infinispan.protostream.MessageMarshaller;
-
 import java.io.IOException;
 import java.time.Instant;
+import org.infinispan.protostream.MessageMarshaller;
 
 public class ServiceStateMarshaller implements MessageMarshaller<ServiceState> {
 
@@ -17,7 +16,6 @@ public class ServiceStateMarshaller implements MessageMarshaller<ServiceState> {
     public Class<? extends ServiceState> getJavaClass() {
         return ServiceState.class;
     }
-
 
     @Override
     public ServiceState readFrom(ProtoStreamReader reader) throws IOException {

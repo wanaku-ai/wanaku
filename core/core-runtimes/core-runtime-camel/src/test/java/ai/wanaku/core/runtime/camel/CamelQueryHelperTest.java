@@ -1,5 +1,8 @@
 package ai.wanaku.core.runtime.camel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import java.net.URISyntaxException;
@@ -7,9 +10,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class CamelQueryHelperTest {
 
@@ -35,7 +35,8 @@ public class CamelQueryHelperTest {
     @Test
     void testUriSingle() {
         assertNotNull(parsedRequest);
-        String filtered = CamelQueryHelper.replaceRawValue("http://base?someSecretKey=RAW(someSecretValue)&addKey=addedValue", "xxx111");
+        String filtered = CamelQueryHelper.replaceRawValue(
+                "http://base?someSecretKey=RAW(someSecretValue)&addKey=addedValue", "xxx111");
         assertEquals("http://base?someSecretKey=RAW(xxx111)&addKey=addedValue", filtered);
     }
 
@@ -43,7 +44,9 @@ public class CamelQueryHelperTest {
     @Test
     void testUriMultiple() {
         assertNotNull(parsedRequest);
-        String filtered = CamelQueryHelper.replaceRawValue("http://base?someSecretKey1=RAW(someSecretValue1)&someSecretKey2=RAW(someSecretValue2)&addKey=addedValue", "aaa222");
+        String filtered = CamelQueryHelper.replaceRawValue(
+                "http://base?someSecretKey1=RAW(someSecretValue1)&someSecretKey2=RAW(someSecretValue2)&addKey=addedValue",
+                "aaa222");
         assertEquals("http://base?someSecretKey1=RAW(aaa222)&someSecretKey2=RAW(aaa222)&addKey=addedValue", filtered);
     }
 }
