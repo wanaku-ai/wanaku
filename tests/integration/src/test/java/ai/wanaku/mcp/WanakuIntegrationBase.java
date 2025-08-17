@@ -86,7 +86,7 @@ public abstract class WanakuIntegrationBase {
      */
     @BeforeEach
     public void startServices() {
-        activeWanakuDownstreamServices().stream().forEach(service -> {
+        activeWanakuDownstreamServices().forEach(service -> {
             services.add(service.getContainer());
             if (!service.getContainer().isRunning()) {
                 service.getContainer()
@@ -99,7 +99,12 @@ public abstract class WanakuIntegrationBase {
                                 BindMode.READ_ONLY)
                         .withEnv("WANAKU_SERVICE_REGISTRATION_URI", "http://wanaku-router:8080")
                         .start();
-
+                // temporary fix for service registration failures
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 service.getContainer().followOutput(logConsumer);
             }
         });

@@ -1,0 +1,13 @@
+- route:
+    id: route-3104
+    from:
+      id: from-1702
+      uri: direct
+      parameters:
+        name: start
+      steps:
+        - log:
+            id: log-2526
+            message: Hello ${body}
+        - setBody:
+            simple: Hello Camel from ${routeId}
