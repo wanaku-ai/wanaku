@@ -1023,6 +1023,38 @@ provide the returned response.
 In those cases, then you also need to write a class that leverages [Apache Camel's](http://camel.apache.org) `ProducerTemplate`
 and (or, sometimes, both) `ConsumerTemplate` to interact with the system you are implementing connectivity too.
 
+### Adding a New Mcp server Capability
+
+#### Creating a New Mcp server
+
+To create a custom mcp server, you can run:
+
+```shell
+wanaku capabilities create mcp --name s3
+```
+
+To run the newly created service enter the directory that was created (i.e.,; `cd wanaku-mcp-servers-s3`),
+then build the project using Maven (`mvn clean package`).
+
+> [!NOTE]
+> Capabilities services are created, by default, using [Apache Camel](http://camel.apache.org). However, it is possible to create
+> purely Quarkus-based capabilities using the option `--type=quarkus`.
+
+Then, launch it using:
+
+```shell
+java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 -jar target/quarkus-app/quarkus-run.jar
+```
+
+You can check if the service was registered correctly using `wanaku targets mcp list`.
+
+> [!IMPORTANT]
+> Remember to set the parameters in the `application.properties` file.
+
+#### Adjusting Your Mcp server Capability
+
+After created, then most of the work is to adjust the auto-generated `Tool` class to implement the mcp server tool.
+
 ### Implementing Services in Other Languages
 
 The communication between Wanaku MCP Router and its downstream services is capable of talking to any type of service using gRPC.
