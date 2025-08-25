@@ -17,9 +17,15 @@ public interface WanakuCliConfig extends WanakuConfig {
         String createCmd();
     }
 
+    interface Mcp {
+        String createCmd();
+    }
+
     Tool tool();
 
     Resource resource();
+
+    Mcp mcp();
 
     @WithDefault("early-access")
     String earlyAccessTag();
