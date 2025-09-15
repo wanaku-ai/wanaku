@@ -56,7 +56,7 @@
         <commons-pool2.version>2.12.1</commons-pool2.version>
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.36</swagger-core-version>
-        <jline-version>3.30.5</jline-version>
+        <jline-version>3.30.6</jline-version>
         <swagger-parser.version>2.1.32</swagger-parser.version>
         <quarkus-infinispan-embedded.version>1.0.2</quarkus-infinispan-embedded.version>
         <assertj-version>3.27.4</assertj-version>
