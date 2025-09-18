@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>wanaku-router</artifactId>
         <version>0.0.8-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
+<!--        <relativePath>../pom.xml</relativePath>-->
     </parent>
 
     <artifactId>wanaku-router-backend</artifactId>
@@ -102,6 +102,12 @@
             <groupId>io.quarkiverse.mcp</groupId>
             <artifactId>quarkus-mcp-server-sse</artifactId>
             <version>${quarkus-mcp-server.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>${quarkus-quinoa.version}</version>
         </dependency>
 
         <dependency>

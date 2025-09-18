@@ -21,6 +21,11 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
+          env:
+            - name: QUARKUS_OIDC_ENABLED
+              value: false
+            - name: WANAKU_ENABLE_AUTHORIZATION
+              value: false
           volumeMounts:
             - name: router-volume
               mountPath: /home/default/.wanaku/router

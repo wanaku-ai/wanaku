@@ -121,7 +121,7 @@ capabilities by default — continue reading the documentation below for details
 After downloading the CLI, simply run `wanaku start local` and the CLI should download, deploy and start Wanaku with the main
 server, a file provider and an HTTP provider. 
 
-If that is successful, open your browser at http://localhost:8081, and you should have access to the UI.
+If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
 
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details. 
@@ -151,7 +151,7 @@ podman compose up -d
 
 Open Wanaku Console to easily import toolsets, add new tools, resources, and test tools using simple LLMChat:
 
-Open your browser at http://localhost:8081, and you should have access to the UI if Wanaku was launched successfully.
+Open your browser at http://localhost:8080, and you should have access to the UI if Wanaku was launched successfully.
 
 ### Installing and Running Wanaku on OpenShift or Kubernetes
 
@@ -795,7 +795,9 @@ To integrate these external MCP servers into your Wanaku instance, follow these 
 ```shell
 wanaku forwards add --service="http://mcp-server1.com:8080/mcp/sse" --name mcp-server-1
 ```
+
 2.  Use the `wanaku forwards list` command to confirm that the forward has been successfully added:
+
 ```bash
 wanaku forwards list
 ``` 
@@ -1091,7 +1093,7 @@ Wanaku Console includes simple LLMChat specificly designed for quick testing of 
 > At the moment, the Embedded LLMChat supports only the tools.
 
 ```shell
-open http://localhost:8081
+open http://localhost:8080
 ```
 
 ![Embedded LLMChat for testing](https://github.com/user-attachments/assets/7a80aacd-0da8-435b-8cd9-75cc073dfc79)
@@ -1249,6 +1251,8 @@ Wanaku's security model focuses on:
 - **UI Access Control**: Restricting access to the web console
 - **Service Authentication**: Ensuring capability services can authenticate with the router
 
+MCP requests are not yet authenticated.
+
 ## Setting Up Authentication with KeyCloak
 
 ### Prerequisites
@@ -1279,7 +1283,9 @@ podman run -d -p 127.0.0.1:8543:8080 \
 
 ### Configuring Wanaku Components
 
-Each Wanaku component requires a specific set of configurations to enable authentication. The configuration varies depending on the component's role in the system.
+Each Wanaku component requires a specific set of configurations to enable authentication. 
+
+The configuration varies depending on the component's role in the system.
 
 #### Wanaku Router Backend
 
@@ -1293,24 +1299,11 @@ quarkus.oidc.enabled=true
 quarkus.oidc.auth-server-url=http://localhost:8543/realms/wanaku
 
 # Client identifier configured in KeyCloak for the backend service
-quarkus.oidc.client-id=wanaku-service
+quarkus.oidc.client-id=wanaku-mcp-router
 
 # Client secret from KeyCloak - replace with your actual secret
 quarkus.oidc.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
 
-# Enable Wanaku's internal authorization policies
-wanaku.enable.authorization=true
-```
-
-#### Wanaku Router Web UI
-
-The web interface requires additional configuration for user authentication flows and logout handling:
-
-```properties
-# Enable OIDC authentication support
-quarkus.oidc.enabled=true
-# Address of the KeyCloak authentication server - adjust to your KeyCloak instance
-quarkus.oidc.auth-server-url=http://localhost:8543/realms/wanaku
 # Enable Wanaku's internal authorization policies
 wanaku.enable.authorization=true
 ```

@@ -46,7 +46,7 @@ distributions:
     type: JAVA_BINARY
   router:
     artifacts:
-      - path: wanaku-router/target/distributions/wanaku-router-{{projectVersion}}.zip
+      - path: wanaku-router/wanaku-router-backend/target/distributions/wanaku-router-backend-{{projectVersion}}.zip
         platform: linux-x86_64
     type: JAVA_BINARY
   service-yaml-route:
