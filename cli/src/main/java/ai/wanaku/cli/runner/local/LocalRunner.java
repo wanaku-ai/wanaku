@@ -44,17 +44,7 @@ public class LocalRunner {
             Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOG.warn("Interrupted while waiting for Wanaku Router to start ... Aborting");
-            return;
-        }
-
-        startRouter(RuntimeConstants.WANAKU_ROUTER_WEB, executorService, countDownLatch);
-        LOG.infof("Waiting %d seconds for the Wanaku Router Web UI to start", config.routerStartWaitSecs());
-        try {
-            Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOG.warn("Interrupted while waiting for Wanaku Router to start ... Aborting");
+            LOG.warn("Interrupted while waiting for Wanaku Router Backend to start ... Aborting");
             return;
         }
 

@@ -23,7 +23,11 @@ spec:
               protocol: TCP
           env:
             - name: WANAKU_SERVICE_REGISTRATION_URI
-              value: http://wanaku-router:8080 # Uses the OpenShift service name
+              value: http://wanaku-router-backend:8080 # Uses the OpenShift service name
+            - name: QUARKUS_OIDC_ENABLED
+              value: false
+            - name: WANAKU_ENABLE_AUTHORIZATION
+              value: false
           volumeMounts:
             - name: services-volume
               mountPath: /home/default/.wanaku/services
