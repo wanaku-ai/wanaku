@@ -34,8 +34,18 @@ public class HttpClient implements Client {
         ParsedToolInvokeRequest parsedRequest =
                 ParsedToolInvokeRequest.parseRequest(request.getUri(), request, parameterBuilder::build);
 
-        Map<String, Object> headers = CollectionsHelper.toStringObjectMap(
-                configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX));
+        Map<String, String> configsMap = configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX);
+        Map<String, String> configsMapNoPrefix = new HashMap<String, String>();
+
+        if (!configsMap.isEmpty()) {
+            for (var entry : configsMap.entrySet()) {
+                configsMapNoPrefix.put(
+                        entry.getKey().substring(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX.length()),
+                        entry.getValue());
+            }
+        }
+        
+        Map<String, Object> headers = CollectionsHelper.toStringObjectMap(configsMapNoPrefix);
 
         if (headers.isEmpty()) {
             headers.put("CamelHttpMethod", "GET");
