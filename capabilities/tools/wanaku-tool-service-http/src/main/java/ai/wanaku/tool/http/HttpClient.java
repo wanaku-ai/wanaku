@@ -12,6 +12,7 @@ import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
+import java.util.HashMap;
 import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
 
