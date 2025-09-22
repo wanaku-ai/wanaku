@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: wanaku-dev
+
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - router-backend-env.yaml
+  - tool-service-env.yaml
+
+#namePrefix:

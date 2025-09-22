@@ -22,12 +22,10 @@ spec:
             - containerPort: 9000
               protocol: TCP
           env:
-            - name: WANAKU_SERVICE_REGISTRATION_URI
-              value: http://wanaku-router-backend:8080 # Uses the OpenShift service name
-            - name: QUARKUS_OIDC_ENABLED
-              value: "false"
+            - name: QUARKUS_OIDC_CLIENT_ENABLED
+              value: "true"
             - name: WANAKU_ENABLE_AUTHORIZATION
-              value: "false"
+              value: "true"
           volumeMounts:
             - name: services-volume
               mountPath: /home/default/.wanaku/services

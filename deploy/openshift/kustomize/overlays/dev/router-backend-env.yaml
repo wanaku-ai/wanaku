@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wanaku-router-backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: wanaku-router-backend
+          env:
+            - name: QUARKUS_OIDC_AUTH_SERVER_URL
+              value: "http://oidc-url-replace/realms/wanaku"
