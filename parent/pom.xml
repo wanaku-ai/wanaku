@@ -59,7 +59,7 @@
         <jline-version>3.30.6</jline-version>
         <swagger-parser.version>2.1.32</swagger-parser.version>
         <quarkus-infinispan-embedded.version>1.0.2</quarkus-infinispan-embedded.version>
-        <assertj-version>3.27.4</assertj-version>
+        <assertj-version>3.27.5</assertj-version>
         <juniversalchardet-version>1.0.3</juniversalchardet-version>
         <jansi-version>2.4.2</jansi-version>
         <jna.version>5.17.0</jna.version>
