@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- wanaku-router-backend.yaml
+- wanaku-tool-service-http.yaml
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/part-of: wanaku

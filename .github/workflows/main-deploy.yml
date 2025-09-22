@@ -16,11 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install CLI tools from GitHub
+    - name: Install CLI tools from Mirror
       uses: redhat-actions/openshift-tools-installer@v1
       with:
         source: "mirror"
         oc: "latest"
+    - name: Install CLI tools from GitHub
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        source: "github"
+        kustomize: "latest"
     - name: Authenticate and set context
       uses: redhat-actions/oc-login@v1
       with:
@@ -31,6 +36,6 @@ jobs:
     - name: Scale down HTTP service
       run: oc scale deployment wanaku-tool-service-http --replicas=0
     - name: Scale down the Router service
-      run: oc scale deployment wanaku-router --replicas=0
+      run: oc scale deployment wanaku-router-backend --replicas=0
     - name: Deploy on the cloud
-      run: oc apply -f deploy/openshift
+      run: kustomize build ../overlays/prod  | sed -e "s/oidc-url-replace/${{ secrets.QUARKUS_OIDC_CLIENT_AUTH_SERVER}}/g" -e "s/replace-me-with-the-client-credentials-secret/${{ secrets.QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET}}/g" | oc apply -f

@@ -111,6 +111,101 @@ executing `wanaku`.
 > It requires access to the internet, in case of using a proxy, please ensure that the proxy is configured for your system.
 > If Wanaku JBang is not working with your current configuration, please look to [Proxy configuration in JBang documentation](https://www.jbang.dev/documentation/guide/latest/configuration.html#proxy-configuration).
 
+## Keycloak Setup for Wanaku
+
+To get started, you'll need to set up Keycloak for authentication. Choose the setup that matches your environment.
+
+* **Local Development:** Use Podman for a quick, local instance.
+* **OpenShift Deployment:** Follow these steps for a cluster environment.
+
+### Option 1: Local Setup with Podman
+
+This method is ideal for development and testing on your local machine.
+
+#### Starting the Keycloak Container
+
+First, run the following command in your terminal to start a Keycloak container. This command also sets the initial admin credentials and maps a local volume for data persistence.
+
+```shell
+podman run -d \
+  -p 127.0.0.1:8543:8080 \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+  -v keycloak-dev:/opt/keycloak/data \
+  quay.io/keycloak/keycloak:26.3.1 start-dev
+```
+
+* `-p 127.0.0.1:8543:8080`: Maps port `8543` on your local machine to the container's port `8080`.
+* `-e ...`: Sets the default **admin** username and password. **Change the password for any non-trivial use case.**
+* `-v keycloak-dev...`: Creates a persistent volume named `keycloak-dev` to store Keycloak data.
+
+#### Importing the Wanaku Realm Configuration
+
+Next, you'll use Keycloak's Admin API to automatically configure the `wanaku` realm.
+
+First, get a temporary admin access token:
+
+```shell
+TOKEN=$(curl -s -d 'client_id=admin-cli' \
+  -d 'username=admin' \
+  -d 'password=admin' \
+  -d 'grant_type=password' \
+  'http://localhost:8543/realms/master/protocol/openid-connect/token' | jq -r '.access_token')
+```
+
+Now, use the token to import the realm configuration from the project's JSON file. 
+Make sure you run this from the root of the repository.
+
+```shell
+curl -X POST 'http://localhost:8543/admin/realms' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d @deploy/auth/wanaku-config.json
+```
+
+#### Regenerating the Client Secret
+
+Finally, for security, you must regenerate the client secret for the `wanaku-backend` client.
+
+1.  Navigate to the Keycloak Admin Console at `http://localhost:8543`.
+2.  Log in with your admin credentials (**admin**/**admin**).
+3.  Select the **wanaku** realm from the dropdown in the top-left corner.
+4.  Go to **Clients** in the side menu and click on **wanaku-backend**.
+5.  Go to the **Credentials** tab.
+6.  Click the **Regenerate secret** button and confirm. Copy the new secret to use in your application's configuration.
+
+![KeyCloak Service](imgs/keycloak-service.png)
+
+-----
+
+### Option 2: Deploying to OpenShift
+
+Follow these steps to deploy Keycloak in an OpenShift cluster.
+
+#### Deploying Keycloak
+
+Apply the pre-defined Kubernetes configurations located in the `deploy/auth` directory.
+This will create all the necessary resources for Keycloak to run.
+
+> [IMPORTANT]
+> Before applying, review the files and be sure to change the default admin password for security.
+
+```shell
+oc apply -f deploy/auth
+```
+
+#### Importing the Wanaku Realm
+
+Once the Keycloak pod is running, you must manually import the realm configuration.
+
+1.  Log in to the Keycloak Admin Console using the route created by the deployment.
+2.  Hover over the **master** realm name in the top-left corner and click **Add realm**.
+3.  Click **Import** and choose the `deploy/auth/wanaku-config.json` file from the project repository.
+4.  Click **Create**.
+5.  After importing, navigate to **Clients** \> **wanaku-backend** \> **Credentials** to retrieve the client secret for your application. You may also regenerate it here if needed.
+
+![Keycloak Service](imgs/keycloak-service.png)
+
 ## Installing and Running the Router
 
 There are three ways to run the router. They work similarly, with the distinction that some of them may come with more 
@@ -126,45 +221,55 @@ If that is successful, open your browser at http://localhost:8080, and you shoul
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details. 
 
-### Installing and Running Wanaku Using Docker Compose 
-
-To run Wanaku using containers, you can download [`docker-compose.yml`](https://raw.githubusercontent.com/wanaku-ai/wanaku/refs/heads/main/docker-compose.yml) 
-file and use it to launch Wanaku. The commands below walk through the steps:
-
-Download the file: 
-
-```shell
-wget https://raw.githubusercontent.com/wanaku-ai/wanaku/refs/heads/main/docker-compose.yml
-```
-
-Then, you can launch the containers using:
-
-```shell
-docker-compose up -d
-```
-
-Alternatively, using podman:
-
-```shell
-podman compose up -d
-```
-
-Open Wanaku Console to easily import toolsets, add new tools, resources, and test tools using simple LLMChat:
-
-Open your browser at http://localhost:8080, and you should have access to the UI if Wanaku was launched successfully.
-
 ### Installing and Running Wanaku on OpenShift or Kubernetes
 
-It is also possible to run Wanaku on Kubernetes distributions, such as OpenShift. This is not documented at this moment, but 
-you can look at our [deployment files](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift) for details.
+It is possible to run Wanaku on Kubernetes distributions, such as OpenShift. The deployment is configured using Kustomize for environment-specific customization.
 
-When running Wanaku locally, such as via `wanaku start local` or via the Docker compose file, the capabilities should discover
-the address of the Wanaku MCP router automatically. However, that doesn't happen automatically on the cloud. You must set the 
-address of the router using settings such as `wanaku.service.registration.uri` or the environment variable
-`WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router. 
+#### Prerequisites
+
+Before deploying Wanaku on OpenShift, ensure you have:
+- Access to an OpenShift or Kubernetes cluster
+- `oc` or `kubectl` CLI tools configured
+- Sufficient permissions to create deployments, services, and routes
+
+#### Initial Setup Steps
+
+#### Deployment
+
+You can deploy Wanaku in OpenShift or Kubernetes using Kustomize. 
+
+After having deployed Keycloak, then run the following command to get its route:
+ 
+```shell
+oc get route keycloak -o jsonpath='{.spec.host}'
+```
+
+Lastly, copy the regenerated client secret and add it to the respective overlay:
+
+**For Development Environment:**
+```shell
+oc apply -k deploy/openshift/kustomize/overlays/dev/
+```
+
+**For Production Environment:**
+```shell
+oc apply -k deploy/openshift/kustomize/overlays/prod/
+```
+
+This updates the OIDC server URLs in the environment variable patch files to point to your Keycloak instance.
+
+
+#### Environment Configuration
+
+When running Wanaku on OpenShift or Kubernetes, capabilities cannot automatically discover the router address. You must configure the router location using environment variables in your deployment:
+
+- Set `WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router
+- Configure OIDC authentication URLs to point to your Keycloak instance
+
+The Kustomize overlays handle these configurations automatically for different environments.
 
 > [IMPORTANT]
-> This can also be required when running the router and the services on different hosts.
+> This configuration is also required when running the router and the services on different hosts.
 
 ### Installing the Command Line Interface (CLI)
 
@@ -1237,7 +1342,7 @@ By using these CLI commands, you can manage resources and tools for your Wanaku 
 
 Security in Wanaku involves controlling access to the management APIs and web interface while ensuring that only authorized users can modify tools, resources, and configurations. 
 
-This section covers how to integrate Wanaku with [KeyCloak](https://keycloak.org) for authentication and authorization.
+This section covers how to integrate Wanaku with [Keycloak](https://keycloak.org) for authentication and authorization.
 
 > [!NOTE]
 > Authentication and authorization currently apply only to the management APIs and UI, not to the MCP endpoints themselves. 
@@ -1253,34 +1358,6 @@ Wanaku's security model focuses on:
 
 MCP requests are not yet authenticated.
 
-## Setting Up Authentication with KeyCloak
-
-### Prerequisites
-
-Before configuring security, ensure you have:
-- A running Wanaku instance
-- Access to deploy and configure KeyCloak
-- Administrative permissions for both systems
-
-### Installing and Configuring KeyCloak
-
-1. **Start KeyCloak**: For development environments, you can start KeyCloak using:
-
-```shell
-podman run -d -p 127.0.0.1:8543:8080 \
-  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
-  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
-  -v keycloak-dev:/opt/keycloak/data \
-  quay.io/keycloak/keycloak:26.3.1 start-dev
-```
-
-2. **Import Wanaku Configuration**: Load the pre-configured realm by importing the `wanaku-config.json` file from the `deploy/auth` directory in the Wanaku repository.
-
-3. **Complete Realm Configuration**: 
-   - Set up user accounts and roles
-   - Configure client credentials for capability services
-   - Adjust security policies as needed for your environment
-
 ### Configuring Wanaku Components
 
 Each Wanaku component requires a specific set of configurations to enable authentication. 
@@ -1292,20 +1369,14 @@ The configuration varies depending on the component's role in the system.
 The backend service handles API operations and requires full OIDC configuration with service credentials:
 
 ```properties
-# Enable OIDC authentication support
-quarkus.oidc.enabled=true
-
-# Address of the KeyCloak authentication server - adjust to your KeyCloak instance
+# Address of the Keycloak authentication server - adjust to your Keycloak instance
 quarkus.oidc.auth-server-url=http://localhost:8543/realms/wanaku
 
-# Client identifier configured in KeyCloak for the backend service
+# Client identifier configured in Keycloak for the backend service
 quarkus.oidc.client-id=wanaku-mcp-router
 
-# Client secret from KeyCloak - replace with your actual secret
+# Client secret from Keycloak - replace with your actual secret
 quarkus.oidc.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
-
-# Enable Wanaku's internal authorization policies
-wanaku.enable.authorization=true
 ```
 
 #### Capability Services
@@ -1313,37 +1384,27 @@ wanaku.enable.authorization=true
 Capability services act as OIDC clients and authenticate with the router using client credentials:
 
 ```properties
-# Enable OIDC client support for service-to-service authentication
-quarkus.oidc-client.enabled=true
-
-# Address of the KeyCloak authentication server - adjust to your KeyCloak instance
+# Address of the Keycloak authentication server - adjust to your Keycloak instance
 quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/wanaku
 
-# Client identifier configured in KeyCloak for capability services
+# Client identifier configured in Keycloak for capability services
 quarkus.oidc-client.client-id=wanaku-service
 
-# Client secret from KeyCloak for service authentication - replace with your actual secret
+# Client secret from Keycloak for service authentication - replace with your actual secret
 quarkus.oidc-client.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
 ```
 
 > [!IMPORTANT]
 > - Capability services use the OIDC *client* component (`quarkus.oidc-client.*`), which differs from the main router configuration
-> - The client secret values shown here are examples from the default configuration - replace them with your actual KeyCloak client secrets
-> - Ensure the auth-server-url points to your actual KeyCloak instance
-
-### Environment Variable Configuration
-
-All settings can also be configured using environment variables:
-- `QUARKUS_OIDC_ENABLED=true`
-- `WANAKU_ENABLE_AUTHORIZATION=true`  
-- `QUARKUS_OIDC_CLIENT_ENABLED=true` (for capability services)
+> - The client secret values shown here are examples from the default configuration - replace them with your actual Keycloak client secrets
+> - Ensure the auth-server-url points to your actual Keycloak instance
 
 ## Troubleshooting Security Configuration
 
 Common issues when setting up authentication:
 
 - **Services fail to register**: Ensure capability services have valid OIDC client credentials
-- **UI access denied**: Verify user roles and permissions in KeyCloak
+- **UI access denied**: Verify user roles and permissions in Keycloak
 - **API authentication errors**: Check OIDC configuration and network connectivity
 
 > [!CAUTION]
