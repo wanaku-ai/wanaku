@@ -1,7 +1,5 @@
 package ai.wanaku.core.config.provider.api;
 
-import static ai.wanaku.core.config.provider.api.ReservedConfigs.CONFIG_QUERY_PARAMETERS_PREFIX;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
