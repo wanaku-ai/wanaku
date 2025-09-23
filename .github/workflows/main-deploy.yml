@@ -38,4 +38,4 @@ jobs:
     - name: Scale down the Router service
       run: oc scale deployment wanaku-router-backend --replicas=0
     - name: Deploy on the cloud
-      run: kustomize build deploy/openshift/kustomize/overlays/dev  | sed -e "s/oidc-url-replace/${{ secrets.QUARKUS_OIDC_CLIENT_AUTH_SERVER}}/g" -e "s/replace-me-with-the-client-credentials-secret/${{ secrets.QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET}}/g" | oc apply -f
+      run: kustomize build deploy/openshift/kustomize/overlays/dev  | sed -e "s/oidc-url-replace/${{ secrets.QUARKUS_OIDC_CLIENT_AUTH_SERVER}}/g" -e "s/replace-me-with-the-client-credentials-secret/${{ secrets.QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET}}/g" | oc apply -f -
