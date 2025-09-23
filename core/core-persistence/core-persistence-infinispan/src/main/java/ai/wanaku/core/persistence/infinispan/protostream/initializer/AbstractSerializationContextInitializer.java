@@ -8,9 +8,8 @@ import java.util.List;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
-import org.infinispan.protostream.SerializationContextInitializer;
 
-public abstract class AbstractSerializationContextInitializer implements SerializationContextInitializer {
+public abstract class AbstractSerializationContextInitializer {
 
     private final String protoFileName;
     private final String protoFileFullPath;
@@ -23,12 +22,12 @@ public abstract class AbstractSerializationContextInitializer implements Seriali
         this.marshallers = marshallers;
     }
 
-    @Override
+    // @Override
     public String getProtoFileName() {
         return protoFileName;
     }
 
-    @Override
+    // @Override
     public String getProtoFile() throws UncheckedIOException {
         ClassLoader classLoader = AbstractSerializationContextInitializer.class.getClassLoader();
         try (InputStream inputStream = classLoader.getResourceAsStream(protoFileFullPath)) {
@@ -41,12 +40,12 @@ public abstract class AbstractSerializationContextInitializer implements Seriali
         }
     }
 
-    @Override
+    // @Override
     public void registerSchema(SerializationContext serCtx) {
         serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
     }
 
-    @Override
+    // @Override
     public void registerMarshallers(SerializationContext serCtx) {
         marshallers.stream().forEach(serCtx::registerMarshaller);
     }
