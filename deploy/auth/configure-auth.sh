@@ -8,7 +8,7 @@ echo "Creating the realm"
 curl -X POST "http://${WANAKU_KEYCLOAK_HOST}/admin/realms" \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d @auth/wanaku-config.json
+  -d @wanaku-config.json
 
 echo "Regenerating secret"
 NEW_SECRET=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" "http://${WANAKU_KEYCLOAK_HOST}/admin/realms/wanaku/clients/${wanaku_service_client_uuid}/client-secret")
