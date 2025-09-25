@@ -1,7 +1,7 @@
 #!/bin/bash
 
 branch=${1:-main}
-manifests=$(cat docker-compose.yml | grep image | grep wanaku | cut -d ' ' -f 6)
+manifests=$(cat images.txt)
 
 for manifest in $manifests ; do
   aarch64Image=$(echo "${manifest}" | sed "s/:[^:]*$/:${branch}-aarch64/")
