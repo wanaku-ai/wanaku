@@ -16,7 +16,6 @@ import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.security.SecurityHelper;
 import io.quarkus.oidc.client.Tokens;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
@@ -43,17 +42,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
     @PostConstruct
     public void init() {
-        final String accessToken = retrieveAccessToken();
-
-        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER, accessToken);
-    }
-
-    private String retrieveAccessToken() {
-        if (SecurityHelper.isAuthEnabled()) {
-            return ServicesHelper.retrieveAccessToken(tokensInstance);
-        } else {
-            return null;
-        }
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER, tokensInstance.get());
     }
 
     /**

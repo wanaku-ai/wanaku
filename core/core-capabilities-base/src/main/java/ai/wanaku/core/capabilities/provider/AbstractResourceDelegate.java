@@ -17,7 +17,6 @@ import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.security.SecurityHelper;
 import io.quarkus.oidc.client.Tokens;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
@@ -44,17 +43,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     @PostConstruct
     public void init() {
-        final String accessToken = retrieveAccessToken();
-
-        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER, accessToken);
-    }
-
-    private String retrieveAccessToken() {
-        if (SecurityHelper.isAuthEnabled()) {
-            return ServicesHelper.retrieveAccessToken(tokensInstance);
-        } else {
-            return null;
-        }
+        registrationManager = ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER, tokensInstance.get());
     }
 
     /**
