@@ -11,7 +11,7 @@ import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import jakarta.enterprise.inject.Instance;
+
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.File;
 import java.net.URI;
@@ -69,15 +69,15 @@ public class ServicesHelper {
      *
      * @param config the Wanaku service configuration
      * @param serviceType the type of service to register
-     * @param accessToken the access token used for authenticating requests to the registration service
+     * @param tokens the access token used for authenticating requests to the registration service
      * @return a new RegistrationManager instance
      */
     public static RegistrationManager newRegistrationManager(
-            WanakuServiceConfig config, ServiceType serviceType, String accessToken) {
+            WanakuServiceConfig config, ServiceType serviceType, Tokens tokens) {
         LOG.infof("Using registration service at %s", config.registration().uri());
         DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(config.registration().uri()))
-                .clientHeadersFactory(new ServiceClientHeadersFactory(accessToken))
+                .clientHeadersFactory(new ServiceClientHeadersFactory(tokens))
                 .build(DiscoveryService.class);
 
         String service = config.name();
@@ -108,7 +108,7 @@ public class ServicesHelper {
         return ServiceTarget.newEmptyTarget(service, address, port, serviceType);
     }
 
-    private record ServiceClientHeadersFactory(String accessToken) implements ClientHeadersFactory {
+    private record ServiceClientHeadersFactory(Tokens accessToken) implements ClientHeadersFactory {
 
         @Override
         public MultivaluedMap<String, String> update(
@@ -118,22 +118,15 @@ public class ServicesHelper {
                 return outgoingHeaders;
             }
 
-            outgoingHeaders.add("Authorization", String.format("Bearer %s", accessToken));
+            if (accessToken.isAccessTokenExpired()) {
+                LOG.warn("The access token is expired. It's likely the current call will fail if the token cannot be refreshed");
+            }
+
+            outgoingHeaders.add("Authorization", String.format("Bearer %s", accessToken.getAccessToken()));
+
+
             return outgoingHeaders;
         }
     }
 
-    public static String retrieveAccessToken(Instance<Tokens> tokensInstance) {
-        try {
-            Tokens tokens = tokensInstance.get();
-            if (tokens == null) {
-                LOG.warn("Tokens instance is null while authorization is enabled.");
-                return null;
-            }
-            return tokens.getAccessToken();
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to obtain Tokens instance for access token retrieval: {}", e.getMessage());
-            return null;
-        }
-    }
 }
