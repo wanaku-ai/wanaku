@@ -117,6 +117,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public void ping(String id) {
+        LOG.tracef("Service %s has pinged", id);
         if (!activityRecordRepository.update(id, InfinispanServiceRegistry::updatePing)) {
             LOG.warn("No records were updated during ping");
         }
