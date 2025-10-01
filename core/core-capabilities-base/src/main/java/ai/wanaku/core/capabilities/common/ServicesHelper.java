@@ -11,7 +11,6 @@ import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.File;
 import java.net.URI;
@@ -119,14 +118,13 @@ public class ServicesHelper {
             }
 
             if (accessToken.isAccessTokenExpired()) {
-                LOG.warn("The access token is expired. It's likely the current call will fail if the token cannot be refreshed");
+                LOG.warn(
+                        "The access token is expired. It's likely the current call will fail if the token cannot be refreshed");
             }
 
             outgoingHeaders.add("Authorization", String.format("Bearer %s", accessToken.getAccessToken()));
 
-
             return outgoingHeaders;
         }
     }
-
 }
