@@ -22,7 +22,7 @@ public class ServiceUnavailableExceptionMapper implements ExceptionMapper<Servic
     public Response toResponse(ServiceUnavailableException e) {
         LOG.error(e);
 
-        return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+        return Response.status(Response.Status.BAD_GATEWAY)
                 .entity(new WanakuResponse<Void>(e.getMessage()))
                 .build();
     }
