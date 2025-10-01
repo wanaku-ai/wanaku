@@ -104,9 +104,10 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 .build();
 
         try {
-            ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
+            ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub =
+                    ResourceAcquirerGrpc.newBlockingStub(channel);
             return blockingStub.resourceAcquire(request);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             throw ServiceUnavailableException.forAddress(service.toAddress());
         }
     }
