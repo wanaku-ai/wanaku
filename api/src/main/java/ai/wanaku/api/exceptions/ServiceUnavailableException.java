@@ -57,12 +57,23 @@ public class ServiceUnavailableException extends WanakuException {
     }
 
     /**
-     * Returns a new instance of this exception with a formatted string indicating that a service could not be found.
+     * Returns a new instance of this exception with a formatted string indicating that a service was not available.
      *
      * @param serviceName the name of the missing service
      * @return a new instance of this exception for the specified service name
      */
     public static ServiceUnavailableException forName(String serviceName) {
         return new ServiceUnavailableException(String.format("Service is not available at %s", serviceName));
+    }
+
+    /**
+     * Returns a new instance of this exception with a formatted string indicating that a service was not available at
+     * a specific address.
+     *
+     * @param address the address of the missing service
+     * @return a new instance of this exception for the specified service name
+     */
+    public static ServiceUnavailableException forAddress(String address) {
+        return new ServiceUnavailableException(String.format("Service is not available at the address %s", address));
     }
 }

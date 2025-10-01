@@ -1,6 +1,7 @@
 package ai.wanaku.backend.proxies;
 
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.api.types.providers.ServiceTarget;
@@ -102,8 +103,12 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 .setSecretsURI(mcpResource.getSecretsURI())
                 .build();
 
-        ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
-        return blockingStub.resourceAcquire(request);
+        try {
+            ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub = ResourceAcquirerGrpc.newBlockingStub(channel);
+            return blockingStub.resourceAcquire(request);
+        }  catch (Exception e) {
+            throw ServiceUnavailableException.forAddress(service.toAddress());
+        }
     }
 
     @Override
@@ -139,12 +144,18 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 .setConfiguration(cfg)
                 .setSecret(secret)
                 .build();
-        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
-        ProvisionReply inquire = blockingStub.provision(inquireRequest);
-        final String configurationUri = inquire.getConfigurationUri();
-        final String secretUri = inquire.getSecretUri();
-        final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
 
-        return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
+        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
+
+        try {
+            ProvisionReply inquire = blockingStub.provision(inquireRequest);
+            final String configurationUri = inquire.getConfigurationUri();
+            final String secretUri = inquire.getSecretUri();
+            final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
+
+            return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
+        } catch (Exception e) {
+            throw ServiceUnavailableException.forAddress(service.toAddress());
+        }
     }
 }
