@@ -5,6 +5,7 @@ import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.Property;
 import ai.wanaku.api.types.ToolReference;
@@ -131,8 +132,12 @@ public class InvokerProxy implements ToolsProxy {
                 .putAllArguments(argumentsMap)
                 .build();
 
-        ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
-        return blockingStub.invokeTool(toolInvokeRequest);
+        try {
+            ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
+            return blockingStub.invokeTool(toolInvokeRequest);
+        } catch (Exception e) {
+            throw ServiceUnavailableException.forAddress(service.toAddress());
+        }
     }
 
     private static String extractBody(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
@@ -182,17 +187,24 @@ public class InvokerProxy implements ToolsProxy {
                 .setPayload(secretsData)
                 .build();
 
-        ProvisionRequest inquireRequest = ProvisionRequest.newBuilder()
+        ProvisionRequest provisionRequest = ProvisionRequest.newBuilder()
                 .setConfiguration(cfg)
                 .setSecret(secret)
                 .build();
-        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
-        ProvisionReply inquire = blockingStub.provision(inquireRequest);
-        final String configurationUri = inquire.getConfigurationUri();
-        final String secretUri = inquire.getSecretUri();
-        final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
 
-        return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
+        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
+
+        try {
+            ProvisionReply inquire = blockingStub.provision(provisionRequest);
+
+            final String configurationUri = inquire.getConfigurationUri();
+            final String secretUri = inquire.getSecretUri();
+            final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
+
+            return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
+        } catch (Exception e) {
+            throw ServiceUnavailableException.forAddress(service.toAddress());
+        }
     }
 
     @Override
