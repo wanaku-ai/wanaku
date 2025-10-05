@@ -9,8 +9,11 @@ import java.net.URISyntaxException;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 @QuarkusTest
+@DisabledOnOs({OS.MAC, OS.WINDOWS})
 public class WanakuFileResourceIT extends WanakuIntegrationBase {
 
     @Test

@@ -25,6 +25,8 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -33,6 +35,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @QuarkusTest
 @Testcontainers
+@DisabledOnOs({OS.MAC, OS.WINDOWS})
 public class WanakuKafkaToolIT extends WanakuIntegrationBase {
 
     @Container

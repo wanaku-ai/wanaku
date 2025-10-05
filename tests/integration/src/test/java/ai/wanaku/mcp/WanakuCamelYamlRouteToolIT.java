@@ -7,8 +7,11 @@ import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 @QuarkusTest
+@DisabledOnOs({OS.MAC, OS.WINDOWS})
 public class WanakuCamelYamlRouteToolIT extends WanakuIntegrationBase {
 
     private static final String YAML_FILE_NAME = "my-route.camel.yaml";
