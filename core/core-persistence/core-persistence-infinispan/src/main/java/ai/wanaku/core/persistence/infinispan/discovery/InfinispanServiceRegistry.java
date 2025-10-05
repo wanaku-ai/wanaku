@@ -7,24 +7,20 @@ import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.jboss.logging.Logger;
 
 public class InfinispanServiceRegistry implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(InfinispanServiceRegistry.class);
 
-    private final InfinispanToolTargetRepository toolRepository;
-    private final InfinispanResourceTargetRepository resourceTargetRepository;
+    private final InfinispanCapabilitiesRepository capabilitiesRepository;
     private final InfinispanServiceRecordRepository activityRecordRepository;
 
     private int maxStateCount;
 
     public InfinispanServiceRegistry(
-            InfinispanResourceTargetRepository resourceTargetRepository,
-            InfinispanToolTargetRepository toolRepository,
+            InfinispanCapabilitiesRepository capabilitiesRepository,
             InfinispanServiceRecordRepository activityRecordRepository) {
-        this.resourceTargetRepository = resourceTargetRepository;
-        this.toolRepository = toolRepository;
+        this.capabilitiesRepository = capabilitiesRepository;
         this.activityRecordRepository = activityRecordRepository;
     }
 
@@ -35,20 +31,12 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public ServiceTarget register(ServiceTarget serviceTarget) {
-        if (serviceTarget.getServiceType() == ServiceType.TOOL_INVOKER) {
-            return toolRepository.persist(serviceTarget);
-        } else {
-            return resourceTargetRepository.persist(serviceTarget);
-        }
+        return capabilitiesRepository.persist(serviceTarget);
     }
 
     @Override
     public void deregister(ServiceTarget serviceTarget) {
-        if (serviceTarget.getServiceType() == ServiceType.TOOL_INVOKER) {
-            toolRepository.deleteById(serviceTarget.getId());
-        } else {
-            resourceTargetRepository.deleteById(serviceTarget.getId());
-        }
+        capabilitiesRepository.deleteById(serviceTarget.getId());
 
         activityRecordRepository.update(serviceTarget.getId(), a -> applyDeregistration(serviceTarget.getId(), a));
     }
@@ -61,21 +49,12 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public ServiceTarget getServiceByName(String serviceName, ServiceType serviceType) {
-        if (serviceType == ServiceType.TOOL_INVOKER) {
-            final List<ServiceTarget> serviceTargets = toolRepository.listAll();
-            return findService(serviceName, serviceTargets);
+        List<ServiceTarget> targets = capabilitiesRepository.findByService(serviceName, serviceType);
+        if (!targets.isEmpty()) {
+            return targets.getFirst();
         }
 
-        final List<ServiceTarget> serviceTargets = resourceTargetRepository.listAll();
-        return findService(serviceName, serviceTargets);
-    }
-
-    private static ServiceTarget findService(String serviceId, List<ServiceTarget> serviceTargets) {
-        final Optional<ServiceTarget> first = serviceTargets.stream()
-                .filter(s -> s.getService().equals(serviceId))
-                .findFirst();
-
-        return first.orElse(null);
+        return null;
     }
 
     @Override
@@ -94,11 +73,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public List<ServiceTarget> getEntries(ServiceType serviceType) {
-        if (serviceType == ServiceType.TOOL_INVOKER) {
-            return toolRepository.listAll();
-        } else {
-            return resourceTargetRepository.listAll();
-        }
+        return capabilitiesRepository.listByType(serviceType);
     }
 
     @Override
@@ -110,8 +85,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
      * Used for testing
      */
     void clear() {
-        resourceTargetRepository.deleteAll();
-        toolRepository.deleteAll();
+        capabilitiesRepository.deleteAll();
         activityRecordRepository.deleteAll();
     }
 

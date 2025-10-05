@@ -20,18 +20,15 @@ public class InfinispanServiceConfiguration {
     Configuration configuration;
 
     @Inject
-    Instance<InfinispanResourceTargetRepository> targetRepositoryInstance;
-
-    @Inject
-    Instance<InfinispanToolTargetRepository> toolTargetRepositoryInstance;
+    Instance<InfinispanCapabilitiesRepository> capabilitiesRepositoryInstance;
 
     @Inject
     Instance<InfinispanServiceRecordRepository> serviceRecordInstance;
 
     @Produces
     ServiceRegistry serviceRegistry() {
-        InfinispanServiceRegistry registry = new InfinispanServiceRegistry(
-                targetRepositoryInstance.get(), toolTargetRepositoryInstance.get(), serviceRecordInstance.get());
+        InfinispanServiceRegistry registry =
+                new InfinispanServiceRegistry(capabilitiesRepositoryInstance.get(), serviceRecordInstance.get());
 
         registry.setMaxStateCount(maxStateCount);
         return registry;
