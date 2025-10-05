@@ -217,6 +217,32 @@ String s = producer.requestBody("direct:start", parsedRequest.body(), String.cla
 
 That should allow you to run more complex processing and transformation before calling the endpoint.
 
+## Running Keycloak
+
+To run keycloak for development: 
+
+```shell
+podman run -d \                                                                                                                                                                                                       125 ↵ otavio@thyone
+  --name keycloak \
+  -p 127.0.0.1:8543:8080 \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME="admin" \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD="admin" \
+  -v keycloak-data:/opt/keycloak/data \
+  quay.io/keycloak/keycloak:26.3.4 \
+  start-dev
+```
+
+If it is the first time you are using it, you will need to configure Wanaku's realm: 
+
+```shell
+export WANAKU_KEYCLOAK_PASS=admin
+export WANAKU_KEYCLOAK_HOST=localhost:8543
+cd deploy/auth
+./configure-auth.sh
+```
+
+Then, take note of the newly generated client secret and use that for the capabilities services. 
+
 ## Testing
 
 There are multiple ways you can test Wanaku and the integrations you develop. 
