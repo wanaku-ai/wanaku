@@ -6,6 +6,8 @@ import static org.hamcrest.CoreMatchers.is;
 
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.backend.support.TestIndexHelper;
+import ai.wanaku.backend.support.WanakuKeycloakTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -16,13 +18,22 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.DisabledIf;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
+@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
+@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
 public class ResourcesResourceTest {
     private static final Logger LOG = Logger.getLogger(ResourcesResourceTest.class);
 
     private static String createdName;
+
+    static boolean isUnsupportedOSOnGithub() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        String githubActions = System.getenv("GITHUB_ACTIONS");
+        return "true".equalsIgnoreCase(githubActions) && (osName.contains("mac") || osName.contains("darwin") || osName.contains("win"));
+    }
 
     @BeforeAll
     static void setup() throws IOException {
