@@ -11,31 +11,31 @@ public enum WanakuContainerDownstreamService {
     /**
      * The Tavily tool service.
      */
-    TAVILY(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-tavily")),
+    TAVILY(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-tavily:latest")),
     /**
      * The YAML route tool service.
      */
-    YAML_ROUTE(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-yaml-route")),
+    YAML_ROUTE(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-yaml-route:latest")),
     /**
      * The Kafka tool service.
      */
-    KAFKA(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-kafka")),
+    KAFKA(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-kafka:latest")),
     /**
      * The HTTP tool service.
      */
-    HTTP(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-http")),
+    HTTP(new GenericContainer<>("quay.io/wanaku/wanaku-tool-service-http:latest")),
     /**
      * The S3 resource provider.
      */
-    PROVIDER_S3(new GenericContainer<>("quay.io/wanaku/wanaku-provider-s3")),
+    PROVIDER_S3(new GenericContainer<>("quay.io/wanaku/wanaku-provider-s3:latest")),
     /**
      * The FTP resource provider.
      */
-    PROVIDER_FTP(new GenericContainer<>("quay.io/wanaku/wanaku-provider-ftp")),
+    PROVIDER_FTP(new GenericContainer<>("quay.io/wanaku/wanaku-provider-ftp:latest")),
     /**
      * The File resource provider.
      */
-    PROVIDER_FILE(new GenericContainer<>("quay.io/wanaku/wanaku-provider-file"));
+    PROVIDER_FILE(new GenericContainer<>("quay.io/wanaku/wanaku-provider-file:latest"));
 
     private final GenericContainer value;
 

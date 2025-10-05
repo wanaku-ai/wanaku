@@ -1,6 +1,7 @@
 package ai.wanaku.mcp;
 
 import ai.wanaku.cli.main.CliMain;
+import ai.wanaku.mcp.utils.WanakuKeycloakContainer;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,13 +32,13 @@ public abstract class WanakuIntegrationBase {
      * The shared Docker network for all containers.
      */
     private static final Network network = Network.newNetwork();
+
+    protected static final WanakuKeycloakContainer keycloak;
+
     /**
      * The main Wanaku router container.
      */
-    protected static final GenericContainer<?> router = new GenericContainer<>("quay.io/wanaku/wanaku-router-backend")
-            .withExposedPorts(8080)
-            .withNetwork(network)
-            .withNetworkAliases("wanaku-router");
+    protected static final GenericContainer<?> router;
 
     /**
      * Extension for interacting with the Model Context Protocol.
@@ -62,12 +63,36 @@ public abstract class WanakuIntegrationBase {
      */
     protected static final String CONTAINER_RESOURCES_FOLDER = "/app/resources";
 
+    static {
+        keycloak = new WanakuKeycloakContainer();
+
+        keycloak.withNetwork(network).withNetworkAliases("keycloak");
+
+        keycloak.start();
+        LOG.info("Creating Wanaku Realm on keycloak");
+        keycloak.createRealm();
+
+        router = new GenericContainer<>("quay.io/wanaku/wanaku-router-backend:latest")
+                .withExposedPorts(8080)
+                .withNetwork(network)
+                .withEnv("QUARKUS_OIDC_AUTH_SERVER_URL", "http://keycloak:8080/realms/wanaku")
+                .waitingFor(Wait.forLogMessage(".*MCP.*HTTP transport endpoints.*", 1))
+                .withNetworkAliases("wanaku-router");
+    }
+
     /**
      * Starts the main router container before any tests are run.
      */
     @BeforeAll
-    static void startContainers() throws URISyntaxException {
-        router.start();
+    public static void startContainers() throws URISyntaxException {
+        LOG.info("Starting Wanaku Router Container");
+        try {
+            router.start();
+        } catch (Exception e) {
+            LOG.error("Unable to initialize the router: {}", e.getMessage(), e);
+            throw e;
+        }
+        LOG.info("Wanaku Router Container started");
         router.followOutput(logConsumer);
 
         client = McpAssured.newSseClient()
@@ -76,6 +101,7 @@ public abstract class WanakuIntegrationBase {
                 .build();
 
         client.connect();
+        LOG.info("Client connected successfully");
     }
 
     /**
@@ -86,26 +112,34 @@ public abstract class WanakuIntegrationBase {
      */
     @BeforeEach
     public void startServices() {
+        LOG.info("Launching Wanaku services");
+
         activeWanakuDownstreamServices().forEach(service -> {
             services.add(service.getContainer());
+            String accessToken = keycloak.getAccessToken();
+            LOG.info("Launching container {}", service.name());
             if (!service.getContainer().isRunning()) {
-                service.getContainer()
+                GenericContainer<?> container = service.getContainer();
+                container
                         .withNetwork(network)
                         .withExposedPorts(8080)
-                        .waitingFor(Wait.forLogMessage(".*Using registration service.*", 1))
                         .withFileSystemBind(
                                 this.getClass().getClassLoader().getResource("").getPath(),
                                 CONTAINER_RESOURCES_FOLDER,
                                 BindMode.READ_ONLY)
                         .withEnv("WANAKU_SERVICE_REGISTRATION_URI", "http://wanaku-router:8080")
+                        .withEnv("QUARKUS_OIDC_CLIENT_AUTH_SERVER_URL", "http://keycloak:8080/realms/wanaku")
+                        .withEnv("QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET", WanakuKeycloakContainer.CLIENT_SECRET)
+                        .withEnv("QUARKUS_OIDC_CLIENT_CLIENT_ID", WanakuKeycloakContainer.CLIENT_ID)
+                        .waitingFor(Wait.forLogMessage(".*Using announce address auto.*", 1))
                         .start();
+                container.followOutput(logConsumer);
                 // temporary fix for service registration failures
                 try {
                     Thread.sleep(1000L);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                service.getContainer().followOutput(logConsumer);
             }
         });
     }
@@ -118,13 +152,22 @@ public abstract class WanakuIntegrationBase {
      */
     public abstract List<WanakuContainerDownstreamService> activeWanakuDownstreamServices();
 
+    static void stopContainerSilently(GenericContainer<?> container) {
+        try {
+            container.stop();
+        } catch (Exception e) {
+            LOG.error("Unable to stop container {}: {}", container.getContainerName(), e.getMessage(), e);
+        }
+    }
+
     /**
      * Stops all running containers after all tests have completed.
      */
     @AfterAll
     static void stopContainers() {
-        router.stop();
-        services.stream().forEach(GenericContainer::stop);
-        services = new HashSet<>();
+        stopContainerSilently(router);
+        services.stream().forEach(WanakuIntegrationBase::stopContainerSilently);
+        services.clear();
+        stopContainerSilently(keycloak);
     }
 }
