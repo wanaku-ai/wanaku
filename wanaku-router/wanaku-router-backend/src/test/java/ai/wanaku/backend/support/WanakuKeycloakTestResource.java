@@ -1,6 +1,6 @@
 package ai.wanaku.backend.support;
 
-import ai.wanaku.backend.api.v1.management.discovery.DiscoveryResourceManualTest;
+import ai.wanaku.backend.api.v1.management.discovery.DiscoveryResourceTest;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.server.KeycloakContainer;
@@ -17,9 +17,8 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
         keycloak = new KeycloakContainer().withUseHttps(false);
         keycloak.start();
 
-        final String path = DiscoveryResourceManualTest.class
-                .getResource("/wanaku-realm.json")
-                .getPath();
+        final String path =
+                DiscoveryResourceTest.class.getResource("/wanaku-realm.json").getPath();
 
         KeycloakTestClient keycloakClient = new KeycloakTestClient(keycloak.getServerUrl());
 
