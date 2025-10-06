@@ -36,7 +36,7 @@ import org.jboss.logging.Logger;
  */
 public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);
-
+    private static final String EMPTY_ARGUMENT = "";
     private final ServiceRegistry serviceRegistry;
 
     public ResourceAcquirerProxy(ServiceRegistry serviceRegistry) {
@@ -99,8 +99,8 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 .setLocation(mcpResource.getLocation())
                 .setType(mcpResource.getType())
                 .setName(mcpResource.getName())
-                .setConfigurationURI(mcpResource.getConfigurationURI())
-                .setSecretsURI(mcpResource.getSecretsURI())
+                .setConfigurationURI(Objects.requireNonNullElse(mcpResource.getConfigurationURI(), EMPTY_ARGUMENT))
+                .setSecretsURI(Objects.requireNonNullElse(mcpResource.getSecretsURI(), EMPTY_ARGUMENT))
                 .build();
 
         try {
