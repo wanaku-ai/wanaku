@@ -72,7 +72,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 target = entity.data();
                 instanceDataManager.writeEntry(target);
                 registered = true;
-                LOG.debugf("The service %s successfully registered with ID %s.", target.getService(), target.getId());
+                LOG.infof("The service %s successfully registered with ID %s.", target.getService(), target.getId());
                 break;
             } catch (WebApplicationException e) {
                 if (LOG.isDebugEnabled()) {
