@@ -12,7 +12,12 @@ public enum ServiceType {
     /**
      * Invokes tools
      */
-    TOOL_INVOKER("tool-invoker", 2);
+    TOOL_INVOKER("tool-invoker", 2),
+
+    /**
+     * This can do both: invoke tools and provide resources
+     */
+    MULTI_CAPABILITY("multi-capability", 3);
 
     private final String value;
     private final int intValue;
@@ -40,6 +45,10 @@ public enum ServiceType {
         }
         if (value == 2) {
             return TOOL_INVOKER;
+        }
+
+        if (value == 3) {
+            return MULTI_CAPABILITY;
         }
 
         throw new IllegalArgumentException("Invalid service type: " + value);

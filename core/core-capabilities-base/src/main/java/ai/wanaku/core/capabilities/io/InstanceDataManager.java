@@ -1,7 +1,6 @@
 package ai.wanaku.core.capabilities.io;
 
 import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,10 +57,10 @@ public class InstanceDataManager {
     }
 
     private static FileHeader newFileHeader(ServiceTarget serviceTarget) {
-        if (serviceTarget.getServiceType() == ServiceType.RESOURCE_PROVIDER) {
-            return FileHeader.RESOURCE_PROVIDER;
-        } else {
-            return FileHeader.TOOL_INVOKER;
-        }
+        return switch (serviceTarget.getServiceType()) {
+            case TOOL_INVOKER -> FileHeader.TOOL_INVOKER;
+            case RESOURCE_PROVIDER -> FileHeader.RESOURCE_PROVIDER;
+            case MULTI_CAPABILITY -> FileHeader.MULTI_CAPABILITY;
+        };
     }
 }

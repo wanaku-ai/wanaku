@@ -73,7 +73,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public List<ServiceTarget> getEntries(ServiceType serviceType) {
-        return capabilitiesRepository.listByType(serviceType);
+        return capabilitiesRepository.listCapable(serviceType);
     }
 
     @Override

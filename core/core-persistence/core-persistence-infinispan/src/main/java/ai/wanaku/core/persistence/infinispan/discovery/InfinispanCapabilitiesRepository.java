@@ -42,21 +42,28 @@ public class InfinispanCapabilitiesRepository extends AbstractInfinispanReposito
         final Cache<Object, ServiceTarget> cache = cacheManager.getCache(entityName());
 
         Query<ServiceTarget> query = cache.query(
-                "from ai.wanaku.api.types.providers.ServiceTarget t where t.service = :service and t.serviceType = :serviceType");
+                "from ai.wanaku.api.types.providers.ServiceTarget t where t.service = :service and (t.serviceType = :serviceType or t.serviceType = :multi)");
 
         query.setParameter("service", serviceName);
         query.setParameter("serviceType", serviceType);
+        query.setParameter("multi", ServiceType.MULTI_CAPABILITY);
 
         return query.maxResults(1).execute().list();
     }
 
-    public List<ServiceTarget> listByType(ServiceType serviceType) {
+    /**
+     * List all services capable of serving resources of the given type
+     * @param serviceType the service type
+     * @return a list of service targets capable of service the given type
+     */
+    public List<ServiceTarget> listCapable(ServiceType serviceType) {
         final Cache<Object, ServiceTarget> cache = cacheManager.getCache(entityName());
 
-        Query<ServiceTarget> query =
-                cache.query("from ai.wanaku.api.types.providers.ServiceTarget t where t.serviceType = :serviceType");
+        Query<ServiceTarget> query = cache.query(
+                "from ai.wanaku.api.types.providers.ServiceTarget t where (t.serviceType = :serviceType or t.serviceType = :multi)");
 
         query.setParameter("serviceType", serviceType);
+        query.setParameter("multi", ServiceType.MULTI_CAPABILITY);
 
         return query.maxResults(1).execute().list();
     }

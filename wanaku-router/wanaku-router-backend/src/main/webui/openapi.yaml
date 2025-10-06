@@ -181,6 +181,7 @@ components:
       enum:
       - RESOURCE_PROVIDER
       - TOOL_INVOKER
+      - MULTI_CAPABILITY
     ToolPayload:
       type: object
       properties:

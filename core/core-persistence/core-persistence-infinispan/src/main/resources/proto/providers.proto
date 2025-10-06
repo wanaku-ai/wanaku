@@ -17,6 +17,11 @@ enum ServiceType {
    * Invokes tools
    */
   TOOL_INVOKER = 2;
+
+  /**
+   * Has both capabilities
+   */
+  MULTI_CAPABILITY = 3;
 }
 
 /*
