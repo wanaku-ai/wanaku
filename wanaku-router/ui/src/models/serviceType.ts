@@ -11,4 +11,5 @@ export type ServiceType = (typeof ServiceType)[keyof typeof ServiceType];
 export const ServiceType = {
   RESOURCE_PROVIDER: "RESOURCE_PROVIDER",
   TOOL_INVOKER: "TOOL_INVOKER",
+  MULTI_CAPABILITY: "MULTI_CAPABILITY",
 } as const;

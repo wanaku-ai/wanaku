@@ -267,7 +267,7 @@
       },
       "ServiceType" : {
         "type" : "string",
-        "enum" : [ "RESOURCE_PROVIDER", "TOOL_INVOKER" ]
+        "enum" : [ "RESOURCE_PROVIDER", "TOOL_INVOKER", "MULTI_CAPABILITY" ]
       },
       "ToolPayload" : {
         "type" : "object",
