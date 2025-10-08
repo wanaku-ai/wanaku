@@ -718,7 +718,7 @@ Configurations in Wanaku have two distinct scopes:
 These configurations are essential for setting up the capability provider itself. 
 
 This includes details required for the transport mechanism used to access the capability, such as usernames and passwords for 
-authenticating with the undelying system that provides the capability.
+authenticating with the underlying system that provides the capability.
 
 Each capability service may have its own specific set of configurations. As such, check the capability service documentation 
 for details.
@@ -1057,11 +1057,17 @@ Currently special arguments:
 Wanaku leverages [Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org) to provide connectivity to a vast 
 range of services and platforms. 
 
-Although we aim to provide many of them out-of-the box, not all of them will fit all the use cases.
-
-That's why we make it simple for users to create custom services that solve their particular need.
+Although we aim to provide a few of them out-of-the box, not all of them will fit all the use cases. For most cases, users
+should rely on the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/). That capability
+service leverages Apache Camel which offers more than 300 components capable of talking to any type of system. Users can design 
+their integrations using tools such as [Kaoto](https://kaoto.io/) or Karavan and expose the routes as tools or resources using 
+that capability service.
 
 ### Adding a New Resource Provider Capability
+
+For cases where the Camel Integration Capability is not sufficient, users can create their own capabibility services. 
+
+Why try to make it simple for users to create custom services that solve their particular need.
 
 #### Creating a New Resource Provider
 
@@ -1081,13 +1087,13 @@ then build the project using Maven (`mvn clean package`).
 Then, launch it using:
 
 ```shell
-java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 -jar target/quarkus-app/quarkus-run.jar
+java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 ... -jar target/quarkus-app/quarkus-run.jar
 ```
 
 You can check if the service was registered correctly using `wanaku targets resources list`.
 
 > [!IMPORTANT]
-> Remember to set the parameters in the `application.properties` file.
+> Remember to set the parameters in the `application.properties` file and also adjust the authentication settings.
 
 #### Adjusting Your Resource Capability
 
@@ -1113,12 +1119,12 @@ To run the newly created service enter the directory that was created (i.e.,; `c
 Then, launch it using:
 
 ```shell
-java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9900 -jar target/quarkus-app/quarkus-run.jar
+java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9900 ... -jar target/quarkus-app/quarkus-run.jar
 ```
 You can check if the service was registered correctly using `wanaku targets tools list`.
 
 > [!IMPORTANT]
-> Remember to set the parameters in the `application.properties` file.
+> Remember to set the parameters in the `application.properties` file and also adjust the authentication settings.
 
 To customize your service, adjust the delegate and client classes.
 
@@ -1150,7 +1156,7 @@ then build the project using Maven (`mvn clean package`).
 Then, launch it using:
 
 ```shell
-java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 -jar target/quarkus-app/quarkus-run.jar
+java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 ... -jar target/quarkus-app/quarkus-run.jar
 ```
 
 You can check if the service was registered correctly using `wanaku targets mcp list`.
@@ -1183,6 +1189,13 @@ You can adjust the address used to announce to the MCP Router using either (depe
 * `wanaku.service.registration.announce-address=my-host`
 
 This is particularly helpful when running a capability service in the cloud, behind a proxy or firewall. 
+
+### Adjusting the authentication parameters
+
+* `quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/wanaku`
+* `quarkus.oidc-client.client-id=wanaku-service`
+* `quarkus.oidc-client.refresh-token-time-skew=1m`
+* `quarkus.oidc-client.credentials.secret=<insert key here>`
 
 ## Supported/Tested Clients 
 
@@ -1326,10 +1339,15 @@ npx -y supergateway --sse http://localhost:8080/mcp/sse
 
 Visit [this page](../capabilities/providers/README.md) to check all the providers that come built-in with Wanaku.
 
+> [NOTE]
+> Most users should rely on the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/).
+
 ## Available Tools Capabilities
 
 Visit [this page](../capabilities/tools/README.md) to check all the tools that come built-in with Wanaku.
 
+> [NOTE]
+> Most users should rely on the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/).
 
 ### API Note
 
