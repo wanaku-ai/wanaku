@@ -1,1 +1,0 @@
-# Wanaku Provider - S3

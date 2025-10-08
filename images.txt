@@ -1,9 +1,5 @@
+quay.io/wanaku/wanaku-tool-service-exec:latest
 quay.io/wanaku/wanaku-tool-service-tavily:latest
-quay.io/wanaku/wanaku-tool-service-yaml-route:latest
-quay.io/wanaku/wanaku-tool-service-kafka:latest
 quay.io/wanaku/wanaku-tool-service-http:latest
-quay.io/wanaku/wanaku-provider-s3:latest
-quay.io/wanaku/wanaku-provider-ftp:latest
-quay.io/wanaku/wanaku-provider-file:latest
 quay.io/wanaku/wanaku-router-backend:latest
 quay.io/wanaku/wanaku-router-web:latest

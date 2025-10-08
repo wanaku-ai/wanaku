@@ -11,10 +11,6 @@
   <modules>
     <module>wanaku-tool-service-exec</module>
     <module>wanaku-tool-service-http</module>
-    <module>wanaku-tool-service-kafka</module>
-    <module>wanaku-tool-service-yaml-route</module>
     <module>wanaku-tool-service-tavily</module>
-    <module>wanaku-tool-service-sqs</module>
-    <module>wanaku-tool-service-telegram</module>
   </modules>
 </project>
