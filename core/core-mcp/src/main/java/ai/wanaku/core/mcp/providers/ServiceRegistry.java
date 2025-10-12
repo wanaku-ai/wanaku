@@ -31,7 +31,7 @@ public interface ServiceRegistry {
      * @param serviceType the service type
      * @return the service instance or null if not found
      */
-    ServiceTarget getServiceByName(String service, ServiceType serviceType);
+    List<ServiceTarget> getServiceByName(String service, ServiceType serviceType);
 
     /**
      * Gets the state of the given service

@@ -49,8 +49,9 @@ public class ServiceRegistryTest {
     @Test
     @Order(2)
     public void getServiceByName() {
-        ServiceTarget service = serviceRegistry.getServiceByName(TEST_SERVICE_NAME, ServiceType.TOOL_INVOKER);
-
+        List<ServiceTarget> services = serviceRegistry.getServiceByName(TEST_SERVICE_NAME, ServiceType.TOOL_INVOKER);
+        assertFalse(services.isEmpty());
+        ServiceTarget service = services.getFirst();
         assertEquals("localhost", service.getHost());
         assertEquals(8081, service.getPort());
     }
