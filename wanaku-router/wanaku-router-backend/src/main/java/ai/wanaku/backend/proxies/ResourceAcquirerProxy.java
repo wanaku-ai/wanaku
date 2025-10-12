@@ -6,6 +6,7 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
@@ -17,7 +18,6 @@ import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.exchange.Secret;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -37,10 +37,10 @@ import org.jboss.logging.Logger;
 public class ResourceAcquirerProxy implements ResourceProxy {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerProxy.class);
     private static final String EMPTY_ARGUMENT = "";
-    private final ServiceRegistry serviceRegistry;
+    private final ServiceResolver serviceResolver;
 
-    public ResourceAcquirerProxy(ServiceRegistry serviceRegistry) {
-        this.serviceRegistry = serviceRegistry;
+    public ResourceAcquirerProxy(ServiceResolver serviceResolver) {
+        this.serviceResolver = serviceResolver;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 "Requesting resource on behalf of connection %s",
                 arguments.connection().id());
 
-        ServiceTarget service = serviceRegistry.getServiceByName(mcpResource.getType(), ServiceType.RESOURCE_PROVIDER);
+        ServiceTarget service = serviceResolver.resolve(mcpResource.getType(), ServiceType.RESOURCE_PROVIDER);
         if (service == null) {
             String message = String.format("There is no service registered for service %s", mcpResource.getType());
             LOG.error(message);
@@ -116,8 +116,7 @@ public class ResourceAcquirerProxy implements ResourceProxy {
     public ProvisioningReference provision(ResourcePayload payload) {
         ResourceReference resourceReference = payload.getPayload();
 
-        ServiceTarget service =
-                serviceRegistry.getServiceByName(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER);
+        ServiceTarget service = serviceResolver.resolve(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER);
         if (service == null) {
             throw new ServiceNotFoundException(
                     "There is no host registered for service " + resourceReference.getType());

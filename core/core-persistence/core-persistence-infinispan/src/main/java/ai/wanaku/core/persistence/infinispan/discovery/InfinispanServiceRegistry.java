@@ -48,13 +48,8 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     }
 
     @Override
-    public ServiceTarget getServiceByName(String serviceName, ServiceType serviceType) {
-        List<ServiceTarget> targets = capabilitiesRepository.findByService(serviceName, serviceType);
-        if (!targets.isEmpty()) {
-            return targets.getFirst();
-        }
-
-        return null;
+    public List<ServiceTarget> getServiceByName(String serviceName, ServiceType serviceType) {
+        return capabilitiesRepository.findByService(serviceName, serviceType);
     }
 
     @Override

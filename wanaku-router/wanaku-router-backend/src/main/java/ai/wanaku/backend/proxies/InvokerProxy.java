@@ -12,6 +12,7 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
@@ -23,7 +24,6 @@ import ai.wanaku.core.exchange.Secret;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.CollectionsHelper;
 import com.google.protobuf.ProtocolStringList;
 import io.grpc.ManagedChannel;
@@ -47,10 +47,10 @@ public class InvokerProxy implements ToolsProxy {
     private static final String EMPTY_BODY = "";
     private static final String EMPTY_ARGUMENT = "";
 
-    private final ServiceRegistry serviceRegistry;
+    private final ServiceResolver serviceResolver;
 
-    public InvokerProxy(ServiceRegistry serviceRegistry) {
-        this.serviceRegistry = serviceRegistry;
+    public InvokerProxy(ServiceResolver serviceResolver) {
+        this.serviceResolver = serviceResolver;
     }
 
     @Override
@@ -69,7 +69,7 @@ public class InvokerProxy implements ToolsProxy {
     }
 
     private ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
-        ServiceTarget service = serviceRegistry.getServiceByName(toolReference.getType(), ServiceType.TOOL_INVOKER);
+        ServiceTarget service = serviceResolver.resolve(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }
@@ -164,7 +164,7 @@ public class InvokerProxy implements ToolsProxy {
     public ProvisioningReference provision(ToolPayload toolPayload) {
         ToolReference toolReference = toolPayload.getPayload();
 
-        ServiceTarget service = serviceRegistry.getServiceByName(toolReference.getType(), ServiceType.TOOL_INVOKER);
+        ServiceTarget service = serviceResolver.resolve(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             throw new ServiceNotFoundException("There is no host registered for service " + toolReference.getType());
         }

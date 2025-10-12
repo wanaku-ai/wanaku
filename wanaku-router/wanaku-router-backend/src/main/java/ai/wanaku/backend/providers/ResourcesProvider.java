@@ -2,6 +2,8 @@ package ai.wanaku.backend.providers;
 
 import ai.wanaku.backend.proxies.ResourceAcquirerProxy;
 import ai.wanaku.backend.resolvers.WanakuResourceResolver;
+import ai.wanaku.backend.service.support.FirstAvailable;
+import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopResourceResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
@@ -37,6 +39,7 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
             return new NoopResourceResolver();
         }
 
-        return new WanakuResourceResolver(new ResourceAcquirerProxy(serviceRegistry));
+        ServiceResolver resolver = new FirstAvailable(serviceRegistry);
+        return new WanakuResourceResolver(new ResourceAcquirerProxy(resolver));
     }
 }
