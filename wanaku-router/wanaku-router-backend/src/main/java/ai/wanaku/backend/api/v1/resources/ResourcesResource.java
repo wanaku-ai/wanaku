@@ -20,6 +20,22 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 
+/**
+ * JAX-RS REST resource implementation for resource management endpoints.
+ * <p>
+ * This class implements the {@code /api/v1/resources} endpoints for managing
+ * resource capabilities in the Wanaku router. It delegates business logic to
+ * {@link ResourcesBean} and integrates with {@link ForwardsBean} to provide
+ * a unified view of both locally exposed resources and resources available
+ * through forward proxies.
+ * </p>
+ * <p>
+ * This is an application-scoped CDI bean that serves as the entry point for
+ * HTTP requests related to resource management.
+ * </p>
+ *
+ * @see ai.wanaku.core.services.api.ResourcesService
+ */
 @ApplicationScoped
 @Path("/api/v1/resources")
 public class ResourcesResource {
@@ -30,6 +46,17 @@ public class ResourcesResource {
     @Inject
     ForwardsBean forwardsBean;
 
+    /**
+     * Exposes a new resource capability with provisioning payload.
+     * <p>
+     * This endpoint accepts a resource reference along with configuration and secrets
+     * data, enabling complete provisioning of the resource capability.
+     * </p>
+     *
+     * @param resource the resource payload containing the resource reference and provisioning data
+     * @return a response containing the exposed resource reference
+     * @throws WanakuException if exposure fails or payload validation fails
+     */
     @Path("/exposeWithPayload")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -40,6 +67,12 @@ public class ResourcesResource {
         return new WanakuResponse<>(ret);
     }
 
+    /**
+     * Validates that a provision-aware payload is not null and contains a payload object.
+     *
+     * @param resource the payload to validate
+     * @throws WanakuException if the payload or its nested payload object is null
+     */
     private void validatePayload(ProvisionAwarePayload<?> resource) throws WanakuException {
         if (resource == null) {
             throw new WanakuException("The request itself must not be null");
@@ -49,6 +82,13 @@ public class ResourcesResource {
         }
     }
 
+    /**
+     * Exposes a new resource capability.
+     *
+     * @param resource the resource reference to expose
+     * @return a response containing the exposed resource reference
+     * @throws WanakuException if exposure fails
+     */
     @Path("/expose")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -58,6 +98,16 @@ public class ResourcesResource {
         return new WanakuResponse<>(ret);
     }
 
+    /**
+     * Lists all available resource capabilities.
+     * <p>
+     * This endpoint returns a combined list of both locally exposed resources
+     * and resources available through forward proxies to remote MCP servers.
+     * </p>
+     *
+     * @return a response containing a list of all resource references
+     * @throws WanakuException if listing fails
+     */
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -70,6 +120,13 @@ public class ResourcesResource {
         return new WanakuResponse<>(ret);
     }
 
+    /**
+     * Removes a resource capability by name.
+     *
+     * @param resource the name of the resource to remove
+     * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the resource doesn't exist
+     * @throws WanakuException if removal fails
+     */
     @Path("/remove")
     @PUT
     public Response remove(@QueryParam("resource") String resource) throws WanakuException {
@@ -81,6 +138,13 @@ public class ResourcesResource {
         }
     }
 
+    /**
+     * Updates an existing resource capability.
+     *
+     * @param resource the updated resource reference
+     * @return HTTP 200 OK if updated successfully
+     * @throws WanakuException if update fails
+     */
     @Path("/update")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)

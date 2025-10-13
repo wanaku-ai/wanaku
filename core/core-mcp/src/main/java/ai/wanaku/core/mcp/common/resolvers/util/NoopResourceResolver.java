@@ -9,13 +9,48 @@ import io.quarkiverse.mcp.server.ResourceManager;
 import java.util.List;
 
 /**
- * A resolver that does not to anything (mostly used for testing)
+ * No-operation implementation of {@link ResourceResolver} for testing and default behavior.
+ * <p>
+ * This resolver provides empty implementations of all {@link ResourceResolver} methods,
+ * making it useful for testing scenarios where actual resource resolution is not needed,
+ * or as a default/fallback resolver when no real resolver is configured.
+ * </p>
+ * <p>
+ * The noop resolver:
+ * <ul>
+ *   <li>Does not perform any provisioning operations</li>
+ *   <li>Returns an empty list for all resource read operations</li>
+ *   <li>Never throws exceptions during normal operation</li>
+ * </ul>
+ * </p>
+ *
+ * @see ResourceResolver
  */
 public class NoopResourceResolver implements ResourceResolver {
 
+    /**
+     * No-operation provisioning that does nothing.
+     * <p>
+     * This method accepts the resource payload but performs no actual provisioning.
+     * </p>
+     *
+     * @param resourcePayload the resource payload (ignored)
+     * @throws ServiceNotFoundException never thrown by this implementation
+     */
     @Override
     public void provision(ResourcePayload resourcePayload) throws ServiceNotFoundException {}
 
+    /**
+     * Returns an empty list of resource contents.
+     * <p>
+     * This method always returns an empty list, indicating that no resource
+     * content is available.
+     * </p>
+     *
+     * @param arguments the resource request arguments (ignored)
+     * @param mcpResource the resource reference (ignored)
+     * @return an empty list
+     */
     @Override
     public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         return List.of();
