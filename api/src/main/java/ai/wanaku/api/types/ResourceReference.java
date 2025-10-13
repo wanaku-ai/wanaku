@@ -43,6 +43,11 @@ public class ResourceReference implements WanakuEntity<String> {
     private String secretsURI;
     private String namespace;
 
+    /**
+     * Gets the location of the resource.
+     *
+     * @return the resource location (e.g., URL, file path)
+     */
     public String getLocation() {
         return location;
     }
@@ -56,6 +61,11 @@ public class ResourceReference implements WanakuEntity<String> {
         this.location = location;
     }
 
+    /**
+     * Gets the type of the resource.
+     *
+     * @return the resource type (e.g., image, text, binary)
+     */
     public String getType() {
         return type;
     }
@@ -69,6 +79,11 @@ public class ResourceReference implements WanakuEntity<String> {
         this.type = type;
     }
 
+    /**
+     * Gets the brief name of the resource.
+     *
+     * @return the resource name
+     */
     public String getName() {
         return name;
     }
@@ -82,6 +97,11 @@ public class ResourceReference implements WanakuEntity<String> {
         this.name = name;
     }
 
+    /**
+     * Gets the longer description of the resource.
+     *
+     * @return the resource description
+     */
     public String getDescription() {
         return description;
     }
@@ -95,6 +115,11 @@ public class ResourceReference implements WanakuEntity<String> {
         this.description = description;
     }
 
+    /**
+     * Gets the MIME type of the resource.
+     *
+     * @return the MIME type (e.g., image/jpeg, text/plain)
+     */
     public String getMimeType() {
         return mimeType;
     }
@@ -108,6 +133,11 @@ public class ResourceReference implements WanakuEntity<String> {
         this.mimeType = mimeType;
     }
 
+    /**
+     * Gets the list of parameters associated with the resource.
+     *
+     * @return the list of resource parameters
+     */
     public List<Param> getParams() {
         return params;
     }
@@ -121,26 +151,64 @@ public class ResourceReference implements WanakuEntity<String> {
         this.params = params;
     }
 
+    /**
+     * Gets the URI location for the resource configuration.
+     * <p>
+     * The configuration URI points to the location where non-sensitive
+     * configuration data for this resource is stored.
+     * </p>
+     *
+     * @return the configuration URI, or {@code null} if not configured
+     */
     public String getConfigurationURI() {
         return configurationURI;
     }
 
+    /**
+     * Sets the URI location for the resource configuration.
+     *
+     * @param configurationURI the configuration URI to set
+     */
     public void setConfigurationURI(String configurationURI) {
         this.configurationURI = configurationURI;
     }
 
+    /**
+     * Gets the URI location for the secrets associated with this resource.
+     * <p>
+     * The secrets URI points to the location where sensitive data such as
+     * credentials, API keys, or tokens for this resource are stored.
+     * </p>
+     *
+     * @return the secrets URI, or {@code null} if not configured
+     */
     public String getSecretsURI() {
         return secretsURI;
     }
 
+    /**
+     * Sets the URI location for the secrets associated with this resource.
+     *
+     * @param secretsURI the secrets URI to set
+     */
     public void setSecretsURI(String secretsURI) {
         this.secretsURI = secretsURI;
     }
 
+    /**
+     * Gets the namespace in which this resource is registered.
+     *
+     * @return the namespace identifier
+     */
     public String getNamespace() {
         return namespace;
     }
 
+    /**
+     * Sets the namespace in which this resource is registered.
+     *
+     * @param namespace the namespace identifier to set
+     */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }
@@ -159,6 +227,11 @@ public class ResourceReference implements WanakuEntity<String> {
          */
         private String value;
 
+        /**
+         * Gets the name of the parameter.
+         *
+         * @return the parameter name
+         */
         public String getName() {
             return name;
         }
@@ -172,6 +245,11 @@ public class ResourceReference implements WanakuEntity<String> {
             this.name = name;
         }
 
+        /**
+         * Gets the value of the parameter.
+         *
+         * @return the parameter value
+         */
         public String getValue() {
             return value;
         }

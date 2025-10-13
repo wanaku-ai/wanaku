@@ -1,45 +1,69 @@
 package ai.wanaku.api.types;
 
 /**
- * Represents a reference that can be called, providing metadata and input schema information.
+ * Represents a reference to a callable entity that can be invoked with arguments.
+ * <p>
+ * A callable reference is an abstraction for any object or function that can be invoked,
+ * potentially with arguments. This interface provides metadata about the callable entity
+ * including its name, description, type, input schema, and namespace.
+ * </p>
+ * <p>
+ * This interface is implemented by various tool and capability reference types to provide
+ * a common contract for invocable entities in the Wanaku system.
+ * </p>
  *
- * A callable reference is an abstraction of an object or function that can be invoked,
- * potentially with arguments. This interface provides methods to retrieve its name, description,
- * data type, and input schema.
- *
+ * @see ToolReference
+ * @see RemoteToolReference
  */
 public interface CallableReference {
     /**
-     * Returns the name of this callable reference.
+     * Gets the name of this callable reference.
      *
-     * @return The name of this callable reference.
+     * @return the name of this callable reference
      */
     String getName();
 
     /**
-     * Returns a human-readable description of this callable reference.
+     * Gets the human-readable description of this callable reference.
+     * <p>
+     * The description provides information about what this callable does,
+     * its purpose, and how it should be used.
+     * </p>
      *
-     * @return A human-readable description of this callable reference.
+     * @return a human-readable description of this callable reference
      */
     String getDescription();
 
     /**
-     * Returns the data type associated with this callable reference.
+     * Gets the type associated with this callable reference.
+     * <p>
+     * The type typically indicates the category or implementation mechanism
+     * of the callable (e.g., "http", "function", "tool").
+     * </p>
      *
-     * @return The data type associated with this callable reference.
+     * @return the type associated with this callable reference
      */
     String getType();
 
     /**
-     * Returns the input schema for this callable reference, describing its expected input structure and format.
+     * Gets the input schema for this callable reference.
+     * <p>
+     * The input schema describes the expected structure, format, and validation
+     * rules for arguments that can be passed to this callable.
+     * </p>
      *
-     * @return The input schema for this callable reference.
+     * @return the input schema for this callable reference
      */
     InputSchema getInputSchema();
 
     /**
-     * Sets the namespace associated with this reference
-     * @return
+     * Gets the namespace in which this callable reference is registered.
+     * <p>
+     * The namespace provides logical grouping and isolation for callable
+     * references within the Wanaku system.
+     * </p>
+     *
+     * @return the namespace identifier
      */
     String getNamespace();
 }
