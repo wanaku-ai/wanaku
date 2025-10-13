@@ -40,14 +40,7 @@ public record ParsedToolInvokeRequest(String uri, String body) {
     @SuppressWarnings("unchecked")
     public static ParsedToolInvokeRequest parseRequest(
             String uri, ToolInvokeRequest toolInvokeRequest, ConfigResource configResource) {
-        Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
-
-        if (argumentsMap == null) {
-            argumentsMap = Collections.emptyMap();
-        }
-
-        Map<String, Object> map = new HashMap<>(argumentsMap);
-        map.put(Parameter.KEY_NAME, new Parameter((Map) argumentsMap));
+        final Map<String, Object> map = toParameterMap(toolInvokeRequest);
 
         String parsedUri = URIParser.parse(uri, map);
 
@@ -58,6 +51,19 @@ public record ParsedToolInvokeRequest(String uri, String body) {
         String body = toolInvokeRequest.getBody();
 
         return new ParsedToolInvokeRequest(parsedUri, body);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> toParameterMap(ToolInvokeRequest toolInvokeRequest) {
+        Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
+
+        if (argumentsMap == null) {
+            argumentsMap = Collections.emptyMap();
+        }
+
+        Map<String, Object> map = new HashMap<>(argumentsMap);
+        map.put(Parameter.KEY_NAME, new Parameter((Map) argumentsMap));
+        return map;
     }
 
     /**
@@ -71,14 +77,7 @@ public record ParsedToolInvokeRequest(String uri, String body) {
     @SuppressWarnings("unchecked")
     public static ParsedToolInvokeRequest parseRequest(
             String uri, ToolInvokeRequest toolInvokeRequest, Supplier<Map<String, String>> queryParametersSupplier) {
-        Map<String, String> argumentsMap = toolInvokeRequest.getArgumentsMap();
-
-        if (argumentsMap == null) {
-            argumentsMap = Collections.emptyMap();
-        }
-
-        Map<String, Object> map = new HashMap<>(argumentsMap);
-        map.put(Parameter.KEY_NAME, new Parameter((Map) argumentsMap));
+        final Map<String, Object> map = toParameterMap(toolInvokeRequest);
 
         String parsedUri = URIParser.parse(uri, map);
 
