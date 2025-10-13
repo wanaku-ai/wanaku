@@ -10,10 +10,6 @@ import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
-import ai.wanaku.core.exchange.PropertySchema;
-import ai.wanaku.core.exchange.ProvisionReply;
-import ai.wanaku.core.exchange.ProvisionRequest;
-import ai.wanaku.core.exchange.ProvisionerGrpc;
 import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
@@ -24,10 +20,8 @@ import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.jboss.logging.Logger;
 
@@ -140,22 +134,6 @@ public class ResourceAcquirerProxy implements ResourceProxy {
                 .setPayload(secretsData)
                 .build();
 
-        ProvisionRequest inquireRequest = ProvisionRequest.newBuilder()
-                .setConfiguration(cfg)
-                .setSecret(secret)
-                .build();
-
-        ProvisionerGrpc.ProvisionerBlockingStub blockingStub = ProvisionerGrpc.newBlockingStub(channel);
-
-        try {
-            ProvisionReply inquire = blockingStub.provision(inquireRequest);
-            final String configurationUri = inquire.getConfigurationUri();
-            final String secretUri = inquire.getSecretUri();
-            final Map<String, PropertySchema> propertiesMap = inquire.getPropertiesMap();
-
-            return new ProvisioningReference(URI.create(configurationUri), URI.create(secretUri), propertiesMap);
-        } catch (Exception e) {
-            throw ServiceUnavailableException.forAddress(service.toAddress());
-        }
+        return ProxyHelper.provision(cfg, secret, channel, service);
     }
 }
