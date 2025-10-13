@@ -102,7 +102,6 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
         } catch (Exception e) {
             String stateMsg = "Unable to read or acquire resource: " + e.getMessage();
             LOG.error(stateMsg, e);
-            ;
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
                     .setIsError(true)

@@ -123,7 +123,6 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
             throw new WanakuException(e);
         }
     }
-    ;
 
     protected void configure(Configuration configuration) {
         cacheManager.defineConfiguration(entityName(), configuration);
