@@ -5,13 +5,9 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableExpandedRow,
-  TableExpandHeader,
-  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
-
 } from "@carbon/react";
 import React from "react";
 import { ServiceTargetState } from "./ServiceTargetState";
@@ -55,11 +51,10 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
           { key: 'reason', header: 'Reason' },
         ]}
       >
-{({ rows, headers, getTableProps, getHeaderProps, getRowProps, getExpandHeaderProps }) => (
+{({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
           <Table {...getTableProps()} aria-label="Targets table">
             <TableHead>
               <TableRow>
-                <TableExpandHeader {...getExpandHeaderProps()} />
                 {headers.map((header) => (
                   <TableHeader {...getHeaderProps({ header })} key={header.key}>
                     {header.header}
@@ -71,20 +66,11 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
               {rows.map((row) => {
                 const { key, ...rowProps } = getRowProps({ row });
                 return (
-                  <React.Fragment key={row.id}>
-                    <TableExpandRow key={key} {...rowProps}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableExpandRow>
-                    {row.isExpanded && (
-                      <TableExpandedRow colSpan={headers.length + 1}>
-                        <div style={{ padding: '1rem' }}>
-                          <h6 style={{ marginBottom: '1rem' }}>Configurations</h6>
-                        </div>
-                      </TableExpandedRow>
-                    )}
-                  </React.Fragment>
+                  <TableRow key={key} {...rowProps}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
+                    ))}
+                  </TableRow>
                 );
               })}
             </TableBody>
