@@ -32,10 +32,18 @@ In the meantime, you can release the artifacts. This will build the zip files an
 component, the native executables and also will publish the containers to Quay.
 
 ```
-gh workflow run release-artifacts -f currentDevelopmentVersion=0.0.7
+gh workflow run release-artifacts -f currentDevelopmentVersion=$(cat core/core-util/target/classes/version.txt)
 ```
 
 After this is completed successfully, you can announce the release.
+
+### Early Builds
+
+To release early builds, run:
+
+```shell
+gh workflow run early-access -f currentDevelopmentVersion=$(cat core/core-util/target/classes/version.txt)
+```
 
 ## Manual Release Process
 
@@ -52,23 +60,26 @@ Make sure you have your GPG keys installed. You can check with the following com
 gpg --list-public-keys --keyid-format LONG
 ```
 
-**NOTE**: make sure the configuration file is stored securely and not accessible by others. 
+> [NOTE]
+> Make sure the configuration file is stored securely and not accessible by others. 
 
 ## Before start 
 
 Repeat this for every machine to be used for the release.
 
 ```shell
-export PREVIOUS_VERSION=0.0.5
-export CURRENT_DEVELOPMENT_VERSION=0.0.6
-export NEXT_DEVELOPMENT_VERSION=0.0.7
+export PREVIOUS_VERSION=0.0.7
+export CURRENT_DEVELOPMENT_VERSION=0.0.8
+export NEXT_DEVELOPMENT_VERSION=0.0.9
 ```
 
-**NOTE**: there is no need to add `-SNAPSHOT` to the versions.
+> [NOTE]
+> There is no need to add `-SNAPSHOT` to the versions.
 
 ### Pre-Release Checks / Dry Run 
 
-**NOTE**: The steps assume you are primarily building on macOS, with a secondary step on a x86-64 Linux machine.
+> [NOTE]
+> The steps assume you are primarily building on macOS, with a secondary step on a x86-64 Linux machine.
 
 Build the project
 
@@ -118,7 +129,8 @@ Commit the auto-generated UI files and the other version-specific files:
 mvn -PcommitFiles scm:checkin
 ```
 
-**NOTE**: do not perform any other manual commit nor push the code. If necessary, append to the UI commit.
+> [NOTE]:
+> Do not perform any other manual commit nor push the code. If necessary, append to the UI commit.
 
 Erase the tag created incorrectly by Maven
 
@@ -203,12 +215,5 @@ This process is automated, but if there is a need to run it manually, then it ca
 mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
 
-**NOTE**: you must be logged in in Quay.io with the Podman (preferred) or Docker CLI.
-
-### Early Builds
-
-To release early builds, run: 
-
-```shell
-gh workflow run early-access -f currentDevelopmentVersion=$(cat core/core-util/target/classes/version.txt)
-```
+> [NOTE]:
+> You must be logged in in Quay.io with the Podman (preferred) or Docker CLI.
