@@ -34,6 +34,7 @@ public class FirstAvailable implements ServiceResolver {
         if (services != null && !services.isEmpty()) {
             return services.getFirst();
         }
+
         return null;
     }
 }
