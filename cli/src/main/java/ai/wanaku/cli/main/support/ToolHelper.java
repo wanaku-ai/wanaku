@@ -24,7 +24,6 @@ public class ToolHelper {
      * <p>
      * Creates a Quarkus REST client for the {@link ToolsService} at the given host
      * and adds each tool reference from the provided list to the service.
-     * </p>
      *
      * @param toolReferences a list of tool references to import
      * @param host the base URI of the host where the ToolsService is deployed
@@ -58,7 +57,6 @@ public class ToolHelper {
      * <p>
      * Convenience method that wraps the single tool reference in a list
      * and delegates to {@link #importToolset(List, String)}.
-     * </p>
      *
      * @param toolReference the tool reference to import
      * @param host the base URI of the host where the ToolsService is deployed

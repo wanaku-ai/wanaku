@@ -15,6 +15,11 @@ public class InputSchema {
     private List<String> required;
 
     /**
+     * Default constructor for InputSchema.
+     */
+    public InputSchema() {}
+
+    /**
      * Gets the type of the input schema.
      *
      * @return the type of the input schema

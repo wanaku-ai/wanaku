@@ -17,6 +17,11 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
     private String secretsURI;
 
     /**
+     * Default constructor for ToolReference.
+     */
+    public ToolReference() {}
+
+    /**
      * Gets the name of the tool.
      *
      * @return the name of the tool
@@ -114,35 +119,63 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
         this.inputSchema = inputSchema;
     }
 
+    /**
+     * Gets the namespace in which this tool is registered.
+     *
+     * @return the namespace identifier
+     */
     @Override
     public String getNamespace() {
         return namespace;
     }
 
+    /**
+     * Sets the namespace in which this tool is registered.
+     *
+     * @param namespace the namespace identifier to set
+     */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }
 
     /**
-     * Gets the location for the tool configuration
-     * @return
+     * Gets the URI location for the tool configuration.
+     * <p>
+     * The configuration URI points to the location where non-sensitive
+     * configuration data for this tool is stored.
+     *
+     * @return the configuration URI, or {@code null} if not configured
      */
     public String getConfigurationURI() {
         return configurationURI;
     }
 
+    /**
+     * Sets the URI location for the tool configuration.
+     *
+     * @param configurationURI the configuration URI to set
+     */
     public void setConfigurationURI(String configurationURI) {
         this.configurationURI = configurationURI;
     }
 
     /**
-     * Gets the location for the secrets associated with this tool
-     * @return
+     * Gets the URI location for the secrets associated with this tool.
+     * <p>
+     * The secrets URI points to the location where sensitive data such as
+     * credentials, API keys, or tokens for this tool are stored.
+     *
+     * @return the secrets URI, or {@code null} if not configured
      */
     public String getSecretsURI() {
         return secretsURI;
     }
 
+    /**
+     * Sets the URI location for the secrets associated with this tool.
+     *
+     * @param secretsURI the secrets URI to set
+     */
     public void setSecretsURI(String secretsURI) {
         this.secretsURI = secretsURI;
     }

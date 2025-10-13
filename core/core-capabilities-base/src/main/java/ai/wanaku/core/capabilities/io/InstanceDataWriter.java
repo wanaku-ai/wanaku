@@ -7,6 +7,30 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import org.jboss.logging.Logger;
 
+/**
+ * Writes service instance data to binary data files.
+ * <p>
+ * This class provides low-level access to write service instance data files that can be
+ * read by {@link InstanceDataReader}. It uses NIO channels and direct byte buffers for
+ * efficient I/O operations. The writer automatically manages buffering and flushing of
+ * data to ensure proper persistence.
+ * <p>
+ * The file format consists of a {@link FileHeader} followed by one or more {@link ServiceEntry}
+ * records. The header is written automatically during construction, and entries are buffered
+ * and written when the buffer fills or when the writer is closed.
+ * <p>
+ * Usage example:
+ * <pre>{@code
+ * try (InstanceDataWriter writer = new InstanceDataWriter(dataFile, fileHeader)) {
+ *     writer.write(serviceEntry);
+ *     // Additional entries can be written if needed
+ * } // Automatically flushed and closed
+ * }</pre>
+ *
+ * @see InstanceDataReader
+ * @see FileHeader
+ * @see ServiceEntry
+ */
 public class InstanceDataWriter implements AutoCloseable {
     private static final Logger LOG = Logger.getLogger(InstanceDataWriter.class);
 

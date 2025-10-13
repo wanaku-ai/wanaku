@@ -16,10 +16,39 @@ import java.io.File;
 import java.net.URI;
 import java.util.UUID;
 
+/**
+ * Utility class for loading and creating configuration provisioners.
+ * <p>
+ * This class provides factory methods for creating {@link ConfigProvisioner} instances
+ * based on provision requests and service configuration. It handles the creation of
+ * appropriate configuration and secret writers based on the payload types specified
+ * in the provision request.
+ * <p>
+ * The loader supports:
+ * <ul>
+ *   <li>Creating provisioners with file-based configuration and secret writers</li>
+ *   <li>Provisioning configuration and secrets to storage locations</li>
+ *   <li>Generating unique file paths for configuration data</li>
+ * </ul>
+ *
+ * @see ConfigProvisioner
+ * @see ProvisionRequest
+ */
 public final class ConfigProvisionerLoader {
 
     private ConfigProvisionerLoader() {}
 
+    /**
+     * Creates a new configuration provisioner based on the provision request and service configuration.
+     * <p>
+     * This method analyzes the payload types in the request and creates appropriate
+     * configuration and secret writers. Currently supports file-based (BUILTIN) payload types.
+     *
+     * @param request the provision request containing configuration and secret data
+     * @param config the service configuration specifying storage locations
+     * @return a new {@link ConfigProvisioner} instance configured for the request
+     * @throws UnsupportedOperationException if the payload type is not supported
+     */
     public static ConfigProvisioner newConfigProvisioner(ProvisionRequest request, WanakuServiceConfig config) {
         final Configuration configuration = request.getConfiguration();
         final Secret secret = request.getSecret();
@@ -53,6 +82,16 @@ public final class ConfigProvisionerLoader {
         return dataFile;
     }
 
+    /**
+     * Provisions configuration and secrets using the provided provisioner.
+     * <p>
+     * This method extracts configuration and secret data from the provision request
+     * and delegates to the provisioner to write them to their designated storage locations.
+     *
+     * @param request the provision request containing the data to provision
+     * @param provisioner the provisioner instance to use for writing configuration and secrets
+     * @return a {@link ProvisionedConfig} containing URIs to the provisioned configuration and secret locations
+     */
     public static ProvisionedConfig provision(ProvisionRequest request, ConfigProvisioner provisioner) {
         final Configuration configuration = request.getConfiguration();
         final Secret secret = request.getSecret();

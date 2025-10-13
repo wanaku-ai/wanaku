@@ -16,11 +16,15 @@ public class ServiceTarget implements WanakuEntity<String> {
     private int port;
     private ServiceType serviceType;
 
+    /**
+     * Default constructor for ServiceTarget.
+     */
     public ServiceTarget() {}
 
     /**
      * Constructs a new instance of {@link ServiceTarget}.
      *
+     * @param id             The unique identifier for the service.
      * @param service        The name of the service.
      * @param host           The host address of the service.
      * @param port           The port number of the service.
@@ -123,6 +127,7 @@ public class ServiceTarget implements WanakuEntity<String> {
      * @param service The name of the service.
      * @param address The host address of the service.
      * @param port The port number of the service.
+     * @param serviceType The type of service (RESOURCE_PROVIDER, TOOL_INVOKER, or MULTI_CAPABILITY).
      * @return A new instance of {@link ServiceTarget}.
      */
     public static ServiceTarget newEmptyTarget(String service, String address, int port, ServiceType serviceType) {

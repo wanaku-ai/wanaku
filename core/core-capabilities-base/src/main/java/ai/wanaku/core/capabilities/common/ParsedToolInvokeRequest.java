@@ -14,6 +14,9 @@ import java.util.function.Supplier;
 
 /**
  * Represents a parsed tool invocation request containing the URI and its body.
+ *
+ * @param uri the parsed URI for the tool invocation
+ * @param body the body content of the tool invocation request
  */
 public record ParsedToolInvokeRequest(String uri, String body) {
 

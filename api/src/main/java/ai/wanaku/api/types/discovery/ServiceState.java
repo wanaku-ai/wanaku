@@ -25,10 +25,20 @@ public class ServiceState {
         this.reason = reason;
     }
 
+    /**
+     * Gets the timestamp when this service state was recorded.
+     *
+     * @return the timestamp
+     */
     public Instant getTimestamp() {
         return timestamp;
     }
 
+    /**
+     * Sets the timestamp when this service state was recorded.
+     *
+     * @param timestamp the timestamp to set
+     */
     public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }

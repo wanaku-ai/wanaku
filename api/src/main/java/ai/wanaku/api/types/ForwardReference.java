@@ -15,6 +15,11 @@ public class ForwardReference implements WanakuEntity<String> {
     private String namespace;
 
     /**
+     * Default constructor for ForwardReference.
+     */
+    public ForwardReference() {}
+
+    /**
      * The name of the reference
      * @return name of the reference as a string
      */
@@ -58,10 +63,20 @@ public class ForwardReference implements WanakuEntity<String> {
         this.id = id;
     }
 
+    /**
+     * Gets the namespace in which this forward is registered.
+     *
+     * @return the namespace identifier
+     */
     public String getNamespace() {
         return namespace;
     }
 
+    /**
+     * Sets the namespace in which this forward is registered.
+     *
+     * @param namespace the namespace identifier to set
+     */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }

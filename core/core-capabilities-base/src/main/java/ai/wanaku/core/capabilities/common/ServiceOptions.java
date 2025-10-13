@@ -2,6 +2,18 @@ package ai.wanaku.core.capabilities.common;
 
 import java.util.Map;
 
+/**
+ * Defines the contract for merging static and runtime service configuration options.
+ * <p>
+ * This interface is implemented by components that need to combine configuration options
+ * from different sources, such as configuration files and runtime parameters. The merge
+ * operation allows dynamic configuration to override or supplement static configuration
+ * defined at deployment time.
+ * <p>
+ * Implementations should ensure that the provided map is modifiable, as options will be
+ * merged directly into it. The merge strategy (e.g., which source takes precedence) is
+ * determined by the implementing class.
+ */
 public interface ServiceOptions {
 
     /**

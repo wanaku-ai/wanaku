@@ -7,6 +7,27 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+/**
+ * Reads service instance data from binary data files.
+ * <p>
+ * This class provides low-level access to read service instance data files created by
+ * {@link InstanceDataWriter}. It uses NIO channels and direct byte buffers for efficient
+ * I/O operations. The reader automatically parses the {@link FileHeader} upon construction
+ * and validates the file format.
+ * <p>
+ * Usage example:
+ * <pre>{@code
+ * try (InstanceDataReader reader = new InstanceDataReader(dataFile)) {
+ *     FileHeader header = reader.getHeader();
+ *     ServiceEntry entry = reader.readEntry();
+ *     // Process entry...
+ * }
+ * }</pre>
+ *
+ * @see InstanceDataWriter
+ * @see FileHeader
+ * @see ServiceEntry
+ */
 public class InstanceDataReader implements AutoCloseable {
     private static final org.jboss.logging.Logger LOG = org.jboss.logging.Logger.getLogger(InstanceDataReader.class);
 

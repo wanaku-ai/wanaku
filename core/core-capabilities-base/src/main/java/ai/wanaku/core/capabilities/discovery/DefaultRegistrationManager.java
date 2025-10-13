@@ -19,6 +19,25 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
+/**
+ * Default implementation of {@link RegistrationManager} for service discovery and lifecycle management.
+ * <p>
+ * This class manages the registration, deregistration, and health reporting of capability provider
+ * services with the MCP router's discovery service. It handles retry logic, maintains persistent
+ * service identity across restarts, and provides thread-safe registration operations.
+ * <p>
+ * Key responsibilities include:
+ * <ul>
+ *   <li>Registering services with the discovery service</li>
+ *   <li>Maintaining service health status through ping operations</li>
+ *   <li>Reporting operation success and failure states</li>
+ *   <li>Persisting service identity to survive restarts</li>
+ *   <li>Implementing retry logic with configurable wait periods</li>
+ * </ul>
+ *
+ * @see RegistrationManager
+ * @see DiscoveryService
+ */
 public class DefaultRegistrationManager implements RegistrationManager {
     private static final Logger LOG = Logger.getLogger(DefaultRegistrationManager.class);
 
@@ -30,6 +49,20 @@ public class DefaultRegistrationManager implements RegistrationManager {
     private volatile boolean registered;
     private final ReentrantLock lock = new ReentrantLock();
 
+    /**
+     * Constructs a new registration manager for a capability provider service.
+     * <p>
+     * If a data file exists for this service, the manager will restore the previous
+     * service ID to maintain identity across restarts. Otherwise, it creates a new
+     * data directory for persisting service information.
+     *
+     * @param service the discovery service client for registration operations
+     * @param target the service target describing this service's capabilities and location
+     * @param retries the number of registration retry attempts before giving up
+     * @param waitSeconds the number of seconds to wait between retry attempts
+     * @param dataDir the directory path for persisting service identity data
+     * @throws WanakuException if the data directory cannot be created
+     */
     public DefaultRegistrationManager(
             DiscoveryService service, ServiceTarget target, int retries, int waitSeconds, String dataDir) {
         this.service = Objects.requireNonNull(service);
@@ -197,18 +230,38 @@ public class DefaultRegistrationManager implements RegistrationManager {
         }
     }
 
+    /**
+     * Gets the current number of retry attempts remaining.
+     *
+     * @return the number of retries
+     */
     public int getRetries() {
         return retries;
     }
 
+    /**
+     * Sets the number of retry attempts for registration operations.
+     *
+     * @param retries the number of retries to set
+     */
     public void setRetries(int retries) {
         this.retries = retries;
     }
 
+    /**
+     * Gets the wait period in seconds between retry attempts.
+     *
+     * @return the wait period in seconds
+     */
     public int getWaitSeconds() {
         return waitSeconds;
     }
 
+    /**
+     * Sets the wait period in seconds between retry attempts.
+     *
+     * @param waitSeconds the wait period in seconds to set
+     */
     public void setWaitSeconds(int waitSeconds) {
         this.waitSeconds = waitSeconds;
     }

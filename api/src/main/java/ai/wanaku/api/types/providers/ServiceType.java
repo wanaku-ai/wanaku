@@ -35,10 +35,22 @@ public enum ServiceType {
         return value;
     }
 
+    /**
+     * Gets the integer value representing this service type.
+     *
+     * @return the integer value
+     */
     public int intValue() {
         return intValue;
     }
 
+    /**
+     * Converts an integer value to the corresponding ServiceType.
+     *
+     * @param value the integer value (1 for RESOURCE_PROVIDER, 2 for TOOL_INVOKER, 3 for MULTI_CAPABILITY)
+     * @return the corresponding ServiceType
+     * @throws IllegalArgumentException if the value does not correspond to any ServiceType
+     */
     public static ServiceType fromIntValue(int value) {
         if (value == 1) {
             return RESOURCE_PROVIDER;

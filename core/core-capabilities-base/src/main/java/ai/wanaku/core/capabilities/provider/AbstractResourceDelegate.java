@@ -25,7 +25,19 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 /**
- * Base delegate class
+ * Base delegate class for resource acquirer implementations.
+ * <p>
+ * This abstract class provides common functionality for resource acquirer delegates
+ * that handle resource requests from the MCP router. It manages service registration,
+ * configuration provisioning, and the lifecycle of resource acquisition operations.
+ * <p>
+ * Subclasses must implement the abstract methods to define how to:
+ * <ul>
+ *   <li>Build endpoint URIs from resource requests</li>
+ *   <li>Convert service responses into the expected format</li>
+ * </ul>
+ *
+ * @see ResourceAcquirerDelegate
  */
 public abstract class AbstractResourceDelegate implements ResourceAcquirerDelegate {
     private static final Logger LOG = Logger.getLogger(AbstractResourceDelegate.class);
@@ -41,6 +53,17 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
     private RegistrationManager registrationManager;
 
+    /**
+     * Default constructor for AbstractResourceDelegate.
+     */
+    public AbstractResourceDelegate() {}
+
+    /**
+     * Initializes the registration manager after construction.
+     * <p>
+     * This method is automatically called after dependency injection is complete.
+     * It creates and configures the registration manager for this resource provider service.
+     */
     @PostConstruct
     public void init() {
         registrationManager =
@@ -53,6 +76,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      * The parameters are already merged w/ the requested ones, but feel free to override or
      * add more if necessary.
      * @param request the request
+     * @param configResource the configuration resource containing settings for this resource
      * @return the URI as a string
      */
     protected abstract String getEndpointUri(ResourceRequest request, ConfigResource configResource);

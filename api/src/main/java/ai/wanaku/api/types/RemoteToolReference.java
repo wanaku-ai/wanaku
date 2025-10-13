@@ -3,7 +3,19 @@ package ai.wanaku.api.types;
 import java.util.Objects;
 
 /**
- * This class represents a reference to a tool with various attributes such as name, description, URI, type, and input schema.
+ * Represents a reference to a tool capability available on a remote MCP server.
+ * <p>
+ * A remote tool reference contains metadata about a tool that is provided by an
+ * external service or remote MCP server, rather than being locally implemented.
+ * This class is used when tools are discovered through forward proxies or when
+ * integrating with remote capability providers.
+ * <p>
+ * Remote tool references can be converted to standard {@link ToolReference}
+ * instances using the {@link #asToolReference(RemoteToolReference)} method,
+ * which assigns a placeholder URI to indicate the remote nature of the tool.
+ *
+ * @see ToolReference
+ * @see CallableReference
  */
 public class RemoteToolReference implements CallableReference, WanakuEntity<String> {
     private String id;
@@ -127,6 +139,16 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
                 + inputSchema + '}';
     }
 
+    /**
+     * Converts a remote tool reference to a standard tool reference.
+     * <p>
+     * This utility method creates a {@link ToolReference} from a {@link RemoteToolReference}
+     * by copying all metadata and assigning a placeholder URI {@code "<remote>"} to indicate
+     * that the tool is provided by a remote service.
+     *
+     * @param ref the remote tool reference to convert
+     * @return a tool reference with the same metadata and a placeholder remote URI
+     */
     public static ToolReference asToolReference(RemoteToolReference ref) {
         ToolReference ret = new ToolReference();
 
@@ -140,11 +162,21 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
         return ret;
     }
 
+    /**
+     * Gets the namespace in which this remote tool is registered.
+     *
+     * @return the namespace identifier
+     */
     @Override
     public String getNamespace() {
         return namespace;
     }
 
+    /**
+     * Sets the namespace in which this remote tool is registered.
+     *
+     * @param namespace the namespace identifier to set
+     */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }

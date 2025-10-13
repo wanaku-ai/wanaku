@@ -24,7 +24,16 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 /**
- * Base delegate class
+ * Base delegate class for tool invoker implementations.
+ * <p>
+ * This abstract class provides common functionality for invocation delegates
+ * that handle tool invocation requests from the MCP router. It manages service registration,
+ * configuration provisioning, and the lifecycle of tool invocation operations.
+ * <p>
+ * Subclasses must implement the abstract method to define how to convert
+ * service responses into the expected format.
+ *
+ * @see InvocationDelegate
  */
 public abstract class AbstractToolDelegate implements InvocationDelegate {
     private static final Logger LOG = Logger.getLogger(AbstractToolDelegate.class);
@@ -40,6 +49,17 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
     private RegistrationManager registrationManager;
 
+    /**
+     * Default constructor for AbstractToolDelegate.
+     */
+    public AbstractToolDelegate() {}
+
+    /**
+     * Initializes the registration manager after construction.
+     * <p>
+     * This method is automatically called after dependency injection is complete.
+     * It creates and configures the registration manager for this tool invoker service.
+     */
     @PostConstruct
     public void init() {
         registrationManager =
