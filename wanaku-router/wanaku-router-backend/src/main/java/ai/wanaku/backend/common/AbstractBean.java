@@ -4,7 +4,7 @@ import ai.wanaku.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import org.jboss.logging.Logger;
 
-public abstract class AbstractBean<R extends WanakuEntity> {
+public abstract class AbstractBean<R extends WanakuEntity<String>> {
 
     private static final Logger LOG = Logger.getLogger(AbstractBean.class);
 
