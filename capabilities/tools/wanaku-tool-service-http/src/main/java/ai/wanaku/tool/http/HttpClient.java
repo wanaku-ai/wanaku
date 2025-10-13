@@ -36,7 +36,15 @@ public class HttpClient implements Client {
                 ParsedToolInvokeRequest.parseRequest(request.getUri(), request, parameterBuilder::build);
 
         Map<String, String> configsMap = configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX);
-        Map<String, String> configsMapNoPrefix = new HashMap<String, String>();
+        final Map<String, Object> headers = transformConfigsToHeaders(configsMap);
+
+        LOG.infof("Invoking tool at URI: %s", safeLog(parsedRequest.uri()));
+
+        return producer.requestBodyAndHeaders(parsedRequest.uri(), parsedRequest.body(), headers, String.class);
+    }
+
+    private static Map<String, Object> transformConfigsToHeaders(Map<String, String> configsMap) {
+        Map<String, String> configsMapNoPrefix = new HashMap<>();
 
         if (!configsMap.isEmpty()) {
             for (var entry : configsMap.entrySet()) {
@@ -51,9 +59,6 @@ public class HttpClient implements Client {
         if (headers.isEmpty()) {
             headers.put("CamelHttpMethod", "GET");
         }
-
-        LOG.infof("Invoking tool at URI: %s", safeLog(parsedRequest.uri()));
-
-        return producer.requestBodyAndHeaders(parsedRequest.uri(), parsedRequest.body(), headers, String.class);
+        return headers;
     }
 }
