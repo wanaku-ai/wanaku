@@ -87,7 +87,6 @@ public class LocalRunner {
     }
 
     private void deploy(List<String> services, Map<String, String> components) throws IOException {
-        downloadService(RuntimeConstants.WANAKU_ROUTER_WEB, components.get(RuntimeConstants.WANAKU_ROUTER_WEB));
         downloadService(RuntimeConstants.WANAKU_ROUTER_BACKEND, components.get(RuntimeConstants.WANAKU_ROUTER_BACKEND));
 
         for (Map.Entry<String, String> component : components.entrySet()) {
