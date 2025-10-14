@@ -9,6 +9,7 @@ import ai.wanaku.core.util.VersionHelper;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -21,8 +22,37 @@ public class LocalRunner {
     private final WanakuCliConfig config;
     private int activeServices = 0;
 
-    public LocalRunner(WanakuCliConfig config) {
+    public static class LocalRunnerEnvironment {
+        private final Map<String, String> servicesOptions = new HashMap<>();
+
+
+        public LocalRunnerEnvironment() {}
+
+        public LocalRunnerEnvironment withServiceOption(String key, String value) {
+            servicesOptions.put(key, value);
+            return this;
+        }
+
+        public Map<String, String> serviceOptions() {
+            return servicesOptions;
+        }
+
+        public String serviceOptionsArguments() {
+            StringBuilder sb = new StringBuilder();
+
+            for (Map.Entry<String, String> entry : servicesOptions.entrySet()) {
+                sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+            }
+
+            return sb.toString();
+        }
+    }
+
+    private final LocalRunnerEnvironment environment;
+
+    public LocalRunner(WanakuCliConfig config, LocalRunnerEnvironment environment) {
         this.config = config;
+        this.environment = environment;
     }
 
     public void start(List<String> services) throws IOException {
@@ -50,7 +80,7 @@ public class LocalRunner {
 
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {
-                startService(component, grpcPort, executorService, countDownLatch);
+                startService(component, grpcPort, executorService, countDownLatch, environment);
                 grpcPort++;
             }
         }
@@ -75,13 +105,14 @@ public class LocalRunner {
             Map.Entry<String, String> component,
             int grpcPort,
             ExecutorService executorService,
-            CountDownLatch countDownLatch) {
+            CountDownLatch countDownLatch, LocalRunnerEnvironment environment) {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
 
-        String grpcPortArg = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
+        String serviceOptions = String.format("-Dquarkus.grpc.server.port=%d %s", grpcPort, environment.serviceOptionsArguments());
+
         executorService.submit(() -> {
-            ProcessRunner.run(componentDir, "java", grpcPortArg, "-jar", "quarkus-run.jar");
+            ProcessRunner.run(componentDir, "java", serviceOptions, "-jar", "quarkus-run.jar");
             countDownLatch.countDown();
         });
     }
