@@ -35,5 +35,11 @@ public abstract class StartBase extends BaseCommand {
         protected boolean clean = false;
     }
 
+    @CommandLine.Option(
+            names = {"--capabilities-client-secret"},
+            description = "The secret used by the capabilities in order to register with the router",
+            arity = "0..1")
+    protected String capabilitiesClientSecret;
+
     protected abstract void startWanaku();
 }

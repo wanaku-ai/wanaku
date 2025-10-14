@@ -213,8 +213,15 @@ capabilities by default — continue reading the documentation below for details
 
 ### Installing and Running Wanaku Locally Using "Wanaku Start Local"
 
+You can use the Wanaku CLI to start a small/simplified local instance. To do so, you need to run and configure a local Keycloak 
+instance and then use the `wanaku start local` command to run Wanaku pointing to that instance. Make sure you follow the steps
+described in [Option 1: Local Setup with Podman](## Option 1: Local Setup with Podman) the [Keycloak Setup For Wanaku](#Keycloak Setup for Wanaku).
+
 After downloading the CLI, simply run `wanaku start local` and the CLI should download, deploy and start Wanaku with the main
-server, a file provider and an HTTP provider. 
+server, a file provider and an HTTP provider. You will need to pass the client secret configured 
+so that the capabilities can connect to the router. 
+
+```wanaku start local start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv```
 
 If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
 

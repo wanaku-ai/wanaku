@@ -33,7 +33,10 @@ public class StartLocal extends StartBase {
             services = config.defaultServices();
         }
 
-        LocalRunner localRunner = new LocalRunner(config);
+        LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment().withServiceOption(
+                "-Dquarkus.oidc.client.credentials.secret", capabilitiesClientSecret);
+
+        LocalRunner localRunner = new LocalRunner(config, environment);
         try {
             localRunner.start(services);
         } catch (WanakuException | IOException e) {
