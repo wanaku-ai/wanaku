@@ -34,7 +34,7 @@ public class StartLocal extends StartBase {
         }
 
         LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment()
-                .withServiceOption("-Dquarkus.oidc.client.credentials.secret", capabilitiesClientSecret);
+                .withServiceOption("QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET", capabilitiesClientSecret);
 
         LocalRunner localRunner = new LocalRunner(config, environment);
         try {
