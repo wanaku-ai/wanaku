@@ -25,7 +25,6 @@ public class LocalRunner {
     public static class LocalRunnerEnvironment {
         private final Map<String, String> servicesOptions = new HashMap<>();
 
-
         public LocalRunnerEnvironment() {}
 
         public LocalRunnerEnvironment withServiceOption(String key, String value) {
@@ -42,7 +41,10 @@ public class LocalRunner {
 
             for (Map.Entry<String, String> entry : servicesOptions.entrySet()) {
                 if (entry.getValue() != null) {
-                    sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+                    sb.append(entry.getKey())
+                            .append("=")
+                            .append(entry.getValue())
+                            .append(" ");
                 }
             }
 
@@ -107,11 +109,13 @@ public class LocalRunner {
             Map.Entry<String, String> component,
             int grpcPort,
             ExecutorService executorService,
-            CountDownLatch countDownLatch, LocalRunnerEnvironment environment) {
+            CountDownLatch countDownLatch,
+            LocalRunnerEnvironment environment) {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
 
-        String serviceOptions = String.format("-Dquarkus.grpc.server.port=%d %s", grpcPort, environment.serviceOptionsArguments());
+        String serviceOptions =
+                String.format("-Dquarkus.grpc.server.port=%d %s", grpcPort, environment.serviceOptionsArguments());
 
         executorService.submit(() -> {
             ProcessRunner.run(componentDir, "java", serviceOptions, "-jar", "quarkus-run.jar");

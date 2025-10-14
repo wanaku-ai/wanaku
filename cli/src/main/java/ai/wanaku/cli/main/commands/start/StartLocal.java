@@ -33,8 +33,8 @@ public class StartLocal extends StartBase {
             services = config.defaultServices();
         }
 
-        LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment().withServiceOption(
-                "-Dquarkus.oidc.client.credentials.secret", capabilitiesClientSecret);
+        LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment()
+                .withServiceOption("-Dquarkus.oidc.client.credentials.secret", capabilitiesClientSecret);
 
         LocalRunner localRunner = new LocalRunner(config, environment);
         try {
