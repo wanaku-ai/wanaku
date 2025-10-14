@@ -6,7 +6,6 @@ public class RuntimeConstants {
     public static final String WANAKU_HOME_DIR;
     public static final String WANAKU_CACHE_DIR;
     public static final String WANAKU_LOCAL_DIR;
-    public static final String WANAKU_ROUTER_WEB = "wanaku-router-web";
     public static final String WANAKU_ROUTER_BACKEND = "wanaku-router-backend";
 
     static {
