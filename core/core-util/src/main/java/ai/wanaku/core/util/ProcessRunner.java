@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Map;
 import org.jboss.logging.Logger;
 
 public class ProcessRunner {
@@ -47,11 +48,20 @@ public class ProcessRunner {
     }
 
     public static void run(File directory, String... command) {
+        run(directory, null, command);
+    }
+
+    public static void run(File directory, Map<String, String> environmentVariables, String... command) {
         try {
+            LOG.infof("About to run command: %s", String.join(" ", command));
             ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.command(command);
-            processBuilder.inheritIO();
-            processBuilder.directory(directory);
+            processBuilder.command(command)
+                    .inheritIO()
+                    .directory(directory);
+
+            if (environmentVariables != null) {
+                processBuilder.environment().putAll(environmentVariables);
+            }
 
             final Process process = processBuilder.start();
 
