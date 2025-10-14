@@ -41,7 +41,9 @@ public class LocalRunner {
             StringBuilder sb = new StringBuilder();
 
             for (Map.Entry<String, String> entry : servicesOptions.entrySet()) {
-                sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+                if (entry.getValue() != null) {
+                    sb.append(entry.getKey()).append("=").append(entry.getValue()).append(" ");
+                }
             }
 
             return sb.toString();
