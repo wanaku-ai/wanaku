@@ -100,8 +100,13 @@ public class LocalRunner {
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component);
 
         executorService.submit(() -> {
-            ProcessRunner.run(componentDir, "java", "-jar", "quarkus-run.jar");
-            countDownLatch.countDown();
+            try {
+                ProcessRunner.run(componentDir, "java", "-jar", "quarkus-run.jar");
+            } catch (Exception e) {
+                LOG.errorf("Failed to start Wanaku Router Service: %s", e.getMessage(), e);
+            } finally {
+                countDownLatch.countDown();
+            }
         });
     }
 
