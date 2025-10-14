@@ -24,6 +24,7 @@ import dev.langchain4j.mcp.client.McpResourceContents;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
+import dev.langchain4j.service.tool.ToolExecutionResult;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.TextResourceContents;
@@ -180,8 +181,12 @@ public class WanakuForwardResolver implements ForwardResolver {
                         .arguments(serializeArguments(toolArguments.args()))
                         .build();
                 try (McpClient client = ClientUtil.createClient(forwardReference.getAddress())) {
-                    String status = client.executeTool(request);
-                    return ToolResponse.success(status);
+                    ToolExecutionResult result = client.executeTool(request);
+                    if (result.isError()) {
+                        return ToolResponse.error(result.resultText());
+                    }
+
+                    return ToolResponse.success(result.resultText());
                 }
             } catch (Exception e) {
                 LOG.errorf(
