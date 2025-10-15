@@ -119,19 +119,17 @@ public class LocalRunner {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
 
-        String grpcPortOpt =
-                String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
+        String grpcPortOpt = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
 
         executorService.submit(() -> {
             try {
-                ProcessRunner.run(componentDir, environment.serviceOptions(),"java", grpcPortOpt, "-jar", "quarkus-run.jar");
+                ProcessRunner.run(
+                        componentDir, environment.serviceOptions(), "java", grpcPortOpt, "-jar", "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Service %s", component.getKey(), e);
             } finally {
                 countDownLatch.countDown();
             }
-
-
         });
     }
 

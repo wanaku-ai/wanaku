@@ -55,9 +55,7 @@ public class ProcessRunner {
         try {
             LOG.infof("About to run command: %s", String.join(" ", command));
             ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.command(command)
-                    .inheritIO()
-                    .directory(directory);
+            processBuilder.command(command).inheritIO().directory(directory);
 
             if (environmentVariables != null) {
                 processBuilder.environment().putAll(environmentVariables);
