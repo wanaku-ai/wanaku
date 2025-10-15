@@ -243,6 +243,10 @@ cd deploy/auth
 
 Then, take note of the newly generated client secret and use that for the capabilities services. 
 
+## Authentication Configuration
+
+![Inspector Config](imgs/oauth-config-inspector.png)
+
 ## Testing
 
 There are multiple ways you can test Wanaku and the integrations you develop. 
