@@ -97,11 +97,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.quarkiverse.oidc-proxy</groupId>-->
-<!--            <artifactId>quarkus-oidc-proxy</artifactId>-->
-<!--            <version>${quarkus-oidc-proxy.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>io.quarkiverse.oidc-proxy</groupId>
+            <artifactId>quarkus-oidc-proxy</artifactId>
+            <version>${quarkus-oidc-proxy.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
