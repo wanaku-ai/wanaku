@@ -16,7 +16,7 @@ export default defineConfig({
     sourcemap: true,
     emptyOutDir: true,
   },
-  base: "./",
+  base: "/admin/",
   css: {
     preprocessorOptions: {
       scss: {
