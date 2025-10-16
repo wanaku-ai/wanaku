@@ -880,10 +880,12 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:8080/*"
+        "http://localhost:8080/*",
+        "*"
       ],
       "webOrigins": [
-        "http://localhost:8080/*"
+        "http://localhost:8080/*",
+        "*"
       ],
       "notBefore": 0,
       "bearerOnly": false,
