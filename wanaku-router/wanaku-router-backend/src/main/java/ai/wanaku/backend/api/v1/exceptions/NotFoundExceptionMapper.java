@@ -4,6 +4,7 @@ import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
@@ -33,3 +34,6 @@ class ServiceNotFoundExceptionMapper extends NotFoundExceptionMapper<ServiceNotF
 
 @Provider
 class ConfigurationNotFoundExceptionMapper extends NotFoundExceptionMapper<ConfigurationNotFoundException> {}
+
+@Provider
+class AddrNotFoundExceptionMapper extends NotFoundExceptionMapper<NotFoundException> {}
