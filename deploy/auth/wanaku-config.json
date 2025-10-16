@@ -1778,18 +1778,6 @@
         "config": {}
       },
       {
-        "id": "c92385d5-a1fd-489c-82b1-df62a4ecfd22",
-        "name": "Allowed Client Scopes",
-        "providerId": "allowed-client-templates",
-        "subType": "authenticated",
-        "subComponents": {},
-        "config": {
-          "allow-default-scopes": [
-            "true"
-          ]
-        }
-      },
-      {
         "id": "ce74f11b-992d-4e27-a7a6-f43152181360",
         "name": "Allowed Protocol Mapper Types",
         "providerId": "allowed-protocol-mappers",
@@ -1860,16 +1848,13 @@
         }
       },
       {
-        "id": "9fe23854-b470-44b5-9826-04a9b3988ddb",
-        "name": "Trusted Hosts",
-        "providerId": "trusted-hosts",
-        "subType": "anonymous",
+        "id": "c92385d5-a1fd-489c-82b1-df62a4ecfd22",
+        "name": "Allowed Client Scopes",
+        "providerId": "allowed-client-templates",
+        "subType": "authenticated",
         "subComponents": {},
         "config": {
-          "host-sending-registration-request-must-match": [
-            "true"
-          ],
-          "client-uris-must-match": [
+          "allow-default-scopes": [
             "true"
           ]
         }
