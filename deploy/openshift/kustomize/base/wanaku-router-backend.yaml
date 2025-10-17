@@ -22,10 +22,21 @@ spec:
             - containerPort: 8080
               protocol: TCP
           env:
-            - name: QUARKUS_OIDC_ENABLED
-              value: "true"
-            - name: WANAKU_ENABLE_AUTHORIZATION
-              value: "true"
+            - name: AUTH_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: wanaku-config
+                  key: AUTH_SERVER
+            - name: AUTH_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  name: wanaku-config
+                  key: AUTH_PROXY
+            - name: QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: wanaku-config
+                  key: QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED
           volumeMounts:
             - name: router-volume
               mountPath: /home/default/.wanaku/router

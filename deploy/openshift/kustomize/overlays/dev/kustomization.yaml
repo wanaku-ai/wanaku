@@ -5,7 +5,8 @@ resources:
   - ../../base
 
 patchesStrategicMerge:
-  - router-backend-env.yaml
-  - tool-service-env.yaml
+  - wanaku-configmap.yaml
+  - wanaku-services-config.yaml
+  - wanaku-secrets.yaml
 
 #namePrefix:

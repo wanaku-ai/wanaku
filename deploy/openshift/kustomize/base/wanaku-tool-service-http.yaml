@@ -22,10 +22,21 @@ spec:
             - containerPort: 9000
               protocol: TCP
           env:
-            - name: QUARKUS_OIDC_CLIENT_ENABLED
-              value: "true"
-            - name: WANAKU_ENABLE_AUTHORIZATION
-              value: "true"
+            - name: AUTH_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: wanaku-services-config
+                  key: AUTH_SERVER
+            - name: WANAKU_SERVICE_REGISTRATION_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: wanaku-services-config
+                  key: WANAKU_SERVICE_REGISTRATION_URI
+            - name: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: wanaku-service-credentials
+                  key: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
           volumeMounts:
             - name: services-volume
               mountPath: /home/default/.wanaku/services

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wanaku-config
+  labels:
+    app.kubernetes.io/part-of: wanaku
+data:
+  # Authentication server URL (Keycloak/OIDC server)
+  AUTH_SERVER: "http://keycloak:8543"
+
+  # Authentication proxy URL (typically the router backend URL)
+  AUTH_PROXY: "http://wanaku-router-backend:8080"
+
+  # MCP server traffic logging enabled
+  QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED: "true"

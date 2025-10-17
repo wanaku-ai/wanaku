@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wanaku-config
+data:
+  # Development environment configuration
+  AUTH_SERVER: "http://oidc-url-replace"
+
+  AUTH_PROXY: "http://wanaku-router-backend:8080"
+
+  # Enable traffic logging in dev for debugging
+  QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED: "true"
