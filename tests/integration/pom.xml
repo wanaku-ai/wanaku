@@ -11,7 +11,7 @@
     <name>Wanaku :: Tests :: Integration</name>
 
     <properties>
-        <keycloak.docker.image>quay.io/keycloak/keycloak:26.3.1</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:26.3.3</keycloak.docker.image>
     </properties>
 
     <dependencies>
