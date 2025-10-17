@@ -142,12 +142,12 @@ Alternatively, you may also import the configuration using Keycloak's UI, and th
 
 #### Regenerating the Capabilities' Client Secret
 
-Finally, for security, you must regenerate the client secret for the `wanaku-backend` client.
+Finally, for security, you must regenerate the client secret for the `wanaku-service` client.
 
 1.  Navigate to the Keycloak Admin Console at `http://localhost:8543`.
 2.  Log in with your admin credentials (**admin**/**admin**).
 3.  Select the **wanaku** realm from the dropdown in the top-left corner.
-4.  Go to **Clients** in the side menu and click on **wanaku-backend**.
+4.  Go to **Clients** in the side menu and click on **wanaku-service**.
 5.  Go to the **Credentials** tab.
 6.  Click the **Regenerate secret** button and confirm. Copy the new secret to use in your application's configuration.
 
@@ -191,7 +191,7 @@ executing `wanaku`.
 
 > [!NOTE]
 > It requires access to the internet, in case of using a proxy, please ensure that the proxy is configured for your system.
-> If Wanaku JBang is not working with your current configuration, please look to [Proxy configuration in JBang documentation](https://www.jbang.dev/documentation/guide/latest/configuration.html#proxy-configuration).
+> If Wanaku JBang is not working with your current configuration, please look to [Proxy configuration in JBang documentation](https://www.jbang.dev/documentation/jbang/latest/configuration.html#proxy-configuration).
 
 
 
