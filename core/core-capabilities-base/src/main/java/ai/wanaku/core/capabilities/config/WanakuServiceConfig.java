@@ -96,7 +96,7 @@ public interface WanakuServiceConfig extends WanakuConfig {
          *
          * @return The delay seconds.
          */
-        @WithDefault("3")
+        @WithDefault("5")
         int delaySeconds();
 
         /**
@@ -104,7 +104,7 @@ public interface WanakuServiceConfig extends WanakuConfig {
          *
          * @return The maximum retries.
          */
-        @WithDefault("3")
+        @WithDefault("12")
         int retries();
 
         /**
@@ -112,7 +112,7 @@ public interface WanakuServiceConfig extends WanakuConfig {
          *
          * @return The retry wait seconds.
          */
-        @WithDefault("1")
+        @WithDefault("5")
         int retryWaitSeconds();
 
         /**
