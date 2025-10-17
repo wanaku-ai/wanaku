@@ -8,6 +8,7 @@ import ai.wanaku.api.types.discovery.ServiceState;
 import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
+import ai.wanaku.backend.support.WanakuRouterTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -28,19 +29,12 @@ import org.junit.jupiter.api.condition.DisabledIf;
 @QuarkusTest
 @QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class DiscoveryResourceTest {
+public class DiscoveryResourceTest extends WanakuRouterTest {
     private static final Logger LOG = Logger.getLogger(DiscoveryResourceTest.class);
 
     private static String serviceId;
 
     private static KeycloakTestClient keycloakClient;
-
-    static boolean isUnsupportedOSOnGithub() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        String githubActions = System.getenv("GITHUB_ACTIONS");
-        return "true".equalsIgnoreCase(githubActions)
-                && (osName.contains("mac") || osName.contains("darwin") || osName.contains("win"));
-    }
 
     private String getAccessToken() {
         return keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");

@@ -33,7 +33,9 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
 
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", keycloak.getServerUrl());
-        conf.put("quarkus.oidc.auth-server-url", String.format("%s/realms/%s", keycloak.getServerUrl(), "wanaku"));
+        conf.put("auth.server", keycloak.getServerUrl());
+        //        conf.put("quarkus.oidc.auth-server-url", String.format("%s/realms/%s", keycloak.getServerUrl(),
+        // "wanaku"));
 
         conf.put("quarkus.oidc.credentials.secret", "secret");
         conf.put("quarkus.oidc.client-id", "wanaku-service");
