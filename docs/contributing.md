@@ -245,7 +245,14 @@ Then, take note of the newly generated client secret and use that for the capabi
 
 ## Authentication Configuration
 
+### Using a Static Client 
+
 ![Inspector Config](imgs/oauth-config-inspector.png)
+
+### Using Dynamic Client Registration
+
+What the [![OAuth2 Dynamic Client Registration with Wanaku](https://img.youtube.com/vi/44j6025ewTA/0.jpg)](https://www.youtube.com/watch?v=44j6025ewTA)
+video that shows how to use the MCP Inspector to perform these steps.
 
 ## Testing
 
