@@ -345,9 +345,6 @@ auth.proxy=http://localhost:${quarkus.http.port}
 # Client identifier configured in Keycloak for the backend service
 quarkus.oidc.client-id=wanaku-mcp-router
 
-# Client secret from Keycloak - replace with your actual secret
-quarkus.oidc.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
-
 # Avoid forcing HTTPS
 quarkus.oidc.resource-metadata.force-https-scheme=false
 ```
