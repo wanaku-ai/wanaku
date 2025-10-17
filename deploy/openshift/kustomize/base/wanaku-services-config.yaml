@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wanaku-services-config
+  labels:
+    app.kubernetes.io/part-of: wanaku
+data:
+  # OIDC authentication server URL for services
+  AUTH_SERVER: "http://keycloak:8543/realms/wanaku"
+
+  # Service registration URI (router backend)
+  WANAKU_SERVICE_REGISTRATION_URI: "http://wanaku-router-backend:8080/"

@@ -2,6 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+- wanaku-configmap.yaml
+- wanaku-services-config.yaml
+- wanaku-secrets.yaml
 - wanaku-router-backend.yaml
 - wanaku-tool-service-http.yaml
 
