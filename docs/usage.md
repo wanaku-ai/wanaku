@@ -402,38 +402,46 @@ To actually perform its work, Wanaku relies on specialized services that offer t
 to talk to any kind of service. At its core, Wanaku is powered by [Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org), which provide the ability to connect
 to more than [300 different types of systems and services](https://camel.apache.org/components/latest/). 
 
-For instance, by adding a "Kafka" capability to Wanaku, it allows it to talk to any kind of Kafka service.
+The power of Wanaku relies on its ability to plug in different types of systems, regardless of them being new 
+microservices or legacy enterprise systems. 
+For instance, consider the scenario of an enterprise organization, which is running hundreds of systems. With Wanaku, 
+it is possible to create a specific capability for each of them (i.e.: a capability for the finance systems, another 
+for human resources, another for billing, and so on). 
+
+The granularity on which these capabilities can operate is a decision left to the administrator of the system. For some 
+organizations, having a "Kafka" capability to Wanaku capable of talking to any of its systems may be enough. Others, may 
+want to have system-specific ones (i.e.: a billing capability, an employee system capability, etc).
+
+The recommended way to create those capabilities is to use the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/). This is a 
+subcomponent of Wanaku that leverages Apache Camel to exchange data with any system that Camel is capable of talking to.
 
 ![Wanaku Capabilities](imgs/wanaku-capabilities.jpg)
 
 > [!NOTE]
-> Capabilities were, at some point, also called "Downstream services" or "targets". You may still see that terminology used in 
-> some places, specially in older documentation.
+> Capabilities were, at some point, also called "Downstream services" or "targets". You may still see that terminology 
+> used in some places, especially in older documentation.
 
 You should see a list of capabilities available in the UI, in the Capabilities page. Something similar to this:
 
 ![Wanaku Capabilities](imgs/capabilities-list.png)
 
-On the CLI, running `wanaku targets tools list` lists the capabilities available for MCP tools:
+On the CLI, running `wanaku capabilities list` lists the capabilities available for MCP tools:
 
 ```shell
-ID                                       SERVICE                 HOST
-bee5f297-4f7a-4d1c-b0c6-0ac372fcae2c  => exec                 => 192.168.1.137
-92380df9-bcd3-43cb-a4c2-eabe7b06b415  => tavily               => 192.168.1.137
-2b70d26b-6d87-4931-8415-684c0d8ca45e  => camel-yaml           => 192.168.1.137
-dcf9acdf-1bee-42db-b440-b64caf77a469  => kafka                => 192.168.1.137
-```
-
-And the command `wanaku targets resources list`, lists the capabilities available for MCP resources:
-
-```shell
-ID                                       SERVICE                 HOST
-60a96f6c-8f71-48e8-a2bf-1872b6869d77  => file                 => 192.168.1.137
+service serviceType  host      port status lastSeen
+exec    tool-invoker 127.0.0.1 9009 active Sat, Oct 18, 2025 at 18:47:22
+http    tool-invoker 127.0.0.1 9000 active Sat, Oct 18, 2025 at 18:47:23
+tavily  tool-invoker 127.0.0.1 9006 active Sat, Oct 18, 2025 at 18:47:23
 ```
 
 Capabilities determine what type of tools you may add to the router. As such, in the output from the CLI above, it means that 
-this server can add tools of the following types: `exec`, `tavily`, `camel-yaml` and `kafka`. The same applies to MCP resources: 
-the Wanaku MCP instance above can handle MCP resources of the type `file`.
+this server can add tools of the following types: `exec`, `tavily`, and `http`. 
+
+Wanaku accepts the following capability service types:
+
+* `tool-invoker`: these capabilities can be used to create MCP tools. 
+* `resource-provider`: these capabilities can be used to create MCP resources.
+* `multi-capability`: these capabilities can be used to create either MCP tools or MCP resources.
 
 ## Managing MCP Tools
 
