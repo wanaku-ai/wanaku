@@ -1462,3 +1462,8 @@ Visit [this page](../capabilities/tools/README.md) to check all the tools that c
 All CLI commands use the Wanaku management API under the hood. If you need more advanced functionality or want to automate tasks, you may be able to use this API directly.
 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
+
+
+## Configuring the Wanaku MCP Router
+
+You can find a comprehensive list of configuration options for Wanaku in the [Configuration Guide](configurations.md).
