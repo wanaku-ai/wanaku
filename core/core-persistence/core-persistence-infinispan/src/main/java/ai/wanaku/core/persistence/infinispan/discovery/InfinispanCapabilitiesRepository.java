@@ -65,6 +65,6 @@ public class InfinispanCapabilitiesRepository extends AbstractInfinispanReposito
         query.setParameter("serviceType", serviceType);
         query.setParameter("multi", ServiceType.MULTI_CAPABILITY);
 
-        return query.maxResults(1).execute().list();
+        return query.execute().list();
     }
 }
