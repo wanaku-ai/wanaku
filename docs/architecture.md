@@ -3,7 +3,9 @@
 ## Overview
 
 The Wanaku MCP Router is a powerful tool for managing Model Context Protocol (MCP) workloads, providing a flexible and extensible
-framework for integrating with various servers and tools.
+framework for integrating with various servers and tools. Wanaku doesn't directly host tools or resources, instead, 
+it acts as a central hub that manages and governs how agents access specific resources. Different types of tools and 
+resources can be provided by Wanaku, as long as a capability service is linked with the router.
 
 ![Wanaku Architecture](imgs/wanaku-architecture.jpg)
 
@@ -22,11 +24,7 @@ The Wanaku MCP Router is composed of the following components:
 
 ### Resource Providers
 
-Resource providers enable access to different data sources and storage systems:
-
-* **File Provider** (`wanaku-provider-file`) - Access to local and network file systems
-* **FTP Provider** (`wanaku-provider-ftp`) - Access to FTP servers and file transfer protocols
-* **S3 Provider** (`wanaku-provider-s3`) - Access to AWS S3 and S3-compatible storage systems
+Resource providers enable access to different data sources and storage systems. 
 
 ### Tool Services
 
@@ -34,11 +32,7 @@ Tool services provide LLM-callable capabilities through the MCP protocol:
 
 * **Exec Tool Service** (`wanaku-tool-service-exec`) - Execute system commands and processes
 * **HTTP Tool Service** (`wanaku-tool-service-http`) - Make HTTP requests to REST APIs and web services
-* **Kafka Tool Service** (`wanaku-tool-service-kafka`) - Interact with Apache Kafka messaging systems
-* **SQS Tool Service** (`wanaku-tool-service-sqs`) - Integrate with AWS SQS message queuing
 * **Tavily Tool Service** (`wanaku-tool-service-tavily`) - Search integration through Tavily API
-* **Telegram Tool Service** (`wanaku-tool-service-telegram`) - Send messages via Telegram bot API
-* **YAML Route Tool Service** (`wanaku-tool-service-yaml-route`) - Execute Apache Camel routes defined in YAML
 
 ### Core Libraries
 
