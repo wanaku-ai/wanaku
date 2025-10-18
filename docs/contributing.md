@@ -222,7 +222,7 @@ That should allow you to run more complex processing and transformation before c
 To run keycloak for development: 
 
 ```shell
-podman run -d \                                                                                                                                                                                                       125 ↵ otavio@thyone
+podman run -d \
   --name keycloak \
   -p 127.0.0.1:8543:8080 \
   -e KC_BOOTSTRAP_ADMIN_USERNAME="admin" \
