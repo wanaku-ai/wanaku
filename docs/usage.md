@@ -118,7 +118,7 @@ If you already have a Keycloak instance, you may skip the deployment section and
 Apply the pre-defined Kubernetes configurations located in the [`deploy/auth`](https://github.com/wanaku-ai/wanaku/tree/main/deploy/auth) directory.
 This will create all the necessary resources for Keycloak to run.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > Before applying, review the files and be sure to change the default admin password for security.
 
 ```shell
@@ -200,7 +200,7 @@ executing `wanaku`.
 There are three ways to run the router. They work similarly, with the distinction that some of them may come with more 
 capabilities by default — continue reading the documentation below for details.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > Before the router can be executed, it still needs to be configured for secure access and control of its resources. Make sure 
 > you read the section [Securing the Wanaku MCP Router](# Securing the Wanaku MCP Router) **before** running or deploying the router. 
 
@@ -236,6 +236,56 @@ The basic steps to install and run Wanaku on OpenShift are:
 > You may also consult [developer-specific documentation](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/kustomize/CONFIGMAP-USAGE.md)
 > if you need special customizations to your deployment.
 
+## Installing and Running Capabilities
+
+Capabilities are standalone services that connect to the Wanaku router to provide new functionalities. 
+They can be downloaded from the [release page](https://github.com/wanaku-ai/wanaku/releases),
+[deployed to OpenShift](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize) using [containers](https://quay.io/organization/wanaku)
+or built from source.
+
+To run a capability, you need to configure it to connect to your Wanaku router instance and authenticate with it.
+This is done by setting a few essential properties.
+
+### Configuring Capabilities
+
+You can configure capabilities using environment variables or by passing system properties directly on the command line.
+
+Here are the key properties you need to set:
+
+1.  Router URI: Each capability needs to know where the Wanaku router is located to register itself.
+    ```properties
+    wanaku.service.registration.uri=http://localhost:8080
+    ```
+
+2.  OIDC Client Credentials: Capabilities authenticate with the router using OIDC. You must provide the client secret that you previously regenerated in Keycloak.
+    ```properties
+    quarkus.oidc-client.credentials.secret=your-client-secret-from-keycloak
+    ```
+
+3.  Announce Address (Optional): If the capability is running in an environment where its address is not directly accessible by the router (e.g., behind a NAT or in a container), you need to specify the address that the router should use to communicate back to it.
+    ```properties
+    wanaku.service.registration.announce-address=your-public-address
+    ```
+
+> [TIP]
+> You can check the full set of [configuration](configurations.md) available.
+
+### Running a Capability
+
+Once configured, you can run the capability from the command line. The following example shows how to run a capability while overriding the configuration properties:
+
+```shell
+java -Dwanaku.service.registration.uri=http://<wanaku-router-host>:8080 \
+     -Dquarkus.oidc-client.credentials.secret=<your-client-secret> \
+     -Dwanaku.service.registration.announce-address=<your-public-address> \
+     -jar <capability-jar-file>.jar
+```
+
+> [!NOTE]
+> Each capability may have its own specific set of configurations. For example, the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/)
+> requires additional properties to connect to different systems.
+> Always consult the specific documentation for the capability you are using for more details.
+
 #### Prerequisites
 
 Before deploying Wanaku on OpenShift, ensure you have:
@@ -257,29 +307,23 @@ oc get route keycloak -o jsonpath='{.spec.host}'
 
 Lastly, copy the regenerated client secret and add it to the respective overlay:
 
-**For Development Environment:**
 ```shell
-oc apply -k deploy/openshift/kustomize/overlays/dev/
-```
-
-**For Production Environment:**
-```shell
-oc apply -k deploy/openshift/kustomize/overlays/prod/
+oc apply -k deploy/openshift/kustomize/overlays/my-overlay/
 ```
 
 This updates the OIDC server URLs in the environment variable patch files to point to your Keycloak instance.
 
-
 #### Environment Configuration
 
-When running Wanaku on OpenShift or Kubernetes, capabilities cannot automatically discover the router address. You must configure the router location using environment variables in your deployment:
+When running Wanaku on OpenShift or Kubernetes, capabilities cannot automatically discover the router address. 
+You must configure the router location using environment variables in your deployment:
 
 - Set `WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router
 - Configure OIDC authentication URLs to point to your Keycloak instance
 
 The Kustomize overlays handle these configurations automatically for different environments.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > This configuration is also required when running the router and the services on different hosts.
 
 ### Installing the Command Line Interface (CLI)
@@ -322,7 +366,7 @@ Currently, Wanaku supports:
 * OAuth authentication with code grant
 * Automatic client registration
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > When using the Automatic client registration, the access is granted per-namespace. As such, applications need to request a new
 > client id and grant if they change the namespace in use.
 
@@ -331,7 +375,7 @@ For these to work, Keycloak needs to be configured so that the authentication is
 Wanaku comes with a [template configuration](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/wanaku-config.json) that
 can be imported into Keycloak to set up the realm, clients and everything else needed for Wanaku to work.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > After importing this, make sure to adjust the secrets used by the services and any other potential sensitive configuration.
 
 
@@ -489,7 +533,7 @@ The command `wanaku tools add` is used to register a new tool with the Wanaku MC
 > [!NOTE]
 > For remote instances, you can use the parameter `--host` to point to the location of the instance.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > The meaning of the `uri` and how to actually compose it, depends on the type of capability being used. Each capability describes
 > exactly the meaning of the URI, so make sure to check the capability service for details. Additionally, this is covered in more
 > details in the Creating URIs section below.
@@ -663,7 +707,7 @@ The generated output can be directed to standard output or saved to a file.
 If the process completes successfully, the command returns exit code `0`. It returns exit code `3` if no paths are found in the 
 specification and exit code `2` if an error occurs during processing.
 
-> [NOTE]
+> [!NOTE]
 > The command support both `json` and `yaml` definition:
 
 For example:
@@ -814,7 +858,7 @@ In this example:
 * `--name="test mcp via CLI"`: Assigns a human-readable name to the exposed resource.
 * `--type=file`: Indicates that the exposed resource is a file.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > It's important to note that this location refers to a location that the capability (downstream service) is able to access. 
 > The exact meaning of "location" depends on the type of the capability. For example:
 > * For a `file` type, it means the capability needs direct access to the file, implying it's likely running on a host with direct physical access to the file.
@@ -859,7 +903,7 @@ These configurations are specific to individual tools that leverage a particular
 
 These configurations are handled when adding a new tool to Wanaku MCP Router.
 
-> [NOTE] 
+> [!NOTE] 
 > Check the "Configuring the Capabilities" section for additional details about this.
 
 
@@ -945,7 +989,7 @@ When multiple instances of the same service are found, you'll see:
 
 ![img.png](imgs/capabilities-show-choose.png)
 
-> [NOTE]
+> [!NOTE]
 > The Wanaku CLI provides clear exit codes to indicate the outcome of a command:
 > - `0`: The command executed successfully.
 > - `1`: An error occurred (e.g., no capabilities were found, or there were issues connecting to the API).
@@ -965,7 +1009,7 @@ eaf7a675-2225-40da-965b-d576c1439b92  => kafka                => 192.168.1.137
 2b70d26b-6d87-4931-8415-684c0d8ca45e  => camel-yaml           => 192.168.1.137                  
 ```
 
-> [NOTE]
+> [!NOTE]
 > The difference between `wanaku targets (tools|resources) list` and the `wanaku capabilities list` is that the 
 > listing targets print the ID, which can be helpful when extending Wanaku. For most cases, users should rely on the 
 > `wanaku capabilities list` feature. 
@@ -1192,7 +1236,7 @@ that capability service.
 
 ### Adding a New Resource Provider Capability
 
-For cases where the Camel Integration Capability is not sufficient, users can create their own capabibility services. 
+For cases where the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/) is not sufficient, users can create their own capabibility services. 
 
 Why try to make it simple for users to create custom services that solve their particular need.
 
@@ -1307,7 +1351,7 @@ For those cases, leverage the `.proto` files in the `core-exchange` module for c
 
 > [!NOTE]
 > For plain Java, you can still generate the project using the archetype, but in this case, you must implement your own
-delegate from scratch and adjust the dependencies.
+> delegate from scratch and adjust the dependencies.
 
 ### Adjusting the announcement address
 
@@ -1466,14 +1510,14 @@ npx -y supergateway --sse http://localhost:8080/mcp/sse
 
 Visit [this page](../capabilities/providers/README.md) to check all the providers that come built-in with Wanaku.
 
-> [NOTE]
+> [!NOTE]
 > Most users should rely on the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/).
 
 ## Available Tools Capabilities
 
 Visit [this page](../capabilities/tools/README.md) to check all the tools that come built-in with Wanaku.
 
-> [NOTE]
+> [!NOTE]
 > Most users should rely on the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/).
 
 ### API Note
