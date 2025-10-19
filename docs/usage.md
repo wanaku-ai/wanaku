@@ -1134,7 +1134,9 @@ Each namespace acts as a separate logical container, ensuring that the LLM conte
 interfere with tools in another.
 This is particularly useful when you have a large number of tools or when different sets of tools are used for distinct purposes.
 
-Wanaku provides a fixed set of 10 available slots for namespaces, named from `ns-0` to `ns-9`.
+Wanaku provides a fixed set of 10 available slots for namespaces, named from `ns-0` to `ns-9`. 
+It also provides a `default` namespace, 
+which is used if none is specified and a special `public` namespace that can be accessed without any authentication.
 
 ### Using Namespaces
 
@@ -1158,18 +1160,19 @@ This command will display a list of all active namespaces, their unique IDs, and
 The output will look similar to this:
 
 ```shell
-id                                   name path
-381d4276-c824-4bbe-9094-a962c6e8fc46 test http://localhost:8080/ns-9/mcp/sse
-4b7a5ec7-c1f3-4311-8067-10148daf3a10      http://localhost:8080/ns-3/mcp/sse
-dcf97b5e-8ff7-4d04-944c-194379f2e0e4      http://localhost:8080/ns-2/mcp/sse
-dd6f75ac-7b32-4f3b-b965-99040f4af6c2      http://localhost:8080/ns-8/mcp/sse
-59e92c00-04d5-4673-a631-d9244c3e07c1      http://localhost:8080/ns-0/mcp/sse
-e3ff6cd0-e73d-431f-96c9-327b3a498265      http://localhost:8080/ns-1/mcp/sse
-ffe8d322-6ebe-46f2-b913-ac792571fadc      http://localhost:8080/ns-7/mcp/sse
-82434059-45b4-442c-b945-385ae36f158d      http://localhost:8080/ns-6/mcp/sse
-901ea4d6-8e08-4e8b-8171-ce23ae1380d4      http://localhost:8080/ns-5/mcp/sse
-4b2403ca-1acd-419f-9e83-102bbf631536      http://localhost:8080/ns-4/mcp/sse
-<default>                                 http://localhost:8080//mcp/sse
+id                                   name   path
+28560e66-d94c-44a2-b032-779b5542132a        http://localhost:8080/ns-4/mcp/sse
+43b5d7a7-4e7d-4109-960b-ac7695b6f2d3 public http://localhost:8080/public/mcp/sse
+93c5bfdf-0e09-4da5-82fa-4eec3bf6b1b4        http://localhost:8080/ns-3/mcp/sse
+bfd112d2-32cb-475a-9f55-63301519152b        http://localhost:8080/ns-7/mcp/sse
+f5915650-4daa-4616-95c6-5aafceffb026        http://localhost:8080/ns-1/mcp/sse
+db89fedd-ffe6-4dee-b051-bcd5285bb9c9        http://localhost:8080/ns-2/mcp/sse
+d4249e11-9368-4c5b-bb66-981d2d2e69c7        http://localhost:8080/ns-0/mcp/sse
+8898fab6-3774-427f-8400-8c6f6fd9a97e        http://localhost:8080/ns-6/mcp/sse
+fe8cc1f2-2355-4009-ba68-4faeefe937f7        http://localhost:8080/ns-5/mcp/sse
+a3dfaaf6-3655-4bcc-8c48-3d183b6d675b        http://localhost:8080/ns-8/mcp/sse
+8832e2c7-3bd9-4f9b-88ba-982cc20a43de        http://localhost:8080/ns-9/mcp/sse
+<default>                                   http://localhost:8080//mcp/sse
 ```
 
 In this output, you can see the mapping of internal namespace IDs to their corresponding ns-X paths.
