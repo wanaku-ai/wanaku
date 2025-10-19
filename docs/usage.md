@@ -157,10 +157,10 @@ Finally, for security, you must regenerate the client secret for the `wanaku-ser
 
 To run Wanaku, you need to first download and install the router and the command line client.
 
-## Installing the CLI
+## Installing the Command Line Interface (CLI)
 
-Although the router comes with a UI, the CLI is the primary method used to manage the router. As such, it's recommended to have 
-it installed.
+Although the router comes with a UI, the CLI is the primary method used to manage the router. 
+As such, it's recommended to have it installed.
 
 #### Installing the CLI by downloading binary
 
@@ -235,6 +235,23 @@ The basic steps to install and run Wanaku on OpenShift are:
 > [TIP]
 > You may also consult [developer-specific documentation](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/kustomize/CONFIGMAP-USAGE.md)
 > if you need special customizations to your deployment.
+
+### Configuring the Wanaku MCP Router
+
+You can find a comprehensive list of configuration options for Wanaku in the [Configuration Guide](configurations.md).
+
+### Accessing the Administration Web User Interface 
+
+Wanaku also comes with a web user interface that you can access to manage the router. By default it runs on port 8080 of
+the host running the router. 
+
+> [NOTE] At this moment, some features are only available on the CLI.
+
+When accessing the Web UI for the first time, you will be redirected to the Keycloak instance for login. Create a user
+and define a password. 
+
+> [IMPORTANT] Wanaku does not yet support fine-grained control over its exposed resources. All users have admin access to the 
+> tools and resources exposed. Expect this to change in future versions.
 
 ## Installing and Running Capabilities
 
@@ -325,19 +342,6 @@ The Kustomize overlays handle these configurations automatically for different e
 
 > [!IMPORTANT]
 > This configuration is also required when running the router and the services on different hosts.
-
-### Installing the Command Line Interface (CLI)
-
-In addition to installing the Wanaku MCP Router, it is also necessary to install the CLI used to manage the router.
-The Wanaku MCP Router CLI provides a simple way to manage resources and tools for your Wanaku MCP Router instance.
-
-> [!NOTE]
-> Wanaku also comes with a web user interface that you can access on port 8080 of the host running the router, but at this
-> moment, some features are only available on the CLI.
-
-The MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
-locally, that would mean `http://localhost:8080/mcp/sse`)
-
 
 # Securing the Wanaku MCP Router
 
@@ -448,6 +452,19 @@ Common issues when setting up authentication:
 
 
 # Using the Wanaku MCP Router
+
+## Protocol Support 
+
+Wanaku supports MCP via SSE (deprecated) or via Streamable HTTP. 
+
+the MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
+locally, that would mean `http://localhost:8080/mcp/sse`). 
+
+The Streamable HTTP endpoint can be accessed on the path `/mcp/`. 
+
+> [IMPORTANT]
+> Also make sure to check the details about namespaces, as Wanaku offers different namespaces where MCP Tools and MCP 
+> Resources can be registered. This is documented further ahead in this guide.
 
 ## Understanding Capabilities
 
@@ -1157,6 +1174,9 @@ ffe8d322-6ebe-46f2-b913-ac792571fadc      http://localhost:8080/ns-7/mcp/sse
 
 In this output, you can see the mapping of internal namespace IDs to their corresponding ns-X paths.
 
+> [IMPORTANT]
+> For Streamable HTTP, remove the `/sse` from the path (i.e.: `http://localhost:8080/ns-1/mcp/`).
+
 ### The Default Namespace
 
 If you do not specify a namespace when adding a tool or resource, it will automatically be added to the default namespace.
@@ -1236,7 +1256,8 @@ that capability service.
 
 ### Adding a New Resource Provider Capability
 
-For cases where the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/) is not sufficient, users can create their own capabibility services. 
+For cases where the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/) is
+not sufficient, users can create their own capability services. 
 
 Why try to make it simple for users to create custom services that solve their particular need.
 
@@ -1525,8 +1546,3 @@ Visit [this page](../capabilities/tools/README.md) to check all the tools that c
 All CLI commands use the Wanaku management API under the hood. If you need more advanced functionality or want to automate tasks, you may be able to use this API directly.
 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
-
-
-## Configuring the Wanaku MCP Router
-
-You can find a comprehensive list of configuration options for Wanaku in the [Configuration Guide](configurations.md).
