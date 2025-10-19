@@ -223,7 +223,18 @@ If that is successful, open your browser at http://localhost:8080, and you shoul
 
 ### Installing and Running Wanaku on OpenShift or Kubernetes
 
-It is possible to run Wanaku on Kubernetes distributions, such as OpenShift. The deployment is configured using Kustomize for environment-specific customization.
+It is possible to run Wanaku on Kubernetes distributions, such as OpenShift. The deployment is configured using 
+Kustomize for environment-specific customization.
+
+The basic steps to install and run Wanaku on OpenShift are: 
+
+1. Download the kustomize template files in the [`deploy` directory](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize) making sure to use the branch that matches your Wanaku version
+2. Copy the files from the [`dev`](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize/overlays/dev) directory and use them to create a new overlay (i.e.: `prod`) 
+3. Adjust the kustomize files according to your environment. 
+
+> [TIP]
+> You may also consult [developer-specific documentation](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/kustomize/CONFIGMAP-USAGE.md)
+> if you need special customizations to your deployment.
 
 #### Prerequisites
 
