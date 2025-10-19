@@ -62,8 +62,10 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
+        //        Namespace ns = namespacesBean.
 
         if (!StringHelper.isEmpty(toolReference.getNamespace())) {
+
             final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
 
             Tool tool = toolsResolver.resolve(toolReference);

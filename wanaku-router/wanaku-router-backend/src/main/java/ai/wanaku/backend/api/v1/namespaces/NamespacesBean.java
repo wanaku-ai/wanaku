@@ -41,21 +41,36 @@ public class NamespacesBean {
         } else {
             LOG.infof("This instance already has %d namespaces allocated", namespaceRepository.size());
         }
+
+        List<Namespace> publicList = namespaceRepository.findByName("public");
+        if (publicList.isEmpty()) {
+            // Register the public namespace
+            Namespace publicNs = new Namespace();
+            publicNs.setPath("public");
+            publicNs.setName("public");
+
+            namespaceRepository.persist(publicNs);
+        }
     }
 
     public Namespace alocateNamespace(String name) {
-        final List<Namespace> namespaces = namespaceRepository.findFirstAvailable(name);
-        Namespace namespace = namespaces.getFirst();
+        List<Namespace> byName = namespaceRepository.findByName(name);
+        if (byName.isEmpty()) {
+            final List<Namespace> namespaces = namespaceRepository.findFirstAvailable(name);
+            Namespace namespace = namespaces.getFirst();
 
-        if (namespace.getName() == null) {
-            LOG.debugf("Allocating namespace with path %s for %s", namespace.getPath(), name);
-            namespace.setName(name);
-            return namespaceRepository.persist(namespace);
-        } else {
-            LOG.debugf("Reusing namespace with path %s for %s", namespace.getPath(), name);
+            if (namespace.getName() == null) {
+                LOG.debugf("Allocating namespace with path %s for %s", namespace.getPath(), name);
+                namespace.setName(name);
+                return namespaceRepository.persist(namespace);
+            } else {
+                LOG.debugf("Reusing namespace with path %s for %s", namespace.getPath(), name);
+            }
+
+            return namespace;
         }
 
-        return namespace;
+        return byName.getFirst();
     }
 
     public List<Namespace> list() {
