@@ -383,13 +383,14 @@ can be imported into Keycloak to set up the realm, clients and everything else n
 > After importing this, make sure to adjust the secrets used by the services and any other potential sensitive configuration.
 
 
-## Configuring Wanaku Components
+## Configuring Wanaku Components for Secure Access
 
-Each Wanaku component requires a specific set of configurations to enable authentication.
+Each Wanaku component requires a specific set of configurations for secure access. You can find the full set of 
+configuration options in the [Configuration Guide](configurations.md).
 
 The configuration varies depending on the component's role in the system.
 
-### Wanaku Router Backend
+### Wanaku Router Backend Security Configurations
 
 The backend service handles API operations and requires [OIDC configuration](https://quarkus.io/guides/security-oidc-configuration-properties-reference)
 with service credentials.
@@ -416,7 +417,7 @@ As a reference for understanding what is going on under the hood, the following 
 * [Secure MCP Server OAuth 2](https://quarkus.io/blog/secure-mcp-server-oauth2/)
 * [Secure MCP SSE Server](https://quarkus.io/blog/secure-mcp-sse-server/)
 
-### Capability Services
+### Capability Services Security Configurations
 
 Wanaku also requires for the capabilities services to be authenticated in order to register themselves.
 Capability services act as [OIDC clients](https://quarkus.io/guides/security-openid-connect-client-reference) and authenticate
