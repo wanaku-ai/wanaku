@@ -5,7 +5,8 @@
 A tool is anything that can operate in a request/reply mode.
 A provider is anything that can read a resource.
 Tools typically mean that some processing is performed on the provided input. 
-Providers typically facilitate access to a resource (such as file) without necessarily processing an input (expect, of course, evaluating the name of the resource and how that matches with the underlying system storing the resource).
+Providers typically facilitate access to a resource (such as file) without necessarily processing an input (except, of course, 
+evaluating the name of the resource and how that matches with the underlying system storing the resource).
 
 Here are some examples: 
 
@@ -16,8 +17,19 @@ Here are some examples:
 * Exchanging data using request/reply over JMS is a tool
 
 > [!NOTE]
-> this is a generic explanation and the distinction may be specific to the problem domain. 
-> Therefore, there may be cases where this doesn't apply. 
+> This is a generic explanation and the distinction may be specific to the problem domain. 
+> Therefore, there may be cases where this doesn't apply.
+
+Ideally, most of the MCP tools and MCP resource providers should be created using the 
+[Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/).
+For special cases, you can use the Wanaku CLI to create the project templates for creating tools or resource providers using 
+the Wanaku SDK.
+
+
+> [IMPORTANT]
+> The vast majority of the custom capabilities should be included in the [Wanaku Examples](https://github.com/wanaku-ai/wanaku-examples)
+> repository and not to the main Wanaku MCP Router project.
+
 
 ### Service types
 
@@ -174,18 +186,18 @@ Or in the CLI:
 mvn -Pdist -Dquarkus.container-image.registry=quay.io -Dquarkus.container-image.group=my-group -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
 
-## Service Types 
+## Capabilities and Forwards 
 
-Wanaku supports two types of services: 
+Wanaku supports acting as a router/gateway for two types of services: 
 
-* Downstream services using gRPC. These services either be plain Quarkus or Camel Extension for Quarkus.
+* Downstream services using gRPC. These services can either be plain Quarkus or Camel Extension for Quarkus.
 * Other HTTP-based MCP servers (SSE). This allows integrating any MCP server with Wanaku.
 
 The type of service you create will depend on the type of problem you want to solve. Downstream services ofter
 greater integration with Wanaku (i.e.; including better discovery and configuration). On the other hand, plain MCP
 services are simpler to create and develop. 
 
-### Downstream Services Tips
+### Capabilities Services Tips
 
 ### Adding Routes to Providers and Tools
 
@@ -217,7 +229,7 @@ String s = producer.requestBody("direct:start", parsedRequest.body(), String.cla
 
 That should allow you to run more complex processing and transformation before calling the endpoint.
 
-## Running Keycloak
+## Running Keycloak for Development
 
 To run keycloak for development: 
 
@@ -243,13 +255,13 @@ cd deploy/auth
 
 Then, take note of the newly generated client secret and use that for the capabilities services. 
 
-## Authentication Configuration
+### Authentication Configuration
 
-### Using a Static Client 
+#### Using a Static Client 
 
 ![Inspector Config](imgs/oauth-config-inspector.png)
 
-### Using Dynamic Client Registration
+#### Using Dynamic Client Registration
 
 What the [![OAuth2 Dynamic Client Registration with Wanaku](https://img.youtube.com/vi/44j6025ewTA/0.jpg)](https://www.youtube.com/watch?v=44j6025ewTA)
 video that shows how to use the MCP Inspector to perform these steps.
@@ -263,12 +275,12 @@ There are multiple ways you can test Wanaku and the integrations you develop.
 3. Any of the scripts in the `tests` directory 
 4. Any agent application (such as [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat)) 
 
+## Release Guide
+
+Committers should check the [Release Guide](release-guide) for details about how to build and distribute Wanaku.
+
 ## Learn More
 
 To contribute new core features and connectors, also read the [Wanaku MCP Router Internals](wanaku-router-internals.md) guide.
 
 If you want to understand what each of the components do, then read the [Wanaku Components and Architecture](architecture.md) guide.
-
-## Release Guide
-
-Committers should check the [Release Guide](release-guide) for details about how to build and distribute Wanaku. 
