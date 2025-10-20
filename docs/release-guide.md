@@ -110,13 +110,6 @@ mvn release:clean
 mvn --batch-mode -Dtag=wanaku-${CURRENT_DEVELOPMENT_VERSION} release:prepare -DreleaseVersion=${CURRENT_DEVELOPMENT_VERSION} -DdevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}-SNAPSHOT
 ```
 
-Adjust the docker-compose files:
-
-```shell
-sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose.yml
-sed -i -e "s/wanaku-$PREVIOUS_VERSION/wanaku-$CURRENT_DEVELOPMENT_VERSION/g" docker-compose-prod.yml
-```
-
 Adjust the Jbang catalog file: 
 
 ```shell
