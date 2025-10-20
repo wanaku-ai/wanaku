@@ -45,7 +45,7 @@ public interface ServiceRegistry {
      * Get all registered services and their configurations
      *
      * @param serviceType the type of service to get
-     * @return a set of all registered services and their configurations
+     * @return a list of all registered services and their configurations
      */
     List<ServiceTarget> getEntries(ServiceType serviceType);
 
