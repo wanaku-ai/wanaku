@@ -13,7 +13,7 @@
     <name>Wanaku :: Router :: Backend</name>
 
     <properties>
-        <keycloak.docker.image>quay.io/keycloak/keycloak:26.3.3</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:26.3.5</keycloak.docker.image>
     </properties>
 
     <dependencies>

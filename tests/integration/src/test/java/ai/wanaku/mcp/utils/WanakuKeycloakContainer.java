@@ -18,7 +18,7 @@ public class WanakuKeycloakContainer extends KeycloakContainer {
 
     public WanakuKeycloakContainer() {
         // Configure the container
-        super(DockerImageName.parse("quay.io/keycloak/keycloak:26.3.1"));
+        super(DockerImageName.parse("quay.io/keycloak/keycloak:26.3.5"));
         this.withUseHttps(false);
         this.waitingFor(Wait.forLogMessage(".*Keycloak.*started.*Listening on:.*", 1));
     }

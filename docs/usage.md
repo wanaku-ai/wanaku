@@ -100,7 +100,7 @@ podman run -d \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   -v keycloak-dev:/opt/keycloak/data \
-  quay.io/keycloak/keycloak:26.3.1 start-dev
+  quay.io/keycloak/keycloak:26.3.5 start-dev
 ```
 
 * `-p 127.0.0.1:8543:8080`: Maps port `8543` on your local machine to the container's port `8080`. By default, Wanaku expects Keycloak on port `8543`.
