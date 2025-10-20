@@ -89,9 +89,7 @@ async def main():
     inputs_map = {
         "dog-facts": "Please give me 3 dog facts",
         "meow-facts": "Please give me 2 cat facts",
-        "camel-rider-quote-generator": "Please give me a random quote from the Camel rider. Extract whatever text you receive from it.",
         # "tavily-search": "Please search on the web using Tavily 'What is Apache Spark?'. Then, summarize the results for me.",
-        "laptop-order": "I need a new laptop. Please issue an order for a new one. If successful, provide me the order number",
     }
 
     participants = [tester_assistant]
