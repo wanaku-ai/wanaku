@@ -6,7 +6,6 @@
         <groupId>ai.wanaku</groupId>
         <artifactId>wanaku-router</artifactId>
         <version>0.0.8-SNAPSHOT</version>
-<!--        <relativePath>../pom.xml</relativePath>-->
     </parent>
 
     <artifactId>wanaku-router-backend</artifactId>
