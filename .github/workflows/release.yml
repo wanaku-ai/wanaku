@@ -50,8 +50,6 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           mvn --batch-mode -Dtag=wanaku-${{ github.event.inputs.currentDevelopmentVersion }} -DreleaseVersion=${{ github.event.inputs.currentDevelopmentVersion }} -DdevelopmentVersion=${{ github.event.inputs.nextDevelopmentVersion }}-SNAPSHOT release:prepare
-          sed -i -e "s/wanaku-${{ github.event.inputs.previousDevelopmentVersion }}/wanaku-${{ github.event.inputs.currentDevelopmentVersion }}/g" docker-compose.yml
-          sed -i -e "s/wanaku-${{ github.event.inputs.previousDevelopmentVersion }}/wanaku-${{ github.event.inputs.currentDevelopmentVersion }}/g" docker-compose-prod.yml
           sed -i -e "s/${{ github.event.inputs.previousDevelopmentVersion }}/${{ github.event.inputs.currentDevelopmentVersion }}/g" jbang-catalog.json
           mvn -PcommitFiles scm:checkin
           git tag -d wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
