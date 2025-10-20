@@ -46,8 +46,8 @@ Alternatively, if you don't have the CLI instanced, you can do so using Maven:
  
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype \ 
-  -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool.kafka -DartifactId=wanaku-tool-service-kafka \
-  -Dname=Kafka -Dwanaku-version=0.0.3 -Dwanaku-capability-type=camel
+  -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool.kafka -DartifactId=wanaku-tool-service-kafka \
+  -Dname=Kafka -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
 ```
 
 > [!IMPORTANT]
@@ -105,8 +105,8 @@ Alternatively, if you don't have the CLI instanced, you can do so using Maven:
 
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype \
-  -DarchetypeVersion=0.0.3 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider.s3 -DartifactId=wanaku-provider-s3 \
-  -Dname=S3 -Dwanaku-version=0.0.3 -Dwanaku-capability-type=camel
+  -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider.s3 -DartifactId=wanaku-provider-s3 \
+  -Dname=S3 -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
 ```
 
 > [!IMPORTANT]
