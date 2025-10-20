@@ -19,7 +19,6 @@ The Wanaku MCP Router is composed of the following components:
 ### Core Router Components
 
 * **Router Backend** (`wanaku-router-backend`) - The main MCP server engine that receives MCP requests and forwards them to appropriate providers or services using gRPC
-* **Router Web** (`wanaku-router-web`) - Web interface for managing and monitoring the router
 * **CLI** (`cli`) - Command-line interface for router configuration and management
 
 ### Resource Providers
