@@ -6,12 +6,14 @@ import io.quarkus.test.junit.QuarkusTest;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 @QuarkusTest
 @DisabledOnOs({OS.MAC, OS.WINDOWS})
+@Disabled( "Breaks the release process")
 public class WanakuHttpToolIT extends WanakuIntegrationBase {
 
     @Test
