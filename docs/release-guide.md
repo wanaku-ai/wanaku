@@ -31,8 +31,8 @@ The publication to Maven Central should take another 30 minutes.
 In the meantime, you can release the artifacts. This will build the zip files and tarballs with each 
 component, the native executables and also will publish the containers to Quay.
 
-```
-gh workflow run release-artifacts -f currentDevelopmentVersion=$(cat core/core-util/target/classes/version.txt)
+```shell
+gh workflow run release-artifacts -f currentDevelopmentVersion=${CURRENT_DEVELOPMENT_VERSION}
 ```
 
 After this is completed successfully, you can announce the release.
