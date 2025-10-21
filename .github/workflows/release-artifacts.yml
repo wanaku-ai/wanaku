@@ -70,7 +70,20 @@ jobs:
         run: |
           mvn -Pdist -Dnative -DskipTests clean package
       - name: Run JReleaser
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
         uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
+          JRELEASER_SELECT_CURRENT_PLATFORM: true
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      - name: Run JReleaser (Cli - macOS)
+        if: matrix.os != 'ubuntu-latest' && matrix.os != 'ubuntu-24.04-arm'
+        uses: jreleaser/release-action@v2
+        with:
+          arguments: 'full-release --exclude-distribution=cli'
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
