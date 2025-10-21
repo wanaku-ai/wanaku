@@ -57,7 +57,7 @@ jobs:
           -Dquarkus.jib.platforms=linux/amd64 \
           clean package
       - name: Create a release build with container push (x86)
-        if: matrix.os != 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04-arm'
         run: |
           mvn -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
