@@ -15,7 +15,7 @@ jobs:
       contents: write
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
         experimental: [ false ]
         include:
           - os: [ macos-latest ]
