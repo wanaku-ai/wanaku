@@ -64,6 +64,12 @@ jobs:
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/arm64/v8 \
           clean package
+      - name: Create a release build with native executables (macos)
+        if: matrix.os == 'macos-latest'
+        run: |
+          mvn -Pdist -Dnative -DskipTests \
+          -Dquarkus.jib.platforms=linux/arm64/v8 \
+          clean package
 
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
