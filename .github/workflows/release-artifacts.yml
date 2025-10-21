@@ -66,12 +66,9 @@ jobs:
           -Dquarkus.jib.platforms=linux/arm64/v8 \
           clean package
       - name: Create a release build with native executables (macos)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os != 'ubuntu-latest' || matrix.os != 'ubuntu-24.04-arm'
         run: |
-          mvn -Pdist -Dnative -DskipTests \
-          -Dquarkus.jib.platforms=linux/arm64/v8 \
-          clean package
-
+          mvn -Pdist -Dnative -DskipTests clean package
       - name: Run JReleaser
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         uses: jreleaser/release-action@v2
