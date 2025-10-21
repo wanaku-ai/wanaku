@@ -6,7 +6,7 @@
       "dependencies": [
         "ai.wanaku:cli:${wanaku.version:0.0.8}"
       ],
-      "description": "Run Wanaku easily"
+      "description": "Run Wanaku easily with JBang"
     }
   }
 }
