@@ -40,7 +40,7 @@ jobs:
         id: arch
         run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Login to Container Registry
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
         uses: docker/login-action@v3
         with:
           registry: quay.io
