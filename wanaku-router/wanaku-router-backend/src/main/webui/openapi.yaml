@@ -786,7 +786,7 @@ paths:
       - Tools Resource
 info:
   title: wanaku-router-backend API
-  version: 0.0.8-SNAPSHOT
+  version: 0.0.8
 servers:
 - url: http://localhost:8080
   description: Auto generated value
