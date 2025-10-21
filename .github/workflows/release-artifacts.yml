@@ -40,6 +40,7 @@ jobs:
         id: arch
         run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Login to Container Registry
+        if: matrix.os == 'ubuntu-latest'
         uses: docker/login-action@v3
         with:
           registry: quay.io
@@ -49,7 +50,7 @@ jobs:
       - name: Create a release build with container push (x86)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          mvn -Dnative -Pdist \
+          mvn -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
@@ -58,7 +59,7 @@ jobs:
       - name: Create a release build with container push (x86)
         if: matrix.os != 'ubuntu-latest'
         run: |
-          mvn -Dnative -Pdist \
+          mvn -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
@@ -72,6 +73,7 @@ jobs:
           clean package
 
       - name: Run JReleaser
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         uses: jreleaser/release-action@v2
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
