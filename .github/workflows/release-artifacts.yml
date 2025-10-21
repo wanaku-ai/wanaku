@@ -70,7 +70,6 @@ jobs:
         run: |
           mvn -Pdist -Dnative -DskipTests clean package
       - name: Run JReleaser
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         uses: jreleaser/release-action@v2
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
