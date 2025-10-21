@@ -25,7 +25,7 @@ public class WanakuKeycloakContainer extends KeycloakContainer {
 
     public void createRealm() {
         final String path =
-                KeycloakTestClient.class.getResource("/wanaku-realm.json").getPath();
+                KeycloakTestClient.class.getResource(REALM_FILE_PATH).getPath();
 
         KeycloakTestClient keycloakClient = new KeycloakTestClient(getServerUrl());
 
