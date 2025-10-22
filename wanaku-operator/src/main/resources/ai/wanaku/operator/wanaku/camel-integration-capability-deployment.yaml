@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: camel-integration-capability-service
+  name: camel-integration-capability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camel-integration-capability
+  template:
+    metadata:
+      labels:
+        app: camel-integration-capability
+    spec:
+      containers:
+      - name: camel-integration-capability
+        image: quay.io/wanaku/camel-integration-capability:latest
+        env:
+        - name: REGISTRATION_URL
+          value: ""
+        - name: REGISTRATION_ANNOUNCE_ADDRESS
+          value: "auto"
+        - name: GRPC_PORT
+          value: "9190"
+        - name: SERVICE_NAME
+          value: ""
+        - name: ROUTES_PATH
+          value: ""
+        - name: ROUTES_RULES
+          value: ""
+        - name: TOKEN_ENDPOINT
+          value: ""
+        - name: CLIENT_ID
+          value: "wanaku-service"
+        - name: CLIENT_SECRET
+          value: ""
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          tcpSocket:
+            port: 9190
+        ports:
+        - containerPort: 9190
+          name: grpc
+          protocol: TCP
+        readinessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          tcpSocket:
+            port: 9190
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /data
+          name: ""
+      volumes:
+        - name: ""
+          persistentVolumeClaim:
+            claimName: ""

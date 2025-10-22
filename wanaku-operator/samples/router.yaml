@@ -1,0 +1,42 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: Wanaku
+metadata:
+  name: wanaku-dev
+spec:
+  auth:
+# This is the address of the authorization server (in the format: http://address)
+    authServer: ""
+# Address of the proxy (in the format: http://address). It could be the same as the auth server - default) or "auto" (for using
+# Wanaku as the proxy via OIDC proxy.
+#    authProxy: ""
+  secrets:
+# This is the OIDC credentials secret for the services
+    oidcCredentialsSecret: ""
+# Router settings are optional
+  router:
+    env:
+# It is possible to set environment variables for the router by adding a map like the one below
+#      - name: ENVIRONMENT_VARIABLE_1
+#        value: value1
+#      - name: ENVIRONMENT_VARIABLE_2
+#        value: value2
+# You can also set a custom image for the router
+#    image: quay.io/wanaku/wanaku-router-backend:latest # Optional
+  capabilities:
+# For the capabilities, you need to provide the name, image to use and any environment variables required:
+    - name: wanaku-http
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
+    - name: finance-system
+      image: quay.io/wanaku/camel-integration-capability:latest
+    - name: employee-system
+      type: camel-integration-capability
+      image: quay.io/wanaku/camel-integration-capability:latest
+      # When using a camel integration capability, must always set the path to the routes file and to the rules file
+      env:
+        # The path to the routes file, should be within /data (i.e.: /data/my-system.camel.yaml)
+        - name: ROUTES_PATH
+          value: ""
+        # The path to the rules file, should be within /data (i.e.: /data/my-system-rules.yaml)
+        - name: ROUTES_RULES
+          value: ""
+        # Note, you can use oc cp file <pod name>:/data/<file> to copy the files
