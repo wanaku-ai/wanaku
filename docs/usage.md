@@ -221,10 +221,204 @@ If that is successful, open your browser at http://localhost:8080, and you shoul
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details. 
 
-### Installing and Running Wanaku on OpenShift or Kubernetes
+### Installing and Running Wanaku on OpenShift or Kubernetes Using the Wanaku Operator
 
-It is possible to run Wanaku on Kubernetes distributions, such as OpenShift. The deployment is configured using 
-Kustomize for environment-specific customization.
+The Wanaku Operator simplifies the deployment and management of Wanaku instances on Kubernetes and OpenShift clusters.
+It automates the creation and configuration of all necessary resources, making it the recommended approach for production deployments.
+
+#### Prerequisites
+
+Before deploying the Wanaku Operator, ensure you have:
+- Access to a Kubernetes or OpenShift cluster
+- `kubectl` or `oc` CLI tools installed and configured
+- `helm` CLI tool installed (version 3.x or later)
+- A running Keycloak instance (see [Keycloak Setup for Wanaku](#keycloak-setup-for-wanaku))
+- Sufficient permissions to create namespaces, deployments, and custom resources
+
+#### Installing the Wanaku Operator with Helm
+
+The Wanaku Operator can be deployed using Helm charts. First, ensure you're in the correct namespace or create a new one:
+
+```shell
+kubectl create namespace wanaku
+```
+
+Then, install the operator using the [Helm chart](https://github.com/wanaku-ai/wanaku/tree/main/wanaku-operator/deploy/helm) from the repository:
+
+```shell
+helm install wanaku-operator ./wanaku-operator/deploy/helm/wanaku-operator \
+  --namespace wanaku \
+  --set operatorNamespace=wanaku
+```
+
+By default, the operator will be deployed in the namespace specified by the `operatorNamespace` value. 
+
+You can customize this during installation:
+
+```shell
+helm install wanaku-operator ./wanaku-operator/deploy/helm/wanaku-operator \
+  --namespace my-custom-namespace \
+  --set operatorNamespace=my-custom-namespace
+```
+
+To verify the operator is running:
+
+```shell
+kubectl get pods -n wanaku
+```
+
+You should see the operator pod in a Running state.
+
+#### Defining a Wanaku Router Instance
+
+Once the operator is installed, you can create Wanaku router instances by defining a custom resource.
+The operator watches for these custom resources and automatically creates all necessary Kubernetes objects.
+
+Create a file named `wanaku-instance.yaml` with the following content:
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: Wanaku
+metadata:
+  name: wanaku-dev
+spec:
+  auth:
+    # This is the address of the authorization server (in the format: http://address)
+    authServer: http://keycloak:8080
+    # Address of the proxy (in the format: http://address).
+    # It could be the same as the auth server (default) or "auto"
+    # (for using Wanaku as the proxy via OIDC proxy)
+    # authProxy: ""
+  secrets:
+    # This is the OIDC credentials secret for the services
+    oidcCredentialsSecret: your-keycloak-client-secret
+
+  # Router settings are optional
+  router:
+    # You can set a custom image for the router
+    # image: quay.io/wanaku/wanaku-router-backend:latest
+    env:
+      # It is possible to set environment variables for the router
+      # - name: ENVIRONMENT_VARIABLE_1
+      #   value: value1
+      # - name: ENVIRONMENT_VARIABLE_2
+      #   value: value2
+
+  # Define the capabilities you want to enable
+  capabilities:
+    # HTTP capability for HTTP-based tools
+    - name: wanaku-http
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
+
+    # Camel Integration Capability example
+    - name: employee-system
+      type: camel-integration-capability
+      image: quay.io/wanaku/camel-integration-capability:latest
+      env:
+        # The path to the routes file, should be within /data
+        - name: ROUTES_PATH
+          value: "/data/employee-routes.camel.yaml"
+        # The path to the rules file, should be within /data
+        - name: ROUTES_RULES
+          value: "/data/employee-rules.yaml"
+```
+
+Apply the custom resource to create your Wanaku instance:
+
+```shell
+kubectl apply -f wanaku-instance.yaml
+```
+
+The operator will automatically create:
+- Deployment for the Wanaku router
+- Deployments for each enabled capability
+- Services to expose the router and capabilities
+- ConfigMaps for configuration
+- Secrets for sensitive data
+- Routes/Ingress (if configured)
+- ServiceAccounts and RBAC resources
+
+> [!NOTE]
+> When using the Camel Integration Capability, you can copy your route and rules files to the capability pods using:
+> ```shell
+> kubectl cp your-routes.camel.yaml <pod-name>:/data/employee-routes.camel.yaml
+> ```
+
+> [!TIP]
+> You can find more complete examples in the [wanaku-operator/samples](https://github.com/wanaku-ai/wanaku/tree/main/wanaku-operator/samples) directory.
+
+#### Checking the Deployment Status
+
+To check the status of your Wanaku instance:
+
+```shell
+kubectl get wanaku -n wanaku
+```
+
+To view detailed information:
+
+```shell
+kubectl describe wanaku my-wanaku-router -n wanaku
+```
+
+To access the logs:
+
+```shell
+kubectl logs -n wanaku deployment/my-wanaku-router
+```
+
+#### Accessing the Wanaku Router
+
+Once deployed, you can access the Wanaku router through its service. To get the service details:
+
+```shell
+kubectl get svc -n wanaku
+```
+
+To get the route URL:
+
+```shell
+oc get route my-wanaku-router -n wanaku -o jsonpath='{.spec.host}'
+```
+
+#### Updating the Wanaku Instance
+
+To update your Wanaku instance, simply edit the custom resource and apply the changes:
+
+```shell
+kubectl edit wanaku my-wanaku-router -n wanaku
+```
+
+Or update your YAML file and reapply:
+
+```shell
+kubectl apply -f wanaku-instance.yaml
+```
+
+The operator will automatically handle the update and roll out the changes.
+
+#### Removing the Wanaku Instance
+
+To remove a Wanaku instance:
+
+```shell
+kubectl delete wanaku my-wanaku-router -n wanaku
+```
+
+To uninstall the operator:
+
+```shell
+helm uninstall wanaku-operator -n wanaku
+```
+
+> [!NOTE]
+> The operator manages the entire lifecycle of Wanaku instances. Manual modifications to operator-managed resources
+> may be overwritten by the operator's reconciliation process.
+
+### Installing and Running Wanaku on OpenShift or Kubernetes (Manually - Deprecated)
+
+It is also possible to manually run Wanaku on Kubernetes distributions, such as OpenShift. 
+The deployment is configured using Kustomize for environment-specific customization.
 
 The basic steps to install and run Wanaku on OpenShift are: 
 

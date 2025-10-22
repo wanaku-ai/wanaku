@@ -1,0 +1,37 @@
+---
+# Namespace where the operator service account is deployed
+# operatorNamespace: wanaku
+
+app:
+  envs:
+    QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKURECONCILER_NAMESPACES: JOSDK_ALL_NAMESPACES
+  image: quay.io/wanaku/wanaku-operator:latest
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/live
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+  ports:
+    http: 8081
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/ready
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+  startupProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/started
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10

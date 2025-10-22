@@ -1,0 +1,78 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    app.quarkus.io/quarkus-version: 3.27.0
+    app.quarkus.io/commit-id: c1378304324f6153f662d35b8450caf37cbedd6a
+    app.quarkus.io/vcs-uri: https://github.com/wanaku-ai/wanaku.git
+    app.quarkus.io/build-timestamp: 2025-10-27 - 11:54:35 +0000
+  labels:
+    app.kubernetes.io/name: wanaku-operator
+    app.kubernetes.io/version: 0.0.9-SNAPSHOT
+    app.kubernetes.io/managed-by: quarkus
+  name: wanaku-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wanaku-operator
+      app.kubernetes.io/version: 0.0.9-SNAPSHOT
+  template:
+    metadata:
+      annotations:
+        app.quarkus.io/quarkus-version: 3.27.0
+        app.quarkus.io/commit-id: c1378304324f6153f662d35b8450caf37cbedd6a
+        app.quarkus.io/vcs-uri: https://github.com/wanaku-ai/wanaku.git
+        app.quarkus.io/build-timestamp: 2025-10-27 - 11:54:35 +0000
+      labels:
+        app.kubernetes.io/managed-by: quarkus
+        app.kubernetes.io/name: wanaku-operator
+        app.kubernetes.io/version: 0.0.9-SNAPSHOT
+    spec:
+      containers:
+        - env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKURECONCILER_NAMESPACES
+              value: {{ .Values.app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKURECONCILER_NAMESPACES | quote }}
+          image: {{ .Values.app.image }}
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold }}
+            httpGet:
+              path: {{ .Values.app.livenessProbe.httpGet.path }}
+              port: {{ .Values.app.ports.http }}
+              scheme: {{ .Values.app.livenessProbe.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.app.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds }}
+          name: wanaku-operator
+          ports:
+            - containerPort: {{ .Values.app.ports.http }}
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold }}
+            httpGet:
+              path: {{ .Values.app.readinessProbe.httpGet.path }}
+              port: {{ .Values.app.ports.http }}
+              scheme: {{ .Values.app.readinessProbe.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.app.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds }}
+          startupProbe:
+            failureThreshold: {{ .Values.app.startupProbe.failureThreshold }}
+            httpGet:
+              path: {{ .Values.app.startupProbe.httpGet.path }}
+              port: {{ .Values.app.ports.http }}
+              scheme: {{ .Values.app.startupProbe.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.app.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.app.startupProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.app.startupProbe.timeoutSeconds }}
+      serviceAccountName: wanaku-operator
