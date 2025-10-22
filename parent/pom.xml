@@ -66,6 +66,7 @@
         <jna.version>5.17.0</jna.version>
         <commons-logging.version>1.3.5</commons-logging.version>
         <spotless-maven-plugin.version>3.0.0</spotless-maven-plugin.version>
+        <quarkus-operator-sdk.version>7.2.2</quarkus-operator-sdk.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
@@ -77,6 +78,14 @@
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-operator-sdk-bom</artifactId>
                 <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>

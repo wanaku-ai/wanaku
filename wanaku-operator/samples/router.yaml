@@ -1,0 +1,26 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: Wanaku
+metadata:
+  name: wanaku-dev
+spec:
+  auth:
+    authServer: http://keycloak-addr
+    authProxy: http://keycloak-addr
+  secrets:
+    oidcCredentialsSecret: fjgE1vkb0x5UhXj8yrecwyOmRlYR9tR6
+# Router settings are optional
+#  router:
+#    port: 8080
+#    image: quay.io/wanaku/wanaku-router-backend:latest # Optional
+  services:
+    - name: employee-system
+      image: quay.io/wanaku/camel-integration-capability:latest
+    - name: finance-system
+      image: quay.io/wanaku/camel-integration-capability:latest
+#      env:
+#        - name: ABC
+#          value: xyz
+#        - name: CONFIG_DDDE
+#          value: why
+    - name: wanaku-http
+      image: quay.io/wanaku/wanaku-tool-service-http:latest

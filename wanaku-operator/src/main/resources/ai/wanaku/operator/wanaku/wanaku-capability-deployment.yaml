@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ""
+  name: ""
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ""
+  template:
+    metadata:
+      labels:
+        app: ""
+    spec:
+      containers:
+        - env:
+            - name: AUTH_SERVER
+              value: ""
+            - name: WANAKU_SERVICE_REGISTRATION_URI
+              # Comes from Wanaku route
+              value: ""
+            - name: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
+              value: ""
+          image: ""
+          imagePullPolicy: Always
+          name: wanaku-tool-service-http
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /home/default/.wanaku/services
+              name: services-volume
+      volumes:
+        - emptyDir: {}
+          name: services-volume
