@@ -1,0 +1,10 @@
+syntax = "proto3";
+package ai.wanaku.api.types;
+
+// Represents a reference to a forward service.
+message ForwardReference {
+  string id = 1;
+  string name = 2;
+  string address = 3;
+  string namespace = 4;
+}

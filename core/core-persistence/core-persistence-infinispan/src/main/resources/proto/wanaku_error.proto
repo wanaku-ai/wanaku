@@ -1,0 +1,7 @@
+// Represents an error response from a WANAKU API or service.
+syntax = "proto3";
+package ai.wanaku.api.types;
+
+message WanakuError {
+  string message = 1;
+}

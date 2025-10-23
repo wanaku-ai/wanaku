@@ -1,0 +1,11 @@
+syntax = "proto3";
+package ai.wanaku.api.types.discovery;
+
+import "service_state.proto";
+
+message ActivityRecord {
+  string id = 1;
+  fixed64 lastSeen = 2;
+  bool active = 3;
+  repeated ServiceState states = 4;
+}

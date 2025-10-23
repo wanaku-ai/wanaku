@@ -1,0 +1,13 @@
+// Represents a single property in the input schema.
+
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+message Property {
+  string type = 1;
+  string description = 2;
+  string target = 3;
+  string scope = 4;
+  string value = 5;
+}

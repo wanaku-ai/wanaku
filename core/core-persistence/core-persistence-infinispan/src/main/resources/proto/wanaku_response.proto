@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+import "wanaku_error.proto";
+
+// Represents a Wanaku response, which can contain either an error or data.
+message WanakuResponse {
+  WanakuError error = 1;
+  bytes data = 2; // Generic data, to be interpreted by the client
+}
+
