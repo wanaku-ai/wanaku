@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+// This message represents a namespace
+message Namespace {
+  string id = 1;
+  string name = 2;
+  string path = 3;
+}

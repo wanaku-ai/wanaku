@@ -1,3 +1,12 @@
-ai.wanaku.core.persistence.infinispan.protostream.initializer.TypesSerializationContextInitializer
-ai.wanaku.core.persistence.infinispan.protostream.initializer.DiscoveryServiceContextInitializer
-ai.wanaku.core.persistence.infinispan.protostream.initializer.ProvidersSerializationContextInitializer
+ai.wanaku.core.persistence.infinispan.protostream.schema.ActivityRecordSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.ForwardReferenceSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.InputSchemaSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.NamespaceSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.PropertySchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.RemoteToolReferenceSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.ResourceReferenceSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.ServiceStateSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.ServiceTargetSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.ServiceTypeSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.ToolReferenceSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.WanakuErrorSchema

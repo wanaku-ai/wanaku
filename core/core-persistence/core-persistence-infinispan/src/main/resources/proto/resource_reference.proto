@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+// Represents a resource reference, containing details such as location, type, and parameters.
+message ResourceReference {
+  string id = 1;
+  string location = 2;
+  string type = 3;
+  string name = 4;
+  string description = 5;
+  string mime_type = 6;
+  repeated Param params = 7;
+
+  // A nested message representing a parameter of the resource.
+  message Param {
+    string name = 1;
+    string value = 2;
+  }
+  string configuration_uri = 8;
+  string secrets_uri = 9;
+  string namespace = 10;
+}

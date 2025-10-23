@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types.providers;
+
+/**
+ * Defines types of downstream services
+ */
+enum ServiceType {
+  /**
+   * Provides resources
+   */
+  RESOURCE_PROVIDER = 1; // Using 0 as the default value, align with enum order
+
+  /**
+   * Invokes tools
+   */
+  TOOL_INVOKER = 2;
+
+  /**
+   * Has both capabilities
+   */
+  MULTI_CAPABILITY = 3;
+}

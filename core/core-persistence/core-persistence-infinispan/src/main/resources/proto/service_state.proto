@@ -1,0 +1,8 @@
+syntax = "proto3";
+package ai.wanaku.api.types.discovery;
+
+message ServiceState {
+  int64 timestamp = 1; // Instant is typically marshalled as milliseconds since epoch
+  bool healthy = 2;
+  optional string reason = 3;
+}

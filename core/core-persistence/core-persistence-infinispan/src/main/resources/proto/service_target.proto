@@ -1,35 +1,16 @@
-syntax = "proto3";
-
-import "types.proto";
-
-package ai.wanaku.api.types.providers;
-
-/**
- * Defines types of downstream services
- */
-enum ServiceType {
-  /**
-   * Provides resources
-   */
-  RESOURCE_PROVIDER = 1; // Using 0 as the default value, align with enum order
-
-  /**
-   * Invokes tools
-   */
-  TOOL_INVOKER = 2;
-
-  /**
-   * Has both capabilities
-   */
-  MULTI_CAPABILITY = 3;
-}
-
 /*
  * Represents a target service endpoint that can be either a resource provider or a tool invoker.
  *
  * This class encapsulates information about a service, including its target and configurations,
  * providing a structured way to represent and manage services in a system.
  */
+
+syntax = "proto3";
+
+package ai.wanaku.api.types.providers;
+
+import "service_type.proto";
+
 message ServiceTarget {
   optional string id = 1;
   string service = 2;

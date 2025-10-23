@@ -1,0 +1,10 @@
+// Represents the input schema for a tool, including type, properties, and required fields.
+syntax = "proto3";
+package ai.wanaku.api.types;
+import "property.proto";
+
+message InputSchema {
+  string type = 1;
+  map<string, Property> properties = 2;
+  repeated string required = 3;
+}
