@@ -53,7 +53,7 @@ jobs:
           mvn -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
-          -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+          -Dquarkus.container-image.tag=${{ github.event.inputs.currentDevelopmentVersion }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/amd64 \
           clean package
       - name: Create a release build with container push (x86)
@@ -62,7 +62,7 @@ jobs:
           mvn -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
-          -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+          -Dquarkus.container-image.tag=${{ github.event.inputs.currentDevelopmentVersion }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/arm64/v8 \
           clean package
       - name: Create a release build with native executables (macos)
@@ -118,4 +118,4 @@ jobs:
       - name: Build and Publish (x86)
         if: github.repository == 'wanaku-ai/wanaku'
         run: |
-          ./build-manifests.sh ${{ github.ref_name }}
+          ./build-manifests.sh ${{ github.event.inputs.currentDevelopmentVersion }}
