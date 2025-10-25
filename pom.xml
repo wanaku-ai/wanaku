@@ -91,6 +91,7 @@
         <module>api</module>
         <module>core</module>
         <module>wanaku-router</module>
+        <module>wanaku-operator</module>
         <module>cli</module>
         <module>capabilities</module>
         <module>archetypes</module>
