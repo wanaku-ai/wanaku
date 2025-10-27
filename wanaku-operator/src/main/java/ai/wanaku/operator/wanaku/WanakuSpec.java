@@ -6,7 +6,7 @@ public class WanakuSpec {
     private AuthSpec auth;
     private SecretsSpec secrets;
     private RouterSpec router;
-    private List<CapabilitiesSpec> services;
+    private List<CapabilitiesSpec> capabilities;
 
     public AuthSpec getAuth() {
         return auth;
@@ -33,11 +33,11 @@ public class WanakuSpec {
     }
 
     public List<CapabilitiesSpec> getCapabilities() {
-        return services;
+        return capabilities;
     }
 
-    public void setCapabilities(List<CapabilitiesSpec> services) {
-        this.services = services;
+    public void setCapabilities(List<CapabilitiesSpec> capabilities) {
+        this.capabilities = capabilities;
     }
 
     public static class AuthSpec {
