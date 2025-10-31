@@ -25,7 +25,7 @@ spec:
               value: ""
           image: ""
           imagePullPolicy: Always
-          name: wanaku-tool-service-http
+          name: wanaku-capability
           ports:
             - containerPort: 9000
               protocol: TCP
