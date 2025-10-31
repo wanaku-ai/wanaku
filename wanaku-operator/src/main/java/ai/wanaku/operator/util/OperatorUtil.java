@@ -47,7 +47,8 @@ public final class OperatorUtil {
         // If a proxy is not defined,
         String authProxy = resource.getSpec().getAuth().getAuthProxy();
         if ("auto".equals(authProxy)) {
-            authProxy = host;
+            // TODO: needs to support https
+            authProxy = String.format("http://%s", host);
         } else {
             if (authProxy == null) {
                 authProxy = authServer;
