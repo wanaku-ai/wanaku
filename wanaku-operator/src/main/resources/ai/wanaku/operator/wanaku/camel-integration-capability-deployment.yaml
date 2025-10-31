@@ -36,7 +36,7 @@ spec:
           value: "wanaku-service"
         - name: CLIENT_SECRET
           value: ""
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           initialDelaySeconds: 30
           periodSeconds: 10
