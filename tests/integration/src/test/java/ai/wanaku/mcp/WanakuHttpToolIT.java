@@ -13,7 +13,7 @@ import org.junit.jupiter.api.condition.OS;
 
 @QuarkusTest
 @DisabledOnOs({OS.MAC, OS.WINDOWS})
-@Disabled( "Breaks the release process")
+@Disabled("Breaks the release process")
 public class WanakuHttpToolIT extends WanakuIntegrationBase {
 
     @Test
