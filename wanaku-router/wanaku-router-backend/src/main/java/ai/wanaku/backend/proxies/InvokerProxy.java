@@ -84,13 +84,23 @@ public class InvokerProxy implements ToolsProxy {
                 return ToolResponse.success(contents);
             }
         } catch (Exception e) {
+            String errorMessage = composeErrorMessage(e);
+
             LOG.errorf(
                     e,
                     "Unable to call endpoint: %s (connection: %s)",
-                    e.getMessage(),
+                    errorMessage,
                     toolArguments.connection().id());
-            return ToolResponse.error(e.getMessage());
+            return ToolResponse.error(errorMessage);
         }
+    }
+
+    private static String composeErrorMessage(Exception e) {
+        if (e.getMessage() != null) {
+            return e.getMessage();
+        }
+
+        return String.format("An exception of type %s was thrown, but no error details were provided", e.getClass().getName());
     }
 
     private static ToolInvokeReply invokeRemotely(
@@ -114,7 +124,7 @@ public class InvokerProxy implements ToolsProxy {
                             && property.getScope().equals(SCOPE_SERVICE);
                 })
                 .collect(Collectors.toMap(
-                        Map.Entry::getKey, entry -> entry.getValue().getValue()));
+                        Map.Entry::getKey, InvokerProxy::getValue));
 
         String body = extractBody(toolReference, toolArguments);
 
@@ -133,6 +143,14 @@ public class InvokerProxy implements ToolsProxy {
         } catch (Exception e) {
             throw ServiceUnavailableException.forAddress(service.toAddress());
         }
+    }
+
+    private static String getValue(Map.Entry<String, Property> entry) {
+        if (entry.getValue() == null) {
+            LOG.fatalf("Malformed value for key %s: null", entry.getKey());
+        }
+
+        return entry.getValue().getValue();
     }
 
     private static String extractBody(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
