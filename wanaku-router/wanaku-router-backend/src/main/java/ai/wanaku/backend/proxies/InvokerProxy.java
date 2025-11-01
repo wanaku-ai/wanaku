@@ -84,13 +84,23 @@ public class InvokerProxy implements ToolsProxy {
                 return ToolResponse.success(contents);
             }
         } catch (Exception e) {
+            String errorMessage = composeErrorMessage(e);
+
             LOG.errorf(
                     e,
                     "Unable to call endpoint: %s (connection: %s)",
-                    e.getMessage(),
+                    errorMessage,
                     toolArguments.connection().id());
-            return ToolResponse.error(e.getMessage());
+            return ToolResponse.error(errorMessage);
         }
+    }
+
+    private static String composeErrorMessage(Exception e) {
+        if (e.getMessage() != null) {
+            return e.getMessage();
+        }
+
+        return String.format("An exception of type %s was thrown, but no error details were provided", e.getClass().getName());
     }
 
     private static ToolInvokeReply invokeRemotely(
