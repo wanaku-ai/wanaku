@@ -124,7 +124,7 @@ public class InvokerProxy implements ToolsProxy {
                             && property.getScope().equals(SCOPE_SERVICE);
                 })
                 .collect(Collectors.toMap(
-                        Map.Entry::getKey, entry -> entry.getValue().getValue()));
+                        Map.Entry::getKey, InvokerProxy::getValue));
 
         String body = extractBody(toolReference, toolArguments);
 
@@ -143,6 +143,14 @@ public class InvokerProxy implements ToolsProxy {
         } catch (Exception e) {
             throw ServiceUnavailableException.forAddress(service.toAddress());
         }
+    }
+
+    private static String getValue(Map.Entry<String, Property> entry) {
+        if (entry.getValue() == null) {
+            LOG.fatalf("Malformed value for key %s: null", entry.getKey());
+        }
+
+        return entry.getValue().getValue();
     }
 
     private static String extractBody(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
