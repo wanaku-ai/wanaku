@@ -100,7 +100,9 @@ public class InvokerProxy implements ToolsProxy {
             return e.getMessage();
         }
 
-        return String.format("An exception of type %s was thrown, but no error details were provided", e.getClass().getName());
+        return String.format(
+                "An exception of type %s was thrown, but no error details were provided",
+                e.getClass().getName());
     }
 
     private static ToolInvokeReply invokeRemotely(
@@ -111,20 +113,7 @@ public class InvokerProxy implements ToolsProxy {
 
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
-        Map<String, Property> inputSchema = toolReference.getInputSchema().getProperties();
-
-        // extract headers parameter
-        Map<String, String> headers = inputSchema.entrySet().stream()
-                .filter(entry -> {
-                    Property property = entry.getValue();
-                    return property != null
-                            && property.getTarget() != null
-                            && property.getScope() != null
-                            && property.getTarget().equals(TARGET_HEADER)
-                            && property.getScope().equals(SCOPE_SERVICE);
-                })
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey, InvokerProxy::getValue));
+        Map<String, String> headers = extractHeaders(toolReference);
 
         String body = extractBody(toolReference, toolArguments);
 
@@ -143,6 +132,23 @@ public class InvokerProxy implements ToolsProxy {
         } catch (Exception e) {
             throw ServiceUnavailableException.forAddress(service.toAddress());
         }
+    }
+
+    static Map<String, String> extractHeaders(ToolReference toolReference) {
+        Map<String, Property> inputSchema = toolReference.getInputSchema().getProperties();
+
+        // extract headers parameter
+        Map<String, String> headers = inputSchema.entrySet().stream()
+                .filter(entry -> {
+                    Property property = entry.getValue();
+                    return property != null
+                            && property.getTarget() != null
+                            && property.getScope() != null
+                            && property.getTarget().equals(TARGET_HEADER)
+                            && property.getScope().equals(SCOPE_SERVICE);
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, InvokerProxy::getValue));
+        return headers;
     }
 
     private static String getValue(Map.Entry<String, Property> entry) {
