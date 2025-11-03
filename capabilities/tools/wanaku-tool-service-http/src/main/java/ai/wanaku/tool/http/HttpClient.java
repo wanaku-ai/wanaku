@@ -35,12 +35,16 @@ public class HttpClient implements Client {
         ParsedToolInvokeRequest parsedRequest =
                 ParsedToolInvokeRequest.parseRequest(request.getUri(), request, parameterBuilder::build);
 
+
         Map<String, String> configsMap = configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX);
-        final Map<String, Object> headers = transformConfigsToHeaders(configsMap);
+
+        Map<String, Object> requestHeaders = new HashMap<>();
+        requestHeaders.putAll(transformConfigsToHeaders(configsMap));
+        requestHeaders.putAll(request.getHeadersMap());
 
         LOG.infof("Invoking tool at URI: %s", safeLog(parsedRequest.uri()));
 
-        return producer.requestBodyAndHeaders(parsedRequest.uri(), parsedRequest.body(), headers, String.class);
+        return producer.requestBodyAndHeaders(parsedRequest.uri(), parsedRequest.body(), requestHeaders, String.class);
     }
 
     private static Map<String, Object> transformConfigsToHeaders(Map<String, String> configsMap) {
