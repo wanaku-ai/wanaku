@@ -4,9 +4,11 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.0.9-SNAPSHOT
  */
+import type { ResourceReferenceLabels } from "./resourceReferenceLabels";
 import type { Param } from "./param";
 
 export interface ResourceReference {
+  labels?: ResourceReferenceLabels;
   id?: string;
   location?: string;
   type?: string;

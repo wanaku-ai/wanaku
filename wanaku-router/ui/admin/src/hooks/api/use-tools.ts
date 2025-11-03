@@ -12,6 +12,7 @@ import {
 import {
   PutApiV1ToolsRemoveParams,
   ToolReference,
+  GetApiV1ToolsListParams,
 } from "../../models";
 
 export const useTools = () => {
@@ -22,7 +23,7 @@ export const useTools = () => {
     (
       options?: RequestInit
     ): Promise<getApiV1CapabilitiesToolsListResponse> => {
-      return getApiV1CapabilitiesToolsList(options);
+      return getApiV1CapabilitiesToolsList(undefined, options);
     },
     []
   );
@@ -44,8 +45,8 @@ export const useTools = () => {
    * List tools.
    */
   const listTools = useCallback(
-    (options?: RequestInit): Promise<getApiV1ToolsListResponse> => {
-      return getApiV1ToolsList(options);
+    (params?: GetApiV1ToolsListParams, options?: RequestInit): Promise<getApiV1ToolsListResponse> => {
+      return getApiV1ToolsList(params, options);
     },
     []
   );

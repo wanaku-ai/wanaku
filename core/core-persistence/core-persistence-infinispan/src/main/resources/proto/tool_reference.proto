@@ -15,4 +15,5 @@ message ToolReference {
   string configuration_uri = 7;
   string secrets_uri = 8;
   string namespace = 9;
+  map<string, string> labels = 10;
 }

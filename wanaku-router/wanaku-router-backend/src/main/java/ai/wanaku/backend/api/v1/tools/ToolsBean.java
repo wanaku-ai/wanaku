@@ -6,13 +6,14 @@ import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
-import ai.wanaku.backend.common.AbstractBean;
+import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
+import io.micrometer.common.util.StringUtils;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.PostConstruct;
@@ -24,7 +25,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class ToolsBean extends AbstractBean<ToolReference> {
+public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     private static final Logger LOG = Logger.getLogger(ToolsBean.class);
 
     @Inject
@@ -81,6 +82,13 @@ public class ToolsBean extends AbstractBean<ToolReference> {
         return toolReferenceRepository.listAll();
     }
 
+    public List<ToolReference> list(String labelFilter) {
+        if (StringUtils.isBlank(labelFilter)) {
+            return toolReferenceRepository.listAll();
+        }
+        return toolReferenceRepository.findAllFilterByLabelExpression(labelFilter);
+    }
+
     void loadTools(@Observes StartupEvent ev) {
         // Preload data
         namespacesBean.preload();
@@ -115,5 +123,41 @@ public class ToolsBean extends AbstractBean<ToolReference> {
     @Override
     protected WanakuRepository<ToolReference, String> getRepository() {
         return toolReferenceRepository;
+    }
+
+    /**
+     * Removes all tool references that match the given label expression.
+     * <p>
+     * This method extends the superclass implementation by also unregistering
+     * each matching tool from the {@link ToolManager} before removing it from
+     * the repository. This ensures that removed tools are no longer available
+     * for execution by AI agents.
+     * </p>
+     * <p>
+     * The removal process for each matching tool:
+     * </p>
+     * <ol>
+     *   <li>Query all tools matching the label expression</li>
+     *   <li>For each tool: unregister from ToolManager and remove from repository</li>
+     *   <li>Return the count of successfully removed tools</li>
+     * </ol>
+     * <p>
+     * For detailed information about label expression syntax and examples,
+     * see the superclass documentation.
+     * </p>
+     *
+     * @param labelExpression the label filter expression to match tools for removal
+     * @return the number of tool references that were removed
+     * @throws WanakuException if the label expression is invalid or malformed, or if the
+     *                         removal operation fails
+     * @see LabelsAwareWanakuEntityBean#removeIf(String)
+     * @see #remove(String)
+     * @see ToolManager#removeTool(String)
+     */
+    @Override
+    public int removeIf(String labelExpression) throws WanakuException {
+        List<ToolReference> toRemove = list(labelExpression);
+        toRemove.stream().map(t -> t.getName()).forEach(this::remove);
+        return toRemove.size();
     }
 }

@@ -31,12 +31,27 @@ public class CapabilitiesBean {
                 serviceRegistry.getClass().getName());
     }
 
+    public List<ServiceTarget> toolList(String labelFilter) {
+        List<ServiceTarget> tools = serviceRegistry.getEntries(ServiceType.TOOL_INVOKER);
+        return filterByLabels(tools, labelFilter);
+    }
+
     public List<ServiceTarget> toolList() {
-        return serviceRegistry.getEntries(ServiceType.TOOL_INVOKER);
+        return toolList(null);
+    }
+
+    public List<ServiceTarget> resourcesList(String labelFilter) {
+        List<ServiceTarget> resources = serviceRegistry.getEntries(ServiceType.RESOURCE_PROVIDER);
+        return filterByLabels(resources, labelFilter);
     }
 
     public List<ServiceTarget> resourcesList() {
-        return serviceRegistry.getEntries(ServiceType.RESOURCE_PROVIDER);
+        return resourcesList(null);
+    }
+
+    private List<ServiceTarget> filterByLabels(List<ServiceTarget> serviceTargets, String labelFilter) {
+        // Label filtering is not supported for capabilities
+        return serviceTargets;
     }
 
     public Map<String, List<ActivityRecord>> toolsState() {

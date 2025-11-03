@@ -1,5 +1,6 @@
 [
   {
+    "labels": {},
     "id": null,
     "name": "addPet",
     "description": "Add a new pet to the store.",
@@ -27,11 +28,12 @@
         "wanaku_body"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "updatePet",
     "description": "Update an existing pet by Id.",
@@ -59,11 +61,12 @@
         "wanaku_body"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "findPetsByStatus",
     "description": "Multiple status values can be provided with comma separated strings.",
@@ -89,11 +92,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "findPetsByTags",
     "description": "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
@@ -119,11 +123,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "getPetById",
     "description": "Returns a single pet.",
@@ -151,11 +156,12 @@
         "petId"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "updatePetWithForm",
     "description": "Updates a pet resource based on the form data.",
@@ -197,11 +203,12 @@
         "petId"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "deletePet",
     "description": "Delete a pet.",
@@ -236,11 +243,12 @@
         "petId"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "uploadFile",
     "description": "Upload image of the pet.",
@@ -282,11 +290,12 @@
         "petId"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "getInventory",
     "description": "Returns a map of status codes to quantities.",
@@ -305,11 +314,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "placeOrder",
     "description": "Place a new order in the store.",
@@ -335,11 +345,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "getOrderById",
     "description": "For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions.",
@@ -367,11 +378,12 @@
         "orderId"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "deleteOrder",
     "description": "For valid response try integer IDs with value < 1000. Anything above 1000 or non-integers will generate API errors.",
@@ -399,11 +411,12 @@
         "orderId"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "createUser",
     "description": "This can only be done by the logged in user.",
@@ -429,11 +442,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "createUsersWithListInput",
     "description": "Creates list of users with given input array.",
@@ -459,11 +473,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "loginUser",
     "description": "Log into the system.",
@@ -496,11 +511,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "logoutUser",
     "description": "Log user out of the system.",
@@ -519,11 +535,12 @@
       },
       "required": []
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "getUserByName",
     "description": "Get user detail based on username.",
@@ -551,11 +568,12 @@
         "username"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "updateUser",
     "description": "This can only be done by the logged in user.",
@@ -590,11 +608,12 @@
         "username"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   },
   {
+    "labels": {},
     "id": null,
     "name": "deleteUser",
     "description": "This can only be done by the logged in user.",
@@ -622,8 +641,8 @@
         "username"
       ]
     },
+    "namespace": null,
     "configurationURI": null,
-    "secretsURI": null,
-    "namespace": null
+    "secretsURI": null
   }
 ]

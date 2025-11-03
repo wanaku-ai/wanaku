@@ -20,4 +20,5 @@ message ResourceReference {
   string configuration_uri = 8;
   string secrets_uri = 9;
   string namespace = 10;
+  map<string, string> labels = 11;
 }

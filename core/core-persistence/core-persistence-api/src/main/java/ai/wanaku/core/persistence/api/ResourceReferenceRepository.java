@@ -6,11 +6,11 @@ import java.util.List;
 /**
  * Repository interface for managing {@link ResourceReference} entities.
  * <p>
- * This interface extends {@link WanakuRepository} to provide persistence operations
+ * This interface extends {@link LabelAwareInfinispanRepository} to provide persistence operations
  * for resource references, which represent data sources or content that can be
  * accessed by AI agents, such as files, databases, or external data sources.
  */
-public interface ResourceReferenceRepository extends WanakuRepository<ResourceReference, String> {
+public interface ResourceReferenceRepository extends LabelAwareInfinispanRepository<ResourceReference, String> {
     /**
      * Finds all resource references with the specified name.
      * <p>

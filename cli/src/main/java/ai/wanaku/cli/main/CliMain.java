@@ -3,12 +3,14 @@ package ai.wanaku.cli.main;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
 import ai.wanaku.cli.main.commands.forwards.Forwards;
+import ai.wanaku.cli.main.commands.man.Man;
 import ai.wanaku.cli.main.commands.namespaces.Namespaces;
 import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.start.Start;
 import ai.wanaku.cli.main.commands.targets.Targets;
 import ai.wanaku.cli.main.commands.tools.Tools;
 import ai.wanaku.cli.main.commands.toolset.ToolSet;
+import ai.wanaku.cli.main.support.WanakuExceptionHandler;
 import ai.wanaku.core.util.VersionHelper;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
@@ -27,7 +29,8 @@ import picocli.CommandLine;
             Targets.class,
             Tools.class,
             ToolSet.class,
-            Namespaces.class
+            Namespaces.class,
+            Man.class
         })
 public class CliMain implements Callable<Integer>, QuarkusApplication {
     @Inject
@@ -44,9 +47,17 @@ public class CliMain implements Callable<Integer>, QuarkusApplication {
             description = "Display the current version of Wanaku CLI")
     private boolean versionRequested = false;
 
+    @CommandLine.Option(
+            names = {"--verbose"},
+            description = "Display detailed error messages including stack traces",
+            scope = CommandLine.ScopeType.INHERIT)
+    private boolean verbose = false;
+
     @Override
     public int run(String... args) throws Exception {
-        return new CommandLine(this, factory).execute(args);
+        CommandLine commandLine = new CommandLine(this, factory);
+        commandLine.setExecutionExceptionHandler(new WanakuExceptionHandler());
+        return commandLine.execute(args);
     }
 
     @Override

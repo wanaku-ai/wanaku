@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * This class represents a reference to a tool with various attributes such as name, description, URI, type, and input schema.
  */
-public class ToolReference implements CallableReference, WanakuEntity<String> {
+public class ToolReference extends LabelsAwareEntity<String> implements CallableReference {
     private String id;
     private String name;
     private String description;
@@ -203,12 +203,14 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
                 && Objects.equals(type, that.type)
                 && Objects.equals(inputSchema, that.inputSchema)
                 && Objects.equals(configurationURI, that.configurationURI)
-                && Objects.equals(secretsURI, that.secretsURI);
+                && Objects.equals(secretsURI, that.secretsURI)
+                && Objects.equals(this.getLabels(), that.getLabels());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, uri, type, inputSchema, configurationURI, secretsURI);
+        return Objects.hash(
+                id, name, description, uri, type, inputSchema, configurationURI, secretsURI, this.getLabels());
     }
 
     @Override
@@ -221,6 +223,7 @@ public class ToolReference implements CallableReference, WanakuEntity<String> {
                 + type + '\'' + ", inputSchema="
                 + inputSchema + ", configurations="
                 + configurationURI + ", secrets="
-                + secretsURI + '}';
+                + secretsURI + ", labels='"
+                + this.getLabels() + '\'' + '}';
     }
 }

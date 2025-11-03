@@ -10,7 +10,7 @@ import java.util.List;
  * for tool references, which represent executable capabilities that can be invoked
  * by AI agents to perform specific tasks.
  */
-public interface ToolReferenceRepository extends WanakuRepository<ToolReference, String> {
+public interface ToolReferenceRepository extends LabelAwareInfinispanRepository<ToolReference, String> {
 
     /**
      * Finds all tool references with the specified name.

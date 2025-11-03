@@ -31,12 +31,22 @@ public interface CapabilitiesService {
     /**
      * Lists all available tool capability providers.
      *
+     * @param labelFilter optional label expression to filter tools by labels
      * @return a {@link WanakuResponse} containing a list of tool service targets
      */
     @Path("/tools/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    WanakuResponse<List<ServiceTarget>> toolsList();
+    WanakuResponse<List<ServiceTarget>> toolsList(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * Lists all available tool capability providers without filtering.
+     *
+     * @return a {@link WanakuResponse} containing a list of tool service targets
+     */
+    default WanakuResponse<List<ServiceTarget>> toolsList() {
+        return toolsList(null);
+    }
 
     /**
      * Retrieves the health and activity state of all tool providers.
@@ -71,12 +81,22 @@ public interface CapabilitiesService {
     /**
      * Lists all available resource capability providers.
      *
+     * @param labelFilter optional label expression to filter resources by labels
      * @return a {@link WanakuResponse} containing a list of resource service targets
      */
     @Path("/resources/list")
     @GET
     @Consumes(MediaType.TEXT_PLAIN)
-    WanakuResponse<List<ServiceTarget>> resourcesList();
+    WanakuResponse<List<ServiceTarget>> resourcesList(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * Lists all available resource capability providers without filtering.
+     *
+     * @return a {@link WanakuResponse} containing a list of resource service targets
+     */
+    default WanakuResponse<List<ServiceTarget>> resourcesList() {
+        return resourcesList(null);
+    }
 
     /**
      * Configures runtime settings for a specific resource provider service.

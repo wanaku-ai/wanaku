@@ -7,7 +7,7 @@ package ai.wanaku.api.types;
  * Each namespace has a unique identifier, a human-readable name, and a path that defines
  * its location within the namespace hierarchy.
  */
-public class Namespace implements WanakuEntity<String> {
+public class Namespace extends LabelsAwareEntity<String> {
     private String id;
     private String name;
     private String path;

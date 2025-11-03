@@ -5,6 +5,24 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
+/**
+ * Parent command for managing tools in the Wanaku platform.
+ * <p>
+ * This command provides access to tool management operations including:
+ * </p>
+ * <ul>
+ *   <li>Adding new tools to the system</li>
+ *   <li>Listing and filtering existing tools</li>
+ *   <li>Editing tool configurations</li>
+ *   <li>Removing tools</li>
+ *   <li>Importing tools from external sources</li>
+ *   <li>Generating tool definitions</li>
+ *   <li>Managing tool labels</li>
+ * </ul>
+ * <p>
+ * When invoked without subcommands, displays available tool management options.
+ * </p>
+ */
 @CommandLine.Command(
         name = "tools",
         description = "Manage tools",
@@ -14,7 +32,8 @@ import picocli.CommandLine;
             ToolsRemove.class,
             ToolsList.class,
             ToolsImport.class,
-            ToolsGenerate.class
+            ToolsGenerate.class,
+            ToolsLabel.class
         })
 public class Tools extends BaseCommand {
     @Override

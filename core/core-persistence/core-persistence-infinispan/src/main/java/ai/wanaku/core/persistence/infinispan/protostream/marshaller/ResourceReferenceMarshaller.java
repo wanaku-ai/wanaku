@@ -3,6 +3,7 @@ package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 import ai.wanaku.api.types.ResourceReference;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;
 
 public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceReference> {
@@ -29,6 +30,7 @@ public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceRe
         ref.setConfigurationURI(reader.readString("configuration_uri"));
         ref.setSecretsURI(reader.readString("secrets_uri"));
         ref.setNamespace(reader.readString("namespace"));
+        ref.setLabels(reader.readMap("labels", new HashMap<>(), String.class, String.class));
         return ref;
     }
 
@@ -44,5 +46,6 @@ public class ResourceReferenceMarshaller implements MessageMarshaller<ResourceRe
         writer.writeString("configuration_uri", ref.getConfigurationURI());
         writer.writeString("secrets_uri", ref.getSecretsURI());
         writer.writeString("namespace", ref.getNamespace());
+        writer.writeMap("labels", ref.getLabels(), String.class, String.class);
     }
 }

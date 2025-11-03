@@ -11,6 +11,7 @@ import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -104,12 +105,11 @@ public class ToolsResource {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public WanakuResponse<List<ToolReference>> list() throws WanakuException {
-        List<ToolReference> forwardTools = forwardsBean.listAllAsTools();
-        List<ToolReference> tools = toolsBean.list();
-
+    public WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter)
+            throws WanakuException {
+        List<ToolReference> forwardTools = forwardsBean.listAllAsTools(labelFilter);
+        List<ToolReference> tools = toolsBean.list(labelFilter);
         List<ToolReference> ret = CollectionsHelper.join(tools, forwardTools);
-
         return new WanakuResponse<>(ret);
     }
 
@@ -163,5 +163,20 @@ public class ToolsResource {
             throw new ToolNotFoundException(name);
         }
         return new WanakuResponse<>(tool);
+    }
+
+    /**
+     * Removes all tools from the system that match the label expression
+     *
+     * @param labelExpression the name of the tool to remove
+     * @return a {@link Response} indicating the number of the tools removed.
+     */
+    @Path("/")
+    @DELETE
+    public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
+            throws WanakuException {
+
+        int deleteCount = toolsBean.removeIf(labelExpression);
+        return new WanakuResponse<>(deleteCount);
     }
 }

@@ -15,6 +15,13 @@ import java.io.IOException;
 import java.util.List;
 import org.jline.terminal.Terminal;
 
+/**
+ * Command to list port forwarding configurations in the Wanaku platform.
+ * <p>
+ * This command retrieves and displays all registered port forwards.
+ * The output includes forward name and address for each entry.
+ * </p>
+ */
 @Command(name = "list", description = "List forward targets")
 public class ForwardsList extends BaseCommand {
 
@@ -31,7 +38,7 @@ public class ForwardsList extends BaseCommand {
         ForwardsService forwardsService = initService(ForwardsService.class, host);
 
         try {
-            WanakuResponse<List<ForwardReference>> wanakuResponseRestResponse = forwardsService.listForwards();
+            WanakuResponse<List<ForwardReference>> wanakuResponseRestResponse = forwardsService.listForwards(null);
             List<ForwardReference> data = wanakuResponseRestResponse.data();
             printer.printTable(data, "name", "address");
 

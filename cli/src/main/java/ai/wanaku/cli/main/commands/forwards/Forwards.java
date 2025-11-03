@@ -8,6 +8,21 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import java.io.IOException;
 import org.jline.terminal.Terminal;
 
+/**
+ * Parent command for managing port forwarding configurations in the Wanaku platform.
+ * <p>
+ * This command provides access to forward management operations including:
+ * </p>
+ * <ul>
+ *   <li>Adding new port forwarding rules</li>
+ *   <li>Listing existing forwards</li>
+ *   <li>Removing forwards</li>
+ * </ul>
+ * <p>
+ * Forwards enable network connectivity between AI agents and external services
+ * by creating port forwarding rules for containerized workloads.
+ * </p>
+ */
 @Command(
         name = "forwards",
         description = "Manage forwards",

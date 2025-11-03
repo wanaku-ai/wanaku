@@ -8,7 +8,8 @@ import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-public class InfinispanResourceReferenceRepository extends AbstractInfinispanRepository<ResourceReference, String>
+public class InfinispanResourceReferenceRepository
+        extends AbstractLabelAwareInfinispanRepository<ResourceReference, String>
         implements ResourceReferenceRepository {
 
     public InfinispanResourceReferenceRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {

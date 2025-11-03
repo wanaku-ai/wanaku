@@ -6,6 +6,23 @@ import java.io.IOException;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
+/**
+ * Parent command for creating new capability instances in the Wanaku platform.
+ * <p>
+ * This command provides subcommands for creating different types of capabilities:
+ * </p>
+ * <ul>
+ *   <li>Tools - Create tool instances from capability providers</li>
+ *   <li>Resources - Create resource instances from capability providers</li>
+ * </ul>
+ * <p>
+ * Capabilities are instantiated from capability providers that advertise
+ * their schemas and configuration requirements through the capabilities API.
+ * </p>
+ *
+ * @see CapabilitiesCreateTool
+ * @see CapabilitiesCreateResources
+ */
 @CommandLine.Command(
         name = "create",
         description = "Create a new capability",

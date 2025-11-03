@@ -12,15 +12,28 @@ public final class ResponseHelper {
             WanakuPrinter printer = new WanakuPrinter(null, terminal);
             String message;
 
+            // Try to read the response body for more details
+            String responseBody = "";
+            try {
+                if (response.hasEntity()) {
+                    responseBody = response.readEntity(String.class);
+                }
+            } catch (Exception e) {
+                // Ignore if we can't read the body
+            }
+
             if (response.getStatus() == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
                 message = String.format(
-                        "The server was unable to handle the request: %s%n",
-                        response.getStatusInfo().getReasonPhrase());
+                        "The server was unable to handle the request: %s%s%n",
+                        response.getStatusInfo().getReasonPhrase(),
+                        responseBody.isEmpty() ? "" : "\nDetails: " + responseBody);
                 printer.printErrorMessage(message);
             } else {
                 message = String.format(
-                        "Unspecified error (status: %d, reason: %s)%n",
-                        response.getStatus(), response.getStatusInfo().getReasonPhrase());
+                        "Error (status: %d, reason: %s)%s%n",
+                        response.getStatus(),
+                        response.getStatusInfo().getReasonPhrase(),
+                        responseBody.isEmpty() ? "" : "\nDetails: " + responseBody);
                 printer.printErrorMessage(message);
             }
         }

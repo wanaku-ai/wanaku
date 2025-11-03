@@ -94,6 +94,12 @@
       "Namespace" : {
         "type" : "object",
         "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
           "id" : {
             "type" : "string"
           },
@@ -187,6 +193,12 @@
       "ResourceReference" : {
         "type" : "object",
         "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
           "id" : {
             "type" : "string"
           },
@@ -289,6 +301,12 @@
       "ToolReference" : {
         "type" : "object",
         "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
           "id" : {
             "type" : "string"
           },
@@ -333,6 +351,18 @@
             "$ref" : "#/components/schemas/WanakuError"
           },
           "data" : { }
+        }
+      },
+      "WanakuResponseInteger" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
         }
       },
       "WanakuResponseListForwardReference" : {
@@ -422,6 +452,17 @@
           }
         }
       },
+      "WanakuResponseNamespace" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/Namespace"
+          }
+        }
+      },
       "WanakuResponseResourceReference" : {
         "type" : "object",
         "properties" : {
@@ -499,6 +540,13 @@
     },
     "/api/v1/capabilities/resources/list" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -535,6 +583,13 @@
     },
     "/api/v1/capabilities/tools/list" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -599,6 +654,13 @@
     },
     "/api/v1/forwards/list" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -795,6 +857,13 @@
     },
     "/api/v1/namespaces/list" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -808,6 +877,62 @@
           }
         },
         "summary" : "List",
+        "tags" : [ "Namespaces Resource" ]
+      }
+    },
+    "/api/v1/namespaces/{id}" : {
+      "put" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Namespace"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseNamespace"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Id",
         "tags" : [ "Namespaces Resource" ]
       }
     },
@@ -895,6 +1020,13 @@
     },
     "/api/v1/resources/list" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -984,6 +1116,39 @@
       }
     },
     "/api/v1/tools" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "labelExpression",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove If",
+        "tags" : [ "Tools Resource" ]
+      },
       "post" : {
         "parameters" : [ {
           "name" : "name",
@@ -1102,6 +1267,13 @@
     },
     "/api/v1/tools/list" : {
       "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",

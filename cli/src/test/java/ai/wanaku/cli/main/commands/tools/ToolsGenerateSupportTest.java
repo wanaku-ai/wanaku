@@ -358,7 +358,7 @@ public class ToolsGenerateSupportTest {
             String path = "/users";
 
             // Act
-            List<ToolReference> references = pathItem2ToolReferences(baseUrl, path, pathItem);
+            List<ToolReference> references = pathItem2ToolReferences(baseUrl, path, pathItem, Map.of());
 
             // Assert
             assertEquals(2, references.size());
@@ -368,7 +368,7 @@ public class ToolsGenerateSupportTest {
         @DisplayName("Should handle null PathItem")
         void shouldHandleNullPathItem() {
             // Act
-            List<ToolReference> references = pathItem2ToolReferences("baseUrl", "path", null);
+            List<ToolReference> references = pathItem2ToolReferences("baseUrl", "path", null, Map.of());
 
             // Assert
             assertTrue(references.isEmpty());
@@ -381,7 +381,7 @@ public class ToolsGenerateSupportTest {
             PathItem pathItem = new PathItem();
 
             // Act
-            List<ToolReference> references = pathItem2ToolReferences("baseUrl", "path", pathItem);
+            List<ToolReference> references = pathItem2ToolReferences("baseUrl", "path", pathItem, Map.of());
 
             // Assert
             assertTrue(references.isEmpty());
@@ -406,7 +406,7 @@ public class ToolsGenerateSupportTest {
             String method = "GET";
 
             // Act
-            ToolReference toolRef = operation2ToolReference(pathItem, operation, baseUrl, path, method);
+            ToolReference toolRef = operation2ToolReference(pathItem, operation, baseUrl, path, method, Map.of());
 
             // Assert
             assertEquals("getUserById", toolRef.getName());
@@ -415,6 +415,80 @@ public class ToolsGenerateSupportTest {
             assertEquals("https://api.example.com/users/{parameter.value('userId')}", toolRef.getUri());
             assertNotNull(toolRef.getInputSchema());
             assertTrue(toolRef.getInputSchema().getProperties().containsKey("CamelHttpMethod"));
+        }
+
+        @Test
+        @DisplayName("Should add labels to ToolReference")
+        void shouldAddLabelsToToolReference() {
+            // Arrange
+            Operation operation = new Operation();
+            operation.setOperationId("getUserById");
+            operation.setDescription("Get a user by their ID");
+
+            PathItem pathItem = new PathItem();
+
+            String baseUrl = "https://api.example.com";
+            String path = "/users/{userId}";
+            String method = "GET";
+
+            Map<String, String> labels = new HashMap<>();
+            labels.put("environment", "production");
+            labels.put("team", "backend");
+            labels.put("version", "v1");
+
+            // Act
+            ToolReference toolRef = operation2ToolReference(pathItem, operation, baseUrl, path, method, labels);
+
+            // Assert
+            assertEquals("getUserById", toolRef.getName());
+            assertNotNull(toolRef.getLabels());
+            assertEquals(3, toolRef.getLabels().size());
+            assertEquals("production", toolRef.getLabelValue("environment"));
+            assertEquals("backend", toolRef.getLabelValue("team"));
+            assertEquals("v1", toolRef.getLabelValue("version"));
+        }
+
+        @Test
+        @DisplayName("Should handle empty labels map")
+        void shouldHandleEmptyLabelsMap() {
+            // Arrange
+            Operation operation = new Operation();
+            operation.setOperationId("getUserById");
+
+            PathItem pathItem = new PathItem();
+
+            String baseUrl = "https://api.example.com";
+            String path = "/users/{userId}";
+            String method = "GET";
+
+            // Act
+            ToolReference toolRef = operation2ToolReference(pathItem, operation, baseUrl, path, method, Map.of());
+
+            // Assert
+            assertNotNull(toolRef);
+            assertTrue(toolRef.getLabels().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should handle null labels map")
+        void shouldHandleNullLabelsMap() {
+            // Arrange
+            Operation operation = new Operation();
+            operation.setOperationId("getUserById");
+
+            PathItem pathItem = new PathItem();
+
+            String baseUrl = "https://api.example.com";
+            String path = "/users/{userId}";
+            String method = "GET";
+
+            // Act
+            ToolReference toolRef = operation2ToolReference(pathItem, operation, baseUrl, path, method, null);
+
+            // Assert
+            assertNotNull(toolRef);
+            assertNotNull(toolRef.getLabels());
+            assertTrue(toolRef.getLabels().isEmpty());
         }
     }
 

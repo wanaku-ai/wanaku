@@ -46,8 +46,9 @@ public class ForwardsResource {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public RestResponse<WanakuResponse<List<ForwardReference>>> listForwards() {
-        return RestResponse.ok(new WanakuResponse<>(forwardsBean.listForwards()));
+    public RestResponse<WanakuResponse<List<ForwardReference>>> listForwards(
+            @jakarta.ws.rs.QueryParam("labelFilter") String labelFilter) {
+        return RestResponse.ok(new WanakuResponse<>(forwardsBean.listForwards(labelFilter)));
     }
 
     @Path("/update")

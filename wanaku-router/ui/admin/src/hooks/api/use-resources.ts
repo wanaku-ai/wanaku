@@ -23,7 +23,7 @@ export const useResources = () => {
     (
       options?: RequestInit
     ): Promise<getApiV1CapabilitiesResourcesListResponse> => {
-      return getApiV1CapabilitiesResourcesList(options);
+      return getApiV1CapabilitiesResourcesList(undefined, options);
     },
     []
   );
@@ -48,7 +48,7 @@ export const useResources = () => {
     (
       options?: RequestInit
     ): Promise<getApiV1ResourcesListResponse> => {
-      return getApiV1ResourcesList(options);
+      return getApiV1ResourcesList(undefined, options);
     },
     []
   );

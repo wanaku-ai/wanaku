@@ -13,9 +13,28 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
+/**
+ * Command to expose a new resource in the Wanaku platform.
+ * <p>
+ * This command registers a resource with specified configuration including:
+ * </p>
+ * <ul>
+ *   <li>Resource metadata (name, namespace, description, location, type)</li>
+ *   <li>MIME type for content identification</li>
+ *   <li>Parameters for resource-specific configuration</li>
+ *   <li>Configuration data from external files</li>
+ *   <li>Secrets data for secure credential storage</li>
+ *   <li>Labels for organization and filtering</li>
+ * </ul>
+ * <p>
+ * Resources represent data sources, APIs, or other external systems that
+ * can be accessed by AI agents during tool execution.
+ * </p>
+ */
 @CommandLine.Command(name = "expose", description = "Expose resources")
 public class ResourcesExpose extends BaseCommand {
 
@@ -87,6 +106,12 @@ public class ResourcesExpose extends BaseCommand {
             arity = "0..1")
     private String secretsFromFile;
 
+    @CommandLine.Option(
+            names = {"-l", "--label"},
+            description = "Label key-value pair (e.g., '--label env=production --label tier=backend')",
+            arity = "0..*")
+    private Map<String, String> labels;
+
     ResourcesService resourcesService;
 
     @Override
@@ -99,6 +124,7 @@ public class ResourcesExpose extends BaseCommand {
         resource.setDescription(description);
         resource.setMimeType(mimeType);
         resource.setNamespace(namespace);
+        resource.setLabels(labels);
 
         ResourcePayload resourcePayload = new ResourcePayload();
         resourcePayload.setPayload(resource);
@@ -126,7 +152,14 @@ public class ResourcesExpose extends BaseCommand {
 
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                printer.printErrorMessage(String.format(
+                        "There is no resource provider capable of handling resources of type '%s'.%n"
+                                + "Make sure a resource provider for this type is running and registered with the router.",
+                        type));
+            } else {
+                commonResponseErrorHandler(response);
+            }
             return EXIT_ERROR;
         }
         return EXIT_OK;

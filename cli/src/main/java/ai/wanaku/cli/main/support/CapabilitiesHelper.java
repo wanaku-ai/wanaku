@@ -1,6 +1,5 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ActivityRecord;
 import ai.wanaku.api.types.providers.ServiceTarget;
@@ -70,7 +69,7 @@ public final class CapabilitiesHelper {
      * capabilities in table or map format. The order matches the fields
      * in {@link PrintableCapability}.
      */
-    public static final String[] COLUMNS = {"service", "serviceType", "host", "port", "status", "lastSeen"};
+    public static final String[] COLUMNS = {"service", "serviceType", "host", "port", "status", "lastSeen", "labels"};
 
     /**
      * Private constructor to prevent instantiation of this utility class.
@@ -89,21 +88,35 @@ public final class CapabilitiesHelper {
      * printable capabilities.
      *
      * @param capabilitiesService the service used to fetch target information
+     * @param labelFilter optional label expression to filter capabilities
      * @return a {@link Uni} emitting a list of {@link PrintableCapability} objects
      * @throws NullPointerException if targetsService is null
      * @see #combineDataIntoCapabilities(List)
      */
-    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(CapabilitiesService capabilitiesService) {
+    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(
+            CapabilitiesService capabilitiesService, String labelFilter) {
         Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
 
         return Uni.combine()
                 .all()
                 .unis(
-                        fetchManagementTools(capabilitiesService),
+                        fetchManagementTools(capabilitiesService, labelFilter),
                         fetchToolsActivityState(capabilitiesService),
-                        fetchResourceProviders(capabilitiesService),
+                        fetchResourceProviders(capabilitiesService, labelFilter),
                         fetchResourcesActivityState(capabilitiesService))
                 .with(CapabilitiesHelper::combineDataIntoCapabilities);
+    }
+
+    /**
+     * Fetches and merges capabilities from multiple sources asynchronously without filtering.
+     *
+     * @param capabilitiesService the service used to fetch target information
+     * @return a {@link Uni} emitting a list of {@link PrintableCapability} objects
+     * @throws NullPointerException if targetsService is null
+     * @see #fetchAndMergeCapabilities(CapabilitiesService, String)
+     */
+    public static Uni<List<PrintableCapability>> fetchAndMergeCapabilities(CapabilitiesService capabilitiesService) {
+        return fetchAndMergeCapabilities(capabilitiesService, null);
     }
 
     /**
@@ -237,12 +250,25 @@ public final class CapabilitiesHelper {
      * Fetches the list of management tools from the targets service.
      *
      * @param capabilitiesService the service to fetch management tools from
+     * @param labelFilter optional label expression to filter tools
+     * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
+     * @throws NullPointerException if targetsService is null
+     */
+    public static Uni<List<ServiceTarget>> fetchManagementTools(
+            CapabilitiesService capabilitiesService, String labelFilter) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(() -> capabilitiesService.toolsList(labelFilter), List.of());
+    }
+
+    /**
+     * Fetches the list of management tools from the targets service without filtering.
+     *
+     * @param capabilitiesService the service to fetch management tools from
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
     public static Uni<List<ServiceTarget>> fetchManagementTools(CapabilitiesService capabilitiesService) {
-        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
-        return executeApiCall(capabilitiesService::toolsList, List.of());
+        return fetchManagementTools(capabilitiesService, null);
     }
 
     /**
@@ -262,12 +288,25 @@ public final class CapabilitiesHelper {
      * Fetches the list of resource providers from the targets service.
      *
      * @param capabilitiesService the service to fetch resource providers from
+     * @param labelFilter optional label expression to filter resources
+     * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
+     * @throws NullPointerException if targetsService is null
+     */
+    public static Uni<List<ServiceTarget>> fetchResourceProviders(
+            CapabilitiesService capabilitiesService, String labelFilter) {
+        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
+        return executeApiCall(() -> capabilitiesService.resourcesList(labelFilter), List.of());
+    }
+
+    /**
+     * Fetches the list of resource providers from the targets service without filtering.
+     *
+     * @param capabilitiesService the service to fetch resource providers from
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
     public static Uni<List<ServiceTarget>> fetchResourceProviders(CapabilitiesService capabilitiesService) {
-        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
-        return executeApiCall(capabilitiesService::resourcesList, List.of());
+        return fetchResourceProviders(capabilitiesService, null);
     }
 
     /**
@@ -295,21 +334,14 @@ public final class CapabilitiesHelper {
      * @param defaultValue value to return in case of error or exception
      * @return a {@link Uni} emitting either the API response data or the default value
      * @throws NullPointerException if apiCall is null
-     * @throws WanakuException if the API call fails with an exception
      */
     public static <T> Uni<T> executeApiCall(Supplier<WanakuResponse<T>> apiCall, T defaultValue) {
         Objects.requireNonNull(apiCall, "API call supplier cannot be null");
 
-        try {
-            var response = apiCall.get();
-            return response.error() != null
-                    ? Uni.createFrom().item(defaultValue)
-                    : Uni.createFrom().item(response.data());
-        } catch (Exception e) {
-            // Consider adding logging in production environment
-            // Logger.warn("API call failed", e);
-            throw new WanakuException("API call failed.", e);
-        }
+        var response = apiCall.get();
+        return response.error() != null
+                ? Uni.createFrom().item(defaultValue)
+                : Uni.createFrom().item(response.data());
     }
 
     /**
@@ -373,7 +405,6 @@ public final class CapabilitiesHelper {
     public static void printCapabilities(List<PrintableCapability> capabilities, WanakuPrinter printer) {
         Objects.requireNonNull(capabilities, "Capabilities list cannot be null");
         Objects.requireNonNull(printer, "Printer cannot be null");
-
         printer.printTable(capabilities, COLUMNS);
     }
 
@@ -387,7 +418,6 @@ public final class CapabilitiesHelper {
     public static void printCapability(PrintableCapability capability, WanakuPrinter printer) {
         Objects.requireNonNull(capability, "Capability cannot be null");
         Objects.requireNonNull(printer, "Printer cannot be null");
-
         printer.printAsMap(capability, COLUMNS);
     }
 

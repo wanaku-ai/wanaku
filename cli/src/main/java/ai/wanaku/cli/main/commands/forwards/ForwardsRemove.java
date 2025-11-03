@@ -31,6 +31,7 @@ public class ForwardsRemove extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initService(ForwardsService.class, host);
+
         ForwardReference reference = new ForwardReference();
         reference.setName(name);
 

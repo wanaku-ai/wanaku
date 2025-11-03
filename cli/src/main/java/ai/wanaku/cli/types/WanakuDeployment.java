@@ -2,6 +2,15 @@ package ai.wanaku.cli.types;
 
 import java.util.List;
 
+/**
+ * Represents a complete Wanaku deployment configuration.
+ * <p>
+ * This class encapsulates all components of a Wanaku deployment including
+ * environment variables, infrastructure services, application services, and server configuration.
+ * It is typically used for parsing deployment configuration files and orchestrating
+ * the deployment process.
+ * </p>
+ */
 public class WanakuDeployment {
 
     private Environment environment;

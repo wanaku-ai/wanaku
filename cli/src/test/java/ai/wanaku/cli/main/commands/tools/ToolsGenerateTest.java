@@ -121,6 +121,38 @@ public class ToolsGenerateTest {
         JSONAssert.assertEquals(jsonFileContent, expectedPetstoreToolsJsonContent, true);
     }
 
+    @Test
+    public void missingToolNameTest() throws Exception {
+        CliMain main = new CliMain();
+        CommandLine cmd = new CommandLine(main);
+        String tmpDirPathString = tempDir.toString();
+
+        // Test with open-meteo-api.yaml which has operations without operationId
+        String openMeteoOutputPath = tmpDirPathString + "/openMeteoTool.json";
+        String openMeteoInputPathString = copyFromResourceToTempDir("openapi", "open-meteo-api.yaml");
+
+        Path openMeteoInputPath = Paths.get(openMeteoInputPathString);
+
+        int exitCode = cmd.execute(
+                "tools",
+                "generate",
+                "-o",
+                openMeteoOutputPath,
+                openMeteoInputPath.toAbsolutePath().toString());
+
+        assertEquals(EXIT_CODE_SUCCESS, exitCode);
+
+        Path outputPath = Paths.get(openMeteoOutputPath);
+        Assertions.assertTrue(Files.exists(outputPath));
+
+        String content = Files.readString(outputPath);
+
+        // Verify that a fallback name was generated (should be "get_v1_forecast")
+        Assertions.assertTrue(
+                content.contains("\"name\" : \"get_v1_forecast\""),
+                "Generated tool should have fallback name 'get_v1_forecast'");
+    }
+
     private String copyFromResourceToTempDir(String resourcePath, String resource) throws IOException {
         InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourcePath + "/" + resource);
         Path tempDirDestinationPath = Paths.get(tempDir.toString(), resource);

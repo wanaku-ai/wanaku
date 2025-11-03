@@ -5,6 +5,7 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.io.ToolPayload;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -63,7 +64,16 @@ public interface ToolsService {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<ToolReference>> list();
+    WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * Lists all registered tool capabilities without filtering.
+     *
+     * @return a {@link WanakuResponse} containing a list of all tool references
+     */
+    default WanakuResponse<List<ToolReference>> list() {
+        return list(null);
+    }
 
     /**
      * Removes a tool capability from the system.
@@ -98,4 +108,14 @@ public interface ToolsService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException;
+
+    /**
+     * Removes a tool capability from the system.
+     *
+     * @param labelExpression the name of the tool to remove
+     * @return a {@link Response} indicating the result of the removal operation
+     */
+    @Path("/")
+    @DELETE
+    WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) throws WanakuException;
 }
