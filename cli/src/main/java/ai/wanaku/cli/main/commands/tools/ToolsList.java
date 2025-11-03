@@ -33,7 +33,8 @@ public class ToolsList extends BaseCommand {
         try {
             WanakuResponse<List<ToolReference>> response = toolsService.list();
             List<ToolReference> list = response.data();
-            printer.printTable(list, "name", "type", "uri");
+            list.stream().filter(t -> t.getNamespace() == null).forEach(t -> t.setNamespace("default"));
+            printer.printTable(list, "name", "namespace", "type", "uri");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
