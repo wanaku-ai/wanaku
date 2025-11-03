@@ -113,7 +113,7 @@ public class InvokerProxy implements ToolsProxy {
 
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
 
-        Map<String, String> headers = extractHeaders(toolReference);
+        Map<String, String> headers = extractHeaders(toolReference, toolArguments);
 
         String body = extractBody(toolReference, toolArguments);
 
@@ -134,26 +134,47 @@ public class InvokerProxy implements ToolsProxy {
         }
     }
 
-    static Map<String, String> extractHeaders(ToolReference toolReference) {
+    static Map<String, String> extractHeaders(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
         Map<String, Property> inputSchema = toolReference.getInputSchema().getProperties();
 
         // extract headers parameter
         Map<String, String> headers = inputSchema.entrySet().stream()
-                .filter(entry -> {
-                    Property property = entry.getValue();
-                    return property != null
-                            && property.getTarget() != null
-                            && property.getScope() != null
-                            && property.getTarget().equals(TARGET_HEADER)
-                            && property.getScope().equals(SCOPE_SERVICE);
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, InvokerProxy::getValue));
+                .filter(InvokerProxy::extractProperties)
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> evalValue(e, toolArguments)));
         return headers;
     }
 
-    private static String getValue(Map.Entry<String, Property> entry) {
+    private static boolean extractProperties(Map.Entry<String, Property> entry) {
+        Property property = entry.getValue();
+        return property != null
+                && property.getTarget() != null
+                && property.getScope() != null
+                && property.getTarget().equals(TARGET_HEADER)
+                && property.getScope().equals(SCOPE_SERVICE);
+    }
+
+    private static String evalValue(Map.Entry<String, Property> entry, ToolManager.ToolArguments toolArguments) {
         if (entry.getValue() == null) {
             LOG.fatalf("Malformed value for key %s: null", entry.getKey());
+            return toolArguments.args().get(entry.getKey()).toString();
+        }
+
+        if (entry.getValue().getValue() == null) {
+            final Object valueFromArgument = toolArguments.args().get(entry.getKey());
+            if (valueFromArgument == null) {
+                LOG.fatalf("Malformed value for key %s: neither a default value nor an argument were provided",
+                        entry.getKey());
+                throw new NullPointerException("Malformed value for key " + entry.getKey() +
+                        ": neither a default value nor an argument were provided (null)");
+            }
+
+            return valueFromArgument.toString();
+        }
+
+        final Object valueFromArgument = toolArguments.args().get(entry.getKey());
+        if (valueFromArgument != null) {
+            LOG.warnf("Overriding default value for configuration %s with the one provided by the tool", entry.getKey());
+            return valueFromArgument.toString();
         }
 
         return entry.getValue().getValue();
