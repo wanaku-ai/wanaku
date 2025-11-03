@@ -25,6 +25,18 @@ public class NamespaceList extends BaseCommand {
             arity = "0..1")
     protected String host;
 
+    @CommandLine.Option(
+            names = {"-e", "--label-expression"},
+            description = {
+                """
+Filter namespaces by label expression. Supports logical operators for complex queries.
+For detailed information see the label expression manual page:
+`wanaku man label-expression`
+Note: If omitted, all namespaces are listed. Label matching is case-sensitive.
+"""
+            })
+    private String labelExpression;
+
     NamespacesService namespacesService;
 
     private AddressableNamespace convertToAddressable(Namespace n) {
@@ -43,6 +55,7 @@ public class NamespaceList extends BaseCommand {
             AddressableNamespace ret = new AddressableNamespace();
             ret.setId(namespace.getId());
             ret.setPath(namespace.getPath());
+            ret.setLabels(namespace.getLabels());
             ret.setName(namespace.getName() == null ? "" : namespace.getName());
             ret.host = host;
 
@@ -66,13 +79,13 @@ public class NamespaceList extends BaseCommand {
                 QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host)).build(NamespacesService.class);
 
         try {
-            WanakuResponse<List<Namespace>> response = namespacesService.list();
+            WanakuResponse<List<Namespace>> response = namespacesService.list(labelExpression);
             List<AddressableNamespace> list =
                     response.data().stream().map(this::convertToAddressable).collect(Collectors.toList());
 
             list.add(AddressableNamespace.defaultNs(host));
 
-            printer.printTable(list, "id", "name", "path");
+            printer.printTable(list, "id", "name", "path", "labels");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);

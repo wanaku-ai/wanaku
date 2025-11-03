@@ -742,6 +742,46 @@ The command `wanaku tools add` is used to register a new tool with the Wanaku MC
 * `--property "count:int,The count of facts to retrieve"`: This defines an input property for the tool named count. It specifies that count is an integer (int) and provides a description of what it represents: `"The count of facts to retrieve"`.
 * `--required count`: This flag indicates that the count property is a required input for this tool.
 
+#### Adding Labels to Tools
+
+You can organize and categorize your tools using labels. Labels are key-value pairs that help you filter and manage tools more effectively:
+
+```shell
+wanaku tools add -n "weather-api" --description "Get weather forecast" --uri "https://api.weather.com/forecast" --type http --label category=weather --label environment=production --label region=us-east
+```
+
+Labels can be used for:
+- **Categorization**: Group tools by function (e.g., `category=weather`, `category=finance`)
+- **Environment tracking**: Identify deployment environments (e.g., `environment=production`, `environment=staging`)
+- **Access control**: Tag tools by team or department (e.g., `team=engineering`, `team=sales`)
+- **Lifecycle management**: Mark tools for deprecation or testing (e.g., `status=deprecated`, `status=beta`)
+
+You can add multiple labels by repeating the `--label` flag, using the format `--label key=value`.
+
+#### Managing Labels on Existing Tools
+
+After creating tools, you can add or remove labels without modifying the tool definition:
+
+**Adding labels to an existing tool:**
+```shell
+# Add labels to a specific tool
+wanaku tools label add --name "weather-api" --label priority=high --label reviewed=true
+
+# Add labels to multiple tools using label expressions (-e is short for --label-expression)
+wanaku tools label add -e 'category=weather' --label migrated=true
+```
+
+**Removing labels from an existing tool:**
+```shell
+# Remove labels from a specific tool
+wanaku tools label remove --name "weather-api" --label temporary --label draft
+
+# Remove labels from multiple tools using label expressions (-e is short for --label-expression)
+wanaku tools label remove -e 'status=deprecated' --label legacy
+```
+
+**Note:** When adding a label with a key that already exists, the value will be updated. When removing a non-existent label, it will be silently ignored.
+
 > [!NOTE]
 > For remote instances, you can use the parameter `--host` to point to the location of the instance.
 
@@ -888,12 +928,75 @@ dog-facts       => http            => https://dogapi.dog/api/v2/facts?limit={par
 
 ### Removing Tools
 
-Tools can be removed from the UI,
-by clicking on the Trash icon, or on the CLI by running the command `wanaku tools remove --name [name]`. 
+Tools can be removed from the UI by clicking on the Trash icon, or via the CLI using the `wanaku tools remove` command.
 
-For instance:
+#### Removing a Single Tool by Name
 
-`wanaku tools remove --name "meow-facts"`
+To remove a specific tool by name:
+
+```shell
+wanaku tools remove --name "meow-facts"
+```
+
+#### Batch Removal Using Label Expressions
+
+You can remove multiple tools at once using label expressions. This is particularly useful for cleaning up tools by category, environment, or other criteria:
+
+```shell
+wanaku tools remove -e 'category=weather'
+```
+
+This command will:
+1. Find all tools with the label `category=weather`
+2. Display a preview table showing which tools will be removed
+3. Prompt for confirmation before removal
+4. Report the number of tools removed
+
+**Advanced Label Expression Examples:**
+
+Remove all non-production tools:
+```shell
+wanaku tools remove -e 'environment!=production'
+```
+
+Remove deprecated weather tools:
+```shell
+wanaku tools remove -e 'category=weather & status=deprecated'
+```
+
+Remove tools from either development or staging environments:
+```shell
+wanaku tools remove -e 'environment=development | environment=staging'
+```
+
+Remove deprecated tools in multiple categories:
+```shell
+wanaku tools remove -e '(category=weather | category=news) & status=deprecated'
+```
+
+**Label Expression Syntax:**
+- `key=value` - Equals
+- `key!=value` - Not equals
+- `expr1 & expr2` - Logical AND
+- `expr1 | expr2` - Logical OR
+- `!expr` - Logical NOT
+- `(expr)` - Grouping
+
+**Skipping Confirmation:**
+
+For automated scripts, you can skip the confirmation prompt using the `--assume-yes` or `-y` flag:
+
+```shell
+wanaku tools remove -e 'status=deprecated' -y
+```
+
+> [!WARNING]
+> Batch removal operations cannot be undone. Always review the preview table carefully before confirming removal.
+
+For detailed information about label expression syntax, see:
+```shell
+wanaku man label-expression
+```
 
 ### Generating Tools
 
@@ -1070,14 +1173,51 @@ In this example:
 * `--name="test mcp via CLI"`: Assigns a human-readable name to the exposed resource.
 * `--type=file`: Indicates that the exposed resource is a file.
 
+#### Adding Labels to Resources
+
+Just like tools, you can organize resources using labels:
+
+```shell
+wanaku resources expose --location=$HOME/documents/report.pdf --mimeType=application/pdf --description="Q4 Financial Report" --name="q4-report" --type=file --label category=finance --label year=2024 --label department=accounting
+```
+
+Labels help you:
+- Organize resources by category, department, or project
+- Track resource lifecycles and versions
+- Filter and manage resources more effectively
+- Implement batch operations on groups of resources
+
 > [!IMPORTANT]
-> It's important to note that this location refers to a location that the capability (downstream service) is able to access. 
+> It's important to note that this location refers to a location that the capability (downstream service) is able to access.
 > The exact meaning of "location" depends on the type of the capability. For example:
 > * For a `file` type, it means the capability needs direct access to the file, implying it's likely running on a host with direct physical access to the file.
 > * For an `ftp` type, it means the capability needs access to the FTP server storing the file.
-> 
+>
 > Always check the documentation for the capability provider that you are using for additional details about the location specifier.
 
+#### Managing Labels on Existing Resources
+
+After creating resources, you can add or remove labels without modifying the resource definition:
+
+**Adding labels to an existing resource:**
+```shell
+# Add labels to a specific resource
+wanaku resources label add --name "q4-report" --label archived=true --label reviewed=yes
+
+# Add labels to multiple resources using label expressions (-e is short for --label-expression)
+wanaku resources label add -e 'category=finance' --label migrated=true
+```
+
+**Removing labels from an existing resource:**
+```shell
+# Remove labels from a specific resource
+wanaku resources label remove --name "q4-report" --label temporary --label draft
+
+# Remove labels from multiple resources using label expressions (-e is short for --label-expression)
+wanaku resources label remove -e 'status=archived' --label legacy
+```
+
+**Note:** When adding a label with a key that already exists, the value will be updated. When removing a non-existent label, it will be silently ignored.
 
 ### Listing Resources
 
@@ -1088,6 +1228,57 @@ Executing this command will display a list of available resources, including the
 ```shell
 wanaku resources list
 ```
+
+### Removing Resources
+
+Resources can be removed from the UI or via the CLI using the `wanaku resources remove` command.
+
+#### Removing a Single Resource by Name
+
+To remove a specific resource by name:
+
+```shell
+wanaku resources remove --name "q4-report"
+```
+
+#### Batch Removal Using Label Expressions
+
+Similar to tools, you can remove multiple resources at once using label expressions:
+
+```shell
+wanaku resources remove -e 'year=2023'
+```
+
+This command will:
+1. Find all resources with the label `year=2023`
+2. Display a preview table showing which resources will be removed
+3. Prompt for confirmation before removal
+4. Report the number of resources removed
+
+**Examples:**
+
+Remove all draft documents:
+```shell
+wanaku resources remove -e 'status=draft'
+```
+
+Remove archived resources from a specific department:
+```shell
+wanaku resources remove -e 'department=sales & status=archived'
+```
+
+Remove resources that are not marked as important:
+```shell
+wanaku resources remove -e '!priority=high'
+```
+
+For automated scripts, skip the confirmation prompt:
+```shell
+wanaku resources remove -e 'year=2022' -y
+```
+
+> [!WARNING]
+> Resource removal operations cannot be undone. Always review the preview table before confirming removal.
 
 ## Managing Capabilities
 
@@ -1261,16 +1452,19 @@ These tools and resources can then be accessed as if they were local to the serv
 
 ### Removing Forwards
 
-To remove an external MCP server from the Wanaku instance, use the `wanaku forwards remove` command:
+To remove a specific external MCP server from the Wanaku instance, use the `wanaku forwards remove` command:
 
 ```bash
-wanaku forwards remove --service="http://your-mcp-server.com:8080/mcp/sse" --name my-mcp-server
+wanaku forwards remove --name my-mcp-server
 ```
 
-* `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
 * `--name`: The human-readable name for the forward to be removed.
 
-Note that attempting to remove a non-existent forward will result in an error message. If you want to remove multiple forwards, simply repeat the command with different names and service URLs.
+> [!WARNING]
+> Forward removal operations cannot be undone. Once removed, the tools and resources from those MCP servers will no longer be accessible.
+
+> [!NOTE]
+> Attempting to remove a non-existent forward will result in an error message.
 
 ### Example Use Case
 
@@ -1382,6 +1576,76 @@ If you do not specify a namespace when adding a tool or resource, it will automa
 The default namespace acts as a general container for tools that don't require specific isolation.
 
 You can identify the default namespace in the wanaku namespaces list output by its `<default>` name.
+
+### Managing Labels on Namespaces
+
+Labels provide a flexible way to organize and filter namespaces. You can add metadata to namespaces in the form of key-value pairs, making it easier to manage and query them.
+
+#### Adding Labels to Namespaces
+
+You can add labels to an existing namespace using the `wanaku namespaces label add` command.
+
+To specify which namespace to add labels to, you need the namespace ID from the `wanaku namespaces list` output (the first column):
+
+```shell
+# Add a single label to a namespace
+wanaku namespaces label add --id 28560e66-d94c-44a2-b032-779b5542132a --label env=production
+
+# Add multiple labels at once
+wanaku namespaces label add --id 28560e66-d94c-44a2-b032-779b5542132a -l env=production -l tier=backend -l version=2.0
+```
+
+If a label key already exists, its value will be updated to the new value.
+
+#### Adding Labels to Multiple Namespaces
+
+You can add labels to multiple namespaces at once using label expressions:
+
+```shell
+# Add a label to all namespaces matching a label expression
+wanaku namespaces label add --label-expression 'category=internal' --label migrated=true
+
+# Add multiple labels to namespaces matching complex expressions
+wanaku namespaces label add -e 'env=staging & tier=backend' -l reviewed=true -l compliant=yes
+```
+
+#### Removing Labels from Namespaces
+
+To remove labels from a namespace, use the `wanaku namespaces label remove` command:
+
+```shell
+# Remove a single label from a namespace
+wanaku namespaces label remove --id 28560e66-d94c-44a2-b032-779b5542132a --label env
+
+# Remove multiple labels at once
+wanaku namespaces label remove --id 28560e66-d94c-44a2-b032-779b5542132a -l env -l tier -l version
+```
+
+#### Removing Labels from Multiple Namespaces
+
+Similar to adding labels, you can remove labels from multiple namespaces using label expressions:
+
+```shell
+# Remove labels from all namespaces matching an expression
+wanaku namespaces label remove --label-expression 'category=temp' --label temp
+
+# Remove multiple labels from matching namespaces
+wanaku namespaces label remove -e 'migrated=true' -l temp -l draft
+```
+
+#### Listing Namespaces with Label Filters
+
+You can filter namespaces by their labels when listing them:
+
+```shell
+# List all namespaces with a specific label
+wanaku namespaces list --label-filter 'env=production'
+
+# List namespaces matching complex expressions
+wanaku namespaces list --label-filter 'env=production & tier=backend'
+```
+
+See the [Label Expressions Guide](LABEL_EXPRESSIONS.md) for detailed information on the label expression syntax and advanced filtering options.
 
 ## Understanding URIs
 

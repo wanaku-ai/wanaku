@@ -15,10 +15,28 @@ import ai.wanaku.core.services.api.ToolsService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
+/**
+ * Command to add a new tool to the Wanaku platform.
+ * <p>
+ * This command registers a new tool with specified configuration including:
+ * </p>
+ * <ul>
+ *   <li>Tool metadata (name, namespace, description, URI, type)</li>
+ *   <li>Input schema definition with properties and required fields</li>
+ *   <li>Configuration data from external files</li>
+ *   <li>Secrets data for secure credential storage</li>
+ *   <li>Labels for organization and filtering</li>
+ * </ul>
+ * <p>
+ * The command validates that a downstream service capable of handling the
+ * specified tool type exists before registration.
+ * </p>
+ */
 @CommandLine.Command(name = "add", description = "Add tools")
 public class ToolsAdd extends BaseCommand {
     private static final Logger LOG = Logger.getLogger(ToolsAdd.class);
@@ -90,6 +108,12 @@ public class ToolsAdd extends BaseCommand {
             arity = "0..1")
     private String secretsFromFile;
 
+    @CommandLine.Option(
+            names = {"-l", "--label"},
+            description = "Label key-value pair (e.g., '--label env=production --label tier=backend')",
+            arity = "0..*")
+    private Map<String, String> labels;
+
     ToolsService toolsService;
 
     @Override
@@ -101,6 +125,7 @@ public class ToolsAdd extends BaseCommand {
         toolReference.setUri(uri);
         toolReference.setType(type);
         toolReference.setNamespace(namespace);
+        toolReference.setLabels(labels);
 
         InputSchema inputSchema = new InputSchema();
         inputSchema.setType(inputSchemaType);

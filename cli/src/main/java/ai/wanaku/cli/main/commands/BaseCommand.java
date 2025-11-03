@@ -7,6 +7,22 @@ import java.util.concurrent.Callable;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
+/**
+ * Abstract base class for all Wanaku CLI commands.
+ * <p>
+ * This class provides common functionality for all commands including:
+ * </p>
+ * <ul>
+ *   <li>Terminal and printer initialization for consistent output formatting</li>
+ *   <li>REST client initialization for communicating with the Wanaku service</li>
+ *   <li>Standard exit codes for success and error conditions</li>
+ *   <li>Help option handling</li>
+ * </ul>
+ * <p>
+ * Subclasses must implement the {@link #doCall(Terminal, WanakuPrinter)} method
+ * to define their specific command behavior.
+ * </p>
+ */
 public abstract class BaseCommand implements Callable<Integer> {
 
     public static final int EXIT_OK = 0;

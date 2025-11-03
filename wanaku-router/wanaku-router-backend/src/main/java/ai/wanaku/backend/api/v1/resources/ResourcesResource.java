@@ -99,14 +99,16 @@ public class ResourcesResource {
      * This endpoint returns a combined list of both locally exposed resources
      * and resources available through forward proxies to remote MCP servers.
      *
+     * @param labelFilter optional label expression to filter resources by labels
      * @return a response containing a list of all resource references
      * @throws WanakuException if listing fails
      */
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public WanakuResponse<List<ResourceReference>> list() throws WanakuException {
-        List<ResourceReference> list = resourcesBean.list();
+    public WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter)
+            throws WanakuException {
+        List<ResourceReference> list = resourcesBean.list(labelFilter);
         List<ResourceReference> resourceReferences = forwardsBean.listAllResources();
 
         List<ResourceReference> ret = CollectionsHelper.join(list, resourceReferences);

@@ -7,7 +7,9 @@ import static org.jline.console.Printer.TableRows.EVEN;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import org.jline.builtins.ConfigurationPath;
+import org.jline.builtins.Less;
+import org.jline.builtins.Source;
 import org.jline.builtins.Styles;
 import org.jline.console.impl.DefaultPrinter;
 import org.jline.terminal.Terminal;
@@ -34,6 +38,7 @@ import org.jline.utils.AttributedStyle;
  * <p>Key features include:</p>
  * <ul>
  *   <li>Styled message printing (error, warning, info, success)</li>
+ *   <li>Markdown rendering with terminal styling</li>
  *   <li>Table printing with customizable options and column selection</li>
  *   <li>Object-to-map conversion and printing</li>
  *   <li>Exception highlighting with configurable display modes</li>
@@ -44,6 +49,7 @@ import org.jline.utils.AttributedStyle;
  * <pre>{@code
  * WanakuPrinter printer = new WanakuPrinter(configPath, terminal);
  * printer.printSuccessMessage("Operation completed successfully");
+ * printer.printMarkdown("# Heading\n\nThis is **bold** text.");
  * printer.printTable(dataList, "name", "status", "timestamp");
  * printer.printAsMap(configuration, "host", "port", "enabled");
  * }</pre>
@@ -114,16 +120,45 @@ public class WanakuPrinter extends DefaultPrinter {
     }
 
     /**
-     * Creates a new terminal instance with system integration, Jansi support, and color support enabled.
+     * Creates a new terminal instance with resilient fallback handling.
      *
-     * <p>This factory method provides a pre-configured terminal suitable for CLI applications
-     * that require color output and system integration.</p>
+     * <p>This factory method attempts to create a terminal in the following order:</p>
+     * <ol>
+     *   <li>System terminal with Jansi and color support (best experience)</li>
+     *   <li>System terminal without Jansi if native libraries fail</li>
+     *   <li>Dumb terminal if system terminal is unavailable (fallback)</li>
+     * </ol>
      *
-     * @return a new terminal instance with standard CLI configuration
-     * @throws IOException if the terminal cannot be created due to I/O issues
+     * <p>This approach ensures the CLI works in various environments including:
+     * standard terminals, CI/CD pipelines, Docker containers, and IDEs.</p>
+     *
+     * @return a new terminal instance, guaranteed to be non-null
+     * @throws IOException if terminal creation fails catastrophically
      */
     public static Terminal terminalInstance() throws IOException {
-        return TerminalBuilder.builder().system(true).jansi(true).color(true).build();
+        TerminalBuilder builder = TerminalBuilder.builder();
+
+        try {
+            // First attempt: full-featured system terminal with Jansi
+            return builder.system(true)
+                    .jansi(true)
+                    .color(true)
+                    .jna(false) // Disable JNA to avoid native library issues
+                    .build();
+        } catch (Exception e) {
+            // Second attempt: system terminal without Jansi
+            try {
+                return TerminalBuilder.builder()
+                        .system(true)
+                        .jansi(false)
+                        .jna(false)
+                        .build();
+            } catch (Exception ex) {
+                // Final fallback: dumb terminal (always works but no colors)
+                // This won't print warnings and will silently work
+                return TerminalBuilder.builder().dumb(true).build();
+            }
+        }
     }
 
     /**
@@ -309,6 +344,103 @@ public class WanakuPrinter extends DefaultPrinter {
         if (message != null) {
             printStyledMessage(message, SUCCESS_STYLE);
         }
+    }
+
+    /**
+     * Prints Markdown text with terminal styling and formatting.
+     *
+     * <p>Parses and renders Markdown text with ANSI color codes and text formatting
+     * for rich terminal output. Supports headings, bold, italic, code blocks, lists,
+     * and links.</p>
+     *
+     * <p>Example Markdown features:</p>
+     * <ul>
+     *   <li><strong>Headings:</strong> {@code # Heading} - rendered in bold cyan</li>
+     *   <li><strong>Bold:</strong> {@code **text**} - rendered in bold</li>
+     *   <li><strong>Italic:</strong> {@code *text*} - rendered in italic</li>
+     *   <li><strong>Code:</strong> {@code `code`} - rendered in yellow</li>
+     *   <li><strong>Lists:</strong> {@code - item} - rendered with bullets</li>
+     *   <li><strong>Links:</strong> {@code [text](url)} - rendered in blue underlined</li>
+     *   <li><strong>Tables:</strong> GitHub Flavored Markdown tables with borders</li>
+     * </ul>
+     *
+     * @param markdown the Markdown text to render and display
+     * @throws IllegalArgumentException if markdown is null
+     */
+    public void printMarkdown(String markdown) {
+        if (markdown == null) {
+            throw new IllegalArgumentException("Markdown text cannot be null");
+        }
+
+        AttributedString rendered = MarkdownRenderer.render(markdown);
+        terminal.writer().println(rendered.toAnsi());
+        terminal.flush();
+    }
+
+    /**
+     * Displays Markdown text in an interactive pager (similar to Unix 'less').
+     *
+     * <p>This method renders Markdown text with terminal styling and displays it
+     * in an interactive pager that allows users to navigate through the content.
+     * The pager supports keyboard navigation:</p>
+     *
+     * <ul>
+     *   <li><strong>Space/f:</strong> Forward one page</li>
+     *   <li><strong>b:</strong> Backward one page</li>
+     *   <li><strong>j/↓:</strong> Forward one line</li>
+     *   <li><strong>k/↑:</strong> Backward one line</li>
+     *   <li><strong>g/Home:</strong> Go to first line</li>
+     *   <li><strong>G/End:</strong> Go to last line</li>
+     *   <li><strong>/pattern:</strong> Search forward for pattern</li>
+     *   <li><strong>?pattern:</strong> Search backward for pattern</li>
+     *   <li><strong>n:</strong> Repeat previous search</li>
+     *   <li><strong>N:</strong> Repeat previous search in reverse direction</li>
+     *   <li><strong>q:</strong> Quit the pager</li>
+     *   <li><strong>h:</strong> Display help</li>
+     * </ul>
+     *
+     * <p>This is useful for displaying long documentation or help text that
+     * doesn't fit on one screen.</p>
+     *
+     * @param markdown the Markdown text to render and display in the pager
+     * @throws IllegalArgumentException if markdown is null
+     * @throws IOException if there's an error displaying the pager
+     * @throws InterruptedException if the pager is interrupted
+     */
+    public void pageMarkdown(String markdown) throws IOException, InterruptedException {
+        if (markdown == null) {
+            throw new IllegalArgumentException("Markdown text cannot be null");
+        }
+
+        // Render Markdown to styled text
+        AttributedString rendered = MarkdownRenderer.render(markdown);
+        String styledContent = rendered.toAnsi();
+
+        // Count lines in the rendered content
+        long lineCount = styledContent.lines().count();
+
+        // Create a Source from the rendered content
+        Source source = new Source() {
+            @Override
+            public String getName() {
+                return "documentation";
+            }
+
+            @Override
+            public ByteArrayInputStream read() throws IOException {
+                return new ByteArrayInputStream(styledContent.getBytes(StandardCharsets.UTF_8));
+            }
+
+            @Override
+            public Long lines() {
+                return lineCount;
+            }
+        };
+
+        // Display in the Less pager
+        // Note: Pass null for path since we're using Source directly
+        Less less = new Less(terminal, null);
+        less.run(source);
     }
 
     /**

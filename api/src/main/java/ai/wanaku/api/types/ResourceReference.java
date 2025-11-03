@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Represents a resource reference, containing details such as location, type, and parameters.
  */
-public class ResourceReference implements WanakuEntity<String> {
+public class ResourceReference extends LabelsAwareEntity<String> {
     private String id;
 
     /**
@@ -284,7 +284,8 @@ public class ResourceReference implements WanakuEntity<String> {
                 + params + ", configurationURI='"
                 + configurationURI + '\'' + ", secretsURI='"
                 + secretsURI + '\'' + ", namespace='"
-                + namespace + '\'' + '}';
+                + namespace + '\'' + ", labels='"
+                + this.getLabels() + '\'' + '}';
     }
 
     @Override
@@ -302,12 +303,23 @@ public class ResourceReference implements WanakuEntity<String> {
                 && Objects.equals(params, that.params)
                 && Objects.equals(configurationURI, that.configurationURI)
                 && Objects.equals(secretsURI, that.secretsURI)
-                && Objects.equals(namespace, that.namespace);
+                && Objects.equals(namespace, that.namespace)
+                && Objects.equals(this.getLabels(), that.getLabels());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                id, location, type, name, description, mimeType, params, configurationURI, secretsURI, namespace);
+                id,
+                location,
+                type,
+                name,
+                description,
+                mimeType,
+                params,
+                configurationURI,
+                secretsURI,
+                namespace,
+                this.getLabels());
     }
 }

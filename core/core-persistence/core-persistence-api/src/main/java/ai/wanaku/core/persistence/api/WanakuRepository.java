@@ -50,6 +50,7 @@ public interface WanakuRepository<A extends WanakuEntity, C> {
     /**
      * Updates an entity to the repository.
      *
+     * @param id the ID of the entity to update
      * @param entity the entity to update
      * @return true if the record was updated
      */
@@ -88,4 +89,19 @@ public interface WanakuRepository<A extends WanakuEntity, C> {
      * @throws IllegalArgumentException if fields map is null or empty
      */
     int removeByFields(Map<String, Object> fields);
+
+    /**
+     * Removes all entities from the repository.
+     *
+     * @return the number of entities removed
+     */
+    int removeAll();
+
+    /**
+     * Checks if an entity with the specified key exists in the repository.
+     *
+     * @param key the key to check for existence
+     * @return {@code true} if an entity with the given key exists, {@code false} otherwise
+     */
+    boolean exists(C key);
 }

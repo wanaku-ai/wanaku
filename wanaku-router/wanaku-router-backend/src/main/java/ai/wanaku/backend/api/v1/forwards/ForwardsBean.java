@@ -1,7 +1,10 @@
 package ai.wanaku.backend.api.v1.forwards;
 
+import static io.micrometer.common.util.StringUtils.*;
+
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.api.types.LabelsAwareEntity;
 import ai.wanaku.api.types.NameNamespacePair;
 import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.RemoteToolReference;
@@ -14,6 +17,7 @@ import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
+import ai.wanaku.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
@@ -27,6 +31,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
@@ -197,6 +202,22 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         return listAllTools().stream().map(RemoteToolReference::asToolReference).collect(Collectors.toList());
     }
 
+    public List<ToolReference> listAllAsTools(String labelFilter) {
+        if (isBlank(labelFilter)) {
+            return listAllAsTools();
+        }
+
+        try {
+            Predicate<LabelsAwareEntity<?>> filter = LabelExpressionParser.parse(labelFilter);
+            return listAllTools().stream()
+                    .filter(filter)
+                    .map(RemoteToolReference::asToolReference)
+                    .collect(Collectors.toList());
+        } catch (LabelExpressionParser.LabelExpressionParseException e) {
+            throw new WanakuException("Invalid label expression: " + labelFilter, e);
+        }
+    }
+
     void loadForwards(@Observes StartupEvent event) {
         for (ForwardReference forwardReference : forwardReferenceRepository.listAll()) {
             try {
@@ -207,8 +228,13 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
     }
 
-    public List<ForwardReference> listForwards() {
+    public List<ForwardReference> listForwards(String labelFilter) {
+        // Label filtering is not supported for forwards
         return forwardReferenceRepository.listAll();
+    }
+
+    public List<ForwardReference> listForwards() {
+        return listForwards(null);
     }
 
     public void update(ForwardReference resource) {

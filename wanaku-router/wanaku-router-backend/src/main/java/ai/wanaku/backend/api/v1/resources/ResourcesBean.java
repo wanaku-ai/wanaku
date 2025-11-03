@@ -54,8 +54,15 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
         return expose(resourcePayload.getPayload());
     }
 
+    public List<ResourceReference> list(String labelFilter) {
+        if (labelFilter == null || labelFilter.trim().isEmpty()) {
+            return resourceReferenceRepository.listAll();
+        }
+        return resourceReferenceRepository.findAllFilterByLabelExpression(labelFilter);
+    }
+
     public List<ResourceReference> list() {
-        return resourceReferenceRepository.listAll();
+        return list(null);
     }
 
     void loadResources(@Observes StartupEvent ev) {

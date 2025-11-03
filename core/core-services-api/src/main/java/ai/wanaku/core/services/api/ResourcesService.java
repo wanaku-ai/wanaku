@@ -56,12 +56,22 @@ public interface ResourcesService {
     /**
      * Lists all exposed resource capabilities.
      *
+     * @param labelFilter optional label expression to filter resources by labels
      * @return a {@link WanakuResponse} containing a list of all resource references
      */
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<ResourceReference>> list();
+    WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * Lists all exposed resource capabilities without filtering.
+     *
+     * @return a {@link WanakuResponse} containing a list of all resource references
+     */
+    default WanakuResponse<List<ResourceReference>> list() {
+        return list(null);
+    }
 
     /**
      * Removes a resource capability from the system.
@@ -72,4 +82,26 @@ public interface ResourcesService {
     @Path("/remove")
     @PUT
     Response remove(@QueryParam("resource") String resource);
+
+    /**
+     * Retrieves a resource capability by its name.
+     *
+     * @param name the name of the resource to retrieve
+     * @return a {@link WanakuResponse} containing the resource reference
+     */
+    @Path("/")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    WanakuResponse<ResourceReference> getByName(@QueryParam("name") String name);
+
+    /**
+     * Updates an existing resource capability.
+     *
+     * @param resource the updated resource reference
+     * @return a {@link Response} indicating the result of the update operation
+     */
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response update(ResourceReference resource);
 }

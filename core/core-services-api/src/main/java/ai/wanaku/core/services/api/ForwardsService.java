@@ -8,6 +8,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -52,10 +53,42 @@ public interface ForwardsService {
     /**
      * Lists all registered forward references.
      *
+     * @param labelFilter optional label expression to filter forwards by labels
      * @return a {@link WanakuResponse} containing a list of all forward references
      */
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<ForwardReference>> listForwards();
+    WanakuResponse<List<ForwardReference>> listForwards(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * Lists all registered forward references without filtering.
+     *
+     * @return a {@link WanakuResponse} containing a list of all forward references
+     */
+    default WanakuResponse<List<ForwardReference>> listForwards() {
+        return listForwards(null);
+    }
+
+    /**
+     * Retrieves a forward reference by its name.
+     *
+     * @param name the name of the forward to retrieve
+     * @return a {@link WanakuResponse} containing the forward reference
+     */
+    @Path("/")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    WanakuResponse<ForwardReference> getByName(@QueryParam("name") String name);
+
+    /**
+     * Updates an existing forward reference.
+     *
+     * @param reference the updated forward reference
+     * @return a {@link Response} indicating the result of the update operation
+     */
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response updateForward(ForwardReference reference);
 }

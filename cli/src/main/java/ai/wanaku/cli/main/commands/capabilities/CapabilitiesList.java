@@ -71,6 +71,18 @@ public class CapabilitiesList extends BaseCommand {
             defaultValue = "http://localhost:8080")
     private String host;
 
+    @Option(
+            names = {"-e", "--label-expression"},
+            description = {
+                """
+Filter capabilities by label expression. Supports logical operators for complex queries.
+For detailed information see the label expression manual page:
+`wanaku man label-expression`
+Note: If omitted, all capabilities are listed. Label matching is case-sensitive.
+"""
+            })
+    private String labelExpression;
+
     /**
      * REST client for communicating with the targets service API.
      * Initialized during command execution.
@@ -104,8 +116,9 @@ public class CapabilitiesList extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
 
         capabilitiesService = initService(CapabilitiesService.class, host);
-        var capabilities =
-                fetchAndMergeCapabilities(capabilitiesService).await().atMost(API_TIMEOUT);
+        var capabilities = fetchAndMergeCapabilities(capabilitiesService, labelExpression)
+                .await()
+                .atMost(API_TIMEOUT);
         printCapabilities(capabilities, printer);
 
         return EXIT_OK;

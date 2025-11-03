@@ -17,7 +17,7 @@ import java.util.Objects;
  * @see ToolReference
  * @see CallableReference
  */
-public class RemoteToolReference implements CallableReference, WanakuEntity<String> {
+public class RemoteToolReference extends LabelsAwareEntity<String> implements CallableReference {
     private String id;
     private String name;
     private String description;
@@ -121,7 +121,8 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
                 && Objects.equals(name, that.name)
                 && Objects.equals(description, that.description)
                 && Objects.equals(type, that.type)
-                && Objects.equals(inputSchema, that.inputSchema);
+                && Objects.equals(inputSchema, that.inputSchema)
+                && Objects.equals(this.getLabels(), that.getLabels());
     }
 
     @Override
@@ -136,7 +137,8 @@ public class RemoteToolReference implements CallableReference, WanakuEntity<Stri
                 + name + '\'' + ", description='"
                 + description + '\'' + ", type='"
                 + type + '\'' + ", inputSchema="
-                + inputSchema + '}';
+                + inputSchema + '\'' + ", labels='"
+                + this.getLabels() + '\'' + '}';
     }
 
     /**

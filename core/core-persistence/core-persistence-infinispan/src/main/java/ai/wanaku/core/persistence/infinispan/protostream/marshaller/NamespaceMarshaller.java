@@ -2,6 +2,7 @@ package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.Namespace;
 import java.io.IOException;
+import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;
 
 public class NamespaceMarshaller implements MessageMarshaller<Namespace> {
@@ -12,6 +13,7 @@ public class NamespaceMarshaller implements MessageMarshaller<Namespace> {
         namespace.setId(reader.readString("id"));
         namespace.setName(reader.readString("name"));
         namespace.setPath(reader.readString("path"));
+        namespace.setLabels(reader.readMap("labels", new HashMap<>(), String.class, String.class));
 
         return namespace;
     }
@@ -21,6 +23,7 @@ public class NamespaceMarshaller implements MessageMarshaller<Namespace> {
         writer.writeString("id", namespace.getId());
         writer.writeString("name", namespace.getName());
         writer.writeString("path", namespace.getPath());
+        writer.writeMap("labels", namespace.getLabels(), String.class, String.class);
     }
 
     @Override

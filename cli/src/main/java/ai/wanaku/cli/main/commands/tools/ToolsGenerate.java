@@ -51,6 +51,13 @@ public class ToolsGenerate extends BaseCommand {
     private Map<String, String> serverVariables = new HashMap<>();
 
     @CommandLine.Option(
+            names = {"--label", "-l"},
+            description =
+                    "key-value pair for labels to be added to all generated tools, can be specified multiple times. Ex  '-l environment=prod -l team=backend'",
+            arity = "0..*")
+    private Map<String, String> labels = new HashMap<>();
+
+    @CommandLine.Option(
             names = {"--import", "-I"},
             arity = "0",
             description = "Import the generated toolset in the registry")
@@ -84,7 +91,7 @@ public class ToolsGenerate extends BaseCommand {
             // Determine base URL to use
             String baseUrl = determineBaseUrl(openAPI, serverUrl, serverIndex, serverVariables);
             // Generate tool references
-            List<ToolReference> toolReferences = generateToolReferences(openAPI, baseUrl);
+            List<ToolReference> toolReferences = generateToolReferences(openAPI, baseUrl, labels);
             // Write output
             writeOutput(toolReferences, outputFile);
 

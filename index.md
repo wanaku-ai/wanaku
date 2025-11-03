@@ -29,4 +29,8 @@ features:
   - title: Wanaku Internals
     details: Learn about the internals of Wanaku
     link: ./docs/contributing
+  - title: Label Expression
+    details: Learn how to filter entities using label expressions and logical operators
+    link: ./cli/src/main/resources/docs/LABEL_EXPRESSIONS
+
 ---

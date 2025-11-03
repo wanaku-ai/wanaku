@@ -8,6 +8,7 @@ import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import ai.wanaku.api.types.InputSchema;
@@ -111,12 +112,14 @@ public class ToolsGenerateHelper {
      *
      * @param openAPI The OpenAPI specification object
      * @param baseUrl The base URL to use for API calls
+     * @param labels The labels to be added to all generated tool references
      * @return A list of tool references
      */
-    public static List<ToolReference> generateToolReferences(OpenAPI openAPI, String baseUrl) {
+    public static List<ToolReference> generateToolReferences(
+            OpenAPI openAPI, String baseUrl, Map<String, String> labels) {
         return openAPI.getPaths().entrySet().stream()
                 .filter(entry -> Objects.nonNull(entry.getValue()))
-                .map(entry -> pathItem2ToolReferences(baseUrl, entry.getKey(), entry.getValue()))
+                .map(entry -> pathItem2ToolReferences(baseUrl, entry.getKey(), entry.getValue(), labels))
                 .flatMap(List::stream)
                 .toList();
     }
@@ -143,12 +146,24 @@ public class ToolsGenerateHelper {
      * @param baseUrl The base URL for the API
      * @param path The path from the OpenAPI specification
      * @param pathItem The PathItem object containing the operations
+     * @param labels The labels to be added to all generated tool references
      * @return A list of tool references, one for each operation in the PathItem
      */
-    public static List<ToolReference> pathItem2ToolReferences(String baseUrl, String path, PathItem pathItem) {
+    public static List<ToolReference> pathItem2ToolReferences(
+            String baseUrl, String path, PathItem pathItem, Map<String, String> labels) {
         if (pathItem == null) {
             return List.of();
         }
+
+        String pathBaseUrl = null;
+        // prefer local server definition to the global one
+        if (pathItem.getServers() != null
+                && !pathItem.getServers().isEmpty()
+                && isNotBlank(pathItem.getServers().getFirst().getUrl())) {
+            pathBaseUrl = pathItem.getServers().getFirst().getUrl();
+        }
+
+        final String finalBaseUrl = isBlank(pathBaseUrl) ? baseUrl : pathBaseUrl;
 
         record OperationEntry(String method, Operation operation) {}
 
@@ -162,8 +177,34 @@ public class ToolsGenerateHelper {
                         new OperationEntry("HEAD", pathItem.getHead()),
                         new OperationEntry("TRACE", pathItem.getTrace()))
                 .filter(entry -> entry.operation() != null)
-                .map(entry -> operation2ToolReference(pathItem, entry.operation(), baseUrl, path, entry.method()))
+                .map(entry -> operation2ToolReference(
+                        pathItem, entry.operation(), finalBaseUrl, path, entry.method(), labels))
                 .toList();
+    }
+
+    /**
+     * Generates a tool name from the API path and HTTP method.
+     * This is used as a fallback when the operation doesn't have an operationId.
+     *
+     * @param path The API path (e.g., "/users/{id}")
+     * @param method The HTTP method (e.g., "GET", "POST")
+     * @return A generated tool name (e.g., "get_users_id")
+     */
+    public static String generateToolNameFromPathAndMethod(String path, String method) {
+        // Start with lowercase method
+        String name = method.toLowerCase();
+
+        // Clean up the path: remove leading/trailing slashes, replace special chars with underscores
+        String cleanPath = path.replaceAll("^/+", "") // Remove leading slashes
+                .replaceAll("/+$", "") // Remove trailing slashes
+                .replaceAll("[^a-zA-Z0-9]+", "_"); // Replace non-alphanumeric chars with underscores
+
+        // Combine method and path
+        if (isNotEmpty(cleanPath)) {
+            name = name + "_" + cleanPath;
+        }
+
+        return name;
     }
 
     /**
@@ -174,16 +215,31 @@ public class ToolsGenerateHelper {
      * @param baseUrl The base URL for the API
      * @param path The path from the OpenAPI specification
      * @param method The HTTP method for this operation
+     * @param labels The labels to be added to the tool reference
      * @return A ToolReference representing the operation
      */
     public static ToolReference operation2ToolReference(
-            PathItem pathItem, Operation operation, String baseUrl, String path, String method) {
+            PathItem pathItem,
+            Operation operation,
+            String baseUrl,
+            String path,
+            String method,
+            Map<String, String> labels) {
         ToolReference toolReference = new ToolReference();
 
         // Set basic properties
-        toolReference.setName(operation.getOperationId());
+        String name = operation.getOperationId();
+        if (isEmpty(name)) {
+            name = generateToolNameFromPathAndMethod(path, method);
+        }
+        toolReference.setName(name);
         toolReference.setDescription(operation.getDescription());
         toolReference.setType(HTTP_TOOL_TYPE);
+
+        // Add labels if provided
+        if (labels != null && !labels.isEmpty()) {
+            toolReference.addLabels(labels);
+        }
 
         // Determine URI
         String uri = determineOperationUri(operation, baseUrl);

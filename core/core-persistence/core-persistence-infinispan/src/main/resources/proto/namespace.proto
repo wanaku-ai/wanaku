@@ -7,4 +7,5 @@ message Namespace {
   string id = 1;
   string name = 2;
   string path = 3;
+  map<string, string> labels = 4;
 }

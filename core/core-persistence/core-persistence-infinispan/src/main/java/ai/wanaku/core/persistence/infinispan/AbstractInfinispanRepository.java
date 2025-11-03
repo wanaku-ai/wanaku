@@ -125,7 +125,11 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
     }
 
     protected void configure(Configuration configuration) {
-        cacheManager.defineConfiguration(entityName(), configuration);
+        // Only define configuration if it doesn't already exist
+        // This prevents errors when multiple tests share the same Quarkus session
+        if (cacheManager.getCacheConfiguration(entityName()) == null) {
+            cacheManager.defineConfiguration(entityName(), configuration);
+        }
     }
 
     // For testing only
@@ -199,5 +203,17 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
         final Cache<Object, Namespace> cache = cacheManager.getCache(entityName());
 
         return cache.size();
+    }
+
+    @Override
+    public int removeAll() {
+        final Cache<Object, A> cache = cacheManager.getCache(entityName());
+        int sizeBefore = cache.size();
+        cache.values().removeIf(x -> true);
+        return sizeBefore - cache.size();
+    }
+
+    public boolean exists(K key) {
+        return findById(key) != null;
     }
 }

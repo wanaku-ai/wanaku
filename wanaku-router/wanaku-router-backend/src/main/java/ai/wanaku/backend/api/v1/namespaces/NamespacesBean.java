@@ -73,7 +73,26 @@ public class NamespacesBean {
         return byName.getFirst();
     }
 
+    public List<Namespace> list(String labelFilter) {
+        if (labelFilter == null || labelFilter.trim().isEmpty()) {
+            return namespaceRepository.listAll();
+        }
+        return namespaceRepository.findAllFilterByLabelExpression(labelFilter);
+    }
+
     public List<Namespace> list() {
-        return namespaceRepository.listAll();
+        return list(null);
+    }
+
+    public boolean exists(String id) {
+        return namespaceRepository.exists(id);
+    }
+
+    public Namespace getById(String id) {
+        return namespaceRepository.findById(id);
+    }
+
+    public boolean update(String id, Namespace namespace) {
+        return namespaceRepository.update(id, namespace);
     }
 }

@@ -9,7 +9,7 @@ import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
-public class InfinispanNamespaceRepository extends AbstractInfinispanRepository<Namespace, String>
+public class InfinispanNamespaceRepository extends AbstractLabelAwareInfinispanRepository<Namespace, String>
         implements NamespaceRepository {
 
     protected InfinispanNamespaceRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {

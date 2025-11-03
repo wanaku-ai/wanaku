@@ -6,11 +6,11 @@ import java.util.List;
 /**
  * Repository interface for managing {@link Namespace} entities.
  * <p>
- * This interface extends {@link WanakuRepository} to provide persistence operations
+ * This interface extends {@link LabelAwareInfinispanRepository} to provide persistence operations
  * for namespaces, which provide logical grouping and isolation for capabilities,
  * tools, and resources within the Wanaku system.
  */
-public interface NamespaceRepository extends WanakuRepository<Namespace, String> {
+public interface NamespaceRepository extends LabelAwareInfinispanRepository<Namespace, String> {
 
     /**
      * Finds all namespaces with the specified name.

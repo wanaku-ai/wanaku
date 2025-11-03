@@ -168,7 +168,8 @@ public class InvokerProxy implements ToolsProxy {
 
         final Object valueFromArgument = toolArguments.args().get(entry.getKey());
         if (valueFromArgument != null) {
-            LOG.warnf("Overriding default value for configuration %s with the tool one", entry.getKey());
+            LOG.warnf(
+                    "Overriding default value for configuration %s with the one provided by the tool", entry.getKey());
             return valueFromArgument.toString();
         }
 
