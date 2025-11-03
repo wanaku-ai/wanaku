@@ -108,7 +108,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                     .addAllContent(List.of(stateMsg))
                     .build();
         } catch (Exception e) {
-            String stateMsg = "Unable to invoke tool: " + e.getMessage();
+            String stateMsg = findRootCause(e);
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ToolInvokeReply.newBuilder()
@@ -116,6 +116,17 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                     .addAllContent(List.of(stateMsg))
                     .build();
         }
+    }
+
+    private static String findRootCause(Exception e) {
+        String rootCause;
+        if (e.getCause() != null) {
+            rootCause = e.getCause().getMessage();
+        } else {
+            rootCause = e.getMessage();
+        }
+
+        return "Unable to invoke tool: " + rootCause;
     }
 
     @Override

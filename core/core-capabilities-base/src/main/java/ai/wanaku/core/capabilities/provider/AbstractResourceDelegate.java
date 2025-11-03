@@ -124,7 +124,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
                     .addAllContent(List.of(stateMsg))
                     .build();
         } catch (Exception e) {
-            String stateMsg = "Unable to read or acquire resource: " + e.getMessage();
+            String stateMsg = findRootCause(e);
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
             return ResourceReply.newBuilder()
@@ -132,6 +132,17 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
                     .addAllContent(List.of(stateMsg))
                     .build();
         }
+    }
+
+    private static String findRootCause(Exception e) {
+        String rootCause;
+        if (e.getCause() != null) {
+            rootCause = e.getCause().getMessage();
+        } else {
+            rootCause = e.getMessage();
+        }
+
+        return "Unable to read or acquire resource: " + rootCause;
     }
 
     @Override
