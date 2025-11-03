@@ -77,6 +77,11 @@ public final class OperatorUtil {
                 service.setImage(image);
             }
 
+            final String imagePullPolicy = routerSpec.getImagePullPolicy();
+            if (imagePullPolicy != null) {
+                service.setImagePullPolicy(imagePullPolicy);
+            }
+
             // Add custom environment variables from router spec if provided
             if (routerSpec.getEnv() != null && !routerSpec.getEnv().isEmpty()) {
                 for (ai.wanaku.operator.wanaku.WanakuSpec.EnvVar env : routerSpec.getEnv()) {
@@ -225,6 +230,11 @@ public final class OperatorUtil {
 
         String serviceImage = capabilitiesSpec.getImage();
         service.setImage(serviceImage);
+
+        final String imagePullPolicy = capabilitiesSpec.getImagePullPolicy();
+        if (imagePullPolicy != null) {
+            service.setImagePullPolicy(imagePullPolicy);
+        }
 
         final List<EnvVar> userDefinedVars = envVarSupplier.get();
         final List<EnvVar> templateEnvs = service.getEnv();

@@ -76,6 +76,7 @@ public class WanakuSpec {
     public static class RouterSpec {
         private String image;
         private List<EnvVar> env;
+        private String imagePullPolicy;
 
         public String getImage() {
             return image;
@@ -92,6 +93,14 @@ public class WanakuSpec {
         public void setEnv(List<EnvVar> env) {
             this.env = env;
         }
+
+        public String getImagePullPolicy() {
+            return imagePullPolicy;
+        }
+
+        public void setImagePullPolicy(String imagePullPolicy) {
+            this.imagePullPolicy = imagePullPolicy;
+        }
     }
 
     public static class CapabilitiesSpec {
@@ -99,6 +108,16 @@ public class WanakuSpec {
         private String image;
         private String type;
         private List<EnvVar> env;
+
+        public String getImagePullPolicy() {
+            return imagePullPolicy;
+        }
+
+        public void setImagePullPolicy(String imagePullPolicy) {
+            this.imagePullPolicy = imagePullPolicy;
+        }
+
+        private String imagePullPolicy;
 
         public String getName() {
             return name;
