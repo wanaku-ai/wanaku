@@ -43,6 +43,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 </SideNavMenuItem>
                 <SideNavMenuItem
                     element={Link}
+                    to="/prompts"
+                    onClick={onClickSideNavExpand}
+                >
+                    Prompts
+                </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
                     to="/llmchat"
                     onClick={onClickSideNavExpand}
                 >

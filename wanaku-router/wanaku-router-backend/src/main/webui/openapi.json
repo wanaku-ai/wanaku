@@ -153,6 +153,94 @@
           }
         }
       },
+      "PromptArgument" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PromptContent" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PromptMessage" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string"
+          },
+          "content" : {
+            "$ref" : "#/components/schemas/PromptContent"
+          }
+        }
+      },
+      "PromptPayload" : {
+        "type" : "object",
+        "properties" : {
+          "promptReference" : {
+            "$ref" : "#/components/schemas/PromptReference"
+          },
+          "configurationData" : {
+            "type" : "string"
+          },
+          "secretsData" : {
+            "type" : "string"
+          },
+          "payload" : {
+            "$ref" : "#/components/schemas/PromptReference"
+          }
+        }
+      },
+      "PromptReference" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromptMessage"
+            }
+          },
+          "arguments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromptArgument"
+            }
+          },
+          "toolReferences" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "namespace" : {
+            "type" : "string"
+          },
+          "configurationURI" : {
+            "type" : "string"
+          }
+        }
+      },
       "Property" : {
         "type" : "object",
         "properties" : {
@@ -393,6 +481,20 @@
           }
         }
       },
+      "WanakuResponseListPromptReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromptReference"
+            }
+          }
+        }
+      },
       "WanakuResponseListResourceReference" : {
         "type" : "object",
         "properties" : {
@@ -460,6 +562,17 @@
           },
           "data" : {
             "$ref" : "#/components/schemas/Namespace"
+          }
+        }
+      },
+      "WanakuResponsePromptReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/PromptReference"
           }
         }
       },
@@ -934,6 +1047,208 @@
         },
         "summary" : "Get By Id",
         "tags" : [ "Namespaces Resource" ]
+      }
+    },
+    "/api/v1/prompts" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromptReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Prompts Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "prompt",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Prompts Resource" ]
+      },
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListPromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Prompts Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromptReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponsePromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Prompts Resource" ]
+      }
+    },
+    "/api/v1/prompts/with-payload" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromptPayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponsePromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add With Payload",
+        "tags" : [ "Prompts Resource" ]
+      }
+    },
+    "/api/v1/prompts/{name}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponsePromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
+        "tags" : [ "Prompts Resource" ]
       }
     },
     "/api/v1/resources/expose" : {

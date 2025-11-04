@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+import "content.proto";
+
+// Represents a prompt reference in the MCP protocol.
+// Prompts are reusable templates that can leverage multiple tools and provide
+// example interactions for LLMs.
+message PromptReference {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated PromptMessage messages = 4;
+  repeated PromptArgument arguments = 5;
+  repeated string tool_references = 6;
+  string namespace = 7;
+  string configuration_uri = 8;
+
+  // Represents a message in an MCP prompt.
+  // Each message has a role and content according to the MCP specification.
+  message PromptMessage {
+    string role = 1;
+    PromptContent content = 2;
+  }
+
+  // Represents an argument/parameter for a prompt.
+  message PromptArgument {
+    string name = 1;
+    string description = 2;
+    bool required = 3;
+  }
+}
+
+// Represents content in a prompt message.
+// This is a polymorphic type that can be one of several content types.
+message PromptContent {
+  oneof content {
+    TextContent text_content = 1;
+    ImageContent image_content = 2;
+    AudioContent audio_content = 3;
+    EmbeddedResource embedded_resource = 4;
+  }
+}
