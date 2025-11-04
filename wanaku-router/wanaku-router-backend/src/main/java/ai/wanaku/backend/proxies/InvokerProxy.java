@@ -161,23 +161,27 @@ public class InvokerProxy implements ToolsProxy {
 
         if (entry.getValue().getValue() == null) {
             final Object valueFromArgument = toolArguments.args().get(entry.getKey());
-            if (valueFromArgument == null) {
-                LOG.fatalf("Malformed value for key %s: neither a default value nor an argument were provided",
-                        entry.getKey());
-                throw new NullPointerException("Malformed value for key " + entry.getKey() +
-                        ": neither a default value nor an argument were provided (null)");
-            }
+            requireNonNullValue(entry, valueFromArgument);
 
             return valueFromArgument.toString();
         }
 
         final Object valueFromArgument = toolArguments.args().get(entry.getKey());
         if (valueFromArgument != null) {
-            LOG.warnf("Overriding default value for configuration %s with the one provided by the tool", entry.getKey());
+            LOG.warnf("Overriding default value for configuration %s with the tool one", entry.getKey());
             return valueFromArgument.toString();
         }
 
         return entry.getValue().getValue();
+    }
+
+    private static void requireNonNullValue(Map.Entry<String, Property> entry, Object valueFromArgument) {
+        if (valueFromArgument == null) {
+            LOG.fatalf("Malformed value for key %s: neither a default value nor an argument were provided",
+                    entry.getKey());
+            throw new NullPointerException("Malformed value for key " + entry.getKey()
+                    + ": neither a default value nor an argument were provided (null)");
+        }
     }
 
     private static String extractBody(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
