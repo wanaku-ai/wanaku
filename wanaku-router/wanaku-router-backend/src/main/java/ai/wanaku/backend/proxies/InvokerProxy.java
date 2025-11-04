@@ -177,7 +177,8 @@ public class InvokerProxy implements ToolsProxy {
 
     private static void requireNonNullValue(Map.Entry<String, Property> entry, Object valueFromArgument) {
         if (valueFromArgument == null) {
-            LOG.fatalf("Malformed value for key %s: neither a default value nor an argument were provided",
+            LOG.fatalf(
+                    "Malformed value for key %s: neither a default value nor an argument were provided",
                     entry.getKey());
             throw new NullPointerException("Malformed value for key " + entry.getKey()
                     + ": neither a default value nor an argument were provided (null)");

@@ -35,7 +35,6 @@ public class HttpClient implements Client {
         ParsedToolInvokeRequest parsedRequest =
                 ParsedToolInvokeRequest.parseRequest(request.getUri(), request, parameterBuilder::build);
 
-
         Map<String, String> configsMap = configResource.getConfigs(ReservedConfigs.CONFIG_HEADER_PARAMETERS_PREFIX);
 
         Map<String, Object> requestHeaders = new HashMap<>();
