@@ -6,6 +6,7 @@
  */
 import type {
   DeleteApiV1ToolsParams,
+  DeleteApiV1PromptsParams,
   ForwardReference,
   GetApiV1CapabilitiesResourcesListParams,
   GetApiV1CapabilitiesToolsListParams,
@@ -16,6 +17,8 @@ import type {
   Namespace,
   OutboundSseEvent,
   PostApiV1ToolsParams,
+  PromptPayload,
+  PromptReference,
   PutApiV1ResourcesRemoveParams,
   PutApiV1ToolsRemoveParams,
   ResourcePayload,
@@ -28,11 +31,13 @@ import type {
   WanakuResponseInteger,
   WanakuResponseListForwardReference,
   WanakuResponseListNamespace,
+  WanakuResponseListPromptReference,
   WanakuResponseListResourceReference,
   WanakuResponseListServiceTarget,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
   WanakuResponseNamespace,
+  WanakuResponsePromptReference,
   WanakuResponseResourceReference,
   WanakuResponseServerInfo,
   WanakuResponseServiceTarget,
@@ -706,6 +711,262 @@ export const getApiV1NamespacesId = async (
 ): Promise<getApiV1NamespacesIdResponse> => {
   return customFetch<getApiV1NamespacesIdResponse>(
     getGetApiV1NamespacesIdUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Update
+ */
+export type putApiV1PromptsResponse200 = {
+  data: null;
+  status: 200;
+};
+
+export type putApiV1PromptsResponse400 = {
+  data: null;
+  status: 400;
+};
+
+export type putApiV1PromptsResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type putApiV1PromptsResponseComposite =
+  | putApiV1PromptsResponse200
+  | putApiV1PromptsResponse400
+  | putApiV1PromptsResponse500;
+
+export type putApiV1PromptsResponse = putApiV1PromptsResponseComposite & {
+  headers: Headers;
+};
+
+export const getPutApiV1PromptsUrl = () => {
+  return `/api/v1/prompts`;
+};
+
+export const putApiV1Prompts = async (
+  promptReference: PromptReference,
+  options?: RequestInit,
+): Promise<putApiV1PromptsResponse> => {
+  return customFetch<putApiV1PromptsResponse>(getPutApiV1PromptsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(promptReference),
+  });
+};
+
+/**
+ * @summary Remove
+ */
+export type deleteApiV1PromptsResponse200 = {
+  data: null;
+  status: 200;
+};
+
+export type deleteApiV1PromptsResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type deleteApiV1PromptsResponseComposite =
+  | deleteApiV1PromptsResponse200
+  | deleteApiV1PromptsResponse500;
+
+export type deleteApiV1PromptsResponse = deleteApiV1PromptsResponseComposite & {
+  headers: Headers;
+};
+
+export const getDeleteApiV1PromptsUrl = (params?: DeleteApiV1PromptsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/prompts?${stringifiedParams}`
+    : `/api/v1/prompts`;
+};
+
+export const deleteApiV1Prompts = async (
+  params?: DeleteApiV1PromptsParams,
+  options?: RequestInit,
+): Promise<deleteApiV1PromptsResponse> => {
+  return customFetch<deleteApiV1PromptsResponse>(
+    getDeleteApiV1PromptsUrl(params),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+/**
+ * @summary List
+ */
+export type getApiV1PromptsResponse200 = {
+  data: WanakuResponseListPromptReference;
+  status: 200;
+};
+
+export type getApiV1PromptsResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1PromptsResponseComposite =
+  | getApiV1PromptsResponse200
+  | getApiV1PromptsResponse500;
+
+export type getApiV1PromptsResponse = getApiV1PromptsResponseComposite & {
+  headers: Headers;
+};
+
+export const getGetApiV1PromptsUrl = () => {
+  return `/api/v1/prompts`;
+};
+
+export const getApiV1Prompts = async (
+  options?: RequestInit,
+): Promise<getApiV1PromptsResponse> => {
+  return customFetch<getApiV1PromptsResponse>(getGetApiV1PromptsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+/**
+ * @summary Add
+ */
+export type postApiV1PromptsResponse200 = {
+  data: WanakuResponsePromptReference;
+  status: 200;
+};
+
+export type postApiV1PromptsResponse400 = {
+  data: null;
+  status: 400;
+};
+
+export type postApiV1PromptsResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1PromptsResponseComposite =
+  | postApiV1PromptsResponse200
+  | postApiV1PromptsResponse400
+  | postApiV1PromptsResponse500;
+
+export type postApiV1PromptsResponse = postApiV1PromptsResponseComposite & {
+  headers: Headers;
+};
+
+export const getPostApiV1PromptsUrl = () => {
+  return `/api/v1/prompts`;
+};
+
+export const postApiV1Prompts = async (
+  promptReference: PromptReference,
+  options?: RequestInit,
+): Promise<postApiV1PromptsResponse> => {
+  return customFetch<postApiV1PromptsResponse>(getPostApiV1PromptsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(promptReference),
+  });
+};
+
+/**
+ * @summary Add With Payload
+ */
+export type postApiV1PromptsWithPayloadResponse200 = {
+  data: WanakuResponsePromptReference;
+  status: 200;
+};
+
+export type postApiV1PromptsWithPayloadResponse400 = {
+  data: null;
+  status: 400;
+};
+
+export type postApiV1PromptsWithPayloadResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1PromptsWithPayloadResponseComposite =
+  | postApiV1PromptsWithPayloadResponse200
+  | postApiV1PromptsWithPayloadResponse400
+  | postApiV1PromptsWithPayloadResponse500;
+
+export type postApiV1PromptsWithPayloadResponse =
+  postApiV1PromptsWithPayloadResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1PromptsWithPayloadUrl = () => {
+  return `/api/v1/prompts/with-payload`;
+};
+
+export const postApiV1PromptsWithPayload = async (
+  promptPayload: PromptPayload,
+  options?: RequestInit,
+): Promise<postApiV1PromptsWithPayloadResponse> => {
+  return customFetch<postApiV1PromptsWithPayloadResponse>(
+    getPostApiV1PromptsWithPayloadUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(promptPayload),
+    },
+  );
+};
+
+/**
+ * @summary Get By Name
+ */
+export type getApiV1PromptsNameResponse200 = {
+  data: WanakuResponsePromptReference;
+  status: 200;
+};
+
+export type getApiV1PromptsNameResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1PromptsNameResponseComposite =
+  | getApiV1PromptsNameResponse200
+  | getApiV1PromptsNameResponse500;
+
+export type getApiV1PromptsNameResponse =
+  getApiV1PromptsNameResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1PromptsNameUrl = (name: string) => {
+  return `/api/v1/prompts/${name}`;
+};
+
+export const getApiV1PromptsName = async (
+  name: string,
+  options?: RequestInit,
+): Promise<getApiV1PromptsNameResponse> => {
+  return customFetch<getApiV1PromptsNameResponse>(
+    getGetApiV1PromptsNameUrl(name),
     {
       ...options,
       method: "GET",

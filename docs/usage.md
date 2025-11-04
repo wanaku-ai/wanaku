@@ -1229,6 +1229,228 @@ Executing this command will display a list of available resources, including the
 wanaku resources list
 ```
 
+## Managing MCP Prompts
+
+Prompts are reusable templates that can leverage multiple tools and provide example interactions for LLMs. They are part of the MCP (Model Context Protocol) specification and enable:
+
+* Creating standardized message templates with variable substitution
+* Defining argument schemas for dynamic prompt generation
+* Referencing tools that the prompt can utilize
+* Supporting multiple content types (text, images, audio, embedded resources)
+* Providing example interactions to guide LLM behavior
+
+### Adding Prompts Using CLI
+
+The `wanaku prompts add` command allows you to create new prompts in your Wanaku MCP Router instance.
+
+#### Basic Example
+
+```shell
+wanaku prompts add \
+  --name "code-review" \
+  --description "Review code for quality and security issues" \
+  --message "user:text:Please review the following code: {{code}}" \
+  --message "assistant:text:I'll analyze this code for potential issues." \
+  --argument "code:The code to review:true"
+```
+
+In this example:
+* `--name "code-review"`: Assigns a unique identifier for the prompt
+* `--description`: Provides a human-readable description
+* `--message`: Defines messages in the prompt (can be specified multiple times)
+* `--argument`: Defines template arguments (format: `name:description:required`)
+
+#### Message Format
+
+The `--message` option supports multiple content types:
+
+**Text Messages** (default):
+```shell
+--message "user:text:Your message here"
+--message "user:Your message here"  # Backward compatible shorthand
+```
+
+**Image Messages**:
+```shell
+--message "user:image:iVBORw0KGgoAAAANSUhEUgAAAAUA...:image/png"
+```
+
+**Audio Messages**:
+```shell
+--message "user:audio:UklGRiQAAABXQVZFZm10IBAAAA...:audio/wav"
+```
+
+**Embedded Resource Messages**:
+```shell
+--message "user:resource:file:///path/to/file.txt:File content:text/plain"
+```
+
+#### Template Variable Substitution
+
+Prompts support Mustache-style variable substitution using `{{variable}}` syntax:
+
+```shell
+wanaku prompts add \
+  --name "translate" \
+  --description "Translate text between languages" \
+  --message "user:text:Translate the following text from {{source_lang}} to {{target_lang}}: {{text}}" \
+  --argument "source_lang:Source language:true" \
+  --argument "target_lang:Target language:true" \
+  --argument "text:Text to translate:true"
+```
+
+#### Tool References
+
+Prompts can reference specific tools they may utilize:
+
+```shell
+wanaku prompts add \
+  --name "api-test" \
+  --description "Test API endpoints" \
+  --message "user:text:Test the API endpoint {{endpoint}}" \
+  --tool-reference "http-get" \
+  --tool-reference "http-post" \
+  --argument "endpoint:API endpoint URL:true"
+```
+
+#### Namespace Support
+
+Prompts can be organized into namespaces for isolation:
+
+```shell
+wanaku prompts add \
+  --name "review" \
+  --description "Code review prompt" \
+  --namespace "ns-0" \
+  --message "user:text:Review this code: {{code}}" \
+  --argument "code:Code to review:true"
+```
+
+Supported namespaces: `ns-0` through `ns-9`, `default`, and `public`.
+
+### Adding Prompts Using the UI
+
+You can also manage prompts through the Wanaku Web UI:
+
+1. Navigate to the Prompts page in the Web UI
+2. Click "Add Prompt"
+3. Fill in the form:
+   - **Name**: Unique identifier for the prompt
+   - **Description**: Human-readable description
+   - **Messages (JSON)**: Array of message objects
+   - **Arguments (JSON)**: Array of argument objects (optional)
+   - **Tool References (JSON)**: Array of tool names (optional)
+   - **Namespace**: Namespace for isolation (optional)
+
+Example message JSON formats:
+
+**Text Message**:
+```json
+{
+  "role": "user",
+  "content": {
+    "type": "text",
+    "text": "Review {{code}}"
+  }
+}
+```
+
+**Image Message**:
+```json
+{
+  "role": "user",
+  "content": {
+    "type": "image",
+    "data": "iVBORw0KGgoAAAANSUhEUgAAAAUA...",
+    "mimeType": "image/png"
+  }
+}
+```
+
+**Audio Message**:
+```json
+{
+  "role": "user",
+  "content": {
+    "type": "audio",
+    "data": "UklGRiQAAABXQVZFZm10IBAAAA...",
+    "mimeType": "audio/wav"
+  }
+}
+```
+
+**Embedded Resource Message**:
+```json
+{
+  "role": "user",
+  "content": {
+    "type": "resource",
+    "resource": {
+      "location": "file:///path/to/file.txt",
+      "description": "File content",
+      "mimeType": "text/plain"
+    }
+  }
+}
+```
+
+### Listing Prompts
+
+View all prompts currently available in your Wanaku MCP Router instance:
+
+```shell
+wanaku prompts list
+```
+
+This displays all prompts with their names, descriptions, and namespaces.
+
+### Editing Prompts
+
+You can edit an existing prompt using either the CLI or the UI.
+
+#### Using CLI
+
+The `wanaku prompts edit` command allows you to modify an existing prompt. Only the fields you specify will be updated:
+
+```shell
+wanaku prompts edit \
+  --name "code-review" \
+  --description "Updated description for code review" \
+  --message "user:text:Please review this code: {{code}}"
+```
+
+All options except `--name` are optional:
+- If `--description` is provided, it replaces the existing description
+- If `--message` is provided, it replaces **all** existing messages
+- If `--argument` is provided, it replaces **all** existing arguments
+- If `--tool-references` is provided, it replaces **all** existing tool references
+- If `--namespace` is provided, it replaces the existing namespace
+
+Example of updating only the description:
+```shell
+wanaku prompts edit --name "code-review" --description "New description"
+```
+
+Example of updating messages:
+```shell
+wanaku prompts edit \
+  --name "code-review" \
+  --message "user:text:Review the following code for security issues: {{code}}" \
+  --message "assistant:text:I'll perform a security audit."
+```
+
+#### Using UI
+
+Navigate to the Prompts page in the Web UI, select the prompt you want to edit, make your changes, and save.
+
+### Removing Prompts
+
+Remove a prompt by name:
+
+```shell
+wanaku prompts remove --name "code-review"
+```
+
 ### Removing Resources
 
 Resources can be removed from the UI or via the CLI using the `wanaku resources remove` command.

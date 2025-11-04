@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+import "resource_reference.proto";
+
+// Represents text content in a prompt message.
+message TextContent {
+  string text = 1;
+}
+
+// Represents image content in a prompt message.
+message ImageContent {
+  string data = 1;
+  string mime_type = 2;
+}
+
+// Represents audio content in a prompt message.
+message AudioContent {
+  string data = 1;
+  string mime_type = 2;
+}
+
+// Represents an embedded resource in a prompt message.
+// This allows prompts to reference external resources.
+message EmbeddedResource {
+  ResourceReference resource = 1;
+}

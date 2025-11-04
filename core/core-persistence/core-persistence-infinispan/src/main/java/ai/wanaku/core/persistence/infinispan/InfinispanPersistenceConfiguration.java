@@ -2,6 +2,7 @@ package ai.wanaku.core.persistence.infinispan;
 
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
+import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import jakarta.enterprise.inject.Produces;
@@ -35,5 +36,10 @@ public class InfinispanPersistenceConfiguration {
     @Produces
     NamespaceRepository namespaceRepository() {
         return new InfinispanNamespaceRepository(cacheManager, configuration);
+    }
+
+    @Produces
+    PromptReferenceRepository promptReferenceRepository() {
+        return new InfinispanPromptReferenceRepository(cacheManager, configuration);
     }
 }

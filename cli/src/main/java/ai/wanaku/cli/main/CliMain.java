@@ -6,6 +6,7 @@ import ai.wanaku.cli.main.commands.completion.Completion;
 import ai.wanaku.cli.main.commands.forwards.Forwards;
 import ai.wanaku.cli.main.commands.man.Man;
 import ai.wanaku.cli.main.commands.namespaces.Namespaces;
+import ai.wanaku.cli.main.commands.prompts.Prompts;
 import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.start.Start;
 import ai.wanaku.cli.main.commands.targets.Targets;
@@ -25,6 +26,7 @@ import picocli.CommandLine;
         subcommands = {
             Forwards.class,
             Resources.class,
+            Prompts.class,
             Start.class,
             Capabilities.class,
             Targets.class,

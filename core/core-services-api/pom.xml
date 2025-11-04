@@ -15,7 +15,6 @@
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
-
         <dependency>
             <groupId>ai.wanaku</groupId>
             <artifactId>api</artifactId>

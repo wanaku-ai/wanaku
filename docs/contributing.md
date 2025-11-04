@@ -1,6 +1,8 @@
 # Contributing
 
-## Tools and Providers 
+## Tools, Providers, and Prompts
+
+### Tools and Providers
 
 A tool is anything that can operate in a request/reply mode.
 A provider is anything that can read a resource.
@@ -19,6 +21,20 @@ Here are some examples:
 > [!NOTE]
 > This is a generic explanation and the distinction may be specific to the problem domain. 
 > Therefore, there may be cases where this doesn't apply.
+
+### Prompts
+
+A prompt is a reusable template that can leverage multiple tools and provide example interactions for LLMs.
+Prompts are part of the MCP (Model Context Protocol) specification and enable:
+
+* Creating standardized message templates with variable substitution
+* Defining argument schemas for dynamic prompt generation
+* Referencing tools that the prompt can utilize
+* Supporting multiple content types (text, images, audio, embedded resources)
+* Providing example interactions to guide LLM behavior
+
+Prompts in Wanaku are stored and managed through the router's persistence layer and are exposed via the MCP protocol
+endpoints (`prompts/list` and `prompts/get`).
 
 Ideally, most of the MCP tools and MCP resource providers should be created using the 
 [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/).
