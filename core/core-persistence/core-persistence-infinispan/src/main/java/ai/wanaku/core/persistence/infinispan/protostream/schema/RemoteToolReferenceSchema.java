@@ -18,6 +18,7 @@ public class RemoteToolReferenceSchema extends AbstractWanakuSerializationContex
         inputSchemaSchema.registerSchema(serCtx);
         serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
     }
+
     @Override
     public void registerMarshallers(SerializationContext serCtx) {
         inputSchemaSchema.registerMarshallers(serCtx);
