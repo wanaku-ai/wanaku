@@ -69,6 +69,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 >
                     Forwards
                 </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
+                    to={Links.DataStores}
+                    onClick={onClickSideNavExpand}
+                >
+                    Data Stores
+                </SideNavMenuItem>
             </SideNavItems>
         </SideNav>
     );

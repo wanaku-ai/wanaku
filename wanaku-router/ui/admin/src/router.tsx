@@ -37,6 +37,10 @@ export const router = createHashRouter([
         path: Links.Forwards,
         lazy: async () => import("./Pages/Forwards"),
       },
+      {
+        path: Links.DataStores,
+        lazy: async () => import("./Pages/DataStores"),
+      },
     ],
   },
 ]);

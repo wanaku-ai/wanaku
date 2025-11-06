@@ -6,6 +6,7 @@ export const enum Links {
   Capabilities = "/capabilities",
   Namespaces = "/namespaces",
   Forwards = "/forwards",
+  DataStores = "/data-stores",
   Logout = "/logout"
 }
 

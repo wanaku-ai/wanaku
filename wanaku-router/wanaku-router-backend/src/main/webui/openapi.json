@@ -22,6 +22,20 @@
           }
         }
       },
+      "DataStore" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "data" : {
+            "type" : "string"
+          }
+        }
+      },
       "ForwardReference" : {
         "type" : "object",
         "properties" : {
@@ -335,6 +349,31 @@
           "data" : { }
         }
       },
+      "WanakuResponseDataStore" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/DataStore"
+          }
+        }
+      },
+      "WanakuResponseListDataStore" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DataStore"
+            }
+          }
+        }
+      },
       "WanakuResponseListForwardReference" : {
         "type" : "object",
         "properties" : {
@@ -420,6 +459,15 @@
               }
             }
           }
+        }
+      },
+      "WanakuResponseObject" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : { }
         }
       },
       "WanakuResponseResourceReference" : {
@@ -569,6 +617,154 @@
         "tags" : [ "Capabilities Resource" ]
       }
     },
+    "/api/v1/data-store/add" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataStore"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : { }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/data-store/get" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseObject"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : { }
+          }
+        },
+        "summary" : "Get",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/data-store/list" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : { }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/data-store/remove" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : { }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/data-store/update" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataStore"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : { }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
     "/api/v1/forwards/add" : {
       "post" : {
         "requestBody" : {
@@ -587,7 +783,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Bad Request"
@@ -657,7 +859,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Bad Request"
