@@ -1,6 +1,7 @@
 package ai.wanaku.backend.api.v1.exceptions;
 
 import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
+import ai.wanaku.api.exceptions.DataStoreResourceNotFoundException;
 import ai.wanaku.api.exceptions.NamespaceNotFoundException;
 import ai.wanaku.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.api.exceptions.ServiceNotFoundException;
@@ -41,3 +42,6 @@ class AddrNotFoundExceptionMapper extends NotFoundExceptionMapper<NotFoundExcept
 
 @Provider
 class NamespaceNotFoundExceptionMapper extends NotFoundExceptionMapper<NamespaceNotFoundException> {}
+
+@Provider
+class DataStoreResourceNotFoundExceptionMapper extends NotFoundExceptionMapper<DataStoreResourceNotFoundException> {}

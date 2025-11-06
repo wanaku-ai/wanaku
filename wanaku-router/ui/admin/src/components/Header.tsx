@@ -69,6 +69,9 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.Forwards}>
                     Forwards
                 </HeaderMenuItem>
+                <HeaderMenuItem as={Link} to={Links.DataStores}>
+                    Data Stores
+                </HeaderMenuItem>
             </HeaderNavigation>
             <HeaderGlobalBar>
                 <HeaderGlobalAction
