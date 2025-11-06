@@ -120,12 +120,7 @@ public class ServicesHelper {
         String service = config.name();
         ServiceTarget serviceTarget = newServiceTarget(config, service, serviceType);
 
-        int retries = config.registration().retries();
-        int waitSeconds = config.registration().retryWaitSeconds();
-
-        final String serviceHome = getCanonicalServiceHome(config);
-
-        return new DefaultRegistrationManager(discoveryService, serviceTarget, retries, waitSeconds, serviceHome);
+        return new DefaultRegistrationManager(discoveryService, serviceTarget, config);
     }
 
     /**

@@ -46,4 +46,10 @@ public interface RegistrationManager {
      * indicating its continued health and availability.
      */
     void lastAsSuccessful();
+
+    /**
+     * Adds a callback to be run after some operations have executed
+     * @param callback the callback to add
+     */
+    void addCallBack(DiscoveryCallback callback);
 }

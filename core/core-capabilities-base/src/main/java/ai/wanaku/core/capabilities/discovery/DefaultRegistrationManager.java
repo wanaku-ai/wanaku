@@ -2,20 +2,26 @@ package ai.wanaku.core.capabilities.discovery;
 
 import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
 
+import ai.wanaku.api.discovery.DiscoveryCallback;
 import ai.wanaku.api.discovery.RegistrationManager;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.discovery.ServiceState;
 import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.core.capabilities.common.ServicesHelper;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.io.InstanceDataManager;
 import ai.wanaku.core.capabilities.io.ServiceEntry;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -44,10 +50,11 @@ public class DefaultRegistrationManager implements RegistrationManager {
     private final DiscoveryService service;
     private ServiceTarget target;
     private int retries;
-    private int waitSeconds;
+    private final int waitSeconds;
     private final InstanceDataManager instanceDataManager;
     private volatile boolean registered;
     private final ReentrantLock lock = new ReentrantLock();
+    private final List<DiscoveryCallback> callbacks = new CopyOnWriteArrayList<>();
 
     /**
      * Constructs a new registration manager for a capability provider service.
@@ -58,19 +65,20 @@ public class DefaultRegistrationManager implements RegistrationManager {
      *
      * @param service the discovery service client for registration operations
      * @param target the service target describing this service's capabilities and location
-     * @param retries the number of registration retry attempts before giving up
-     * @param waitSeconds the number of seconds to wait between retry attempts
-     * @param dataDir the directory path for persisting service identity data
      * @throws WanakuException if the data directory cannot be created
      */
-    public DefaultRegistrationManager(
-            DiscoveryService service, ServiceTarget target, int retries, int waitSeconds, String dataDir) {
+    public DefaultRegistrationManager(DiscoveryService service, ServiceTarget target, WanakuServiceConfig config) {
         this.service = Objects.requireNonNull(service);
         this.target = Objects.requireNonNull(target);
 
-        this.retries = retries;
-        this.waitSeconds = waitSeconds;
+        // the number of registration retry attempts before giving up
+        this.retries = config.registration().retries();
 
+        // the number of seconds to wait between retry attempts
+        this.waitSeconds = config.registration().retryWaitSeconds();
+
+        // the directory path for persisting service identity data
+        String dataDir = ServicesHelper.getCanonicalServiceHome(config);
         instanceDataManager = new InstanceDataManager(dataDir, target.getService());
 
         if (instanceDataManager.dataFileExists()) {
@@ -85,6 +93,8 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 throw new WanakuException(e);
             }
         }
+
+        callbacks.add(new DiscoveryLogCallback());
     }
 
     private void tryRegistering() {
@@ -105,7 +115,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 target = entity.data();
                 instanceDataManager.writeEntry(target);
                 registered = true;
-                LOG.infof("The service %s successfully registered with ID %s.", target.getService(), target.getId());
+                runCallBack(c -> c.onRegistration(this, target));
                 break;
             } catch (WebApplicationException e) {
                 if (LOG.isDebugEnabled()) {
@@ -129,6 +139,26 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 retries = waitAndRetry(target.getService(), e, retries, waitSeconds);
             }
         } while (retries > 0);
+    }
+
+    private void runCallBack(Consumer<DiscoveryCallback> registrationManagerConsumer) {
+        for (DiscoveryCallback callback : callbacks) {
+            try {
+                registrationManagerConsumer.accept(callback);
+            } catch (Exception e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.warnf(
+                            e,
+                            "Unable to run callback %s due to %s",
+                            callback.getClass().getName(),
+                            e.getMessage());
+                } else {
+                    LOG.warnf(
+                            "Unable to run callback %s due to %s",
+                            callback.getClass().getName(), e.getMessage());
+                }
+            }
+        }
     }
 
     private boolean isRegistered() {
@@ -161,11 +191,8 @@ public class DefaultRegistrationManager implements RegistrationManager {
     public void deregister() {
         if (target != null && target.getId() != null) {
             try (Response response = service.deregister(target)) {
-                if (response.getStatus() != 200) {
-                    LOG.warnf(
-                            "De-registering service %s failed with status %d",
-                            target.getServiceType().asValue(), response.getStatus());
-                }
+                final int status = response.getStatus();
+                runCallBack(c -> c.onDeregistration(this, target, status));
             } catch (Exception e) {
                 logServiceFailure(e, "De-registering failed with %s");
             }
@@ -177,13 +204,9 @@ public class DefaultRegistrationManager implements RegistrationManager {
         if (target != null && target.getId() != null) {
             LOG.tracef("Pinging router ...");
             try (var response = service.ping(target.getId())) {
-                if (response.getStatus() != 200) {
-                    LOG.warnf("Pinging router failed with status %d", response.getStatus());
-                }
+                final int status = response.getStatus();
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.tracef("Pinging router completed successfully");
-                }
+                runCallBack(c -> c.onPing(this, target, status));
             } catch (Exception e) {
                 logServiceFailure(e, "Pinging router failed with %s");
             }
@@ -230,39 +253,8 @@ public class DefaultRegistrationManager implements RegistrationManager {
         }
     }
 
-    /**
-     * Gets the current number of retry attempts remaining.
-     *
-     * @return the number of retries
-     */
-    public int getRetries() {
-        return retries;
-    }
-
-    /**
-     * Sets the number of retry attempts for registration operations.
-     *
-     * @param retries the number of retries to set
-     */
-    public void setRetries(int retries) {
-        this.retries = retries;
-    }
-
-    /**
-     * Gets the wait period in seconds between retry attempts.
-     *
-     * @return the wait period in seconds
-     */
-    public int getWaitSeconds() {
-        return waitSeconds;
-    }
-
-    /**
-     * Sets the wait period in seconds between retry attempts.
-     *
-     * @param waitSeconds the wait period in seconds to set
-     */
-    public void setWaitSeconds(int waitSeconds) {
-        this.waitSeconds = waitSeconds;
+    @Override
+    public void addCallBack(DiscoveryCallback callback) {
+        this.callbacks.add(callback);
     }
 }
