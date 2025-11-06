@@ -1,6 +1,7 @@
 package ai.wanaku.cli.main;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.commands.auth.Auth;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
 import ai.wanaku.cli.main.commands.completion.Completion;
 import ai.wanaku.cli.main.commands.datastores.DataStores;
@@ -24,6 +25,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "wanaku",
         subcommands = {
+            Auth.class,
             Forwards.class,
             Resources.class,
             Prompts.class,
