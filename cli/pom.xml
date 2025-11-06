@@ -96,6 +96,12 @@
         </dependency>
 
         <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>

@@ -21,11 +21,24 @@ public interface WanakuCliConfig extends WanakuConfig {
         String createCmd();
     }
 
+    interface Auth {
+        @WithDefault("none")
+        String mode();
+
+        @WithDefault("~/.wanaku/credentials")
+        String credentialsFile();
+
+        @WithDefault("false")
+        boolean enabled();
+    }
+
     Tool tool();
 
     Resource resource();
 
     Mcp mcp();
+
+    Auth auth();
 
     @WithDefault("early-access")
     String earlyAccessTag();
