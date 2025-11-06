@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ai.wanaku.api.types;
+
+/**
+ * Protocol buffer definition for DataStore entity.
+ */
+message DataStore {
+  string id = 1;
+  string name = 2;
+  string data = 3;
+}
