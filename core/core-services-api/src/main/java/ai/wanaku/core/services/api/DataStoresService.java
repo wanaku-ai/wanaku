@@ -38,6 +38,28 @@ public interface DataStoresService {
     WanakuResponse<List<DataStore>> list();
 
     /**
+     * Get a data store by ID.
+     *
+     * @param id the ID of the data store
+     * @return response with the data store
+     */
+    @Path("/get")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<DataStore> getById(@QueryParam("id") String id);
+
+    /**
+     * Get data stores by name.
+     *
+     * @param name the name of the data stores
+     * @return response with list of data stores
+     */
+    @Path("/get")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<List<DataStore>> getByName(@QueryParam("name") String name);
+
+    /**
      * Remove a data store by ID.
      *
      * @param id the ID of the data store to remove
