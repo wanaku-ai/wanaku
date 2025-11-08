@@ -4,7 +4,6 @@ import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandl
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
-import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;
@@ -31,11 +30,9 @@ public class ForwardsRemove extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initService(ForwardsService.class, host);
-        ForwardReference reference = new ForwardReference();
-        reference.setName(name);
 
-        try (Response ignored = forwardsService.removeForward(reference)) {
-            printer.printSuccessMessage("Successfully removed forward reference '" + reference.getName() + "'");
+        try (Response ignored = forwardsService.removeForward(name)) {
+            printer.printSuccessMessage("Successfully removed forward reference '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {

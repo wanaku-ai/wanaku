@@ -47,7 +47,7 @@ export const ResourcesPage: React.FC = () => {
 
   const onDelete = async (resourceName?: string) => {
     try {
-      await removeResource({ resource: resourceName });
+      await removeResource(resourceName || "");
       listResources().then((result) => {
         setFetchedData(result.data.data as ResourceReference[]);
       });

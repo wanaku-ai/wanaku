@@ -11,12 +11,13 @@ import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -48,7 +49,6 @@ public class ToolsResource {
      * @return a response containing the registered tool reference
      * @throws WanakuException if registration fails
      */
-    @Path("/add")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -67,7 +67,7 @@ public class ToolsResource {
      * @return a response containing the registered tool reference
      * @throws WanakuException if registration fails or payload validation fails
      */
-    @Path("/addWithPayload")
+    @Path("/with-payload")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -101,7 +101,6 @@ public class ToolsResource {
      * @return a response containing a list of all tool references
      * @throws WanakuException if listing fails
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ToolReference>> list() throws WanakuException {
@@ -116,14 +115,14 @@ public class ToolsResource {
     /**
      * Removes a tool capability by name.
      *
-     * @param tool the name of the tool to remove
+     * @param toolName the name of the tool to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the tool doesn't exist
      * @throws WanakuException if removal fails
      */
-    @Path("/remove")
-    @PUT
-    public Response remove(@QueryParam("tool") String tool) throws WanakuException {
-        int deleteCount = toolsBean.remove(tool);
+    @Path("/{toolName}")
+    @DELETE
+    public Response remove(@PathParam("toolName") String toolName) throws WanakuException {
+        int deleteCount = toolsBean.remove(toolName);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
@@ -134,14 +133,17 @@ public class ToolsResource {
     /**
      * Updates an existing tool capability.
      *
+     * @param toolName the name of the tool to update
      * @param resource the updated tool reference
      * @return HTTP 200 OK if updated successfully
      * @throws WanakuException if update fails
      */
-    @Path("/update")
-    @POST
+    @Path("/{toolName}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(ToolReference resource) throws WanakuException {
+    public Response update(@PathParam("toolName") String toolName, ToolReference resource) throws WanakuException {
+        // Ensure the resource has the correct name
+        resource.setName(toolName);
         toolsBean.update(resource);
         return Response.ok().build();
     }
@@ -149,18 +151,18 @@ public class ToolsResource {
     /**
      * Retrieves a tool capability by name.
      *
-     * @param name the name of the tool to retrieve
+     * @param toolName the name of the tool to retrieve
      * @return a response containing the tool reference
      * @throws ToolNotFoundException if the tool is not found
      * @throws WanakuException if retrieval fails
      */
-    @Path("/")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException {
-        ToolReference tool = toolsBean.getByName(name);
+    @Path("/{toolName}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ToolReference> getByName(@PathParam("toolName") String toolName) throws WanakuException {
+        ToolReference tool = toolsBean.getByName(toolName);
         if (tool == null) {
-            throw new ToolNotFoundException(name);
+            throw new ToolNotFoundException(toolName);
         }
         return new WanakuResponse<>(tool);
     }

@@ -157,12 +157,10 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
                 .build();
     }
 
-    @Override
     public void register() {
         registrationManager.register();
     }
 
-    @Override
     public void deregister() {
         registrationManager.deregister();
     }

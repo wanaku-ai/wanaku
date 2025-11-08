@@ -5,12 +5,13 @@ import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.io.ToolPayload;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -36,7 +37,6 @@ public interface ToolsService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/add")
     WanakuResponse<ToolReference> add(ToolReference toolReference);
 
     /**
@@ -49,7 +49,7 @@ public interface ToolsService {
      * @return a {@link WanakuResponse} containing the registered tool reference
      * @throws WanakuException if registration fails
      */
-    @Path("/addWithPayload")
+    @Path("/with-payload")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -60,7 +60,6 @@ public interface ToolsService {
      *
      * @return a {@link WanakuResponse} containing a list of all tool references
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<ToolReference>> list();
@@ -68,34 +67,35 @@ public interface ToolsService {
     /**
      * Removes a tool capability from the system.
      *
-     * @param tool the name of the tool to remove
+     * @param toolName the name of the tool to remove
      * @return a {@link Response} indicating the result of the removal operation
      */
-    @Path("/remove")
-    @PUT
-    Response remove(@QueryParam("tool") String tool);
+    @Path("/{toolName}")
+    @DELETE
+    Response remove(@PathParam("toolName") String toolName);
 
     /**
      * Updates an existing tool capability.
      *
+     * @param toolName the name of the tool to update
      * @param resource the updated tool reference
      * @return a {@link Response} indicating the result of the update operation
      * @throws WanakuException if the update fails
      */
-    @Path("/update")
-    @POST
+    @Path("/{toolName}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(ToolReference resource) throws WanakuException;
+    Response update(@PathParam("toolName") String toolName, ToolReference resource) throws WanakuException;
 
     /**
      * Retrieves a tool capability by its name.
      *
-     * @param name the name of the tool to retrieve
+     * @param toolName the name of the tool to retrieve
      * @return a {@link WanakuResponse} containing the tool reference
      * @throws WanakuException if the tool is not found
      */
-    @Path("/")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException;
+    @Path("/{toolName}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<ToolReference> getByName(@PathParam("toolName") String toolName) throws WanakuException;
 }

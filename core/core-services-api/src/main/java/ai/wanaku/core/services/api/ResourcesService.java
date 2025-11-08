@@ -4,12 +4,13 @@ import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.api.types.io.ResourcePayload;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -35,7 +36,7 @@ public interface ResourcesService {
      * @param resourceReference the resource payload containing the resource reference and provisioning data
      * @return a {@link Response} indicating the result of the expose operation
      */
-    @Path("/exposeWithPayload")
+    @Path("/with-payload")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -50,7 +51,6 @@ public interface ResourcesService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/expose")
     Response expose(ResourceReference resourceReference);
 
     /**
@@ -58,7 +58,6 @@ public interface ResourcesService {
      *
      * @return a {@link WanakuResponse} containing a list of all resource references
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<ResourceReference>> list();
@@ -66,10 +65,22 @@ public interface ResourcesService {
     /**
      * Removes a resource capability from the system.
      *
-     * @param resource the name of the resource to remove
+     * @param resourceName the name of the resource to remove
      * @return a {@link Response} indicating the result of the removal operation
      */
-    @Path("/remove")
+    @Path("/{resourceName}")
+    @DELETE
+    Response remove(@PathParam("resourceName") String resourceName);
+
+    /**
+     * Updates an existing resource capability.
+     *
+     * @param resourceName the name of the resource to update
+     * @param resource the updated resource reference
+     * @return a {@link Response} indicating the result of the update operation
+     */
+    @Path("/{resourceName}")
     @PUT
-    Response remove(@QueryParam("resource") String resource);
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response update(@PathParam("resourceName") String resourceName, ResourceReference resource);
 }

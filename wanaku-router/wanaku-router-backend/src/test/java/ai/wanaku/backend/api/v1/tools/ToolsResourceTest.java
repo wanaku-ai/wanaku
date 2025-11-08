@@ -52,7 +52,7 @@ public class ToolsResourceTest extends WanakuRouterTest {
         final var response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(toolReference1)
                 .when()
-                .post("/api/v1/tools/add");
+                .post("/api/v1/tools");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -63,7 +63,7 @@ public class ToolsResourceTest extends WanakuRouterTest {
     @Test
     void testList() {
         given().when()
-                .get("/api/v1/tools/list")
+                .get("/api/v1/tools")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(
@@ -80,13 +80,10 @@ public class ToolsResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testRemove() {
-        given().when()
-                .put("/api/v1/tools/remove?tool=" + createdName)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        given().when().delete("/api/v1/tools/" + createdName).then().statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/tools/list")
+                .get("/api/v1/tools")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(0));
@@ -107,12 +104,12 @@ public class ToolsResourceTest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(toolReference3)
                 .when()
-                .post("/api/v1/tools/add")
+                .post("/api/v1/tools")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/tools/list")
+                .get("/api/v1/tools")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(1), "data[0].name", is("test-tool-3"), "data[0].type", is("http"));

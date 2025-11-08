@@ -10,12 +10,13 @@ import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -52,7 +53,7 @@ public class ResourcesResource {
      * @return a response containing the exposed resource reference
      * @throws WanakuException if exposure fails or payload validation fails
      */
-    @Path("/exposeWithPayload")
+    @Path("/with-payload")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -84,7 +85,6 @@ public class ResourcesResource {
      * @return a response containing the exposed resource reference
      * @throws WanakuException if exposure fails
      */
-    @Path("/expose")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -102,7 +102,6 @@ public class ResourcesResource {
      * @return a response containing a list of all resource references
      * @throws WanakuException if listing fails
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ResourceReference>> list() throws WanakuException {
@@ -117,14 +116,14 @@ public class ResourcesResource {
     /**
      * Removes a resource capability by name.
      *
-     * @param resource the name of the resource to remove
+     * @param resourceName the name of the resource to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the resource doesn't exist
      * @throws WanakuException if removal fails
      */
-    @Path("/remove")
-    @PUT
-    public Response remove(@QueryParam("resource") String resource) throws WanakuException {
-        int deleteCount = resourcesBean.remove(resource);
+    @Path("/{resourceName}")
+    @DELETE
+    public Response remove(@PathParam("resourceName") String resourceName) throws WanakuException {
+        int deleteCount = resourcesBean.remove(resourceName);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
@@ -135,14 +134,18 @@ public class ResourcesResource {
     /**
      * Updates an existing resource capability.
      *
+     * @param resourceName the name of the resource to update
      * @param resource the updated resource reference
      * @return HTTP 200 OK if updated successfully
      * @throws WanakuException if update fails
      */
-    @Path("/update")
-    @POST
+    @Path("/{resourceName}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(ResourceReference resource) throws WanakuException {
+    public Response update(@PathParam("resourceName") String resourceName, ResourceReference resource)
+            throws WanakuException {
+        // Ensure the resource has the correct name
+        resource.setName(resourceName);
         resourcesBean.update(resource);
         return Response.ok().build();
     }

@@ -43,7 +43,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         final io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(resource)
                 .when()
-                .post("/api/v1/resources/expose");
+                .post("/api/v1/resources");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -59,7 +59,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Test
     public void testListResourcesSuccessfully() {
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(
@@ -76,13 +76,10 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testRemove() {
-        given().when()
-                .put("/api/v1/resources/remove?resource=" + createdName)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        given().when().delete("/api/v1/resources/" + createdName).then().statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(0));
@@ -96,12 +93,12 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(resource)
                 .when()
-                .post("/api/v1/resources/expose")
+                .post("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(

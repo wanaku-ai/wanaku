@@ -104,7 +104,7 @@ public class ToolsEdit extends BaseCommand {
             ToolReference toolModified = mapper.readValue(modifiedContent, ToolReference.class);
             // Force the ID in case the user modified it.
             toolModified.setId(tool.getId());
-            Response response = toolsService.update(toolModified);
+            Response response = toolsService.update(tool.getName(), toolModified);
             if (response.getStatus() != OK.code()) {
                 System.err.println("error!");
             }
