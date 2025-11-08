@@ -48,6 +48,13 @@ public class ForwardsResource {
     @Path("/{forwardName}")
     @DELETE
     public Response removeForward(@PathParam("forwardName") String forwardName) {
+        // Validate path parameter
+        if (forwardName == null || forwardName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Forward name cannot be empty")
+                    .build();
+        }
+
         ForwardReference reference = new ForwardReference();
         reference.setName(forwardName);
 
@@ -83,8 +90,24 @@ public class ForwardsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("forwardName") String forwardName, ForwardReference resource)
             throws WanakuException {
-        // Ensure the resource has the correct name
-        resource.setName(forwardName);
+        // Validate path parameter
+        if (forwardName == null || forwardName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Forward name cannot be empty")
+                    .build();
+        }
+
+        // Validate that the payload name matches the path parameter
+        if (resource.getName() != null && !resource.getName().equals(forwardName)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Forward name in payload (" + resource.getName() + ") does not match path parameter ("
+                            + forwardName + ")")
+                    .build();
+        }
+        // If payload name is null, set it from path parameter for consistency
+        if (resource.getName() == null) {
+            resource.setName(forwardName);
+        }
         forwardsBean.update(resource);
         return Response.ok().build();
     }

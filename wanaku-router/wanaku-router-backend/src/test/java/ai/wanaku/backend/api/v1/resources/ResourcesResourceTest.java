@@ -10,6 +10,7 @@ import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.ValidatableResponse;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
@@ -86,6 +87,92 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     }
 
     @Order(4)
+    @Test
+    void testDeleteNonExistentResource() {
+        given().when()
+                .delete("/api/v1/resources/non-existent-resource")
+                .then()
+                .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    }
+
+    @Order(5)
+    @Test
+    void testUpdateResource() {
+        // First create a resource
+        ResourceReference resource = createResource("/tmp/original.jpg", "image/jpeg", "original.jpg");
+
+        ValidatableResponse createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(resource)
+                .when()
+                .post("/api/v1/resources")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        // Extract the created resource name
+        String createdName = createResponse.extract().jsonPath().getString("data.name");
+
+        // Now update the resource
+        ResourceReference updatedResource = createResource("/tmp/updated.jpg", "image/png", createdName);
+        updatedResource.setDescription("Updated description");
+
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(updatedResource)
+                .when()
+                .put("/api/v1/resources/" + createdName)
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        // Verify the update
+        given().when()
+                .get("/api/v1/resources")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.size()", is(1))
+                .body("data[0].location", is("/tmp/updated.jpg"))
+                .body("data[0].type", is("image/png"))
+                .body("data[0].description", is("Updated description"));
+    }
+
+    @Order(6)
+    @Test
+    void testUpdateNonExistentResource() {
+        ResourceReference resource = createResource("/tmp/test.jpg", "image/jpeg", "non-existent");
+
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(resource)
+                .when()
+                .put("/api/v1/resources/non-existent")
+                .then()
+                .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    }
+
+    @Order(7)
+    @Test
+    void testUpdateResourceWithMismatchedName() {
+        // First create a resource
+        ResourceReference resource = createResource("/tmp/original.jpg", "image/jpeg", "original.jpg");
+
+        ValidatableResponse createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(resource)
+                .when()
+                .post("/api/v1/resources")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        String createdName = createResponse.extract().jsonPath().getString("data.name");
+
+        // Try to update with mismatched name in payload
+        ResourceReference mismatchedResource = createResource("/tmp/updated.jpg", "image/png", "different-name");
+
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(mismatchedResource)
+                .when()
+                .put("/api/v1/resources/" + createdName)
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
+    @Order(8)
     @Test
     void testAddAfterRemove() {
         ResourceReference resource = createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg");

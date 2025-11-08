@@ -45,15 +45,18 @@ export const ResourcesPage: React.FC = () => {
     }
   };
 
-  const onDelete = async (resourceName?: string) => {
+    const onDelete = async (resourceName?: string) => {
     try {
-      await removeResource(resourceName || "");
+      if (!resourceName || resourceName.trim() === "") {
+        console.error("Cannot delete resource: resource name is empty or undefined");
+        return;
+      }
+      await removeResource(resourceName);
       listResources().then((result) => {
         setFetchedData(result.data.data as ResourceReference[]);
       });
     } catch (error) {
-      console.error("Error deleting resource:", error);
-      setErrorMessage(`Failed to delete resource: ${resourceName}`);
+      console.error("Failed to delete resource:", error);
     }
   };
 

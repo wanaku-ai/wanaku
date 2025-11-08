@@ -74,10 +74,15 @@ public interface ToolsService {
     @DELETE
     Response remove(@PathParam("toolName") String toolName);
 
-    /**
-     * Updates an existing tool capability.
-     *
-     * @param toolName the name of the tool to update
+        /**
+     * Updates an existing tool reference.
+     * <p>
+     * Implementations must ensure that the {@code toolName} path parameter matches 
+     * the {@code resource.getName()}. If they do not match, the request should be 
+     * rejected with a 400 Bad Request response.
+     * </p>
+     * 
+     * @param toolName the name of the tool to update (from the path)
      * @param resource the updated tool reference
      * @return a {@link Response} indicating the result of the update operation
      * @throws WanakuException if the update fails

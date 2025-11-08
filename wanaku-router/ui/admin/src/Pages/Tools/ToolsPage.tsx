@@ -82,13 +82,16 @@ export const ToolsPage: React.FC = () => {
     await updateTools();
   };
 
-  const handleDeleteTool = async (toolName?: string) => {
+    const handleDeleteTool = async (toolName?: string) => {
     try {
-      await removeTool(toolName || "");
+      if (!toolName || toolName.trim() === "") {
+        console.error("Cannot delete tool: tool name is empty or undefined");
+        return;
+      }
+      await removeTool(toolName);
       await updateTools();
     } catch (error) {
-      console.error("Error deleting tool:", error);
-      setErrorMessage(`Failed to delete tool: ${toolName}`);
+      console.error("Failed to delete tool:", error);
     }
   };
 

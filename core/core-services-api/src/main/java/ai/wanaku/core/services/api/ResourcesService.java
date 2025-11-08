@@ -72,12 +72,18 @@ public interface ResourcesService {
     @DELETE
     Response remove(@PathParam("resourceName") String resourceName);
 
-    /**
+        /**
      * Updates an existing resource capability.
-     *
-     * @param resourceName the name of the resource to update
+     * <p>
+     * Implementations must ensure that the {@code resourceName} path parameter matches
+     * the {@code resource.getName()}. If they do not match, the request should be
+     * rejected with a 400 Bad Request response.
+     * </p>
+     * 
+     * @param resourceName the name of the resource to update (from the path)
      * @param resource the updated resource reference
      * @return a {@link Response} indicating the result of the update operation
+     * @throws WanakuException if the update fails
      */
     @Path("/{resourceName}")
     @PUT

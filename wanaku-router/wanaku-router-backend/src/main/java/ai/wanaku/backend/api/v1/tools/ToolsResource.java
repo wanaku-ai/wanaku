@@ -122,6 +122,13 @@ public class ToolsResource {
     @Path("/{toolName}")
     @DELETE
     public Response remove(@PathParam("toolName") String toolName) throws WanakuException {
+        // Validate path parameter
+        if (toolName == null || toolName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Tool name cannot be empty")
+                    .build();
+        }
+
         int deleteCount = toolsBean.remove(toolName);
         if (deleteCount > 0) {
             return Response.ok().build();
@@ -142,8 +149,24 @@ public class ToolsResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("toolName") String toolName, ToolReference resource) throws WanakuException {
-        // Ensure the resource has the correct name
-        resource.setName(toolName);
+        // Validate path parameter
+        if (toolName == null || toolName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Tool name cannot be empty")
+                    .build();
+        }
+
+        // Validate that the payload name matches the path parameter
+        if (resource.getName() != null && !resource.getName().equals(toolName)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Tool name in payload (" + resource.getName() + ") does not match path parameter ("
+                            + toolName + ")")
+                    .build();
+        }
+        // If payload name is null, set it from path parameter for consistency
+        if (resource.getName() == null) {
+            resource.setName(toolName);
+        }
         toolsBean.update(resource);
         return Response.ok().build();
     }

@@ -114,4 +114,99 @@ public class ToolsResourceTest extends WanakuRouterTest {
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(1), "data[0].name", is("test-tool-3"), "data[0].type", is("http"));
     }
+
+    @Order(5)
+    @Test
+    void testDeleteNonExistentTool() {
+        given().when()
+                .delete("/api/v1/tools/non-existent-tool")
+                .then()
+                .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    }
+
+    @Order(6)
+    @Test
+    void testUpdateTool() {
+        ToolInputSchema inputSchema = createInputSchema();
+        ToolReference toolReference = createToolReference(
+                "update-test-tool", "Update test tool", "https://example.com/update-test", inputSchema);
+
+        // Create the tool first
+        io.restassured.response.Response createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(toolReference)
+                .when()
+                .post("/api/v1/tools")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .extract()
+                .response();
+
+        String createdName = createResponse.jsonPath().getString("data.name");
+
+        // Update the tool
+        ToolReference updatedTool = createToolReference(
+                createdName, "Updated description", "https://example.com/updated-tool", inputSchema);
+
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(updatedTool)
+                .when()
+                .put("/api/v1/tools/" + createdName)
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
+
+        // Verify the update
+        given().when()
+                .get("/api/v1/tools")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.size()", is(1))
+                .body("data[0].description", is("Updated description"))
+                .body("data[0].uri", is("https://example.com/updated-tool"));
+    }
+
+    @Order(7)
+    @Test
+    void testUpdateNonExistentTool() {
+        ToolInputSchema inputSchema = createInputSchema();
+        ToolReference toolReference = createToolReference(
+                "non-existent-tool", "Non-existent tool", "https://example.com/non-existent", inputSchema);
+
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(toolReference)
+                .when()
+                .put("/api/v1/tools/non-existent-tool")
+                .then()
+                .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    }
+
+    @Order(8)
+    @Test
+    void testUpdateToolWithMismatchedName() {
+        ToolInputSchema inputSchema = createInputSchema();
+        ToolReference toolReference = createToolReference(
+                "mismatch-test-tool", "Mismatch test tool", "https://example.com/mismatch-test", inputSchema);
+
+        // Create the tool first
+        io.restassured.response.Response createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(toolReference)
+                .when()
+                .post("/api/v1/tools")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .extract()
+                .response();
+
+        String createdName = createResponse.jsonPath().getString("data.name");
+
+        // Try to update with mismatched name in payload
+        ToolReference mismatchedTool = createToolReference(
+                "different-name", "Updated description", "https://example.com/updated-tool", inputSchema);
+
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body(mismatchedTool)
+                .when()
+                .put("/api/v1/tools/" + createdName)
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode());
+    }
 }

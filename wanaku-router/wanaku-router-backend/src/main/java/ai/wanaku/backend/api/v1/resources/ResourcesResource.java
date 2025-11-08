@@ -123,6 +123,13 @@ public class ResourcesResource {
     @Path("/{resourceName}")
     @DELETE
     public Response remove(@PathParam("resourceName") String resourceName) throws WanakuException {
+        // Validate path parameter
+        if (resourceName == null || resourceName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Resource name cannot be empty")
+                    .build();
+        }
+
         int deleteCount = resourcesBean.remove(resourceName);
         if (deleteCount > 0) {
             return Response.ok().build();
@@ -144,8 +151,24 @@ public class ResourcesResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("resourceName") String resourceName, ResourceReference resource)
             throws WanakuException {
-        // Ensure the resource has the correct name
-        resource.setName(resourceName);
+        // Validate path parameter
+        if (resourceName == null || resourceName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Resource name cannot be empty")
+                    .build();
+        }
+
+        // Validate that the resource name in the payload matches the path parameter
+        if (resource.getName() != null && !resourceName.equals(resource.getName())) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Resource name in path (" + resourceName + ") does not match payload (" + resource.getName()
+                            + ")")
+                    .build();
+        }
+        // If payload name is null, set it from path parameter for consistency
+        if (resource.getName() == null) {
+            resource.setName(resourceName);
+        }
         resourcesBean.update(resource);
         return Response.ok().build();
     }

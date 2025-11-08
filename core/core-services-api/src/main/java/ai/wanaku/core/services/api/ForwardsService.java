@@ -58,12 +58,18 @@ public interface ForwardsService {
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<ForwardReference>> listForwards();
 
-    /**
+        /**
      * Updates an existing forward reference.
-     *
-     * @param forwardName the name of the forward reference to update
+     * <p>
+     * Implementations must ensure that the {@code forwardName} path parameter matches
+     * the {@code reference.getName()}. If they do not match, the request should be
+     * rejected with a 400 Bad Request response.
+     * </p>
+     * 
+     * @param forwardName the name of the forward to update (from the path)
      * @param reference the updated forward reference
      * @return a {@link Response} indicating the result of the update operation
+     * @throws WanakuException if the update fails
      */
     @Path("/{forwardName}")
     @PUT
