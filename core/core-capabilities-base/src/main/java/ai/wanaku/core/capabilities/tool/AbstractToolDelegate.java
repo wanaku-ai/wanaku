@@ -129,12 +129,10 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
         return "Unable to invoke tool: " + rootCause;
     }
 
-    @Override
     public void register() {
         registrationManager.register();
     }
 
-    @Override
     public void deregister() {
         registrationManager.deregister();
     }

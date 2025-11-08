@@ -6,10 +6,12 @@ import ai.wanaku.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -22,7 +24,13 @@ public class ForwardsResource {
     @Inject
     ForwardsBean forwardsBean;
 
-    @Path("/add")
+    /**
+     * Creates a new forward reference.
+     *
+     * @param reference the forward reference to create
+     * @return HTTP 200 OK if created successfully
+     * @throws WanakuException if creation fails
+     */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -31,10 +39,25 @@ public class ForwardsResource {
         return Response.ok().build();
     }
 
-    @Path("/remove")
-    @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response removeForward(ForwardReference reference) {
+    /**
+     * Deletes a forward reference by name.
+     *
+     * @param forwardName the name of the forward to delete
+     * @return HTTP 200 OK if deleted successfully, HTTP 404 NOT FOUND if forward doesn't exist
+     */
+    @Path("/{forwardName}")
+    @DELETE
+    public Response removeForward(@PathParam("forwardName") String forwardName) {
+        // Validate path parameter
+        if (forwardName == null || forwardName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Forward name cannot be empty")
+                    .build();
+        }
+
+        ForwardReference reference = new ForwardReference();
+        reference.setName(forwardName);
+
         int deleteCount = forwardsBean.remove(reference);
         if (deleteCount > 0) {
             return Response.ok().build();
@@ -43,17 +66,48 @@ public class ForwardsResource {
         return Response.status(Response.Status.NOT_FOUND).build();
     }
 
-    @Path("/list")
+    /**
+     * Lists all forward references.
+     *
+     * @return a response containing a list of all forward references
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public RestResponse<WanakuResponse<List<ForwardReference>>> listForwards() {
         return RestResponse.ok(new WanakuResponse<>(forwardsBean.listForwards()));
     }
 
-    @Path("/update")
-    @POST
+    /**
+     * Updates an existing forward reference.
+     *
+     * @param forwardName the name of the forward to update
+     * @param resource the updated forward reference
+     * @return HTTP 200 OK if updated successfully
+     * @throws WanakuException if update fails
+     */
+    @Path("/{forwardName}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(ForwardReference resource) throws WanakuException {
+    public Response update(@PathParam("forwardName") String forwardName, ForwardReference resource)
+            throws WanakuException {
+        // Validate path parameter
+        if (forwardName == null || forwardName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Forward name cannot be empty")
+                    .build();
+        }
+
+        // Validate that the payload name matches the path parameter
+        if (resource.getName() != null && !resource.getName().equals(forwardName)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Forward name in payload (" + resource.getName() + ") does not match path parameter ("
+                            + forwardName + ")")
+                    .build();
+        }
+        // If payload name is null, set it from path parameter for consistency
+        if (resource.getName() == null) {
+            resource.setName(forwardName);
+        }
         forwardsBean.update(resource);
         return Response.ok().build();
     }

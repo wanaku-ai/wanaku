@@ -70,16 +70,13 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
 
             final ForwardsService forwardsService = newService();
 
-            ForwardReference reference = new ForwardReference();
-            reference.setName(name);
-
-            try (Response ignored = forwardsService.removeForward(reference)) {
+            try (Response ignored = forwardsService.removeForward(name)) {
 
             } catch (WebApplicationException ex) {
                 if (LOG.isTraceEnabled()) {
-                    LOG.errorf(ex, "Unable to deregister forward service %s", reference.getName());
+                    LOG.errorf(ex, "Unable to deregister forward service %s", name);
                 } else {
-                    LOG.errorf("Unable to deregister forward service %s", reference.getName());
+                    LOG.errorf("Unable to deregister forward service %s", name);
                 }
             }
         } finally {

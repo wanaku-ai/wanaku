@@ -1,16 +1,15 @@
 import { useCallback } from "react";
 import {
   getApiV1CapabilitiesToolsList,
-  postApiV1ToolsAdd,
-  getApiV1ToolsList,
-  putApiV1ToolsRemove,
+  postApiV1Tools,
+  getApiV1Tools,
+  deleteApiV1ToolsToolName,
   getApiV1CapabilitiesToolsListResponse,
-  postApiV1ToolsAddResponse,
-  getApiV1ToolsListResponse,
-  putApiV1ToolsRemoveResponse
+  postApiV1ToolsResponse,
+  getApiV1ToolsResponse,
+  deleteApiV1ToolsToolNameResponse
 } from "../../api/wanaku-router-api";
 import {
-  PutApiV1ToolsRemoveParams,
   ToolReference,
 } from "../../models";
 
@@ -34,8 +33,8 @@ export const useTools = () => {
     (
       toolReference: ToolReference,
       options?: RequestInit
-    ): Promise<postApiV1ToolsAddResponse> => {
-      return postApiV1ToolsAdd(toolReference, options);
+    ): Promise<postApiV1ToolsResponse> => {
+      return postApiV1Tools(toolReference, options);
     },
     []
   );
@@ -44,8 +43,8 @@ export const useTools = () => {
    * List tools.
    */
   const listTools = useCallback(
-    (options?: RequestInit): Promise<getApiV1ToolsListResponse> => {
-      return getApiV1ToolsList(options);
+    (options?: RequestInit): Promise<getApiV1ToolsResponse> => {
+      return getApiV1Tools(options);
     },
     []
   );
@@ -55,10 +54,10 @@ export const useTools = () => {
    */
   const removeTool = useCallback(
     (
-      params?: PutApiV1ToolsRemoveParams,
+      toolName: string, // The name/ID of the tool to remove
       options?: RequestInit
-    ): Promise<putApiV1ToolsRemoveResponse> => {
-      return putApiV1ToolsRemove(params, options);
+    ): Promise<deleteApiV1ToolsToolNameResponse> => {
+      return deleteApiV1ToolsToolName(toolName, options);
     },
     []
   );

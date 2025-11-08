@@ -1,15 +1,14 @@
 import { useCallback } from "react";
 import {
   getApiV1CapabilitiesResourcesList,
-  postApiV1ResourcesExpose,
-  getApiV1ResourcesList,
-  putApiV1ResourcesRemove,
-  postApiV1ResourcesExposeResponse,
-  getApiV1ResourcesListResponse,
-  putApiV1ResourcesRemoveResponse, getApiV1CapabilitiesResourcesListResponse
+  postApiV1Resources,
+  getApiV1Resources,
+  deleteApiV1ResourcesResourceName,
+  postApiV1ResourcesResponse,
+  getApiV1ResourcesResponse,
+  deleteApiV1ResourcesResourceNameResponse, getApiV1CapabilitiesResourcesListResponse
 } from "../../api/wanaku-router-api";
 import {
-  PutApiV1ResourcesRemoveParams,
   ResourceReference,
 } from "../../models";
 
@@ -35,8 +34,8 @@ export const useResources = () => {
     (
       resourceReference: ResourceReference, // Define the proper type from your models if available.
       options?: RequestInit
-    ): Promise<postApiV1ResourcesExposeResponse> => {
-      return postApiV1ResourcesExpose(resourceReference, options);
+    ): Promise<postApiV1ResourcesResponse> => {
+      return postApiV1Resources(resourceReference, options);
     },
     []
   );
@@ -47,8 +46,8 @@ export const useResources = () => {
   const listResources = useCallback(
     (
       options?: RequestInit
-    ): Promise<getApiV1ResourcesListResponse> => {
-      return getApiV1ResourcesList(options);
+    ): Promise<getApiV1ResourcesResponse> => {
+      return getApiV1Resources(options);
     },
     []
   );
@@ -58,10 +57,10 @@ export const useResources = () => {
    */
   const removeResource = useCallback(
     (
-      params?: PutApiV1ResourcesRemoveParams, // Replace with the actual type if available from models.
+      resourceName: string, // The name/ID of the resource to remove
       options?: RequestInit
-    ): Promise<putApiV1ResourcesRemoveResponse> => {
-      return putApiV1ResourcesRemove(params, options);
+    ): Promise<deleteApiV1ResourcesResourceNameResponse> => {
+      return deleteApiV1ResourcesResourceName(resourceName, options);
     },
     []
   );
