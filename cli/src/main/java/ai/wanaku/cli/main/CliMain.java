@@ -2,6 +2,7 @@ package ai.wanaku.cli.main;
 
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
+import ai.wanaku.cli.main.commands.completion.Completion;
 import ai.wanaku.cli.main.commands.forwards.Forwards;
 import ai.wanaku.cli.main.commands.man.Man;
 import ai.wanaku.cli.main.commands.namespaces.Namespaces;
@@ -30,7 +31,8 @@ import picocli.CommandLine;
             Tools.class,
             ToolSet.class,
             Namespaces.class,
-            Man.class
+            Man.class,
+            Completion.class
         })
 public class CliMain implements Callable<Integer>, QuarkusApplication {
     @Inject
