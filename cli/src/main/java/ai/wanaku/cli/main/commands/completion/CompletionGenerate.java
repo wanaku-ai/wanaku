@@ -47,7 +47,7 @@ import picocli.CommandLine;
  * source /etc/bash_completion.d/wanaku_completion
  *
  * # For zsh (add to ~/.zshrc)
- * autoload -U +X bashcompinit && bashcompinit
+ * autoload -U +X bashcompinit &amp;&amp; bashcompinit
  * source ~/.zsh/completions/_wanaku
  * </pre>
  */
