@@ -56,7 +56,7 @@
         <test-containers.version>1.21.3</test-containers.version>
         <commons-pool2.version>2.12.1</commons-pool2.version>
         <jsonassert-version>1.5.3</jsonassert-version>
-        <swagger-core-version>2.2.39</swagger-core-version>
+        <swagger-core-version>2.2.40</swagger-core-version>
         <jline-version>3.30.6</jline-version>
         <swagger-parser.version>2.1.34</swagger-parser.version>
         <quarkus-infinispan-embedded.version>1.2.1</quarkus-infinispan-embedded.version>
