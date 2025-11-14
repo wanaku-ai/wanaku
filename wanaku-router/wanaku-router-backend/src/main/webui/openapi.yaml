@@ -303,6 +303,13 @@ components:
         error:
           $ref: "#/components/schemas/WanakuError"
         data: {}
+    WanakuResponseDataStore:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/DataStore"
     WanakuResponseInteger:
       type: object
       properties:
@@ -311,13 +318,6 @@ components:
         data:
           type: integer
           format: int32
-    WanakuResponseDataStore:
-      type: object
-      properties:
-        error:
-          $ref: "#/components/schemas/WanakuError"
-        data:
-          $ref: "#/components/schemas/DataStore"
     WanakuResponseListDataStore:
       type: object
       properties:
@@ -399,6 +399,12 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/Namespace"
+    WanakuResponseObject:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data: {}
     WanakuResponsePromptReference:
       type: object
       properties:
@@ -406,12 +412,6 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/PromptReference"
-    WanakuResponseObject:
-      type: object
-      properties:
-        error:
-          $ref: "#/components/schemas/WanakuError"
-        data: {}
     WanakuResponseResourceReference:
       type: object
       properties:
