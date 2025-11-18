@@ -478,7 +478,10 @@ paths:
           description: OK
         "500":
           description: Wanaku error
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add Forward
@@ -530,7 +533,10 @@ paths:
           description: OK
         "500":
           description: Wanaku error
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Update

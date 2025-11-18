@@ -9,7 +9,6 @@ import ai.wanaku.cli.main.commands.namespaces.Namespaces;
 import ai.wanaku.cli.main.commands.prompts.Prompts;
 import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.start.Start;
-import ai.wanaku.cli.main.commands.targets.Targets;
 import ai.wanaku.cli.main.commands.tools.Tools;
 import ai.wanaku.cli.main.commands.toolset.ToolSet;
 import ai.wanaku.cli.main.support.WanakuExceptionHandler;
@@ -29,7 +28,6 @@ import picocli.CommandLine;
             Prompts.class,
             Start.class,
             Capabilities.class,
-            Targets.class,
             Tools.class,
             ToolSet.class,
             Namespaces.class,

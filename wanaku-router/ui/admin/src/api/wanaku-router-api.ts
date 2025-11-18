@@ -184,9 +184,15 @@ export type postApiV1ForwardsAddResponse400 = {
   status: 400;
 };
 
+export type postApiV1ForwardsAddResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
 export type postApiV1ForwardsAddResponseComposite =
   | postApiV1ForwardsAddResponse200
-  | postApiV1ForwardsAddResponse400;
+  | postApiV1ForwardsAddResponse400
+  | postApiV1ForwardsAddResponse500;
 
 export type postApiV1ForwardsAddResponse =
   postApiV1ForwardsAddResponseComposite & {
@@ -313,9 +319,15 @@ export type postApiV1ForwardsUpdateResponse400 = {
   status: 400;
 };
 
+export type postApiV1ForwardsUpdateResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
 export type postApiV1ForwardsUpdateResponseComposite =
   | postApiV1ForwardsUpdateResponse200
-  | postApiV1ForwardsUpdateResponse400;
+  | postApiV1ForwardsUpdateResponse400
+  | postApiV1ForwardsUpdateResponse500;
 
 export type postApiV1ForwardsUpdateResponse =
   postApiV1ForwardsUpdateResponseComposite & {

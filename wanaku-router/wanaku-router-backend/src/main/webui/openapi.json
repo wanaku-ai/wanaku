@@ -723,7 +723,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Bad Request"
@@ -800,7 +806,13 @@
           },
           "500" : {
             "description" : "Wanaku error",
-            "content" : { }
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Bad Request"
