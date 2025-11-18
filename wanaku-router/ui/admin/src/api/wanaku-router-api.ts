@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.9-SNAPSHOT
  */
 import type {
-  DeleteApiV1ToolsParams,
   DeleteApiV1PromptsParams,
+  DeleteApiV1ToolsParams,
   ForwardReference,
   GetApiV1CapabilitiesResourcesListParams,
   GetApiV1CapabilitiesToolsListParams,
