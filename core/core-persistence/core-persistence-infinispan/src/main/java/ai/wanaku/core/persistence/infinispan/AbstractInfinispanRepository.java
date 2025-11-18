@@ -30,14 +30,13 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
 
     @Override
     public A persist(A entity) {
-        final Cache<Object, A> cache = cacheManager.getCache(entityName());
-
-        if (entity.getId() == null) {
-            entity.setId(newId());
-        }
-
         try {
             lock.lock();
+            if (entity.getId() == null) {
+                entity.setId(newId());
+            }
+
+            final Cache<Object, A> cache = cacheManager.getCache(entityName());
             cache.put(entity.getId(), entity);
         } finally {
             lock.unlock();

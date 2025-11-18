@@ -74,7 +74,7 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
         LOG.infof("Created service with id %s", serviceId);
 
         given().when()
-                .get("/api/v1/capabilities/tools/list")
+                .get("/api/v1/capabilities/")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(1), "data[0].id", is(serviceId), "data[0].service", is("test-service"));
@@ -142,7 +142,7 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/capabilities/tools/list")
+                .get("/api/v1/capabilities/")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(0));

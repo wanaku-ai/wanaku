@@ -630,6 +630,24 @@
     }
   },
   "paths" : {
+    "/api/v1/capabilities" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
     "/api/v1/capabilities/notifications" : {
       "get" : {
         "responses" : {
@@ -651,31 +669,6 @@
         "tags" : [ "Capabilities Resource" ]
       }
     },
-    "/api/v1/capabilities/resources/list" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "labelFilter",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Resources List",
-        "tags" : [ "Capabilities Resource" ]
-      }
-    },
     "/api/v1/capabilities/resources/state" : {
       "get" : {
         "responses" : {
@@ -691,31 +684,6 @@
           }
         },
         "summary" : "Resources State",
-        "tags" : [ "Capabilities Resource" ]
-      }
-    },
-    "/api/v1/capabilities/tools/list" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "labelFilter",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Tool List",
         "tags" : [ "Capabilities Resource" ]
       }
     },

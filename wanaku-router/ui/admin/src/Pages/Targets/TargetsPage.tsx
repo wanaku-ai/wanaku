@@ -10,21 +10,16 @@ export const TargetsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ServiceTargetState[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { listManagementResources, listManagementTools, listManagementToolsState, listManagementResourcesState } = useCapabilities();
+  const { listManagementTools, listManagementToolsState, listManagementResourcesState } = useCapabilities();
 
   const fetch = async () => {
     setIsLoading(true);
-    const [tools, resources] = await Promise.all([
-      listManagementTools(),
-      listManagementResources()
-    ]);
+    const result = await listManagementTools();
 
-    const merged = tools.data.data?.concat(resources.data.data!);
-
-    setFetchedData(merged!);
+    setFetchedData(result.data.data!);
     setIsLoading(false);
 
-    return merged as ServiceTargetState[];
+    return result.data.data as ServiceTargetState[];
   }
 
   const fetchState = async (data: ServiceTargetState[]) => {

@@ -42,11 +42,9 @@ public class CapabilitiesResource {
         serviceTargetEvents.subscribe().with(events -> {});
     }
 
-    @Path("/tools/list")
     @GET
-    @Consumes(MediaType.TEXT_PLAIN)
-    public WanakuResponse<List<ServiceTarget>> toolList(@jakarta.ws.rs.QueryParam("labelFilter") String labelFilter) {
-        return new WanakuResponse<>(capabilitiesBean.toolList(labelFilter));
+    public WanakuResponse<List<ServiceTarget>> list() {
+        return new WanakuResponse<>(capabilitiesBean.listAllCapabilities());
     }
 
     @Path("/tools/state")
@@ -55,14 +53,6 @@ public class CapabilitiesResource {
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, List<ActivityRecord>>> toolsState() {
         return new WanakuResponse<>(capabilitiesBean.toolsState());
-    }
-
-    @Path("/resources/list")
-    @GET
-    @Consumes(MediaType.TEXT_PLAIN)
-    public WanakuResponse<List<ServiceTarget>> resourcesList(
-            @jakarta.ws.rs.QueryParam("labelFilter") String labelFilter) {
-        return new WanakuResponse<>(capabilitiesBean.resourcesList(labelFilter));
     }
 
     @Path("/resources/state")

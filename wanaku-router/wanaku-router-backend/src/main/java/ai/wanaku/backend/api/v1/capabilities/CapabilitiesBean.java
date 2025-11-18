@@ -31,7 +31,11 @@ public class CapabilitiesBean {
                 serviceRegistry.getClass().getName());
     }
 
-    public List<ServiceTarget> toolList(String labelFilter) {
+    public List<ServiceTarget> listAllCapabilities() {
+        return serviceRegistry.getEntries();
+    }
+
+    private List<ServiceTarget> toolList(String labelFilter) {
         List<ServiceTarget> tools = serviceRegistry.getEntries(ServiceType.TOOL_INVOKER);
         return filterByLabels(tools, labelFilter);
     }
