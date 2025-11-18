@@ -415,6 +415,18 @@ components:
       openIdConnectUrl: http://localhost:8543/realms/wanaku/.well-known/openid-configuration
       description: Authentication
 paths:
+  /api/v1/capabilities:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListServiceTarget"
+      summary: List
+      tags:
+      - Capabilities Resource
   /api/v1/capabilities/notifications:
     get:
       responses:
@@ -429,23 +441,6 @@ paths:
       summary: Targets Event Stream
       tags:
       - Capabilities Resource
-  /api/v1/capabilities/resources/list:
-    get:
-      parameters:
-      - name: labelFilter
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseListServiceTarget"
-      summary: Resources List
-      tags:
-      - Capabilities Resource
   /api/v1/capabilities/resources/state:
     get:
       responses:
@@ -456,23 +451,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringListActivityRecord"
       summary: Resources State
-      tags:
-      - Capabilities Resource
-  /api/v1/capabilities/tools/list:
-    get:
-      parameters:
-      - name: labelFilter
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseListServiceTarget"
-      summary: Tool List
       tags:
       - Capabilities Resource
   /api/v1/capabilities/tools/state:

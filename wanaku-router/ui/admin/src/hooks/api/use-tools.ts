@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import {
-  getApiV1CapabilitiesToolsList,
+  getApiV1Capabilities,
   postApiV1ToolsAdd,
   getApiV1ToolsList,
   putApiV1ToolsRemove,
-  getApiV1CapabilitiesToolsListResponse,
+  getApiV1CapabilitiesResponse,
   postApiV1ToolsAddResponse,
   getApiV1ToolsListResponse,
   putApiV1ToolsRemoveResponse
@@ -22,8 +22,8 @@ export const useTools = () => {
   const listManagementTools = useCallback(
     (
       options?: RequestInit
-    ): Promise<getApiV1CapabilitiesToolsListResponse> => {
-      return getApiV1CapabilitiesToolsList(undefined, options);
+    ): Promise<getApiV1CapabilitiesResponse> => {
+      return getApiV1Capabilities(options);
     },
     []
   );

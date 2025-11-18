@@ -1,11 +1,9 @@
 import { useCallback } from "react";
 import {
-  getApiV1CapabilitiesToolsList,
+  getApiV1Capabilities,
   getApiV1CapabilitiesToolsState,
   getApiV1CapabilitiesResourcesState,
-  getApiV1CapabilitiesResourcesList,
-  getApiV1CapabilitiesToolsListResponse,
-  getApiV1CapabilitiesResourcesListResponse,
+  getApiV1CapabilitiesResponse,
   getApiV1CapabilitiesToolsStateResponse,
   getApiV1CapabilitiesResourcesStateResponse,
 } from "../../api/wanaku-router-api";
@@ -17,8 +15,8 @@ export const useCapabilities = () => {
   const listManagementTools = useCallback(
     (
       options?: RequestInit
-    ): Promise<getApiV1CapabilitiesToolsListResponse> => {
-      return getApiV1CapabilitiesToolsList(undefined, options);
+    ): Promise<getApiV1CapabilitiesResponse> => {
+      return getApiV1Capabilities(options);
     },
     []
   );
@@ -41,8 +39,8 @@ export const useCapabilities = () => {
   const listManagementResources = useCallback(
     (
       options?: RequestInit
-    ): Promise<getApiV1CapabilitiesResourcesListResponse> => {
-      return getApiV1CapabilitiesResourcesList(undefined, options);
+    ): Promise<getApiV1CapabilitiesResponse> => {
+      return getApiV1Capabilities(options);
     },
     []
   );

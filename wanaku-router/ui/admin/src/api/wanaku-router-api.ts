@@ -8,8 +8,6 @@ import type {
   DeleteApiV1PromptsParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
-  GetApiV1CapabilitiesResourcesListParams,
-  GetApiV1CapabilitiesToolsListParams,
   GetApiV1ForwardsListParams,
   GetApiV1NamespacesListParams,
   GetApiV1ResourcesListParams,
@@ -46,6 +44,38 @@ import type {
 
 import { customFetch } from "../custom-fetch";
 /**
+ * @summary List
+ */
+export type getApiV1CapabilitiesResponse200 = {
+  data: WanakuResponseListServiceTarget;
+  status: 200;
+};
+
+export type getApiV1CapabilitiesResponseComposite =
+  getApiV1CapabilitiesResponse200;
+
+export type getApiV1CapabilitiesResponse =
+  getApiV1CapabilitiesResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1CapabilitiesUrl = () => {
+  return `/api/v1/capabilities`;
+};
+
+export const getApiV1Capabilities = async (
+  options?: RequestInit,
+): Promise<getApiV1CapabilitiesResponse> => {
+  return customFetch<getApiV1CapabilitiesResponse>(
+    getGetApiV1CapabilitiesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
  * @summary Targets Event Stream
  */
 export type getApiV1CapabilitiesNotificationsResponse200 = {
@@ -78,53 +108,6 @@ export const getApiV1CapabilitiesNotifications = async (
 };
 
 /**
- * @summary Resources List
- */
-export type getApiV1CapabilitiesResourcesListResponse200 = {
-  data: WanakuResponseListServiceTarget;
-  status: 200;
-};
-
-export type getApiV1CapabilitiesResourcesListResponseComposite =
-  getApiV1CapabilitiesResourcesListResponse200;
-
-export type getApiV1CapabilitiesResourcesListResponse =
-  getApiV1CapabilitiesResourcesListResponseComposite & {
-    headers: Headers;
-  };
-
-export const getGetApiV1CapabilitiesResourcesListUrl = (
-  params?: GetApiV1CapabilitiesResourcesListParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/capabilities/resources/list?${stringifiedParams}`
-    : `/api/v1/capabilities/resources/list`;
-};
-
-export const getApiV1CapabilitiesResourcesList = async (
-  params?: GetApiV1CapabilitiesResourcesListParams,
-  options?: RequestInit,
-): Promise<getApiV1CapabilitiesResourcesListResponse> => {
-  return customFetch<getApiV1CapabilitiesResourcesListResponse>(
-    getGetApiV1CapabilitiesResourcesListUrl(params),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
  * @summary Resources State
  */
 export type getApiV1CapabilitiesResourcesStateResponse200 = {
@@ -149,53 +132,6 @@ export const getApiV1CapabilitiesResourcesState = async (
 ): Promise<getApiV1CapabilitiesResourcesStateResponse> => {
   return customFetch<getApiV1CapabilitiesResourcesStateResponse>(
     getGetApiV1CapabilitiesResourcesStateUrl(),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
- * @summary Tool List
- */
-export type getApiV1CapabilitiesToolsListResponse200 = {
-  data: WanakuResponseListServiceTarget;
-  status: 200;
-};
-
-export type getApiV1CapabilitiesToolsListResponseComposite =
-  getApiV1CapabilitiesToolsListResponse200;
-
-export type getApiV1CapabilitiesToolsListResponse =
-  getApiV1CapabilitiesToolsListResponseComposite & {
-    headers: Headers;
-  };
-
-export const getGetApiV1CapabilitiesToolsListUrl = (
-  params?: GetApiV1CapabilitiesToolsListParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/capabilities/tools/list?${stringifiedParams}`
-    : `/api/v1/capabilities/tools/list`;
-};
-
-export const getApiV1CapabilitiesToolsList = async (
-  params?: GetApiV1CapabilitiesToolsListParams,
-  options?: RequestInit,
-): Promise<getApiV1CapabilitiesToolsListResponse> => {
-  return customFetch<getApiV1CapabilitiesToolsListResponse>(
-    getGetApiV1CapabilitiesToolsListUrl(params),
     {
       ...options,
       method: "GET",
