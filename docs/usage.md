@@ -1619,26 +1619,6 @@ When multiple instances of the same service are found, you'll see:
 > - `0`: The command executed successfully.
 > - `1`: An error occurred (e.g., no capabilities were found, or there were issues connecting to the API).
 
-### Listing Targets
-
-You can view linked targets by using either the `wanaku targets tools list` command (to see targets for tools) or the
-`wanaku target resources list` command (to see targets for resources).
-
-For instance, running listing the targets for tools, you should expect a response similar to this:
-
-```shell
-ID                                       SERVICE                 TARGET                        
-bee5f297-4f7a-4d1c-b0c6-0ac372fcae2c  => exec                 => 192.168.1.137                         
-eaf7a675-2225-40da-965b-d576c1439b92  => kafka                => 192.168.1.137                 
-92380df9-bcd3-43cb-a4c2-eabe7b06b415  => tavily               => 192.168.1.137                 
-2b70d26b-6d87-4931-8415-684c0d8ca45e  => camel-yaml           => 192.168.1.137                  
-```
-
-> [!NOTE]
-> The difference between `wanaku targets (tools|resources) list` and the `wanaku capabilities list` is that the 
-> listing targets print the ID, which can be helpful when extending Wanaku. For most cases, users should rely on the 
-> `wanaku capabilities list` feature. 
-
 ## Accessing Other MCP servers (MCP Forwards)
 
 The MCP bridge in Wanaku allows it to act as a central gateway or proxy to other MCP servers that use HTTP as the transport mechanism.
@@ -2000,7 +1980,7 @@ Once installed, you can use tab-completion with the Wanaku CLI:
 ```shell
 # Tab-complete commands
 wanaku <TAB>
-# Shows: capabilities, completion, forwards, man, namespaces, resources, start, targets, tools, toolset
+# Shows: capabilities, completion, forwards, man, namespaces, resources, start, tools, toolset
 
 # Tab-complete subcommands
 wanaku namespaces <TAB>
@@ -2140,7 +2120,7 @@ Then, launch it using:
 java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 ... -jar target/quarkus-app/quarkus-run.jar
 ```
 
-You can check if the service was registered correctly using `wanaku targets resources list`.
+You can check if the service was registered correctly using `wanaku capabilities list`.
 
 > [!IMPORTANT]
 > Remember to set the parameters in the `application.properties` file and also adjust the authentication settings.
@@ -2171,7 +2151,7 @@ Then, launch it using:
 ```shell
 java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9900 ... -jar target/quarkus-app/quarkus-run.jar
 ```
-You can check if the service was registered correctly using `wanaku targets tools list`.
+You can check if the service was registered correctly using `wanaku capabilities list`.
 
 > [!IMPORTANT]
 > Remember to set the parameters in the `application.properties` file and also adjust the authentication settings.
@@ -2209,7 +2189,7 @@ Then, launch it using:
 java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9901 ... -jar target/quarkus-app/quarkus-run.jar
 ```
 
-You can check if the service was registered correctly using `wanaku targets mcp list`.
+You can check if the service was registered correctly using `wanaku forwards list`.
 
 > [!IMPORTANT]
 > Remember to set the parameters in the `application.properties` file.

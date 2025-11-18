@@ -43,6 +43,7 @@ public class CapabilitiesResource {
     }
 
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ServiceTarget>> list() {
         return new WanakuResponse<>(capabilitiesBean.listAllCapabilities());
     }

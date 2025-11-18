@@ -100,9 +100,8 @@ public final class CapabilitiesHelper {
         return Uni.combine()
                 .all()
                 .unis(
-                        fetchManagementTools(capabilitiesService, labelFilter),
+                        fetchCapabilities(capabilitiesService),
                         fetchToolsActivityState(capabilitiesService),
-                        fetchResourceProviders(capabilitiesService, labelFilter),
                         fetchResourcesActivityState(capabilitiesService))
                 .with(CapabilitiesHelper::combineDataIntoCapabilities);
     }
@@ -137,20 +136,17 @@ public final class CapabilitiesHelper {
      */
     @SuppressWarnings("unchecked")
     public static List<PrintableCapability> combineDataIntoCapabilities(List<?> responses) {
-        if (responses.size() != 4) {
-            throw new IndexOutOfBoundsException("Expected exactly 4 responses, got: " + responses.size());
+        if (responses.size() != 3) {
+            throw new IndexOutOfBoundsException("Expected exactly 3 responses, got: " + responses.size());
         }
 
-        var managementTools = (List<ServiceTarget>) responses.get(0);
+        var capabilities = (List<ServiceTarget>) responses.get(0);
         var toolsActivityState = (Map<String, List<ActivityRecord>>) responses.get(1);
-        var resourceProviders = (List<ServiceTarget>) responses.get(2);
-        var resourcesActivityState = (Map<String, List<ActivityRecord>>) responses.get(3);
+        var resourcesActivityState = (Map<String, List<ActivityRecord>>) responses.get(2);
 
         var mergedActivityStates = mergeActivityStates(toolsActivityState, resourcesActivityState);
-        var allServiceTargets = Stream.concat(managementTools.stream(), resourceProviders.stream())
-                .toList();
 
-        return allServiceTargets.stream()
+        return capabilities.stream()
                 .map(target -> createPrintableCapability(target, mergedActivityStates))
                 .toList();
     }
@@ -247,28 +243,15 @@ public final class CapabilitiesHelper {
     }
 
     /**
-     * Fetches the list of management tools from the targets service.
+     * Fetches the list of capabilities
      *
      * @param capabilitiesService the service to fetch management tools from
-     * @param labelFilter optional label expression to filter tools
      * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
      * @throws NullPointerException if targetsService is null
      */
-    public static Uni<List<ServiceTarget>> fetchManagementTools(
-            CapabilitiesService capabilitiesService, String labelFilter) {
+    public static Uni<List<ServiceTarget>> fetchCapabilities(CapabilitiesService capabilitiesService) {
         Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
-        return executeApiCall(() -> capabilitiesService.toolsList(labelFilter), List.of());
-    }
-
-    /**
-     * Fetches the list of management tools from the targets service without filtering.
-     *
-     * @param capabilitiesService the service to fetch management tools from
-     * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
-     * @throws NullPointerException if targetsService is null
-     */
-    public static Uni<List<ServiceTarget>> fetchManagementTools(CapabilitiesService capabilitiesService) {
-        return fetchManagementTools(capabilitiesService, null);
+        return executeApiCall(capabilitiesService::list, List.of());
     }
 
     /**
@@ -282,31 +265,6 @@ public final class CapabilitiesHelper {
             CapabilitiesService capabilitiesService) {
         Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
         return executeApiCall(capabilitiesService::toolsState, Map.of());
-    }
-
-    /**
-     * Fetches the list of resource providers from the targets service.
-     *
-     * @param capabilitiesService the service to fetch resource providers from
-     * @param labelFilter optional label expression to filter resources
-     * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
-     * @throws NullPointerException if targetsService is null
-     */
-    public static Uni<List<ServiceTarget>> fetchResourceProviders(
-            CapabilitiesService capabilitiesService, String labelFilter) {
-        Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
-        return executeApiCall(() -> capabilitiesService.resourcesList(labelFilter), List.of());
-    }
-
-    /**
-     * Fetches the list of resource providers from the targets service without filtering.
-     *
-     * @param capabilitiesService the service to fetch resource providers from
-     * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
-     * @throws NullPointerException if targetsService is null
-     */
-    public static Uni<List<ServiceTarget>> fetchResourceProviders(CapabilitiesService capabilitiesService) {
-        return fetchResourceProviders(capabilitiesService, null);
     }
 
     /**
