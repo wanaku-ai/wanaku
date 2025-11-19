@@ -1406,9 +1406,7 @@ This displays all prompts with their names, descriptions, and namespaces.
 
 ### Editing Prompts
 
-You can edit an existing prompt using either the CLI or the UI.
-
-#### Using CLI
+You can edit an existing prompt using the CLI.
 
 The `wanaku prompts edit` command allows you to modify an existing prompt. Only the fields you specify will be updated:
 
@@ -1438,10 +1436,6 @@ wanaku prompts edit \
   --message "user:text:Review the following code for security issues: {{code}}" \
   --message "assistant:text:I'll perform a security audit."
 ```
-
-#### Using UI
-
-Navigate to the Prompts page in the Web UI, select the prompt you want to edit, make your changes, and save.
 
 ### Removing Prompts
 
