@@ -54,6 +54,9 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.Resources}>
                     Resources
                 </HeaderMenuItem>
+                <HeaderMenuItem as={Link} to={Links.Prompts}>
+                    Prompts
+                </HeaderMenuItem>
                 <HeaderMenuItem as={Link} to={Links.LLMChat}>
                     LLMChat
                 </HeaderMenuItem>
