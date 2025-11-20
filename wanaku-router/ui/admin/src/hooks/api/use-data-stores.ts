@@ -4,15 +4,22 @@ import {
   postApiV1DataStoreAdd,
   deleteApiV1DataStoreRemove,
 } from "../../api/wanaku-router-api";
-import type { DataStore, DeleteApiV1DataStoreRemoveParams } from "../../models";
+import type {
+  DataStore,
+  DeleteApiV1DataStoreRemoveParams,
+  GetApiV1DataStoreListParams,
+} from "../../models";
 
 /**
  * Custom hook for DataStore API operations
  */
 export const useDataStores = () => {
-  const listDataStores = useCallback((options?: RequestInit) => {
-    return getApiV1DataStoreList(options);
-  }, []);
+  const listDataStores = useCallback(
+    (params?: GetApiV1DataStoreListParams, options?: RequestInit) => {
+      return getApiV1DataStoreList(params, options);
+    },
+    []
+  );
 
   const addDataStore = useCallback(
     (dataStore: DataStore, options?: RequestInit) => {

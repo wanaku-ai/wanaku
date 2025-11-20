@@ -18,6 +18,10 @@ components:
     DataStore:
       type: object
       properties:
+        labels:
+          type: object
+          additionalProperties:
+            type: string
         id:
           type: string
         name:
@@ -551,6 +555,11 @@ paths:
       - Data Stores Resource
   /api/v1/data-store/list:
     get:
+      parameters:
+      - name: labelFilter
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -590,8 +599,31 @@ paths:
       summary: Remove
       tags:
       - Data Stores Resource
+  /api/v1/data-store/removeByLabel:
+    delete:
+      parameters:
+      - name: labelExpression
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseInteger"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove If
+      tags:
+      - Data Stores Resource
   /api/v1/data-store/update:
-    put:
+    post:
       requestBody:
         content:
           application/json:

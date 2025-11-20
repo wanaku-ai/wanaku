@@ -11,7 +11,13 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "data-store",
         description = "Manage data stores",
-        subcommands = {DataStoresAdd.class, DataStoresGet.class, DataStoresList.class, DataStoresRemove.class})
+        subcommands = {
+            DataStoresAdd.class,
+            DataStoresGet.class,
+            DataStoresList.class,
+            DataStoresRemove.class,
+            DataStoresLabel.class
+        })
 public class DataStores extends BaseCommand {
 
     @Override

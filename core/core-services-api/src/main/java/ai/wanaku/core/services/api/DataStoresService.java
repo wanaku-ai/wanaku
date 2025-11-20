@@ -28,14 +28,24 @@ public interface DataStoresService {
     WanakuResponse<DataStore> add(DataStore dataStore) throws WanakuException;
 
     /**
-     * List all data stores.
+     * List all data stores, optionally filtered by label expression.
      *
-     * @return response with list of all data stores
+     * @param labelFilter optional label expression to filter data stores by labels
+     * @return response with list of data stores
      */
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<DataStore>> list();
+    WanakuResponse<List<DataStore>> list(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * List all data stores without filtering.
+     *
+     * @return response with list of all data stores
+     */
+    default WanakuResponse<List<DataStore>> list() {
+        return list(null);
+    }
 
     /**
      * Get a data store by ID.
@@ -78,4 +88,27 @@ public interface DataStoresService {
     @Path("/remove")
     @DELETE
     Response removeByName(@QueryParam("name") String name);
+
+    /**
+     * Remove data stores matching a label expression.
+     *
+     * @param labelExpression the label expression to match data stores for removal
+     * @return response with count of removed data stores
+     * @throws WanakuException if removal fails
+     */
+    @Path("/removeByLabel")
+    @DELETE
+    WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) throws WanakuException;
+
+    /**
+     * Update an existing data store entry.
+     *
+     * @param dataStore the data store to update
+     * @return HTTP response
+     * @throws WanakuException if update fails
+     */
+    @Path("/update")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response update(DataStore dataStore) throws WanakuException;
 }
