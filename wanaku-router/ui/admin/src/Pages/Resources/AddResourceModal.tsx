@@ -2,10 +2,11 @@ import {
   Modal,
   TextInput,
   Select,
-  SelectItem,
+  SelectItem, ComboBox,
 } from "@carbon/react";
 import React, { useEffect, useState } from "react";
 import { Namespace, ResourceReference } from "../../models";
+import { commonMimeTypes, commonMimeTypesMapping } from "../../constants/mimeTypes.ts";
 import { listNamespaces } from "../../hooks/api/use-namespaces";
 import { useCapabilities } from "../../hooks/api/use-capabilities";
 import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
@@ -23,6 +24,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [resourceType, setResourceType] = useState("file");
+  const [mimeType, setMimeType] = useState("");
   const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
   const { listManagementResources } = useCapabilities();
@@ -43,9 +45,21 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       description,
       location,
       type: resourceType,
+      mimeType,
       namespace: selectedNamespace,
     });
   };
+
+  function autoDetectMimeType(location: string) {
+    const i = location.lastIndexOf(".")
+    if (i != -1) {
+      const suffix = location.substring(i + 1).toLowerCase()
+      const autoDetection = commonMimeTypesMapping.get(suffix)
+      if (autoDetection && mimeType == "") {
+        setMimeType(autoDetection)
+      }
+    }
+  }
 
   return (
     <Modal
@@ -75,12 +89,31 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         labelText="Location"
         placeholder="e.g. /path/to/resource"
         value={location}
-        onChange={(e) => setLocation(e.target.value)}
+        onChange={(e) => {
+          const location = e.target.value
+          setLocation(location)
+          autoDetectMimeType(location)
+        }}
       />
       <TargetTypeSelect
         value={resourceType}
         onChange={setResourceType}
         apiCall={listManagementResources}
+      />
+      <ComboBox
+          id="resource-mime-type"
+          titleText="MIME Type"
+          placeholder="Select or enter MIME type"
+          items={commonMimeTypes}
+          selectedItem={mimeType}
+          onChange={(e) => {
+            let value = e.selectedItem
+            if (value === undefined || value === null) {
+              value = ""
+            }
+            setMimeType(value)
+          }}
+          helperText="Content type of the resource (optional)"
       />
       <Select
         id="namespace"

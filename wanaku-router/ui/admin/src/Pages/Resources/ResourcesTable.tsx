@@ -25,7 +25,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
   onDelete,
   onAdd,
 }) => {
-  const headers = ["Name", "Location", "Type", "Description", "Namespace", "Actions"];
+  const headers = ["Name", "Location", "Type", "MIME Type", "Description", "Namespace", "Actions"];
 
   return (
     <Grid>
@@ -55,6 +55,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.location}</TableCell>
                 <TableCell>{row.type}</TableCell>
+                <TableCell>{row.mimeType}</TableCell>
                 <TableCell>{row.description}</TableCell>
                 <TableCell>{getNamespacePathById(row.namespace) || "default"}</TableCell>
                 <TableCell>
