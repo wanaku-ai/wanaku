@@ -2,7 +2,7 @@ package ai.wanaku.backend.api.v1.datastores;
 
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.DataStore;
-import ai.wanaku.backend.common.AbstractBean;
+import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.core.persistence.api.DataStoreRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import jakarta.annotation.PostConstruct;
@@ -16,7 +16,7 @@ import org.jboss.logging.Logger;
  * Bean for managing DataStore entities.
  */
 @ApplicationScoped
-public class DataStoresBean extends AbstractBean<DataStore> {
+public class DataStoresBean extends LabelsAwareWanakuEntityBean<DataStore> {
     private static final Logger LOG = Logger.getLogger(DataStoresBean.class);
 
     @Inject
@@ -59,13 +59,29 @@ public class DataStoresBean extends AbstractBean<DataStore> {
     }
 
     /**
-     * List all data stores.
+     * List all data stores, optionally filtered by label expression.
+     *
+     * @param labelFilter optional label expression to filter data stores
+     * @return list of data stores
+     * @throws WanakuException if label expression is invalid
+     */
+    public List<DataStore> list(String labelFilter) throws WanakuException {
+        if (labelFilter == null || labelFilter.isBlank()) {
+            LOG.debug("Listing all data stores");
+            return dataStoreRepository.listAll();
+        }
+
+        LOG.debugf("Listing data stores with label filter: %s", labelFilter);
+        return dataStoreRepository.findAllFilterByLabelExpression(labelFilter);
+    }
+
+    /**
+     * List all data stores without filtering.
      *
      * @return list of all data stores
      */
     public List<DataStore> list() {
-        LOG.debug("Listing all data stores");
-        return dataStoreRepository.listAll();
+        return list(null);
     }
 
     /**

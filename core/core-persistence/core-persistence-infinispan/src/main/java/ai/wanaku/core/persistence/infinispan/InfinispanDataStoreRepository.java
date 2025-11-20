@@ -9,9 +9,9 @@ import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 
 /**
- * Infinispan implementation of the DataStoreRepository.
+ * Infinispan implementation of the DataStoreRepository with label support.
  */
-public class InfinispanDataStoreRepository extends AbstractInfinispanRepository<DataStore, String>
+public class InfinispanDataStoreRepository extends AbstractLabelAwareInfinispanRepository<DataStore, String>
         implements DataStoreRepository {
 
     public InfinispanDataStoreRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {

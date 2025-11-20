@@ -2,6 +2,7 @@ package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.api.types.DataStore;
 import java.io.IOException;
+import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;
 
 /**
@@ -15,6 +16,7 @@ public class DataStoreMarshaller implements MessageMarshaller<DataStore> {
         dataStore.setId(reader.readString("id"));
         dataStore.setName(reader.readString("name"));
         dataStore.setData(reader.readString("data"));
+        dataStore.setLabels(reader.readMap("labels", new HashMap<>(), String.class, String.class));
         return dataStore;
     }
 
@@ -23,6 +25,7 @@ public class DataStoreMarshaller implements MessageMarshaller<DataStore> {
         writer.writeString("id", dataStore.getId());
         writer.writeString("name", dataStore.getName());
         writer.writeString("data", dataStore.getData());
+        writer.writeMap("labels", dataStore.getLabels(), String.class, String.class);
     }
 
     @Override

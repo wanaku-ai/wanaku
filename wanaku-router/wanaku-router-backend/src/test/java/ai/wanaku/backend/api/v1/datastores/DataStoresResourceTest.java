@@ -101,7 +101,7 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(dataStore)
                 .when()
-                .put("/api/v1/data-store/update")
+                .post("/api/v1/data-store/update")
                 .then()
                 .statusCode(200);
 

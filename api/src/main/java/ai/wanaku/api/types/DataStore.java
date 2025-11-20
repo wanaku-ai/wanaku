@@ -15,6 +15,7 @@ import java.util.Objects;
  * DataStore dataStore = new DataStore();
  * dataStore.setName("config.yaml");
  * dataStore.setData(Base64.getEncoder().encodeToString(fileBytes));
+ * dataStore.addLabel("environment", "production");
  *
  * // The ID will be automatically assigned by the persistence layer
  * }</pre>
@@ -24,11 +25,13 @@ import java.util.Objects;
  *   <li>Data is persisted in Infinispan distributed cache</li>
  *   <li>Content is typically Base64-encoded for safe binary storage</li>
  *   <li>Multiple entries can share the same name but will have unique IDs</li>
+ *   <li>Supports labels for categorization and filtering</li>
  * </ul>
  *
+ * @see LabelsAwareEntity
  * @see WanakuEntity
  */
-public class DataStore implements WanakuEntity<String> {
+public class DataStore extends LabelsAwareEntity<String> {
 
     /**
      * Unique identifier for this data store entry.
@@ -134,7 +137,7 @@ public class DataStore implements WanakuEntity<String> {
 
     /**
      * Compares this DataStore to another object for equality.
-     * Two DataStore instances are considered equal if they have the same id, name, and data.
+     * Two DataStore instances are considered equal if they have the same id, name, data, and labels.
      *
      * @param o the object to compare with
      * @return {@code true} if the objects are equal, {@code false} otherwise
@@ -146,28 +149,34 @@ public class DataStore implements WanakuEntity<String> {
         DataStore dataStore = (DataStore) o;
         return Objects.equals(id, dataStore.id)
                 && Objects.equals(name, dataStore.name)
-                && Objects.equals(data, dataStore.data);
+                && Objects.equals(data, dataStore.data)
+                && Objects.equals(getLabels(), dataStore.getLabels());
     }
 
     /**
      * Returns a hash code value for this DataStore.
-     * The hash code is computed based on the id, name, and data fields.
+     * The hash code is computed based on the id, name, data, and labels fields.
      *
      * @return a hash code value for this object
      */
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, data);
+        return Objects.hash(id, name, data, getLabels());
     }
 
     /**
      * Returns a string representation of this DataStore.
-     * The string includes the id, name, and data fields.
+     * The string includes the id, name, data, and labels fields.
      *
      * @return a string representation of this DataStore
      */
     @Override
     public String toString() {
-        return "DataStore{" + "id='" + id + '\'' + ", name='" + name + '\'' + ", data='" + data + '\'' + '}';
+        return "DataStore{"
+                + "id='" + id + '\''
+                + ", name='" + name + '\''
+                + ", data='" + data + '\''
+                + ", labels=" + getLabels()
+                + '}';
     }
 }

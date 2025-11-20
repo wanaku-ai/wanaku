@@ -9,4 +9,5 @@ message DataStore {
   string id = 1;
   string name = 2;
   string data = 3;
+  map<string, string> labels = 4;
 }

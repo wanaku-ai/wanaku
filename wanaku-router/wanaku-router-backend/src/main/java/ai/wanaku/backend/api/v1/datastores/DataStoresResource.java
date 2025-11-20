@@ -44,14 +44,14 @@ public class DataStoresResource {
 
     /**
      * Update an existing data store entry.
-     * PUT /api/v1/data-store/update
+     * POST /api/v1/data-store/update
      *
      * @param dataStore the data store to update (must include ID)
      * @return HTTP 200 if updated successfully
      * @throws WanakuException if update fails
      */
     @Path("/update")
-    @PUT
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response update(DataStore dataStore) throws WanakuException {
         LOG.debugf("REST: Updating data store: %s", dataStore);
@@ -60,18 +60,24 @@ public class DataStoresResource {
     }
 
     /**
-     * List all data stores.
+     * List all data stores, optionally filtered by label expression.
      * GET /api/v1/data-store/list
+     * GET /api/v1/data-store/list?labelFilter={expression}
      *
-     * @return response with list of all data stores
-     * @throws WanakuException if listing fails
+     * @param labelFilter optional label expression to filter data stores
+     * @return response with list of data stores
+     * @throws WanakuException if listing or label expression parsing fails
      */
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public WanakuResponse<List<DataStore>> list() throws WanakuException {
-        LOG.debug("REST: Listing all data stores");
-        List<DataStore> dataStores = dataStoresBean.list();
+    public WanakuResponse<List<DataStore>> list(@QueryParam("labelFilter") String labelFilter) throws WanakuException {
+        if (labelFilter != null && !labelFilter.isBlank()) {
+            LOG.debugf("REST: Listing data stores with label filter: %s", labelFilter);
+        } else {
+            LOG.debug("REST: Listing all data stores");
+        }
+        List<DataStore> dataStores = dataStoresBean.list(labelFilter);
         return new WanakuResponse<>(dataStores);
     }
 
@@ -138,5 +144,23 @@ public class DataStoresResource {
         } else {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
+    }
+
+    /**
+     * Remove data stores matching a label expression.
+     * DELETE /api/v1/data-store/removeByLabel?labelExpression={expression}
+     *
+     * @param labelExpression the label expression to match data stores for removal
+     * @return response with count of removed data stores
+     * @throws WanakuException if label expression is invalid or removal fails
+     */
+    @Path("/removeByLabel")
+    @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
+            throws WanakuException {
+        LOG.debugf("REST: Removing data stores by label expression: %s", labelExpression);
+        int removed = dataStoresBean.removeIf(labelExpression);
+        return new WanakuResponse<>(removed);
     }
 }

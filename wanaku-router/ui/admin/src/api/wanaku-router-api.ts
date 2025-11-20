@@ -6,11 +6,13 @@
  */
 import type {
   DataStore,
+  DeleteApiV1DataStoreRemoveByLabelParams,
   DeleteApiV1DataStoreRemoveParams,
   DeleteApiV1PromptsParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
   GetApiV1DataStoreGetParams,
+  GetApiV1DataStoreListParams,
   GetApiV1ForwardsListParams,
   GetApiV1NamespacesListParams,
   GetApiV1ResourcesListParams,
@@ -299,15 +301,30 @@ export type getApiV1DataStoreListResponse =
     headers: Headers;
   };
 
-export const getGetApiV1DataStoreListUrl = () => {
-  return `/api/v1/data-store/list`;
+export const getGetApiV1DataStoreListUrl = (
+  params?: GetApiV1DataStoreListParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/data-store/list?${stringifiedParams}`
+    : `/api/v1/data-store/list`;
 };
 
 export const getApiV1DataStoreList = async (
+  params?: GetApiV1DataStoreListParams,
   options?: RequestInit,
 ): Promise<getApiV1DataStoreListResponse> => {
   return customFetch<getApiV1DataStoreListResponse>(
-    getGetApiV1DataStoreListUrl(),
+    getGetApiV1DataStoreListUrl(params),
     {
       ...options,
       method: "GET",
@@ -369,46 +386,99 @@ export const deleteApiV1DataStoreRemove = async (
 };
 
 /**
- * @summary Update
+ * @summary Remove If
  */
-export type putApiV1DataStoreUpdateResponse200 = {
-  data: null;
+export type deleteApiV1DataStoreRemoveByLabelResponse200 = {
+  data: WanakuResponseInteger;
   status: 200;
 };
 
-export type putApiV1DataStoreUpdateResponse400 = {
-  data: null;
-  status: 400;
-};
-
-export type putApiV1DataStoreUpdateResponse500 = {
+export type deleteApiV1DataStoreRemoveByLabelResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type putApiV1DataStoreUpdateResponseComposite =
-  | putApiV1DataStoreUpdateResponse200
-  | putApiV1DataStoreUpdateResponse400
-  | putApiV1DataStoreUpdateResponse500;
+export type deleteApiV1DataStoreRemoveByLabelResponseComposite =
+  | deleteApiV1DataStoreRemoveByLabelResponse200
+  | deleteApiV1DataStoreRemoveByLabelResponse500;
 
-export type putApiV1DataStoreUpdateResponse =
-  putApiV1DataStoreUpdateResponseComposite & {
+export type deleteApiV1DataStoreRemoveByLabelResponse =
+  deleteApiV1DataStoreRemoveByLabelResponseComposite & {
     headers: Headers;
   };
 
-export const getPutApiV1DataStoreUpdateUrl = () => {
+export const getDeleteApiV1DataStoreRemoveByLabelUrl = (
+  params?: DeleteApiV1DataStoreRemoveByLabelParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/data-store/removeByLabel?${stringifiedParams}`
+    : `/api/v1/data-store/removeByLabel`;
+};
+
+export const deleteApiV1DataStoreRemoveByLabel = async (
+  params?: DeleteApiV1DataStoreRemoveByLabelParams,
+  options?: RequestInit,
+): Promise<deleteApiV1DataStoreRemoveByLabelResponse> => {
+  return customFetch<deleteApiV1DataStoreRemoveByLabelResponse>(
+    getDeleteApiV1DataStoreRemoveByLabelUrl(params),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+/**
+ * @summary Update
+ */
+export type postApiV1DataStoreUpdateResponse200 = {
+  data: null;
+  status: 200;
+};
+
+export type postApiV1DataStoreUpdateResponse400 = {
+  data: null;
+  status: 400;
+};
+
+export type postApiV1DataStoreUpdateResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1DataStoreUpdateResponseComposite =
+  | postApiV1DataStoreUpdateResponse200
+  | postApiV1DataStoreUpdateResponse400
+  | postApiV1DataStoreUpdateResponse500;
+
+export type postApiV1DataStoreUpdateResponse =
+  postApiV1DataStoreUpdateResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1DataStoreUpdateUrl = () => {
   return `/api/v1/data-store/update`;
 };
 
-export const putApiV1DataStoreUpdate = async (
+export const postApiV1DataStoreUpdate = async (
   dataStore: DataStore,
   options?: RequestInit,
-): Promise<putApiV1DataStoreUpdateResponse> => {
-  return customFetch<putApiV1DataStoreUpdateResponse>(
-    getPutApiV1DataStoreUpdateUrl(),
+): Promise<postApiV1DataStoreUpdateResponse> => {
+  return customFetch<postApiV1DataStoreUpdateResponse>(
+    getPostApiV1DataStoreUpdateUrl(),
     {
       ...options,
-      method: "PUT",
+      method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(dataStore),
     },
