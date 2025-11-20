@@ -1,5 +1,6 @@
 package ai.wanaku.backend.common;
 
+import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.api.types.CallableReference;
 import ai.wanaku.api.types.InputSchema;
 import ai.wanaku.api.types.Namespace;
@@ -80,27 +81,41 @@ public class ToolsHelper {
             Namespace namespace,
             BiFunction<ToolManager.ToolArguments, CallableReference, ToolResponse> handler) {
 
-        ToolManager.ToolDefinition toolDefinition =
-                toolManager.newTool(toolReference.getName()).setDescription(toolReference.getDescription());
-
-        final boolean required = isRequired(toolReference);
-
-        InputSchema inputSchema = toolReference.getInputSchema();
-        if (inputSchema != null) {
-            inputSchema.getProperties().forEach((key, value) -> addArgument(key, value, toolDefinition, required));
+        if (toolManager.getTool(toolReference.getName()) != null) {
+            throw EntityAlreadyExistsException.forName(toolReference.getName());
         }
 
-        if (namespace != null) {
-            LOG.debugf(
-                    "Registering tool %s in namespace %s with path %s",
-                    toolReference.getName(), namespace.getName(), namespace.getPath());
-            toolDefinition
-                    .setServerName(namespace.getPath())
-                    .setHandler(ta -> handler.apply(ta, toolReference))
-                    .register();
-        } else {
-            LOG.debugf("Registering tool %s", toolReference.getName());
-            toolDefinition.setHandler(ta -> handler.apply(ta, toolReference)).register();
+        try {
+            ToolManager.ToolDefinition toolDefinition =
+                    toolManager.newTool(toolReference.getName()).setDescription(toolReference.getDescription());
+
+            final boolean required = isRequired(toolReference);
+
+            InputSchema inputSchema = toolReference.getInputSchema();
+            if (inputSchema != null) {
+                inputSchema.getProperties().forEach((key, value) -> addArgument(key, value, toolDefinition, required));
+            }
+
+            if (namespace != null) {
+                LOG.debugf(
+                        "Registering tool %s in namespace %s with path %s",
+                        toolReference.getName(), namespace.getName(), namespace.getPath());
+                toolDefinition
+                        .setServerName(namespace.getPath())
+                        .setHandler(ta -> handler.apply(ta, toolReference))
+                        .register();
+            } else {
+                LOG.debugf("Registering tool %s", toolReference.getName());
+                toolDefinition
+                        .setHandler(ta -> handler.apply(ta, toolReference))
+                        .register();
+            }
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("already exists")) {
+                throw EntityAlreadyExistsException.forName(toolReference.getName());
+            } else {
+                throw e;
+            }
         }
     }
 }

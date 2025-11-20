@@ -1,5 +1,6 @@
 package ai.wanaku.backend.api.v1.tools;
 
+import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.api.exceptions.ToolNotFoundException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.Namespace;
@@ -63,8 +64,6 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
-        //        Namespace ns = namespacesBean.
-
         if (!StringHelper.isEmpty(toolReference.getNamespace())) {
 
             final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
@@ -94,7 +93,11 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
         namespacesBean.preload();
 
         for (ToolReference toolReference : list()) {
-            registerTool(toolReference);
+            try {
+                registerTool(toolReference);
+            } catch (EntityAlreadyExistsException e) {
+                LOG.errorf("Error registering a tool named %s during startup, but it already exists", toolReference.getName());
+            }
         }
     }
 

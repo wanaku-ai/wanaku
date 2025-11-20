@@ -2,6 +2,7 @@ package ai.wanaku.backend.api.v1.forwards;
 
 import static io.micrometer.common.util.StringUtils.*;
 
+import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.api.exceptions.WanakuException;
 import ai.wanaku.api.types.ForwardReference;
 import ai.wanaku.api.types.LabelsAwareEntity;
@@ -222,6 +223,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         for (ForwardReference forwardReference : forwardReferenceRepository.listAll()) {
             try {
                 registerForward(forwardReference);
+            } catch (EntityAlreadyExistsException e) {
+                LOG.errorf("Tried to register a tool named %s during startup, but it already exists", forwardReference.getAddress());
             } catch (Exception e) {
                 LOG.errorf("Error registering forwards from %s during startup", forwardReference.getAddress());
             }
