@@ -1,5 +1,6 @@
 package ai.wanaku.backend.common;
 
+import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.ResourceReference;
 import io.quarkiverse.mcp.server.ResourceContents;
@@ -47,21 +48,33 @@ public final class ResourceHelper {
             ResourceManager resourceManager,
             Namespace namespace,
             BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler) {
-        final ResourceManager.ResourceDefinition resourceDefinition = resourceManager
-                .newResource(resourceReference.getName())
-                .setUri(resourceReference.getLocation())
-                .setMimeType(resourceReference.getMimeType())
-                .setDescription(resourceReference.getDescription())
-                .setHandler(args -> new ResourceResponse(handler.apply(args, resourceReference)));
+        if (resourceManager.getResource(resourceReference.getLocation()) != null) {
+            throw EntityAlreadyExistsException.forName(resourceReference.getName());
+        }
 
-        if (namespace != null) {
-            LOG.debugf(
-                    "Exposing resource %s in namespace %s",
-                    resourceReference.getName(), resourceReference.getNamespace());
-            resourceDefinition.setServerName(namespace.getPath()).register();
-        } else {
-            LOG.debugf("Exposing resource %s", resourceReference.getName());
-            resourceDefinition.register();
+        try {
+            final ResourceManager.ResourceDefinition resourceDefinition = resourceManager
+                    .newResource(resourceReference.getName())
+                    .setUri(resourceReference.getLocation())
+                    .setMimeType(resourceReference.getMimeType())
+                    .setDescription(resourceReference.getDescription())
+                    .setHandler(args -> new ResourceResponse(handler.apply(args, resourceReference)));
+
+            if (namespace != null) {
+                LOG.debugf(
+                        "Exposing resource %s in namespace %s",
+                        resourceReference.getName(), resourceReference.getNamespace());
+                resourceDefinition.setServerName(namespace.getPath()).register();
+            } else {
+                LOG.debugf("Exposing resource %s", resourceReference.getName());
+                resourceDefinition.register();
+            }
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("already exists")) {
+                throw EntityAlreadyExistsException.forName(resourceReference.getName());
+            } else {
+                throw e;
+            }
         }
     }
 }

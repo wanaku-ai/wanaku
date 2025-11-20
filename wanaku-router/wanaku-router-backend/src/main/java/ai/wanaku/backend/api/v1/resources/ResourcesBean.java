@@ -1,5 +1,6 @@
 package ai.wanaku.backend.api.v1.resources;
 
+import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.api.types.Namespace;
 import ai.wanaku.api.types.ResourceReference;
 import ai.wanaku.api.types.io.ResourcePayload;
@@ -70,7 +71,11 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
         namespacesBean.preload();
 
         for (ResourceReference resourceReference : list()) {
-            doExposeResource(resourceReference);
+            try {
+                doExposeResource(resourceReference);
+            } catch (EntityAlreadyExistsException e) {
+                LOG.errorf("Error registering a resource named %s during startup, but it already exists", resourceReference.getName());
+            }
         }
     }
 
