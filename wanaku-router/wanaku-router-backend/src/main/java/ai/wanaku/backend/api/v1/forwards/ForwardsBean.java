@@ -224,7 +224,9 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             try {
                 registerForward(forwardReference);
             } catch (EntityAlreadyExistsException e) {
-                LOG.errorf("Tried to register a tool named %s during startup, but it already exists", forwardReference.getAddress());
+                LOG.errorf(
+                        "Tried to register a tool named %s during startup, but it already exists",
+                        forwardReference.getAddress());
             } catch (Exception e) {
                 LOG.errorf("Error registering forwards from %s during startup", forwardReference.getAddress());
             }

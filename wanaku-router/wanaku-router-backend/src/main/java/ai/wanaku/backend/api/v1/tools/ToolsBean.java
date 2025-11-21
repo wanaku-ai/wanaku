@@ -96,7 +96,9 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
             try {
                 registerTool(toolReference);
             } catch (EntityAlreadyExistsException e) {
-                LOG.errorf("Error registering a tool named %s during startup, but it already exists", toolReference.getName());
+                LOG.errorf(
+                        "Error registering a tool named %s during startup, but it already exists",
+                        toolReference.getName());
             }
         }
     }

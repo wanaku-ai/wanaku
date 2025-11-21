@@ -74,7 +74,9 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
             try {
                 doExposeResource(resourceReference);
             } catch (EntityAlreadyExistsException e) {
-                LOG.errorf("Error registering a resource named %s during startup, but it already exists", resourceReference.getName());
+                LOG.errorf(
+                        "Error registering a resource named %s during startup, but it already exists",
+                        resourceReference.getName());
             }
         }
     }
