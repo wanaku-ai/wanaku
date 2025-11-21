@@ -3,16 +3,16 @@ package ai.wanaku.cli.main.commands.auth;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.security.auth.OidcTokenException;
-import ai.wanaku.core.security.auth.OidcTokenService;
-import ai.wanaku.core.security.auth.TokenResponse;
+import ai.wanaku.cli.main.support.security.CustomSecurityServiceConfig;
+import ai.wanaku.cli.main.support.security.ServiceAuthenticator;
+import ai.wanaku.cli.main.support.security.TokenEndpoint;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "login", description = "Interactive authentication login")
 public class AuthLogin extends BaseCommand {
 
-    private static final String DEFAULT_AUTH_SERVER = "http://localhost:8543";
+    private static final String DEFAULT_AUTH_SERVER = "http://localhost:8080";
     private static final String DEFAULT_REALM = "wanaku";
     private static final String DEFAULT_CLIENT_ID = "admin-cli";
     private static final String DEFAULT_AUTH_MODE = "token";
@@ -73,20 +73,23 @@ public class AuthLogin extends BaseCommand {
 
             try {
                 printer.printInfoMessage("Authenticating with username and password...");
-                OidcTokenService tokenService = new OidcTokenService();
-                TokenResponse tokenResponse =
-                        tokenService.retrieveToken(serverUrl, realm, clientId, username, password);
+                CustomSecurityServiceConfig config = new CustomSecurityServiceConfig();
+                config.setClientId(DEFAULT_CLIENT_ID);
+                config.setUsername(username);
+                config.setPassword(password);
+                config.setTokenEndpoint(TokenEndpoint.forDiscovery(serverUrl));
+                ServiceAuthenticator serviceAuthenticator = new ServiceAuthenticator(config);
 
-                credentialStore.storeApiToken(tokenResponse.getAccessToken());
-                if (tokenResponse.getRefreshToken() != null) {
-                    credentialStore.storeRefreshToken(tokenResponse.getRefreshToken());
-                }
+                credentialStore.storeApiToken(serviceAuthenticator.currentValidAccessToken());
+                credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
+
                 credentialStore.storeAuthMode("token");
                 credentialStore.storeAuthServerUrl(serverUrl);
 
                 printer.printSuccessMessage("Successfully authenticated and stored credentials");
                 return EXIT_OK;
-            } catch (OidcTokenException e) {
+            } catch (Exception e) {
+                e.printStackTrace();
                 printer.printErrorMessage("Authentication failed: " + e.getMessage());
                 return EXIT_ERROR;
             }

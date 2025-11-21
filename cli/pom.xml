@@ -156,6 +156,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>oauth2-oidc-sdk</artifactId>
+            <version>11.29.2</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
             <version>0.22.0</version>
@@ -259,6 +265,7 @@
                     --initialize-at-run-time=org.jline.nativ.Kernel32$INPUT_RECORD,
                     --initialize-at-run-time=org.jline.nativ.Kernel32$MENU_EVENT_RECORD,
                     --initialize-at-run-time=org.jline.nativ.JLineLibrary,
+                    --initialize-at-run-time=com.nimbusds.oauth2.sdk.http.HTTPRequest,
                     -H:ReflectionConfigurationFiles=reflection-config.json,
                     -H:IncludeResourceBundles=consoleui_messages,
                     -H:ResourceConfigurationFiles=resources-config.json
