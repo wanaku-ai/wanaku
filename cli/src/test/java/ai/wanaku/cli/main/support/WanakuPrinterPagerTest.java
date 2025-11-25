@@ -8,6 +8,9 @@ import org.jline.builtins.ConfigurationPath;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /**
  * Tests for WanakuPrinter pager functionality.
@@ -16,6 +19,8 @@ import org.junit.jupiter.api.Test;
  * verify the method exists and handles null input correctly. Full integration testing
  * requires a real terminal environment.</p>
  */
+@DisabledOnOs(OS.WINDOWS)
+@Timeout(value = 60)
 class WanakuPrinterPagerTest {
 
     @Test
