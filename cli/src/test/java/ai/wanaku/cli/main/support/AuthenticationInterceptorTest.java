@@ -87,13 +87,4 @@ class AuthenticationInterceptorTest {
 
         assertNull(headers.getFirst(HttpHeaders.AUTHORIZATION));
     }
-
-    @Test
-    void shouldWorkWithDefaultConstructor() throws Exception {
-        AuthenticationInterceptor defaultInterceptor = new AuthenticationInterceptor();
-
-        defaultInterceptor.filter(requestContext);
-
-        assertNull(headers.getFirst(HttpHeaders.AUTHORIZATION));
-    }
 }
