@@ -47,8 +47,7 @@ public class AuthStatus extends BaseCommand {
             printer.printInfoMessage("Refresh Token: " + maskedRefreshToken);
         }
 
-        printer.printInfoMessage(
-                "Credentials File: " + credentialStore.getCredentialsFile().getPath());
+        printer.printInfoMessage("Credentials File: " + java.nio.file.Paths.get(credentialStore.getCredentialsFile()));
         printer.printInfoMessage("Has Credentials: " + credentialStore.hasCredentials());
 
         return EXIT_OK;

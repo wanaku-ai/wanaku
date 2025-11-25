@@ -118,7 +118,7 @@ public class AuthCredentialStore {
      */
     public void clearCredentials() {
         try {
-            Path credentialsPath = Paths.get(getCredentialsFile().getPath());
+            Path credentialsPath = Paths.get(credentialsUri);
             if (Files.exists(credentialsPath)) {
                 Files.delete(credentialsPath);
             }
@@ -148,7 +148,7 @@ public class AuthCredentialStore {
     private Properties loadProperties() {
         Properties props = new Properties();
         try {
-            Path credentialsPath = Paths.get(getCredentialsFile().getPath());
+            Path credentialsPath = Paths.get(credentialsUri);
             if (Files.exists(credentialsPath)) {
                 props.load(Files.newInputStream(credentialsPath));
             }
@@ -160,7 +160,7 @@ public class AuthCredentialStore {
 
     private void storeCredential(String key, String value) {
         try {
-            Path credentialsPath = Paths.get(getCredentialsFile().getPath());
+            Path credentialsPath = Paths.get(credentialsUri);
             Properties props = loadProperties();
 
             props.setProperty(key, value);
@@ -172,7 +172,7 @@ public class AuthCredentialStore {
 
     private void ensureCredentialsDirectoryExists() {
         try {
-            Path credentialsPath = Paths.get(getCredentialsFile().getPath());
+            Path credentialsPath = Paths.get(credentialsUri);
             Path parentDir = credentialsPath.getParent();
             if (parentDir != null && !Files.exists(parentDir)) {
                 Files.createDirectories(parentDir);
