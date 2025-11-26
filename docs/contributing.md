@@ -275,7 +275,7 @@ Then, take note of the newly generated client secret and use that for the capabi
 
 #### Using a Static Client 
 
-![Inspector Config](imgs/oauth-config-inspector.png)
+![Screenshot of OAuth configuration inspector showing client credentials and authentication settings](imgs/oauth-config-inspector.png)
 
 #### Using Dynamic Client Registration
 

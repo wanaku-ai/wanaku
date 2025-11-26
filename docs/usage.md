@@ -10,7 +10,7 @@ filtering capabilities exposed to Large Language Models (LLMs).
 
 The Wanaku MCP Router itself does not directly host tools or resources; instead, it acts as an integration service that connects AI agents with external resources and tools, including enterprise systems and cloud services. It manages and governs access between agent types and specific resources, proxying and filtering available capabilities to agents and their LLM
 
-![HyperChat Configuration](imgs/wanaku-architecture.jpg)
+![Diagram showing Wanaku's layered architecture with LLM client connecting to router backend, which communicates via gRPC with tool services and resource providers](imgs/wanaku-architecture.jpg)
 
 Wanaku provides specialized services, referred to as "capabilities" that offer specific functionalities to the Wanaku MCP Router.
 
@@ -151,7 +151,7 @@ Finally, for security, you must regenerate the client secret for the `wanaku-ser
 5.  Go to the **Credentials** tab.
 6.  Click the **Regenerate secret** button and confirm. Copy the new secret to use in your application's configuration.
 
-![KeyCloak Service](imgs/keycloak-service.png)
+![Screenshot of Keycloak admin console showing the wanaku-service client credentials tab with the Regenerate secret button](imgs/keycloak-service.png)
 
 # Installing Wanaku
 
@@ -891,7 +891,7 @@ want to have system-specific ones (i.e.: a billing capability, an employee syste
 The recommended way to create those capabilities is to use the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/). This is a 
 subcomponent of Wanaku that leverages Apache Camel to exchange data with any system that Camel is capable of talking to.
 
-![Wanaku Capabilities](imgs/wanaku-capabilities.jpg)
+![Diagram showing available Wanaku capability types including tool services, resource providers, and MCP server bridges](imgs/wanaku-capabilities.jpg)
 
 > [!NOTE]
 > Capabilities were, at some point, also called "Downstream services" or "targets". You may still see that terminology 
@@ -899,7 +899,7 @@ subcomponent of Wanaku that leverages Apache Camel to exchange data with any sys
 
 You should see a list of capabilities available in the UI, in the Capabilities page. Something similar to this:
 
-![Wanaku Capabilities](imgs/capabilities-list.png)
+![Screenshot of Wanaku web UI showing a list of registered capability services with their status, type, and health information](imgs/capabilities-list.png)
 
 On the CLI, running `wanaku capabilities list` lists the capabilities available for MCP tools:
 
@@ -1859,7 +1859,7 @@ The command displays the results in a table with the following columns:
 For instance, running the command, should present you with an output similar to this:
 
 #### Sample Output
-![img.png](imgs/cli-capabilities-list.png)
+![Terminal output showing the result of running 'wanaku capabilities list' command displaying registered capability services](imgs/cli-capabilities-list.png)
 
 ### Displaying Service Capability Details
 
@@ -1905,7 +1905,7 @@ The command displays two main sections:
 - Parameter names
 - Parameter descriptions
 
-![img.png](imgs/capabilities-show.png)
+![Terminal output showing detailed information for a specific capability service including status, URI, and available operations](imgs/capabilities-show.png)
 
 
 #### Interactive Selection
@@ -1915,7 +1915,7 @@ When multiple instances of the same service are found, you'll see:
 - An interactive selection prompt with service details
 - Choose your desired instance using arrow keys and Enter
 
-![img.png](imgs/capabilities-show-choose.png)
+![Terminal output showing an interactive prompt for selecting a capability service from a numbered list](imgs/capabilities-show-choose.png)
 
 > [!NOTE]
 > The Wanaku CLI provides clear exit codes to indicate the outcome of a command:
@@ -2621,7 +2621,7 @@ Claude Desktop does not currently support connecting to SSE-based endpoints, so 
 Wanaku works with [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat). To do so,
 you can configure Wanaku as an MCP server using the MCP configuration as shown below:
 
-![HyperChat Configuration](imgs/hyperchat-configuration.png)
+![Screenshot of HyperChat configuration panel showing MCP server connection settings with Wanaku router URL](imgs/hyperchat-configuration.png)
 
 > [!IMPORTANT]
 > Make sure to have Wanaku up and running before configuring HyperChat. You may also need to 
@@ -2687,3 +2687,371 @@ Visit [this page](../capabilities/tools/README.md) to check all the tools that c
 All CLI commands use the Wanaku management API under the hood. If you need more advanced functionality or want to automate tasks, you may be able to use this API directly.
 
 By using these CLI commands, you can manage resources and tools for your Wanaku MCP Router instance.
+
+## Troubleshooting
+
+This section provides solutions to common issues you may encounter while using Wanaku.
+
+### Authentication Issues
+
+#### Cannot authenticate with the router
+
+**Symptoms:**
+- CLI commands fail with authentication errors
+- Web UI redirects to Keycloak but login fails
+
+**Solutions:**
+
+1. Verify Keycloak is running and accessible:
+   ```shell
+   curl http://localhost:8543/health
+   ```
+
+2. Check that the Keycloak realm is properly configured:
+   - Ensure the `wanaku` realm exists
+   - Verify the `wanaku-mcp-router` client is configured
+   - Confirm user accounts have been created
+
+3. Clear stored credentials and re-authenticate:
+   ```shell
+   rm ~/.wanaku/credentials
+   wanaku auth login --url http://localhost:8080
+   ```
+
+4. Verify the router can reach Keycloak:
+   - Check the `auth.server` configuration property
+   - Ensure network connectivity between components
+
+#### Token expired errors
+
+**Symptoms:**
+- Commands work initially but fail after some time
+- Error messages about expired tokens
+
+**Solutions:**
+
+1. Re-authenticate with the router:
+   ```shell
+   wanaku auth login --url http://localhost:8080
+   ```
+
+2. Check token lifetime settings in Keycloak if tokens expire too quickly
+
+### Service Registration Issues
+
+#### Capability services not appearing in the router
+
+**Symptoms:**
+- Services start successfully but don't show up in `wanaku capabilities list`
+- Tools or resources from a service are not available
+
+**Solutions:**
+
+1. Verify the service registration configuration:
+   ```shell
+   # In the capability service application.properties
+   wanaku.service.registration.enabled=true
+   wanaku.service.registration.uri=http://localhost:8080
+   ```
+
+2. Check service logs for registration errors:
+   ```shell
+   # Look for registration-related errors
+   grep -i "registration" /path/to/service.log
+   ```
+
+3. Verify network connectivity between the service and router:
+   ```shell
+   # From the service host
+   curl http://localhost:8080/q/health
+   ```
+
+4. Check if the service is using the correct OIDC credentials:
+   - Verify `quarkus.oidc-client.credentials.secret` matches the secret in Keycloak
+   - Ensure the `wanaku-service` client exists in Keycloak
+
+5. Check the router backend logs for incoming registration requests
+
+#### Service shows as "offline" or "unhealthy"
+
+**Symptoms:**
+- Service appears in `wanaku capabilities list` but marked as offline
+- Intermittent availability
+
+**Solutions:**
+
+1. Verify the service is running:
+   ```shell
+   # Check if the gRPC port is listening
+   netstat -an | grep 9009
+   ```
+
+2. Check the registration interval and ensure heartbeats are being sent:
+   ```shell
+   # In application.properties
+   wanaku.service.registration.interval=10s
+   ```
+
+3. Review service health and ensure it's not crashing or restarting
+
+### Connection Issues
+
+#### Cannot connect to the router from MCP clients
+
+**Symptoms:**
+- MCP clients fail to connect
+- Timeout errors when connecting
+
+**Solutions:**
+
+1. Verify the router is running and accessible:
+   ```shell
+   curl http://localhost:8080/q/health
+   ```
+
+2. Check the correct MCP endpoint is being used:
+   - SSE transport: `http://localhost:8080/mcp/sse`
+   - Streamable HTTP: `http://localhost:8080/mcp/`
+
+3. For namespace-specific connections, ensure the correct path:
+   ```shell
+   # For namespace ns-1
+   http://localhost:8080/ns-1/mcp/sse
+   ```
+
+4. Verify firewall rules allow traffic on port 8080
+
+5. Check CORS settings if connecting from a web application:
+   ```shell
+   quarkus.http.cors.enabled=true
+   quarkus.http.cors.origins=http://localhost:3000
+   ```
+
+### Tool and Resource Issues
+
+#### Tools or resources not appearing in MCP clients
+
+**Symptoms:**
+- `wanaku tools list` shows tools, but they don't appear in the MCP client
+- Resources are registered but not accessible
+
+**Solutions:**
+
+1. Verify the tool/resource is in the correct namespace:
+   ```shell
+   wanaku tools list
+   wanaku namespaces list
+   ```
+
+2. Check if the client is connected to the correct namespace endpoint
+
+3. Refresh the MCP client connection
+
+4. Verify the capability service providing the tool is online:
+   ```shell
+   wanaku capabilities list
+   ```
+
+#### Tool invocation fails
+
+**Symptoms:**
+- Tool appears in client but execution fails
+- Error messages when calling a tool
+
+**Solutions:**
+
+1. Check the tool URI is correct:
+   ```shell
+   wanaku tools list
+   ```
+
+2. Verify the capability service is running and healthy
+
+3. Review capability service logs for errors during tool execution
+
+4. Ensure required configuration or secrets are properly set:
+   ```shell
+   wanaku tools list
+   ```
+
+5. For HTTP tools, verify the target endpoint is accessible from the service
+
+#### Resource read fails
+
+**Symptoms:**
+- Resource appears but cannot be read
+- Empty or error responses when accessing resources
+
+**Solutions:**
+
+1. Verify the resource URI and that the target exists:
+   ```shell
+   wanaku resources list
+   ```
+
+2. Check file permissions if using file-based resources
+
+3. Verify network access if using remote resources (S3, FTP, etc.)
+
+4. Review provider service logs for errors
+
+### Build and Deployment Issues
+
+#### Build fails with missing dependencies
+
+**Symptoms:**
+- Maven build errors
+- Missing artifact errors
+
+**Solutions:**
+
+1. Ensure you're using the correct Maven version:
+   ```shell
+   mvn --version  # Should be 3.x
+   ```
+
+2. Clear Maven cache and rebuild:
+   ```shell
+   rm -rf ~/.m2/repository/ai/wanaku
+   mvn clean install
+   ```
+
+3. Verify internet connectivity for downloading dependencies
+
+#### Native build fails
+
+**Symptoms:**
+- Native compilation errors
+- GraalVM-related failures
+
+**Solutions:**
+
+1. Verify GraalVM is properly installed:
+   ```shell
+   java -version  # Should show GraalVM
+   native-image --version
+   ```
+
+2. Check the [Quarkus native build guide](https://quarkus.io/guides/building-native-image) for system requirements
+
+3. Try building without native mode first to isolate the issue:
+   ```shell
+   mvn clean package
+   ```
+
+#### Container deployment fails
+
+**Symptoms:**
+- Pods in CrashLoopBackOff state
+- ImagePullBackOff errors
+
+**Solutions:**
+
+1. Verify the container image exists and is accessible:
+   ```shell
+   podman pull quay.io/wanaku/wanaku-router-backend:latest
+   ```
+
+2. Check pod logs for startup errors:
+   ```shell
+   oc logs <pod-name>
+   kubectl logs <pod-name>
+   ```
+
+3. Verify ConfigMaps and Secrets are properly mounted:
+   ```shell
+   oc describe pod <pod-name>
+   ```
+
+4. Check resource limits and ensure sufficient memory/CPU
+
+5. Verify Keycloak is accessible from the pods:
+   ```shell
+   oc exec <pod-name> -- curl http://keycloak:8080/health
+   ```
+
+### Performance Issues
+
+#### Slow response times
+
+**Symptoms:**
+- Tools take a long time to execute
+- Resource reads are slow
+- MCP clients experience timeouts
+
+**Solutions:**
+
+1. Check router and service resource usage:
+   ```shell
+   top
+   htop
+   ```
+
+2. Review logs for errors or warnings
+
+3. Verify network latency between components:
+   ```shell
+   ping <service-host>
+   ```
+
+4. Check Infinispan cache performance and consider adjusting:
+   ```shell
+   wanaku.infinispan.max-state-count=10
+   ```
+
+5. For Kubernetes deployments, ensure adequate resource limits:
+   ```yaml
+   resources:
+     requests:
+       memory: "512Mi"
+       cpu: "500m"
+     limits:
+       memory: "1Gi"
+       cpu: "1000m"
+   ```
+
+### Logging and Debugging
+
+#### Enable debug logging
+
+To get more detailed logs for troubleshooting:
+
+**Router backend:**
+```properties
+quarkus.log.level=DEBUG
+quarkus.log.category."ai.wanaku".level=DEBUG
+quarkus.mcp.server.traffic-logging.enabled=true
+```
+
+**Capability services:**
+```properties
+quarkus.log.level=DEBUG
+quarkus.log.category."ai.wanaku".level=DEBUG
+```
+
+**CLI:**
+```shell
+wanaku --verbose tools list
+```
+
+#### Access logs
+
+Check logs in these locations:
+
+- **Router backend:** Look for `wanaku-router-backend.log` or check container logs
+- **Capability services:** Check individual service log files
+- **Kubernetes:** `oc logs <pod-name>` or `kubectl logs <pod-name>`
+
+### Getting Help
+
+If you continue to experience issues:
+
+1. Check the [GitHub Issues](https://github.com/wanaku-ai/wanaku/issues) for similar problems
+2. Review the [documentation](https://github.com/wanaku-ai/wanaku/tree/main/docs)
+3. Join the [community discussions](https://github.com/wanaku-ai/wanaku/discussions)
+4. Open a new issue with:
+   - Wanaku version
+   - Deployment environment (local, OpenShift, etc.)
+   - Steps to reproduce
+   - Relevant log excerpts
+   - Configuration (with secrets redacted)
