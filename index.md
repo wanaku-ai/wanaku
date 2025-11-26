@@ -28,7 +28,7 @@ features:
     link: ./docs/contributing
   - title: Wanaku Internals
     details: Learn about the internals of Wanaku
-    link: ./docs/contributing
+    link: ./docs/wanaku-router-internals
   - title: Label Expression
     details: Learn how to filter entities using label expressions and logical operators
     link: ./cli/src/main/resources/docs/LABEL_EXPRESSIONS

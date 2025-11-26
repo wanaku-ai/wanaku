@@ -13,8 +13,7 @@ which provides access to more than 300 components.
 | Type         | Service Tool                                                                 | Description                                                                 |
 |--------------|------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | `exec`       | [wanaku-tool-service-exec](./wanaku-tool-service-exec/README.md)             | Executes a process as a tool (use carefully - there's no input validation)  |
-| `http`       | [wanaku-tool-service-http](./wanaku-tool-service-http/README.md)             | Provides access to HTTP endpoints as tools via Wanaku                       |
-| `kafka`      | [wanaku-tool-service-sqs](./wanaku-tool-service-sqs/README.md)               | Provides access to AWS SQS queues as tools via Wanaku                       |
+| `http`       | [wanaku-tool-service-http](./wanaku-tool-service-http/README.md)             | Provides access to HTTP endpoints as tools via Wanaku                       | | Provides access to AWS SQS queues as tools via Wanaku                       |
 | `tavily`     | [wanaku-tool-service-tavily](./wanaku-tool-service-tavily/README.md)         | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
 
 
