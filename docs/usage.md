@@ -193,215 +193,6 @@ executing `wanaku`.
 > It requires access to the internet, in case of using a proxy, please ensure that the proxy is configured for your system.
 > If Wanaku JBang is not working with your current configuration, please look to [Proxy configuration in JBang documentation](https://www.jbang.dev/documentation/jbang/latest/configuration.html#proxy-configuration).
 
-## CLI Authentication
-
-The Wanaku CLI supports authentication to securely interact with the Wanaku MCP Router API. Authentication credentials are stored locally and automatically included in API requests.
-
-### Authentication Modes
-
-The CLI currently supports the following authentication modes:
-
-- **token** (default): Use an API token for authentication via Bearer token
-
-### Authentication Commands
-
-#### Login
-
-Store authentication credentials for use with subsequent CLI commands:
-
-```shell
-wanaku auth login --api-token <your-api-token>
-```
-
-**Options:**
-- `--api-token <token>`: API token for authentication (required)
-- `--auth-server <url>`: Authentication server URL (optional)
-- `--mode <mode>`: Authentication mode - `token` or `oauth2` (default: `token`)
-
-**Example:**
-```shell
-wanaku auth login --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-With custom authentication server:
-```shell
-wanaku auth login \
-  --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... \
-  --auth-server https://keycloak.example.com \
-  --mode token
-```
-
-#### Status
-
-Check the current authentication status and view stored credentials:
-
-```shell
-wanaku auth status
-```
-
-This command displays:
-- Current authentication mode
-- Masked API token (showing first and last 4 characters)
-- Authentication server URL (if configured)
-- Masked refresh token (if available)
-- Credentials file location
-- Whether credentials are currently stored
-
-**Example output:**
-```
-Authentication Status:
-=====================
-Mode: token
-API Token: eyJh***VCJ9
-Auth Server: https://keycloak.example.com
-Credentials File: /Users/username/.wanaku/credentials
-Has Credentials: true
-```
-
-#### Logout
-
-Clear all stored authentication credentials:
-
-```shell
-wanaku auth logout
-```
-
-This command removes all authentication data from the local credentials file.
-
-#### Token Management
-
-Display the raw authentication token (useful for debugging or using with other tools):
-
-```shell
-wanaku auth token
-```
-
-This outputs the raw API token without masking.
-
-### Using Authentication with Commands
-
-Once authenticated via `wanaku auth login`, all subsequent CLI commands will automatically include the authentication token in their requests.
-
-#### Per-Command Token Override
-
-You can override the stored authentication token for a single command:
-
-```shell
-wanaku tools list --token <temporary-token>
-```
-
-#### Disabling Authentication
-
-To explicitly disable authentication for a command:
-
-```shell
-wanaku tools list --no-auth
-```
-
-### Credential Storage
-
-Authentication credentials are stored in:
-```
-~/.wanaku/credentials
-```
-
-This file is a Java properties file containing:
-- `api.token`: The API bearer token
-- `refresh.token`: OAuth2 refresh token (when applicable)
-- `auth.mode`: The authentication mode (token, oauth2, etc.)
-- `auth.server.url`: The authentication server URL
-
-> [!CAUTION]
-> The credentials file contains sensitive authentication tokens. Ensure proper file permissions are set to prevent unauthorized access.
-> On Unix-like systems, you should restrict access: `chmod 600 ~/.wanaku/credentials`
-
-### Authentication Flow
-
-The CLI authentication process works as follows:
-
-1. **Login**: User provides API token via `wanaku auth login --api-token <token>`
-2. **Storage**: Token is stored in `~/.wanaku/credentials`
-3. **Auto-Injection**: The CLI automatically reads the token and adds it as a Bearer token to the `Authorization` header for all API requests
-4. **Validation**: The Wanaku Router validates the token on each request
-5. **Logout**: User can clear credentials via `wanaku auth logout`
-
-### Troubleshooting Authentication
-
-#### Token Not Working
-
-If you receive authentication errors:
-
-1. Check token validity:
-   ```shell
-   wanaku auth status
-   ```
-
-2. Verify the token hasn't expired
-3. Ensure you're using the correct authentication server URL
-4. Try logging in again with a fresh token
-
-#### Clear and Reset
-
-To completely reset authentication:
-
-```shell
-wanaku auth logout
-wanaku auth login --api-token <new-token>
-```
-
-#### Manual Credential Management
-
-You can manually edit or remove the credentials file if needed:
-
-```shell
-# View credentials
-cat ~/.wanaku/credentials
-
-# Remove credentials manually
-rm ~/.wanaku/credentials
-```
-
-### Security Best Practices
-
-1. **Token Protection**: Never share your API tokens or commit them to version control
-2. **Regular Rotation**: Rotate tokens periodically for enhanced security
-3. **Use Environment Variables**: For CI/CD, consider using `--token` flag with environment variables instead of storing tokens
-4. **File Permissions**: Ensure credentials file has restricted permissions (600)
-5. **Logout When Done**: Use `wanaku auth logout` when finished working on shared systems
-
-### Example Workflows
-
-#### Basic Authentication Workflow
-
-```shell
-# Login with API token
-wanaku auth login --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# Verify authentication
-wanaku auth status
-
-# Use authenticated commands
-wanaku tools list
-wanaku resources list
-wanaku data-store list
-
-# Logout when done
-wanaku auth logout
-```
-
-#### CI/CD Usage
-
-For automated scripts, use token override instead of storing credentials:
-
-```shell
-# Use token from environment variable
-wanaku tools list --token $WANAKU_API_TOKEN
-
-# Or disable authentication for public endpoints
-wanaku tools list --no-auth
-```
-
-
 ## Installing and Running the Router
 
 There are three ways to run the router. They work similarly, with the distinction that some of them may come with more 
@@ -843,18 +634,6 @@ quarkus.oidc-client.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
 > - The client secret values shown here are examples from the default configuration - replace them with your actual Keycloak client secrets
 > - Ensure the auth-server-url points to your actual Keycloak instance
 
-## Troubleshooting Security Configuration
-
-Common issues when setting up authentication:
-
-- **Services fail to register**: Ensure capability services have valid OIDC client credentials
-- **UI access denied**: Verify user roles and permissions in Keycloak
-- **API authentication errors**: Check OIDC configuration and network connectivity
-
-> [!CAUTION]
-> This security implementation is experimental. For production deployments, thoroughly test the configuration and consider additional security measures such as network-level access controls.
-
-
 # Using the Wanaku MCP Router
 
 ## Protocol Support 
@@ -869,6 +648,215 @@ The Streamable HTTP endpoint can be accessed on the path `/mcp/`.
 > [!IMPORTANT]
 > Also make sure to check the details about namespaces, as Wanaku offers different namespaces where MCP Tools and MCP
 > Resources can be registered. This is documented further ahead in this guide.
+
+## CLI Authentication
+
+The Wanaku CLI supports authentication to securely interact with the Wanaku MCP Router API. Authentication credentials are stored locally and automatically included in API requests.
+
+### Authentication Modes
+
+The CLI currently supports the following authentication modes:
+
+- **token** (default): Use an API token for authentication via Bearer token
+- **username** and **password**
+
+### Authentication Commands
+
+#### Login
+
+Store authentication credentials for use with subsequent CLI commands:
+
+```shell
+wanaku auth login --api-token <your-api-token>
+```
+
+**Options:**
+- `--api-token <token>`: API token for authentication (required)
+- `--auth-server <url>`: Authentication server URL (optional)
+- `--mode <mode>`: Authentication mode - `token` or `oauth2` (default: `token`)
+
+**Example:**
+```shell
+wanaku auth login --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+With custom authentication server:
+```shell
+wanaku auth login \
+  --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... \
+  --auth-server https://keycloak.example.com \
+  --mode token
+```
+
+#### Status
+
+Check the current authentication status and view stored credentials:
+
+```shell
+wanaku auth status
+```
+
+This command displays:
+- Current authentication mode
+- Masked API token (showing first and last 4 characters)
+- Authentication server URL (if configured)
+- Masked refresh token (if available)
+- Credentials file location
+- Whether credentials are currently stored
+
+**Example output:**
+```
+Authentication Status:
+=====================
+Mode: token
+API Token: eyJh***VCJ9
+Auth Server: https://keycloak.example.com
+Credentials File: /Users/username/.wanaku/credentials
+Has Credentials: true
+```
+
+#### Logout
+
+Clear all stored authentication credentials:
+
+```shell
+wanaku auth logout
+```
+
+This command removes all authentication data from the local credentials file.
+
+#### Token Management
+
+Display the raw authentication token (useful for debugging or using with other tools):
+
+```shell
+wanaku auth token
+```
+
+This outputs the raw API token without masking.
+
+### Using Authentication with Commands
+
+Once authenticated via `wanaku auth login`, all subsequent CLI commands will automatically include the authentication token in their requests.
+
+#### Per-Command Token Override
+
+You can override the stored authentication token for a single command:
+
+```shell
+wanaku tools list --token <temporary-token>
+```
+
+#### Disabling Authentication
+
+To explicitly disable authentication for a command:
+
+```shell
+wanaku tools list --no-auth
+```
+
+### Credential Storage
+
+Authentication credentials are stored in:
+```
+~/.wanaku/credentials
+```
+
+This file is a Java properties file containing:
+- `api.token`: The API bearer token
+- `refresh.token`: OAuth2 refresh token (when applicable)
+- `auth.mode`: The authentication mode (token, oauth2, etc.)
+- `auth.server.url`: The authentication server URL
+
+> [!CAUTION]
+> The credentials file contains sensitive authentication tokens. Ensure proper file permissions are set to prevent unauthorized access.
+> On Unix-like systems, you should restrict access: `chmod 600 ~/.wanaku/credentials`
+
+### Authentication Flow
+
+The CLI authentication process works as follows:
+
+1. **Login**: User provides API token via `wanaku auth login --api-token <token>`
+2. **Storage**: Token is stored in `~/.wanaku/credentials`
+3. **Auto-Injection**: The CLI automatically reads the token and adds it as a Bearer token to the `Authorization` header for all API requests
+4. **Validation**: The Wanaku Router validates the token on each request
+5. **Logout**: User can clear credentials via `wanaku auth logout`
+
+### Troubleshooting Authentication
+
+#### Token Not Working
+
+If you receive authentication errors:
+
+1. Check token validity:
+   ```shell
+   wanaku auth status
+   ```
+
+2. Verify the token hasn't expired
+3. Ensure you're using the correct authentication server URL
+4. Try logging in again with a fresh token
+
+#### Clear and Reset
+
+To completely reset authentication:
+
+```shell
+wanaku auth logout
+wanaku auth login --api-token <new-token>
+```
+
+#### Manual Credential Management
+
+You can manually edit or remove the credentials file if needed:
+
+```shell
+# View credentials
+cat ~/.wanaku/credentials
+
+# Remove credentials manually
+rm ~/.wanaku/credentials
+```
+
+### Security Best Practices
+
+1. **Token Protection**: Never share your API tokens or commit them to version control
+2. **Regular Rotation**: Rotate tokens periodically for enhanced security
+3. **Use Environment Variables**: For CI/CD, consider using `--token` flag with environment variables instead of storing tokens
+4. **File Permissions**: Ensure credentials file has restricted permissions (600)
+5. **Logout When Done**: Use `wanaku auth logout` when finished working on shared systems
+
+### Example Workflows
+
+#### Basic Authentication Workflow
+
+```shell
+# Login with API token
+wanaku auth login --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Verify authentication
+wanaku auth status
+
+# Use authenticated commands
+wanaku tools list
+wanaku resources list
+wanaku data-store list
+
+# Logout when done
+wanaku auth logout
+```
+
+#### CI/CD Usage
+
+For automated scripts, use token override instead of storing credentials:
+
+```shell
+# Use token from environment variable
+wanaku tools list --token $WANAKU_API_TOKEN
+
+# Or disable authentication for public endpoints
+wanaku tools list --no-auth
+```
 
 ## Understanding Capabilities
 
