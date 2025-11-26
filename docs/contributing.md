@@ -42,7 +42,7 @@ For special cases, you can use the Wanaku CLI to create the project templates fo
 the Wanaku SDK.
 
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > The vast majority of the custom capabilities should be included in the [Wanaku Examples](https://github.com/wanaku-ai/wanaku-examples)
 > repository and not to the main Wanaku MCP Router project.
 

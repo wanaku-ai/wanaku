@@ -633,7 +633,7 @@ The basic steps to install and run Wanaku on OpenShift are:
 2. Copy the files from the [`dev`](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize/overlays/dev) directory and use them to create a new overlay (i.e.: `prod`) 
 3. Adjust the kustomize files according to your environment. 
 
-> [TIP]
+> [!TIP]
 > You may also consult [developer-specific documentation](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/kustomize/CONFIGMAP-USAGE.md)
 > if you need special customizations to your deployment.
 
@@ -646,12 +646,14 @@ You can find a comprehensive list of configuration options for Wanaku in the [Co
 Wanaku also comes with a web user interface that you can access to manage the router. By default it runs on port 8080 of
 the host running the router. 
 
-> [NOTE] At this moment, some features are only available on the CLI.
+> [!NOTE]
+> At this moment, some features are only available on the CLI.
 
 When accessing the Web UI for the first time, you will be redirected to the Keycloak instance for login. Create a user
 and define a password. 
 
-> [IMPORTANT] Wanaku does not yet support fine-grained control over its exposed resources. All users have admin access to the 
+> [!IMPORTANT]
+> Wanaku does not yet support fine-grained control over its exposed resources. All users have admin access to the
 > tools and resources exposed. Expect this to change in future versions.
 
 ## Installing and Running Capabilities
@@ -685,7 +687,7 @@ Here are the key properties you need to set:
     wanaku.service.registration.announce-address=your-public-address
     ```
 
-> [TIP]
+> [!TIP]
 > You can check the full set of [configuration](configurations.md) available.
 
 ### Running a Capability
@@ -862,10 +864,10 @@ Wanaku supports MCP via SSE (deprecated) or via Streamable HTTP.
 the MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
 locally, that would mean `http://localhost:8080/mcp/sse`). 
 
-The Streamable HTTP endpoint can be accessed on the path `/mcp/`. 
+The Streamable HTTP endpoint can be accessed on the path `/mcp/`.
 
-> [IMPORTANT]
-> Also make sure to check the details about namespaces, as Wanaku offers different namespaces where MCP Tools and MCP 
+> [!IMPORTANT]
+> Also make sure to check the details about namespaces, as Wanaku offers different namespaces where MCP Tools and MCP
 > Resources can be registered. This is documented further ahead in this guide.
 
 ## Understanding Capabilities
@@ -2069,7 +2071,7 @@ a3dfaaf6-3655-4bcc-8c48-3d183b6d675b        http://localhost:8080/ns-8/mcp/sse
 
 In this output, you can see the mapping of internal namespace IDs to their corresponding ns-X paths.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > For Streamable HTTP, remove the `/sse` from the path (i.e.: `http://localhost:8080/ns-1/mcp/`).
 
 ### The Default Namespace

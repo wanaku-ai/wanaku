@@ -21,7 +21,7 @@ The release build can take up to 30 minutes to complete. This will:
 1. Validate the artifacts 
 2. Publish the files to the Maven Central.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > It is **absolutely mandatory** for the artifacts to be validated for the release to proceed.
 
 After the upload is complete, go to [Maven Central](https://central.sonatype.com/publishing/deployments) and publish the deployment.
@@ -60,7 +60,7 @@ Make sure you have your GPG keys installed. You can check with the following com
 gpg --list-public-keys --keyid-format LONG
 ```
 
-> [NOTE]
+> [!NOTE]
 > Make sure the configuration file is stored securely and not accessible by others. 
 
 ## Before start 
@@ -73,12 +73,12 @@ export CURRENT_DEVELOPMENT_VERSION=0.0.8
 export NEXT_DEVELOPMENT_VERSION=0.0.9
 ```
 
-> [NOTE]
+> [!NOTE]
 > There is no need to add `-SNAPSHOT` to the versions.
 
 ### Pre-Release Checks / Dry Run 
 
-> [NOTE]
+> [!NOTE]
 > The steps assume you are primarily building on macOS, with a secondary step on a x86-64 Linux machine.
 
 Build the project
@@ -122,7 +122,7 @@ Commit the auto-generated UI files and the other version-specific files:
 mvn -PcommitFiles scm:checkin
 ```
 
-> [NOTE]:
+> [!NOTE]
 > Do not perform any other manual commit nor push the code. If necessary, append to the UI commit.
 
 Erase the tag created incorrectly by Maven
@@ -208,5 +208,5 @@ This process is automated, but if there is a need to run it manually, then it ca
 mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true clean package
 ```
 
-> [NOTE]:
+> [!NOTE]
 > You must be logged in in Quay.io with the Podman (preferred) or Docker CLI.

@@ -5,14 +5,14 @@ This document provides a comprehensive overview of the configuration options for
 Described here are both Wanaku-specific configurations, prefixed with `wanaku`, and relevant [Quarkus-specific](https://quarkus.io/guides/all-config) 
 configurations, prefixed with `quarkus`.
 
-> [NOTE]
-> Quarkus is the ultimate source for their descriptions. In case the description here conflicts with the ones from 
+> [!NOTE]
+> Quarkus is the ultimate source for their descriptions. In case the description here conflicts with the ones from
 > Quarkus, please consider the ones from them as being the actual correct value.
 
 Properties are typically stored in `application.properties` files within each module and can be set in runtime using 
 `-D<property.name>=<value>` or by exporting equivalent environment variables (i.e.: `PROPERTY_NAME=<value>`).
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > Some of the settings can only be set at build time. 
 
 ## 1. Router Backend
@@ -143,3 +143,79 @@ Quarkus uses profiles to manage environment-specific configurations. You will se
 
 -   **`%dev`**: Used when running in development mode (`quarkus dev`).
 -   **`%test`**: Used when running automated tests.
+-   **`%prod`**: Used for production deployments (default when no profile is specified).
+
+### Environment Variables
+
+Most properties can be set via environment variables by converting the property name:
+
+1. Convert to uppercase
+2. Replace dots (`.`) with underscores (`_`)
+3. Replace hyphens (`-`) with underscores (`_`)
+
+**Example:**
+
+```properties
+quarkus.http.port=8080
+```
+
+Becomes:
+
+```shell
+QUARKUS_HTTP_PORT=8080
+```
+
+## Configuration Examples
+
+### Example: Router Backend with Custom OIDC
+
+```properties
+# application.properties for router backend
+quarkus.http.port=8080
+quarkus.http.cors.enabled=true
+quarkus.http.cors.origins=http://localhost:3000,https://my-frontend.example.com
+
+auth.server=https://keycloak.example.com
+auth.proxy=https://wanaku.example.com
+
+quarkus.oidc.client-id=wanaku-mcp-router
+quarkus.oidc.application-type=hybrid
+quarkus.oidc.tls.verification=required
+
+wanaku.persistence.infinispan.base-folder=/var/lib/wanaku/data
+wanaku.infinispan.max-state-count=20
+```
+
+### Example: Tool Service with Custom Registration
+
+```properties
+# application.properties for a tool service
+quarkus.http.host-enabled=false
+quarkus.grpc.server.host=0.0.0.0
+quarkus.grpc.server.port=9010
+
+wanaku.service.name=my-custom-tool
+wanaku.service.base-uri=custom://
+
+wanaku.service.registration.enabled=true
+wanaku.service.registration.uri=http://wanaku-router:8080
+wanaku.service.registration.interval=15s
+wanaku.service.registration.announce-address=my-custom-tool.example.com:9010
+
+quarkus.oidc-client.auth-server-url=https://keycloak.example.com/realms/wanaku
+quarkus.oidc-client.client-id=wanaku-service
+quarkus.oidc-client.credentials.secret=${WANAKU_SERVICE_SECRET}
+```
+
+### Example: CLI Configuration
+
+```properties
+# ~/.wanaku/cli.properties
+wanaku.cli.default-services=http,exec,tavily
+```
+
+## Additional Resources
+
+- [Quarkus Configuration Guide](https://quarkus.io/guides/config) - Comprehensive Quarkus configuration documentation
+- [Keycloak Documentation](https://www.keycloak.org/documentation) - OIDC and authentication setup
+- [Infinispan Configuration](https://infinispan.org/docs/stable/titles/configuring/configuring.html) - Persistence layer configuration

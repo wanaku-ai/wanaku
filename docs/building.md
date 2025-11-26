@@ -19,7 +19,7 @@ mvn clean package
 
 This command will compile the source code and package it.
 
-To package it into a distributable formats (i.e.: tarballs), run: 
+To package it into a distributable format (i.e.: tarballs), run: 
 
 ```shell
 mvn -Pdist clean package
