@@ -1703,6 +1703,106 @@ wanaku resources remove -e 'year=2022' -y
 > [!WARNING]
 > Resource removal operations cannot be undone. Always review the preview table before confirming removal.
 
+## Managing Shared Data
+
+Wanaku provides a data store feature that allows you to share static data between Wanaku and its capabilities. 
+
+This is particularly useful for storing configuration files, route definitions, and other static resources that capabilities need to access at runtime.
+
+A primary use case for the data store is storing Apache Camel routes and associated files for the Camel Integration Capability. 
+
+By storing route definitions in the data store, you can dynamically configure integrations without rebuilding or redeploying capabilities.
+
+> [!IMPORTANT]
+> Authentication is required to access the data store API. 
+> Make sure you're logged in using `wanaku auth login` before using data store commands.
+
+### Adding Data to the Data Store
+
+The `wanaku data-store add` command allows you to upload files to the data store. 
+Files are automatically Base64 encoded when stored.
+
+```shell
+wanaku data-store add --read-from-file /path/to/file.yaml
+```
+
+By default, the data store entry will be named after the filename. You can specify a custom name using the `--name` option:
+
+```shell
+wanaku data-store add --read-from-file /path/to/employee-routes.camel.yaml --name employee-routes
+```
+
+In this example:
+* `--read-from-file`: Specifies the local file path to upload
+* `--name`: (Optional) Assigns a custom name to the stored data
+
+The file contents are automatically Base64 encoded before being sent to the server, ensuring binary-safe storage.
+
+### Listing Stored Data
+
+View all data currently stored in the data store:
+
+```shell
+wanaku data-store list
+```
+
+This displays a table showing:
+- **ID**: Unique identifier for each stored item
+- **Name**: The name of the stored data
+- **Data**: A preview of the stored content (truncated to 50 characters)
+- **Labels**: Labels associated with the data store entry
+
+You can filter the list using label expressions:
+
+```shell
+# Filter by label expression
+wanaku data-store list -e 'category=routes'
+```
+
+See the label expression guide (`wanaku man label-expression`) for detailed syntax information.
+
+### Managing Labels on Data Stores
+
+Data stores support labels for organization and filtering, similar to tools and resources.
+
+**Adding labels to a data store:**
+
+```shell
+# Add labels to a specific data store by ID
+wanaku data-store label add --id <data-store-id> --label category=routes --label env=production
+
+# Add labels to multiple data stores using label expressions
+wanaku data-store label add -e 'category=config' --label migrated=true
+```
+
+**Removing labels from a data store:**
+
+```shell
+# Remove labels from a specific data store by ID
+wanaku data-store label remove --id <data-store-id> --label temporary --label draft
+
+# Remove labels from multiple data stores using label expressions
+wanaku data-store label remove -e 'status=deprecated' --label legacy
+```
+
+When adding a label with a key that already exists, the value will be updated. When removing a non-existent label, it will be silently ignored.
+
+### Removing Data from the Data Store
+
+Remove stored data using either the ID or name:
+
+```shell
+# Remove by ID
+wanaku data-store remove --id <data-store-id>
+
+# Remove by name
+wanaku data-store remove --name employee-routes
+```
+
+> [!NOTE]
+> The data store is also accessible via the REST API at `/api/v1/data-store` and through the Wanaku web interface under the Data Stores page,
+> where you can upload, download, and manage stored data using a graphical interface.
+
 ## Managing Capabilities
 
 Configurations in Wanaku have two distinct scopes:
