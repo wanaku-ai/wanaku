@@ -7,7 +7,7 @@ framework for integrating with various servers and tools. Wanaku doesn't directl
 it acts as a central hub that manages and governs how agents access specific resources. Different types of tools and 
 resources can be provided by Wanaku, as long as a capability service is linked with the router.
 
-![Wanaku Architecture](imgs/wanaku-architecture.jpg)
+![Diagram showing Wanaku's layered architecture with LLM client connecting to router backend, which communicates via gRPC with tool services and resource providers](imgs/wanaku-architecture.jpg)
 
 > [!NOTE]
 > For detailed information about the router's internal implementation, see [Wanaku Router Internals](wanaku-router-internals.md).
