@@ -20,6 +20,9 @@ features:
   - title: Architecture
     details: Learn about Wanaku system architecture
     link: ./docs/architecture
+  - title: Configuration Guide
+    details: A list of all configuration parameters for Wanaku
+    link: ./docs/configurations
   - title: Building
     details: Learn how to build and package this capability
     link: ./docs/building
