@@ -11,7 +11,7 @@ There are two ConfigMaps used in this deployment:
 
 ## Secrets
 
-There are one secrets used for sensitive credentials (mostly by the services):
+There is one secret used for sensitive credentials (mostly by the services):
 
 1. **`wanaku-service-credentials`** - For tool services OIDC credentials
 

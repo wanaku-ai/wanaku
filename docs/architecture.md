@@ -9,7 +9,7 @@ resources can be provided by Wanaku, as long as a capability service is linked w
 
 ![Wanaku Architecture](imgs/wanaku-architecture.jpg)
 
-> [NOTE]
+> [!NOTE]
 > For detailed information about the router's internal implementation, see [Wanaku Router Internals](wanaku-router-internals.md).
 
 ## Components
