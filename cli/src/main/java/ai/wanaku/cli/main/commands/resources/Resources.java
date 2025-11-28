@@ -25,7 +25,13 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "resources",
         description = "Manage resources",
-        subcommands = {ResourcesExpose.class, ResourcesRemove.class, ResourcesList.class, ResourcesLabel.class})
+        subcommands = {
+            ResourcesExpose.class,
+            ResourcesRemove.class,
+            ResourcesList.class,
+            ResourcesShow.class,
+            ResourcesLabel.class
+        })
 public class Resources extends BaseCommand {
 
     @Override

@@ -31,6 +31,7 @@ import picocli.CommandLine;
             ToolsAdd.class,
             ToolsRemove.class,
             ToolsList.class,
+            ToolsShow.class,
             ToolsImport.class,
             ToolsGenerate.class,
             ToolsLabel.class
