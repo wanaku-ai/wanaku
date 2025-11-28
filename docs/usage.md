@@ -1107,7 +1107,7 @@ The selected tool's JSON definition will then open in nano for you to make your 
 
 Any available tool is listed by default when you access the UI.
 
-When using the CLI, the `wanaku tools list` command allows you to view all available tools on your Wanaku MCP Router instance. 
+When using the CLI, the `wanaku tools list` command allows you to view all available tools on your Wanaku MCP Router instance.
 
 Running this command will display a comprehensive list of tools, including their names and descriptions.
 
@@ -1121,6 +1121,47 @@ For example, you should receive an output similar to this.
 Name               Type               URI
 meow-facts      => http            => https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}
 dog-facts       => http            => https://dogapi.dog/api/v2/facts?limit={parameter.valueOrElse('count', 1)}
+```
+
+### Showing Tool Details
+
+The `wanaku tools show` command displays detailed information about a specific tool registered in the Wanaku MCP Router.
+
+```shell
+wanaku tools show <tool-name>
+```
+
+This command retrieves comprehensive details including the tool's name, namespace, type, description, URI, labels, and input schema properties.
+
+**Example:**
+
+```shell
+wanaku tools show meow-facts
+```
+
+**Sample Output:**
+
+```
+Tool Details:
+name        meow-facts
+namespace   default
+type        http
+description Retrieve random facts about cats
+uri         https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}
+labels      category=animals
+
+Input Schema Properties:
+name   type   description                    required
+count  int    The count of facts to retrieve yes
+```
+
+**Options:**
+- `--host <url>`: The API host URL (default: `http://localhost:8080`)
+
+**Example with remote host:**
+
+```shell
+wanaku tools show --host http://api.example.com:8080 meow-facts
 ```
 
 ### Removing Tools
@@ -1424,6 +1465,49 @@ Executing this command will display a list of available resources, including the
 
 ```shell
 wanaku resources list
+```
+
+### Showing Resource Details
+
+The `wanaku resources show` command displays detailed information about a specific resource registered in the Wanaku MCP Router.
+
+```shell
+wanaku resources show <resource-name>
+```
+
+This command retrieves comprehensive details including the resource's name, type, description, location, MIME type, namespace, labels, and parameters.
+
+**Example:**
+
+```shell
+wanaku resources show q4-report
+```
+
+**Sample Output:**
+
+```
+Resource Details:
+name        q4-report
+type        file
+description Q4 Financial Report
+location    /home/user/documents/report.pdf
+mimeType    application/pdf
+namespace   default
+labels      category=finance, year=2024
+
+Parameters:
+name   value
+key1   value1
+key2   value2
+```
+
+**Options:**
+- `--host <url>`: The API host URL (default: `http://localhost:8080`)
+
+**Example with remote host:**
+
+```shell
+wanaku resources show --host http://api.example.com:8080 q4-report
 ```
 
 ## Managing MCP Prompts
