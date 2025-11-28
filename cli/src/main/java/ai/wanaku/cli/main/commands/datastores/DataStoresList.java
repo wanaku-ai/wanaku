@@ -7,6 +7,7 @@ import ai.wanaku.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -98,6 +99,7 @@ Note: If omitted, all data stores are listed. Label matching is case-sensitive.
     /**
      * Display class for table printing.
      */
+    @RegisterForReflection
     public static class DataStoreDisplay {
         private String id;
         private String name;
