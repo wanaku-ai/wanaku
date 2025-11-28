@@ -7,7 +7,7 @@
 
 syntax = "proto3";
 
-package ai.wanaku.api.types.providers;
+package ai.wanaku.capabilities.sdk.api.types.providers;
 
 import "service_type.proto";
 

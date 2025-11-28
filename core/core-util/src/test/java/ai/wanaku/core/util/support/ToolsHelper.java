@@ -1,8 +1,8 @@
 package ai.wanaku.core.util.support;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.Property;
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

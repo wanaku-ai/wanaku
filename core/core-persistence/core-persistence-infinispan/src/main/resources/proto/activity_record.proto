@@ -1,5 +1,5 @@
 syntax = "proto3";
-package ai.wanaku.api.types.discovery;
+package ai.wanaku.capabilities.sdk.api.types.discovery;
 
 import "service_state.proto";
 

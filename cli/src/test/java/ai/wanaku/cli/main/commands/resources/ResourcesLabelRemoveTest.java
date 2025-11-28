@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ResourcesService;
 import jakarta.ws.rs.core.Response;
 import java.util.*;

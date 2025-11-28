@@ -1,8 +1,8 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.WanakuEntity;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;

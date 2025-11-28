@@ -1,8 +1,8 @@
 package ai.wanaku.backend.api.v1.namespaces;
 
-import ai.wanaku.api.exceptions.NamespaceNotFoundException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.NamespaceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;

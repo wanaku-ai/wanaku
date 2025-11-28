@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import java.util.List;
 
 /**

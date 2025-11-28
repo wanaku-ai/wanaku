@@ -14,6 +14,6 @@
  *   <li>{@link ai.wanaku.core.services.api.CapabilitiesService} - Capability discovery and monitoring endpoints ({@code /api/v1/capabilities})</li>
  * </ul>
  *
- * @see ai.wanaku.api.types
+ * @see ai.wanaku.capabilities.sdk.api.types
  */
 package ai.wanaku.core.services.api;

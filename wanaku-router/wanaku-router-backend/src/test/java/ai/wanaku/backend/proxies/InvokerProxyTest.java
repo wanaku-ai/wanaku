@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.Property;
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import io.quarkiverse.mcp.server.ToolManager;
 import java.util.HashMap;
 import java.util.Map;

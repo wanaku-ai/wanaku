@@ -3,11 +3,11 @@ package ai.wanaku.backend.api.v1.tools;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.util.support.ToolsHelper;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;

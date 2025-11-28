@@ -1,8 +1,8 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;

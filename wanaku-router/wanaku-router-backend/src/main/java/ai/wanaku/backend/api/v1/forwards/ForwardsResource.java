@@ -1,8 +1,8 @@
 package ai.wanaku.backend.api.v1.forwards;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;

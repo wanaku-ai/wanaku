@@ -1,9 +1,9 @@
 package ai.wanaku.backend.api.v1.datastores;
 
-import ai.wanaku.api.exceptions.DataStoreResourceNotFoundException;
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.DataStore;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;

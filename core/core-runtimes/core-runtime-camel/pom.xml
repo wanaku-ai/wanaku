@@ -48,9 +48,9 @@
         </dependency>
 
         <dependency>
-            <groupId>ai.wanaku</groupId>
-            <artifactId>core-config-provider-file</artifactId>
-            <version>${project.version}</version>
+            <groupId>ai.wanaku.sdk</groupId>
+            <artifactId>capabilities-config-provider-file</artifactId>
+            <version>${wanaku-capabilities-sdk.version}</version>
             <scope>test</scope>
         </dependency>
 

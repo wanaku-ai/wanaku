@@ -1,7 +1,7 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;

@@ -1,8 +1,8 @@
 package ai.wanaku.backend.proxies;
 
-import ai.wanaku.api.exceptions.ServiceUnavailableException;
-import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.exchange.ProvisionReply;

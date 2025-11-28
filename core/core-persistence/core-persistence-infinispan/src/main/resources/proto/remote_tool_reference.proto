@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ai.wanaku.api.types;
+package ai.wanaku.capabilities.sdk.api.types;
 import "input_schema.proto";
 
 // This message represents a reference to a tool with various attributes.

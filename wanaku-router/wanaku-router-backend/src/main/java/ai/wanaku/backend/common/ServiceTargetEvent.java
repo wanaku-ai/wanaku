@@ -1,7 +1,7 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 public class ServiceTargetEvent {
     private EventType eventType;

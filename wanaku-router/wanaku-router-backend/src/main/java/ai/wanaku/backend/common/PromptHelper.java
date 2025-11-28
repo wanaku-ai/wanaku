@@ -1,10 +1,10 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.api.types.AudioContent;
-import ai.wanaku.api.types.ImageContent;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.PromptReference;
-import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.AudioContent;
+import ai.wanaku.capabilities.sdk.api.types.ImageContent;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import io.quarkiverse.mcp.server.EmbeddedResource;
 import io.quarkiverse.mcp.server.PromptManager;
 import io.quarkiverse.mcp.server.PromptMessage;
@@ -98,7 +98,7 @@ public final class PromptHelper {
         // Convert to MCP format
         List<PromptMessage> mcpMessages = new ArrayList<>();
         if (expanded.getMessages() != null) {
-            for (ai.wanaku.api.types.PromptMessage message : expanded.getMessages()) {
+            for (ai.wanaku.capabilities.sdk.api.types.PromptMessage message : expanded.getMessages()) {
                 mcpMessages.add(convertMessage(message));
             }
         }
@@ -110,13 +110,13 @@ public final class PromptHelper {
      * Converts a Wanaku PromptMessage to MCP PromptMessage format.
      * Supports all MCP content types: text, image, audio, and embedded resources.
      */
-    private static PromptMessage convertMessage(ai.wanaku.api.types.PromptMessage message) {
+    private static PromptMessage convertMessage(ai.wanaku.capabilities.sdk.api.types.PromptMessage message) {
         String role = message.getRole();
         Object content = message.getContent();
 
         io.quarkiverse.mcp.server.Content mcpContent;
 
-        if (content instanceof ai.wanaku.api.types.TextContent textContent) {
+        if (content instanceof ai.wanaku.capabilities.sdk.api.types.TextContent textContent) {
             // Text content
             mcpContent = new TextContent(textContent.getText());
         } else if (content instanceof ImageContent imageContent) {
@@ -125,7 +125,7 @@ public final class PromptHelper {
         } else if (content instanceof AudioContent audioContent) {
             // Audio content (base64 encoded data)
             mcpContent = new io.quarkiverse.mcp.server.AudioContent(audioContent.getData(), audioContent.getMimeType());
-        } else if (content instanceof ai.wanaku.api.types.EmbeddedResource embeddedResource) {
+        } else if (content instanceof ai.wanaku.capabilities.sdk.api.types.EmbeddedResource embeddedResource) {
             // Embedded resource
             ResourceReference resource = embeddedResource.getResource();
 

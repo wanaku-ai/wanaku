@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import java.io.IOException;
 import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;

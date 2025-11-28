@@ -2,7 +2,7 @@ package ai.wanaku.core.mcp.util;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.wanaku.api.types.LabelsAwareEntity;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 

@@ -1,11 +1,11 @@
 package ai.wanaku.core.mcp.common.resolvers.util;
 
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.types.CallableReference;
-import ai.wanaku.api.types.RemoteToolReference;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
+import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import io.quarkiverse.mcp.server.ResourceContents;

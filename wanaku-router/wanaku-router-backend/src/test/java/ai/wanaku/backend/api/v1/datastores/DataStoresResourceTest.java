@@ -5,9 +5,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-import ai.wanaku.api.types.DataStore;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;

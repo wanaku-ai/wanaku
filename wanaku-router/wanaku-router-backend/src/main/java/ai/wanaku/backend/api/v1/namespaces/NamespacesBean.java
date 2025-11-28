@@ -1,6 +1,6 @@
 package ai.wanaku.backend.api.v1.namespaces;
 
-import ai.wanaku.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;

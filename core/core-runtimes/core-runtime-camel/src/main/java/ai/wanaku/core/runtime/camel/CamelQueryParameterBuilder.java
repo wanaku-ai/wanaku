@@ -1,7 +1,7 @@
 package ai.wanaku.core.runtime.camel;
 
-import ai.wanaku.core.config.provider.api.ConfigResource;
-import ai.wanaku.core.config.provider.api.ReservedConfigs;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.api.ReservedConfigs;
 import java.util.HashMap;
 import java.util.Map;
 

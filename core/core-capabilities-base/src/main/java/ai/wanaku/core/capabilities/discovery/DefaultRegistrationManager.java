@@ -2,16 +2,16 @@ package ai.wanaku.core.capabilities.discovery;
 
 import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
 
-import ai.wanaku.api.discovery.DiscoveryCallback;
-import ai.wanaku.api.discovery.RegistrationManager;
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.discovery.DiscoveryCallback;
+import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.data.files.InstanceDataManager;
+import ai.wanaku.capabilities.sdk.data.files.ServiceEntry;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.capabilities.io.InstanceDataManager;
-import ai.wanaku.core.capabilities.io.ServiceEntry;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ai.wanaku.api.types;
+package ai.wanaku.capabilities.sdk.api.types;
 
 // This message represents a namespace
 message Namespace {

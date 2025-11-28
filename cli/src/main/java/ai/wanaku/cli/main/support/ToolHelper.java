@@ -2,8 +2,8 @@ package ai.wanaku.cli.main.support;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ToolsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;

@@ -1,6 +1,6 @@
 package ai.wanaku.core.util;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;

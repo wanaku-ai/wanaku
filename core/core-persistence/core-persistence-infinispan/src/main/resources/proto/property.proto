@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package ai.wanaku.api.types;
+package ai.wanaku.capabilities.sdk.api.types;
 
 message Property {
   string type = 1;

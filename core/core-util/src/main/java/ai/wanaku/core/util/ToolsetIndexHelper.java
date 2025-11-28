@@ -1,6 +1,6 @@
 package ai.wanaku.core.util;
 
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;

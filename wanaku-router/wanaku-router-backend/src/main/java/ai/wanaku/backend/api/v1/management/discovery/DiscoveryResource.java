@@ -1,9 +1,9 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.common.ServiceTargetEvent;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
