@@ -1,7 +1,7 @@
 package ai.wanaku.backend.api.v1.management.info;
 
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.management.ServerInfo;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.management.ServerInfo;
 import ai.wanaku.core.util.VersionHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;

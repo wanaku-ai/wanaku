@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

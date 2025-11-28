@@ -2,7 +2,7 @@ package ai.wanaku.core.persistence.infinispan;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.wanaku.api.types.DataStore;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.persistence.api.DataStoreRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

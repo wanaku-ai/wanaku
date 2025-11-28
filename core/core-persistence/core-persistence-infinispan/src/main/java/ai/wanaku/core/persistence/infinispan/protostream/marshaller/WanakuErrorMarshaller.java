@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.WanakuError;
+import ai.wanaku.capabilities.sdk.api.types.WanakuError;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
 

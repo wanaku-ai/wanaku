@@ -1,7 +1,7 @@
 package ai.wanaku.backend.proxies;
 
-import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.Tool;
 
 /**

@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import java.util.List;
 
 /**

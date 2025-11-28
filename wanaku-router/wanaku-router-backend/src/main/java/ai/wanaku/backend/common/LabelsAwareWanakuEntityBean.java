@@ -1,7 +1,7 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.LabelsAwareEntity;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import ai.wanaku.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.core.persistence.api.LabelAwareInfinispanRepository;
 

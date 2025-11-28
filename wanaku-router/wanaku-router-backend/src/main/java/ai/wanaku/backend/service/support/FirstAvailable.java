@@ -1,7 +1,7 @@
 package ai.wanaku.backend.service.support;
 
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import java.util.List;
 

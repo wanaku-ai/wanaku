@@ -1,8 +1,8 @@
 package ai.wanaku.core.capabilities.common;
 
-import static ai.wanaku.core.config.provider.api.ReservedConfigs.CONFIG_QUERY_PARAMETERS_PREFIX;
+import static ai.wanaku.capabilities.sdk.config.provider.api.ReservedConfigs.CONFIG_QUERY_PARAMETERS_PREFIX;
 
-import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.uri.Parameter;
 import ai.wanaku.core.uri.URIHelper;

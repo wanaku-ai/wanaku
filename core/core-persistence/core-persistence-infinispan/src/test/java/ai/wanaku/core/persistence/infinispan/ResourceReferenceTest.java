@@ -2,7 +2,7 @@ package ai.wanaku.core.persistence.infinispan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

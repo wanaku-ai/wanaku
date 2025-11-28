@@ -1,9 +1,9 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import java.time.Instant;
 import java.util.List;

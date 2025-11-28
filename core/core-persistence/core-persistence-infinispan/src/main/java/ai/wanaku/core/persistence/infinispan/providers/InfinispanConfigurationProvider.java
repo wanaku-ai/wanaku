@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.providers;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import jakarta.enterprise.inject.Produces;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -1,13 +1,13 @@
 package ai.wanaku.backend.proxies;
 
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.exceptions.ServiceUnavailableException;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.io.ResourcePayload;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
 import ai.wanaku.core.exchange.ResourceAcquirerGrpc;

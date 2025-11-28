@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.api.types.DataStore;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import java.util.List;
 
 /**

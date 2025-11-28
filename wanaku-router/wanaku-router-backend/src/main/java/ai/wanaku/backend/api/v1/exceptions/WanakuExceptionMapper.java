@@ -1,7 +1,7 @@
 package ai.wanaku.backend.api.v1.exceptions;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;

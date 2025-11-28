@@ -1,13 +1,13 @@
 package ai.wanaku.core.capabilities.common;
 
-import ai.wanaku.core.config.provider.api.ConfigResource;
-import ai.wanaku.core.config.provider.api.ConfigStore;
-import ai.wanaku.core.config.provider.api.DefaultConfigResource;
-import ai.wanaku.core.config.provider.api.NoopConfigStore;
-import ai.wanaku.core.config.provider.api.NoopSecretStore;
-import ai.wanaku.core.config.provider.api.SecretStore;
-import ai.wanaku.core.config.provider.file.ConfigFileStore;
-import ai.wanaku.core.config.provider.file.SecretFileStore;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigStore;
+import ai.wanaku.capabilities.sdk.config.provider.api.DefaultConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.api.NoopConfigStore;
+import ai.wanaku.capabilities.sdk.config.provider.api.NoopSecretStore;
+import ai.wanaku.capabilities.sdk.config.provider.api.SecretStore;
+import ai.wanaku.capabilities.sdk.config.provider.file.ConfigFileStore;
+import ai.wanaku.capabilities.sdk.config.provider.file.SecretFileStore;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.util.StringHelper;

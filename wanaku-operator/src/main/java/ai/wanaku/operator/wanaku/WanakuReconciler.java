@@ -10,7 +10,7 @@ import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.util.OperatorUtil;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;

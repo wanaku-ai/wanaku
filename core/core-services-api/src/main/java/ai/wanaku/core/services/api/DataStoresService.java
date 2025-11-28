@@ -1,8 +1,8 @@
 package ai.wanaku.core.services.api;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.DataStore;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;

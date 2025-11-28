@@ -3,7 +3,7 @@ package ${package};
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import ai.wanaku.core.config.provider.api.ConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;

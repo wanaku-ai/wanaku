@@ -1,6 +1,6 @@
 package ai.wanaku.cli.main.support.security;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
 /**
  * Exception thrown when service authentication fails in the Wanaku capabilities SDK.

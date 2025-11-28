@@ -3,10 +3,10 @@ package ai.wanaku.core.persistence.infinispan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import ai.wanaku.api.types.PromptMessage;
-import ai.wanaku.api.types.PromptReference;
-import ai.wanaku.api.types.PromptReference.PromptArgument;
-import ai.wanaku.api.types.TextContent;
+import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
+import ai.wanaku.capabilities.sdk.api.types.TextContent;
 import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

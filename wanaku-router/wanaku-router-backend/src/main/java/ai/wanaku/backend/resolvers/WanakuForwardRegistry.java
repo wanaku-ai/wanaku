@@ -1,7 +1,7 @@
 package ai.wanaku.backend.resolvers;
 
-import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.NameNamespacePair;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
 import java.util.Map;

@@ -2,16 +2,16 @@ package ai.wanaku.cli.main.commands.prompts;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
-import ai.wanaku.api.types.AudioContent;
-import ai.wanaku.api.types.EmbeddedResource;
-import ai.wanaku.api.types.ImageContent;
-import ai.wanaku.api.types.PromptMessage;
-import ai.wanaku.api.types.PromptReference;
-import ai.wanaku.api.types.PromptReference.PromptArgument;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.TextContent;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.io.PromptPayload;
+import ai.wanaku.capabilities.sdk.api.types.AudioContent;
+import ai.wanaku.capabilities.sdk.api.types.EmbeddedResource;
+import ai.wanaku.capabilities.sdk.api.types.ImageContent;
+import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.TextContent;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;

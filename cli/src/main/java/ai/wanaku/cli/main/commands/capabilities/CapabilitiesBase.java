@@ -1,6 +1,6 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.core.util.ProcessRunner;
 import ai.wanaku.core.util.VersionHelper;

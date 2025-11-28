@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.RemoteToolReference;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
 

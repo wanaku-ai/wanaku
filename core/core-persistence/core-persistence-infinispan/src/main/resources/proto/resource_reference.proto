@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ai.wanaku.api.types;
+package ai.wanaku.capabilities.sdk.api.types;
 
 // Represents a resource reference, containing details such as location, type, and parameters.
 message ResourceReference {

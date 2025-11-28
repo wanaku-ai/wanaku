@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 import java.util.List;
 import java.util.UUID;
@@ -33,8 +33,9 @@ public class InfinispanNamespaceRepository extends AbstractLabelAwareInfinispanR
 
     @Override
     public List<Namespace> findByName(String name) {
-        Query<Namespace> query =
-                cacheManager.getCache(entityName()).query("from ai.wanaku.api.types.Namespace t where t.name = :name");
+        Query<Namespace> query = cacheManager
+                .getCache(entityName())
+                .query("from ai.wanaku.capabilities.sdk.api.types.Namespace t where t.name = :name");
         query.setParameter("name", name);
         return query.execute().list();
     }
@@ -43,7 +44,7 @@ public class InfinispanNamespaceRepository extends AbstractLabelAwareInfinispanR
     public List<Namespace> findFirstAvailable(String name) {
         final Cache<Object, Namespace> cache = cacheManager.getCache(entityName());
         Query<Namespace> query = cache.query(
-                "from ai.wanaku.api.types.Namespace t where t.name = :name OR (t.path != '' AND t.name is NULL)");
+                "from ai.wanaku.capabilities.sdk.api.types.Namespace t where t.name = :name OR (t.path != '' AND t.name is NULL)");
 
         query.setParameter("name", name);
         return query.maxResults(1).execute().list();

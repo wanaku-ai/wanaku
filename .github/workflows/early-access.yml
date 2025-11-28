@@ -14,6 +14,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout Wanaku Capabilities SDK Main Project
+        uses: actions/checkout@v4
+        with:
+          repository: wanaku-ai/wanaku-capabilities-java-sdk
+          persist-credentials: false
+          ref: main
+          path: wanaku-capabilities-java-sdk
+      - name: Build Wanaku Capabilities SDK Main Project
+        run: mvn -DskipTests clean install
+        working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
       - name: Checkout
         uses: actions/checkout@v4
         with:

@@ -2,19 +2,19 @@ package ai.wanaku.backend.api.v1.forwards;
 
 import static io.micrometer.common.util.StringUtils.*;
 
-import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.ForwardReference;
-import ai.wanaku.api.types.LabelsAwareEntity;
-import ai.wanaku.api.types.NameNamespacePair;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.RemoteToolReference;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.ToolReference;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.common.ToolsHelper;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
+import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;

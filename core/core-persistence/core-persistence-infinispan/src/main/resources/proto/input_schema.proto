@@ -1,6 +1,6 @@
 // Represents the input schema for a tool, including type, properties, and required fields.
 syntax = "proto3";
-package ai.wanaku.api.types;
+package ai.wanaku.capabilities.sdk.api.types;
 import "property.proto";
 
 message InputSchema {

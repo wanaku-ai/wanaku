@@ -1,6 +1,6 @@
 package ai.wanaku.cli.main.commands.start;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.cli.main.support.RuntimeConstants;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
 import ai.wanaku.cli.main.support.WanakuPrinter;

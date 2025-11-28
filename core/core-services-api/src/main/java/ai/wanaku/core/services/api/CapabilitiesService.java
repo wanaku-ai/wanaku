@@ -1,8 +1,8 @@
 package ai.wanaku.core.services.api;
 
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;

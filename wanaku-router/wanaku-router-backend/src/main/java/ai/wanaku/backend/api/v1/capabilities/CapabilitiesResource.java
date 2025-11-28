@@ -1,9 +1,9 @@
 package ai.wanaku.backend.api.v1.capabilities;
 
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.common.ServiceTargetEvent;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
