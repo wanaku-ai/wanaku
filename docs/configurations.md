@@ -94,6 +94,17 @@ These `wanaku.service.registration.*` properties are available for all capabilit
 | `wanaku.service.registration.delay-seconds` | `3` - Seconds to delay the initial registration after startup. |
 | `wanaku.service.registration.announce-address` | A custom address to announce to the router, overriding the auto-detected one. |
 
+### Secret Encryption
+
+Secrets can be encrypted at rest using AES-256. Set both environment variables to enable:
+
+| Environment Variable | Description |
+| --- | --- |
+| `WANAKU_SECRETS_ENCRYPTION_PASSWORD` | Password for key derivation |
+| `WANAKU_SECRETS_ENCRYPTION_SALT` | Salt for key derivation |
+
+When both are set, secrets are automatically encrypted when written and decrypted when read.
+
 ## 3. CLI
 
 Configuration for the Wanaku command-line interface (`wanaku-cli`).
@@ -212,6 +223,13 @@ quarkus.oidc-client.credentials.secret=${WANAKU_SERVICE_SECRET}
 ```properties
 # ~/.wanaku/cli.properties
 wanaku.cli.default-services=http,exec,tavily
+```
+
+### Example: Enabling Secret Encryption
+
+```shell
+export WANAKU_SECRETS_ENCRYPTION_PASSWORD="your-strong-password"
+export WANAKU_SECRETS_ENCRYPTION_SALT="unique-salt-value"
 ```
 
 ## Additional Resources

@@ -634,6 +634,28 @@ quarkus.oidc-client.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
 > - The client secret values shown here are examples from the default configuration - replace them with your actual Keycloak client secrets
 > - Ensure the auth-server-url points to your actual Keycloak instance
 
+### Encrypting Secrets at Rest
+
+Wanaku supports AES-256 encryption for secrets stored in files. When enabled, all secrets provisioned by tools and resources
+are encrypted before being written to disk and automatically decrypted when read.
+
+To enable secret encryption, set both environment variables:
+
+```shell
+export WANAKU_SECRETS_ENCRYPTION_PASSWORD="your-strong-password"
+export WANAKU_SECRETS_ENCRYPTION_SALT="unique-salt-value"
+```
+
+> [!IMPORTANT]
+> - Both password and salt must be set for encryption to work
+> - All services that handle secrets must use the same password and salt values
+> - Store credentials securely (e.g., Kubernetes Secrets, HashiCorp Vault)
+
+> [!WARNING]
+> If the encryption password or salt is lost, encrypted secrets cannot be recovered. Ensure these values are backed up securely.
+
+For more details, see the [Configuration Guide](configurations.md#secret-encryption).
+
 # Using the Wanaku MCP Router
 
 ## Protocol Support 
