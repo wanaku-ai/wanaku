@@ -1,6 +1,6 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

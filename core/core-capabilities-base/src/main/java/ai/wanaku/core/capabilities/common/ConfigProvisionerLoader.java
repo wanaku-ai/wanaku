@@ -1,13 +1,13 @@
 package ai.wanaku.core.capabilities.common;
 
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigProvisioner;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigWriter;
+import ai.wanaku.capabilities.sdk.config.provider.api.DefaultConfigProvisioner;
+import ai.wanaku.capabilities.sdk.config.provider.api.ProvisionedConfig;
+import ai.wanaku.capabilities.sdk.config.provider.api.SecretWriter;
+import ai.wanaku.capabilities.sdk.config.provider.file.FileConfigurationWriter;
+import ai.wanaku.capabilities.sdk.config.provider.file.FileSecretWriter;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.config.provider.api.ConfigProvisioner;
-import ai.wanaku.core.config.provider.api.ConfigWriter;
-import ai.wanaku.core.config.provider.api.DefaultConfigProvisioner;
-import ai.wanaku.core.config.provider.api.ProvisionedConfig;
-import ai.wanaku.core.config.provider.api.SecretWriter;
-import ai.wanaku.core.config.provider.file.FileConfigurationWriter;
-import ai.wanaku.core.config.provider.file.FileSecretWriter;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
 import ai.wanaku.core.exchange.ProvisionRequest;

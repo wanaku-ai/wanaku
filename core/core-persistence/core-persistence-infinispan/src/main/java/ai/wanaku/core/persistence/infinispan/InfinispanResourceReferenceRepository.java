@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +35,7 @@ public class InfinispanResourceReferenceRepository
     public List<ResourceReference> findByName(String name) {
         Query<ResourceReference> query = cacheManager
                 .getCache(entityName())
-                .query("from ai.wanaku.api.types.ResourceReference t where t.name = :name");
+                .query("from ai.wanaku.capabilities.sdk.api.types.ResourceReference t where t.name = :name");
         query.setParameter("name", name);
         return query.execute().list();
     }

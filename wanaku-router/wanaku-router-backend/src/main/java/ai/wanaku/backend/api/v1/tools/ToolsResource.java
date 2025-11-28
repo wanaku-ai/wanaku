@@ -1,12 +1,12 @@
 package ai.wanaku.backend.api.v1.tools;
 
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.io.ProvisionAwarePayload;
-import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
+import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

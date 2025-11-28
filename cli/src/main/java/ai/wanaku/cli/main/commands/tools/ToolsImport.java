@@ -2,7 +2,7 @@ package ai.wanaku.cli.main.commands.tools;
 
 import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
 
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.converter.URLConverter;
 import ai.wanaku.cli.main.support.WanakuPrinter;

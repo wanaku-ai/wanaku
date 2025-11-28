@@ -1,8 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.PromptMessage;
-import ai.wanaku.api.types.PromptReference;
-import ai.wanaku.api.types.PromptReference.PromptArgument;
+import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
 import java.io.IOException;
 import java.util.ArrayList;
 import org.infinispan.protostream.MessageMarshaller;

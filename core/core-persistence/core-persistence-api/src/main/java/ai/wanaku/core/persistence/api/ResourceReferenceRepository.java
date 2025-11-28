@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import java.util.List;
 
 /**

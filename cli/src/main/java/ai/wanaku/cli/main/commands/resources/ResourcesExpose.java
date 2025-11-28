@@ -2,8 +2,8 @@ package ai.wanaku.cli.main.commands.resources;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;

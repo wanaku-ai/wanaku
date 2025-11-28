@@ -1,9 +1,9 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.services.api.CapabilitiesService;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;

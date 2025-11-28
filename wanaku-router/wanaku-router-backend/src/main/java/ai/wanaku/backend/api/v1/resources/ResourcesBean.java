@@ -1,12 +1,12 @@
 package ai.wanaku.backend.api.v1.resources;
 
-import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.io.ResourcePayload;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;

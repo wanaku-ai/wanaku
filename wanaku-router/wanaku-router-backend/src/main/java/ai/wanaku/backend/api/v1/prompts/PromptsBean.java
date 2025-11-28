@@ -1,12 +1,12 @@
 package ai.wanaku.backend.api.v1.prompts;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.PromptReference;
-import ai.wanaku.api.types.io.PromptPayload;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.PromptHelper;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
 import ai.wanaku.core.mcp.common.resolvers.PromptsResolver;
 import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;

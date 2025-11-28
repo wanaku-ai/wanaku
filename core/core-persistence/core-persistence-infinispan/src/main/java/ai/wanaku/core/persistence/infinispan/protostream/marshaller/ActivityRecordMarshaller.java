@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;

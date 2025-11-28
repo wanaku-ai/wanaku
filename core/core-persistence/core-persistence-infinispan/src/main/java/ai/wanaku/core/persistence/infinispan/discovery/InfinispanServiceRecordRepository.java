@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
-import ai.wanaku.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.core.persistence.infinispan.AbstractInfinispanRepository;
 import jakarta.inject.Singleton;
 import java.util.UUID;

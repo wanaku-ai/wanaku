@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.api.types.WanakuEntity;
+import ai.wanaku.capabilities.sdk.api.types.WanakuEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;

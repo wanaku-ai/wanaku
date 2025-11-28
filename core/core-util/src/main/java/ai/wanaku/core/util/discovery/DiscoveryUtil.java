@@ -1,6 +1,6 @@
 package ai.wanaku.core.util.discovery;
 
-import ai.wanaku.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.jboss.logging.Logger;

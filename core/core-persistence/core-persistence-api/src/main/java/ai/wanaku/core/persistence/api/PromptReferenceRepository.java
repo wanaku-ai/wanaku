@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import java.util.List;
 
 /**

@@ -68,6 +68,7 @@
         <spotless-maven-plugin.version>3.0.0</spotless-maven-plugin.version>
         <quarkus-operator-sdk.version>7.3.0</quarkus-operator-sdk.version>
         <quarkus-helm.version>1.2.7</quarkus-helm.version>
+        <wanaku-capabilities-sdk.version>0.0.9-SNAPSHOT</wanaku-capabilities-sdk.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
@@ -102,6 +103,14 @@
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-bom</artifactId>
                 <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>ai.wanaku.sdk</groupId>
+                <artifactId>capabilities-bom</artifactId>
+                <version>${wanaku-capabilities-sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

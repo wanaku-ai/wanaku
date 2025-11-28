@@ -1,7 +1,7 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
-import ai.wanaku.api.exceptions.PromptNotFoundException;
-import ai.wanaku.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.PromptNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 
 /**
  * A resolver that consumes MCP requests and resolves prompt-related operations.

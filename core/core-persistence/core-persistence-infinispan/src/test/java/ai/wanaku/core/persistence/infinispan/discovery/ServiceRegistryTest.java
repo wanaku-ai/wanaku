@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.wanaku.api.types.discovery.ActivityRecord;
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.discovery.StandardMessages;
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.discovery.StandardMessages;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

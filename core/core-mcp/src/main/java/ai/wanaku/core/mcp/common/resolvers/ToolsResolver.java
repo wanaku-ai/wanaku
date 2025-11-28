@@ -1,9 +1,9 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.io.ToolPayload;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.Tool;
 
 /**

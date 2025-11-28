@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.PromptReference.PromptArgument;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
 
@@ -32,6 +32,6 @@ public class PromptArgumentMarshaller implements MessageMarshaller<PromptArgumen
 
     @Override
     public String getTypeName() {
-        return "ai.wanaku.api.types.PromptReference.PromptArgument";
+        return "ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument";
     }
 }

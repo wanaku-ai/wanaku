@@ -4,11 +4,11 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -55,7 +55,11 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
         Assertions.assertNotNull(accessToken);
 
         ServiceTarget serviceTarget = new ServiceTarget(
-                null, "test-service", "localhost", 8080, ai.wanaku.api.types.providers.ServiceType.TOOL_INVOKER);
+                null,
+                "test-service",
+                "localhost",
+                8080,
+                ai.wanaku.capabilities.sdk.api.types.providers.ServiceType.TOOL_INVOKER);
 
         final var response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
@@ -131,7 +135,11 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
         Assertions.assertNotNull(accessToken);
 
         ServiceTarget serviceTarget = new ServiceTarget(
-                serviceId, "test-service", "localhost", 8080, ai.wanaku.api.types.providers.ServiceType.TOOL_INVOKER);
+                serviceId,
+                "test-service",
+                "localhost",
+                8080,
+                ai.wanaku.capabilities.sdk.api.types.providers.ServiceType.TOOL_INVOKER);
 
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)

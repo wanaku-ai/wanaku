@@ -3,9 +3,9 @@ package ai.wanaku.core.runtime.camel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import ai.wanaku.core.config.provider.api.DefaultConfigResource;
-import ai.wanaku.core.config.provider.file.ConfigFileStore;
-import ai.wanaku.core.config.provider.file.SecretFileStore;
+import ai.wanaku.capabilities.sdk.config.provider.api.DefaultConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.file.ConfigFileStore;
+import ai.wanaku.capabilities.sdk.config.provider.file.SecretFileStore;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;

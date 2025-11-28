@@ -1,11 +1,11 @@
 package ai.wanaku.backend.resolvers;
 
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.types.Property;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.backend.proxies.ToolsProxy;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
