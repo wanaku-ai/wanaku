@@ -1,8 +1,8 @@
 package ai.wanaku.core.services.api;
 
-import ai.wanaku.api.types.ResourceReference;
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.io.ResourcePayload;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;

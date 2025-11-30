@@ -8,10 +8,10 @@
  * <p>
  * Key subpackages include:
  * <ul>
- *   <li>{@link ai.wanaku.api.types} - Core entity types and data models</li>
- *   <li>{@link ai.wanaku.api.exceptions} - Exception types for error handling</li>
+ *   <li>{@link ai.wanaku.capabilities.sdk.api.types} - Core entity types and data models</li>
+ *   <li>{@link ai.wanaku.capabilities.sdk.api.exceptions} - Exception types for error handling</li>
  * </ul>
  *
- * @see ai.wanaku.api.types
+ * @see ai.wanaku.capabilities.sdk.api.types
  */
-package ai.wanaku.api;
+package ai.wanaku.capabilities.sdk.api;

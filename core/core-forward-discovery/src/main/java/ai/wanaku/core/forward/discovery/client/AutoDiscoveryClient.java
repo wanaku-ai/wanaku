@@ -2,7 +2,7 @@ package ai.wanaku.core.forward.discovery.client;
 
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
-import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.core.services.api.ForwardsService;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;

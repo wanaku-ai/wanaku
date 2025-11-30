@@ -18,6 +18,6 @@
  *   <li>{@link ai.wanaku.core.persistence.api.NamespaceRepository} - Namespace persistence</li>
  * </ul>
  *
- * @see ai.wanaku.api.types
+ * @see ai.wanaku.capabilities.sdk.api.types
  */
 package ai.wanaku.core.persistence.api;

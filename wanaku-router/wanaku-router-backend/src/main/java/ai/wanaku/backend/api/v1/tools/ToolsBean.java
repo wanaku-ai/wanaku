@@ -1,14 +1,14 @@
 package ai.wanaku.backend.api.v1.tools;
 
-import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.ToolReference;
-import ai.wanaku.api.types.io.ToolPayload;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;

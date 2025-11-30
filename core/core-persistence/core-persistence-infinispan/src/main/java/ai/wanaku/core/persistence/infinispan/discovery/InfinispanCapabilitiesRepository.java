@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
-import ai.wanaku.api.types.providers.ServiceTarget;
-import ai.wanaku.api.types.providers.ServiceType;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.persistence.infinispan.AbstractInfinispanRepository;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -42,7 +42,7 @@ public class InfinispanCapabilitiesRepository extends AbstractInfinispanReposito
         final Cache<Object, ServiceTarget> cache = cacheManager.getCache(entityName());
 
         Query<ServiceTarget> query = cache.query(
-                "from ai.wanaku.api.types.providers.ServiceTarget t where t.service = :service and (t.serviceType = :serviceType or t.serviceType = :multi)");
+                "from ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget t where t.service = :service and (t.serviceType = :serviceType or t.serviceType = :multi)");
 
         query.setParameter("service", serviceName);
         query.setParameter("serviceType", serviceType);
@@ -60,7 +60,7 @@ public class InfinispanCapabilitiesRepository extends AbstractInfinispanReposito
         final Cache<Object, ServiceTarget> cache = cacheManager.getCache(entityName());
 
         Query<ServiceTarget> query = cache.query(
-                "from ai.wanaku.api.types.providers.ServiceTarget t where (t.serviceType = :serviceType or t.serviceType = :multi)");
+                "from ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget t where (t.serviceType = :serviceType or t.serviceType = :multi)");
 
         query.setParameter("serviceType", serviceType);
         query.setParameter("multi", ServiceType.MULTI_CAPABILITY);

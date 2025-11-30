@@ -2,8 +2,8 @@ package ai.wanaku.cli.main.commands.prompts;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
-import ai.wanaku.api.types.PromptReference;
-import ai.wanaku.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.PromptsService;

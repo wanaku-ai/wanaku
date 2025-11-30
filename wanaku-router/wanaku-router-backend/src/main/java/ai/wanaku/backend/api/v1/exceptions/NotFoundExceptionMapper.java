@@ -1,11 +1,11 @@
 package ai.wanaku.backend.api.v1.exceptions;
 
-import ai.wanaku.api.exceptions.ConfigurationNotFoundException;
-import ai.wanaku.api.exceptions.DataStoreResourceNotFoundException;
-import ai.wanaku.api.exceptions.NamespaceNotFoundException;
-import ai.wanaku.api.exceptions.ResourceNotFoundException;
-import ai.wanaku.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ConfigurationNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.NamespaceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;

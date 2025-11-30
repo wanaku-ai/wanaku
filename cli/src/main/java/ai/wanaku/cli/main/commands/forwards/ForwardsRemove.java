@@ -4,7 +4,7 @@ import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandl
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
-import ai.wanaku.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;

@@ -1,10 +1,10 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
-import ai.wanaku.api.exceptions.ServiceUnavailableException;
-import ai.wanaku.api.exceptions.ToolNotFoundException;
-import ai.wanaku.api.types.CallableReference;
-import ai.wanaku.api.types.RemoteToolReference;
-import ai.wanaku.api.types.ResourceReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
+import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.Tool;
 import java.util.List;
 

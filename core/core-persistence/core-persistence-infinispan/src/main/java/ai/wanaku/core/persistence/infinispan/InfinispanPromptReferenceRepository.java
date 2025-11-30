@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +43,7 @@ public class InfinispanPromptReferenceRepository extends AbstractInfinispanRepos
     public List<PromptReference> findByName(String name) {
         Query<PromptReference> query = cacheManager
                 .getCache(entityName())
-                .query("from ai.wanaku.api.types.PromptReference p where p.name = :name");
+                .query("from ai.wanaku.capabilities.sdk.api.types.PromptReference p where p.name = :name");
         query.setParameter("name", name);
         return query.execute().list();
     }
@@ -57,7 +57,8 @@ public class InfinispanPromptReferenceRepository extends AbstractInfinispanRepos
     public List<PromptReference> findByNameAndNamespace(String name, String namespace) {
         Query<PromptReference> query = cacheManager
                 .getCache(entityName())
-                .query("from ai.wanaku.api.types.PromptReference p where p.name = :name and p.namespace = :namespace");
+                .query(
+                        "from ai.wanaku.capabilities.sdk.api.types.PromptReference p where p.name = :name and p.namespace = :namespace");
         query.setParameter("name", name);
         query.setParameter("namespace", namespace);
         return query.execute().list();

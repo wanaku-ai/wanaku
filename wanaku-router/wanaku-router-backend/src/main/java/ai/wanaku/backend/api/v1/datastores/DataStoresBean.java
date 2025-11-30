@@ -1,8 +1,8 @@
 package ai.wanaku.backend.api.v1.datastores;
 
-import ai.wanaku.api.exceptions.WanakuException;
-import ai.wanaku.api.types.DataStore;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.persistence.api.DataStoreRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import jakarta.annotation.PostConstruct;

@@ -1,10 +1,10 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.api.types.CallableReference;
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.Namespace;
-import ai.wanaku.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Property;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import java.util.List;

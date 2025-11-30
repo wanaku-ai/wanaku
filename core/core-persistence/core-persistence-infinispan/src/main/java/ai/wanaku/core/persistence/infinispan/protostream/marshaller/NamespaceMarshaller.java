@@ -1,6 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import java.io.IOException;
 import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;

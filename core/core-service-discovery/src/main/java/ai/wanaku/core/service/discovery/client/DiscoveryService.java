@@ -1,8 +1,8 @@
 package ai.wanaku.core.service.discovery.client;
 
-import ai.wanaku.api.types.WanakuResponse;
-import ai.wanaku.api.types.discovery.ServiceState;
-import ai.wanaku.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;

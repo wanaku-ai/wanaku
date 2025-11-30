@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import ai.wanaku.api.types.InputSchema;
-import ai.wanaku.api.types.Property;
-import ai.wanaku.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;

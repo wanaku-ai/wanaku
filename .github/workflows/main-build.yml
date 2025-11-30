@@ -45,6 +45,16 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
+    - name: Checkout Wanaku Capabilities SDK Main Project
+      uses: actions/checkout@v4
+      with:
+        repository: wanaku-ai/wanaku-capabilities-java-sdk
+        persist-credentials: false
+        ref: main
+        path: wanaku-capabilities-java-sdk
+    - name: Build Wanaku Capabilities SDK Main Project
+      run: mvn -DskipTests clean install
+      working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
     - name: Set arch
       id: arch
       run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
