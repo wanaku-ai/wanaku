@@ -69,7 +69,7 @@
         <quarkus-operator-sdk.version>7.3.0</quarkus-operator-sdk.version>
         <quarkus-helm.version>1.2.7</quarkus-helm.version>
         <wanaku-capabilities-sdk.version>0.0.9-SNAPSHOT</wanaku-capabilities-sdk.version>
-        <commonmark.version>0.22.0</commonmark.version>
+        <commonmark.version>0.27.0</commonmark.version>
         <oauth2-oidc-sdk.version>11.29.2</oauth2-oidc-sdk.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
