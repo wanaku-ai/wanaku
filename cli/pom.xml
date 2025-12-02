@@ -152,19 +152,19 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>oauth2-oidc-sdk</artifactId>
-            <version>11.29.2</version>
+            <version>${oauth2-oidc-sdk.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
-            <version>0.22.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-gfm-tables</artifactId>
-            <version>0.22.0</version>
+            <version>${commonmark.version}</version>
         </dependency>
 
         <!-- tests -->
