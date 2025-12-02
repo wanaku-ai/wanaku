@@ -18,11 +18,6 @@
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.wanaku</groupId>
             <artifactId>core-mcp</artifactId>
             <version>${project.version}</version>
         </dependency>

@@ -119,7 +119,6 @@ Shared libraries providing foundational functionality:
 
 | Library | Purpose |
 |---------|---------|
-| **api** | Common API definitions and data models |
 | **core-exchange** | gRPC protocols and message exchange definitions |
 | **core-mcp** | MCP protocol implementation and client libraries |
 | **core-capabilities-base** | Base classes for capability implementations |
