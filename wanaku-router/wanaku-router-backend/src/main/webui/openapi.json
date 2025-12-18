@@ -1934,7 +1934,7 @@
   },
   "info" : {
     "title" : "wanaku-router-backend API",
-    "version" : "0.0.9-SNAPSHOT"
+    "version" : "0.0.9"
   },
   "servers" : [ {
     "url" : "http://localhost:8080",
