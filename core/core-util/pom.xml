@@ -15,7 +15,6 @@
         <dependency>
             <groupId>ai.wanaku.sdk</groupId>
             <artifactId>capabilities-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
