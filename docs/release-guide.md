@@ -5,9 +5,9 @@
 Start by setting the versions. 
 
 ```shell
-export PREVIOUS_VERSION=0.0.7
-export CURRENT_DEVELOPMENT_VERSION=0.0.8
-export NEXT_DEVELOPMENT_VERSION=0.0.9
+export PREVIOUS_VERSION=0.0.8
+export CURRENT_DEVELOPMENT_VERSION=0.0.9
+export NEXT_DEVELOPMENT_VERSION=0.1.0
 ```
 
 Trigger a release build: 
