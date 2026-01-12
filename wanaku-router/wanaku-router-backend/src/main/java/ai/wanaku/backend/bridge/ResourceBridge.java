@@ -1,4 +1,4 @@
-package ai.wanaku.backend.proxies;
+package ai.wanaku.backend.bridge;
 
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Proxies between MCP URIs and Camel components capable of handling them
  */
-public interface ResourceProxy extends Proxy {
+public interface ResourceBridge extends Bridge {
 
     /**
      * Provision a configuration in the service

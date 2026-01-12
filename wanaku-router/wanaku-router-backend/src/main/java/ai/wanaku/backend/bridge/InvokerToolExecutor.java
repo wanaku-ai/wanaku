@@ -1,29 +1,21 @@
-package ai.wanaku.backend.proxies;
+package ai.wanaku.backend.bridge;
 
 import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
+import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.backend.support.ProvisioningReference;
-import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.exchange.Configuration;
-import ai.wanaku.core.exchange.PayloadType;
-import ai.wanaku.core.exchange.Secret;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokerGrpc;
+import ai.wanaku.core.mcp.common.ToolExecutor;
 import ai.wanaku.core.util.CollectionsHelper;
 import com.google.protobuf.ProtocolStringList;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
@@ -35,35 +27,68 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 /**
- * A proxy class for invoking tools
+ * Tool executor implementation for the InvokerBridge.
+ * <p>
+ * This class handles the actual execution of tool invocations by delegating
+ * to remote tool services via gRPC. It is responsible for:
+ * <ul>
+ *   <li>Resolving the target service for a tool</li>
+ *   <li>Extracting headers and body from tool arguments</li>
+ *   <li>Invoking the remote tool service</li>
+ *   <li>Processing and returning the response</li>
+ * </ul>
+ * <p>
+ * This executor is used in composition with InvokerProxy to separate
+ * tool execution concerns from proxy management concerns.
  */
-public class InvokerProxy implements ToolsProxy {
-    private static final Logger LOG = Logger.getLogger(InvokerProxy.class);
+public class InvokerToolExecutor implements ToolExecutor {
+    private static final Logger LOG = Logger.getLogger(InvokerToolExecutor.class);
     private static final String EMPTY_BODY = "";
     private static final String EMPTY_ARGUMENT = "";
 
     private final ServiceResolver serviceResolver;
+    private final WanakuBridgeTransport transport;
 
-    public InvokerProxy(ServiceResolver serviceResolver) {
+    /**
+     * Creates a new InvokerToolExecutor.
+     *
+     * @param serviceResolver the service resolver for locating tool services
+     */
+    public InvokerToolExecutor(ServiceResolver serviceResolver) {
+        this(serviceResolver, new GrpcTransport());
+    }
+
+    /**
+     * Creates a new InvokerToolExecutor with a custom transport.
+     * <p>
+     * This constructor is primarily intended for testing purposes, allowing
+     * injection of a mock or custom transport implementation.
+     *
+     * @param serviceResolver the service resolver for locating tool services
+     * @param transport the gRPC transport for communication
+     */
+    public InvokerToolExecutor(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
         this.serviceResolver = serviceResolver;
+        this.transport = transport;
     }
 
     @Override
-    public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+    public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         LOG.infof(
-                "Calling tool on behalf of connection %s",
+                "Executing tool on behalf of connection %s",
                 toolArguments.connection().id());
+
         if (toolReference instanceof ToolReference ref) {
-            return call(toolArguments, ref);
+            return executeToolReference(toolArguments, ref);
         }
 
         LOG.errorf(
                 "Tool reference %s not supported",
                 toolReference == null ? "null" : toolReference.getClass().getName());
-        throw new UnsupportedOperationException("Only local tool call references should be invoked by this proxy");
+        throw new UnsupportedOperationException("Only local tool call references should be invoked by this executor");
     }
 
-    private ToolResponse call(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
+    private ToolResponse executeToolReference(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
         ServiceTarget service = serviceResolver.resolve(toolReference.getType(), ServiceType.TOOL_INVOKER);
         if (service == null) {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
@@ -72,17 +97,7 @@ public class InvokerProxy implements ToolsProxy {
         LOG.infof("Invoking %s on %s", toolReference.getType(), service);
         try {
             final ToolInvokeReply invokeReply = invokeRemotely(toolReference, toolArguments, service);
-
-            if (invokeReply.getIsError()) {
-                return ToolResponse.error(invokeReply.getContentList().get(0));
-            } else {
-                ProtocolStringList contentList = invokeReply.getContentList();
-                List<TextContent> contents =
-                        new ArrayList<>(invokeReply.getContentList().size());
-                contentList.stream().map(TextContent::new).forEach(contents::add);
-
-                return ToolResponse.success(contents);
-            }
+            return processToolInvokeReply(invokeReply);
         } catch (Exception e) {
             String errorMessage = composeErrorMessage(e);
 
@@ -95,6 +110,24 @@ public class InvokerProxy implements ToolsProxy {
         }
     }
 
+    /**
+     * Processes a ToolInvokeReply and converts it to a ToolResponse.
+     *
+     * @param invokeReply the reply from the remote tool invocation
+     * @return a ToolResponse containing either success or error information
+     */
+    private ToolResponse processToolInvokeReply(ToolInvokeReply invokeReply) {
+        if (invokeReply.getIsError()) {
+            return ToolResponse.error(invokeReply.getContentList().get(0));
+        }
+
+        ProtocolStringList contentList = invokeReply.getContentList();
+        List<TextContent> contents = new ArrayList<>(contentList.size());
+        contentList.stream().map(TextContent::new).forEach(contents::add);
+
+        return ToolResponse.success(contents);
+    }
+
     private static String composeErrorMessage(Exception e) {
         if (e.getMessage() != null) {
             return e.getMessage();
@@ -105,19 +138,27 @@ public class InvokerProxy implements ToolsProxy {
                 e.getClass().getName());
     }
 
-    private static ToolInvokeReply invokeRemotely(
+    private ToolInvokeReply invokeRemotely(
             ToolReference toolReference, ToolManager.ToolArguments toolArguments, ServiceTarget service) {
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
-                .usePlaintext()
-                .build();
+        ToolInvokeRequest request = buildToolInvokeRequest(toolReference, toolArguments);
+        return transport.invokeTool(request, service);
+    }
+
+    /**
+     * Builds a ToolInvokeRequest from the tool reference and arguments.
+     *
+     * @param toolReference the tool reference containing tool metadata
+     * @param toolArguments the arguments provided for the tool invocation
+     * @return a fully constructed ToolInvokeRequest
+     */
+    private ToolInvokeRequest buildToolInvokeRequest(
+            ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
 
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
-
         Map<String, String> headers = extractHeaders(toolReference, toolArguments);
-
         String body = extractBody(toolReference, toolArguments);
 
-        ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
+        return ToolInvokeRequest.newBuilder()
                 .setBody(body)
                 .setUri(toolReference.getUri())
                 .setConfigurationURI(Objects.requireNonNullElse(toolReference.getConfigurationURI(), EMPTY_ARGUMENT))
@@ -125,13 +166,6 @@ public class InvokerProxy implements ToolsProxy {
                 .putAllHeaders(headers)
                 .putAllArguments(argumentsMap)
                 .build();
-
-        try {
-            ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
-            return blockingStub.invokeTool(toolInvokeRequest);
-        } catch (Exception e) {
-            throw ServiceUnavailableException.forAddress(service.toAddress());
-        }
     }
 
     static Map<String, String> extractHeaders(ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
@@ -139,7 +173,7 @@ public class InvokerProxy implements ToolsProxy {
 
         // extract headers parameter
         Map<String, String> headers = inputSchema.entrySet().stream()
-                .filter(InvokerProxy::extractProperties)
+                .filter(InvokerToolExecutor::extractProperties)
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> evalValue(e, toolArguments)));
         return headers;
     }
@@ -204,40 +238,5 @@ public class InvokerProxy implements ToolsProxy {
 
         // Use the body provided by the LLM
         return body;
-    }
-
-    @Override
-    public ProvisioningReference provision(ToolPayload toolPayload) {
-        ToolReference toolReference = toolPayload.getPayload();
-
-        ServiceTarget service = serviceResolver.resolve(toolReference.getType(), ServiceType.TOOL_INVOKER);
-        if (service == null) {
-            throw new ServiceNotFoundException("There is no host registered for service " + toolReference.getType());
-        }
-
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
-                .usePlaintext()
-                .build();
-
-        final String configData = Objects.requireNonNullElse(toolPayload.getConfigurationData(), "");
-        final Configuration cfg = Configuration.newBuilder()
-                .setType(PayloadType.BUILTIN)
-                .setName(toolReference.getName())
-                .setPayload(configData)
-                .build();
-
-        final String secretsData = Objects.requireNonNullElse(toolPayload.getSecretsData(), "");
-        final Secret secret = Secret.newBuilder()
-                .setType(PayloadType.BUILTIN)
-                .setName(toolReference.getName())
-                .setPayload(secretsData)
-                .build();
-
-        return ProxyHelper.provision(cfg, secret, channel, service);
-    }
-
-    @Override
-    public String name() {
-        return "invoker";
     }
 }

@@ -1,4 +1,4 @@
-package ai.wanaku.backend.proxies;
+package ai.wanaku.backend.bridge;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class InvokerProxyTest {
+class InvokerBridgeTest {
 
     private ToolReference buildToolReference(Map<String, Property> properties) {
         InputSchema schema = new InputSchema();
@@ -50,7 +50,7 @@ class InvokerProxyTest {
         ToolReference ref = buildToolReference(props);
 
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
-        Map<String, String> headers = InvokerProxy.extractHeaders(ref, toolArguments);
+        Map<String, String> headers = InvokerToolExecutor.extractHeaders(ref, toolArguments);
 
         assertEquals(2, headers.size(), "Should only include header+service entries");
         assertEquals("abc-123", headers.get("X-Request-ID"));
@@ -73,7 +73,7 @@ class InvokerProxyTest {
         ToolReference ref = buildToolReference(props);
 
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
-        Map<String, String> headers = InvokerProxy.extractHeaders(ref, toolArguments);
+        Map<String, String> headers = InvokerToolExecutor.extractHeaders(ref, toolArguments);
 
         assertEquals(1, headers.size());
         assertEquals("xyz", headers.get("X-Request-ID"));
@@ -89,7 +89,7 @@ class InvokerProxyTest {
         ToolReference ref = buildToolReference(props);
 
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
-        Map<String, String> headers = InvokerProxy.extractHeaders(ref, toolArguments);
+        Map<String, String> headers = InvokerToolExecutor.extractHeaders(ref, toolArguments);
         assertTrue(headers.isEmpty());
     }
 
@@ -111,7 +111,7 @@ class InvokerProxyTest {
         // 3. Calling .toString() on null throws NPE
         org.junit.jupiter.api.Assertions.assertThrows(
                 NullPointerException.class,
-                () -> InvokerProxy.extractHeaders(ref, toolArguments),
+                () -> InvokerToolExecutor.extractHeaders(ref, toolArguments),
                 "Should throw NPE when property value is null and argument is not provided");
     }
 
@@ -127,7 +127,7 @@ class InvokerProxyTest {
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
         when(toolArguments.args()).thenReturn(Map.of("X-API-Key", "123"));
 
-        final Map<String, String> stringStringMap = InvokerProxy.extractHeaders(ref, toolArguments);
+        final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, toolArguments);
         assertEquals("123", stringStringMap.get("X-API-Key"));
     }
 
@@ -143,7 +143,7 @@ class InvokerProxyTest {
         // Mock toolArguments with empty args map (no X-API-Key provided)
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
 
-        final Map<String, String> stringStringMap = InvokerProxy.extractHeaders(ref, toolArguments);
+        final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, toolArguments);
         assertEquals("abc", stringStringMap.get("X-API-Key"));
     }
 
@@ -160,7 +160,7 @@ class InvokerProxyTest {
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
         when(toolArguments.args()).thenReturn(Map.of("X-API-Key", "123"));
 
-        final Map<String, String> stringStringMap = InvokerProxy.extractHeaders(ref, toolArguments);
+        final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, toolArguments);
         assertEquals("123", stringStringMap.get("X-API-Key"));
     }
 }

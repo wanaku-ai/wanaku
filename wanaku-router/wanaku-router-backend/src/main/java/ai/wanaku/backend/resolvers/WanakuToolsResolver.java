@@ -1,6 +1,6 @@
 package ai.wanaku.backend.resolvers;
 
-import ai.wanaku.backend.proxies.ToolsProxy;
+import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.Property;
@@ -8,19 +8,26 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.mcp.common.Tool;
+import ai.wanaku.core.mcp.common.ToolAdapter;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import java.util.Map;
 
+/**
+ * Resolver for tools that uses a ToolsProxy to provide tool execution capabilities.
+ * <p>
+ * This resolver adapts the proxy's tool executor to the Tool interface using
+ * the adapter pattern, maintaining separation between proxy and execution concerns.
+ */
 public class WanakuToolsResolver implements ToolsResolver {
-    private final ToolsProxy proxy;
+    private final ToolsBridge proxy;
 
-    public WanakuToolsResolver(ToolsProxy proxy) {
+    public WanakuToolsResolver(ToolsBridge proxy) {
         this.proxy = proxy;
     }
 
     @Override
     public Tool resolve(ToolReference toolReference) {
-        return proxy;
+        return new ToolAdapter(proxy.getExecutor());
     }
 
     @Override
