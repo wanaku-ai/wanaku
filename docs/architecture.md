@@ -17,8 +17,10 @@ The Wanaku MCP Router is a distributed system for managing Model Context Protoco
 
 Wanaku doesn't directly host tools or resources. Instead, it acts as a central hub that manages and governs how AI agents access specific resources and capabilities through registered services.
 
+The router uses a **bridge architecture** with **composition over inheritance** to separate transport concerns from business logic, enabling flexible and testable implementations.
+
 > [!NOTE]
-> For detailed information about the router's internal implementation, see [Wanaku Router Internals](wanaku-router-internals.md).
+> For detailed information about the router's internal implementation, including the bridge pattern and transport abstraction, see [Wanaku Router Internals](wanaku-router-internals.md).
 
 ## System Components
 
@@ -150,19 +152,22 @@ Wanaku follows a distributed microservices architecture where the central router
 sequenceDiagram
     participant Client as LLM Client
     participant Router as Router Backend
-    participant Proxy as Proxy Layer
+    participant Bridge as Bridge Layer
+    participant Transport as Transport Layer
     participant Service as Capability Service
     participant Target as External System
 
     Client->>Router: MCP Request (Tool Call)
     Router->>Router: Authenticate Request
-    Router->>Proxy: Route to Appropriate Proxy
-    Proxy->>Proxy: Determine Target Service
-    Proxy->>Service: gRPC Tool Invocation
+    Router->>Bridge: Route to Appropriate Bridge
+    Bridge->>Bridge: Process Business Logic
+    Bridge->>Transport: Delegate to Transport
+    Transport->>Service: gRPC Tool Invocation
     Service->>Target: Execute Operation
     Target-->>Service: Operation Result
-    Service-->>Proxy: gRPC Response
-    Proxy-->>Router: Aggregated Result
+    Service-->>Transport: gRPC Response
+    Transport-->>Bridge: Parsed Response
+    Bridge-->>Router: Aggregated Result
     Router-->>Client: MCP Response
 ```
 
@@ -171,10 +176,12 @@ sequenceDiagram
 1. **Client Connection**: LLM client connects to router backend via MCP protocol (SSE or HTTP)
 2. **Authentication**: Router authenticates the request using Keycloak/OIDC
 3. **Request Processing**: Router receives MCP requests (tool calls, resource reads, prompt requests)
-4. **Proxy Routing**: Proxy layer determines the appropriate service based on tool/resource type and namespace
-5. **gRPC Communication**: Request is forwarded to specific capability service via gRPC
-6. **Service Processing**: Capability service handles actual resource access or tool execution
-7. **Response Aggregation**: Results are returned through proxy layer back to client
+4. **Bridge Routing**: Bridge layer determines the appropriate service based on tool/resource type and namespace
+5. **Business Logic**: Bridge processes request and prepares for transport
+6. **Transport Delegation**: Bridge delegates communication to transport layer (composition pattern)
+7. **gRPC Communication**: Transport forwards request to specific capability service via gRPC
+8. **Service Processing**: Capability service handles actual resource access or tool execution
+9. **Response Aggregation**: Results are returned through transport and bridge layers back to client
 
 ### Tool Invocation Flow
 
@@ -182,6 +189,8 @@ sequenceDiagram
 sequenceDiagram
     participant LLM as LLM Agent
     participant Router as Router Backend
+    participant Bridge as InvokerBridge
+    participant Transport as GrpcTransport
     participant Registry as Service Registry
     participant ToolSvc as HTTP Tool Service
     participant API as External API
@@ -189,10 +198,14 @@ sequenceDiagram
     LLM->>Router: Call Tool "http://api.example.com/data"
     Router->>Registry: Lookup Service for "http://" URI
     Registry-->>Router: Return HTTP Service Details
-    Router->>ToolSvc: gRPC ToolInvoke(uri, params)
+    Router->>Bridge: Execute Tool
+    Bridge->>Transport: invokeTool(request, service)
+    Transport->>ToolSvc: gRPC ToolInvoke(uri, params)
     ToolSvc->>API: HTTP GET /data
     API-->>ToolSvc: JSON Response
-    ToolSvc-->>Router: gRPC Response
+    ToolSvc-->>Transport: gRPC Response
+    Transport-->>Bridge: ToolInvokeReply
+    Bridge-->>Router: ToolResponse
     Router-->>LLM: MCP Tool Result
 ```
 
@@ -202,6 +215,8 @@ sequenceDiagram
 sequenceDiagram
     participant LLM as LLM Agent
     participant Router as Router Backend
+    participant Bridge as ResourceAcquirerBridge
+    participant Transport as GrpcTransport
     participant Registry as Service Registry
     participant FileProv as File Provider
     participant FS as File System
@@ -209,10 +224,14 @@ sequenceDiagram
     LLM->>Router: Read Resource "file:///path/to/doc.txt"
     Router->>Registry: Lookup Provider for "file://" URI
     Registry-->>Router: Return File Provider Details
-    Router->>FileProv: gRPC ReadResource(uri)
+    Router->>Bridge: Evaluate Resource
+    Bridge->>Transport: acquireResource(request, service)
+    Transport->>FileProv: gRPC ReadResource(uri)
     FileProv->>FS: Read File
     FS-->>FileProv: File Contents
-    FileProv-->>Router: gRPC Response (contents)
+    FileProv-->>Transport: gRPC Response (contents)
+    Transport-->>Bridge: ResourceReply
+    Bridge-->>Router: ResourceContents
     Router-->>LLM: MCP Resource Content
 ```
 
@@ -418,6 +437,14 @@ Leverage 300+ Camel components for rapid integration:
 - **Independent Scaling**: Scale services based on demand
 - **Technology Flexibility**: Use different tech stacks per service
 - **Security**: Contain potential vulnerabilities to specific services
+
+### Why Bridge Pattern with Composition?
+
+- **Separation of Concerns**: Business logic separated from transport implementation
+- **Testability**: Easy to mock transport layer for unit testing
+- **Flexibility**: Support multiple transport protocols (gRPC, HTTP, WebSocket)
+- **Maintainability**: Changes to transport don't affect business logic
+- **Extensibility**: New transport implementations without modifying bridges
 
 ### Why Infinispan for Persistence?
 

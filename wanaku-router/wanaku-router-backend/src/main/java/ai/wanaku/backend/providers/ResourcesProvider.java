@@ -1,6 +1,8 @@
 package ai.wanaku.backend.providers;
 
-import ai.wanaku.backend.proxies.ResourceAcquirerProxy;
+import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
+import ai.wanaku.backend.bridge.WanakuBridgeTransport;
+import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.resolvers.WanakuResourceResolver;
 import ai.wanaku.backend.service.support.FirstAvailable;
 import ai.wanaku.backend.service.support.ServiceResolver;
@@ -40,6 +42,7 @@ public class ResourcesProvider extends AbstractProvider<ResourceResolver> {
         }
 
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        return new WanakuResourceResolver(new ResourceAcquirerProxy(resolver));
+        WanakuBridgeTransport transport = new GrpcTransport();
+        return new WanakuResourceResolver(new ResourceAcquirerBridge(resolver, transport));
     }
 }

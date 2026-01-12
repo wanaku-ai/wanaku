@@ -1,6 +1,6 @@
 package ai.wanaku.backend.resolvers;
 
-import ai.wanaku.backend.proxies.ResourceProxy;
+import ai.wanaku.backend.bridge.ResourceBridge;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
@@ -16,9 +16,9 @@ import org.jboss.logging.Logger;
  */
 public class WanakuResourceResolver implements ResourceResolver {
     private static final Logger LOG = Logger.getLogger(WanakuResourceResolver.class);
-    private final ResourceProxy proxy;
+    private final ResourceBridge proxy;
 
-    public WanakuResourceResolver(ResourceProxy proxy) {
+    public WanakuResourceResolver(ResourceBridge proxy) {
         this.proxy = proxy;
     }
 

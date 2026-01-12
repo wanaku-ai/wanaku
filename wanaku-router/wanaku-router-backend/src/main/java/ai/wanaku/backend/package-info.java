@@ -6,6 +6,6 @@
  * handles all capability management operations and MCP request routing.
  *
  * @see ai.wanaku.backend.api
- * @see ai.wanaku.backend.proxies
+ * @see ai.wanaku.backend.bridge
  */
 package ai.wanaku.backend;
