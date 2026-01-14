@@ -3,7 +3,6 @@ package ai.wanaku.core.persistence.infinispan.discovery;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import java.time.Instant;
 import java.util.List;
@@ -48,8 +47,13 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     }
 
     @Override
-    public List<ServiceTarget> getServiceByName(String serviceName, ServiceType serviceType) {
+    public List<ServiceTarget> getServiceByName(String serviceName, String serviceType) {
         return capabilitiesRepository.findByService(serviceName, serviceType);
+    }
+
+    @Override
+    public List<ServiceTarget> getCodeExecutionService(String serviceType, String serviceSubType, String serviceName) {
+        return capabilitiesRepository.findCodeExecutionService(serviceType, serviceSubType, serviceName);
     }
 
     @Override
@@ -72,7 +76,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     }
 
     @Override
-    public List<ServiceTarget> getEntries(ServiceType serviceType) {
+    public List<ServiceTarget> getEntries(String serviceType) {
         return capabilitiesRepository.listCapable(serviceType);
     }
 

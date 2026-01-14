@@ -33,6 +33,7 @@ import org.jboss.logging.Logger;
 public class ResourceAcquirerBridge implements ResourceBridge {
     private static final Logger LOG = Logger.getLogger(ResourceAcquirerBridge.class);
     private static final String EMPTY_ARGUMENT = "";
+    private static final String SERVICE_TYPE_RESOURCE_PROVIDER = ServiceType.RESOURCE_PROVIDER.asValue();
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
@@ -57,7 +58,7 @@ public class ResourceAcquirerBridge implements ResourceBridge {
                 "Requesting resource on behalf of connection %s",
                 arguments.connection().id());
 
-        ServiceTarget service = resolveService(mcpResource.getType(), ServiceType.RESOURCE_PROVIDER);
+        ServiceTarget service = resolveService(mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
 
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.toAddress());
 
@@ -123,7 +124,7 @@ public class ResourceAcquirerBridge implements ResourceBridge {
 
         LOG.debugf("Provisioning resource: %s (type: %s)", resourceReference.getName(), resourceReference.getType());
 
-        ServiceTarget service = resolveService(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER);
+        ServiceTarget service = resolveService(resourceReference.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
 
         return transport.provision(
                 resourceReference.getName(), payload.getConfigurationData(), payload.getSecretsData(), service);
@@ -136,11 +137,11 @@ public class ResourceAcquirerBridge implements ResourceBridge {
      * and throws an exception if no service is found.
      *
      * @param type the service type identifier
-     * @param serviceType the category of service (e.g., TOOL_INVOKER, RESOURCE_PROVIDER)
+     * @param serviceType the category of service (e.g., "tool-invoker", "resource-provider")
      * @return the resolved service target
      * @throws ServiceNotFoundException if no service is registered for the given type
      */
-    private ServiceTarget resolveService(String type, ServiceType serviceType) {
+    private ServiceTarget resolveService(String type, String serviceType) {
         LOG.debugf("Resolving service for type '%s' and service type '%s'", type, serviceType);
         ServiceTarget service = serviceResolver.resolve(type, serviceType);
         if (service == null) {

@@ -19,6 +19,7 @@ import org.mockito.Mockito;
 @QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
 public class FirstAvailableTest extends WanakuRouterTest {
+    private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
 
     FirstAvailable firstAvailable;
 
@@ -32,33 +33,35 @@ public class FirstAvailableTest extends WanakuRouterTest {
 
     @Test
     public void testResolveService() {
-        ServiceTarget service1 = new ServiceTarget("id1", "service-a", "localhost", 8080, ServiceType.TOOL_INVOKER);
-        ServiceTarget service2 = new ServiceTarget("id2", "service-a", "localhost", 8081, ServiceType.TOOL_INVOKER);
+        ServiceTarget service1 = new ServiceTarget(
+                "id1", "service-a", "localhost", 8080, SERVICE_TYPE_TOOL_INVOKER, "mcp", null, null, null);
+        ServiceTarget service2 = new ServiceTarget(
+                "id2", "service-a", "localhost", 8081, SERVICE_TYPE_TOOL_INVOKER, "mcp", null, null, null);
         List<ServiceTarget> targets = List.of(service1, service2);
 
-        Mockito.when(mockRegistry.getServiceByName("service-a", ServiceType.TOOL_INVOKER))
+        Mockito.when(mockRegistry.getServiceByName("service-a", SERVICE_TYPE_TOOL_INVOKER))
                 .thenReturn(targets);
 
-        ServiceTarget resolved = firstAvailable.resolve("service-a", ServiceType.TOOL_INVOKER);
+        ServiceTarget resolved = firstAvailable.resolve("service-a", SERVICE_TYPE_TOOL_INVOKER);
         Assertions.assertNotNull(resolved);
         Assertions.assertEquals("id1", resolved.getId());
     }
 
     @Test
     public void testResolveServiceNotFound() {
-        Mockito.when(mockRegistry.getServiceByName("service-b", ServiceType.TOOL_INVOKER))
+        Mockito.when(mockRegistry.getServiceByName("service-b", SERVICE_TYPE_TOOL_INVOKER))
                 .thenReturn(Collections.emptyList());
 
-        ServiceTarget resolved = firstAvailable.resolve("service-b", ServiceType.TOOL_INVOKER);
+        ServiceTarget resolved = firstAvailable.resolve("service-b", SERVICE_TYPE_TOOL_INVOKER);
         Assertions.assertNull(resolved);
     }
 
     @Test
     public void testResolveServiceNull() {
-        Mockito.when(mockRegistry.getServiceByName("service-c", ServiceType.TOOL_INVOKER))
+        Mockito.when(mockRegistry.getServiceByName("service-c", SERVICE_TYPE_TOOL_INVOKER))
                 .thenReturn(null);
 
-        ServiceTarget resolved = firstAvailable.resolve("service-c", ServiceType.TOOL_INVOKER);
+        ServiceTarget resolved = firstAvailable.resolve("service-c", SERVICE_TYPE_TOOL_INVOKER);
         Assertions.assertNull(resolved);
     }
 }

@@ -26,6 +26,7 @@ import org.jboss.logging.Logger;
  */
 public class InvokerBridge implements ToolsBridge {
     private static final Logger LOG = Logger.getLogger(InvokerBridge.class);
+    private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
@@ -57,7 +58,7 @@ public class InvokerBridge implements ToolsBridge {
 
         LOG.debugf("Provisioning tool: %s (type: %s)", toolReference.getName(), toolReference.getType());
 
-        ServiceTarget service = resolveService(toolReference.getType(), ServiceType.TOOL_INVOKER);
+        ServiceTarget service = resolveService(toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
 
         return transport.provision(
                 toolReference.getName(), toolPayload.getConfigurationData(), toolPayload.getSecretsData(), service);
@@ -70,11 +71,11 @@ public class InvokerBridge implements ToolsBridge {
      * and throws an exception if no service is found.
      *
      * @param type the service type identifier
-     * @param serviceType the category of service (e.g., TOOL_INVOKER, RESOURCE_PROVIDER)
+     * @param serviceType the category of service (e.g., "tool-invoker", "resource-provider")
      * @return the resolved service target
      * @throws ServiceNotFoundException if no service is registered for the given type
      */
-    private ServiceTarget resolveService(String type, ServiceType serviceType) {
+    private ServiceTarget resolveService(String type, String serviceType) {
         LOG.debugf("Resolving service for type '%s' and service type '%s'", type, serviceType);
         ServiceTarget service = serviceResolver.resolve(type, serviceType);
         if (service == null) {

@@ -3,7 +3,6 @@ package ai.wanaku.cli.main.support;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.services.api.CapabilitiesService;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
@@ -204,7 +203,7 @@ public final class CapabilitiesHelper {
         Objects.requireNonNull(serviceTarget, "ServiceTarget cannot be null");
         Objects.requireNonNull(activityStates, "Activity states map cannot be null");
 
-        return Optional.ofNullable(activityStates.get(serviceTarget.getService())).orElse(List.of()).stream()
+        return Optional.ofNullable(activityStates.get(serviceTarget.getServiceName())).orElse(List.of()).stream()
                 .filter(record -> record.getId().equals(serviceTarget.getId()))
                 .findFirst()
                 .orElse(null);
@@ -230,10 +229,8 @@ public final class CapabilitiesHelper {
         var activityRecord = findActivityRecord(serviceTarget, activityStates);
 
         return new PrintableCapability(
-                Optional.ofNullable(serviceTarget.getService()).orElse(DEFAULT_STATUS),
-                Optional.ofNullable(serviceTarget.getServiceType())
-                        .map(ServiceType::asValue)
-                        .orElse(DEFAULT_STATUS),
+                Optional.ofNullable(serviceTarget.getServiceName()).orElse(DEFAULT_STATUS),
+                Optional.ofNullable(serviceTarget.getServiceType()).orElse(DEFAULT_STATUS),
                 Optional.ofNullable(serviceTarget.getHost()).orElse(DEFAULT_STATUS),
                 serviceTarget.getPort(),
                 determineServiceStatus(activityRecord),

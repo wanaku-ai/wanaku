@@ -32,8 +32,8 @@ export const TargetTypeSelect: React.FC<TargetTypeSelectProps> = ({
       {targetTypes.map((targetType) => (
         <SelectItem
           key={targetType.id}
-          value={targetType.service}
-          text={targetType.service || ""}
+          value={targetType.serviceName}
+          text={targetType.serviceName || ""}
         />
       ))}
     </Select>

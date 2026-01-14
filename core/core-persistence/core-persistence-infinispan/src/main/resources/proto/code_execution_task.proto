@@ -1,0 +1,23 @@
+/*
+ * Internal representation of a code execution task.
+ * Used internally to track the state and metadata of a code execution task.
+ */
+
+syntax = "proto3";
+
+package ai.wanaku.capabilities.sdk.api.types.execution;
+
+import "code_execution_request.proto";
+import "code_execution_status.proto";
+
+message CodeExecutionTask {
+  string taskId = 1;
+  CodeExecutionRequest request = 2;
+  string engineType = 3;
+  string language = 4;
+  CodeExecutionStatus status = 5;
+  optional int64 submittedAt = 6;
+  optional int64 startedAt = 7;
+  optional int64 completedAt = 8;
+  optional int32 exitCode = 9;
+}

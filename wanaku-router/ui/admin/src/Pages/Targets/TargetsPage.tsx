@@ -29,10 +29,10 @@ export const TargetsPage: React.FC = () => {
     ]);
 
     const updatedData = data.map((entry) => {
-      if (entry.service && tools.data?.data?.[entry.service]) {
-        return { ...entry, ...tools.data?.data?.[entry.service][0] };
-      } else if (entry.service && resources.data?.data?.[entry.service]) {
-        return { ...entry, ...resources.data?.data?.[entry.service][0] };
+      if (entry.serviceName && tools.data?.data?.[entry.serviceName]) {
+        return { ...entry, ...tools.data?.data?.[entry.serviceName][0] };
+      } else if (entry.serviceName && resources.data?.data?.[entry.serviceName]) {
+        return { ...entry, ...resources.data?.data?.[entry.serviceName][0] };
       }
       return entry;
     });

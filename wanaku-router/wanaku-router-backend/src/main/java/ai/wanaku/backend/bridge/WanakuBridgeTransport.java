@@ -2,10 +2,13 @@ package ai.wanaku.backend.bridge;
 
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.exchange.CodeExecutionReply;
+import ai.wanaku.core.exchange.CodeExecutionRequest;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
+import java.util.Iterator;
 
 /**
  * Transport abstraction for Wanaku bridge operations.
@@ -85,4 +88,20 @@ public interface WanakuBridgeTransport {
      *         if the service cannot be reached or returns an error
      */
     ResourceReply acquireResource(ResourceRequest request, ServiceTarget service);
+
+    /**
+     * Executes code on a remote code execution service via streaming.
+     * <p>
+     * This method sends a code execution request to the specified service and
+     * returns an iterator over the streaming responses. The iterator will yield
+     * execution output, status updates, and completion/error messages as they
+     * arrive from the remote service.
+     *
+     * @param request the code execution request containing code and execution parameters
+     * @param service the target service that will execute the code
+     * @return an iterator over the streaming code execution replies
+     * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
+     *         if the service cannot be reached or returns an error
+     */
+    Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service);
 }

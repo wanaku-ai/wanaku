@@ -8,6 +8,9 @@ import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.exchange.CodeExecutionReply;
+import ai.wanaku.core.exchange.CodeExecutionRequest;
+import ai.wanaku.core.exchange.CodeExecutorGrpc;
 import ai.wanaku.core.exchange.Configuration;
 import ai.wanaku.core.exchange.PayloadType;
 import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
@@ -18,6 +21,7 @@ import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
 import io.grpc.ManagedChannel;
+import java.util.Iterator;
 import java.util.Objects;
 import org.jboss.logging.Logger;
 
@@ -173,6 +177,33 @@ public class GrpcTransport implements WanakuBridgeTransport {
             return blockingStub.resourceAcquire(request);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
+            throw ServiceUnavailableException.forAddress(service.toAddress());
+        }
+    }
+
+    /**
+     * Executes code on a remote code execution service via gRPC streaming.
+     * <p>
+     * This method creates a channel, builds a gRPC stub, and initiates a streaming
+     * code execution. The returned iterator allows the caller to consume execution
+     * output as it arrives from the remote service.
+     *
+     * @param request the code execution request
+     * @param service the target service
+     * @return an iterator over the streaming code execution replies
+     * @throws ServiceUnavailableException if the service cannot be reached
+     */
+    @Override
+    public Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service) {
+        LOG.debugf("Executing code on service: %s", service.toAddress());
+
+        ManagedChannel channel = createChannel(service);
+
+        try {
+            CodeExecutorGrpc.CodeExecutorBlockingStub blockingStub = CodeExecutorGrpc.newBlockingStub(channel);
+            return blockingStub.executeCode(request);
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to execute code on service: %s", service.toAddress());
             throw ServiceUnavailableException.forAddress(service.toAddress());
         }
     }

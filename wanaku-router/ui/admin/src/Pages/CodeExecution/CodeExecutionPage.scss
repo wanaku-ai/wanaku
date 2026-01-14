@@ -1,0 +1,132 @@
+.code-execution-page {
+  padding: 1rem;
+
+  .title {
+    margin-bottom: 0.5rem;
+  }
+
+  .description {
+    margin-bottom: 1.5rem;
+    color: var(--cds-text-secondary, #525252);
+  }
+
+  .execution-grid {
+    margin-top: 1rem;
+  }
+
+  .code-input-tile,
+  .output-tile {
+    height: 100%;
+    min-height: 500px;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+
+    > * {
+      flex: 1;
+      min-width: 150px;
+    }
+  }
+
+  .code-textarea {
+    font-family: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+
+    textarea {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: 1.5;
+      tab-size: 2;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: center;
+  }
+
+  .output-tile {
+    display: flex;
+    flex-direction: column;
+
+    h4 {
+      margin-bottom: 0.5rem;
+
+      .task-id {
+        font-size: 0.75rem;
+        font-weight: normal;
+        color: var(--cds-text-secondary, #525252);
+      }
+    }
+  }
+
+  .output-console {
+    flex: 1;
+    background-color: #161616;
+    color: #f4f4f4;
+    font-family: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-y: auto;
+    min-height: 400px;
+    max-height: 500px;
+
+    .output-placeholder {
+      color: #6f6f6f;
+      font-style: italic;
+    }
+
+    .output-line {
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 2px;
+
+      &.output-started {
+        color: #78a9ff;
+      }
+
+      &.output-completed {
+        color: #42be65;
+      }
+
+      &.output-error {
+        color: #fa4d56;
+      }
+
+      &.output-standard {
+        color: #f4f4f4;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 672px) {
+  .code-execution-page {
+    .controls-row {
+      flex-direction: column;
+
+      > * {
+        width: 100%;
+      }
+    }
+
+    .code-input-tile,
+    .output-tile {
+      min-height: 300px;
+    }
+
+    .output-console {
+      min-height: 250px;
+      max-height: 300px;
+    }
+  }
+}

@@ -4,6 +4,7 @@ export const enum Links {
   Resources = "/resources",
   Prompts = "/prompts",
   LLMChat = "/llmchat",
+  CodeExecution = "/code-execution",
   Capabilities = "/capabilities",
   Namespaces = "/namespaces",
   Forwards = "/forwards",

@@ -32,8 +32,8 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
       </div>
       <DataTable
         rows={targets.map((target, index) => ({
-          id: `${target.service}-${index}`,
-          service: target.service,
+          id: `${target.serviceName}-${index}`,
+          service: target.serviceName,
           serviceType: target.serviceType,
           host: target.host,
           port: target.port,

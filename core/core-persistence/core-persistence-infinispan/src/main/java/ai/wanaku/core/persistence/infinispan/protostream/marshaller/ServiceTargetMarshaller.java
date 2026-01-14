@@ -1,7 +1,6 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
 
@@ -20,21 +19,30 @@ public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget>
     @Override
     public ServiceTarget readFrom(ProtoStreamReader reader) throws IOException {
         String id = reader.readString("id");
-        String service = reader.readString("service");
+        String serviceName = reader.readString("serviceName");
         String host = reader.readString("host");
         int port = reader.readInt("port");
-        ServiceType serviceType = reader.readEnum("serviceType", ServiceType.class);
+        String serviceType = reader.readString("serviceType");
+        String serviceSubType = reader.readString("serviceSubType");
+        String languageName = reader.readString("languageName");
+        String languageType = reader.readString("languageType");
+        String languageSubType = reader.readString("languageSubType");
 
-        ServiceTarget serviceTarget = new ServiceTarget(id, service, host, port, serviceType);
+        ServiceTarget serviceTarget = new ServiceTarget(
+                id, serviceName, host, port, serviceType, serviceSubType, languageName, languageType, languageSubType);
         return serviceTarget;
     }
 
     @Override
     public void writeTo(ProtoStreamWriter writer, ServiceTarget serviceTarget) throws IOException {
         writer.writeString("id", serviceTarget.getId());
-        writer.writeString("service", serviceTarget.getService());
+        writer.writeString("serviceName", serviceTarget.getServiceName());
         writer.writeString("host", serviceTarget.getHost());
         writer.writeInt("port", serviceTarget.getPort());
-        writer.writeEnum("serviceType", serviceTarget.getServiceType());
+        writer.writeString("serviceType", serviceTarget.getServiceType());
+        writer.writeString("serviceSubType", serviceTarget.getServiceSubType());
+        writer.writeString("languageName", serviceTarget.getLanguageName());
+        writer.writeString("languageType", serviceTarget.getLanguageType());
+        writer.writeString("languageSubType", serviceTarget.getLanguageSubType());
     }
 }
