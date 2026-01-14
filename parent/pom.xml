@@ -68,7 +68,7 @@
         <spotless-maven-plugin.version>3.1.0</spotless-maven-plugin.version>
         <quarkus-operator-sdk.version>7.3.0</quarkus-operator-sdk.version>
         <quarkus-helm.version>1.2.7</quarkus-helm.version>
-        <wanaku-capabilities-sdk.version>0.0.9</wanaku-capabilities-sdk.version>
+        <wanaku-capabilities-sdk.version>0.1.0-SNAPSHOT</wanaku-capabilities-sdk.version>
         <commonmark.version>0.27.0</commonmark.version>
         <oauth2-oidc-sdk.version>11.29.2</oauth2-oidc-sdk.version>
 
