@@ -49,6 +49,10 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>ai.wanaku.sdk</groupId>
+            <artifactId>capabilities-api</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

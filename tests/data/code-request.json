@@ -1,0 +1,17 @@
+{
+  "code": "LSByb3V0ZToKICAgIGlkOiByb3V0ZS0zMTA0CiAgICBmcm9tOgogICAgICBpZDogZnJvbS0xNzAyCiAgICAgIHVyaTogZGlyZWN0CiAgICAgIHBhcmFtZXRlcnM6CiAgICAgICAgbmFtZTogd2FuYWt1CiAgICAgIHN0ZXBzOgogICAgICAgIC0gbG9nOgogICAgICAgICAgICBpZDogbG9nLTI1MjYKICAgICAgICAgICAgbWVzc2FnZTogSGVsbG8gJHtib2R5fQogICAgICAgIC0gc2V0Qm9keToKICAgICAgICAgICAgc2ltcGxlOiBIZWxsbyAke2JvZHl9IGZyb20gJHtyb3V0ZUlkfQo=",
+  "timeout": 30000,
+  "environment": {
+    "NODE_ENV": "production",
+    "LOG_LEVEL": "info"
+  },
+  "arguments": [
+    "--verbose",
+    "run"
+  ],
+  "metadata": {
+    "requestId": "req-12345",
+    "priority": 1,
+    "internal": false
+  }
+}

@@ -4,7 +4,6 @@ import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAdd
 
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.core.exchange.PropertySchema;
@@ -105,12 +104,12 @@ public class ServicesHelper {
      * Creates a new RegistrationManager instance for the given configuration and service type.
      *
      * @param config the Wanaku service configuration
-     * @param serviceType the type of service to register
+     * @param serviceType the type of service to register (e.g., "resource-provider", "tool-invoker", "code-execution-engine")
      * @param tokens the access token used for authenticating requests to the registration service
      * @return a new RegistrationManager instance
      */
     public static RegistrationManager newRegistrationManager(
-            WanakuServiceConfig config, ServiceType serviceType, Tokens tokens) {
+            WanakuServiceConfig config, String serviceType, Tokens tokens) {
         LOG.infof("Using registration service at %s", config.registration().uri());
         DiscoveryService discoveryService = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(URI.create(config.registration().uri()))
@@ -139,7 +138,7 @@ public class ServicesHelper {
                 + config.name();
     }
 
-    private static ServiceTarget newServiceTarget(WanakuServiceConfig config, String service, ServiceType serviceType) {
+    private static ServiceTarget newServiceTarget(WanakuServiceConfig config, String service, String serviceType) {
         String portStr = ConfigProvider.getConfig()
                 .getConfigValue("quarkus.grpc.server.port")
                 .getValue();

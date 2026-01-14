@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "ai.wanaku.core.exchange";
+option java_outer_classname = "CodeExecutionExchange";
+
+package codeexecution;
+
+/**
+ * The code execution service definition.
+ * Provides capabilities for executing code in various languages and engine types.
+ */
+service CodeExecutor {
+  /**
+   * Executes code and streams the results back to the client.
+   * The stream will automatically close when execution completes.
+   */
+  rpc ExecuteCode (CodeExecutionRequest) returns (stream CodeExecutionReply) {}
+}
+
+/**
+ * The code execution request message.
+ * Contains the code to execute along with optional execution parameters.
+ */
+message CodeExecutionRequest {
+  /**
+   * The URI identifying the code execution capability.
+   * Format: code-execution-engine://${engine-type}/${language}
+   */
+  string uri = 1;
+
+  /**
+   * The request body content.
+   */
+  string body = 2;
+
+  /**
+   * The source code to execute as a text blob.
+   * This field contains the actual code that will be executed by the engine.
+   */
+  string code = 3;
+
+  /**
+   * Optional map of execution arguments.
+   * These are command-line arguments or parameters passed to the code execution.
+   * Key-value pairs where both key and value are strings.
+   */
+  map<string, string> arguments = 4;
+
+  /**
+   * Optional URI reference to configuration data.
+   * Used to provide additional configuration for the execution environment.
+   */
+  string configurationURI = 5;
+
+  /**
+   * Optional URI reference to secrets data.
+   * Used to provide secure credentials or sensitive data needed for execution.
+   */
+  string secretsURI = 6;
+
+  /**
+   * Optional timeout in milliseconds.
+   * Maximum time allowed for code execution before termination.
+   * If not specified, a default timeout will be applied.
+   */
+  int64 timeout = 7;
+
+  /**
+   * Optional map of environment variables.
+   * These environment variables will be set in the execution context.
+   */
+  map<string, string> environment = 8;
+}
+
+/**
+ * The code execution reply message.
+ * Streamed back to the client during and after code execution.
+ * Multiple messages may be sent for a single execution request.
+ */
+message CodeExecutionReply {
+  /**
+   * Indicates whether this message represents an error condition.
+   * true if the execution encountered an error, false otherwise.
+   */
+  bool isError = 1;
+
+  /**
+   * The execution output content.
+   * For standard output, this contains the stdout data.
+   * For errors, this contains the stderr data or error messages.
+   * Multiple content strings may be provided for chunked output.
+   */
+  repeated string content = 2;
+
+  /**
+   * The type of output this reply represents.
+   * Indicates whether this is stdout, stderr, or a status message.
+   */
+  OutputType outputType = 3;
+
+  /**
+   * The current execution status.
+   * Indicates the state of the code execution task.
+   */
+  ExecutionStatus status = 4;
+
+  /**
+   * Optional exit code from the executed process.
+   * Only present in the final message when execution completes.
+   * A value of 0 typically indicates successful execution.
+   */
+  int32 exitCode = 5;
+
+  /**
+   * Optional timestamp when this output was generated.
+   * Unix timestamp in milliseconds since epoch.
+   */
+  int64 timestamp = 6;
+}
+
+/**
+ * Enumeration of output types for code execution replies.
+ */
+enum OutputType {
+  /**
+   * Standard output (stdout) from the executed code.
+   */
+  STDOUT = 0;
+
+  /**
+   * Standard error (stderr) from the executed code.
+   */
+  STDERR = 1;
+
+  /**
+   * Status or informational message about execution progress.
+   */
+  STATUS = 2;
+
+  /**
+   * Final completion message indicating execution has finished.
+   */
+  COMPLETION = 3;
+}
+
+/**
+ * Enumeration of execution status values.
+ */
+enum ExecutionStatus {
+  /**
+   * Execution is pending and has not yet started.
+   */
+  PENDING = 0;
+
+  /**
+   * Code is currently being executed.
+   */
+  RUNNING = 1;
+
+  /**
+   * Execution completed successfully.
+   */
+  COMPLETED = 2;
+
+  /**
+   * Execution failed with an error.
+   */
+  FAILED = 3;
+
+  /**
+   * Execution was cancelled by the client.
+   */
+  CANCELLED = 4;
+
+  /**
+   * Execution exceeded the timeout limit.
+   */
+  TIMEOUT = 5;
+}

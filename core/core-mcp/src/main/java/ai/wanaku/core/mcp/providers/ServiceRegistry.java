@@ -3,7 +3,6 @@ package ai.wanaku.core.mcp.providers;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import java.util.List;
 
 /**
@@ -27,11 +26,21 @@ public interface ServiceRegistry {
     /**
      * Gets a registered service by name
      *
-     * @param service     the name of the service
-     * @param serviceType the service type
+     * @param serviceName the name of the service
+     * @param serviceType the service type (e.g., "resource-provider", "tool-invoker", "code-execution-engine")
      * @return the service instance or null if not found
      */
-    List<ServiceTarget> getServiceByName(String service, ServiceType serviceType);
+    List<ServiceTarget> getServiceByName(String serviceName, String serviceType);
+
+    /**
+     * Gets a code execution service by matching service type, sub-type, and name.
+     *
+     * @param serviceType the type of the service (e.g., "code-execution-engine")
+     * @param serviceSubType the sub-type of the service, typically the engine type (e.g., "jvm", "interpreted")
+     * @param serviceName the name of the service, typically the programming language (e.g., "java", "python")
+     * @return a list of matching service targets
+     */
+    List<ServiceTarget> getCodeExecutionService(String serviceType, String serviceSubType, String serviceName);
 
     /**
      * Gets the state of the given service
@@ -50,10 +59,10 @@ public interface ServiceRegistry {
     /**
      * Get registered services of the given type
      *
-     * @param serviceType the type of service to get
+     * @param serviceType the type of service to get (e.g., "resource-provider", "tool-invoker", "code-execution-engine")
      * @return a list of all registered services
      */
-    List<ServiceTarget> getEntries(ServiceType serviceType);
+    List<ServiceTarget> getEntries(String serviceType);
 
     /**
      * Update a registered service target in the registry

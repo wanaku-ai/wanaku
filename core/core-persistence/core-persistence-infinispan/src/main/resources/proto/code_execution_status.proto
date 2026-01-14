@@ -1,0 +1,17 @@
+/*
+ * Enumeration of execution task states.
+ * Represents the lifecycle states of a code execution task from submission to completion.
+ */
+
+syntax = "proto3";
+
+package ai.wanaku.capabilities.sdk.api.types.execution;
+
+enum CodeExecutionStatus {
+  PENDING = 0;
+  RUNNING = 1;
+  COMPLETED = 2;
+  FAILED = 3;
+  CANCELLED = 4;
+  TIMEOUT = 5;
+}

@@ -9,6 +9,7 @@ import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -54,12 +55,8 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        ServiceTarget serviceTarget = new ServiceTarget(
-                null,
-                "test-service",
-                "localhost",
-                8080,
-                ai.wanaku.capabilities.sdk.api.types.providers.ServiceType.TOOL_INVOKER);
+        ServiceTarget serviceTarget =
+                new ServiceTarget(null, "test-service", "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
         final var response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
@@ -81,7 +78,7 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
                 .get("/api/v1/capabilities/")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(1), "data[0].id", is(serviceId), "data[0].service", is("test-service"));
+                .body("data.size()", is(1), "data[0].id", is(serviceId), "data[0].serviceName", is("test-service"));
     }
 
     @Order(2)
@@ -139,7 +136,11 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
                 "test-service",
                 "localhost",
                 8080,
-                ai.wanaku.capabilities.sdk.api.types.providers.ServiceType.TOOL_INVOKER);
+                ServiceType.TOOL_INVOKER.asValue(),
+                "mcp",
+                null,
+                null,
+                null);
 
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)

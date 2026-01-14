@@ -57,6 +57,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 </SideNavMenuItem>
                 <SideNavMenuItem
                     element={Link}
+                    to={Links.CodeExecution}
+                    onClick={onClickSideNavExpand}
+                >
+                    Code Execution
+                </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
                     to="/capabilities"
                     onClick={onClickSideNavExpand}
                 >

@@ -9,13 +9,15 @@ syntax = "proto3";
 
 package ai.wanaku.capabilities.sdk.api.types.providers;
 
-import "service_type.proto";
-
 message ServiceTarget {
   optional string id = 1;
-  string service = 2;
+  string serviceName = 2;
   string host = 3;
   int32 port = 4;
-  ServiceType serviceType = 5;
-  map<string, string> configurations = 6;
+  string serviceType = 5;
+  optional string serviceSubType = 6;
+  map<string, string> configurations = 7;
+  optional string languageName = 8;
+  optional string languageType = 9;
+  optional string languageSubType = 10;
 }

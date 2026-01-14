@@ -37,6 +37,7 @@ import org.jboss.logging.Logger;
  */
 public abstract class AbstractToolDelegate implements InvocationDelegate {
     private static final Logger LOG = Logger.getLogger(AbstractToolDelegate.class);
+    private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
 
     @Inject
     WanakuServiceConfig config;
@@ -63,7 +64,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     @PostConstruct
     public void init() {
         registrationManager =
-                ServicesHelper.newRegistrationManager(config, ServiceType.TOOL_INVOKER, tokensInstance.get());
+                ServicesHelper.newRegistrationManager(config, SERVICE_TYPE_TOOL_INVOKER, tokensInstance.get());
     }
 
     /**

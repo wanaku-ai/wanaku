@@ -4,12 +4,15 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
-import type { ServiceType } from "./serviceType";
 
 export interface ServiceTarget {
   id?: string;
-  service?: string;
+  serviceName?: string;
   host?: string;
   port?: number;
-  serviceType?: ServiceType;
+  serviceType?: string;
+  serviceSubType?: string;
+  languageName?: string;
+  languageType?: string;
+  languageSubType?: string;
 }

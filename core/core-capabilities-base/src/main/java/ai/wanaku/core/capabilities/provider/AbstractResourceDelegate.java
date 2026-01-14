@@ -41,6 +41,7 @@ import org.jboss.logging.Logger;
  */
 public abstract class AbstractResourceDelegate implements ResourceAcquirerDelegate {
     private static final Logger LOG = Logger.getLogger(AbstractResourceDelegate.class);
+    private static final String SERVICE_TYPE_RESOURCE_PROVIDER = ServiceType.RESOURCE_PROVIDER.asValue();
 
     @Inject
     WanakuServiceConfig config;
@@ -67,7 +68,7 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @PostConstruct
     public void init() {
         registrationManager =
-                ServicesHelper.newRegistrationManager(config, ServiceType.RESOURCE_PROVIDER, tokensInstance.get());
+                ServicesHelper.newRegistrationManager(config, SERVICE_TYPE_RESOURCE_PROVIDER, tokensInstance.get());
     }
 
     /**

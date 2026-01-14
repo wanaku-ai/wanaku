@@ -18,6 +18,9 @@ import org.jboss.logging.Logger;
 public class CapabilitiesBean {
     private static final Logger LOG = Logger.getLogger(CapabilitiesBean.class);
 
+    private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
+    private static final String SERVICE_TYPE_RESOURCE_PROVIDER = ServiceType.RESOURCE_PROVIDER.asValue();
+
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
 
@@ -36,7 +39,7 @@ public class CapabilitiesBean {
     }
 
     private List<ServiceTarget> toolList(String labelFilter) {
-        List<ServiceTarget> tools = serviceRegistry.getEntries(ServiceType.TOOL_INVOKER);
+        List<ServiceTarget> tools = serviceRegistry.getEntries(SERVICE_TYPE_TOOL_INVOKER);
         return filterByLabels(tools, labelFilter);
     }
 
@@ -45,7 +48,7 @@ public class CapabilitiesBean {
     }
 
     public List<ServiceTarget> resourcesList(String labelFilter) {
-        List<ServiceTarget> resources = serviceRegistry.getEntries(ServiceType.RESOURCE_PROVIDER);
+        List<ServiceTarget> resources = serviceRegistry.getEntries(SERVICE_TYPE_RESOURCE_PROVIDER);
         return filterByLabels(resources, labelFilter);
     }
 
@@ -75,7 +78,7 @@ public class CapabilitiesBean {
             ActivityRecord state = serviceRegistry.getStates(service.getId());
 
             final List<ActivityRecord> activityRecords =
-                    result.computeIfAbsent(service.getService(), k -> new ArrayList<>());
+                    result.computeIfAbsent(service.getServiceName(), k -> new ArrayList<>());
             activityRecords.add(state);
         }
 

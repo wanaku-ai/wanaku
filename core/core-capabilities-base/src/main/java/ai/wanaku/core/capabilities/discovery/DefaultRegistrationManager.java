@@ -79,7 +79,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
 
         // the directory path for persisting service identity data
         String dataDir = ServicesHelper.getCanonicalServiceHome(config);
-        instanceDataManager = new InstanceDataManager(dataDir, target.getService());
+        instanceDataManager = new InstanceDataManager(dataDir, target.getServiceName());
 
         if (instanceDataManager.dataFileExists()) {
             final ServiceEntry serviceEntry = instanceDataManager.readEntry();
@@ -103,7 +103,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                     LOG.warnf(
                             "The service %s failed to register. Response code: %d",
-                            target.getService(), response.getStatus());
+                            target.getServiceName(), response.getStatus());
                 }
 
                 final WanakuResponse<ServiceTarget> entity = response.getEntity();
@@ -129,14 +129,14 @@ public class DefaultRegistrationManager implements RegistrationManager {
                             "Unable to register service because of: %s (%d)",
                             e.getMessage(), e.getResponse().getStatus());
                 }
-                retries = waitAndRetry(target.getService(), e, retries, waitSeconds);
+                retries = waitAndRetry(target.getServiceName(), e, retries, waitSeconds);
             } catch (Exception e) {
                 if (LOG.isDebugEnabled()) {
                     LOG.warnf(e, "Unable to register service because of: %s", e.getMessage());
                 } else {
                     LOG.warnf("Unable to register service because of: %s", e.getMessage());
                 }
-                retries = waitAndRetry(target.getService(), e, retries, waitSeconds);
+                retries = waitAndRetry(target.getServiceName(), e, retries, waitSeconds);
             }
         } while (retries > 0);
     }
@@ -172,7 +172,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
         } else {
             LOG.debugf(
                     "Registering %s service %s with address %s",
-                    target.getServiceType().asValue(), target.getService(), target.toAddress());
+                    target.getServiceType(), target.getServiceName(), target.toAddress());
             try {
                 if (!lock.tryLock(1, TimeUnit.SECONDS)) {
                     LOG.warnf("Could not obtain a registration lock in 1 second. Giving up ...");
@@ -216,13 +216,13 @@ public class DefaultRegistrationManager implements RegistrationManager {
     @Override
     public void lastAsFail(String reason) {
         if (target.getId() == null) {
-            LOG.warnf("Trying to update the state of an unknown service %s", target.getService());
+            LOG.warnf("Trying to update the state of an unknown service %s", target.getServiceName());
             return;
         }
 
         try (final Response response = service.updateState(target.getId(), ServiceState.newUnhealthy(reason))) {
             if (response.getStatus() != 200) {
-                LOG.errorf("Could not update the state of an service %s (%s)", target.getService(), target.getId());
+                LOG.errorf("Could not update the state of an service %s (%s)", target.getServiceName(), target.getId());
             }
         } catch (Exception e) {
             logServiceFailure(e, "Updating last status failed with %s");
@@ -240,13 +240,13 @@ public class DefaultRegistrationManager implements RegistrationManager {
     @Override
     public void lastAsSuccessful() {
         if (target.getId() == null) {
-            LOG.warnf("Trying to update the state of an unknown service %s", target.getService());
+            LOG.warnf("Trying to update the state of an unknown service %s", target.getServiceName());
             return;
         }
 
         try (final Response response = service.updateState(target.getId(), ServiceState.newHealthy())) {
             if (response.getStatus() != 200) {
-                LOG.errorf("Could not update the state of an service %s (%s)", target.getService(), target.getId());
+                LOG.errorf("Could not update the state of an service %s (%s)", target.getServiceName(), target.getId());
             }
         } catch (Exception e) {
             logServiceFailure(e, "Updating last status failed with %s");

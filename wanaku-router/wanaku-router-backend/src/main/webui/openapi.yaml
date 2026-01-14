@@ -15,6 +15,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ServiceState"
+    CodeExecutionError:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        taskId:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        details:
+          type: object
+          additionalProperties:
+            type: string
+    CodeExecutionRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        timeout:
+          type: integer
+          format: int64
+        environment:
+          type: object
+          additionalProperties:
+            type: string
+        arguments:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: {}
+    CodeExecutionResponse:
+      type: object
+      properties:
+        taskId:
+          type: string
+        streamUrl:
+          type: string
+        status:
+          $ref: "#/components/schemas/CodeExecutionStatus"
+        submittedAt:
+          $ref: "#/components/schemas/Instant"
+    CodeExecutionStatus:
+      type: string
+      enum:
+      - PENDING
+      - RUNNING
+      - COMPLETED
+      - FAILED
+      - CANCELLED
+      - TIMEOUT
     DataStore:
       type: object
       properties:
@@ -245,7 +300,7 @@ components:
       properties:
         id:
           type: string
-        service:
+        serviceName:
           type: string
         host:
           type: string
@@ -253,13 +308,15 @@ components:
           type: integer
           format: int32
         serviceType:
-          $ref: "#/components/schemas/ServiceType"
-    ServiceType:
-      type: string
-      enum:
-      - RESOURCE_PROVIDER
-      - TOOL_INVOKER
-      - MULTI_CAPABILITY
+          type: string
+        serviceSubType:
+          type: string
+        languageName:
+          type: string
+        languageType:
+          type: string
+        languageSubType:
+          type: string
     ToolPayload:
       type: object
       properties:
@@ -1270,6 +1327,77 @@ paths:
       summary: Update
       tags:
       - Tools Resource
+  /api/v2/code-execution-engine/{engineType}/{language}:
+    post:
+      parameters:
+      - name: engineType
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: language
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CodeExecutionRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CodeExecutionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CodeExecutionError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CodeExecutionError"
+      summary: Submit Code
+      tags:
+      - Code Execution Resource
+  /api/v2/code-execution-engine/{engineType}/{language}/{taskId}:
+    get:
+      parameters:
+      - name: engineType
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: language
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutboundSseEvent"
+      summary: Stream Results
+      tags:
+      - Code Execution Resource
 info:
   title: wanaku-router-backend API
   version: 0.1.0-SNAPSHOT

@@ -12,3 +12,4 @@ ai.wanaku.core.persistence.infinispan.protostream.schema.RemoteToolReferenceSche
 ai.wanaku.core.persistence.infinispan.protostream.schema.ToolReferenceSchema
 ai.wanaku.core.persistence.infinispan.protostream.schema.ServiceTargetSchema
 ai.wanaku.core.persistence.infinispan.protostream.schema.ActivityRecordSchema
+ai.wanaku.core.persistence.infinispan.protostream.schema.CodeExecutionTaskSchema

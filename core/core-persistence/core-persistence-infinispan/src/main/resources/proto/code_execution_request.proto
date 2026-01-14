@@ -1,0 +1,15 @@
+/*
+ * Request payload for submitting code to be executed.
+ * Contains the source code along with optional configuration parameters.
+ */
+
+syntax = "proto3";
+
+package ai.wanaku.capabilities.sdk.api.types.execution;
+
+message CodeExecutionRequest {
+  string code = 1;
+  optional int64 timeout = 2;
+  map<string, string> environment = 3;
+  repeated string arguments = 4;
+}
