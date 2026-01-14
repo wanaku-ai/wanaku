@@ -212,7 +212,7 @@ After downloading the CLI, simply run `wanaku start local` and the CLI should do
 server, a file provider and an HTTP provider. You will need to pass the client secret configured 
 so that the capabilities can connect to the router. 
 
-```wanaku start local start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv```
+```wanaku start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv```
 
 If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
 
