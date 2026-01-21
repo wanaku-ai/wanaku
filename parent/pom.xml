@@ -53,7 +53,7 @@
         <langchain4j.version>1.8.0</langchain4j.version>
         <langchain4j-mcp.version>1.8.0-beta15</langchain4j-mcp.version>
         <quarkus-quinoa.version>2.7.1</quarkus-quinoa.version>
-        <test-containers.version>1.21.4</test-containers.version>
+        <testcontainers.version>2.0.3</testcontainers.version>
         <commons-pool2.version>2.12.1</commons-pool2.version>
         <jsonassert-version>1.5.3</jsonassert-version>
         <swagger-core-version>2.2.42</swagger-core-version>
@@ -129,6 +129,24 @@
                 <groupId>io.swagger.parser.v3</groupId>
                 <artifactId>swagger-parser</artifactId>
                 <version>${swagger-parser.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-localstack</artifactId>
+                <version>${testcontainers.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
