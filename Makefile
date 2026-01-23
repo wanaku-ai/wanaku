@@ -70,6 +70,5 @@ load-test: test-resources test-tools
 	$(WANAKU_CLI_CMD) targets resources list
 	$(WANAKU_CLI_CMD) targets tools list
 
-refresh-early-builds:
-	mvn -Pdist clean package
-	jreleaser full-release -Djreleaser.project.version=$(WANAKU_VERSION) --select-platform=osx-aarch_64 --exclude-distribution=cli-native --exclude-distribution=router-native --exclude-distribution=service-kafka-native --exclude-distribution=service-http-native --exclude-distribution=provider-file-native --exclude-distribution=service-yaml-route-native --exclude-distribution=provider-ftp-native --exclude-distribution=service-exec-native --exclude-distribution=provider-s3-native --exclude-distribution=service-sqs-native -Djreleaser.project.snapshot.label="early-access"
+early-builds:
+	gh workflow run early-access -f currentDevelopmentVersion=$$(cat core/core-util/target/classes/version.txt)
