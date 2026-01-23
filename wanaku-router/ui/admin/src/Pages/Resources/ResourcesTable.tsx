@@ -1,17 +1,22 @@
 import {
-  Column,
-  Grid,
+  Button,
+  DataTable,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableHeader,
   TableRow,
-  Button,
+  TableExpandRow,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableToolbar,
+  TableToolbarContent,
 } from "@carbon/react";
-import { TrashCan } from "@carbon/icons-react";
+import { Add, TrashCan} from "@carbon/icons-react";
 import React from "react";
-import { ResourceReference } from "../../models";
+import { Param, ResourceReference} from "../../models";
 import { getNamespacePathById } from "../../hooks/api/use-namespaces";
 
 interface ResourcesTableProps {
@@ -25,53 +30,116 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
   onDelete,
   onAdd,
 }) => {
-  const headers = ["Name", "Location", "Type", "MIME Type", "Description", "Namespace", "Actions"];
+  const headers = [
+    {key: "name", header: "Name"},
+    {key: "location", header: "Location"},
+    {key: "type", header: "Type"},
+    {key: "mimeType", header: "MIME Type"},
+    {key: "description", header: "Description"},
+    {key: "namespace", header: "Namespace"},
+    {key: "actions", header: "Actions"},
+  ]
+
+  function resourcesToRows() {
+    return resources.map((resource: ResourceReference, index: number) => ({
+      id: resource.name || `resource-${index}`,
+      name: resource.name,
+      location: resource.location,
+      type: resource.type,
+      mimeType: resource.mimeType,
+      description: resource.description,
+      namespace: resource.namespace,
+    }))
+  }
+
+  function resourceHasDetails(resource: ResourceReference) {
+    return resource.params && resource.params.length > 0
+  }
+
+  function tableCells(resource) {
+    return (
+      <React.Fragment>
+        <TableCell>{resource.name}</TableCell>
+        <TableCell>{resource.location}</TableCell>
+        <TableCell>{resource.type}</TableCell>
+        <TableCell>{resource.mimeType}</TableCell>
+        <TableCell>{resource.description}</TableCell>
+        <TableCell>{getNamespacePathById(resource.namespace) || "default"}</TableCell>
+        <TableCell>
+          <Button
+              kind="ghost"
+              renderIcon={TrashCan}
+              hasIconOnly
+              iconDescription="Delete"
+              onClick={() => onDelete(resource.name)}
+          />
+        </TableCell>
+      </React.Fragment>
+    )
+  }
 
   return (
-    <Grid>
-      <Column lg={12} md={8} sm={4}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          <Button onClick={onAdd}>Add Resource</Button>
-        </div>
-        <Table aria-label="Resources table">
-          <TableHead>
-            <TableRow>
-              {headers.map((header) => (
-                <TableHeader id={header} key={header}>
-                  {header}
-                </TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {resources.map((row: ResourceReference) => (
-              <TableRow key={row.name}>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.location}</TableCell>
-                <TableCell>{row.type}</TableCell>
-                <TableCell>{row.mimeType}</TableCell>
-                <TableCell>{row.description}</TableCell>
-                <TableCell>{getNamespacePathById(row.namespace) || "default"}</TableCell>
-                <TableCell>
-                  <Button
-                    kind="ghost"
-                    renderIcon={TrashCan}
-                    hasIconOnly
-                    iconDescription="Delete"
-                    onClick={() => onDelete(row.name)}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Column>
-    </Grid>
+    <DataTable headers={headers} rows={resourcesToRows()}>
+      {({
+          headers,
+          rows,
+          getTableProps,
+          getHeaderProps,
+          getRowProps,
+          getExpandedRowProps,
+          getToolbarProps
+        }) => (
+          <TableContainer>
+            <TableToolbar {...getToolbarProps()}>
+              <TableToolbarContent>
+                <Button renderIcon={Add} onClick={onAdd}>Add Resource</Button>
+              </TableToolbarContent>
+            </TableToolbar>
+            <Table {...getTableProps()}>
+              <TableHead>
+                <TableRow>
+                  <TableExpandHeader/>
+                  {headers.map((header) => (
+                    <TableHeader {...getHeaderProps({header})}>
+                      {header.header}
+                    </TableHeader>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row) => {
+                  const resource = resources.find((item) => item.name === row.id)
+                  if (resource && resourceHasDetails(resource)) {
+                    // resource with details, expansion available
+                    return (
+                      <React.Fragment key={resource.name}>
+                        <TableExpandRow expandIconDescription="Show details" {...getRowProps({row})}>
+                          {tableCells(resource)}
+                        </TableExpandRow>
+                        {row.isExpanded && (
+                          <TableExpandedRow colSpan={headers.length + 3} {...getExpandedRowProps({row})}>
+                            Parameters:
+                            {resource.params?.map((parameter: Param) => {
+                              return (<div>{parameter.name + ": " + parameter.value}</div>)
+                            })}
+                          </TableExpandedRow>
+                        )}
+                      </React.Fragment>
+                    )
+                  } else if (resource) {
+                    // resource without detials, no expansion available
+                    return (
+                      <TableRow {...getRowProps({row})}>
+                        <TableCell />
+                        {tableCells(resource)}
+                      </TableRow>
+                    )
+                  }
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+    </DataTable>
   );
 };
