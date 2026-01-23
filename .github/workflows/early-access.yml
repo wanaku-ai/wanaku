@@ -21,6 +21,12 @@ jobs:
           persist-credentials: false
           ref: main
           path: wanaku-capabilities-java-sdk
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
       - name: Build Wanaku Capabilities SDK Main Project
         run: mvn -DskipTests clean install
         working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
