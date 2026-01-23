@@ -4,7 +4,22 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.0.9-SNAPSHOT
+    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+  name: wanaku-role-binding
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: wanaku-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: wanaku-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: wanaku-operator
+    app.kubernetes.io/version: 0.1.0-SNAPSHOT
   name: wanaku-operator-view
 roleRef:
   kind: ClusterRole

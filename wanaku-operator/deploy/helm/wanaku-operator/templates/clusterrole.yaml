@@ -4,8 +4,8 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.0.9-SNAPSHOT
-  name: wanakureconciler-cluster-role
+    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+  name: wanaku-cluster-role
 rules:
   - apiGroups:
       - wanaku.ai
@@ -92,7 +92,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.0.9-SNAPSHOT
+    app.kubernetes.io/version: 0.1.0-SNAPSHOT
   name: josdk-crd-validating-cluster-role
 rules:
   - apiGroups:
