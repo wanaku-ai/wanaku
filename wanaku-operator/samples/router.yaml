@@ -22,10 +22,15 @@ spec:
 #        value: value2
 # You can also set a custom image for the router
 #    image: quay.io/wanaku/wanaku-router-backend:latest # Optional
+# You can also configure the image pull policy (default: IfNotPresent)
+# Valid values: Always, IfNotPresent, Never
+#    imagePullPolicy: IfNotPresent
   capabilities:
 # For the capabilities, you need to provide the name, image to use and any environment variables required:
+# You can also optionally specify the imagePullPolicy (default: IfNotPresent)
     - name: wanaku-http
       image: quay.io/wanaku/wanaku-tool-service-http:latest
+#      imagePullPolicy: IfNotPresent  # Optional: Always, IfNotPresent, or Never
     - name: finance-system
       image: quay.io/wanaku/camel-integration-capability:latest
     - name: employee-system
