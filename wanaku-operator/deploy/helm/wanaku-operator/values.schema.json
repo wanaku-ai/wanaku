@@ -46,6 +46,14 @@
           "description" : "The container image to use.",
           "type" : "string"
         },
+        "envs" : {
+          "type" : "object",
+          "properties" : {
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_NAMESPACES" : {
+              "type" : "string"
+            }
+          }
+        },
         "readinessProbe" : {
           "type" : "object",
           "properties" : {
@@ -81,14 +89,6 @@
                   "type" : "string"
                 }
               }
-            }
-          }
-        },
-        "envs" : {
-          "type" : "object",
-          "properties" : {
-            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKURECONCILER_NAMESPACES" : {
-              "type" : "string"
             }
           }
         },
