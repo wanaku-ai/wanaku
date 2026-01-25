@@ -59,7 +59,29 @@ class URIParserTest {
                 arguments(
                         "http://my-host/data?id=456",
                         "http://my-host/data{parameter.query('id')}",
-                        makeArg(Map.of("id", "456", "name", "My Name With Spaces"))));
+                        makeArg(Map.of("id", "456", "name", "My Name With Spaces"))),
+                // Edge case: Empty template
+                arguments("", "", emptyArg()),
+                // Edge case: No substitution
+                arguments("http://example.com", "http://example.com", emptyArg()),
+                // Edge case: Empty string value
+                arguments("http://host/", "http://host/{id}", makeArg(Map.of("id", ""))),
+                // Edge case: Multiple substitutions
+                arguments(
+                        "http://host:8080/path?id=123",
+                        "http://{host}:{port}/{path}?id={id}",
+                        makeArg(Map.of("host", "host", "port", "8080", "path", "path", "id", "123"))),
+                // Edge case: Special chars (encoded)
+                arguments(
+                        "http://my-host/?query=a%26b%3Dc",
+                        "http://my-host/{parameter.query('query')}", makeArg(Map.of("query", "a&b=c"))),
+                // Edge case: valueOrElse with multiple params
+                arguments(
+                        "http://my-host/123/user/data",
+                        "http://my-host/{parameter.valueOrElse('id', 'default')}/user/data",
+                        makeArg(Map.of("id", "123"))),
+                // Edge case: Missing param with parameter.value
+                arguments("http://host//data", "http://host/{parameter.value('{missing}')}/data", emptyArg()));
     }
 
     static Map<String, Object> makeArg(Map<String, Object> map) {
