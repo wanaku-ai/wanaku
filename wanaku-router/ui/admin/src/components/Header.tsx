@@ -58,14 +58,6 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.Prompts}>
                     Prompts
                 </HeaderMenuItem>
-                <HeaderMenu aria-label="Developer" menuLinkName="Developer">
-                    <HeaderMenuItem as={Link} to={Links.LLMChat}>
-                        LLMChat
-                    </HeaderMenuItem>
-                    <HeaderMenuItem as={Link} to={Links.CodeExecution}>
-                        Code Execution
-                    </HeaderMenuItem>
-                </HeaderMenu>
                 <HeaderMenuItem as={Link} to={Links.Capabilities}>
                     Capabilities
                 </HeaderMenuItem>
@@ -78,6 +70,14 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.DataStores}>
                     Data Stores
                 </HeaderMenuItem>
+                <HeaderMenu aria-label="Developer" menuLinkName="Developer">
+                    <HeaderMenuItem as={Link} to={Links.LLMChat}>
+                        LLMChat
+                    </HeaderMenuItem>
+                    <HeaderMenuItem as={Link} to={Links.CodeExecution}>
+                        Code Execution
+                    </HeaderMenuItem>
+                </HeaderMenu>
             </HeaderNavigation>
             <HeaderGlobalBar>
                 <HeaderGlobalAction
