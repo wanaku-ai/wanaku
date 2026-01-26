@@ -1,6 +1,7 @@
 import {
     SideNav,
     SideNavItems,
+    SideNavMenu,
     SideNavMenuItem,
 } from '@carbon/react';
 import { Links } from "../router/links.models";
@@ -48,20 +49,22 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 >
                     Prompts
                 </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/llmchat"
-                    onClick={onClickSideNavExpand}
-                >
-                    LLMChat
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to={Links.CodeExecution}
-                    onClick={onClickSideNavExpand}
-                >
-                    Code Execution
-                </SideNavMenuItem>
+                <SideNavMenu title="Developer">
+                    <SideNavMenuItem
+                        element={Link}
+                        to={Links.LLMChat}
+                        onClick={onClickSideNavExpand}
+                    >
+                        LLMChat
+                    </SideNavMenuItem>
+                    <SideNavMenuItem
+                        element={Link}
+                        to={Links.CodeExecution}
+                        onClick={onClickSideNavExpand}
+                    >
+                        Code Execution
+                    </SideNavMenuItem>
+                </SideNavMenu>
                 <SideNavMenuItem
                     element={Link}
                     to="/capabilities"
