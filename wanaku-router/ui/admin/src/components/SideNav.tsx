@@ -64,6 +64,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                     >
                         Code Execution
                     </SideNavMenuItem>
+                    <SideNavMenuItem
+                        element={Link}
+                        to={Links.ToolCalls}
+                        onClick={onClickSideNavExpand}
+                    >
+                        Tool Call Debugger
+                    </SideNavMenuItem>
                 </SideNavMenu>
                 <SideNavMenuItem
                     element={Link}

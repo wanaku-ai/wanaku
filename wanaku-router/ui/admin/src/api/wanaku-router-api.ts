@@ -1914,3 +1914,70 @@ export const getApiV2CodeExecutionEngineEngineTypeLanguageTaskId = async (
     },
   );
 };
+
+/**
+ * @summary Stream All Tool Calls
+ */
+export type getApiV2ToolCallsNotificationsResponse200 = {
+  data: OutboundSseEvent[];
+  status: 200;
+};
+
+export type getApiV2ToolCallsNotificationsResponseComposite =
+  getApiV2ToolCallsNotificationsResponse200;
+
+export type getApiV2ToolCallsNotificationsResponse =
+  getApiV2ToolCallsNotificationsResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV2ToolCallsNotificationsUrl = () => {
+  return `/api/v2/tool-calls/notifications`;
+};
+
+export const getApiV2ToolCallsNotifications = async (
+  options?: RequestInit,
+): Promise<getApiV2ToolCallsNotificationsResponse> => {
+  return customFetch<getApiV2ToolCallsNotificationsResponse>(
+    getGetApiV2ToolCallsNotificationsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Stream Tool Calls By Connection
+ */
+export type getApiV2ToolCallsNotificationsConnectionIdResponse200 = {
+  data: OutboundSseEvent[];
+  status: 200;
+};
+
+export type getApiV2ToolCallsNotificationsConnectionIdResponseComposite =
+  getApiV2ToolCallsNotificationsConnectionIdResponse200;
+
+export type getApiV2ToolCallsNotificationsConnectionIdResponse =
+  getApiV2ToolCallsNotificationsConnectionIdResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV2ToolCallsNotificationsConnectionIdUrl = (
+  connectionId: string,
+) => {
+  return `/api/v2/tool-calls/notifications/${connectionId}`;
+};
+
+export const getApiV2ToolCallsNotificationsConnectionId = async (
+  connectionId: string,
+  options?: RequestInit,
+): Promise<getApiV2ToolCallsNotificationsConnectionIdResponse> => {
+  return customFetch<getApiV2ToolCallsNotificationsConnectionIdResponse>(
+    getGetApiV2ToolCallsNotificationsConnectionIdUrl(connectionId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};

@@ -5,6 +5,7 @@ import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
+import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.Property;
@@ -19,6 +20,9 @@ import com.google.protobuf.ProtocolStringList;
 import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +53,7 @@ public class InvokerToolExecutor implements ToolExecutor {
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
+    private final MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
 
     /**
      * Creates a new InvokerToolExecutor.
@@ -56,7 +61,7 @@ public class InvokerToolExecutor implements ToolExecutor {
      * @param serviceResolver the service resolver for locating tool services
      */
     public InvokerToolExecutor(ServiceResolver serviceResolver) {
-        this(serviceResolver, new GrpcTransport());
+        this(serviceResolver, new GrpcTransport(), null);
     }
 
     /**
@@ -69,8 +74,23 @@ public class InvokerToolExecutor implements ToolExecutor {
      * @param transport the gRPC transport for communication
      */
     public InvokerToolExecutor(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
+        this(serviceResolver, transport, null);
+    }
+
+    /**
+     * Creates a new InvokerToolExecutor with a custom transport and event emitter.
+     *
+     * @param serviceResolver the service resolver for locating tool services
+     * @param transport the gRPC transport for communication
+     * @param toolCallEventEmitter the emitter for tool call events (nullable)
+     */
+    public InvokerToolExecutor(
+            ServiceResolver serviceResolver,
+            WanakuBridgeTransport transport,
+            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
+        this.toolCallEventEmitter = toolCallEventEmitter;
     }
 
     @Override
@@ -95,19 +115,57 @@ public class InvokerToolExecutor implements ToolExecutor {
             return ToolResponse.error("There is no host registered for service " + toolReference.getType());
         }
 
+        // Build request to extract information for event
+        ToolInvokeRequest request = buildToolInvokeRequest(toolReference, toolArguments);
+
+        // Emit STARTED event
+        ToolCallEvent startedEvent = null;
+        if (toolCallEventEmitter != null) {
+            startedEvent = emitStartedEvent(toolArguments, toolReference, service, request);
+        }
+
+        final Instant startTime = Instant.now();
         LOG.infof("Invoking %s on %s", toolReference.getType(), service);
+
         try {
-            final ToolInvokeReply invokeReply = invokeRemotely(toolReference, toolArguments, service);
+            final ToolInvokeReply invokeReply = transport.invokeTool(request, service);
+            long duration = Duration.between(startTime, Instant.now()).toMillis();
+
+            // Emit COMPLETED or FAILED event based on response
+            if (toolCallEventEmitter != null && startedEvent != null) {
+                doEmitEvents(invokeReply, startedEvent, duration);
+            }
+
             return processToolInvokeReply(invokeReply);
         } catch (Exception e) {
+            long duration = Duration.between(startTime, Instant.now()).toMillis();
             String errorMessage = composeErrorMessage(e);
 
-            LOG.errorf(
-                    e,
-                    "Unable to call endpoint: %s (connection: %s)",
+            // Emit FAILED event with error categorization
+            if (toolCallEventEmitter != null && startedEvent != null) {
+                ToolCallEvent.ErrorCategory category = categorizeException(e);
+                emitFailedEvent(startedEvent.getEventId(), category, errorMessage, duration);
+            }
+
+            LOG.errorf(e, "Unable to call endpoint: %s (connection: %s)",
                     errorMessage,
                     toolArguments.connection().id());
             return ToolResponse.error(errorMessage);
+        }
+    }
+
+    private void doEmitEvents(ToolInvokeReply invokeReply, ToolCallEvent startedEvent, long duration) {
+        if (invokeReply.getIsError()) {
+            String errorMsg = invokeReply.getContentList().isEmpty()
+                    ? "Tool execution error"
+                    : invokeReply.getContentList().get(0);
+            ToolCallEvent.ErrorCategory category = categorizeToolError(errorMsg);
+            emitFailedEvent(startedEvent.getEventId(), category, errorMsg, duration);
+        } else {
+            String content = invokeReply.getContentList().isEmpty()
+                    ? ""
+                    : String.join("\n", invokeReply.getContentList());
+            emitCompletedEvent(startedEvent.getEventId(), content, duration);
         }
     }
 
@@ -137,12 +195,6 @@ public class InvokerToolExecutor implements ToolExecutor {
         return String.format(
                 "An exception of type %s was thrown, but no error details were provided",
                 e.getClass().getName());
-    }
-
-    private ToolInvokeReply invokeRemotely(
-            ToolReference toolReference, ToolManager.ToolArguments toolArguments, ServiceTarget service) {
-        ToolInvokeRequest request = buildToolInvokeRequest(toolReference, toolArguments);
-        return transport.invokeTool(request, service);
     }
 
     /**
@@ -239,5 +291,130 @@ public class InvokerToolExecutor implements ToolExecutor {
 
         // Use the body provided by the LLM
         return body;
+    }
+
+    /**
+     * Emits a STARTED event for a tool call.
+     */
+    private ToolCallEvent emitStartedEvent(
+            ToolManager.ToolArguments toolArguments,
+            ToolReference toolReference,
+            ServiceTarget service,
+            ToolInvokeRequest request) {
+        try {
+            Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
+            ToolCallEvent event = ToolCallEvent.started(
+                    toolReference.getName(),
+                    toolReference.getType(),
+                    toolArguments.connection().id(),
+                    service.getId(),
+                    service.toAddress(),
+                    argumentsMap,
+                    request.getHeadersMap(),
+                    request.getBody(),
+                    request.getConfigurationURI(),
+                    request.getSecretsURI());
+
+            if (toolCallEventEmitter.hasRequests()) {
+                toolCallEventEmitter.sendAndForget(event);
+            }
+            return event;
+        } catch (Exception e) {
+            LOG.warnf(e, "Failed to emit STARTED event for tool %s", toolReference.getName());
+            return null;
+        }
+    }
+
+    /**
+     * Emits a COMPLETED event for a successful tool call.
+     */
+    private void emitCompletedEvent(String eventId, String content, long duration) {
+        try {
+            ToolCallEvent event = ToolCallEvent.completed(eventId, content, duration);
+            if (toolCallEventEmitter.hasRequests()) {
+                toolCallEventEmitter.sendAndForget(event);
+            }
+        } catch (Exception e) {
+            LOG.warnf(e, "Failed to emit COMPLETED event for %s", eventId);
+        }
+    }
+
+    /**
+     * Emits a FAILED event for a failed tool call.
+     */
+    private void emitFailedEvent(
+            String eventId, ToolCallEvent.ErrorCategory category, String errorMessage, long duration) {
+        try {
+            ToolCallEvent event = ToolCallEvent.failed(eventId, category, errorMessage, null, duration);
+            if (toolCallEventEmitter.hasRequests()) {
+                toolCallEventEmitter.sendAndForget(event);
+            }
+        } catch (Exception e) {
+            LOG.warnf(e, "Failed to emit FAILED event for %s", eventId);
+        }
+    }
+
+    /**
+     * Categorizes exceptions into error categories.
+     */
+    private ToolCallEvent.ErrorCategory categorizeException(Exception e) {
+        String exceptionName = e.getClass().getName();
+        String message = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+
+        // Check for gRPC / network exceptions
+        if (exceptionName.contains("StatusRuntimeException")
+                || exceptionName.contains("ServiceUnavailableException")
+                || message.contains("unavailable")
+                || message.contains("connection refused")
+                || message.contains("connection reset")) {
+            return ToolCallEvent.ErrorCategory.SERVICE_UNAVAILABLE;
+        }
+
+        // Check for null pointer exceptions (likely tool definition issues)
+        if (e instanceof NullPointerException) {
+            return ToolCallEvent.ErrorCategory.TOOL_DEFINITION_ERROR;
+        }
+
+        // Check for argument-related errors
+        if (isArgumentRelatedException(exceptionName, message)) {
+            return ToolCallEvent.ErrorCategory.INVALID_ARGUMENTS;
+        }
+
+        return ToolCallEvent.ErrorCategory.UNKNOWN;
+    }
+
+    private static boolean isArgumentRelatedException(String exceptionName, String message) {
+        return exceptionName.contains("IllegalArgumentException")
+                || exceptionName.contains("JsonProcessingException")
+                || message.contains("invalid argument")
+                || message.contains("missing required")
+                || message.contains("validation failed");
+    }
+
+    /**
+     * Categorizes tool execution errors based on error message content.
+     */
+    private ToolCallEvent.ErrorCategory categorizeToolError(String errorMessage) {
+        if (errorMessage == null) {
+            return ToolCallEvent.ErrorCategory.EXECUTION_ERROR;
+        }
+
+        String lowerMessage = errorMessage.toLowerCase();
+
+        // Check for invalid argument patterns
+        if (isArgumentRelatedMessage(lowerMessage)) {
+            return ToolCallEvent.ErrorCategory.INVALID_ARGUMENTS;
+        }
+
+        // Default to execution error for tool-reported errors
+        return ToolCallEvent.ErrorCategory.EXECUTION_ERROR;
+    }
+
+    private static boolean isArgumentRelatedMessage(String lowerMessage) {
+        return lowerMessage.contains("invalid argument")
+                || lowerMessage.contains("missing required")
+                || lowerMessage.contains("validation failed")
+                || lowerMessage.contains("invalid parameter")
+                || lowerMessage.contains("bad request");
     }
 }
