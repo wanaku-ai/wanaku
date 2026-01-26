@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge;
 
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
+import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
@@ -9,6 +10,7 @@ import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.common.ToolExecutor;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import org.jboss.logging.Logger;
 
 /**
@@ -42,9 +44,23 @@ public class InvokerBridge implements ToolsBridge {
      * @param transport the gRPC transport for communication
      */
     public InvokerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
+        this(serviceResolver, transport, null);
+    }
+
+    /**
+     * Creates a new InvokerBridge with the specified service resolver, transport, and event emitter.
+     *
+     * @param serviceResolver the resolver for locating tool services
+     * @param transport the gRPC transport for communication
+     * @param toolCallEventEmitter the emitter for tool call events (nullable)
+     */
+    public InvokerBridge(
+            ServiceResolver serviceResolver,
+            WanakuBridgeTransport transport,
+            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
-        this.executor = new InvokerToolExecutor(serviceResolver, transport);
+        this.executor = new InvokerToolExecutor(serviceResolver, transport, toolCallEventEmitter);
     }
 
     @Override

@@ -80,6 +80,7 @@ export * from "./serviceTargetEvent";
 export * from "./serviceTargetLabels";
 export * from "./serviceType";
 export * from "./state";
+export * from "./toolCallEvent";
 export * from "./toolPayload";
 export * from "./toolReference";
 export * from "./toolReferenceLabels";

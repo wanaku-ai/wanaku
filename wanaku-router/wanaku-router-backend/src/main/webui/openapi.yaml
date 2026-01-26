@@ -1398,6 +1398,40 @@ paths:
       summary: Stream Results
       tags:
       - Code Execution Resource
+  /api/v2/tool-calls/notifications:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutboundSseEvent"
+      summary: Stream All Tool Calls
+      tags:
+      - Tool Call Resource
+  /api/v2/tool-calls/notifications/{connectionId}:
+    get:
+      parameters:
+      - name: connectionId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutboundSseEvent"
+      summary: Stream Tool Calls By Connection
+      tags:
+      - Tool Call Resource
 info:
   title: wanaku-router-backend API
   version: 0.1.0-SNAPSHOT
