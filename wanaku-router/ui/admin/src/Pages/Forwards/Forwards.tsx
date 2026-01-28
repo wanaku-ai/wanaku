@@ -121,7 +121,8 @@ const ForwardsPage = () => {
                 clearForwardsCache();
                 fetchForwards();
             } else {
-                setErrorMessage(response.data?.message || "Failed to add forward");
+                const errorData = response.data as { error?: { message?: string } } | null;
+                setErrorMessage(errorData?.error?.message || "Failed to add forward");
             }
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : "An error occurred");
