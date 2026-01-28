@@ -14,9 +14,9 @@ import {
     TableToolbarContent,
     ToastNotification,
 } from "@carbon/react";
-import { Add } from "@carbon/icons-react";
+import { Add, TrashCan } from "@carbon/icons-react";
 import {useEffect, useState} from "react";
-import {addForward, clearForwardsCache, listForwards} from "../../hooks/api/use-forwards";
+import {addForward, clearForwardsCache, listForwards, removeForward} from "../../hooks/api/use-forwards";
 import {ForwardReference} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces";
 import {AddForwardModal} from "./AddForwardModal";
@@ -32,14 +32,19 @@ interface ForwardRow {
     name?: string;
     address?: string;
     namespace?: string;
+    original: ForwardReference;
 }
 
 interface ForwardsTableProps {
     rows: ForwardRow[];
     onAdd: () => void;
+    onDelete: (forward: ForwardReference) => void;
 }
 
-const ForwardsTable = ({rows, onAdd}: ForwardsTableProps) => {
+const ForwardsTable = ({rows, onAdd, onDelete}: ForwardsTableProps) => {
+    // Create a map of row id to original forward for quick lookup
+    const rowDataMap = new Map(rows.map(row => [row.id, row.original]));
+
     return (
         <Grid>
             <Column lg={12} md={8} sm={4}>
@@ -64,6 +69,7 @@ const ForwardsTable = ({rows, onAdd}: ForwardsTableProps) => {
                                                 {header.header}
                                             </TableHeader>
                                         ))}
+                                        <TableHeader>Actions</TableHeader>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -72,6 +78,18 @@ const ForwardsTable = ({rows, onAdd}: ForwardsTableProps) => {
                                             {row.cells.map((cell) => (
                                                 <TableCell key={cell.id}>{cell.value}</TableCell>
                                             ))}
+                                            <TableCell>
+                                                <Button
+                                                    kind="ghost"
+                                                    renderIcon={TrashCan}
+                                                    iconDescription="Delete"
+                                                    hasIconOnly
+                                                    onClick={() => {
+                                                        const forward = rowDataMap.get(row.id);
+                                                        if (forward) onDelete(forward);
+                                                    }}
+                                                />
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -99,6 +117,7 @@ const ForwardsPage = () => {
                         name: f.name,
                         address: f.address,
                         namespace: getNamespacePathById(f.namespace),
+                        original: f,
                     }));
                 setForwards(forwardsData);
             }
@@ -129,6 +148,20 @@ const ForwardsPage = () => {
         }
     };
 
+    const handleDeleteForward = async (forward: ForwardReference) => {
+        try {
+            const response = await removeForward(forward);
+            if (response.status === 200) {
+                clearForwardsCache();
+                fetchForwards();
+            } else {
+                setErrorMessage("Failed to delete forward");
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "An error occurred while deleting forward");
+        }
+    };
+
     return (
         <div>
             <h1 className="title">Forwards</h1>
@@ -151,7 +184,7 @@ const ForwardsPage = () => {
                 />
             )}
             <div id="page-content">
-                <ForwardsTable rows={forwards} onAdd={handleAddClick}/>
+                <ForwardsTable rows={forwards} onAdd={handleAddClick} onDelete={handleDeleteForward}/>
             </div>
         </div>
     );
