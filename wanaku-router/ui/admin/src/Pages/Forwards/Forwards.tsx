@@ -16,7 +16,7 @@ import {
 } from "@carbon/react";
 import { Add, TrashCan } from "@carbon/icons-react";
 import {useEffect, useState} from "react";
-import {addForward, clearForwardsCache, listForwards, removeForward} from "../../hooks/api/use-forwards";
+import {addForward, listForwards, removeForward} from "../../hooks/api/use-forwards";
 import {ForwardReference} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces";
 import {AddForwardModal} from "./AddForwardModal";
@@ -41,14 +41,11 @@ interface ForwardsTableProps {
     onDelete: (forward: ForwardReference) => void;
 }
 
-const ForwardsTable = ({rows, onAdd, onDelete}: ForwardsTableProps) => {
-    // Create a map of row id to original forward for quick lookup
-    const rowDataMap = new Map(rows.map(row => [row.id, row.original]));
-
+const ForwardsTable = ({rows: forwardRows, onAdd, onDelete}: ForwardsTableProps) => {
     return (
         <Grid>
             <Column lg={12} md={8} sm={4}>
-                <DataTable rows={rows} headers={headers}>
+                <DataTable rows={forwardRows} headers={headers}>
                     {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
                         <TableContainer>
                             <TableToolbar>
@@ -85,8 +82,8 @@ const ForwardsTable = ({rows, onAdd, onDelete}: ForwardsTableProps) => {
                                                     iconDescription="Delete"
                                                     hasIconOnly
                                                     onClick={() => {
-                                                        const forward = rowDataMap.get(row.id);
-                                                        if (forward) onDelete(forward);
+                                                        const forwardRow = forwardRows.find(r => r.id === row.id);
+                                                        if (forwardRow) onDelete(forwardRow.original);
                                                     }}
                                                 />
                                             </TableCell>
@@ -137,7 +134,6 @@ const ForwardsPage = () => {
             const response = await addForward(newForward);
             if (response.status === 200) {
                 setIsAddModalOpen(false);
-                clearForwardsCache();
                 fetchForwards();
             } else {
                 const errorData = response.data as { error?: { message?: string } } | null;
@@ -152,7 +148,6 @@ const ForwardsPage = () => {
         try {
             const response = await removeForward(forward);
             if (response.status === 200) {
-                clearForwardsCache();
                 fetchForwards();
             } else {
                 setErrorMessage("Failed to delete forward");
