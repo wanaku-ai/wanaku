@@ -147,7 +147,9 @@ public class InvokerToolExecutor implements ToolExecutor {
                 emitFailedEvent(startedEvent.getEventId(), category, errorMessage, duration);
             }
 
-            LOG.errorf(e, "Unable to call endpoint: %s (connection: %s)",
+            LOG.errorf(
+                    e,
+                    "Unable to call endpoint: %s (connection: %s)",
                     errorMessage,
                     toolArguments.connection().id());
             return ToolResponse.error(errorMessage);
@@ -162,9 +164,8 @@ public class InvokerToolExecutor implements ToolExecutor {
             ToolCallEvent.ErrorCategory category = categorizeToolError(errorMsg);
             emitFailedEvent(startedEvent.getEventId(), category, errorMsg, duration);
         } else {
-            String content = invokeReply.getContentList().isEmpty()
-                    ? ""
-                    : String.join("\n", invokeReply.getContentList());
+            String content =
+                    invokeReply.getContentList().isEmpty() ? "" : String.join("\n", invokeReply.getContentList());
             emitCompletedEvent(startedEvent.getEventId(), content, duration);
         }
     }
