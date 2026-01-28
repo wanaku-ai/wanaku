@@ -19,15 +19,19 @@ import ai.wanaku.backend.bridge.CodeExecutionBridge;
 import ai.wanaku.backend.bridge.CodeExecutorBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
+import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.FirstAvailable;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import io.quarkus.arc.DefaultBean;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
 
@@ -48,6 +52,11 @@ public class CodeExecutionProvider {
 
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
+
+    @Inject
+    @Channel("tool-call-event")
+    @OnOverflow(OnOverflow.Strategy.DROP)
+    MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
 
     ServiceRegistry serviceRegistry;
 
@@ -73,6 +82,6 @@ public class CodeExecutionProvider {
         LOG.info("Creating CodeExecutionBridge");
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
         WanakuBridgeTransport transport = new GrpcTransport();
-        return new CodeExecutionBridge(resolver, transport);
+        return new CodeExecutionBridge(resolver, transport, toolCallEventEmitter);
     }
 }
