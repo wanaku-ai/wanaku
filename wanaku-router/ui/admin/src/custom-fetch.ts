@@ -37,6 +37,7 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
     const requestInit: RequestInit = {
       ...options,
       headers: requestHeaders,
+      credentials: 'include',
     };
 
     const request = new Request(requestUrl, requestInit);

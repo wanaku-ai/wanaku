@@ -31,6 +31,8 @@ import json from "highlight.js/lib/languages/json";
 import yaml from "highlight.js/lib/languages/yaml";
 import xml from "highlight.js/lib/languages/xml";
 import { Bot, Function_2, InformationSquare, Reply } from "@carbon/icons-react";
+import { useTools } from "../../hooks/api/use-tools";
+import { ToolReference } from "../../models";
 
 export const LLMChatPage: React.FC = () => {
   hljs.registerLanguage("json", json);
@@ -82,13 +84,8 @@ export const LLMChatPage: React.FC = () => {
     JSON.stringify(extraLLMParams)
   );
 
-  interface Tool {
-    name?: string;
-    description?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    inputSchema?: any;
-  }
-  const [tools, setTools] = useState<Tool[]>([]);
+  const { listTools } = useTools();
+  const [tools, setTools] = useState<ToolReference[]>([]);
   const [selectedTools, setSelectedTools] = useState<string[]>(() => {
     if (isStoreInLocalStorage) {
       const stored = localStorage.getItem("selectedTools");
@@ -98,6 +95,7 @@ export const LLMChatPage: React.FC = () => {
     return [];
   });
   const [isLoadingTools, setIsLoadingTools] = useState<boolean>(true);
+  const [toolsError, setToolsError] = useState<string | null>(null);
 
   const [systemMessage, setSystemMessage] = useState(
     "You are an assistant that can use tools."
@@ -177,8 +175,14 @@ export const LLMChatPage: React.FC = () => {
 
     try {
       await mcpClient.connect(
-        // try with /mcp/sse
-        new SSEClientTransport(new URL(getUrl("mcp/sse")))
+        new SSEClientTransport(new URL(getUrl("mcp/sse")), {
+          eventSourceInit: {
+            withCredentials: true,
+          },
+          requestInit: {
+            credentials: "include",
+          },
+        })
       );
       return mcpClient;
     } catch (error) {
@@ -188,34 +192,30 @@ export const LLMChatPage: React.FC = () => {
     return null;
   };
 
-  const getTools = useCallback(async (mcpClient?) => {
-    if (!mcpClient) {
-      mcpClient = await connectMCPClient();
-      if (mcpClient) {
-        const { tools } = await mcpClient.listTools();
-        return tools;
-      }
-      mcpClient.close();
-    } else {
-      const { tools } = await mcpClient.listTools();
-      return tools;
-    }
-  }, []);
+  const fetchToolsFromApi = useCallback(async () => {
+    setToolsError(null);
+    return listTools()
+      .then((result) => {
+        if (result.status === 200 && Array.isArray(result.data.data)) {
+          setTools(result.data.data);
+        } else {
+          console.error("Failed to fetch tools", result);
+          setToolsError("Failed to fetch tools from API");
+          setTools([]);
+        }
+        setIsLoadingTools(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching tools", error);
+        setToolsError(`Error: ${error.message || "Unknown error"}`);
+        setTools([]);
+        setIsLoadingTools(false);
+      });
+  }, [listTools]);
 
   useEffect(() => {
-    const fetchTools = async () => {
-      try {
-        const fetchedTools = await getTools();
-        setTools([...fetchedTools]);
-      } catch (error) {
-        console.error("Failed to load tools", error);
-      } finally {
-        setIsLoadingTools(false);
-      }
-    };
-
-    fetchTools();
-  }, [getTools]);
+    fetchToolsFromApi();
+  }, [fetchToolsFromApi]);
 
   const isAllSelected =
     tools.length > 0 &&
@@ -525,7 +525,13 @@ export const LLMChatPage: React.FC = () => {
             <Tile style={{ marginBottom: "1rem", padding: "1rem" }}>
               <Stack gap={7}>
                 {isLoadingTools && <p>Loading tools...</p>}
-                {!isLoadingTools && (
+                {!isLoadingTools && toolsError && (
+                  <p style={{ color: "red" }}>{toolsError}</p>
+                )}
+                {!isLoadingTools && !toolsError && tools.length === 0 && (
+                  <p>No tools available. Please add tools via the Tools page.</p>
+                )}
+                {!isLoadingTools && tools.length > 0 && (
                   <FormGroup legendText="Select tools">
                     <Checkbox
                       id="select-all"
