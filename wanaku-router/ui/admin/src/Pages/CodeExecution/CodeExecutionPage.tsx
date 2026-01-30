@@ -301,35 +301,42 @@ const CodeExecutionPage: React.FC = () => {
             return newOutput;
           });
           scrollToBottom();
+
+          // Check if this is a terminal event and stop execution
+          const eventType = data.eventType?.toLowerCase();
+          if (eventType === "completed" || eventType === "failed" || eventType === "error") {
+            console.log("🛑 Terminal event received, stopping execution");
+            stopExecution();
+          }
         } catch (error) {
           console.error("  - Failed to parse message data:", error);
         }
       };
 
-      // Specific event handlers
-      eventSource.addEventListener("started", (event) => {
+      // Specific event handlers (uppercase names match backend enum.name())
+      eventSource.addEventListener("STARTED", (event) => {
         console.log("🚀 SSE event: STARTED", event.data);
         try {
           const data = JSON.parse(event.data) as ExecutionEvent;
           setOutput((prev) => [...prev, { ...data, timestamp: new Date().toISOString() }]);
           scrollToBottom();
         } catch (error) {
-          console.error("Error parsing 'started' event:", error);
+          console.error("Error parsing 'STARTED' event:", error);
         }
       });
 
-      eventSource.addEventListener("output", (event) => {
+      eventSource.addEventListener("OUTPUT", (event) => {
         console.log("📝 SSE event: OUTPUT", event.data);
         try {
           const data = JSON.parse(event.data) as ExecutionEvent;
           setOutput((prev) => [...prev, { ...data, timestamp: new Date().toISOString() }]);
           scrollToBottom();
         } catch (error) {
-          console.error("Error parsing 'output' event:", error);
+          console.error("Error parsing 'OUTPUT' event:", error);
         }
       });
 
-      eventSource.addEventListener("completed", (event) => {
+      eventSource.addEventListener("COMPLETED", (event) => {
         console.log("✅ SSE event: COMPLETED", event.data);
         try {
           const data = JSON.parse(event.data) as ExecutionEvent;
@@ -337,11 +344,11 @@ const CodeExecutionPage: React.FC = () => {
           scrollToBottom();
           stopExecution();
         } catch (error) {
-          console.error("Error parsing 'completed' event:", error);
+          console.error("Error parsing 'COMPLETED' event:", error);
         }
       });
 
-      eventSource.addEventListener("failed", (event) => {
+      eventSource.addEventListener("FAILED", (event) => {
         console.log("❌ SSE event: FAILED", event.data);
         try {
           const data = JSON.parse(event.data) as ExecutionEvent;
@@ -349,11 +356,11 @@ const CodeExecutionPage: React.FC = () => {
           scrollToBottom();
           stopExecution();
         } catch (error) {
-          console.error("Error parsing 'failed' event:", error);
+          console.error("Error parsing 'FAILED' event:", error);
         }
       });
 
-      eventSource.addEventListener("error", (event) => {
+      eventSource.addEventListener("ERROR", (event) => {
         console.log("⚠️ SSE event: ERROR", event);
         const messageEvent = event as MessageEvent;
         if (messageEvent.data) {
@@ -363,7 +370,7 @@ const CodeExecutionPage: React.FC = () => {
             setOutput((prev) => [...prev, { ...data, timestamp: new Date().toISOString() }]);
             stopExecution();
           } catch (error) {
-            console.error("Error parsing 'error' event:", error);
+            console.error("Error parsing 'ERROR' event:", error);
           }
         }
       });
