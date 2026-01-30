@@ -22,6 +22,7 @@ import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.CodeExecutionReply;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -117,32 +118,8 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             // Execute via transport
             Iterator<CodeExecutionReply> replyIterator = transport.executeCode(grpcRequest, service);
 
-            // Wrap the iterator to emit completion event when done
-            return new Iterator<>() {
-                private boolean completed = false;
-                private boolean hasError = false;
-                private String lastErrorMessage = null;
-
-                @Override
-                public boolean hasNext() {
-                    boolean hasNext = replyIterator.hasNext();
-                    if (!hasNext && !completed) {
-                        completed = true;
-                        emitCompletionEvent(finalStartedEvent, startTime, hasError, lastErrorMessage);
-                    }
-                    return hasNext;
-                }
-
-                @Override
-                public CodeExecutionReply next() {
-                    CodeExecutionReply reply = replyIterator.next();
-                    if (reply.getIsError()) {
-                        hasError = true;
-                        lastErrorMessage = reply.getContentCount() > 0 ? reply.getContent(0) : "Code execution error";
-                    }
-                    return reply;
-                }
-            };
+            // Wrap the iterator to emit completion event when done or on close
+            return new CloseableCodeExecutionIterator(replyIterator, finalStartedEvent, startTime, this);
         } catch (Exception e) {
             // Emit FAILED event
             if (toolCallEventEmitter != null && startedEvent != null) {
@@ -154,6 +131,96 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
                         duration);
             }
             throw e;
+        }
+    }
+
+    /**
+     * Closeable iterator wrapper that ensures completion/failure events are emitted
+     * even when the iterator is not fully consumed or when exceptions occur during iteration.
+     * <p>
+     * Callers should use try-with-resources to ensure proper cleanup:
+     * <pre>
+     * try (var iterator = (CloseableCodeExecutionIterator) bridge.executeCode(...)) {
+     *     while (iterator.hasNext()) {
+     *         // process
+     *     }
+     * }
+     * </pre>
+     */
+    public static class CloseableCodeExecutionIterator implements Iterator<CodeExecutionReply>, Closeable {
+        private final Iterator<CodeExecutionReply> delegate;
+        private final ToolCallEvent startedEvent;
+        private final Instant startTime;
+        private final CodeExecutionBridge bridge;
+        private boolean completed = false;
+        private boolean hasError = false;
+        private String lastErrorMessage = null;
+
+        CloseableCodeExecutionIterator(
+                Iterator<CodeExecutionReply> delegate,
+                ToolCallEvent startedEvent,
+                Instant startTime,
+                CodeExecutionBridge bridge) {
+            this.delegate = delegate;
+            this.startedEvent = startedEvent;
+            this.startTime = startTime;
+            this.bridge = bridge;
+        }
+
+        @Override
+        public boolean hasNext() {
+            try {
+                boolean hasNext = delegate.hasNext();
+                if (!hasNext && !completed) {
+                    emitTerminalEvent();
+                }
+                return hasNext;
+            } catch (Exception e) {
+                // Emit FAILED event for exceptions during iteration
+                if (!completed) {
+                    hasError = true;
+                    lastErrorMessage = e.getMessage() != null ? e.getMessage() : "Error during iteration";
+                    emitTerminalEvent();
+                }
+                throw e;
+            }
+        }
+
+        @Override
+        public CodeExecutionReply next() {
+            try {
+                CodeExecutionReply reply = delegate.next();
+                if (reply.getIsError()) {
+                    hasError = true;
+                    lastErrorMessage = reply.getContentCount() > 0 ? reply.getContent(0) : "Code execution error";
+                }
+                return reply;
+            } catch (Exception e) {
+                // Emit FAILED event for exceptions during iteration
+                if (!completed) {
+                    hasError = true;
+                    lastErrorMessage = e.getMessage() != null ? e.getMessage() : "Error during iteration";
+                    emitTerminalEvent();
+                }
+                throw e;
+            }
+        }
+
+        /**
+         * Closes this iterator and emits a terminal event if not already done.
+         * This ensures that even if the caller abandons iteration early,
+         * a COMPLETED or FAILED event is still emitted.
+         */
+        @Override
+        public void close() {
+            if (!completed) {
+                emitTerminalEvent();
+            }
+        }
+
+        private void emitTerminalEvent() {
+            completed = true;
+            bridge.emitCompletionEvent(startedEvent, startTime, hasError, lastErrorMessage);
         }
     }
 
@@ -265,6 +332,10 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
 
     /**
      * Emits a STARTED event for a code execution call.
+     * <p>
+     * Note: Arguments are redacted to avoid exposing potentially sensitive data.
+     * Only metadata about the arguments (count) is logged, not the actual values.
+     * </p>
      */
     private ToolCallEvent emitStartedEvent(
             String engineType, String language, ServiceTarget service, CodeExecutionRequest request) {
@@ -272,10 +343,11 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             Map<String, String> arguments = new HashMap<>();
             arguments.put("engineType", engineType);
             arguments.put("language", language);
-            if (request.getArguments() != null) {
-                for (int i = 0; i < request.getArguments().size(); i++) {
-                    arguments.put("arg" + i, request.getArguments().get(i));
-                }
+            // Redact raw argument values to avoid leaking secrets or large payloads.
+            // Only emit safe metadata about the arguments.
+            if (request.getArguments() != null && !request.getArguments().isEmpty()) {
+                arguments.put("argCount", String.valueOf(request.getArguments().size()));
+                arguments.put("argsRedacted", "true");
             }
 
             String toolName = String.format("code-execution/%s/%s", engineType, language);
