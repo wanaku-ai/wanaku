@@ -17,6 +17,7 @@ package ai.wanaku.backend.api.v2.codeexecution;
 
 import ai.wanaku.backend.bridge.CodeExecutorBridge;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionEvent;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionEventType;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionResponse;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionTask;
@@ -149,12 +150,40 @@ public class CodeExecutionBean {
      * @param taskId the task UUID
      */
     private void streamExecution(CodeExecutionReply reply, String taskId) {
-        final ExecutionStatus status = reply.getStatus();
 
         final long timestamp = reply.getTimestamp();
 
         CodeExecutionEvent codeExecutionEvent = new CodeExecutionEvent();
         codeExecutionEvent.setTaskId(taskId);
+
+        final ExecutionStatus status = reply.getStatus();
+        switch (status) {
+            case PENDING:
+            case RUNNING: {
+                codeExecutionEvent.setEventType(CodeExecutionEventType.STARTED);
+                break;
+            }
+            case COMPLETED: {
+                codeExecutionEvent.setEventType(CodeExecutionEventType.COMPLETED);
+                break;
+            }
+            case FAILED: {
+                codeExecutionEvent.setEventType(CodeExecutionEventType.FAILED);
+                break;
+            }
+
+            case TIMEOUT: {
+                codeExecutionEvent.setEventType(CodeExecutionEventType.TIMEOUT);
+                break;
+            }
+            case CANCELLED: {
+                codeExecutionEvent.setEventType(CodeExecutionEventType.CANCELLED);
+                break;
+            }
+            case UNRECOGNIZED:
+                codeExecutionEvent.setEventType(CodeExecutionEventType.ERROR);
+                break;
+        }
 
         codeExecutionEvent.setTimestamp(Instant.ofEpochMilli(timestamp));
 

@@ -209,7 +209,10 @@ public class CodeExecutionResource {
 
         return codeExecutionEvents
                 .filter(event -> taskId.equals(event.getTaskId()))
-                .map(event ->
-                        sse.newEventBuilder().id(event.getTaskId()).data(event).build());
+                .map(event -> sse.newEventBuilder()
+                        .name(event.getEventType().name())
+                        .id(event.getTaskId())
+                        .data(event)
+                        .build());
     }
 }
