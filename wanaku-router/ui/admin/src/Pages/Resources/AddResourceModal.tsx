@@ -35,6 +35,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState('');
   const [params, setParams] = useState<Param[]>([]);
+  const [configurationURI, setConfigurationURI] = useState("")
+  const [secretsURI, setSecretsURI] = useState("")
   const { listManagementResources } = useCapabilities();
   
   useEffect(() => {
@@ -55,7 +57,9 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       type: resourceType,
       mimeType,
       namespace: selectedNamespace,
-      params: nonEmptyParameters()
+      params: nonEmptyParameters(),
+      configurationURI,
+      secretsURI
     });
   };
 
@@ -99,6 +103,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         <TabList>
           <Tab>Overview</Tab>
           <Tab>Parameters</Tab>
+          <Tab>External</Tab>
         </TabList>
         <TabPanels>
           <TabPanel>
@@ -171,6 +176,22 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 onSetName={(i, name) => params[i].name = name}
                 onSetValue={(i, value) => params[i].value = value}
                 onDelete={removeParameter}
+            />
+          </TabPanel>
+          <TabPanel>
+            <TextInput
+              id="resource-configuration-uri"
+              labelText="Configuration URI"
+              placeholder="e.g. file:///config/resource-config.json"
+              value={configurationURI}
+              onChange={(event) => setConfigurationURI(event.target.value)}
+            />
+            <TextInput
+              id="resource-secrets-uri"
+              labelText="Secrets URI"
+              placeholder="e.g. vault://secrets/db-credentials"
+              value={secretsURI}
+              onChange={(event) => setSecretsURI(event.target.value)}
             />
           </TabPanel>
         </TabPanels>

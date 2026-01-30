@@ -52,8 +52,14 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
     }))
   }
 
+  function resourceHasParameters(resource: ResourceReference): boolean {
+    return !!resource.params?.length
+  }
+
   function resourceHasDetails(resource: ResourceReference) {
-    return resource.params && resource.params.length > 0
+    return resourceHasParameters(resource)
+            || resource.configurationURI
+            || resource.secretsURI
   }
 
   function tableCells(resource) {
@@ -75,6 +81,31 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
           />
         </TableCell>
       </React.Fragment>
+    )
+  }
+
+  function resourceDetails(resource: ResourceReference, rowProps) {
+    return (
+      <TableExpandedRow colSpan={headers.length + 3} {...rowProps}>
+        {resourceHasParameters(resource) && (
+          <div>
+            <strong>Parameters:</strong>
+            {resource.params?.map((parameter: Param) => {
+              return (<div>{parameter.name + ": " + parameter.value}</div>)
+            })}
+          </div>
+        )}
+        {resource.configurationURI && (
+          <div>
+            <strong>Configuration URI:</strong> {resource.configurationURI}
+          </div>
+        )}
+        {resource.secretsURI && (
+          <div>
+            <strong>Secrets URI:</strong> {resource.secretsURI}
+          </div>
+        )}
+      </TableExpandedRow>
     )
   }
 
@@ -116,18 +147,11 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
                         <TableExpandRow expandIconDescription="Show details" {...getRowProps({row})}>
                           {tableCells(resource)}
                         </TableExpandRow>
-                        {row.isExpanded && (
-                          <TableExpandedRow colSpan={headers.length + 3} {...getExpandedRowProps({row})}>
-                            Parameters:
-                            {resource.params?.map((parameter: Param) => {
-                              return (<div>{parameter.name + ": " + parameter.value}</div>)
-                            })}
-                          </TableExpandedRow>
-                        )}
+                        {row.isExpanded && resourceDetails(resource, getExpandedRowProps({row}))}
                       </React.Fragment>
                     )
                   } else if (resource) {
-                    // resource without detials, no expansion available
+                    // resource without details, no expansion available
                     return (
                       <TableRow {...getRowProps({row})}>
                         <TableCell />
