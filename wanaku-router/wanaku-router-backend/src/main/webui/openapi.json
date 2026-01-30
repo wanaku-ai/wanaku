@@ -87,7 +87,8 @@
             "$ref" : "#/components/schemas/CodeExecutionStatus"
           },
           "submittedAt" : {
-            "$ref" : "#/components/schemas/Instant"
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },

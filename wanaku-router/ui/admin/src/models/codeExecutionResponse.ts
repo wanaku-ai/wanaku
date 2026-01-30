@@ -5,11 +5,10 @@
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
 import type { CodeExecutionStatus } from "./codeExecutionStatus";
-import type { Instant } from "./instant";
 
 export interface CodeExecutionResponse {
   taskId?: string;
   streamUrl?: string;
   status?: CodeExecutionStatus;
-  submittedAt?: Instant;
+  submittedAt?: number;
 }

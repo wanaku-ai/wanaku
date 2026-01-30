@@ -60,7 +60,8 @@ components:
         status:
           $ref: "#/components/schemas/CodeExecutionStatus"
         submittedAt:
-          $ref: "#/components/schemas/Instant"
+          type: integer
+          format: int64
     CodeExecutionStatus:
       type: string
       enum:

@@ -30,7 +30,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import java.time.Instant;
 import java.util.Iterator;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -158,9 +157,12 @@ public class CodeExecutionBean {
 
         final ExecutionStatus status = reply.getStatus();
         switch (status) {
-            case PENDING:
-            case RUNNING: {
+            case PENDING: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.STARTED);
+                break;
+            }
+            case RUNNING: {
+                codeExecutionEvent.setEventType(CodeExecutionEventType.OUTPUT);
                 break;
             }
             case COMPLETED: {
@@ -185,7 +187,7 @@ public class CodeExecutionBean {
                 break;
         }
 
-        codeExecutionEvent.setTimestamp(Instant.ofEpochMilli(timestamp));
+        codeExecutionEvent.setTimestamp(timestamp);
 
         if (reply.getIsError()) {
             String errorContent = reply.getContentCount() > 0 ? reply.getContent(0) : "Unknown error";
