@@ -779,6 +779,28 @@ paths:
       summary: Update
       tags:
       - Forwards Resource
+  /api/v1/forwards/refresh:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardReference"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Refresh Forward
+      tags:
+      - Forwards Resource
   /api/v1/management/discovery/deregister:
     post:
       requestBody:

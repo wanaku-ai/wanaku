@@ -91,4 +91,15 @@ public interface ForwardsService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response updateForward(ForwardReference reference);
+
+    /**
+     * Refreshes a forward reference to re-discover tools and resources from the remote server.
+     *
+     * @param reference the forward reference to refresh
+     * @return a {@link Response} indicating the result of the refresh operation
+     */
+    @Path("/refresh")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response refreshForward(ForwardReference reference);
 }

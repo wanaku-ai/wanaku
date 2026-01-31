@@ -246,6 +246,21 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         forwardReferenceRepository.update(resource.getName(), resource);
     }
 
+    public void refresh(ForwardReference forwardReferenceHint) {
+        List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReferenceHint.getName());
+        if (references.isEmpty()) {
+            throw new WanakuException("Forward reference not found: " + forwardReferenceHint.getName());
+        }
+
+        ForwardReference forwardReference = references.getFirst();
+
+        // Remove existing tools/resources and unlink resolver
+        removeLinkedEntries(forwardReference);
+
+        // Re-register with fresh data from remote server
+        registerForward(forwardReference);
+    }
+
     @Override
     protected WanakuRepository<ForwardReference, String> getRepository() {
         return forwardReferenceRepository;
