@@ -26,7 +26,7 @@ import org.jline.terminal.Terminal;
 @Command(
         name = "forwards",
         description = "Manage forwards",
-        subcommands = {ForwardsAdd.class, ForwardsRemove.class, ForwardsList.class})
+        subcommands = {ForwardsAdd.class, ForwardsRemove.class, ForwardsList.class, ForwardsRefresh.class})
 public class Forwards extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {

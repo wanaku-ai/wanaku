@@ -58,4 +58,12 @@ public class ForwardsResource {
         forwardsBean.update(resource);
         return Response.ok().build();
     }
+
+    @Path("/refresh")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response refresh(ForwardReference reference) throws WanakuException {
+        forwardsBean.refresh(reference);
+        return Response.ok().build();
+    }
 }

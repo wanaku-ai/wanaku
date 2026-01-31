@@ -14,9 +14,9 @@ import {
     TableToolbarContent,
     ToastNotification,
 } from "@carbon/react";
-import { Add, TrashCan } from "@carbon/icons-react";
+import { Add, Renew, TrashCan } from "@carbon/icons-react";
 import {useEffect, useState} from "react";
-import {addForward, listForwards, removeForward} from "../../hooks/api/use-forwards";
+import {addForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards";
 import {ForwardReference} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces";
 import {AddForwardModal} from "./AddForwardModal";
@@ -39,9 +39,10 @@ interface ForwardsTableProps {
     rows: ForwardRow[];
     onAdd: () => void;
     onDelete: (forward: ForwardReference) => void;
+    onRefresh: (forward: ForwardReference) => void;
 }
 
-const ForwardsTable = ({rows: forwardRows, onAdd, onDelete}: ForwardsTableProps) => {
+const ForwardsTable = ({rows: forwardRows, onAdd, onDelete, onRefresh}: ForwardsTableProps) => {
     return (
         <Grid>
             <Column lg={12} md={8} sm={4}>
@@ -76,6 +77,16 @@ const ForwardsTable = ({rows: forwardRows, onAdd, onDelete}: ForwardsTableProps)
                                                 <TableCell key={cell.id}>{cell.value}</TableCell>
                                             ))}
                                             <TableCell>
+                                                <Button
+                                                    kind="ghost"
+                                                    renderIcon={Renew}
+                                                    iconDescription="Refresh"
+                                                    hasIconOnly
+                                                    onClick={() => {
+                                                        const forwardRow = forwardRows.find(r => r.id === row.id);
+                                                        if (forwardRow) onRefresh(forwardRow.original);
+                                                    }}
+                                                />
                                                 <Button
                                                     kind="ghost"
                                                     renderIcon={TrashCan}
@@ -157,6 +168,19 @@ const ForwardsPage = () => {
         }
     };
 
+    const handleRefreshForward = async (forward: ForwardReference) => {
+        try {
+            const response = await refreshForward(forward);
+            if (response.status === 200) {
+                fetchForwards();
+            } else {
+                setErrorMessage("Failed to refresh forward");
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "An error occurred while refreshing forward");
+        }
+    };
+
     return (
         <div>
             <h1 className="title">Forwards</h1>
@@ -179,7 +203,7 @@ const ForwardsPage = () => {
                 />
             )}
             <div id="page-content">
-                <ForwardsTable rows={forwards} onAdd={handleAddClick} onDelete={handleDeleteForward}/>
+                <ForwardsTable rows={forwards} onAdd={handleAddClick} onDelete={handleDeleteForward} onRefresh={handleRefreshForward}/>
             </div>
         </div>
     );
