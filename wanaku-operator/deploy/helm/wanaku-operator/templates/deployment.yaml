@@ -39,7 +39,7 @@ spec:
             - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_NAMESPACES
               value: {{ .Values.app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_NAMESPACES | quote }}
           image: {{ .Values.app.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.app.imagePullPolicy }}
           livenessProbe:
             failureThreshold: {{ .Values.app.livenessProbe.failureThreshold }}
             httpGet:

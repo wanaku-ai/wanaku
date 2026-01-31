@@ -7,6 +7,15 @@ public class WanakuSpec {
     private SecretsSpec secrets;
     private RouterSpec router;
     private List<CapabilitiesSpec> capabilities;
+    private String imagePullPolicy;
+
+    public String getImagePullPolicy() {
+        return imagePullPolicy;
+    }
+
+    public void setImagePullPolicy(String imagePullPolicy) {
+        this.imagePullPolicy = imagePullPolicy;
+    }
 
     public AuthSpec getAuth() {
         return auth;

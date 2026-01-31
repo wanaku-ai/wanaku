@@ -17,6 +17,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
@@ -32,7 +33,32 @@ public final class OperatorUtil {
     public static final String SERVICES_VOLUME_PVC_FILE = "services-volume-pvc.yaml";
     public static final String ROUTER_VOLUME_CLAIM = "router-volume-claim";
 
+    public static final String DEFAULT_PULL_POLICY = "IfNotPresent";
+    public static final Set<String> VALID_PULL_POLICIES = Set.of("Always", "IfNotPresent", "Never");
+
     private OperatorUtil() {}
+
+    /**
+     * Resolves image pull policy with priority:
+     * 1. Component-specific policy (router.imagePullPolicy or capability.imagePullPolicy)
+     * 2. Global policy (spec.imagePullPolicy)
+     * 3. Default (IfNotPresent)
+     *
+     * @param componentPolicy the component-specific policy (may be null)
+     * @param globalPolicy the global policy from spec (may be null)
+     * @return the resolved policy, validated against allowed values
+     */
+    public static String resolveImagePullPolicy(String componentPolicy, String globalPolicy) {
+        String resolved =
+                componentPolicy != null ? componentPolicy : (globalPolicy != null ? globalPolicy : DEFAULT_PULL_POLICY);
+
+        if (!VALID_PULL_POLICIES.contains(resolved)) {
+            LOG.warnf("Invalid imagePullPolicy '%s', using default '%s'", resolved, DEFAULT_PULL_POLICY);
+            return DEFAULT_PULL_POLICY;
+        }
+
+        return resolved;
+    }
 
     private static void setupBackendContainer(Wanaku resource, DeploymentSpec spec, String host) {
         final List<Container> containers = spec.getTemplate().getSpec().getContainers();
@@ -69,17 +95,19 @@ public final class OperatorUtil {
         envVars.add(authProxyEnv);
 
         final WanakuSpec.RouterSpec routerSpec = resource.getSpec().getRouter();
+
+        // Resolve pull policy with fallback chain: component -> global -> default
+        String componentPolicy = routerSpec != null ? routerSpec.getImagePullPolicy() : null;
+        String globalPolicy = resource.getSpec().getImagePullPolicy();
+        String resolvedPolicy = resolveImagePullPolicy(componentPolicy, globalPolicy);
+        service.setImagePullPolicy(resolvedPolicy);
+
         if (routerSpec != null) {
             // Set a custom image
             final String image = routerSpec.getImage();
 
             if (image != null) {
                 service.setImage(image);
-            }
-
-            final String imagePullPolicy = routerSpec.getImagePullPolicy();
-            if (imagePullPolicy != null) {
-                service.setImagePullPolicy(imagePullPolicy);
             }
 
             // Add custom environment variables from router spec if provided
@@ -221,7 +249,10 @@ public final class OperatorUtil {
     }
 
     private static void setupCapabilityContainer(
-            DeploymentSpec spec, WanakuSpec.CapabilitiesSpec capabilitiesSpec, Supplier<List<EnvVar>> envVarSupplier) {
+            Wanaku resource,
+            DeploymentSpec spec,
+            WanakuSpec.CapabilitiesSpec capabilitiesSpec,
+            Supplier<List<EnvVar>> envVarSupplier) {
         final List<Container> containers = spec.getTemplate().getSpec().getContainers();
 
         final Container service = containers.get(0);
@@ -231,10 +262,11 @@ public final class OperatorUtil {
         String serviceImage = capabilitiesSpec.getImage();
         service.setImage(serviceImage);
 
-        final String imagePullPolicy = capabilitiesSpec.getImagePullPolicy();
-        if (imagePullPolicy != null) {
-            service.setImagePullPolicy(imagePullPolicy);
-        }
+        // Resolve pull policy with fallback chain: component -> global -> default
+        String componentPolicy = capabilitiesSpec.getImagePullPolicy();
+        String globalPolicy = resource.getSpec().getImagePullPolicy();
+        String resolvedPolicy = resolveImagePullPolicy(componentPolicy, globalPolicy);
+        service.setImagePullPolicy(resolvedPolicy);
 
         final List<EnvVar> userDefinedVars = envVarSupplier.get();
         final List<EnvVar> templateEnvs = service.getEnv();
@@ -377,7 +409,10 @@ public final class OperatorUtil {
                 .setClaimName(createVolumeClaimName(serviceName));
 
         setupCapabilityContainer(
-                deploymentSpec, capabilitiesSpec, () -> computeWanakuCapabilitiesEnvVars(resource, capabilitiesSpec));
+                resource,
+                deploymentSpec,
+                capabilitiesSpec,
+                () -> computeWanakuCapabilitiesEnvVars(resource, capabilitiesSpec));
 
         desiredDeployment.addOwnerReference(resource);
         return desiredDeployment;
@@ -421,6 +456,7 @@ public final class OperatorUtil {
                 .setClaimName(createVolumeClaimName(serviceName));
 
         setupCapabilityContainer(
+                resource,
                 deploymentSpec,
                 capabilitiesSpec,
                 () -> computeCamelIntegrationCapabilitiesEnvVars(resource, capabilitiesSpec));

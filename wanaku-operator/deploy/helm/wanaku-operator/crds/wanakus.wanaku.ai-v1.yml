@@ -24,6 +24,13 @@ spec:
                   authServer:
                     type: "string"
                 type: "object"
+              imagePullPolicy:
+                type: "string"
+                description: "Global default image pull policy for all deployments"
+                enum:
+                - "Always"
+                - "IfNotPresent"
+                - "Never"
               capabilities:
                 items:
                   properties:
@@ -40,6 +47,11 @@ spec:
                       type: "string"
                     imagePullPolicy:
                       type: "string"
+                      description: "Override image pull policy for this capability (overrides global)"
+                      enum:
+                      - "Always"
+                      - "IfNotPresent"
+                      - "Never"
                     name:
                       type: "string"
                     type:
@@ -61,6 +73,11 @@ spec:
                     type: "string"
                   imagePullPolicy:
                     type: "string"
+                    description: "Override image pull policy for router (overrides global)"
+                    enum:
+                    - "Always"
+                    - "IfNotPresent"
+                    - "Never"
                 type: "object"
               secrets:
                 properties:
