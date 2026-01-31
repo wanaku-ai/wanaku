@@ -1,4 +1,4 @@
-import { getApiV1ForwardsList, postApiV1ForwardsAdd, postApiV1ForwardsAddResponse, putApiV1ForwardsRemove, putApiV1ForwardsRemoveResponse } from "../../api/wanaku-router-api";
+import { getApiV1ForwardsList, postApiV1ForwardsAdd, postApiV1ForwardsAddResponse, postApiV1ForwardsRefresh, postApiV1ForwardsRefreshResponse, putApiV1ForwardsRemove, putApiV1ForwardsRemoveResponse } from "../../api/wanaku-router-api";
 import { ForwardReference } from "../../models";
 
 // Simple in-memory cache for Client Components
@@ -48,4 +48,12 @@ export const removeForward = async (
 ): Promise<putApiV1ForwardsRemoveResponse> => {
   clearForwardsCache();
   return putApiV1ForwardsRemove(forwardReference, options);
+};
+
+export const refreshForward = async (
+  forwardReference: ForwardReference,
+  options?: RequestInit
+): Promise<postApiV1ForwardsRefreshResponse> => {
+  clearForwardsCache();
+  return postApiV1ForwardsRefresh(forwardReference, options);
 };
