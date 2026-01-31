@@ -3,6 +3,7 @@ app:
   envs:
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_NAMESPACES: JOSDK_WATCH_CURRENT
   image: quay.io/wanaku/wanaku-operator:latest
+  imagePullPolicy: IfNotPresent
   livenessProbe:
     failureThreshold: 3
     httpGet:

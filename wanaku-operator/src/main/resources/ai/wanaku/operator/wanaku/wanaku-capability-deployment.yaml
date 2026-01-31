@@ -24,7 +24,7 @@ spec:
             - name: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
               value: ""
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: wanaku-capability
           ports:
             - containerPort: 9000

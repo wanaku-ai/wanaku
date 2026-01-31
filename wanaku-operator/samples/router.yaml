@@ -12,6 +12,11 @@ spec:
   secrets:
 # This is the OIDC credentials secret for the services
     oidcCredentialsSecret: ""
+# Global image pull policy for all deployments (router and capabilities)
+# Valid values: Always, IfNotPresent, Never
+# Default: IfNotPresent
+# Can be overridden per-component using router.imagePullPolicy or capability.imagePullPolicy
+#  imagePullPolicy: IfNotPresent
 # Router settings are optional
   router:
     env:
@@ -22,10 +27,14 @@ spec:
 #        value: value2
 # You can also set a custom image for the router
 #    image: quay.io/wanaku/wanaku-router-backend:latest # Optional
+# Override pull policy for router only (takes precedence over global setting)
+#    imagePullPolicy: Always
   capabilities:
 # For the capabilities, you need to provide the name, image to use and any environment variables required:
+# You can also optionally set imagePullPolicy per capability (overrides global setting)
     - name: wanaku-http
       image: quay.io/wanaku/wanaku-tool-service-http:latest
+#      imagePullPolicy: Always  # Optional: Always, IfNotPresent, Never
     - name: finance-system
       image: quay.io/wanaku/camel-integration-capability:latest
     - name: employee-system
