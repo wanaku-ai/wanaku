@@ -1,0 +1,58 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.5
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8543:8080"
+    volumes:
+      - ../auth/wanaku-config.json:/opt/keycloak/data/import/realm-export.json:ro,Z
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
+
+  wanaku-tool-service-http:
+    environment:
+      WANAKU_SERVICE_REGISTRATION_URI: http://localhost:8080/
+      AUTH_SERVER: http://localhost:8543
+      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: "**********"
+    network_mode: host
+    depends_on:
+      wanaku-router:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    image: quay.io/wanaku/wanaku-tool-service-http:latest
+    volumes:
+      - wanaku-services:/home/default/.wanaku/services
+
+
+  wanaku-router:
+    image: quay.io/wanaku/wanaku-router-backend:latest
+    environment:
+      QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED: "true"
+      QUARKUS_HTTP_HOST: 0.0.0.0
+      AUTH_SERVER: http://localhost:8543
+      AUTH_PROXY: http://localhost:8080
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    network_mode: host
+    volumes:
+      - wanaku-router:/home/default/.wanaku/router
+    healthcheck:
+      test: curl -f localhost:8080/api/v1/management/info/version || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  wanaku-router:
+  wanaku-services:
