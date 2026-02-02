@@ -328,6 +328,8 @@ Different capability types use strategy pattern to:
 
 ## Related Documentation
 
+- **[Persistence](internals-persistence.md)** - Persistence information
+- **[Persistence](internals-service-registration.md)** - Service registration information
 - **[Architecture Overview](architecture.md)** - High-level system architecture and components
 - **[Configuration Guide](configurations.md)** - Router and service configuration reference
 - **[Contributing Guide](../CONTRIBUTING.md)** - How to extend Wanaku with new capabilities
