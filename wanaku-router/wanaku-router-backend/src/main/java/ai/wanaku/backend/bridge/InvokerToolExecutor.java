@@ -50,6 +50,7 @@ public class InvokerToolExecutor implements ToolExecutor {
     private static final String EMPTY_BODY = "";
     private static final String EMPTY_ARGUMENT = "";
     private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
+    private static final String SERVICE__TYPE_CODE_EXECUTION_ENGINE = ServiceType.CODE_EXECUTION_ENGINE.asValue();
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
@@ -112,7 +113,11 @@ public class InvokerToolExecutor implements ToolExecutor {
     private ToolResponse executeToolReference(ToolManager.ToolArguments toolArguments, ToolReference toolReference) {
         ServiceTarget service = serviceResolver.resolve(toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
         if (service == null) {
-            return ToolResponse.error("There is no host registered for service " + toolReference.getType());
+            // Code engines may also provide specialized tools to assist their work
+            service = serviceResolver.resolve(toolReference.getType(), SERVICE__TYPE_CODE_EXECUTION_ENGINE);
+            if (service == null) {
+                return ToolResponse.error("There is no host registered for service " + toolReference.getType());
+            }
         }
 
         // Build request to extract information for event
