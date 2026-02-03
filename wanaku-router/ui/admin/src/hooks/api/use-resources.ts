@@ -7,7 +7,9 @@ import {
   postApiV1ResourcesExposeResponse,
   getApiV1ResourcesListResponse,
   putApiV1ResourcesRemoveResponse,
-  getApiV1CapabilitiesResponse
+  getApiV1CapabilitiesResponse,
+  postApiV1DataStoreUpdateResponse,
+  postApiV1ResourcesUpdate
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ResourcesRemoveParams,
@@ -42,6 +44,16 @@ export const useResources = () => {
     []
   );
 
+  const updateResource = useCallback(
+    (
+      resource: ResourceReference,
+      options?: RequestInit
+    ): Promise<postApiV1DataStoreUpdateResponse> => {
+      return postApiV1ResourcesUpdate(resource, options)
+    },
+    []
+  )
+
   /**
    * List resources.
    */
@@ -71,6 +83,7 @@ export const useResources = () => {
     listManagementResources,
     exposeResource,
     listResources,
+    updateResource,
     removeResource,
   };
 };

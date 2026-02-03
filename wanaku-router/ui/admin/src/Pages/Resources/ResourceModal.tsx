@@ -18,25 +18,27 @@ import { useCapabilities } from "../../hooks/api/use-capabilities";
 import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
 import { ParametersTable } from "./ParametersTable.tsx";
 
-interface AddResourceModalProps {
+interface ResourceModalProps {
+  resource?: ResourceReference
   onRequestClose: () => void;
-  onSubmit: (newResource: ResourceReference) => void;
+  onSubmit: (resource: ResourceReference) => void;
 }
 
-export const AddResourceModal: React.FC<AddResourceModalProps> = ({
+export const ResourceModal: React.FC<ResourceModalProps> = ({
+  resource,
   onRequestClose,
   onSubmit,
 }) => {
-  const [resourceName, setResourceName] = useState("");
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [resourceType, setResourceType] = useState("file");
-  const [mimeType, setMimeType] = useState("");
+  const [resourceName, setResourceName] = useState(resource?.name || "");
+  const [description, setDescription] = useState(resource?.description || "");
+  const [location, setLocation] = useState(resource?.location || "");
+  const [resourceType, setResourceType] = useState(resource?.type || "file");
+  const [mimeType, setMimeType] = useState(resource?.mimeType || "");
   const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState('');
-  const [params, setParams] = useState<Param[]>([]);
-  const [configurationURI, setConfigurationURI] = useState("")
-  const [secretsURI, setSecretsURI] = useState("")
+  const [selectedNamespace, setSelectedNamespace] = useState(resource?.namespace || "");
+  const [params, setParams] = useState<Param[]>(resource?.params || []);
+  const [configurationURI, setConfigurationURI] = useState(resource?.configurationURI || "")
+  const [secretsURI, setSecretsURI] = useState(resource?.secretsURI || "")
   const { listManagementResources } = useCapabilities();
   
   useEffect(() => {
@@ -51,6 +53,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
 
   const handleSubmit = () => {
     onSubmit({
+      id: resource?.id,
       name: resourceName,
       description,
       location,
@@ -93,8 +96,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   return (
     <Modal
       open={true}
-      modalHeading="Add a Resource"
-      primaryButtonText="Add"
+      modalHeading={resource ? "Edit resource" : "Add a Resource"}
+      primaryButtonText={resource ? "Save" : "Add"}
       secondaryButtonText="Cancel"
       onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}

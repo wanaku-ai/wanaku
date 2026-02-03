@@ -1,5 +1,5 @@
 import { ToastNotification } from "@carbon/react";
-import { AddResourceModal } from "./AddResourceModal";
+import { ResourceModal } from "./ResourceModal.tsx";
 import { ResourcesTable } from "./ResourcesTable";
 import React, { useState, useEffect } from "react";
 import { ResourceReference } from "../../models";
@@ -9,8 +9,9 @@ export const ResourcesPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ResourceReference[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const { listResources, exposeResource, removeResource } = useResources();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openedResource, setOpenedResource] = useState<ResourceReference>()
+  const { listResources, exposeResource, updateResource, removeResource } = useResources();
 
   useEffect(() => {
     listResources().then((result) => {
@@ -30,20 +31,49 @@ export const ResourcesPage: React.FC = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
+  function reloadResources() {
+    listResources().then((result) => {
+      setFetchedData(result.data.data as ResourceReference[]);
+    });
+  }
+
+  function handleModalClose() {
+    setOpenedResource(undefined);
+    setIsModalOpen(false);
+  }
+
+  function handleModalSubmit(resource: ResourceReference) {
+    if (openedResource) {
+      handleUpdateResource(resource)
+    } else {
+      handleAddResource(resource)
+    }
+  }
+
   const handleAddResource = async (newResource: ResourceReference) => {
     try {
       await exposeResource(newResource);
-      setIsAddModalOpen(false);
       setErrorMessage(null);
-      listResources().then((result) => {
-        setFetchedData(result.data.data as ResourceReference[]);
-      });
+      reloadResources()
     } catch (error) {
       console.error("Error adding resource:", error);
-      setIsAddModalOpen(false);
       setErrorMessage("Error adding resource: The resource name must be unique");
+    } finally {
+      handleModalClose()
     }
   };
+
+  const handleUpdateResource = async (resource: ResourceReference) => {
+    try {
+      await updateResource(resource);
+      setErrorMessage(null);
+      reloadResources()
+    } catch (error) {
+      console.error("Error updating resource:", error);
+    } finally {
+      handleModalClose()
+    }
+  }
 
   const onDelete = async (resourceName?: string) => {
     try {
@@ -58,8 +88,13 @@ export const ResourcesPage: React.FC = () => {
   };
 
   const handleAddClick = () => {
-    setIsAddModalOpen(true);
+    setIsModalOpen(true);
   };
+
+  function handleEditClick(resource: ResourceReference): void {
+    setOpenedResource(resource)
+    setIsModalOpen(true);
+  }
 
   return (
     <div>
@@ -84,13 +119,15 @@ export const ResourcesPage: React.FC = () => {
             resources={fetchedData}
             onDelete={onDelete}
             onAdd={handleAddClick}
+            onEdit={handleEditClick}
           />
         )}
       </div>
-      {isAddModalOpen && (
-        <AddResourceModal
-          onRequestClose={() => setIsAddModalOpen(false)}
-          onSubmit={handleAddResource}
+      {isModalOpen && (
+        <ResourceModal
+          resource={openedResource}
+          onRequestClose={handleModalClose}
+          onSubmit={handleModalSubmit}
         />
       )}
     </div>
