@@ -14,21 +14,23 @@ import {
   TableToolbar,
   TableToolbarContent,
 } from "@carbon/react";
-import { Add, TrashCan} from "@carbon/icons-react";
+import { Add, TrashCan, Edit } from "@carbon/icons-react";
 import React from "react";
-import { Param, ResourceReference} from "../../models";
+import { Param, ResourceReference } from "../../models";
 import { getNamespacePathById } from "../../hooks/api/use-namespaces";
 
 interface ResourcesTableProps {
   resources: ResourceReference[];
   onDelete: (resourceName?: string) => void;
   onAdd: () => void;
+  onEdit: (resource: ResourceReference) => void
 }
 
 export const ResourcesTable: React.FC<ResourcesTableProps> = ({
   resources,
   onDelete,
   onAdd,
+  onEdit
 }) => {
   const headers = [
     {key: "name", header: "Name"},
@@ -42,7 +44,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
 
   function resourcesToRows() {
     return resources.map((resource: ResourceReference, index: number) => ({
-      id: resource.name || `resource-${index}`,
+      id: resource.id || `resource-${index}`,
       name: resource.name,
       location: resource.location,
       type: resource.type,
@@ -73,11 +75,18 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
         <TableCell>{getNamespacePathById(resource.namespace) || "default"}</TableCell>
         <TableCell>
           <Button
-              kind="ghost"
-              renderIcon={TrashCan}
-              hasIconOnly
-              iconDescription="Delete"
-              onClick={() => onDelete(resource.name)}
+            kind="ghost"
+            renderIcon={Edit}
+            hasIconOnly
+            iconDescription="Edit"
+            onClick={() => onEdit(resource)}
+          />
+          <Button
+            kind="ghost"
+            renderIcon={TrashCan}
+            hasIconOnly
+            iconDescription="Delete"
+            onClick={() => onDelete(resource.name)}
           />
         </TableCell>
       </React.Fragment>
@@ -139,7 +148,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
               </TableHead>
               <TableBody>
                 {rows.map((row) => {
-                  const resource = resources.find((item) => item.name === row.id)
+                  const resource = resources.find((item) => item.id === row.id)
                   if (resource && resourceHasDetails(resource)) {
                     // resource with details, expansion available
                     return (
