@@ -1,9 +1,9 @@
 package ai.wanaku.cli.main.support;
 
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
 import static ai.wanaku.cli.main.support.StringHelper.isEmpty;
 import static ai.wanaku.cli.main.support.StringHelper.isNotEmpty;
-import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;

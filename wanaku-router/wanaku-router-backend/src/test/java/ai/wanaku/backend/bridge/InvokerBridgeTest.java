@@ -163,4 +163,77 @@ class InvokerBridgeTest {
         final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, toolArguments);
         assertEquals("123", stringStringMap.get("X-API-Key"));
     }
+
+    @Test
+    void extractMetadataHeaders_extractsPrefixedArgsAndStripsPrefix() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_meta_contextId", "ctx-123");
+        args.put("wanaku_meta_userId", "user-456");
+        args.put("regularArg", "value");
+        when(toolArguments.args()).thenReturn(args);
+
+        Map<String, String> headers = InvokerToolExecutor.extractMetadataHeaders(toolArguments);
+
+        assertEquals(2, headers.size());
+        assertEquals("ctx-123", headers.get("contextId"));
+        assertEquals("user-456", headers.get("userId"));
+        assertFalse(headers.containsKey("regularArg"));
+        assertFalse(headers.containsKey("wanaku_meta_contextId"));
+    }
+
+    @Test
+    void extractMetadataHeaders_handlesNullValues() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_meta_contextId", "ctx-123");
+        args.put("wanaku_meta_nullValue", null);
+        when(toolArguments.args()).thenReturn(args);
+
+        Map<String, String> headers = InvokerToolExecutor.extractMetadataHeaders(toolArguments);
+
+        assertEquals(1, headers.size());
+        assertEquals("ctx-123", headers.get("contextId"));
+        assertFalse(headers.containsKey("nullValue"));
+    }
+
+    @Test
+    void extractMetadataHeaders_returnsEmptyMapWhenNoMetadataArgs() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        when(toolArguments.args()).thenReturn(Map.of("regularArg", "value"));
+
+        Map<String, String> headers = InvokerToolExecutor.extractMetadataHeaders(toolArguments);
+
+        assertTrue(headers.isEmpty());
+    }
+
+    @Test
+    void filterOutMetadataArgs_removesPrefixedArgs() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_meta_contextId", "ctx-123");
+        args.put("wanaku_meta_userId", "user-456");
+        args.put("regularArg", "value");
+        args.put("anotherArg", 42);
+
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutMetadataArgs(args);
+
+        assertEquals(2, filtered.size());
+        assertEquals("value", filtered.get("regularArg"));
+        assertEquals(42, filtered.get("anotherArg"));
+        assertFalse(filtered.containsKey("wanaku_meta_contextId"));
+        assertFalse(filtered.containsKey("wanaku_meta_userId"));
+    }
+
+    @Test
+    void filterOutMetadataArgs_returnsAllArgsWhenNoMetadata() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("regularArg", "value");
+        args.put("anotherArg", 42);
+
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutMetadataArgs(args);
+
+        assertEquals(2, filtered.size());
+        assertEquals("value", filtered.get("regularArg"));
+        assertEquals(42, filtered.get("anotherArg"));
+    }
 }
