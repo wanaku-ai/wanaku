@@ -583,6 +583,53 @@ export const getApiV1ForwardsList = async (
 };
 
 /**
+ * @summary Refresh
+ */
+export type postApiV1ForwardsRefreshResponse200 = {
+  data: null;
+  status: 200;
+};
+
+export type postApiV1ForwardsRefreshResponse400 = {
+  data: null;
+  status: 400;
+};
+
+export type postApiV1ForwardsRefreshResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ForwardsRefreshResponseComposite =
+  | postApiV1ForwardsRefreshResponse200
+  | postApiV1ForwardsRefreshResponse400
+  | postApiV1ForwardsRefreshResponse500;
+
+export type postApiV1ForwardsRefreshResponse =
+  postApiV1ForwardsRefreshResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1ForwardsRefreshUrl = () => {
+  return `/api/v1/forwards/refresh`;
+};
+
+export const postApiV1ForwardsRefresh = async (
+  forwardReference: ForwardReference,
+  options?: RequestInit,
+): Promise<postApiV1ForwardsRefreshResponse> => {
+  return customFetch<postApiV1ForwardsRefreshResponse>(
+    getPostApiV1ForwardsRefreshUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(forwardReference),
+    },
+  );
+};
+
+/**
  * @summary Remove Forward
  */
 export type putApiV1ForwardsRemoveResponse200 = {
@@ -661,53 +708,6 @@ export const postApiV1ForwardsUpdate = async (
 ): Promise<postApiV1ForwardsUpdateResponse> => {
   return customFetch<postApiV1ForwardsUpdateResponse>(
     getPostApiV1ForwardsUpdateUrl(),
-    {
-      ...options,
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(forwardReference),
-    },
-  );
-};
-
-/**
- * @summary Refresh Forward
- */
-export type postApiV1ForwardsRefreshResponse200 = {
-  data: null;
-  status: 200;
-};
-
-export type postApiV1ForwardsRefreshResponse400 = {
-  data: null;
-  status: 400;
-};
-
-export type postApiV1ForwardsRefreshResponse500 = {
-  data: WanakuResponse;
-  status: 500;
-};
-
-export type postApiV1ForwardsRefreshResponseComposite =
-  | postApiV1ForwardsRefreshResponse200
-  | postApiV1ForwardsRefreshResponse400
-  | postApiV1ForwardsRefreshResponse500;
-
-export type postApiV1ForwardsRefreshResponse =
-  postApiV1ForwardsRefreshResponseComposite & {
-    headers: Headers;
-  };
-
-export const getPostApiV1ForwardsRefreshUrl = () => {
-  return `/api/v1/forwards/refresh`;
-};
-
-export const postApiV1ForwardsRefresh = async (
-  forwardReference: ForwardReference,
-  options?: RequestInit,
-): Promise<postApiV1ForwardsRefreshResponse> => {
-  return customFetch<postApiV1ForwardsRefreshResponse>(
-    getPostApiV1ForwardsRefreshUrl(),
     {
       ...options,
       method: "POST",
