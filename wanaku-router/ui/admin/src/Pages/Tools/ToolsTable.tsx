@@ -1,4 +1,4 @@
-import { Add, Upload, TrashCan } from "@carbon/icons-react";
+import { Add, Upload, TrashCan, Edit } from "@carbon/icons-react";
 import {
   Button,
   Column,
@@ -13,31 +13,22 @@ import {
 import { FunctionComponent } from "react";
 import { ToolReference } from "../../models";
 import { getNamespacePathById } from "../../hooks/api/use-namespaces";
+import { formatInputSchema } from "./tools-utils.ts";
 
 interface ToolListProps {
   fetchedData: ToolReference[];
   onDelete: (toolName?: string) => void;
   onImport: () => void;
   onAdd: () => void;
+  onEdit: (tool: ToolReference) => void
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const formatInputSchema = (inputSchema: any) => {
-  return (
-    Object.entries(inputSchema.properties)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map(([key, value]: [string, any]) => {
-        return `${key}: ${value.type} - ${value.description}`;
-      })
-      .join("\n")
-  );
-};
 
 export const ToolsTable: FunctionComponent<ToolListProps> = ({
   fetchedData,
   onDelete,
   onImport,
   onAdd,
+  onEdit
 }) => {
   const headers = [
     "Name",
@@ -77,25 +68,32 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {fetchedData.map((row: ToolReference) => (
-              <TableRow key={row.name}>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.type}</TableCell>
-                <TableCell>{row.description}</TableCell>
+            {fetchedData.map((tool: ToolReference) => (
+              <TableRow key={tool.name}>
+                <TableCell>{tool.name}</TableCell>
+                <TableCell>{tool.type}</TableCell>
+                <TableCell>{tool.description}</TableCell>
                 <TableCell style={{ wordWrap: "break-word" }}>
-                  {row.uri}
+                  {tool.uri}
                 </TableCell>
                 <TableCell style={{ fontSize: "14px" }}>
-                  {formatInputSchema(row.inputSchema)}
+                  {formatInputSchema(tool.inputSchema)}
                 </TableCell>
-                <TableCell>{getNamespacePathById(row.namespace) || "default"}</TableCell>
+                <TableCell>{getNamespacePathById(tool.namespace) || "default"}</TableCell>
                 <TableCell>
+                  <Button
+                    kind="ghost"
+                    renderIcon={Edit}
+                    hasIconOnly
+                    iconDescription="Edit"
+                    onClick={() => onEdit(tool)}
+                  />
                   <Button
                     kind="ghost"
                     renderIcon={TrashCan}
                     iconDescription="Delete"
                     hasIconOnly
-                    onClick={() => onDelete(row.name)}
+                    onClick={() => onDelete(tool.name)}
                   />
                 </TableCell>
               </TableRow>
