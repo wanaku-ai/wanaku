@@ -1,7 +1,5 @@
 import {
   Modal,
-  Select,
-  SelectItem,
   Stack,
   TextArea,
   TextInput,
@@ -9,19 +7,19 @@ import {
 } from "@carbon/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTools } from "../../hooks/api/use-tools";
-import { Namespace, ToolReference } from "../../models";
+import { ToolReference } from "../../models";
 import { ToolsTable } from "./ToolsTable";
-import { listNamespaces } from "../../hooks/api/use-namespaces";
-import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
-import { useCapabilities } from "../../hooks/api/use-capabilities";
+import { ToolModal } from "./ToolModal"
+
 
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [openedTool, setOpenedTool] = useState<ToolReference>()
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { listTools, addTool, removeTool } = useTools();
+  const { listTools, addTool, updateTool, removeTool } = useTools();
 
   const updateTools = useCallback(async () => {
     return listTools().then((result) => {
@@ -54,6 +52,19 @@ export const ToolsPage: React.FC = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
+  function handleToolModalSubmit(tool: ToolReference): void {
+    if (openedTool) {
+      handleUpdateTool(tool)
+    } else {
+      handleAddTool(tool)
+    }
+  }
+
+  function handleToolModalClose(): void {
+    setOpenedTool(undefined)
+    setIsAddModalOpen(false)
+  }
+
   const handleAddTool = async (newTool: ToolReference) => {
     try {
       await addTool(newTool);
@@ -67,6 +78,18 @@ export const ToolsPage: React.FC = () => {
       setErrorMessage("Error adding tool: The tool name must be unique");
     }
   };
+
+  const handleUpdateTool = async(tool: ToolReference) => {
+    try {
+      await updateTool(tool)
+      setErrorMessage(null)
+      await updateTools();
+    } catch (error) {
+      console.error("Error updating tool:", error)
+    } finally {
+      handleToolModalClose()
+    }
+  }
 
   const handleImportToolset = async (tools: ToolReference[]) => {
     setErrorMessage(null);
@@ -117,12 +140,14 @@ export const ToolsPage: React.FC = () => {
             onDelete={handleDeleteTool}
             onImport={() => setIsImportModalOpen(true)}
             onAdd={() => setIsAddModalOpen(true)}
+            onEdit={(tool: ToolReference) => { setOpenedTool(tool); setIsAddModalOpen(true) }}
           />
         )}
         {isAddModalOpen && (
-          <AddToolModal
-            onRequestClose={() => setIsAddModalOpen(false)}
-            onSubmit={handleAddTool}
+          <ToolModal
+            tool={openedTool}
+            onRequestClose={handleToolModalClose}
+            onSubmit={handleToolModalSubmit}
           />
         )}
         {isImportModalOpen && (
@@ -136,112 +161,9 @@ export const ToolsPage: React.FC = () => {
   );
 };
 
-interface AddToolModalProps {
-  onRequestClose: () => void;
-  onSubmit: (newTool: ToolReference) => void;
-}
 
-const AddToolModal: React.FC<AddToolModalProps> = ({
-  onRequestClose,
-  onSubmit,
-}) => {
-  const [toolName, setToolName] = useState("");
-  const [description, setDescription] = useState("");
-  const [uri, setUri] = useState("");
-  const [toolType, setToolType] = useState("http");
-  const [inputSchema, setInputSchema] = useState("");
-  const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState('');
-  const { listManagementTools } = useCapabilities();
-    
-    useEffect(() => {
-      listNamespaces().then((result) => {
-      setFetchedNamespaceData(result.data.data as Namespace[]);
-      });
-    }, [listNamespaces]);
-  
-    const handleSelectionChange = (event) => {
-      setSelectedNamespace(event.target.value);
-    };
 
-  const handleSubmit = () => {
-    try {
-      const schema = JSON.parse(inputSchema);
-      onSubmit({
-        name: toolName,
-        description,
-        uri,
-        type: toolType,
-        inputSchema: schema,
-        namespace: selectedNamespace,
-      });
-    } catch (error) {
-      console.error("Invalid JSON in input schema:", error);
-    }
-  };
 
-  return (
-    <Modal
-      open={true}
-      modalHeading="Add a Tool"
-      primaryButtonText="Add"
-      secondaryButtonText="Cancel"
-      onRequestClose={onRequestClose}
-      onRequestSubmit={handleSubmit}
-    >
-      <TextInput
-        id="tool-name"
-        labelText="Tool Name"
-        placeholder="e.g. meow-facts"
-        value={toolName}
-        onChange={(e) => setToolName(e.target.value)}
-      />
-      <TextInput
-        id="tool-description"
-        labelText="Description"
-        placeholder="e.g. Retrieve random facts about cats"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <TextInput
-        id="tool-uri"
-        labelText="URI"
-        placeholder="e.g. https://meowfacts.herokuapp.com?count={count}"
-        value={uri}
-        onChange={(e) => setUri(e.target.value)}
-      />
-      <TargetTypeSelect
-        value={toolType}
-        onChange={setToolType}
-        apiCall={listManagementTools}
-      />
-      <TextInput
-        id="input-schema"
-        labelText="Input Schema"
-        placeholder='e.g. {"type": "object", "properties": {"count": {"type": "int", "description": "The count of facts to retrieve"}}, "required": ["count"]}'
-        value={inputSchema}
-        onChange={(e) => setInputSchema(e.target.value)}
-      />
-      <Select
-        id="namespace"
-        labelText="Select a Namespace"
-        helperText="Choose a Namespace from the list"
-        value={selectedNamespace}
-        onChange={handleSelectionChange}
-      >
-        <SelectItem text="Choose an option" value="" />
-        {fetchedNamespaceData.map((namespace) => (
-          <SelectItem
-            key={namespace.id}
-            id={namespace.id}
-            text={namespace.path || "default"}
-            value={namespace.id}
-          />
-        ))}
-      </Select>
-    </Modal>
-  );
-};
 
 interface ImportToolsetModalProps {
   onRequestClose: () => void;

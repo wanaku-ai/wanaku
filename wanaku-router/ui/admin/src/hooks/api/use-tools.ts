@@ -7,7 +7,9 @@ import {
   getApiV1CapabilitiesResponse,
   postApiV1ToolsAddResponse,
   getApiV1ToolsListResponse,
-  putApiV1ToolsRemoveResponse
+  putApiV1ToolsRemoveResponse,
+  postApiV1ToolsUpdateResponse,
+  postApiV1ToolsUpdate
 } from "../../api/wanaku-router-api";
 import {
   PutApiV1ToolsRemoveParams,
@@ -41,6 +43,12 @@ export const useTools = () => {
     []
   );
 
+  const updateTool = useCallback(
+    (tool: ToolReference, options?: RequestInit): Promise<postApiV1ToolsUpdateResponse> => {
+      return postApiV1ToolsUpdate(tool, options)
+    }, []
+  )
+
   /**
    * List tools.
    */
@@ -67,6 +75,7 @@ export const useTools = () => {
   return {
     listManagementTools,
     addTool,
+    updateTool,
     listTools,
     removeTool,
   };
