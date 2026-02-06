@@ -87,7 +87,7 @@ export const AddDataStoreModal: React.FC<AddDataStoreModalProps> = ({
             marginBottom: "0.5rem",
             fontSize: "0.875rem",
             fontWeight: 400,
-            color: "#161616",
+            color: "var(--cds-text-primary)",
           }}
         >
           Select File
@@ -101,13 +101,13 @@ export const AddDataStoreModal: React.FC<AddDataStoreModalProps> = ({
             display: "block",
             width: "100%",
             padding: "0.5rem",
-            border: "1px solid #8d8d8d",
+            border: "1px solid var(--cds-border-strong)",
             borderRadius: "0",
-            backgroundColor: "#f4f4f4",
+            backgroundColor: "var(--cds-field)",
           }}
         />
         {selectedFile && (
-          <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#525252" }}>
+          <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
             Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
           </div>
         )}
@@ -116,7 +116,7 @@ export const AddDataStoreModal: React.FC<AddDataStoreModalProps> = ({
       {errorText && (
         <div
           style={{
-            color: "#da1e28",
+            color: "var(--cds-text-error)",
             fontSize: "0.875rem",
             marginTop: "0.5rem",
           }}
