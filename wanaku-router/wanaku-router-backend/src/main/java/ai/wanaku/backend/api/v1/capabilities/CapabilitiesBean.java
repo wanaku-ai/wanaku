@@ -4,6 +4,8 @@ import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.StaleCapability;
+import ai.wanaku.core.services.api.StaleCapabilityInfo;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -83,5 +85,57 @@ public class CapabilitiesBean {
         }
 
         return result;
+    }
+
+    /**
+     * Lists all stale capabilities based on the provided criteria.
+     *
+     * @param maxAgeSeconds the maximum age in seconds since last seen
+     * @param inactiveOnly if true, only return capabilities that are also marked as inactive
+     * @return a list of stale capability information
+     */
+    public List<StaleCapabilityInfo> listStaleCapabilities(long maxAgeSeconds, boolean inactiveOnly) {
+        List<StaleCapability> staleCapabilities = serviceRegistry.findStaleCapabilities(maxAgeSeconds, inactiveOnly);
+
+        return staleCapabilities.stream().map(this::toStaleCapabilityInfo).toList();
+    }
+
+    /**
+     * Cleans up (removes) all stale capabilities based on the provided criteria.
+     *
+     * @param maxAgeSeconds the maximum age in seconds since last seen
+     * @param inactiveOnly if true, only remove capabilities that are also marked as inactive
+     * @return a list of removed service targets for event emission
+     */
+    public List<ServiceTarget> cleanupStaleCapabilities(long maxAgeSeconds, boolean inactiveOnly) {
+        List<StaleCapability> staleCapabilities = serviceRegistry.findStaleCapabilities(maxAgeSeconds, inactiveOnly);
+        List<ServiceTarget> removedTargets = new ArrayList<>();
+
+        for (StaleCapability stale : staleCapabilities) {
+            ServiceTarget serviceTarget = stale.serviceTarget();
+            if (serviceRegistry.removeById(serviceTarget.getId())) {
+                removedTargets.add(serviceTarget);
+                LOG.infof(
+                        "Removed stale capability: %s (service: %s)",
+                        serviceTarget.getId(), serviceTarget.getServiceName());
+            }
+        }
+
+        LOG.infof("Stale capability cleanup complete: %d capabilities removed", removedTargets.size());
+        return removedTargets;
+    }
+
+    private StaleCapabilityInfo toStaleCapabilityInfo(StaleCapability stale) {
+        ServiceTarget target = stale.serviceTarget();
+        ActivityRecord activity = stale.activityRecord();
+
+        return new StaleCapabilityInfo(
+                target.getId(),
+                target.getServiceName(),
+                target.getServiceType(),
+                target.getHost(),
+                target.getPort(),
+                activity != null && activity.isActive(),
+                activity != null ? activity.getLastSeen() : null);
     }
 }
