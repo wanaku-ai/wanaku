@@ -4,6 +4,7 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -96,4 +97,36 @@ public interface CapabilitiesService {
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Map<String, List<ActivityRecord>>> resourcesState();
+
+    /**
+     * Lists all stale capabilities based on the provided criteria.
+     * <p>
+     * A capability is considered stale if it hasn't been seen within the specified
+     * time threshold. Optionally, only inactive capabilities can be included.
+     *
+     * @param maxAgeSeconds the maximum age in seconds since last seen (default: 86400 = 1 day)
+     * @param inactiveOnly if true, only return capabilities that are also marked as inactive
+     * @return a {@link WanakuResponse} containing a list of stale capability information
+     */
+    @Path("/stale")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<List<StaleCapabilityInfo>> listStale(
+            @QueryParam("maxAgeSeconds") Long maxAgeSeconds, @QueryParam("inactiveOnly") Boolean inactiveOnly);
+
+    /**
+     * Cleans up (removes) all stale capabilities based on the provided criteria.
+     * <p>
+     * This operation is destructive and cannot be undone. Each removed capability
+     * will trigger a deregistration SSE event.
+     *
+     * @param maxAgeSeconds the maximum age in seconds since last seen (default: 86400 = 1 day)
+     * @param inactiveOnly if true, only remove capabilities that are also marked as inactive
+     * @return a {@link WanakuResponse} containing the count of removed capabilities
+     */
+    @Path("/stale")
+    @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Integer> cleanupStale(
+            @QueryParam("maxAgeSeconds") Long maxAgeSeconds, @QueryParam("inactiveOnly") Boolean inactiveOnly);
 }

@@ -9,11 +9,13 @@ import type {
   CodeExecutionRequest,
   CodeExecutionResponse,
   DataStore,
+  DeleteApiV1CapabilitiesStaleParams,
   DeleteApiV1DataStoreRemoveByLabelParams,
   DeleteApiV1DataStoreRemoveParams,
   DeleteApiV1PromptsParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
+  GetApiV1CapabilitiesStaleParams,
   GetApiV1DataStoreGetParams,
   GetApiV1DataStoreListParams,
   GetApiV1ForwardsListParams,
@@ -42,6 +44,7 @@ import type {
   WanakuResponseListPromptReference,
   WanakuResponseListResourceReference,
   WanakuResponseListServiceTarget,
+  WanakuResponseListStaleCapabilityInfo,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
   WanakuResponseNamespace,
@@ -146,6 +149,100 @@ export const getApiV1CapabilitiesResourcesState = async (
     {
       ...options,
       method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary List Stale
+ */
+export type getApiV1CapabilitiesStaleResponse200 = {
+  data: WanakuResponseListStaleCapabilityInfo;
+  status: 200;
+};
+
+export type getApiV1CapabilitiesStaleResponseComposite =
+  getApiV1CapabilitiesStaleResponse200;
+
+export type getApiV1CapabilitiesStaleResponse =
+  getApiV1CapabilitiesStaleResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1CapabilitiesStaleUrl = (
+  params?: GetApiV1CapabilitiesStaleParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/capabilities/stale?${stringifiedParams}`
+    : `/api/v1/capabilities/stale`;
+};
+
+export const getApiV1CapabilitiesStale = async (
+  params?: GetApiV1CapabilitiesStaleParams,
+  options?: RequestInit,
+): Promise<getApiV1CapabilitiesStaleResponse> => {
+  return customFetch<getApiV1CapabilitiesStaleResponse>(
+    getGetApiV1CapabilitiesStaleUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Cleanup Stale
+ */
+export type deleteApiV1CapabilitiesStaleResponse200 = {
+  data: WanakuResponseInteger;
+  status: 200;
+};
+
+export type deleteApiV1CapabilitiesStaleResponseComposite =
+  deleteApiV1CapabilitiesStaleResponse200;
+
+export type deleteApiV1CapabilitiesStaleResponse =
+  deleteApiV1CapabilitiesStaleResponseComposite & {
+    headers: Headers;
+  };
+
+export const getDeleteApiV1CapabilitiesStaleUrl = (
+  params?: DeleteApiV1CapabilitiesStaleParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/capabilities/stale?${stringifiedParams}`
+    : `/api/v1/capabilities/stale`;
+};
+
+export const deleteApiV1CapabilitiesStale = async (
+  params?: DeleteApiV1CapabilitiesStaleParams,
+  options?: RequestInit,
+): Promise<deleteApiV1CapabilitiesStaleResponse> => {
+  return customFetch<deleteApiV1CapabilitiesStaleResponse>(
+    getDeleteApiV1CapabilitiesStaleUrl(params),
+    {
+      ...options,
+      method: "DELETE",
     },
   );
 };
