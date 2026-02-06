@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ToastNotification } from "@carbon/react";
 import { AddDataStoreModal } from "./AddDataStoreModal";
+import { ViewDataStoreModal } from "./ViewDataStoreModal";
 import { DataStoresTable } from "./DataStoresTable";
 import { useDataStores } from "../../hooks/api/use-data-stores";
 import type { DataStore } from "../../models";
@@ -10,6 +11,7 @@ export const DataStoresPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewDataStore, setViewDataStore] = useState<DataStore | null>(null);
   const { listDataStores, addDataStore, deleteDataStore } = useDataStores();
 
   // Fetch data on mount
@@ -121,12 +123,19 @@ export const DataStoresPage: React.FC = () => {
           onDelete={handleDelete}
           onAdd={() => setIsAddModalOpen(true)}
           onDownload={handleDownload}
+          onView={(dataStore) => setViewDataStore(dataStore)}
         />
       </div>
       {isAddModalOpen && (
         <AddDataStoreModal
           onRequestClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddDataStore}
+        />
+      )}
+      {viewDataStore && (
+        <ViewDataStoreModal
+          dataStore={viewDataStore}
+          onRequestClose={() => setViewDataStore(null)}
         />
       )}
     </div>

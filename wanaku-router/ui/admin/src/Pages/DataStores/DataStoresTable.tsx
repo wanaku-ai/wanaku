@@ -12,7 +12,7 @@ import {
   TableRow,
   Tooltip,
 } from "@carbon/react";
-import { TrashCan, Download } from "@carbon/icons-react";
+import { TrashCan, Download, View } from "@carbon/icons-react";
 import type { DataStore } from "../../models";
 
 interface DataStoresTableProps {
@@ -20,6 +20,7 @@ interface DataStoresTableProps {
   onDelete: (id: string) => void;
   onAdd: () => void;
   onDownload: (dataStore: DataStore) => void;
+  onView: (dataStore: DataStore) => void;
 }
 
 export const DataStoresTable: React.FC<DataStoresTableProps> = ({
@@ -27,6 +28,7 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
   onDelete,
   onAdd,
   onDownload,
+  onView,
 }) => {
   const truncateData = (data?: string): string => {
     if (!data) return "";
@@ -90,6 +92,15 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
                           if (cell.info.header === "actions") {
                             return (
                               <TableCell key={cell.id}>
+                                <Button
+                                  kind="ghost"
+                                  renderIcon={View}
+                                  hasIconOnly
+                                  iconDescription="View"
+                                  onClick={() => dataStore && onView(dataStore)}
+                                  size="sm"
+                                  style={{ marginRight: "0.5rem" }}
+                                />
                                 <Button
                                   kind="ghost"
                                   renderIcon={Download}
