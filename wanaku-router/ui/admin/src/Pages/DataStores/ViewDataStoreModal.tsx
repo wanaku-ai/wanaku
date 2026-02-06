@@ -16,6 +16,11 @@ export const ViewDataStoreModal: React.FC<ViewDataStoreModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Reset state whenever the data changes to avoid showing stale content
+    setIsLoading(true);
+    setError(null);
+    setDecodedContent("");
+
     if (!dataStore.data) {
       setError("No data available");
       setIsLoading(false);
@@ -23,8 +28,13 @@ export const ViewDataStoreModal: React.FC<ViewDataStoreModalProps> = ({
     }
 
     try {
-      // Decode base64 to text
-      const decoded = atob(dataStore.data);
+      // Decode base64 to binary, then use TextDecoder for proper UTF-8 handling
+      const binaryString = atob(dataStore.data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const decoded = new TextDecoder("utf-8").decode(bytes);
       setDecodedContent(decoded);
       setIsLoading(false);
     } catch (err) {
@@ -34,24 +44,14 @@ export const ViewDataStoreModal: React.FC<ViewDataStoreModalProps> = ({
     }
   }, [dataStore.data]);
 
-  const isJsonContent = (content: string): boolean => {
-    try {
-      JSON.parse(content);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
+  // Format content, pretty-printing JSON if valid (single parse attempt)
   const formatContent = (content: string): string => {
-    if (isJsonContent(content)) {
-      try {
-        return JSON.stringify(JSON.parse(content), null, 2);
-      } catch {
-        return content;
-      }
+    try {
+      const parsed = JSON.parse(content);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return content;
     }
-    return content;
   };
 
   return (
