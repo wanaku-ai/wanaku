@@ -471,6 +471,33 @@
           }
         }
       },
+      "StaleCapabilityInfo" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "serviceName" : {
+            "type" : "string"
+          },
+          "serviceType" : {
+            "type" : "string"
+          },
+          "host" : {
+            "type" : "string"
+          },
+          "port" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "lastSeen" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
       "ToolPayload" : {
         "type" : "object",
         "properties" : {
@@ -650,6 +677,20 @@
           }
         }
       },
+      "WanakuResponseListStaleCapabilityInfo" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StaleCapabilityInfo"
+            }
+          }
+        }
+      },
       "WanakuResponseListToolReference" : {
         "type" : "object",
         "properties" : {
@@ -820,6 +861,68 @@
           }
         },
         "summary" : "Resources State",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/stale" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "inactiveOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListStaleCapabilityInfo"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Stale",
+        "tags" : [ "Capabilities Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "inactiveOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Cleanup Stale",
         "tags" : [ "Capabilities Resource" ]
       }
     },

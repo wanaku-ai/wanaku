@@ -24,7 +24,12 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "capabilities",
         description = "Manage capabilities",
-        subcommands = {CapabilitiesList.class, CapabilitiesCreate.class, CapabilitiesShow.class})
+        subcommands = {
+            CapabilitiesList.class,
+            CapabilitiesCreate.class,
+            CapabilitiesShow.class,
+            CapabilitiesCleanup.class
+        })
 public class Capabilities extends BaseCommand {
 
     @Override

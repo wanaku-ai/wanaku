@@ -45,6 +45,11 @@
         </dependency>
         <dependency>
             <groupId>ai.wanaku</groupId>
+            <artifactId>core-services-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
             <artifactId>core-mcp-client</artifactId>
             <version>${project.version}</version>
         </dependency>

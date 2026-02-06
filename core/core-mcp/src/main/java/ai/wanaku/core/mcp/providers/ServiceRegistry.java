@@ -82,4 +82,22 @@ public interface ServiceRegistry {
      * @param id the service ID
      */
     void ping(String id);
+
+    /**
+     * Find capabilities that are considered stale based on the given criteria.
+     *
+     * @param maxAgeSeconds the maximum age in seconds since last seen; capabilities older than this are considered stale
+     * @param inactiveOnly if true, only return capabilities that are also marked as inactive
+     * @return a list of stale capabilities with their activity records
+     */
+    List<StaleCapability> findStaleCapabilities(long maxAgeSeconds, boolean inactiveOnly);
+
+    /**
+     * Remove a capability by its ID.
+     * This removes both the service target and its associated activity record.
+     *
+     * @param id the ID of the capability to remove
+     * @return true if the capability was found and removed, false otherwise
+     */
+    boolean removeById(String id);
 }

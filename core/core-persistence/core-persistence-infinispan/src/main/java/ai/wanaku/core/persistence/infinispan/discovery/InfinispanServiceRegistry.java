@@ -4,7 +4,9 @@ import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
+import ai.wanaku.core.mcp.providers.StaleCapability;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -124,5 +126,50 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     void setMaxStateCount(int maxStateCount) {
         this.maxStateCount = maxStateCount;
+    }
+
+    @Override
+    public List<StaleCapability> findStaleCapabilities(long maxAgeSeconds, boolean inactiveOnly) {
+        List<StaleCapability> staleCapabilities = new ArrayList<>();
+        Instant threshold = Instant.now().minusSeconds(maxAgeSeconds);
+
+        List<ServiceTarget> allCapabilities = capabilitiesRepository.listAll();
+        for (ServiceTarget serviceTarget : allCapabilities) {
+            ActivityRecord activityRecord = activityRecordRepository.findById(serviceTarget.getId());
+
+            if (activityRecord == null) {
+                // No activity record means it was never pinged - consider it stale
+                staleCapabilities.add(new StaleCapability(serviceTarget, null));
+                continue;
+            }
+
+            Instant lastSeen = activityRecord.getLastSeen();
+            boolean isOldEnough = lastSeen == null || lastSeen.isBefore(threshold);
+            boolean isInactive = !activityRecord.isActive();
+
+            if (inactiveOnly) {
+                // Only include if both old enough AND inactive
+                if (isOldEnough && isInactive) {
+                    staleCapabilities.add(new StaleCapability(serviceTarget, activityRecord));
+                }
+            } else {
+                // Include if old enough, regardless of active status
+                if (isOldEnough) {
+                    staleCapabilities.add(new StaleCapability(serviceTarget, activityRecord));
+                }
+            }
+        }
+
+        return staleCapabilities;
+    }
+
+    @Override
+    public boolean removeById(String id) {
+        boolean capabilityRemoved = capabilitiesRepository.deleteById(id);
+        boolean activityRemoved = activityRecordRepository.deleteById(id);
+
+        LOG.debugf("Removed capability %s: capability=%b, activity=%b", id, capabilityRemoved, activityRemoved);
+
+        return capabilityRemoved || activityRemoved;
     }
 }
