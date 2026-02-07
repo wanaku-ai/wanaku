@@ -80,12 +80,12 @@ export const ViewDataStoreModal: React.FC<ViewDataStoreModalProps> = ({
         ) : error ? (
           <div
             style={{
-              color: "#da1e28",
+              color: "var(--cds-text-error)",
               fontSize: "0.875rem",
               marginTop: "0.5rem",
               padding: "1rem",
-              backgroundColor: "#fff1f1",
-              border: "1px solid #da1e28",
+              backgroundColor: "var(--cds-notification-background-error)",
+              border: "1px solid var(--cds-support-error)",
             }}
           >
             {error}
@@ -95,8 +95,8 @@ export const ViewDataStoreModal: React.FC<ViewDataStoreModalProps> = ({
             style={{
               marginTop: "0.5rem",
               padding: "1rem",
-              backgroundColor: "#f4f4f4",
-              border: "1px solid #e0e0e0",
+              backgroundColor: "var(--cds-layer-01)",
+              border: "1px solid var(--cds-border-subtle)",
               borderRadius: "4px",
               overflow: "auto",
               maxHeight: "400px",

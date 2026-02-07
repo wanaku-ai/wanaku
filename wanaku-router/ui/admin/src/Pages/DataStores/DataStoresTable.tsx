@@ -43,7 +43,7 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
           <Button onClick={onAdd}>Add Data Store</Button>
         </div>
         {dataStores.length === 0 ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "#6f6f6f" }}>
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--cds-text-secondary)" }}>
             No data stores found. Click "Add Data Store" to upload a file.
           </div>
         ) : (
