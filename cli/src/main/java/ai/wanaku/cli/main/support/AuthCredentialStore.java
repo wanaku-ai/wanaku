@@ -19,6 +19,8 @@ public class AuthCredentialStore {
     private static final String REFRESH_TOKEN_KEY = "refresh.token";
     private static final String AUTH_MODE_KEY = "auth.mode";
     private static final String AUTH_SERVER_URL_KEY = "auth.server.url";
+    private static final String TOKEN_EXPIRY_KEY = "token.expiry";
+    private static final String CLIENT_ID_KEY = "client.id";
 
     private final URI credentialsUri;
 
@@ -111,6 +113,43 @@ public class AuthCredentialStore {
      */
     public String getAuthServerUrl() {
         return get(AUTH_SERVER_URL_KEY);
+    }
+
+    /**
+     * Stores the token expiry time as epoch seconds.
+     *
+     * @param expiryEpochSeconds the expiry time in epoch seconds
+     */
+    public void storeTokenExpiry(long expiryEpochSeconds) {
+        storeCredential(TOKEN_EXPIRY_KEY, String.valueOf(expiryEpochSeconds));
+    }
+
+    /**
+     * Retrieves the token expiry time as epoch seconds.
+     *
+     * @return the expiry time in epoch seconds, or 0 if not found
+     */
+    public long getTokenExpiry() {
+        String expiry = get(TOKEN_EXPIRY_KEY);
+        return expiry != null ? Long.parseLong(expiry) : 0;
+    }
+
+    /**
+     * Stores the OAuth2 client ID.
+     *
+     * @param clientId the client ID
+     */
+    public void storeClientId(String clientId) {
+        storeCredential(CLIENT_ID_KEY, clientId);
+    }
+
+    /**
+     * Retrieves the OAuth2 client ID.
+     *
+     * @return the client ID, or null if not found
+     */
+    public String getClientId() {
+        return get(CLIENT_ID_KEY);
     }
 
     /**

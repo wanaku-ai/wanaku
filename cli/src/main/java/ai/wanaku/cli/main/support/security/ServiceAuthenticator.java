@@ -207,6 +207,15 @@ public class ServiceAuthenticator {
     }
 
     /**
+     * Returns the expiry time of the current access token as epoch seconds.
+     *
+     * @return The token expiry time in epoch seconds.
+     */
+    public long getTokenExpiryEpochSeconds() {
+        return creationTime.getEpochSecond() + accessToken.getLifetime();
+    }
+
+    /**
      * Formats the access token as an Authorization header value.
      *
      * @return The formatted Bearer token header value.
