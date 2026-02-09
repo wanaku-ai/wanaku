@@ -122,4 +122,35 @@ class AuthCredentialStoreTest {
         AuthCredentialStore newStore = new AuthCredentialStore(credentialsUri);
         assertEquals(token, newStore.getApiToken());
     }
+
+    @Test
+    void shouldStoreAndRetrieveTokenExpiry() {
+        long expiryTime = 1704067200L;
+
+        credentialStore.storeTokenExpiry(expiryTime);
+        long retrievedExpiry = credentialStore.getTokenExpiry();
+
+        assertEquals(expiryTime, retrievedExpiry);
+    }
+
+    @Test
+    void shouldReturnZeroWhenTokenExpiryNotSet() {
+        long expiryTime = credentialStore.getTokenExpiry();
+        assertEquals(0, expiryTime);
+    }
+
+    @Test
+    void shouldStoreAndRetrieveClientId() {
+        String clientId = "test-client-id";
+
+        credentialStore.storeClientId(clientId);
+        String retrievedClientId = credentialStore.getClientId();
+
+        assertEquals(clientId, retrievedClientId);
+    }
+
+    @Test
+    void shouldReturnNullWhenClientIdNotSet() {
+        assertNull(credentialStore.getClientId());
+    }
 }

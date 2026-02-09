@@ -82,6 +82,8 @@ public class AuthLogin extends BaseCommand {
 
                 credentialStore.storeApiToken(serviceAuthenticator.currentValidAccessToken());
                 credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
+                credentialStore.storeTokenExpiry(serviceAuthenticator.getTokenExpiryEpochSeconds());
+                credentialStore.storeClientId(DEFAULT_CLIENT_ID);
 
                 credentialStore.storeAuthMode("token");
                 credentialStore.storeAuthServerUrl(serverUrl);
