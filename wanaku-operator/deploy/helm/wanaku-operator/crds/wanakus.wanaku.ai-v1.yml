@@ -31,6 +31,13 @@ spec:
                 - "Always"
                 - "IfNotPresent"
                 - "Never"
+              ingress:
+                description: "Ingress configuration for Kubernetes clusters (not needed for OpenShift)"
+                properties:
+                  host:
+                    type: "string"
+                    description: "Hostname for Kubernetes Ingress (required on non-OpenShift clusters)"
+                type: "object"
               capabilities:
                 items:
                   properties:
