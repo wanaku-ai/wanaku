@@ -17,6 +17,11 @@ spec:
 # Default: IfNotPresent
 # Can be overridden per-component using router.imagePullPolicy or capability.imagePullPolicy
 #  imagePullPolicy: IfNotPresent
+# Ingress configuration for Kubernetes clusters (not needed for OpenShift)
+# OpenShift clusters auto-generate the host via Routes, but Kubernetes requires explicit configuration
+# Uncomment and set the host when deploying on vanilla Kubernetes:
+#  ingress:
+#    host: wanaku.example.com
 # Router settings are optional
   router:
     env:
