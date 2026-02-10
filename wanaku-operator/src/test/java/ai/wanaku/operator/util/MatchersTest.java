@@ -10,48 +10,64 @@ import org.junit.jupiter.api.Test;
 
 class MatchersTest {
 
+    private Ingress createIngress(String name, String host, String backendService) {
+        return new IngressBuilder()
+                .withNewMetadata()
+                .withName(name)
+                .endMetadata()
+                .withNewSpec()
+                .addNewRule()
+                .withHost(host)
+                .withNewHttp()
+                .addNewPath()
+                .withPath("/")
+                .withPathType("Prefix")
+                .withNewBackend()
+                .withNewService()
+                .withName(backendService)
+                .withNewPort()
+                .withNumber(8080)
+                .endPort()
+                .endService()
+                .endBackend()
+                .endPath()
+                .endHttp()
+                .endRule()
+                .endSpec()
+                .build();
+    }
+
     @Test
     void testMatchIngressWhenExistingIsNull() {
-        Ingress desired = new IngressBuilder()
-                .withNewMetadata()
-                .withName("test-ingress")
-                .endMetadata()
-                .build();
-
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
         assertFalse(Matchers.match(desired, null));
     }
 
     @Test
-    void testMatchIngressWhenNamesMatch() {
-        Ingress desired = new IngressBuilder()
-                .withNewMetadata()
-                .withName("test-ingress")
-                .endMetadata()
-                .build();
-
-        Ingress existing = new IngressBuilder()
-                .withNewMetadata()
-                .withName("test-ingress")
-                .endMetadata()
-                .build();
-
+    void testMatchIngressWhenFullyMatches() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        Ingress existing = createIngress("test-ingress", "example.com", "backend-service");
         assertTrue(Matchers.match(desired, existing));
     }
 
     @Test
     void testMatchIngressWhenNamesDiffer() {
-        Ingress desired = new IngressBuilder()
-                .withNewMetadata()
-                .withName("test-ingress")
-                .endMetadata()
-                .build();
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        Ingress existing = createIngress("other-ingress", "example.com", "backend-service");
+        assertFalse(Matchers.match(desired, existing));
+    }
 
-        Ingress existing = new IngressBuilder()
-                .withNewMetadata()
-                .withName("other-ingress")
-                .endMetadata()
-                .build();
+    @Test
+    void testMatchIngressWhenHostsDiffer() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        Ingress existing = createIngress("test-ingress", "other.com", "backend-service");
+        assertFalse(Matchers.match(desired, existing));
+    }
 
+    @Test
+    void testMatchIngressWhenBackendServicesDiffer() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        Ingress existing = createIngress("test-ingress", "example.com", "other-service");
         assertFalse(Matchers.match(desired, existing));
     }
 

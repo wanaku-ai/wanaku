@@ -6,6 +6,7 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
+import java.util.Objects;
 
 /**
  * Matching utilities to check if the desired resource matches the existing resource
@@ -82,7 +83,39 @@ public final class Matchers {
             return false;
         }
 
-        return desired.getMetadata().getName().equals(existing.getMetadata().getName());
+        // Compare name
+        if (!desired.getMetadata().getName().equals(existing.getMetadata().getName())) {
+            return false;
+        }
+
+        // Compare host from first rule
+        String desiredHost = desired.getSpec().getRules().getFirst().getHost();
+        String existingHost = existing.getSpec().getRules().getFirst().getHost();
+        if (!Objects.equals(desiredHost, existingHost)) {
+            return false;
+        }
+
+        // Compare backend service name from first rule's first path
+        String desiredBackend = desired.getSpec()
+                .getRules()
+                .getFirst()
+                .getHttp()
+                .getPaths()
+                .getFirst()
+                .getBackend()
+                .getService()
+                .getName();
+        String existingBackend = existing.getSpec()
+                .getRules()
+                .getFirst()
+                .getHttp()
+                .getPaths()
+                .getFirst()
+                .getBackend()
+                .getService()
+                .getName();
+
+        return Objects.equals(desiredBackend, existingBackend);
     }
 
     public static boolean match(PersistentVolumeClaim desired, PersistentVolumeClaim existing) {

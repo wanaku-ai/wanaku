@@ -181,31 +181,25 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
         String host = ingressSpec.getHost();
         final Ingress desiredIngress = makeRouterIngress(resource, host);
 
-        Ingress existingIngress;
-        try {
-            existingIngress = kubernetesClient
-                    .network()
-                    .v1()
-                    .ingresses()
-                    .inNamespace(namespace)
-                    .withName(desiredIngress.getMetadata().getName())
-                    .get();
-        } catch (Exception e) {
-            LOG.warnf("There is no existing ingress");
-            existingIngress = null;
-        }
+        // Get existing ingress - returns null if not found
+        Ingress existingIngress = kubernetesClient
+                .network()
+                .v1()
+                .ingresses()
+                .inNamespace(namespace)
+                .withName(desiredIngress.getMetadata().getName())
+                .get();
 
         if (!match(desiredIngress, existingIngress)) {
-            String ns = resource.getMetadata().getNamespace();
             LOG.infof(
                     "Creating or updating Ingress %s in %s",
-                    desiredIngress.getMetadata().getName(), ns);
+                    desiredIngress.getMetadata().getName(), namespace);
 
             kubernetesClient
                     .network()
                     .v1()
                     .ingresses()
-                    .inNamespace(ns)
+                    .inNamespace(namespace)
                     .resource(desiredIngress)
                     .createOr(Replaceable::update);
         }
