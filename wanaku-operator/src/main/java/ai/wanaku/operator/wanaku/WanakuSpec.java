@@ -8,6 +8,7 @@ public class WanakuSpec {
     private RouterSpec router;
     private List<CapabilitiesSpec> capabilities;
     private String imagePullPolicy;
+    private IngressSpec ingress;
 
     public String getImagePullPolicy() {
         return imagePullPolicy;
@@ -47,6 +48,26 @@ public class WanakuSpec {
 
     public void setCapabilities(List<CapabilitiesSpec> capabilities) {
         this.capabilities = capabilities;
+    }
+
+    public IngressSpec getIngress() {
+        return ingress;
+    }
+
+    public void setIngress(IngressSpec ingress) {
+        this.ingress = ingress;
+    }
+
+    public static class IngressSpec {
+        private String host;
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
     }
 
     public static class AuthSpec {

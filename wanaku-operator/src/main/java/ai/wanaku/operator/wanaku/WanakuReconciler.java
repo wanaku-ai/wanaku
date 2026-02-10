@@ -7,6 +7,7 @@ import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCiCCapabilityDeplo
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredRouterBackendDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredWanakuCapabilityDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
+import static ai.wanaku.operator.util.OperatorUtil.makeRouterIngress;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
@@ -15,6 +16,7 @@ import ai.wanaku.operator.util.OperatorUtil;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.fabric8.openshift.api.model.Route;
@@ -81,10 +83,16 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
                     .createOr(Replaceable::update);
         }
 
-        // Create the external service (cluster IP)
-        final OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
-
-        String host = createRouteAndGetHost(resource, namespace, openShiftClient);
+        // Create the external service - use OpenShift Route if available, otherwise Kubernetes Ingress
+        String host;
+        if (isOpenShiftCluster()) {
+            LOG.info("OpenShift cluster detected, using Route for external access");
+            final OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
+            host = createRouteAndGetHost(resource, namespace, openShiftClient);
+        } else {
+            LOG.info("Kubernetes cluster detected, using Ingress for external access");
+            host = createIngressAndGetHost(resource, namespace);
+        }
         wanakuStatus.setHost("http://" + host);
         wanakuStatus.setSseEndpoint("http://" + host + "/mcp/sse");
         wanakuStatus.setStreamableEndpoint("http://" + host + "/mcp");
@@ -157,6 +165,56 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
         } else {
             return existingRoute.getStatus().getIngress().getFirst().getHost();
         }
+    }
+
+    private String createIngressAndGetHost(Wanaku resource, String namespace) {
+        // Get host from spec - required for Kubernetes Ingress
+        WanakuSpec.IngressSpec ingressSpec = resource.getSpec().getIngress();
+        if (ingressSpec == null
+                || ingressSpec.getHost() == null
+                || ingressSpec.getHost().isBlank()) {
+            throw new WanakuException(
+                    "Ingress host must be specified in spec.ingress.host when deploying on Kubernetes. "
+                            + "OpenShift clusters auto-generate the host via Routes.");
+        }
+
+        String host = ingressSpec.getHost();
+        final Ingress desiredIngress = makeRouterIngress(resource, host);
+
+        Ingress existingIngress;
+        try {
+            existingIngress = kubernetesClient
+                    .network()
+                    .v1()
+                    .ingresses()
+                    .inNamespace(namespace)
+                    .withName(desiredIngress.getMetadata().getName())
+                    .get();
+        } catch (Exception e) {
+            LOG.warnf("There is no existing ingress");
+            existingIngress = null;
+        }
+
+        if (!match(desiredIngress, existingIngress)) {
+            String ns = resource.getMetadata().getNamespace();
+            LOG.infof(
+                    "Creating or updating Ingress %s in %s",
+                    desiredIngress.getMetadata().getName(), ns);
+
+            kubernetesClient
+                    .network()
+                    .v1()
+                    .ingresses()
+                    .inNamespace(ns)
+                    .resource(desiredIngress)
+                    .createOr(Replaceable::update);
+        }
+
+        return host;
+    }
+
+    private boolean isOpenShiftCluster() {
+        return kubernetesClient.supports("route.openshift.io/v1", "Route");
     }
 
     private void deployCapabilities(Wanaku resource, Context<Wanaku> context, String namespace) {

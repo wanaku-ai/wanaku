@@ -11,6 +11,7 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.ReconcilerUtils;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -26,6 +27,7 @@ public final class OperatorUtil {
     public static final String ROUTER_BACKEND_DEPLOYMENT_FILE = "wanaku-router-deployment.yaml";
     public static final String ROUTER_BACKEND_INTERNAL_SERVICE_FILE = "wanaku-router-service-internal.yaml";
     public static final String ROUTER_BACKEND_EXTERNAL_SERVICE_FILE = "wanaku-router-service-external.yaml";
+    public static final String ROUTER_INGRESS_FILE = "wanaku-router-ingress.yaml";
     public static final String WANAKU_CAPABILITY_DEPLOYMENT_FILE = "wanaku-capability-deployment.yaml";
     public static final String CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE =
             "camel-integration-capability-deployment.yaml";
@@ -206,6 +208,35 @@ public final class OperatorUtil {
         route.addOwnerReference(resource);
 
         return route;
+    }
+
+    public static Ingress makeRouterIngress(Wanaku resource, String host) {
+        Ingress ingress = ReconcilerUtils.loadYaml(Ingress.class, WanakuReconciler.class, ROUTER_INGRESS_FILE);
+
+        String deploymentName = resource.getMetadata().getName();
+        String ns = resource.getMetadata().getNamespace();
+
+        LOG.infof("Creating new ingress for deployment: %s", deploymentName);
+        ingress.getMetadata().setName(deploymentName);
+        ingress.getMetadata().setNamespace(ns);
+        ingress.getMetadata().getLabels().put("app", routerName(deploymentName));
+        ingress.getMetadata().getLabels().put("component", "wanaku-router-backend");
+
+        // Set the host and backend service
+        ingress.getSpec().getRules().getFirst().setHost(host);
+        ingress.getSpec()
+                .getRules()
+                .getFirst()
+                .getHttp()
+                .getPaths()
+                .getFirst()
+                .getBackend()
+                .getService()
+                .setName("internal-" + deploymentName);
+
+        ingress.addOwnerReference(resource);
+
+        return ingress;
     }
 
     public static PersistentVolumeClaim makeRouterVolumePVC(Wanaku resource) {

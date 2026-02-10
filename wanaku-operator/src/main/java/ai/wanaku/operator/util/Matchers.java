@@ -4,6 +4,7 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 
 /**
@@ -74,6 +75,14 @@ public final class Matchers {
         }
 
         return desiredRoute.getFullResourceName().equals(existingRoute.getFullResourceName());
+    }
+
+    public static boolean match(Ingress desired, Ingress existing) {
+        if (existing == null) {
+            return false;
+        }
+
+        return desired.getMetadata().getName().equals(existing.getMetadata().getName());
     }
 
     public static boolean match(PersistentVolumeClaim desired, PersistentVolumeClaim existing) {
