@@ -28,7 +28,7 @@ public final class TokenEndpoint {
      * @return The complete token endpoint URL.
      */
     public static String fromBaseUrl(String baseUrl) {
-        return baseUrl + "/protocol/openid-connect/token";
+        return stripTrailingSlash(baseUrl) + "/protocol/openid-connect/token";
     }
 
     /**
@@ -38,6 +38,13 @@ public final class TokenEndpoint {
      * @return The complete token endpoint URL.
      */
     public static String forDiscovery(String baseUrl) {
-        return baseUrl + "/q/oidc/";
+        return stripTrailingSlash(baseUrl) + "/q/oidc/";
+    }
+
+    private static String stripTrailingSlash(String url) {
+        if (url != null && url.endsWith("/")) {
+            return url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 }
