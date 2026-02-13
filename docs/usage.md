@@ -157,9 +157,19 @@ Finally, for security, you must regenerate the client secret for the `wanaku-ser
 
 To run Wanaku, you need to first download and install the router and the command line client.
 
+## Prerequisites
+
+> **Important:** Java 21 or later is required to run Wanaku. Ensure you have Java 21+ installed before proceeding with the installation.
+
+You can verify your Java version by running:
+
+```shell
+java -version
+```
+
 ## Installing the Command Line Interface (CLI)
 
-Although the router comes with a UI, the CLI is the primary method used to manage the router. 
+Although the router comes with a UI, the CLI is the primary method used to manage the router.
 As such, it's recommended to have it installed.
 
 #### Installing the CLI by downloading binary
@@ -170,6 +180,8 @@ The most recommended method for installing the Wanaku CLI is to download the lat
 #### Installing the CLI via JBang
 
 To simplify using the Wanaku Command Line Interface (CLI), you can install it via [JBang](https://www.jbang.dev/).
+
+> **Note:** JBang requires Java 21 or later for running Wanaku CLI.
 
 First, ensure JBang is installed on your system. You can find detailed [download and installation](https://www.jbang.dev/download/) instructions on the official JBang website.
 
