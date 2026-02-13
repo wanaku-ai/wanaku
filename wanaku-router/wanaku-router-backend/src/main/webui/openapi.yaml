@@ -15,6 +15,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ServiceState"
+    CapabilityStatistics:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        active:
+          type: integer
+          format: int64
+        inactive:
+          type: integer
+          format: int64
     CodeExecutionError:
       type: object
       properties:
@@ -336,6 +348,28 @@ components:
           type: boolean
         lastSeen:
           $ref: "#/components/schemas/Instant"
+    SystemStatistics:
+      type: object
+      properties:
+        toolsCount:
+          type: integer
+          format: int64
+        resourcesCount:
+          type: integer
+          format: int64
+        promptsCount:
+          type: integer
+          format: int64
+        forwardsCount:
+          type: integer
+          format: int64
+        dataStoresCount:
+          type: integer
+          format: int64
+        toolCapabilities:
+          $ref: "#/components/schemas/CapabilityStatistics"
+        resourceCapabilities:
+          $ref: "#/components/schemas/CapabilityStatistics"
     ToolPayload:
       type: object
       properties:
@@ -522,6 +556,13 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/ServiceTarget"
+    WanakuResponseSystemStatistics:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/SystemStatistics"
     WanakuResponseToolReference:
       type: object
       properties:
@@ -955,6 +996,18 @@ paths:
       summary: Version
       tags:
       - Info Resource
+  /api/v1/management/statistics:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseSystemStatistics"
+      summary: Get Statistics
+      tags:
+      - Statistics Resource
   /api/v1/namespaces/list:
     get:
       parameters:

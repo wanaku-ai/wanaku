@@ -53,6 +53,7 @@ import type {
   WanakuResponseResourceReference,
   WanakuResponseServerInfo,
   WanakuResponseServiceTarget,
+  WanakuResponseSystemStatistics,
   WanakuResponseToolReference,
 } from "../models";
 
@@ -998,6 +999,38 @@ export const getApiV1ManagementInfoVersion = async (
 ): Promise<getApiV1ManagementInfoVersionResponse> => {
   return customFetch<getApiV1ManagementInfoVersionResponse>(
     getGetApiV1ManagementInfoVersionUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Get Statistics
+ */
+export type getApiV1ManagementStatisticsResponse200 = {
+  data: WanakuResponseSystemStatistics;
+  status: 200;
+};
+
+export type getApiV1ManagementStatisticsResponseComposite =
+  getApiV1ManagementStatisticsResponse200;
+
+export type getApiV1ManagementStatisticsResponse =
+  getApiV1ManagementStatisticsResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ManagementStatisticsUrl = () => {
+  return `/api/v1/management/statistics`;
+};
+
+export const getApiV1ManagementStatistics = async (
+  options?: RequestInit,
+): Promise<getApiV1ManagementStatisticsResponse> => {
+  return customFetch<getApiV1ManagementStatisticsResponse>(
+    getGetApiV1ManagementStatisticsUrl(),
     {
       ...options,
       method: "GET",
