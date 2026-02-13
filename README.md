@@ -27,8 +27,10 @@ South America.
 
 ### Wanaku CLI Installation
 
+> **Note:** Java 21 or later is required to run Wanaku.
+
 ```shell
-# Install via JBang
+# Install via JBang (requires Java 21+)
 jbang app install wanaku@wanaku-ai/wanaku
 
 # Or download the latest binary from releases

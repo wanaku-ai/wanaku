@@ -25,6 +25,8 @@ The Wanaku CLI provides a user-friendly interface for:
 
 ## Installation
 
+> **Note:** Java 21 or later is required to run Wanaku CLI.
+
 ### Via JBang (Recommended)
 
 ```shell
