@@ -7,6 +7,7 @@
 
 export * from "./activityRecord";
 export * from "./callableReference";
+export * from "./capabilityStatistics";
 export * from "./codeExecutionError";
 export * from "./codeExecutionErrorDetails";
 export * from "./codeExecutionRequest";
@@ -83,6 +84,7 @@ export * from "./serviceTargetLabels";
 export * from "./serviceType";
 export * from "./staleCapabilityInfo";
 export * from "./state";
+export * from "./systemStatistics";
 export * from "./toolCallEvent";
 export * from "./toolPayload";
 export * from "./toolReference";
@@ -119,4 +121,5 @@ export * from "./wanakuResponseResourceReference";
 export * from "./wanakuResponseServerInfo";
 export * from "./wanakuResponseServiceTarget";
 export * from "./wanakuResponseString";
+export * from "./wanakuResponseSystemStatistics";
 export * from "./wanakuResponseToolReference";
