@@ -8,8 +8,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     VITE_API_URL:
-      process.env.VITE_API_URL ??
-      JSON.stringify("http://localhost:8080/api/v1"),
+      process.env.VITE_API_URL ?? JSON.stringify(""),
   },
   build: {
     outDir,
