@@ -1,10 +1,5 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
-import ai.wanaku.backend.common.ServiceTargetEvent;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -14,10 +9,16 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.common.ServiceTargetEvent;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 @ApplicationScoped
 @Path("/api/v1/management/discovery")

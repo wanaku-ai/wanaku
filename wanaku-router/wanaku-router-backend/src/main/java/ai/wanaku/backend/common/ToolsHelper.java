@@ -1,15 +1,15 @@
 package ai.wanaku.backend.common;
 
+import java.util.List;
+import java.util.function.BiFunction;
+import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.Property;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
-import java.util.List;
-import java.util.function.BiFunction;
-import org.jboss.logging.Logger;
 
 /**
  * Helper class for dealing with tools

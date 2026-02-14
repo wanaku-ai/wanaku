@@ -1,7 +1,13 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.jline.terminal.Terminal;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -9,14 +15,9 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
-import io.quarkus.runtime.annotations.RegisterForReflection;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 /**
  * Command to show detailed information about a specific tool registered in the Wanaku platform.

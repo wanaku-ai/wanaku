@@ -1,5 +1,7 @@
 package ai.wanaku.core.mcp.common.resolvers.util;
 
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
@@ -7,8 +9,6 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
 
 /**
  * No-operation implementation of {@link ToolsResolver} for testing and default behavior.

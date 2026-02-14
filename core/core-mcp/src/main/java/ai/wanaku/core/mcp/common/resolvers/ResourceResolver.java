@@ -1,11 +1,11 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
+import java.util.List;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import java.util.List;
 
 /**
  * Resolver interface for resource capability requests in the MCP system.

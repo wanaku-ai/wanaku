@@ -1,20 +1,21 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-
-import ai.wanaku.capabilities.sdk.api.types.Namespace;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.NamespacesService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.NamespacesService;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 /**
  * CLI command for adding labels to existing namespaces.

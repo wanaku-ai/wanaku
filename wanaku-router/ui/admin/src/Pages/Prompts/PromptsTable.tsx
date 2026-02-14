@@ -1,18 +1,8 @@
-import { Add, TrashCan } from "@carbon/icons-react";
-import {
-  Button,
-  Column,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@carbon/react";
-import { FunctionComponent } from "react";
-import { PromptReference } from "../../models";
-import { getNamespacePathById } from "../../hooks/api/use-namespaces";
+import {Add, TrashCan} from "@carbon/icons-react";
+import {Button, Column, Grid, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@carbon/react";
+import {FunctionComponent} from "react";
+import {PromptReference} from "../../models";
+import {getNamespacePathById} from "../../hooks/api/use-namespaces";
 
 interface PromptsListProps {
   fetchedData: PromptReference[];

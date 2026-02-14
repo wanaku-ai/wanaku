@@ -1,16 +1,17 @@
 package ai.wanaku.cli.main.commands.forwards;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import org.jline.terminal.Terminal;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
 
 @Command(name = "refresh", description = "Refresh forward to re-discover tools and resources")
 public class ForwardsRefresh extends BaseCommand {

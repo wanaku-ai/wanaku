@@ -1,8 +1,8 @@
 package ai.wanaku.core.mcp.common;
 
-import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 
 /**
  * Interface for executable tool implementations in the MCP system.

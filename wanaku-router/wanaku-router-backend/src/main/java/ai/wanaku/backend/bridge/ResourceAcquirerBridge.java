@@ -1,5 +1,12 @@
 package ai.wanaku.backend.bridge;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.TextResourceContents;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
@@ -11,13 +18,6 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import com.google.protobuf.ProtocolStringList;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.TextResourceContents;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import org.jboss.logging.Logger;
 
 /**
  * A proxy class for acquiring resources via gRPC.

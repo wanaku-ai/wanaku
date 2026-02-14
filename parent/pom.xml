@@ -72,6 +72,7 @@
         <commonmark.version>0.27.1</commonmark.version>
         <oauth2-oidc-sdk.version>11.31.1</oauth2-oidc-sdk.version>
         <operator-framework.version>5.2.2</operator-framework.version>
+        <palantir-format-version.version>2.71.0</palantir-format-version.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
@@ -162,10 +163,21 @@
                     <configuration>
                         <java>
                             <palantirJavaFormat>
-                                <version>2.71.0</version>
+                                <version>${palantir-format-version.version}</version>
                             </palantirJavaFormat>
                             <removeUnusedImports />
                             <formatAnnotations />
+                            <forbidWildcardImports />
+
+                            <excludes>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.proto</exclude>
+                            </excludes>
+
+                            <importOrder>
+                                <wildcardsLast>true</wildcardsLast>
+                                <order>jakarta|javax,org.w3c|org.xml,java|org|io|,,\#,org.junit|org.mockito|\#org.assertj|\#org.junit|\#org.mockito</order>
+                            </importOrder>
                         </java>
                     </configuration>
                     <executions>

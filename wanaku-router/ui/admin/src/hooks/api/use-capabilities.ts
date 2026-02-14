@@ -1,11 +1,11 @@
-import { useCallback } from "react";
+import {useCallback} from "react";
 import {
-  getApiV1Capabilities,
-  getApiV1CapabilitiesToolsState,
-  getApiV1CapabilitiesResourcesState,
-  getApiV1CapabilitiesResponse,
-  getApiV1CapabilitiesToolsStateResponse,
-  getApiV1CapabilitiesResourcesStateResponse,
+    getApiV1Capabilities,
+    getApiV1CapabilitiesResourcesState,
+    getApiV1CapabilitiesResourcesStateResponse,
+    getApiV1CapabilitiesResponse,
+    getApiV1CapabilitiesToolsState,
+    getApiV1CapabilitiesToolsStateResponse,
 } from "../../api/wanaku-router-api";
 
 export const useCapabilities = () => {

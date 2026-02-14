@@ -1,13 +1,13 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
-import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
-import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+
 import java.util.List;
 import java.util.Optional;
+import io.quarkus.test.junit.QuarkusTest;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

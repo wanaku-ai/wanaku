@@ -1,20 +1,21 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.jline.terminal.Terminal;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.NamespacesService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 @CommandLine.Command(name = "list", description = "List namespaces")
 public class NamespaceList extends BaseCommand {

@@ -1,10 +1,10 @@
 package ai.wanaku.core.persistence.infinispan.protostream.schema;
 
-import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ToolReferenceMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ToolReferenceMarshaller;
 
 public class ToolReferenceSchema extends AbstractWanakuSerializationContextInitializer {
 

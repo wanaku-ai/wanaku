@@ -1,11 +1,11 @@
 package ai.wanaku.cli.main.support;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import java.util.List;
 import ai.wanaku.cli.main.support.CapabilitiesHelper.PrintableCapability;
 import ai.wanaku.cli.main.support.CapabilitiesHelper.StatusSummary;
-import java.util.List;
+
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CapabilitiesHelperTest {
 

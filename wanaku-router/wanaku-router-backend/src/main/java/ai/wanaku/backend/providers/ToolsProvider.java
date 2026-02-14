@@ -1,5 +1,16 @@
 package ai.wanaku.backend.providers;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
+import org.jboss.logging.Logger;
+import io.quarkus.arc.DefaultBean;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
@@ -11,16 +22,6 @@ import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopToolsResolver;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.util.VersionHelper;
-import io.quarkus.arc.DefaultBean;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.OnOverflow;
-import org.jboss.logging.Logger;
 import picocli.CommandLine;
 
 /**

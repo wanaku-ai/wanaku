@@ -1,15 +1,16 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.persistence.infinispan.AbstractInfinispanRepository;
 import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.UUID;
 import org.infinispan.Cache;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
+import ai.wanaku.core.persistence.infinispan.AbstractInfinispanRepository;
 
 @Singleton
 public class InfinispanCapabilitiesRepository extends AbstractInfinispanRepository<ServiceTarget, String> {

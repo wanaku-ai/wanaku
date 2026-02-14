@@ -1,14 +1,14 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.StaleCapability;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import org.jboss.logging.Logger;
 
 public class InfinispanServiceRegistry implements ServiceRegistry {
     private static final Logger LOG = Logger.getLogger(InfinispanServiceRegistry.class);

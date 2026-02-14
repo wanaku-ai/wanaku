@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.protostream.schema;
 
-import ai.wanaku.core.persistence.infinispan.protostream.marshaller.DataStoreMarshaller;
 import org.infinispan.protostream.SerializationContext;
+import ai.wanaku.core.persistence.infinispan.protostream.marshaller.DataStoreMarshaller;
 
 /**
  * Schema initializer for DataStore entity.

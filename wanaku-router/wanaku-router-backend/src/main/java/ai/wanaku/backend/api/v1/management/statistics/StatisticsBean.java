@@ -1,5 +1,10 @@
 package ai.wanaku.backend.api.v1.management.statistics;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import java.util.List;
+import java.util.Map;
 import ai.wanaku.backend.api.v1.capabilities.CapabilitiesBean;
 import ai.wanaku.backend.api.v1.datastores.DataStoresBean;
 import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
@@ -9,10 +14,6 @@ import ai.wanaku.backend.api.v1.tools.ToolsBean;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.core.util.CollectionsHelper;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import java.util.List;
-import java.util.Map;
 
 @ApplicationScoped
 public class StatisticsBean {

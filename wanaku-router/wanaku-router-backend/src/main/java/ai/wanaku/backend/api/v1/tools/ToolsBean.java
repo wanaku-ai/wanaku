@@ -1,5 +1,16 @@
 package ai.wanaku.backend.api.v1.tools;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
+import java.util.List;
+import org.jboss.logging.Logger;
+import io.micrometer.common.util.StringUtils;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
@@ -14,16 +25,6 @@ import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
-import io.micrometer.common.util.StringUtils;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-import java.util.List;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {

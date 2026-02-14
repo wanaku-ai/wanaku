@@ -1,18 +1,20 @@
 package ai.wanaku.cli.main.commands.auth;
 
-import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-
-import ai.wanaku.cli.main.support.AuthCredentialStore;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import java.nio.file.Path;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.support.AuthCredentialStore;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+
+import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_OK;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.contains;
+import static org.mockito.Mockito.verify;
 
 class AuthCommandsTest {
 

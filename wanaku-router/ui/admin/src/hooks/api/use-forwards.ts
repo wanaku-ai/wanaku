@@ -1,5 +1,13 @@
-import { getApiV1ForwardsList, postApiV1ForwardsAdd, postApiV1ForwardsAddResponse, postApiV1ForwardsRefresh, postApiV1ForwardsRefreshResponse, putApiV1ForwardsRemove, putApiV1ForwardsRemoveResponse } from "../../api/wanaku-router-api";
-import { ForwardReference } from "../../models";
+import {
+    getApiV1ForwardsList,
+    postApiV1ForwardsAdd,
+    postApiV1ForwardsAddResponse,
+    postApiV1ForwardsRefresh,
+    postApiV1ForwardsRefreshResponse,
+    putApiV1ForwardsRemove,
+    putApiV1ForwardsRemoveResponse
+} from "../../api/wanaku-router-api";
+import {ForwardReference} from "../../models";
 
 // Simple in-memory cache for Client Components
 let forwardsCache: {

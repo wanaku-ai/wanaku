@@ -1,15 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Button,
-  Search,
-  Tag,
-  Accordion,
-  AccordionItem,
-  Toggle,
-  ToastNotification,
-} from "@carbon/react";
-import { Download, TrashCan } from "@carbon/icons-react";
-import { ToolCallEvent, ToolCallEventType, ToolCallErrorCategory } from "../../models";
+import React, {useEffect, useRef, useState} from "react";
+import {Accordion, AccordionItem, Button, Search, Tag, ToastNotification, Toggle,} from "@carbon/react";
+import {Download, TrashCan} from "@carbon/icons-react";
+import {ToolCallErrorCategory, ToolCallEvent, ToolCallEventType} from "../../models";
 
 const MAX_EVENTS = 1000;
 

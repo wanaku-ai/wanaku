@@ -1,3 +1,3 @@
-import { ResourcesPage } from './ResourcesPage';
+import {ResourcesPage} from './ResourcesPage';
 
 export const element = <ResourcesPage />;

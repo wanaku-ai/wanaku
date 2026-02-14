@@ -1,12 +1,12 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.capabilities.sdk.api.types.PromptReference;
-import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 import java.util.List;
 import java.util.UUID;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 
 /**
  * Infinispan implementation of PromptReferenceRepository.

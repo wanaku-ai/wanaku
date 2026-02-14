@@ -1,22 +1,28 @@
 package ai.wanaku.cli.main.support;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import ai.wanaku.cli.main.support.security.TokenRefresher;
-import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
+import ai.wanaku.cli.main.support.security.TokenRefresher;
+import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AuthenticationInterceptorTest {
 

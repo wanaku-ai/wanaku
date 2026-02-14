@@ -1,5 +1,8 @@
 package ai.wanaku.backend.bridge;
 
+import java.net.URI;
+import org.jboss.logging.Logger;
+import io.grpc.ManagedChannel;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -8,9 +11,6 @@ import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ProvisionerGrpc;
 import ai.wanaku.core.exchange.Secret;
-import io.grpc.ManagedChannel;
-import java.net.URI;
-import org.jboss.logging.Logger;
 
 /**
  * Service for handling provisioning operations across all proxy implementations.

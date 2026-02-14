@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
 /**
  * Repository interface for DataStore entity operations.

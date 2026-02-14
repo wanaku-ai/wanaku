@@ -1,5 +1,17 @@
 package ai.wanaku.backend.resolvers;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.TextResourceContents;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import io.vertx.core.json.JsonObject;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
@@ -25,18 +37,6 @@ import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import dev.langchain4j.service.tool.ToolExecutionResult;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.TextResourceContents;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
-import io.vertx.core.json.JsonObject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import org.jboss.logging.Logger;
 
 public class WanakuForwardResolver implements ForwardResolver {
     private static final Logger LOG = Logger.getLogger(WanakuForwardResolver.class);

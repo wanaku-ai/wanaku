@@ -1,23 +1,23 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.generateToolReferences;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.loadAndResolveOpenAPI;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.writeOutput;
-
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.converter.URLConverter;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import io.swagger.v3.oas.models.OpenAPI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
+import io.swagger.v3.oas.models.OpenAPI;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.converter.URLConverter;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.generateToolReferences;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.loadAndResolveOpenAPI;
+import static ai.wanaku.cli.main.support.ToolsGenerateHelper.writeOutput;
 
 @CommandLine.Command(name = "generate", description = "generate tools from an OpenApi specification")
 public class ToolsGenerate extends BaseCommand {

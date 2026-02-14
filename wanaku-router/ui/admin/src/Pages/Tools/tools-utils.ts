@@ -1,4 +1,4 @@
-import { InputSchema } from "../../models";
+import {InputSchema} from "../../models";
 
 export function formatInputSchema(inputSchema?: InputSchema): string {
   return (inputSchema) ? (JSON.stringify(inputSchema, null, 1)) : ""

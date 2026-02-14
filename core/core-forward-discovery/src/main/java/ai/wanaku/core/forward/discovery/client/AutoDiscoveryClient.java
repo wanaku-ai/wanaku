@@ -1,16 +1,17 @@
 package ai.wanaku.core.forward.discovery.client;
 
-import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
-
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
-import ai.wanaku.core.services.api.ForwardsService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.core.services.api.ForwardsService;
+
+import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
 public class AutoDiscoveryClient implements ForwardDiscoveryClient {
     private static final Logger LOG = Logger.getLogger(AutoDiscoveryClient.class);

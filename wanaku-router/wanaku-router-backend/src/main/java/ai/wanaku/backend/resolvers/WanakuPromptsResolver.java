@@ -1,11 +1,12 @@
 package ai.wanaku.backend.resolvers;
 
+import jakarta.inject.Inject;
+
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.PromptNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.core.mcp.common.resolvers.PromptsResolver;
 import ai.wanaku.core.persistence.api.PromptReferenceRepository;
-import jakarta.inject.Inject;
-import java.util.List;
 
 /**
  * Wanaku implementation of PromptsResolver.

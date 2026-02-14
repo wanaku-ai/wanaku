@@ -1,20 +1,17 @@
-import { useCallback } from "react";
+import {useCallback} from "react";
 import {
-  getApiV1Capabilities,
-  postApiV1ResourcesExpose,
-  getApiV1ResourcesList,
-  putApiV1ResourcesRemove,
-  postApiV1ResourcesExposeResponse,
-  getApiV1ResourcesListResponse,
-  putApiV1ResourcesRemoveResponse,
-  getApiV1CapabilitiesResponse,
-  postApiV1DataStoreUpdateResponse,
-  postApiV1ResourcesUpdate
+    getApiV1Capabilities,
+    getApiV1CapabilitiesResponse,
+    getApiV1ResourcesList,
+    getApiV1ResourcesListResponse,
+    postApiV1DataStoreUpdateResponse,
+    postApiV1ResourcesExpose,
+    postApiV1ResourcesExposeResponse,
+    postApiV1ResourcesUpdate,
+    putApiV1ResourcesRemove,
+    putApiV1ResourcesRemoveResponse
 } from "../../api/wanaku-router-api";
-import {
-  PutApiV1ResourcesRemoveParams,
-  ResourceReference,
-} from "../../models";
+import {PutApiV1ResourcesRemoveParams, ResourceReference,} from "../../models";
 
 export const useResources = () => {
 

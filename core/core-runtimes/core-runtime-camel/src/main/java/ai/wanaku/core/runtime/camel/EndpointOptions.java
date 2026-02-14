@@ -1,7 +1,7 @@
 package ai.wanaku.core.runtime.camel;
 
-import ai.wanaku.core.capabilities.common.ServiceOptions;
 import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -10,6 +10,7 @@ import org.apache.camel.catalog.DefaultCamelCatalog;
 import org.apache.camel.tooling.model.BaseOptionModel;
 import org.apache.camel.tooling.model.ComponentModel;
 import org.jboss.logging.Logger;
+import ai.wanaku.core.capabilities.common.ServiceOptions;
 
 @ApplicationScoped
 public class EndpointOptions implements ServiceOptions {

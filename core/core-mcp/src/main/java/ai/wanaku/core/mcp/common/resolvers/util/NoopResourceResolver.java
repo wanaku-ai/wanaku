@@ -1,12 +1,12 @@
 package ai.wanaku.core.mcp.common.resolvers.util;
 
+import java.util.List;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import java.util.List;
 
 /**
  * No-operation implementation of {@link ResourceResolver} for testing and default behavior.

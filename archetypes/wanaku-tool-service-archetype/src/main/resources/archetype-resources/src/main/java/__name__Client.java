@@ -1,22 +1,13 @@
-package ${package};
+package $
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.tool.Client;
-
-#if ( $wanaku-capability-type == "camel")
-import org.apache.camel.CamelContext;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.apache.camel.ProducerTemplate;
-import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
-#end
 import org.jboss.logging.Logger;
 
-#if ( $wanaku-capability-type == "camel")
 import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 #end
 

@@ -1,11 +1,12 @@
 package ai.wanaku.core.forward.discovery.client;
 
-import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+
 import java.util.concurrent.TimeUnit;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.scheduler.Scheduled;
 
 @ApplicationScoped
 public class ForwardRegistrationManager {

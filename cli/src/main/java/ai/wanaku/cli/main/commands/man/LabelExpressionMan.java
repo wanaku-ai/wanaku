@@ -1,10 +1,10 @@
 package ai.wanaku.cli.main.commands.man;
 
+import java.io.IOException;
+import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.DocumentationLoader;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import java.io.IOException;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 /**

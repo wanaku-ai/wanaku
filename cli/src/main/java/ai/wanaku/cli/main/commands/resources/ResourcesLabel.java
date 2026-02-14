@@ -1,8 +1,8 @@
 package ai.wanaku.cli.main.commands.resources;
 
+import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 /**

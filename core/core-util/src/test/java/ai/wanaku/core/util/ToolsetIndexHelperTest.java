@@ -1,20 +1,21 @@
 package ai.wanaku.core.util;
 
-import static ai.wanaku.core.util.support.ToolsHelper.TOOLSET_INDEX;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.core.util.support.ToolsHelper;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.core.util.support.ToolsHelper;
+
+import static ai.wanaku.core.util.support.ToolsHelper.TOOLSET_INDEX;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ToolsetIndexHelperTest {

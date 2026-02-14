@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 
 /**
  * Repository interface for managing {@link ForwardReference} entities.

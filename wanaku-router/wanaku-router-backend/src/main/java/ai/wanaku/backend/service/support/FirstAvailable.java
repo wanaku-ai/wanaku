@@ -1,8 +1,8 @@
 package ai.wanaku.backend.service.support;
 
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import java.util.List;
 
 /**
  * A service resolver that returns the first available service from the registry.

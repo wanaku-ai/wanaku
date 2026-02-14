@@ -1,18 +1,9 @@
 package ai.wanaku.operator.wanaku;
 
-import static ai.wanaku.operator.util.Matchers.match;
-import static ai.wanaku.operator.util.OperatorUtil.createVolumeClaimName;
-import static ai.wanaku.operator.util.OperatorUtil.makeCapabilityInternalService;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCiCCapabilityDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredRouterBackendDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredWanakuCapabilityDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
-import static ai.wanaku.operator.util.OperatorUtil.makeRouterIngress;
-import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
+import jakarta.inject.Inject;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.operator.util.OperatorUtil;
+import java.util.List;
+import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -28,9 +19,19 @@ import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
-import jakarta.inject.Inject;
-import java.util.List;
-import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.operator.util.OperatorUtil;
+
+import static ai.wanaku.operator.util.Matchers.match;
+import static ai.wanaku.operator.util.OperatorUtil.createVolumeClaimName;
+import static ai.wanaku.operator.util.OperatorUtil.makeCapabilityInternalService;
+import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCiCCapabilityDeployment;
+import static ai.wanaku.operator.util.OperatorUtil.makeDesiredRouterBackendDeployment;
+import static ai.wanaku.operator.util.OperatorUtil.makeDesiredWanakuCapabilityDeployment;
+import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
+import static ai.wanaku.operator.util.OperatorUtil.makeRouterIngress;
+import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
+import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku")
 @CSVMetadata(displayName = "Wanaku operator", description = "A simple operator that can deploy and manage Wanaku")

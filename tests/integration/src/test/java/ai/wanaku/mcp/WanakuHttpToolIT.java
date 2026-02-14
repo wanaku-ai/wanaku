@@ -1,11 +1,12 @@
 package ai.wanaku.mcp;
 
-import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
-
-import io.quarkus.test.junit.QuarkusTest;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import io.quarkus.test.junit.QuarkusTest;
+
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;

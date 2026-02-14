@@ -1,9 +1,5 @@
 package ai.wanaku.core.services.api;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.capabilities.sdk.api.types.PromptReference;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -15,7 +11,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
 
 @Path("/api/v1/prompts")
 public interface PromptsService {

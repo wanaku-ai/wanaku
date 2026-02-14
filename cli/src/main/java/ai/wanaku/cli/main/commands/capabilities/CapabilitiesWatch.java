@@ -1,10 +1,5 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
-
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,6 +10,11 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
 
 /**
  * CLI command for watching real-time capability events via Server-Sent Events (SSE).

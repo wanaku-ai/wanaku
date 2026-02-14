@@ -97,8 +97,6 @@
         <module>archetypes</module>
         <module>jbang</module>
         <module>tests</module>
-
-
     </modules>
 
     <profiles>

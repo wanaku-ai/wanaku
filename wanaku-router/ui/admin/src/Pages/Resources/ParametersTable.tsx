@@ -1,20 +1,20 @@
-import { FunctionComponent } from "react";
+import {FunctionComponent} from "react";
 import {
-  Button,
-  DataTable,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableToolbar,
-  TableToolbarContent,
-  TextInput
+    Button,
+    DataTable,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableHeader,
+    TableRow,
+    TableToolbar,
+    TableToolbarContent,
+    TextInput
 } from "@carbon/react";
-import { Add, TrashCan } from "@carbon/icons-react";
-import { Param } from "../../models";
+import {Add, TrashCan} from "@carbon/icons-react";
+import {Param} from "../../models";
 
 interface ParametersTableProps {
   parameters: Param[]

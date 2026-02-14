@@ -1,11 +1,7 @@
 package ai.wanaku.cli.main.commands.start;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.cli.main.support.RuntimeConstants;
-import ai.wanaku.cli.main.support.WanakuCliConfig;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.cli.runner.local.LocalRunner;
 import jakarta.inject.Inject;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -13,6 +9,11 @@ import java.util.Map;
 import java.util.Objects;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.cli.main.support.RuntimeConstants;
+import ai.wanaku.cli.main.support.WanakuCliConfig;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.cli.runner.local.LocalRunner;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "local", description = "Create a new tool service")

@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 
 /**
  * Repository interface for managing {@link ToolReference} entities.

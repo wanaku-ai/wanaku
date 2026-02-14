@@ -1,14 +1,7 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.ToolsService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.Response;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -25,7 +18,15 @@ import org.jline.consoleui.prompt.PromptResultItemIF;
 import org.jline.consoleui.prompt.builder.ListPromptBuilder;
 import org.jline.consoleui.prompt.builder.PromptBuilder;
 import org.jline.terminal.Terminal;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.ToolsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import picocli.CommandLine;
+
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 @CommandLine.Command(name = "edit", description = "edit tool")
 public class ToolsEdit extends BaseCommand {

@@ -1,3 +1,3 @@
-import { LLMChatPage } from './LLMChatPage';
+import {LLMChatPage} from './LLMChatPage';
 
 export const element = <LLMChatPage />;

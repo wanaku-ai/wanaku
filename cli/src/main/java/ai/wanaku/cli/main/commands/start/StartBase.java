@@ -1,8 +1,8 @@
 package ai.wanaku.cli.main.commands.start;
 
-import ai.wanaku.cli.main.commands.BaseCommand;
 import java.util.List;
 import org.jboss.logging.Logger;
+import ai.wanaku.cli.main.commands.BaseCommand;
 import picocli.CommandLine;
 
 public abstract class StartBase extends BaseCommand {

@@ -1,19 +1,20 @@
 package ai.wanaku.cli.main.commands.datastores;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import org.jline.terminal.Terminal;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
-import io.quarkus.runtime.annotations.RegisterForReflection;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 /**
  * List subcommand for data stores.

@@ -1,13 +1,14 @@
 package ai.wanaku.mcp;
 
-import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
-
-import io.quarkiverse.mcp.server.test.McpAssured;
-import io.quarkus.test.junit.QuarkusTest;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import io.quarkiverse.mcp.server.test.McpAssured;
+import io.quarkus.test.junit.QuarkusTest;
+
+import static ai.wanaku.mcp.CLIHelper.executeWanakuCliCommand;
+
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest

@@ -1,9 +1,9 @@
 package ai.wanaku.cli.main.commands.resources;
 
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import java.io.IOException;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
 /**

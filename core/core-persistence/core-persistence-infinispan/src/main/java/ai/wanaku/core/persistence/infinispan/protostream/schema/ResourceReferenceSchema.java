@@ -1,8 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.schema;
 
+import org.infinispan.protostream.SerializationContext;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ParamMarshaller;
 import ai.wanaku.core.persistence.infinispan.protostream.marshaller.ResourceReferenceMarshaller;
-import org.infinispan.protostream.SerializationContext;
 
 public class ResourceReferenceSchema extends AbstractWanakuSerializationContextInitializer {
 

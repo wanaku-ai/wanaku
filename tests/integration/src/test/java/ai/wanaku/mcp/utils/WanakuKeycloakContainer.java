@@ -1,10 +1,10 @@
 package ai.wanaku.mcp.utils;
 
-import io.quarkus.test.keycloak.client.KeycloakTestClient;
-import io.quarkus.test.keycloak.server.KeycloakContainer;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.keycloak.server.KeycloakContainer;
 
 public class WanakuKeycloakContainer extends KeycloakContainer {
 

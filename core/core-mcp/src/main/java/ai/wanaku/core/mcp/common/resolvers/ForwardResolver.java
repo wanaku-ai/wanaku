@@ -1,12 +1,12 @@
 package ai.wanaku.core.mcp.common.resolvers;
 
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.mcp.common.Tool;
-import java.util.List;
 
 /**
  * A resolver that is used to resolve the tools, taking into account the available MCP forwards

@@ -1,8 +1,5 @@
 package ai.wanaku.core.services.api;
 
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -13,8 +10,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
 import java.util.Map;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 /**
  * JAX-RS service interface for managing and monitoring capabilities in the Wanaku system.

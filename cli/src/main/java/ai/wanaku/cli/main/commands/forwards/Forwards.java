@@ -1,12 +1,12 @@
 package ai.wanaku.cli.main.commands.forwards;
 
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.usage;
-
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import java.io.IOException;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.usage;
 
 /**
  * Parent command for managing port forwarding configurations in the Wanaku platform.

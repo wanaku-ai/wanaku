@@ -1,6 +1,6 @@
-import { Select, SelectItem } from "@carbon/react";
-import React, { useEffect, useState } from "react";
-import { ServiceTarget } from "../../models";
+import {Select, SelectItem} from "@carbon/react";
+import React, {useEffect, useState} from "react";
+import {ServiceTarget} from "../../models";
 
 interface TargetTypeSelectProps {
   value: string;

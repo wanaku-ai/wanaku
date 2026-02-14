@@ -1,18 +1,18 @@
 package ai.wanaku.backend.bridge;
 
+import java.util.HashMap;
+import java.util.Map;
+import io.quarkiverse.mcp.server.ToolManager;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import ai.wanaku.capabilities.sdk.api.types.InputSchema;
-import ai.wanaku.capabilities.sdk.api.types.Property;
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import io.quarkiverse.mcp.server.ToolManager;
-import java.util.HashMap;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
 
 class InvokerBridgeTest {
 

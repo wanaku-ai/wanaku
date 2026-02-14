@@ -1,9 +1,9 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import org.jboss.logging.Logger;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 /**
  * Manages the lifecycle of gRPC channels for proxy implementations.

@@ -1,12 +1,13 @@
 package ai.wanaku.backend.providers;
 
-import ai.wanaku.backend.resolvers.WanakuPromptsResolver;
-import ai.wanaku.core.mcp.common.resolvers.PromptsResolver;
-import ai.wanaku.core.mcp.common.resolvers.util.NoopPromptsResolver;
-import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+
+import io.quarkus.arc.DefaultBean;
+import ai.wanaku.backend.resolvers.WanakuPromptsResolver;
+import ai.wanaku.core.mcp.common.resolvers.PromptsResolver;
+import ai.wanaku.core.mcp.common.resolvers.util.NoopPromptsResolver;
 import picocli.CommandLine;
 
 /**

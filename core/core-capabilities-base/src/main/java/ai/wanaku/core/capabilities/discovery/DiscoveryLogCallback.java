@@ -1,9 +1,9 @@
 package ai.wanaku.core.capabilities.discovery;
 
+import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.discovery.DiscoveryCallback;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import org.jboss.logging.Logger;
 
 class DiscoveryLogCallback implements DiscoveryCallback {
     private static final Logger LOG = Logger.getLogger(DiscoveryLogCallback.class);

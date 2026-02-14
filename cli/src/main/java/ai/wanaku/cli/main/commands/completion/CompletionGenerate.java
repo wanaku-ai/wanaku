@@ -1,14 +1,14 @@
 package ai.wanaku.cli.main.commands.completion;
 
-import ai.wanaku.cli.main.CliMain;
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.CliMain;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.AutoComplete;
 import picocli.CommandLine;
 

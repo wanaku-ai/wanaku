@@ -1,15 +1,9 @@
-import {
-  Modal,
-  Stack,
-  TextArea,
-  TextInput,
-  ToastNotification,
-} from "@carbon/react";
-import React, { useCallback, useEffect, useState } from "react";
-import { useTools } from "../../hooks/api/use-tools";
-import { ToolReference } from "../../models";
-import { ToolsTable } from "./ToolsTable";
-import { ToolModal } from "./ToolModal"
+import {Modal, Stack, TextArea, TextInput, ToastNotification,} from "@carbon/react";
+import React, {useCallback, useEffect, useState} from "react";
+import {useTools} from "../../hooks/api/use-tools";
+import {ToolReference} from "../../models";
+import {ToolsTable} from "./ToolsTable";
+import {ToolModal} from "./ToolModal"
 
 
 export const ToolsPage: React.FC = () => {

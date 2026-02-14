@@ -1,17 +1,17 @@
 import {
     Header,
-    SkipToContent,
+    HeaderGlobalAction,
+    HeaderGlobalBar,
+    HeaderMenu,
     HeaderMenuButton,
+    HeaderMenuItem,
     HeaderName,
     HeaderNavigation,
-    HeaderMenu,
-    HeaderMenuItem,
-    HeaderGlobalAction,
-    HeaderGlobalBar
+    SkipToContent
 } from '@carbon/react';
 
-import { Link } from 'react-router-dom';
-import { ExternalLinks, Links } from "../router/links.models";
+import {Link} from 'react-router-dom';
+import {ExternalLinks, Links} from "../router/links.models";
 
 import {LogoGithub, Logout, Notification, Search} from "@carbon/icons-react";
 import wanakuLogo from "../assets/wanaku.svg";

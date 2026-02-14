@@ -1,16 +1,6 @@
-import {
-  Column,
-  DataTable,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@carbon/react";
+import {Column, DataTable, Grid, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@carbon/react";
 import React from "react";
-import { Namespace } from "../../models";
+import {Namespace} from "../../models";
 
 interface NamespaceTableProps {
   namespaces: Namespace[];

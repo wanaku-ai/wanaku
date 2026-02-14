@@ -1,7 +1,17 @@
 package ai.wanaku.core.capabilities.discovery;
 
-import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
 import ai.wanaku.capabilities.sdk.api.discovery.DiscoveryCallback;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -13,17 +23,8 @@ import ai.wanaku.capabilities.sdk.data.files.ServiceEntry;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestResponse;
+
+import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
 
 /**
  * Default implementation of {@link RegistrationManager} for service discovery and lifecycle management.

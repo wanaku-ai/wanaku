@@ -1,3 +1,3 @@
-import { PromptsPage } from './PromptsPage';
+import {PromptsPage} from './PromptsPage';
 
 export const element = <PromptsPage />;

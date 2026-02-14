@@ -1,8 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.schema;
 
-import ai.wanaku.core.persistence.infinispan.protostream.marshaller.RemoteToolReferenceMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
+import ai.wanaku.core.persistence.infinispan.protostream.marshaller.RemoteToolReferenceMarshaller;
 
 public class RemoteToolReferenceSchema extends AbstractWanakuSerializationContextInitializer {
 

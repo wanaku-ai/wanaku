@@ -1,17 +1,17 @@
 // CapabilitiesList.java
 package ai.wanaku.cli.main.commands.capabilities;
 
+import java.io.IOException;
+import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.CapabilitiesService;
+
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapabilities;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
-
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.CapabilitiesService;
-import java.io.IOException;
-import org.jline.terminal.Terminal;
 
 /**
  * Command-line interface for listing all service capabilities in the Wanaku system.

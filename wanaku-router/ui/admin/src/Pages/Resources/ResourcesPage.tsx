@@ -1,9 +1,9 @@
-import { ToastNotification } from "@carbon/react";
-import { ResourceModal } from "./ResourceModal.tsx";
-import { ResourcesTable } from "./ResourcesTable";
-import React, { useState, useEffect } from "react";
-import { ResourceReference } from "../../models";
-import { useResources } from "../../hooks/api/use-resources";
+import {ToastNotification} from "@carbon/react";
+import {ResourceModal} from "./ResourceModal.tsx";
+import {ResourcesTable} from "./ResourcesTable";
+import React, {useEffect, useState} from "react";
+import {ResourceReference} from "../../models";
+import {useResources} from "../../hooks/api/use-resources";
 
 export const ResourcesPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ResourceReference[]>([]);

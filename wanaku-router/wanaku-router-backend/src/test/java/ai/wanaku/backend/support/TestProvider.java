@@ -1,13 +1,14 @@
 package ai.wanaku.backend.support;
 
-import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
-import ai.wanaku.core.mcp.providers.ForwardRegistry;
-import io.quarkus.arc.DefaultBean;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+
 import org.jboss.logging.Logger;
+import io.quarkus.arc.DefaultBean;
+import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
+import ai.wanaku.core.mcp.providers.ForwardRegistry;
 
 @ApplicationScoped
 public class TestProvider {

@@ -1,7 +1,11 @@
 package ai.wanaku.tool.http;
 
-import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
+import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.camel.ProducerTemplate;
+import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.capabilities.sdk.config.provider.api.ReservedConfigs;
@@ -10,11 +14,8 @@ import ai.wanaku.core.capabilities.tool.Client;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import ai.wanaku.core.util.CollectionsHelper;
-import jakarta.enterprise.context.ApplicationScoped;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.camel.ProducerTemplate;
-import org.jboss.logging.Logger;
+
+import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
 
 @ApplicationScoped
 public class HttpClient implements Client {

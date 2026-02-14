@@ -1,12 +1,12 @@
 package ai.wanaku.core.util.support;
 
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.EmbeddedResource;
 import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.TextContent;
-import java.util.List;
 
 public class PromptsHelper {
 

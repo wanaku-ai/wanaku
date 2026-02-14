@@ -1,8 +1,5 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import ai.wanaku.cli.main.CliMain;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -13,14 +10,17 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.IOUtils;
 import org.jboss.logging.Logger;
+import org.skyscreamer.jsonassert.JSONAssert;
+import ai.wanaku.cli.main.CliMain;
+import picocli.CommandLine;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
-import org.skyscreamer.jsonassert.JSONAssert;
-import picocli.CommandLine;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisabledOnOs(OS.WINDOWS)
 @Timeout(value = 60)

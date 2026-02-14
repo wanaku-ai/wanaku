@@ -1,12 +1,12 @@
 package ai.wanaku.cli.main.commands.auth;
 
+import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.security.CustomSecurityServiceConfig;
 import ai.wanaku.cli.main.support.security.ServiceAuthenticator;
 import ai.wanaku.cli.main.support.security.TokenEndpoint;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "login", description = "Interactive authentication login")

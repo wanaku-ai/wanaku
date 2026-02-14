@@ -1,6 +1,7 @@
 package ai.wanaku.cli.main.support;
 
 import jakarta.ws.rs.core.Response;
+
 import java.io.IOException;
 import org.jline.terminal.Terminal;
 

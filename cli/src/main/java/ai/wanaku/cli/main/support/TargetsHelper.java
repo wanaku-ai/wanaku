@@ -1,12 +1,12 @@
 package ai.wanaku.cli.main.support;
 
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.formatLastSeenTimestamp;
-
-import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+
+import static ai.wanaku.cli.main.support.CapabilitiesHelper.formatLastSeenTimestamp;
 
 public class TargetsHelper {
 

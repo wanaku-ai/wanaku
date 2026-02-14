@@ -1,36 +1,36 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import ReactMarkdown from "react-markdown";
 import {
-  Button,
-  Tile,
-  Form,
-  TextArea,
-  Grid,
-  Column,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Tabs,
-  TabList,
-  Stack,
-  ComboBox,
-  PasswordInput,
-  TextInput,
-  Toggle,
-  FormGroup,
-  Checkbox,
-  Accordion,
-  AccordionItem,
+    Accordion,
+    AccordionItem,
+    Button,
+    Checkbox,
+    Column,
+    ComboBox,
+    Form,
+    FormGroup,
+    Grid,
+    PasswordInput,
+    Stack,
+    Tab,
+    TabList,
+    TabPanel,
+    TabPanels,
+    Tabs,
+    TextArea,
+    TextInput,
+    Tile,
+    Toggle,
 } from "@carbon/react";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { getUrl } from "../../custom-fetch";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import {Client} from "@modelcontextprotocol/sdk/client/index.js";
+import {getUrl} from "../../custom-fetch";
+import {SSEClientTransport} from "@modelcontextprotocol/sdk/client/sse.js";
 import hljs from "highlight.js/lib/core";
 import "highlight.js/styles/atom-one-dark.css";
 import json from "highlight.js/lib/languages/json";
 import yaml from "highlight.js/lib/languages/yaml";
 import xml from "highlight.js/lib/languages/xml";
-import { Bot, Function_2, InformationSquare, Reply } from "@carbon/icons-react";
+import {Bot, Function_2, InformationSquare, Reply} from "@carbon/icons-react";
 
 export const LLMChatPage: React.FC = () => {
   hljs.registerLanguage("json", json);

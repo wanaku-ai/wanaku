@@ -1,12 +1,12 @@
 package ai.wanaku.core.util.support;
 
-import ai.wanaku.capabilities.sdk.api.types.InputSchema;
-import ai.wanaku.capabilities.sdk.api.types.Property;
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 
 public class ToolsHelper {
     public static final String TOOLSET_INDEX = "target/test-classes/toolset.json";

@@ -1,9 +1,9 @@
 package ai.wanaku.core.mcp.common;
 
-import ai.wanaku.capabilities.sdk.api.types.CallableReference;
+import java.util.Objects;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
-import java.util.Objects;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 
 /**
  * Adapter that bridges ToolExecutor to the Tool interface.

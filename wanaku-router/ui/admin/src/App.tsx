@@ -1,5 +1,5 @@
-import { HeaderContainer } from "@carbon/react";
-import { listNamespaces } from "./hooks/api/use-namespaces";
+import {HeaderContainer} from "@carbon/react";
+import {listNamespaces} from "./hooks/api/use-namespaces";
 import "./App.scss";
 
 import Header from "./components/Header";

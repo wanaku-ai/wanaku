@@ -1,8 +1,5 @@
 package ai.wanaku.core.service.discovery.client;
 
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -10,7 +7,11 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestResponse;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 @Path("/api/v1/management/discovery")
 public interface DiscoveryService {

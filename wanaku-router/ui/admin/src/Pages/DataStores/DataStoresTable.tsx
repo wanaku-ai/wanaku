@@ -1,19 +1,19 @@
 import React from "react";
 import {
-  Button,
-  Column,
-  DataTable,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tooltip,
+    Button,
+    Column,
+    DataTable,
+    Grid,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    Tooltip,
 } from "@carbon/react";
-import { TrashCan, Download, View } from "@carbon/icons-react";
-import type { DataStore } from "../../models";
+import {Download, TrashCan, View} from "@carbon/icons-react";
+import type {DataStore} from "../../models";
 
 interface DataStoresTableProps {
   dataStores: DataStore[];

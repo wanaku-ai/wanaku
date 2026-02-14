@@ -1,9 +1,9 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.capabilities.sdk.api.types.WanakuEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import ai.wanaku.capabilities.sdk.api.types.WanakuEntity;
 
 /**
  * Repository interface for the Wanaku persistence layer.

@@ -1,10 +1,10 @@
 package ai.wanaku.core.capabilities.config;
 
-import ai.wanaku.core.config.WanakuConfig;
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
 import java.util.Map;
 import java.util.Set;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import ai.wanaku.core.config.WanakuConfig;
 
 /**
  * Base configuration class for downstream services, extending {@link WanakuConfig}.

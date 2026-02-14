@@ -1,8 +1,8 @@
-import { ToastNotification } from "@carbon/react";
-import React, { useState, useEffect } from "react";
-import { Namespace } from "../../models";
-import { NamespaceTable } from "./NamespacesTable";
-import { listNamespaces } from "../../hooks/api/use-namespaces";
+import {ToastNotification} from "@carbon/react";
+import React, {useEffect, useState} from "react";
+import {Namespace} from "../../models";
+import {NamespaceTable} from "./NamespacesTable";
+import {listNamespaces} from "../../hooks/api/use-namespaces";
 
 export const NamespacesPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

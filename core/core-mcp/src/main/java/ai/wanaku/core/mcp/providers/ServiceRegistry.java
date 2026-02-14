@@ -1,9 +1,9 @@
 package ai.wanaku.core.mcp.providers;
 
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import java.util.List;
 
 /**
  * Defines a registry of downstream services

@@ -1,30 +1,5 @@
 package ai.wanaku.cli.main.support;
 
-import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
-import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
-import static ai.wanaku.cli.main.support.StringHelper.isEmpty;
-import static ai.wanaku.cli.main.support.StringHelper.isNotEmpty;
-import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
-import ai.wanaku.capabilities.sdk.api.types.InputSchema;
-import ai.wanaku.capabilities.sdk.api.types.Property;
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.core.util.CollectionsHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.parameters.RequestBody;
-import io.swagger.v3.oas.models.servers.Server;
-import io.swagger.v3.parser.OpenAPIV3Parser;
-import io.swagger.v3.parser.core.models.ParseOptions;
-import io.swagger.v3.parser.util.ResolverFully;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,6 +15,31 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jboss.logging.Logger;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.util.ResolverFully;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.core.util.CollectionsHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
+import static ai.wanaku.cli.main.support.StringHelper.isEmpty;
+import static ai.wanaku.cli.main.support.StringHelper.isNotEmpty;
+import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class ToolsGenerateHelper {
 

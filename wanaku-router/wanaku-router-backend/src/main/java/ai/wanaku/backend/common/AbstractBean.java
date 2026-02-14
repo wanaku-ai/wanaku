@@ -1,8 +1,8 @@
 package ai.wanaku.backend.common;
 
+import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
-import org.jboss.logging.Logger;
 
 /**
  * Base class for Wanaku beans

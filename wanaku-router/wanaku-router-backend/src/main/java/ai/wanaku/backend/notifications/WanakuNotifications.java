@@ -1,10 +1,11 @@
 package ai.wanaku.backend.notifications;
 
+import jakarta.inject.Inject;
+
+import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.Notification.Type;
 import io.quarkiverse.mcp.server.NotificationManager;
 import io.quarkus.runtime.Startup;
-import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 
 public class WanakuNotifications {
     private static final Logger LOG = Logger.getLogger(WanakuNotifications.class);

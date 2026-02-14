@@ -1,9 +1,9 @@
 package ai.wanaku.cli.main.commands.auth;
 
+import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "token", description = "Manage API tokens")

@@ -1,11 +1,11 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.InputSchema;
-import ai.wanaku.capabilities.sdk.api.types.Property;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.Property;
 
 public class InputSchemaMarshaller implements MessageMarshaller<InputSchema> {
     @Override

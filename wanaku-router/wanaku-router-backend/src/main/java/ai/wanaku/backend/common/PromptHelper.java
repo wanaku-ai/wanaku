@@ -1,21 +1,21 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.capabilities.sdk.api.types.AudioContent;
-import ai.wanaku.capabilities.sdk.api.types.ImageContent;
-import ai.wanaku.capabilities.sdk.api.types.Namespace;
-import ai.wanaku.capabilities.sdk.api.types.PromptReference;
-import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.EmbeddedResource;
 import io.quarkiverse.mcp.server.PromptManager;
 import io.quarkiverse.mcp.server.PromptMessage;
 import io.quarkiverse.mcp.server.PromptResponse;
 import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.TextResourceContents;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.types.AudioContent;
+import ai.wanaku.capabilities.sdk.api.types.ImageContent;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 /**
  * Helper class for dealing with prompts and MCP protocol exposure

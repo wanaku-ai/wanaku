@@ -1,9 +1,9 @@
 package ai.wanaku.core.persistence.api;
 
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import ai.wanaku.core.mcp.util.LabelExpressionParser;
-import java.util.List;
 
 /**
  * Repository interface for entities that support label-based filtering and operations.

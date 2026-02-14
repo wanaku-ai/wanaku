@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Loading } from "@carbon/react";
-import type { DataStore } from "../../models";
+import React, {useEffect, useState} from "react";
+import {Loading, Modal} from "@carbon/react";
+import type {DataStore} from "../../models";
 
 interface ViewDataStoreModalProps {
   dataStore: DataStore;
