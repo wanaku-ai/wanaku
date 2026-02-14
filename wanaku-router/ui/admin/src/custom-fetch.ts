@@ -27,6 +27,9 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
     };
   };
 
+  const REDIRECT_TS_KEY = 'wanaku_auth_redirect_ts';
+  const REDIRECT_LOOP_MS = 10_000;
+
   export const customFetch = async <T>(
     url: string,
     options: RequestInit,
@@ -37,10 +40,26 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
     const requestInit: RequestInit = {
       ...options,
       headers: requestHeaders,
+      redirect: 'manual',
     };
 
     const request = new Request(requestUrl, requestInit);
     const response = await fetch(request);
+
+    if (response.type === 'opaqueredirect' || response.status === 401) {
+      const lastRedirect = Number(sessionStorage.getItem(REDIRECT_TS_KEY) || '0');
+      if (Date.now() - lastRedirect < REDIRECT_LOOP_MS) {
+        throw new Error('Authentication redirect loop detected — check OIDC configuration');
+      }
+      sessionStorage.setItem(REDIRECT_TS_KEY, String(Date.now()));
+      window.location.reload();
+      throw new Error('Redirecting to login');
+    }
+
+    if (response.ok) {
+      sessionStorage.removeItem(REDIRECT_TS_KEY);
+    }
+
     const data = await getBody<T>(response);
 
     return { status: response.status, data, headers: response.headers } as T;
