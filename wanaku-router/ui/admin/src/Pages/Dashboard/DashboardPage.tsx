@@ -6,7 +6,14 @@ import {
   Tile,
   ToastNotification,
 } from "@carbon/react";
-import { Renew } from "@carbon/icons-react";
+import {
+  Renew,
+  Tools,
+  Document,
+  TextAlignJustify,
+  ArrowRight,
+  DataBase,
+} from "@carbon/icons-react";
 import { useStatistics } from "../../hooks/api/use-statistics";
 import { SystemStatistics, CapabilityStatistics } from "../../models";
 import "./DashboardPage.scss";
@@ -80,56 +87,72 @@ export const DashboardPage: React.FC = () => {
         </Button>
       </div>
       {statistics && (
-        <Grid className="stats-grid">
-          <Column lg={4} md={4} sm={4}>
-            <Tile className="stat-tile">
-              <div className="stat-value">{statistics.toolsCount ?? 0}</div>
-              <div className="stat-label">Tools</div>
-            </Tile>
-          </Column>
-          <Column lg={4} md={4} sm={4}>
-            <Tile className="stat-tile">
-              <div className="stat-value">
-                {statistics.resourcesCount ?? 0}
-              </div>
-              <div className="stat-label">Resources</div>
-            </Tile>
-          </Column>
-          <Column lg={4} md={4} sm={4}>
-            <Tile className="stat-tile">
-              <div className="stat-value">{statistics.promptsCount ?? 0}</div>
-              <div className="stat-label">Prompts</div>
-            </Tile>
-          </Column>
-          <Column lg={4} md={4} sm={4}>
-            <Tile className="stat-tile">
-              <div className="stat-value">
-                {statistics.forwardsCount ?? 0}
-              </div>
-              <div className="stat-label">Forwards</div>
-            </Tile>
-          </Column>
-          <Column lg={4} md={4} sm={4}>
-            <Tile className="stat-tile">
-              <div className="stat-value">
-                {statistics.dataStoresCount ?? 0}
-              </div>
-              <div className="stat-label">Data Stores</div>
-            </Tile>
-          </Column>
-          <Column lg={8} md={4} sm={4}>
-            <Tile className="capability-tile">
-              <div className="capability-title">Tool Capabilities</div>
-              <CapabilityDetails stats={statistics.toolCapabilities} />
-            </Tile>
-          </Column>
-          <Column lg={8} md={4} sm={4}>
-            <Tile className="capability-tile">
-              <div className="capability-title">Resource Capabilities</div>
-              <CapabilityDetails stats={statistics.resourceCapabilities} />
-            </Tile>
-          </Column>
-        </Grid>
+        <>
+          <section className="dashboard-section">
+            <h3 className="section-heading">Overview</h3>
+            <Grid className="stats-grid">
+              <Column lg={4} md={4} sm={4}>
+                <Tile className="stat-tile">
+                  <Tools size={24} className="stat-icon" />
+                  <div className="stat-value">{statistics.toolsCount ?? 0}</div>
+                  <div className="stat-label">Tools</div>
+                </Tile>
+              </Column>
+              <Column lg={4} md={4} sm={4}>
+                <Tile className="stat-tile">
+                  <Document size={24} className="stat-icon" />
+                  <div className="stat-value">
+                    {statistics.resourcesCount ?? 0}
+                  </div>
+                  <div className="stat-label">Resources</div>
+                </Tile>
+              </Column>
+              <Column lg={4} md={4} sm={4}>
+                <Tile className="stat-tile">
+                  <TextAlignJustify size={24} className="stat-icon" />
+                  <div className="stat-value">{statistics.promptsCount ?? 0}</div>
+                  <div className="stat-label">Prompts</div>
+                </Tile>
+              </Column>
+              <Column lg={4} md={4} sm={4}>
+                <Tile className="stat-tile">
+                  <ArrowRight size={24} className="stat-icon" />
+                  <div className="stat-value">
+                    {statistics.forwardsCount ?? 0}
+                  </div>
+                  <div className="stat-label">Forwards</div>
+                </Tile>
+              </Column>
+              <Column lg={4} md={4} sm={4}>
+                <Tile className="stat-tile">
+                  <DataBase size={24} className="stat-icon" />
+                  <div className="stat-value">
+                    {statistics.dataStoresCount ?? 0}
+                  </div>
+                  <div className="stat-label">Data Stores</div>
+                </Tile>
+              </Column>
+            </Grid>
+          </section>
+
+          <section className="dashboard-section">
+            <h3 className="section-heading">Capabilities</h3>
+            <Grid className="stats-grid">
+              <Column lg={8} md={4} sm={4}>
+                <Tile className="capability-tile">
+                  <div className="capability-title">Tool Capabilities</div>
+                  <CapabilityDetails stats={statistics.toolCapabilities} />
+                </Tile>
+              </Column>
+              <Column lg={8} md={4} sm={4}>
+                <Tile className="capability-tile">
+                  <div className="capability-title">Resource Capabilities</div>
+                  <CapabilityDetails stats={statistics.resourceCapabilities} />
+                </Tile>
+              </Column>
+            </Grid>
+          </section>
+        </>
       )}
     </div>
   );
@@ -142,15 +165,15 @@ interface CapabilityDetailsProps {
 const CapabilityDetails: React.FC<CapabilityDetailsProps> = ({ stats }) => {
   return (
     <div className="capability-details">
-      <div className="capability-stat">
+      <div className="capability-stat capability-stat--neutral">
         <div className="capability-value">{stats?.total ?? 0}</div>
         <div className="capability-label">Total</div>
       </div>
-      <div className="capability-stat">
+      <div className="capability-stat capability-stat--active">
         <div className="capability-value">{stats?.active ?? 0}</div>
         <div className="capability-label">Active</div>
       </div>
-      <div className="capability-stat">
+      <div className="capability-stat capability-stat--inactive">
         <div className="capability-value">{stats?.inactive ?? 0}</div>
         <div className="capability-label">Inactive</div>
       </div>
