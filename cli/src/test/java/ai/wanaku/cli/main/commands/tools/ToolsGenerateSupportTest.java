@@ -1,5 +1,6 @@
 package ai.wanaku.cli.main.commands.tools;
 
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.addHttpMethodProperty;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.getOutputPrintWriter;
@@ -9,7 +10,6 @@ import static ai.wanaku.cli.main.support.ToolsGenerateHelper.parameter2Property;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.parameters2InputSchema;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.pathItem2ToolReferences;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.toolReferenceUrl;
-import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;

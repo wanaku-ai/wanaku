@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge;
 
-import static ai.wanaku.core.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.METADATA_PREFIX;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
@@ -24,6 +25,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -213,8 +215,20 @@ public class InvokerToolExecutor implements ToolExecutor {
     private ToolInvokeRequest buildToolInvokeRequest(
             ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
 
-        Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
-        Map<String, String> headers = extractHeaders(toolReference, toolArguments);
+        // Filter out metadata args before converting to string map
+        Map<String, Object> filteredArgs = filterOutMetadataArgs(toolArguments.args());
+        Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
+
+        // Extract metadata headers from args (with prefix stripped)
+        Map<String, String> metadataHeaders = extractMetadataHeaders(toolArguments);
+
+        // Extract tool-defined headers from schema
+        Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, toolArguments);
+
+        // Merge headers: metadata first, then tool-defined (tool-defined wins on conflict)
+        Map<String, String> headers = new HashMap<>(metadataHeaders);
+        headers.putAll(toolDefinedHeaders);
+
         String body = extractBody(toolReference, toolArguments);
 
         return ToolInvokeRequest.newBuilder()
@@ -235,6 +249,35 @@ public class InvokerToolExecutor implements ToolExecutor {
                 .filter(InvokerToolExecutor::extractProperties)
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> evalValue(e, toolArguments)));
         return headers;
+    }
+
+    /**
+     * Extracts metadata headers from tool arguments.
+     * Arguments with the "wanaku_meta_" prefix are extracted and the prefix is stripped
+     * to form the header name.
+     *
+     * @param toolArguments the tool arguments containing potential metadata
+     * @return a map of header names (with prefix stripped) to their values
+     */
+    static Map<String, String> extractMetadataHeaders(ToolManager.ToolArguments toolArguments) {
+        return toolArguments.args().entrySet().stream()
+                .filter(e -> e.getKey() != null && e.getKey().startsWith(METADATA_PREFIX))
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(e -> e.getKey().substring(METADATA_PREFIX.length()), e -> e.getValue()
+                        .toString()));
+    }
+
+    /**
+     * Filters out metadata arguments from the arguments map.
+     * Arguments with the "wanaku_meta_" prefix are excluded.
+     *
+     * @param args the original arguments map
+     * @return a new map without metadata arguments
+     */
+    static Map<String, Object> filterOutMetadataArgs(Map<String, Object> args) {
+        return args.entrySet().stream()
+                .filter(e -> e.getKey() == null || !e.getKey().startsWith(METADATA_PREFIX))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static boolean extractProperties(Map.Entry<String, Property> entry) {
