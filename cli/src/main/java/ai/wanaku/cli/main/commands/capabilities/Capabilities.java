@@ -28,6 +28,8 @@ import picocli.CommandLine;
             CapabilitiesList.class,
             CapabilitiesCreate.class,
             CapabilitiesShow.class,
+            CapabilitiesStatus.class,
+            CapabilitiesWatch.class,
             CapabilitiesCleanup.class
         })
 public class Capabilities extends BaseCommand {

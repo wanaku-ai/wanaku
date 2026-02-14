@@ -364,6 +364,42 @@ public final class CapabilitiesHelper {
     }
 
     /**
+     * Computes a summary of capabilities grouped by status.
+     *
+     * @param capabilities the list of capabilities to summarize
+     * @return a {@link StatusSummary} with counts per status and the grouped capabilities
+     * @throws NullPointerException if capabilities is null
+     */
+    public static StatusSummary computeStatusSummary(List<PrintableCapability> capabilities) {
+        Objects.requireNonNull(capabilities, "Capabilities list cannot be null");
+
+        int active = 0;
+        int inactive = 0;
+        int unknown = 0;
+
+        for (PrintableCapability cap : capabilities) {
+            switch (cap.status()) {
+                case ACTIVE_STATUS -> active++;
+                case INACTIVE_STATUS -> inactive++;
+                default -> unknown++;
+            }
+        }
+
+        return new StatusSummary(capabilities.size(), active, inactive, unknown);
+    }
+
+    /**
+     * Record representing a summary of capability statuses.
+     *
+     * @param total total number of capabilities
+     * @param active number of active capabilities
+     * @param inactive number of inactive capabilities
+     * @param unknown number of capabilities with unknown status
+     */
+    @RegisterForReflection
+    public record StatusSummary(int total, int active, int inactive, int unknown) {}
+
+    /**
      * Prints a single capability in map format.
      *
      * @param capability the capability to print
