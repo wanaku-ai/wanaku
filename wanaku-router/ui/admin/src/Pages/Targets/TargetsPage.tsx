@@ -1,10 +1,10 @@
-import { ToastNotification } from "@carbon/react";
-import { TargetsTable } from "./TargetsTable";
-import React, { useState, useEffect } from "react";
-import { useCapabilities } from "../../hooks/api/use-capabilities";
-import { ServiceTargetState } from "./ServiceTargetState";
-import { getGetApiV1CapabilitiesNotificationsUrl } from "../../api/wanaku-router-api";
-import { ServiceTargetEvent } from "../../models";
+import {ToastNotification} from "@carbon/react";
+import {TargetsTable} from "./TargetsTable";
+import React, {useEffect, useState} from "react";
+import {useCapabilities} from "../../hooks/api/use-capabilities";
+import {ServiceTargetState} from "./ServiceTargetState";
+import {getGetApiV1CapabilitiesNotificationsUrl} from "../../api/wanaku-router-api";
+import {ServiceTargetEvent} from "../../models";
 
 export const TargetsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ServiceTargetState[]>([]);

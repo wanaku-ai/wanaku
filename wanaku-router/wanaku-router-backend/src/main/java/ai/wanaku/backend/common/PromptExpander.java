@@ -1,13 +1,13 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
-import ai.wanaku.capabilities.sdk.api.types.PromptReference;
-import ai.wanaku.capabilities.sdk.api.types.TextContent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
+import ai.wanaku.capabilities.sdk.api.types.PromptReference;
+import ai.wanaku.capabilities.sdk.api.types.TextContent;
 
 /**
  * Utility class for expanding prompt templates with argument substitution.

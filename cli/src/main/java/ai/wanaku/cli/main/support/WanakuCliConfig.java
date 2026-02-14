@@ -1,10 +1,10 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.core.config.WanakuConfig;
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
 import java.util.List;
 import java.util.Map;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import ai.wanaku.core.config.WanakuConfig;
 
 @ConfigMapping(prefix = "wanaku.cli")
 public interface WanakuCliConfig extends WanakuConfig {

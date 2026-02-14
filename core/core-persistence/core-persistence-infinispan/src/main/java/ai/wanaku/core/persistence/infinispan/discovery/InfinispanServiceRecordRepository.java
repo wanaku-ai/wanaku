@@ -1,11 +1,12 @@
 package ai.wanaku.core.persistence.infinispan.discovery;
 
-import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
-import ai.wanaku.core.persistence.infinispan.AbstractInfinispanRepository;
 import jakarta.inject.Singleton;
+
 import java.util.UUID;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.core.persistence.infinispan.AbstractInfinispanRepository;
 
 @Singleton
 public class InfinispanServiceRecordRepository extends AbstractInfinispanRepository<ActivityRecord, String> {

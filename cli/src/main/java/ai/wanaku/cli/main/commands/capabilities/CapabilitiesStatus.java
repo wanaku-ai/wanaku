@@ -1,5 +1,14 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
+import java.util.List;
+import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.CapabilitiesHelper;
+import ai.wanaku.cli.main.support.CapabilitiesHelper.PrintableCapability;
+import ai.wanaku.cli.main.support.CapabilitiesHelper.StatusSummary;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.CapabilitiesService;
+
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.ACTIVE_STATUS;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.INACTIVE_STATUS;
@@ -8,15 +17,6 @@ import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabil
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapabilities;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
-
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.CapabilitiesHelper;
-import ai.wanaku.cli.main.support.CapabilitiesHelper.PrintableCapability;
-import ai.wanaku.cli.main.support.CapabilitiesHelper.StatusSummary;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.CapabilitiesService;
-import java.util.List;
-import org.jline.terminal.Terminal;
 
 /**
  * CLI command for checking the availability status of registered capabilities.

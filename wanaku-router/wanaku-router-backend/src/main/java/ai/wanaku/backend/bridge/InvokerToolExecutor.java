@@ -1,10 +1,18 @@
 package ai.wanaku.backend.bridge;
 
-import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
-import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.METADATA_PREFIX;
-import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.TextContent;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
@@ -18,19 +26,11 @@ import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.mcp.common.ToolExecutor;
 import ai.wanaku.core.util.CollectionsHelper;
 import com.google.protobuf.ProtocolStringList;
-import io.quarkiverse.mcp.server.TextContent;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import org.jboss.logging.Logger;
+
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.METADATA_PREFIX;
+import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
+import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
 /**
  * Tool executor implementation for the InvokerBridge.

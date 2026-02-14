@@ -1,9 +1,9 @@
 package ai.wanaku.core.runtime.camel;
 
-import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
-import ai.wanaku.capabilities.sdk.config.provider.api.ReservedConfigs;
 import java.util.HashMap;
 import java.util.Map;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.api.ReservedConfigs;
 
 public class CamelQueryParameterBuilder {
     private final ConfigResource configResource;

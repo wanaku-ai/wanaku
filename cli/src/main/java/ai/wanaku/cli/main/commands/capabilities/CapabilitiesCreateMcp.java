@@ -1,13 +1,14 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import static picocli.CommandLine.Command;
-
-import ai.wanaku.cli.main.support.WanakuCliConfig;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import jakarta.inject.Inject;
+
 import java.io.IOException;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.support.WanakuCliConfig;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+
+import static picocli.CommandLine.Command;
 
 @Command(name = "mcp", description = "Create a new mcp service")
 public class CapabilitiesCreateMcp extends CapabilitiesBase {

@@ -1,12 +1,12 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
-import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import java.util.List;
 import java.util.UUID;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 
 public class InfinispanResourceReferenceRepository
         extends AbstractLabelAwareInfinispanRepository<ResourceReference, String>

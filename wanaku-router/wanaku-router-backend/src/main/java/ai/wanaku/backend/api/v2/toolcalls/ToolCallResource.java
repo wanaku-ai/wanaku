@@ -15,8 +15,6 @@
  */
 package ai.wanaku.backend.api.v2.toolcalls;
 
-import ai.wanaku.backend.common.ToolCallEvent;
-import io.smallrye.mutiny.Multi;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,9 +26,12 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
+
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import io.smallrye.mutiny.Multi;
+import ai.wanaku.backend.common.ToolCallEvent;
 
 /**
  * JAX-RS REST resource for tool call debugging endpoints.

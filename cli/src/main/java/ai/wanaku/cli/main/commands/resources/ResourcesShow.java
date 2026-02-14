@@ -1,21 +1,22 @@
 package ai.wanaku.cli.main.commands.resources;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
-import static picocli.CommandLine.Parameters;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import java.util.List;
+import java.util.Map;
+import org.jline.terminal.Terminal;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
-import io.quarkus.runtime.annotations.RegisterForReflection;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import org.jline.terminal.Terminal;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.Parameters;
 
 /**
  * Command to show detailed information about a specific resource registered in the Wanaku platform.

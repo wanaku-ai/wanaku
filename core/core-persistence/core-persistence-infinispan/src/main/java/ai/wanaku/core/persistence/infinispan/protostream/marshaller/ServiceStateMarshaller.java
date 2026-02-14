@@ -1,9 +1,9 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import java.io.IOException;
 import java.time.Instant;
 import org.infinispan.protostream.MessageMarshaller;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 
 public class ServiceStateMarshaller implements MessageMarshaller<ServiceState> {
 

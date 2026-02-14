@@ -1,20 +1,10 @@
-import {
-  Modal,
-  Select,
-  SelectItem,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  TextInput
-} from "@carbon/react";
-import React, { useEffect, useState } from "react";
-import { Namespace, ToolReference } from "../../models";
-import { listNamespaces } from "../../hooks/api/use-namespaces";
-import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
-import { useCapabilities } from "../../hooks/api/use-capabilities";
-import { formatInputSchema, parseInputSchema } from "./tools-utils.ts";
+import {Modal, Select, SelectItem, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react";
+import React, {useEffect, useState} from "react";
+import {Namespace, ToolReference} from "../../models";
+import {listNamespaces} from "../../hooks/api/use-namespaces";
+import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
+import {useCapabilities} from "../../hooks/api/use-capabilities";
+import {formatInputSchema, parseInputSchema} from "./tools-utils.ts";
 
 
 interface ToolModalProps {

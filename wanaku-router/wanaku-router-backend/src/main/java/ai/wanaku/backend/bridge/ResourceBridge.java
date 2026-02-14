@@ -1,11 +1,11 @@
 package ai.wanaku.backend.bridge;
 
+import java.util.List;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import java.util.List;
 
 /**
  * Proxies between MCP URIs and Camel components capable of handling them

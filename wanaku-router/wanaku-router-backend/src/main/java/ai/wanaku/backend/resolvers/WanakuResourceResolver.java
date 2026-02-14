@@ -1,15 +1,15 @@
 package ai.wanaku.backend.resolvers;
 
+import java.util.List;
+import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
 import ai.wanaku.backend.bridge.ResourceBridge;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import java.util.List;
-import org.jboss.logging.Logger;
 
 /**
  * Represents resolvers for Wanaku resources

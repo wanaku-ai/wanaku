@@ -1,8 +1,8 @@
 package ai.wanaku.core.util.support;
 
-import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import java.util.ArrayList;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 public class ResourcesHelper {
     public static ResourceReference createResource(String location, String type, String name) {

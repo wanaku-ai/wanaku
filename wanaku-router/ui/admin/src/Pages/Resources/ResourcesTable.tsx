@@ -1,23 +1,23 @@
 import {
-  Button,
-  DataTable,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableExpandRow,
-  TableExpandedRow,
-  TableExpandHeader,
-  TableToolbar,
-  TableToolbarContent,
+    Button,
+    DataTable,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableExpandedRow,
+    TableExpandHeader,
+    TableExpandRow,
+    TableHead,
+    TableHeader,
+    TableRow,
+    TableToolbar,
+    TableToolbarContent,
 } from "@carbon/react";
-import { Add, TrashCan, Edit } from "@carbon/icons-react";
+import {Add, Edit, TrashCan} from "@carbon/icons-react";
 import React from "react";
-import { Param, ResourceReference } from "../../models";
-import { getNamespacePathById } from "../../hooks/api/use-namespaces";
+import {Param, ResourceReference} from "../../models";
+import {getNamespacePathById} from "../../hooks/api/use-namespaces";
 
 interface ResourcesTableProps {
   resources: ResourceReference[];

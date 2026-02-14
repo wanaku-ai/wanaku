@@ -1,5 +1,12 @@
 package ai.wanaku.core.capabilities.provider;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
+import java.util.List;
+import org.jboss.logging.Logger;
+import io.quarkus.oidc.client.Tokens;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
@@ -17,12 +24,6 @@ import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
 import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
-import io.quarkus.oidc.client.Tokens;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-import java.util.List;
-import org.jboss.logging.Logger;
 
 /**
  * Base delegate class for resource acquirer implementations.

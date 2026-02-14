@@ -1,17 +1,17 @@
 package ai.wanaku.core.runtime.camel;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import ai.wanaku.capabilities.sdk.config.provider.api.DefaultConfigResource;
-import ai.wanaku.capabilities.sdk.config.provider.file.ConfigFileStore;
-import ai.wanaku.capabilities.sdk.config.provider.file.SecretFileStore;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Objects;
+import ai.wanaku.capabilities.sdk.config.provider.api.DefaultConfigResource;
+import ai.wanaku.capabilities.sdk.config.provider.file.ConfigFileStore;
+import ai.wanaku.capabilities.sdk.config.provider.file.SecretFileStore;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class CamelQueryParameterBuilderTest {
 

@@ -1,10 +1,10 @@
 package ai.wanaku.core.mcp.common.resolvers.util;
 
+import java.util.Set;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
-import java.util.Set;
 
 /**
  * No-operation implementation of {@link ForwardRegistry} for testing and default behavior.

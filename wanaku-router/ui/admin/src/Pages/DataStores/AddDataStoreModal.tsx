@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
-import { Modal, TextInput } from "@carbon/react";
-import type { DataStore } from "../../models";
+import React, {useRef, useState} from "react";
+import {Modal, TextInput} from "@carbon/react";
+import type {DataStore} from "../../models";
 
 interface AddDataStoreModalProps {
   onRequestClose: () => void;

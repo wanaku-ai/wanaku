@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.providers;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import jakarta.enterprise.inject.Produces;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -10,6 +10,7 @@ import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.SingleFileStoreConfigurationBuilder;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
 public class InfinispanConfigurationProvider {
     @ConfigProperty(name = "wanaku.persistence.infinispan.base-folder", defaultValue = "${user.home}/.wanaku/router/")

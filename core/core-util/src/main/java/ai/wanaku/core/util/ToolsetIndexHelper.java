@@ -1,11 +1,11 @@
 package ai.wanaku.core.util;
 
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Helper class for dealing with the toolset index file

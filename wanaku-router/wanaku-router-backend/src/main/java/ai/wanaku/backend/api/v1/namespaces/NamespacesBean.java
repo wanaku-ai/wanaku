@@ -1,13 +1,14 @@
 package ai.wanaku.backend.api.v1.namespaces;
 
-import ai.wanaku.capabilities.sdk.api.types.Namespace;
-import ai.wanaku.core.persistence.api.NamespaceRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+
 import java.util.List;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.core.persistence.api.NamespaceRepository;
 
 @Singleton
 public class NamespacesBean {

@@ -1,7 +1,12 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
+import java.util.List;
+import java.util.Map;
+import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -12,13 +17,9 @@ import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import org.jboss.logging.Logger;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 /**
  * Command to add a new tool to the Wanaku platform.

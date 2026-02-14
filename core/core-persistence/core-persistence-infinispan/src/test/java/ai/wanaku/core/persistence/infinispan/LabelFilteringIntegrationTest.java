@@ -1,22 +1,33 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import static org.junit.jupiter.api.Assertions.*;
+import jakarta.inject.Inject;
 
+import java.util.List;
+import java.util.Map;
+import io.quarkus.test.junit.QuarkusTest;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import org.junit.jupiter.api.*;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration test for label expression filtering using Infinispan.
  * <p>
- * This test spins up an embedded Infinispan cache, populates it with ToolReference
- * objects that have various labels, and tests different label query expressions.
+ * This test spins up an embedded Infinispan cache, populates it with
+ * ToolReference
+ * objects that have various labels, and tests different label query
+ * expressions.
  */
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

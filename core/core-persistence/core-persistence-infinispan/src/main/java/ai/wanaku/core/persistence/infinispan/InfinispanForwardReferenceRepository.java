@@ -1,12 +1,12 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
-import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import java.util.List;
 import java.util.UUID;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 
 public class InfinispanForwardReferenceRepository extends AbstractInfinispanRepository<ForwardReference, String>
         implements ForwardReferenceRepository {

@@ -1,13 +1,14 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
-import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.mcp.providers.ServiceRegistry;
 
 @ApplicationScoped
 public class DiscoveryBean {

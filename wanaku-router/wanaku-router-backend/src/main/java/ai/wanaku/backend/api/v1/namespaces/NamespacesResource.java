@@ -1,8 +1,5 @@
 package ai.wanaku.backend.api.v1.namespaces;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.NamespaceNotFoundException;
-import ai.wanaku.capabilities.sdk.api.types.Namespace;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -14,7 +11,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.exceptions.NamespaceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 @ApplicationScoped
 @Path("/api/v1/namespaces")

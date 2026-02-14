@@ -1,5 +1,9 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
+import java.util.Iterator;
+import java.util.Objects;
+import org.jboss.logging.Logger;
+import io.grpc.ManagedChannel;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.InvokerToolExecutor;
 import ai.wanaku.backend.bridge.ProvisioningService;
@@ -20,10 +24,6 @@ import ai.wanaku.core.exchange.Secret;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.exchange.ToolInvokerGrpc;
-import io.grpc.ManagedChannel;
-import java.util.Iterator;
-import java.util.Objects;
-import org.jboss.logging.Logger;
 
 /**
  * Encapsulates all gRPC transport operations for bridge implementations.

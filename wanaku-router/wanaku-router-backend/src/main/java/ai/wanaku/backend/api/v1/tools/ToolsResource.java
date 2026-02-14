@@ -1,13 +1,5 @@
 package ai.wanaku.backend.api.v1.tools;
 
-import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
-import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
-import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
-import ai.wanaku.core.util.CollectionsHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -20,7 +12,16 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
+import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
+import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
+import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
+import ai.wanaku.core.util.CollectionsHelper;
 
 /**
  * JAX-RS REST resource implementation for tool management endpoints.

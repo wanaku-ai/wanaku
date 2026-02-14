@@ -1,8 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.codeexecution;
 
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionStatus;
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionTask;
 import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +10,8 @@ import org.infinispan.Cache;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionStatus;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionTask;
 
 /**
  * Infinispan-based repository for storing and managing {@link CodeExecutionTask} instances.

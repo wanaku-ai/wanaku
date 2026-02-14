@@ -1,17 +1,9 @@
-import {
-  Modal,
-  Select,
-  SelectItem,
-  Stack,
-  TextArea,
-  TextInput,
-  ToastNotification,
-} from "@carbon/react";
-import React, { useCallback, useEffect, useState } from "react";
-import { usePrompts } from "../../hooks/api/use-prompts";
-import { Namespace, PromptReference } from "../../models";
-import { PromptsTable } from "./PromptsTable";
-import { listNamespaces } from "../../hooks/api/use-namespaces";
+import {Modal, Select, SelectItem, Stack, TextArea, TextInput, ToastNotification,} from "@carbon/react";
+import React, {useCallback, useEffect, useState} from "react";
+import {usePrompts} from "../../hooks/api/use-prompts";
+import {Namespace, PromptReference} from "../../models";
+import {PromptsTable} from "./PromptsTable";
+import {listNamespaces} from "../../hooks/api/use-namespaces";
 
 export const PromptsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<PromptReference[]>([]);

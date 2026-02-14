@@ -1,10 +1,11 @@
 package ai.wanaku.tool.http;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
+import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.capabilities.tool.AbstractToolDelegate;
-import jakarta.enterprise.context.ApplicationScoped;
-import java.util.List;
 
 @ApplicationScoped
 public class HttpDelegate extends AbstractToolDelegate {

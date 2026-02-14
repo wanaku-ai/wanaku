@@ -15,11 +15,6 @@
  */
 package ai.wanaku.backend.api.v2.codeexecution;
 
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionError;
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionEvent;
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionResponse;
-import io.smallrye.mutiny.Multi;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -35,9 +30,15 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
+
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import io.smallrye.mutiny.Multi;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionError;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionEvent;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionResponse;
 
 /**
  * JAX-RS REST resource for code execution endpoints.

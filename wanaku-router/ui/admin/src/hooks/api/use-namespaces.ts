@@ -1,5 +1,5 @@
-import { getApiV1NamespacesList } from "../../api/wanaku-router-api";
-import { Namespace } from "../../models";
+import {getApiV1NamespacesList} from "../../api/wanaku-router-api";
+import {Namespace} from "../../models";
 
 // Simple in-memory cache for Client Components
 let namespacesCache: {

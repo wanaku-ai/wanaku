@@ -1,5 +1,7 @@
 package ai.wanaku.backend.bridge;
 
+import org.jboss.logging.Logger;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
@@ -10,8 +12,6 @@ import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.common.ToolExecutor;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import org.jboss.logging.Logger;
 
 /**
  * A proxy class for invoking tools via gRPC.

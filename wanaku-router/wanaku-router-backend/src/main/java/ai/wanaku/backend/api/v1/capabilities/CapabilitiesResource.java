@@ -1,12 +1,5 @@
 package ai.wanaku.backend.api.v1.capabilities;
 
-import ai.wanaku.backend.common.ServiceTargetEvent;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.services.api.StaleCapabilityInfo;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,12 +14,20 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
+
 import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.common.ServiceTargetEvent;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.services.api.StaleCapabilityInfo;
 
 @ApplicationScoped
 @Path("/api/v1/capabilities")

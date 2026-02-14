@@ -1,16 +1,7 @@
 package ai.wanaku.core.capabilities.common;
 
-import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
-
-import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
-import ai.wanaku.core.exchange.PropertySchema;
-import ai.wanaku.core.service.discovery.client.DiscoveryService;
-import io.quarkus.oidc.client.Tokens;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.io.File;
 import java.net.URI;
 import java.util.Map;
@@ -19,6 +10,16 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.jboss.logging.Logger;
+import io.quarkus.oidc.client.Tokens;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
+import ai.wanaku.core.exchange.PropertySchema;
+import ai.wanaku.core.service.discovery.client.DiscoveryService;
+
+import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
 /**
  * Utility class providing helper methods for service registration, configuration, and lifecycle management.

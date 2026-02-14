@@ -14,7 +14,7 @@ import {
     TableToolbarContent,
     ToastNotification,
 } from "@carbon/react";
-import { Add, Renew, TrashCan } from "@carbon/icons-react";
+import {Add, Renew, TrashCan} from "@carbon/icons-react";
 import {useEffect, useState} from "react";
 import {addForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards";
 import {ForwardReference} from "../../models";

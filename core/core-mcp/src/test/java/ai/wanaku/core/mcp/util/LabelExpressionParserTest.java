@@ -1,14 +1,18 @@
 package ai.wanaku.core.mcp.util;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import java.util.function.Predicate;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
+
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for LabelExpressionParser.
- * Tests verify that the parser creates predicates that correctly filter label-aware entities.
+ * Tests verify that the parser creates predicates that correctly filter
+ * label-aware entities.
  */
 class LabelExpressionParserTest {
 

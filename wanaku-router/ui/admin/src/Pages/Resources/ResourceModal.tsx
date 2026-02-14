@@ -1,22 +1,11 @@
-import {
-  Modal,
-  TextInput,
-  Select,
-  SelectItem,
-  ComboBox,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs
-} from "@carbon/react";
-import React, { useEffect, useState } from "react";
-import { Namespace, Param, ResourceReference } from "../../models";
-import { commonMimeTypes, commonMimeTypesMapping } from "../../constants/mimeTypes.ts";
-import { listNamespaces } from "../../hooks/api/use-namespaces";
-import { useCapabilities } from "../../hooks/api/use-capabilities";
-import { TargetTypeSelect } from "../Targets/TargetTypeSelect";
-import { ParametersTable } from "./ParametersTable.tsx";
+import {ComboBox, Modal, Select, SelectItem, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react";
+import React, {useEffect, useState} from "react";
+import {Namespace, Param, ResourceReference} from "../../models";
+import {commonMimeTypes, commonMimeTypesMapping} from "../../constants/mimeTypes.ts";
+import {listNamespaces} from "../../hooks/api/use-namespaces";
+import {useCapabilities} from "../../hooks/api/use-capabilities";
+import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
+import {ParametersTable} from "./ParametersTable.tsx";
 
 interface ResourceModalProps {
   resource?: ResourceReference

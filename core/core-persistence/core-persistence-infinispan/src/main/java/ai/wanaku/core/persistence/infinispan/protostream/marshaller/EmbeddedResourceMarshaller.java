@@ -1,9 +1,9 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.EmbeddedResource;
-import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
+import ai.wanaku.capabilities.sdk.api.types.EmbeddedResource;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 /**
  * Protostream marshaller for EmbeddedResource.

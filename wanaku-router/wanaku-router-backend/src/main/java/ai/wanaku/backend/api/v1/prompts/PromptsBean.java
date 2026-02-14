@@ -1,5 +1,15 @@
 package ai.wanaku.backend.api.v1.prompts;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
+import java.util.List;
+import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.PromptManager;
+import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.PromptHelper;
@@ -11,15 +21,6 @@ import ai.wanaku.core.mcp.common.resolvers.PromptsResolver;
 import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
-import io.quarkiverse.mcp.server.PromptManager;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-import java.util.List;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class PromptsBean extends AbstractBean<PromptReference> {

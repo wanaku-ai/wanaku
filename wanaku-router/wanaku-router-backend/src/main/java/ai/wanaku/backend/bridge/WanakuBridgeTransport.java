@@ -1,5 +1,6 @@
 package ai.wanaku.backend.bridge;
 
+import java.util.Iterator;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.CodeExecutionReply;
@@ -8,7 +9,6 @@ import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 import ai.wanaku.core.exchange.ToolInvokeReply;
 import ai.wanaku.core.exchange.ToolInvokeRequest;
-import java.util.Iterator;
 
 /**
  * Transport abstraction for Wanaku bridge operations.

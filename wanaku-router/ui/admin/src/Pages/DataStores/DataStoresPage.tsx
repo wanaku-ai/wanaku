@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { ToastNotification } from "@carbon/react";
-import { AddDataStoreModal } from "./AddDataStoreModal";
-import { ViewDataStoreModal } from "./ViewDataStoreModal";
-import { DataStoresTable } from "./DataStoresTable";
-import { useDataStores } from "../../hooks/api/use-data-stores";
-import type { DataStore } from "../../models";
+import React, {useEffect, useState} from "react";
+import {ToastNotification} from "@carbon/react";
+import {AddDataStoreModal} from "./AddDataStoreModal";
+import {ViewDataStoreModal} from "./ViewDataStoreModal";
+import {DataStoresTable} from "./DataStoresTable";
+import {useDataStores} from "../../hooks/api/use-data-stores";
+import type {DataStore} from "../../models";
 
 export const DataStoresPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<DataStore[]>([]);

@@ -1,8 +1,5 @@
 package ai.wanaku.backend.api.v1.forwards;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -13,8 +10,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.util.List;
 import org.jboss.resteasy.reactive.RestResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 @ApplicationScoped
 @Path("/api/v1/forwards")

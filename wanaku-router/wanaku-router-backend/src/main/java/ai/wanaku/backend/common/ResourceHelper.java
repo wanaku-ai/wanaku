@@ -1,14 +1,14 @@
 package ai.wanaku.backend.common;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.capabilities.sdk.api.types.Namespace;
-import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
 import java.util.List;
 import java.util.function.BiFunction;
 import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ResourceResponse;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 /**
  * Helper class for dealing with resources

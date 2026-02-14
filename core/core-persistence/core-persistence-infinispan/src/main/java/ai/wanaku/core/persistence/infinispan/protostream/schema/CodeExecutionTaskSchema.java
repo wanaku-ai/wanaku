@@ -1,8 +1,8 @@
 package ai.wanaku.core.persistence.infinispan.protostream.schema;
 
-import ai.wanaku.core.persistence.infinispan.protostream.marshaller.CodeExecutionTaskMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
+import ai.wanaku.core.persistence.infinispan.protostream.marshaller.CodeExecutionTaskMarshaller;
 
 public class CodeExecutionTaskSchema extends AbstractWanakuSerializationContextInitializer {
 

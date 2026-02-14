@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import org.infinispan.protostream.EnumMarshaller;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 
 public class ServiceTypeMarshaller implements EnumMarshaller<ServiceType> {
 

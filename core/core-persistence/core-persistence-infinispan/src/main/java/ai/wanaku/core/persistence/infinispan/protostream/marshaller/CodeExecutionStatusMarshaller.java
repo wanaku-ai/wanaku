@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionStatus;
 import org.infinispan.protostream.EnumMarshaller;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionStatus;
 
 public class CodeExecutionStatusMarshaller implements EnumMarshaller<CodeExecutionStatus> {
 

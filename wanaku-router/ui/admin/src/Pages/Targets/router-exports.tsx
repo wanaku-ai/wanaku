@@ -1,3 +1,3 @@
-import { TargetsPage } from './TargetsPage';
+import {TargetsPage} from './TargetsPage';
 
 export const element = <TargetsPage />;

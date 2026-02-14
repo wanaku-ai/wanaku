@@ -1,10 +1,10 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.InputSchema;
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import java.io.IOException;
 import java.util.HashMap;
 import org.infinispan.protostream.MessageMarshaller;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 
 public class ToolReferenceMarshaller implements MessageMarshaller<ToolReference> {
 

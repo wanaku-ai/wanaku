@@ -1,12 +1,7 @@
-import {
-  Modal,
-  TextInput,
-  Select,
-  SelectItem,
-} from "@carbon/react";
-import React, { useEffect, useState } from "react";
-import { ForwardReference, Namespace } from "../../models";
-import { listNamespaces } from "../../hooks/api/use-namespaces";
+import {Modal, Select, SelectItem, TextInput,} from "@carbon/react";
+import React, {useEffect, useState} from "react";
+import {ForwardReference, Namespace} from "../../models";
+import {listNamespaces} from "../../hooks/api/use-namespaces";
 
 interface AddForwardModalProps {
   onRequestClose: () => void;

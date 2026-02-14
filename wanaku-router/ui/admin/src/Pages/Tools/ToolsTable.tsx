@@ -1,24 +1,24 @@
-import { Add, Upload, TrashCan, Edit } from "@carbon/icons-react";
+import {Add, Edit, TrashCan, Upload} from "@carbon/icons-react";
 import {
-  Button,
-  DataTable,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableExpandRow,
-  TableExpandedRow,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableToolbar,
-  TableToolbarContent
+    Button,
+    DataTable,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableExpandedRow,
+    TableExpandHeader,
+    TableExpandRow,
+    TableHead,
+    TableHeader,
+    TableRow,
+    TableToolbar,
+    TableToolbarContent
 } from "@carbon/react";
-import React, { FunctionComponent } from "react";
-import { ToolReference } from "../../models";
-import { getNamespacePathById } from "../../hooks/api/use-namespaces";
-import { formatInputSchema } from "./tools-utils.ts";
-import { TableExpandHeader } from "@carbon/react";
+import React, {FunctionComponent} from "react";
+import {ToolReference} from "../../models";
+import {getNamespacePathById} from "../../hooks/api/use-namespaces";
+import {formatInputSchema} from "./tools-utils.ts";
 
 interface ToolListProps {
   fetchedData: ToolReference[];

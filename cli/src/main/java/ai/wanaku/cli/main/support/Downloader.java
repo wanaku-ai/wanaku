@@ -1,6 +1,5 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,6 +9,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
 public class Downloader {
     private static final Logger LOG = Logger.getLogger(Downloader.class);

@@ -1,11 +1,11 @@
 package ai.wanaku.cli.main.commands;
 
-import ai.wanaku.cli.main.support.AuthenticationInterceptor;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import java.net.URI;
 import java.util.concurrent.Callable;
 import org.jline.terminal.Terminal;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import ai.wanaku.cli.main.support.AuthenticationInterceptor;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
 /**

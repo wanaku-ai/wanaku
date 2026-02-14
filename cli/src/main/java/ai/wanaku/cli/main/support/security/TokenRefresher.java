@@ -1,5 +1,11 @@
 package ai.wanaku.cli.main.support.security;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.GeneralException;
@@ -15,13 +21,7 @@ import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.time.Instant;
 import net.minidev.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles OAuth2 token refresh using stored refresh tokens.

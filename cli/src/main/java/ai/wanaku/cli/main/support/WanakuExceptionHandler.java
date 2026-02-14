@@ -1,13 +1,14 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.cli.main.commands.BaseCommand;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.IExecutionExceptionHandler;
 import picocli.CommandLine.ParseResult;

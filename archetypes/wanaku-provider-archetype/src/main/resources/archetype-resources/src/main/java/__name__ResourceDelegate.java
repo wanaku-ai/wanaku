@@ -1,22 +1,14 @@
-package ${package};
+package $
 
 import java.util.List;
 import java.util.Map;
 
+import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
-import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
-import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import org.jboss.logging.Logger;
-
-#if ( $wanaku-capability-type == "camel")
-import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
-#end
 
 import static ai.wanaku.core.uri.URIHelper.buildUri;
 

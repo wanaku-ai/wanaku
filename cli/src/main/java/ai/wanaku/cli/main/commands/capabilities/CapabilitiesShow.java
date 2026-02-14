@@ -1,16 +1,5 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapability;
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
-import static picocli.CommandLine.Parameters;
-
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.CapabilitiesHelper;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.CapabilitiesService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +8,17 @@ import org.jline.consoleui.prompt.PromptResultItemIF;
 import org.jline.consoleui.prompt.builder.ListPromptBuilder;
 import org.jline.consoleui.prompt.builder.PromptBuilder;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.CapabilitiesHelper;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.CapabilitiesService;
+
+import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
+import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
+import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapability;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.Parameters;
 
 /**
  * Command implementation for displaying detailed information about specific service capabilities.

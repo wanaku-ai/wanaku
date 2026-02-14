@@ -1,18 +1,15 @@
-import { useCallback } from "react";
+import {useCallback} from "react";
 import {
-  getApiV1Prompts,
-  postApiV1Prompts,
-  deleteApiV1Prompts,
-  putApiV1Prompts,
-  getApiV1PromptsResponse,
-  postApiV1PromptsResponse,
-  deleteApiV1PromptsResponse,
-  putApiV1PromptsResponse,
+    deleteApiV1Prompts,
+    deleteApiV1PromptsResponse,
+    getApiV1Prompts,
+    getApiV1PromptsResponse,
+    postApiV1Prompts,
+    postApiV1PromptsResponse,
+    putApiV1Prompts,
+    putApiV1PromptsResponse,
 } from "../../api/wanaku-router-api";
-import {
-  DeleteApiV1PromptsParams,
-  PromptReference,
-} from "../../models";
+import {DeleteApiV1PromptsParams, PromptReference,} from "../../models";
 
 export const usePrompts = () => {
   /**

@@ -1,11 +1,12 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
-import ai.wanaku.cli.main.support.WanakuCliConfig;
-import ai.wanaku.cli.main.support.WanakuPrinter;
 import jakarta.inject.Inject;
+
 import java.io.IOException;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.support.WanakuCliConfig;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "resource", description = "Create a new resource provider capability")

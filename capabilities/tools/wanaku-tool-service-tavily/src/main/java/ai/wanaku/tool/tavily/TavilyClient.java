@@ -1,5 +1,11 @@
 package ai.wanaku.tool.tavily;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
@@ -8,11 +14,6 @@ import ai.wanaku.core.exchange.ToolInvokeRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TavilyClient implements Client {

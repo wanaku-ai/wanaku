@@ -1,7 +1,7 @@
-import { createHashRouter } from "react-router-dom";
+import {createHashRouter} from "react-router-dom";
 import App from "./App";
-import { ErrorPage } from "./Pages/Error";
-import { Links } from "./router/links.models";
+import {ErrorPage} from "./Pages/Error";
+import {Links} from "./router/links.models";
 
 export const router = createHashRouter([
   {

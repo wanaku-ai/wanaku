@@ -1,7 +1,7 @@
 package ai.wanaku.core.persistence.api;
 
-import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import java.util.List;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
 
 /**
  * Repository interface for managing {@link Namespace} entities.

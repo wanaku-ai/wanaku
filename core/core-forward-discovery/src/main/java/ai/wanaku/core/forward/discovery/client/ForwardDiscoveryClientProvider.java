@@ -2,6 +2,7 @@ package ai.wanaku.core.forward.discovery.client;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.Produces;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 

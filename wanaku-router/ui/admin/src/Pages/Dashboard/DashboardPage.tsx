@@ -1,21 +1,8 @@
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  Button,
-  Grid,
-  Column,
-  Tile,
-  ToastNotification,
-} from "@carbon/react";
-import {
-  Renew,
-  Tools,
-  Document,
-  TextAlignJustify,
-  ArrowRight,
-  DataBase,
-} from "@carbon/icons-react";
-import { useStatistics } from "../../hooks/api/use-statistics";
-import { SystemStatistics, CapabilityStatistics } from "../../models";
+import React, {useCallback, useEffect, useState} from "react";
+import {Button, Column, Grid, Tile, ToastNotification,} from "@carbon/react";
+import {ArrowRight, DataBase, Document, Renew, TextAlignJustify, Tools,} from "@carbon/icons-react";
+import {useStatistics} from "../../hooks/api/use-statistics";
+import {CapabilityStatistics, SystemStatistics} from "../../models";
 import "./DashboardPage.scss";
 
 export const DashboardPage: React.FC = () => {

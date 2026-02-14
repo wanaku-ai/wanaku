@@ -1,15 +1,15 @@
 package ai.wanaku.core.persistence.infinispan;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
-import ai.wanaku.core.mcp.util.LabelExpressionParser;
-import ai.wanaku.core.mcp.util.LabelExpressionParser.LabelExpressionParseException;
-import ai.wanaku.core.persistence.api.LabelAwareInfinispanRepository;
 import java.util.List;
 import java.util.function.Predicate;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
+import ai.wanaku.core.mcp.util.LabelExpressionParser;
+import ai.wanaku.core.mcp.util.LabelExpressionParser.LabelExpressionParseException;
+import ai.wanaku.core.persistence.api.LabelAwareInfinispanRepository;
 
 public abstract class AbstractLabelAwareInfinispanRepository<A extends LabelsAwareEntity<K>, K>
         extends AbstractInfinispanRepository<A, K> implements LabelAwareInfinispanRepository<A, K> {

@@ -1,14 +1,15 @@
 package ai.wanaku.cli.main.support;
 
-import ai.wanaku.cli.main.support.security.TokenRefresher;
-import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
+
 import java.io.IOException;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ai.wanaku.cli.main.support.security.TokenRefresher;
+import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
 
 /**
  * A JAX-RS client request filter that automatically adds authentication headers

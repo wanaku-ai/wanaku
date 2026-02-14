@@ -15,12 +15,12 @@
  */
 package ai.wanaku.backend.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Event representing a tool call invocation lifecycle.

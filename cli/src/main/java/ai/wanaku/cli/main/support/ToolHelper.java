@@ -1,16 +1,17 @@
 package ai.wanaku.cli.main.support;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.core.services.api.ToolsService;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.core.services.api.ToolsService;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 public class ToolHelper {
 

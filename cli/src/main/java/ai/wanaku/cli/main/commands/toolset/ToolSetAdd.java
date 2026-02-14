@@ -1,5 +1,11 @@
 package ai.wanaku.cli.main.commands.toolset;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import org.jboss.logging.Logger;
+import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -7,12 +13,6 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.util.ToolsetIndexHelper;
-import java.io.File;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import org.jboss.logging.Logger;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "add", description = "Add tools to a toolset")

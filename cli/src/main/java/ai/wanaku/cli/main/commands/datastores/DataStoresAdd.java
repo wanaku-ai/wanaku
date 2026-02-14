@@ -1,21 +1,22 @@
 package ai.wanaku.cli.main.commands.datastores;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
-
-import ai.wanaku.capabilities.sdk.api.types.DataStore;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.cli.main.commands.BaseCommand;
-import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.DataStoresService;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.DataStoresService;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 /**
  * Add subcommand for data stores.

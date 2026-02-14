@@ -1,13 +1,14 @@
 package ai.wanaku.backend.api.v1.exceptions;
 
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 /**
  * A provider of a base exception mapper that converts exceptions to standardized responses.

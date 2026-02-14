@@ -1,5 +1,6 @@
 package ai.wanaku.backend.resolvers;
 
+import java.util.Map;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
@@ -10,7 +11,6 @@ import ai.wanaku.core.exchange.PropertySchema;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.ToolAdapter;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
-import java.util.Map;
 
 /**
  * Resolver for tools that uses a ToolsProxy to provide tool execution capabilities.

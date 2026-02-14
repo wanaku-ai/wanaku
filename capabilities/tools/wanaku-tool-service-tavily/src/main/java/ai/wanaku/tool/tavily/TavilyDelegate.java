@@ -1,11 +1,12 @@
 package ai.wanaku.tool.tavily;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.core.capabilities.tool.AbstractToolDelegate;
-import jakarta.enterprise.context.ApplicationScoped;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class TavilyDelegate extends AbstractToolDelegate {

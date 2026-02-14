@@ -1,11 +1,11 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
-import static picocli.CommandLine.usage;
-
+import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import org.jline.terminal.Terminal;
 import picocli.CommandLine;
+
+import static picocli.CommandLine.usage;
 
 /**
  * Parent command for managing namespaces in the Wanaku platform.

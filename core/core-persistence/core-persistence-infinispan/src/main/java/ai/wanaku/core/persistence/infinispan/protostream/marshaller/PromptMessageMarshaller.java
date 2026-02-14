@@ -1,10 +1,10 @@
 package ai.wanaku.core.persistence.infinispan.protostream.marshaller;
 
-import ai.wanaku.capabilities.sdk.api.types.PromptContent;
-import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.WrappedMessage;
+import ai.wanaku.capabilities.sdk.api.types.PromptContent;
+import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
 
 /**
  * Protostream marshaller for PromptMessage.

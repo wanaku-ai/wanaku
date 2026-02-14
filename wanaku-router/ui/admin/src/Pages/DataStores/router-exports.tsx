@@ -1,3 +1,3 @@
-import { DataStoresPage } from "./DataStoresPage";
+import {DataStoresPage} from "./DataStoresPage";
 
 export const element = <DataStoresPage />;

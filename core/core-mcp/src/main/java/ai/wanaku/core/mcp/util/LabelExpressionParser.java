@@ -1,10 +1,10 @@
 package ai.wanaku.core.mcp.util;
 
-import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 
 /**
  * Recursive descent parser for label expression filters.

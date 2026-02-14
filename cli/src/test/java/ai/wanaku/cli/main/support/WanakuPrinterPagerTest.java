@@ -1,16 +1,18 @@
 package ai.wanaku.cli.main.support;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for WanakuPrinter pager functionality.

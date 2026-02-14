@@ -15,13 +15,6 @@
  */
 package ai.wanaku.backend.bridge;
 
-import ai.wanaku.backend.common.ToolCallEvent;
-import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
-import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.CodeExecutionReply;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -32,6 +25,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.common.ToolCallEvent;
+import ai.wanaku.backend.service.support.ServiceResolver;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.exchange.CodeExecutionReply;
 
 /**
  * Bridge implementation for code execution services via gRPC.

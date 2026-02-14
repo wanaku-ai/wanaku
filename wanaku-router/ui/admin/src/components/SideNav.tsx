@@ -1,11 +1,6 @@
-import {
-    SideNav,
-    SideNavItems,
-    SideNavMenu,
-    SideNavMenuItem,
-} from '@carbon/react';
-import { Links } from "../router/links.models";
-import { Link } from 'react-router-dom';
+import {SideNav, SideNavItems, SideNavMenu, SideNavMenuItem,} from '@carbon/react';
+import {Links} from "../router/links.models";
+import {Link} from 'react-router-dom';
 
 interface SideNavComponentProps {
     isSideNavExpanded: boolean;

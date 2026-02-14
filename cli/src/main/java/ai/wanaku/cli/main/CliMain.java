@@ -1,5 +1,10 @@
 package ai.wanaku.cli.main;
 
+import jakarta.inject.Inject;
+
+import java.util.concurrent.Callable;
+import io.quarkus.picocli.runtime.annotations.TopCommand;
+import io.quarkus.runtime.QuarkusApplication;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.commands.auth.Auth;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
@@ -15,10 +20,6 @@ import ai.wanaku.cli.main.commands.tools.Tools;
 import ai.wanaku.cli.main.commands.toolset.ToolSet;
 import ai.wanaku.cli.main.support.WanakuExceptionHandler;
 import ai.wanaku.core.util.VersionHelper;
-import io.quarkus.picocli.runtime.annotations.TopCommand;
-import io.quarkus.runtime.QuarkusApplication;
-import jakarta.inject.Inject;
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 @TopCommand

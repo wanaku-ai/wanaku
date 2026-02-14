@@ -1,8 +1,11 @@
 package ai.wanaku.operator.util;
 
-import ai.wanaku.operator.wanaku.Wanaku;
-import ai.wanaku.operator.wanaku.WanakuReconciler;
-import ai.wanaku.operator.wanaku.WanakuSpec;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -15,12 +18,9 @@ import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.ReconcilerUtils;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-import org.jboss.logging.Logger;
+import ai.wanaku.operator.wanaku.Wanaku;
+import ai.wanaku.operator.wanaku.WanakuReconciler;
+import ai.wanaku.operator.wanaku.WanakuSpec;
 
 public final class OperatorUtil {
     private static final Logger LOG = Logger.getLogger(OperatorUtil.class);

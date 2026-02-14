@@ -1,9 +1,9 @@
 package ai.wanaku.core.mcp.providers;
 
+import java.util.Set;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
 import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
-import java.util.Set;
 
 /**
  * A registry for managing forwarded services and their resolvers.

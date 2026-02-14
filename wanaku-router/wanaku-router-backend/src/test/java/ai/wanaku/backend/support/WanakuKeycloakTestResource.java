@@ -1,12 +1,12 @@
 package ai.wanaku.backend.support;
 
-import ai.wanaku.backend.api.v1.management.discovery.DiscoveryResourceTest;
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.quarkus.test.keycloak.client.KeycloakTestClient;
-import io.quarkus.test.keycloak.server.KeycloakContainer;
 import java.util.HashMap;
 import java.util.Map;
 import org.keycloak.representations.idm.RealmRepresentation;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.keycloak.server.KeycloakContainer;
+import ai.wanaku.backend.api.v1.management.discovery.DiscoveryResourceTest;
 
 public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleManager {
 
