@@ -13,9 +13,9 @@
     "jsonpath-plus": "^10.3.0"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.55.0",
-    "@carbon/layout": "^11.30.0",
-    "@carbon/react": "^1.76.0",
+    "@carbon/icons-react": "^11.75.0",
+    "@carbon/layout": "^11.48.0",
+    "@carbon/react": "^1.101.0",
     "@modelcontextprotocol/sdk": "^1.6.1",
     "axios": "^1.8.1",
     "highlight.js": "^11.11.1",

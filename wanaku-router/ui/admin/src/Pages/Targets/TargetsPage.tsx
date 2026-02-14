@@ -102,7 +102,7 @@ export const TargetsPage: React.FC = () => {
       const serviceTargetEvent = JSON.parse(event.data) as ServiceTargetEvent;
 
       // Remove if already present, shuoldn't be, but better safe than sorry
-      let updatedData = data.filter((entry) => entry.id != serviceTargetEvent.id);
+      const updatedData = data.filter((entry) => entry.id != serviceTargetEvent.id);
 
       updatedData.push(serviceTargetEvent.serviceTarget as ServiceTargetState);
 

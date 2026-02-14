@@ -7,7 +7,7 @@
 
 export type ServiceType = (typeof ServiceType)[keyof typeof ServiceType];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const ServiceType = {
   RESOURCE_PROVIDER: "RESOURCE_PROVIDER",
   TOOL_INVOKER: "TOOL_INVOKER",
