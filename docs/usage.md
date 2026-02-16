@@ -609,6 +609,22 @@ can be imported into Keycloak to set up the realm, clients and everything else n
 > [!IMPORTANT]
 > After importing this, make sure to adjust the secrets used by the services and any other potential sensitive configuration.
 
+### Configuring an MCP Client for OIDC
+
+When connecting an MCP client application to Wanaku, you need to configure it with the correct OIDC client ID and scopes.
+By default, the Wanaku Keycloak realm provides the following settings for MCP clients:
+
+- **Client ID**: `mcp-client`
+- **Scopes**: `openid`, `wanaku-mcp-client`
+
+When an application uses these settings to connect to a Wanaku MCP endpoint, the user will be redirected to the
+Keycloak login page. After entering their username and password, Keycloak will redirect them back to the application
+with a valid authentication token.
+
+> [!NOTE]
+> If using automatic client registration, the registered client will use these same defaults. Applications only need
+> to request a new client ID and grant when changing the namespace in use.
+
 
 ## Configuring Wanaku Components for Secure Access
 
