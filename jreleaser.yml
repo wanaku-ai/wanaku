@@ -38,9 +38,8 @@ release:
     update:
       enabled: true
     skipTag: true
-
-changelog:
-  contentTemplate: src/jreleaser/changelog.tpl
+    changelog:
+      contentTemplate: src/jreleaser/changelog.tpl
 
 distributions:
   cli:
