@@ -8,7 +8,7 @@
 export type CodeExecutionStatus =
   (typeof CodeExecutionStatus)[keyof typeof CodeExecutionStatus];
 
- 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CodeExecutionStatus = {
   PENDING: "PENDING",
   RUNNING: "RUNNING",

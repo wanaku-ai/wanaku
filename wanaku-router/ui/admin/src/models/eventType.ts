@@ -7,7 +7,6 @@
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
- 
 export const EventType = {
   REGISTER: "REGISTER",
   DEREGISTER: "DEREGISTER",
