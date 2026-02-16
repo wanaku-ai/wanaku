@@ -130,4 +130,14 @@ public interface CapabilitiesService {
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Integer> cleanupStale(
             @QueryParam("maxAgeSeconds") Long maxAgeSeconds, @QueryParam("inactiveOnly") Boolean inactiveOnly);
+
+    /**
+     * Returns the aggregated fleet health status across all registered capabilities.
+     *
+     * @return a {@link WanakuResponse} containing the fleet status summary
+     */
+    @Path("/fleet/status")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<FleetStatus> fleetStatus();
 }

@@ -4,7 +4,8 @@ public enum EventType {
     REGISTER("register"),
     DEREGISTER("deregister"),
     UPDATE("update"),
-    PING("ping");
+    PING("ping"),
+    HEALTH_CHECK("health-check");
 
     private final String value;
 

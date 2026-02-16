@@ -42,6 +42,10 @@ public class ServiceTargetEvent {
         return new ServiceTargetEvent(id);
     }
 
+    public static ServiceTargetEvent healthCheck(ServiceTarget serviceTarget) {
+        return new ServiceTargetEvent(EventType.HEALTH_CHECK, serviceTarget);
+    }
+
     public EventType getEventType() {
         return eventType;
     }

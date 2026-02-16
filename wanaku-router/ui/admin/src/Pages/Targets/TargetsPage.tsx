@@ -4,7 +4,7 @@ import React, {useEffect, useState} from "react";
 import {useCapabilities} from "../../hooks/api/use-capabilities";
 import {ServiceTargetState} from "./ServiceTargetState";
 import {getGetApiV1CapabilitiesNotificationsUrl} from "../../api/wanaku-router-api";
-import {ServiceTargetEvent} from "../../models";
+import {HealthStatus, ServiceTargetEvent} from "../../models";
 
 export const TargetsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ServiceTargetState[]>([]);
@@ -69,7 +69,7 @@ export const TargetsPage: React.FC = () => {
 
       const updatedData = data.map((entry) => {
         if (entry.id == serviceTargetEvent.id) {
-          entry.active = serviceTargetEvent.serviceState?.healthy; // TODO is this assumption true?
+          entry.healthStatus = serviceTargetEvent.serviceState?.healthStatus ?? HealthStatus.DOWN;
           const date = new Date(serviceTargetEvent.serviceState?.timestamp ?? new Date());
           entry.lastSeen = dateFormatter.format(date);
           entry.reason = serviceTargetEvent.serviceState?.reason;
@@ -87,8 +87,7 @@ export const TargetsPage: React.FC = () => {
 
       const updatedData = data.map((entry) => {
         if (entry.id == serviceTargetEvent.id) {
-          entry.lastSeen = dateFormatter.format(new Date()); // TODO What to do with dates?!
-          entry.active = true; // TODO is this assumption true?
+          entry.lastSeen = dateFormatter.format(new Date());
         }
 
         return entry;

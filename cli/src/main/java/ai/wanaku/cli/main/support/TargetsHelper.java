@@ -28,7 +28,7 @@ public class TargetsHelper {
      *         <ul>
      *           <li>"id" - the activity record ID</li>
      *           <li>"service" - the service name</li>
-     *           <li>"active" - string representation of the activity status ("true"/"false")</li>
+     *           <li>"status" - the health status of the service (e.g., "healthy", "down")</li>
      *           <li>"last_seen" - formatted timestamp of when the activity was last seen</li>
      *         </ul>
      *         Returns an empty list if the input map is empty or contains no activities.
@@ -64,7 +64,7 @@ public class TargetsHelper {
         Map<String, String> targetMap = new HashMap<>();
         targetMap.put("id", activityRecord.getId());
         targetMap.put("service", serviceName);
-        targetMap.put("active", String.valueOf(activityRecord.isActive()));
+        targetMap.put("status", activityRecord.getHealthStatus().asValue());
         targetMap.put("last_seen", formatLastSeenTimestamp(activityRecord)); // Note: underscore for consistency
 
         return targetMap;

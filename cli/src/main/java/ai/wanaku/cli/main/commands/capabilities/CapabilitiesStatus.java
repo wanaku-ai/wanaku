@@ -2,6 +2,7 @@ package ai.wanaku.cli.main.commands.capabilities;
 
 import java.util.List;
 import org.jline.terminal.Terminal;
+import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.CapabilitiesHelper;
 import ai.wanaku.cli.main.support.CapabilitiesHelper.PrintableCapability;
@@ -9,9 +10,7 @@ import ai.wanaku.cli.main.support.CapabilitiesHelper.StatusSummary;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.CapabilitiesService;
 
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.ACTIVE_STATUS;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.INACTIVE_STATUS;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.computeStatusSummary;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapabilities;
@@ -51,7 +50,7 @@ public class CapabilitiesStatus extends BaseCommand {
 
     @Option(
             names = {"--filter"},
-            description = "Filter by status: active, inactive, or unknown (default: show all)")
+            description = "Filter by health status: healthy, unhealthy, down, or pending (default: show all)")
     private String filter;
 
     private CapabilitiesService capabilitiesService;
@@ -71,15 +70,20 @@ public class CapabilitiesStatus extends BaseCommand {
         StatusSummary summary = computeStatusSummary(capabilities);
 
         // Print summary
-        printer.printInfoMessage("Capability Status Summary:");
-        printer.printSuccessMessage(String.format("  Active:   %d", summary.active()));
-        if (summary.inactive() > 0) {
-            printer.printErrorMessage(String.format("  Inactive: %d", summary.inactive()));
+        printer.printInfoMessage("Capability Health Status Summary:");
+        printer.printSuccessMessage(String.format("  Healthy:   %d", summary.healthy()));
+        if (summary.unhealthy() > 0) {
+            printer.printWarningMessage(String.format("  Unhealthy: %d", summary.unhealthy()));
         } else {
-            printer.printInfoMessage(String.format("  Inactive: %d", summary.inactive()));
+            printer.printInfoMessage(String.format("  Unhealthy: %d", summary.unhealthy()));
         }
-        printer.printWarningMessage(String.format("  Unknown:  %d", summary.unknown()));
-        printer.printInfoMessage(String.format("  Total:    %d", summary.total()));
+        if (summary.down() > 0) {
+            printer.printErrorMessage(String.format("  Down:      %d", summary.down()));
+        } else {
+            printer.printInfoMessage(String.format("  Down:      %d", summary.down()));
+        }
+        printer.printInfoMessage(String.format("  Pending:   %d", summary.pending()));
+        printer.printInfoMessage(String.format("  Total:     %d", summary.total()));
         System.out.println();
 
         // Apply filter if requested
@@ -98,20 +102,11 @@ public class CapabilitiesStatus extends BaseCommand {
             return capabilities;
         }
 
-        return switch (filter.toLowerCase()) {
-            case "active" ->
-                capabilities.stream()
-                        .filter(c -> ACTIVE_STATUS.equals(c.status()))
-                        .toList();
-            case "inactive" ->
-                capabilities.stream()
-                        .filter(c -> INACTIVE_STATUS.equals(c.status()))
-                        .toList();
-            case "unknown" ->
-                capabilities.stream()
-                        .filter(c -> !ACTIVE_STATUS.equals(c.status()) && !INACTIVE_STATUS.equals(c.status()))
-                        .toList();
-            default -> capabilities;
-        };
+        String filterValue = filter.toLowerCase();
+        HealthStatus filterStatus = HealthStatus.fromValue(filterValue);
+
+        return capabilities.stream()
+                .filter(c -> filterStatus.asValue().equals(c.status()))
+                .toList();
     }
 }

@@ -5,9 +5,11 @@
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
 import type { Instant } from "./instant";
+import type { HealthStatus } from "./healthStatus";
 
 export interface ServiceState {
   timestamp?: Instant;
   healthy?: boolean;
+  healthStatus?: HealthStatus;
   reason?: string;
 }

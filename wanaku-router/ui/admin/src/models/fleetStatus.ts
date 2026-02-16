@@ -5,10 +5,10 @@
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
 
-export interface CapabilityStatistics {
+export interface FleetStatus {
   total?: number;
   healthy?: number;
-  unhealthy?: number;
+  warning?: number;
   down?: number;
-  pending?: number;
+  overall?: string;
 }

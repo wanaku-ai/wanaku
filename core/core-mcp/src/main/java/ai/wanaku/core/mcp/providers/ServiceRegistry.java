@@ -2,6 +2,7 @@ package ai.wanaku.core.mcp.providers;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
@@ -82,6 +83,13 @@ public interface ServiceRegistry {
      * @param id the service ID
      */
     void ping(String id);
+
+    /**
+     * Update the health status of a service
+     * @param id the service ID
+     * @param status the new health status
+     */
+    void updateHealthStatus(String id, HealthStatus status);
 
     /**
      * Find capabilities that are considered stale based on the given criteria.

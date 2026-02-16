@@ -11,6 +11,10 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.exchange.HealthProbe;
+import ai.wanaku.core.exchange.HealthProbeDelegate;
+import ai.wanaku.core.exchange.HealthProbeReply;
+import ai.wanaku.core.exchange.HealthProbeRequest;
 import ai.wanaku.core.exchange.ProvisionReply;
 import ai.wanaku.core.exchange.ProvisionRequest;
 import ai.wanaku.core.exchange.Provisioner;
@@ -20,11 +24,14 @@ import ai.wanaku.core.exchange.ResourceReply;
 import ai.wanaku.core.exchange.ResourceRequest;
 
 @GrpcService
-public class ResourceService implements ResourceAcquirer, Provisioner {
+public class ResourceService implements ResourceAcquirer, Provisioner, HealthProbe {
     private static final Logger LOG = Logger.getLogger(ResourceService.class);
 
     @Inject
     ResourceAcquirerDelegate delegate;
+
+    @Inject
+    HealthProbeDelegate healthProbeDelegate;
 
     @Inject
     WanakuServiceConfig config;
@@ -39,6 +46,14 @@ public class ResourceService implements ResourceAcquirer, Provisioner {
     @Override
     public Uni<ProvisionReply> provision(ProvisionRequest request) {
         return Uni.createFrom().item(() -> delegate.provision(request));
+    }
+
+    @Override
+    public Uni<HealthProbeReply> getStatus(HealthProbeRequest request) {
+        return Uni.createFrom()
+                .item(HealthProbeReply.newBuilder()
+                        .setStatus(healthProbeDelegate.getStatus(request.getId()))
+                        .build());
     }
 
     @Scheduled(

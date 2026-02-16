@@ -12,6 +12,6 @@ export interface StaleCapabilityInfo {
   serviceType?: string;
   host?: string;
   port?: number;
-  active?: boolean;
+  healthStatus?: string;
   lastSeen?: Instant;
 }

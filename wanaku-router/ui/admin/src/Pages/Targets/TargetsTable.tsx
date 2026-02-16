@@ -6,6 +6,10 @@ interface TargetsTableProps {
   targets: ServiceTargetState[];
 }
 
+const formatStatus = (status: string): string => {
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+};
+
 export const TargetsTable: React.FC<TargetsTableProps> = ({
   targets,
 }) => {
@@ -27,7 +31,7 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
           serviceType: target.serviceType,
           host: target.host,
           port: target.port,
-          active: target.active ? "Active" : "Inactive",
+          status: formatStatus(target.healthStatus ?? "pending"),
           lastSeen: target.lastSeen,
           reason: target.reason
         }))}
@@ -36,7 +40,7 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
           { key: 'serviceType', header: 'Service Type' },
           { key: 'host', header: 'Host' },
           { key: 'port', header: 'Port' },
-          { key: 'active', header: 'Status' },
+          { key: 'status', header: 'Status' },
           { key: 'lastSeen', header: 'Last Seen' },
           { key: 'reason', header: 'Reason' },
         ]}
