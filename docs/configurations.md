@@ -9,11 +9,88 @@ configurations, prefixed with `quarkus`.
 > Quarkus is the ultimate source for their descriptions. In case the description here conflicts with the ones from
 > Quarkus, please consider the ones from them as being the actual correct value.
 
-Properties are typically stored in `application.properties` files within each module and can be set in runtime using 
+Properties are typically stored in `application.properties` files within each module and can be set in runtime using
 `-D<property.name>=<value>` or by exporting equivalent environment variables (i.e.: `PROPERTY_NAME=<value>`).
 
 > [!IMPORTANT]
-> Some of the settings can only be set at build time. 
+> Some of the settings can only be set at build time.
+
+## Configuration Basics
+
+Wanaku is built on [Quarkus](https://quarkus.io/), a Java framework that uses `application.properties` files for
+configuration. If you are unfamiliar with Quarkus, this section explains how configuration works.
+
+### What is `application.properties`?
+
+`application.properties` is a plain text file containing key-value pairs, one per line. Each line sets a configuration
+property:
+
+```properties
+quarkus.http.port=8080
+wanaku.service.name=my-tool
+quarkus.log.level=INFO
+```
+
+Lines starting with `#` are comments. Blank lines are ignored.
+
+### Where is `application.properties` located?
+
+Each Wanaku component ships with a built-in `application.properties` file inside its JAR/binary at
+`src/main/resources/application.properties`. These files contain sensible defaults and are embedded at build time.
+
+For the main components:
+
+- **Router Backend**: `wanaku-router/wanaku-router-backend/src/main/resources/application.properties`
+- **Tool Services**: `capabilities/tools/<service>/src/main/resources/application.properties`
+- **CLI**: `cli/src/main/resources/application.properties`
+
+### How to override configuration at runtime
+
+You do **not** need to modify the built-in files. Quarkus provides several ways to override configuration values when
+running Wanaku:
+
+#### 1. External `application.properties` file
+
+Place an `application.properties` file in a `config/` directory next to the Wanaku binary. Quarkus automatically reads
+it and any properties defined there override the built-in defaults:
+
+```
+my-deployment/
+├── wanaku-router-backend-runner.jar
+└── config/
+    └── application.properties    ← your overrides go here
+```
+
+You only need to include the properties you want to change, not the entire file.
+
+#### 2. System properties (`-D` flags)
+
+Pass individual properties on the command line using `-D`:
+
+```shell
+java -Dquarkus.http.port=9090 -jar wanaku-router-backend-runner.jar
+```
+
+#### 3. Environment variables
+
+Export properties as environment variables. Convert the property name to uppercase, replacing dots (`.`) and hyphens
+(`-`) with underscores (`_`):
+
+```shell
+export QUARKUS_HTTP_PORT=9090
+java -jar wanaku-router-backend-runner.jar
+```
+
+#### Priority order
+
+When the same property is defined in multiple places, the following priority applies (highest to lowest):
+
+1. System properties (`-D`)
+2. Environment variables
+3. External `config/application.properties`
+4. Built-in `application.properties` (inside the JAR)
+
+For complete details, see the [Quarkus Configuration Guide](https://quarkus.io/guides/config).
 
 ## 1. Router Backend
 
