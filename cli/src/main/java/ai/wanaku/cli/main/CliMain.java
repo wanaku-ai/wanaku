@@ -9,6 +9,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.commands.auth.Auth;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
 import ai.wanaku.cli.main.commands.completion.Completion;
+import ai.wanaku.cli.main.commands.credentials.Credentials;
 import ai.wanaku.cli.main.commands.datastores.DataStores;
 import ai.wanaku.cli.main.commands.forwards.Forwards;
 import ai.wanaku.cli.main.commands.man.Man;
@@ -18,6 +19,7 @@ import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.start.Start;
 import ai.wanaku.cli.main.commands.tools.Tools;
 import ai.wanaku.cli.main.commands.toolset.ToolSet;
+import ai.wanaku.cli.main.commands.users.Users;
 import ai.wanaku.cli.main.support.WanakuExceptionHandler;
 import ai.wanaku.core.util.VersionHelper;
 import picocli.CommandLine;
@@ -27,6 +29,7 @@ import picocli.CommandLine;
         name = "wanaku",
         subcommands = {
             Auth.class,
+            Credentials.class,
             Forwards.class,
             Resources.class,
             Prompts.class,
@@ -35,6 +38,7 @@ import picocli.CommandLine;
             Tools.class,
             ToolSet.class,
             Namespaces.class,
+            Users.class,
             Man.class,
             Completion.class,
             DataStores.class
