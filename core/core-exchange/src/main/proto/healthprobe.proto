@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "ai.wanaku.core.exchange";
+option java_outer_classname = "HealthProbeExchange";
+
+package health;
+
+// The health probe service definition.
+service HealthProbe {
+  // Gets the runtime status of the capability
+  rpc GetStatus (HealthProbeRequest) returns (HealthProbeReply) {}
+}
+
+// The health probe request message
+message HealthProbeRequest {
+  string id = 1;
+}
+
+// The runtime status of the capability
+enum RuntimeStatus {
+  STOPPED = 0;
+  STOPPING = 1;
+  STARTING = 2;
+  STARTED = 3;
+}
+
+// The health probe response message
+message HealthProbeReply {
+  RuntimeStatus status = 1;
+}

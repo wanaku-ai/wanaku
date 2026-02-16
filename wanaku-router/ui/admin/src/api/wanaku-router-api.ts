@@ -37,6 +37,7 @@ import type {
   ToolReference,
   WanakuResponse,
   WanakuResponseDataStore,
+  WanakuResponseFleetStatus,
   WanakuResponseInteger,
   WanakuResponseListDataStore,
   WanakuResponseListForwardReference,
@@ -83,6 +84,38 @@ export const getApiV1Capabilities = async (
 ): Promise<getApiV1CapabilitiesResponse> => {
   return customFetch<getApiV1CapabilitiesResponse>(
     getGetApiV1CapabilitiesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Fleet Status
+ */
+export type getApiV1CapabilitiesFleetStatusResponse200 = {
+  data: WanakuResponseFleetStatus;
+  status: 200;
+};
+
+export type getApiV1CapabilitiesFleetStatusResponseComposite =
+  getApiV1CapabilitiesFleetStatusResponse200;
+
+export type getApiV1CapabilitiesFleetStatusResponse =
+  getApiV1CapabilitiesFleetStatusResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1CapabilitiesFleetStatusUrl = () => {
+  return `/api/v1/capabilities/fleet/status`;
+};
+
+export const getApiV1CapabilitiesFleetStatus = async (
+  options?: RequestInit,
+): Promise<getApiV1CapabilitiesFleetStatusResponse> => {
+  return customFetch<getApiV1CapabilitiesFleetStatusResponse>(
+    getGetApiV1CapabilitiesFleetStatusUrl(),
     {
       ...options,
       method: "GET",

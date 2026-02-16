@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
@@ -27,7 +28,6 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     private static void updatePing(ActivityRecord e) {
         e.setLastSeen(Instant.now());
-        e.setActive(true);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     private void applyDeregistration(String id, ActivityRecord activityRecord) {
         activityRecord.setLastSeen(Instant.now());
-        activityRecord.setActive(false);
+        activityRecord.setHealthStatus(HealthStatus.DOWN);
         updateLastState(id, ServiceState.newInactive());
     }
 
@@ -101,6 +101,23 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
         if (!activityRecordRepository.update(id, InfinispanServiceRegistry::updatePing)) {
             LOG.warn("No records were updated during ping");
         }
+    }
+
+    @Override
+    public void updateHealthStatus(String id, HealthStatus healthStatus) {
+        activityRecordRepository.update(id, e -> {
+            e.setHealthStatus(healthStatus);
+            e.setLastSeen(Instant.now());
+        });
+
+        ServiceState state;
+        switch (healthStatus) {
+            case HEALTHY -> state = ServiceState.newHealthy();
+            case UNHEALTHY -> state = ServiceState.newUnhealthy("health probe reported unhealthy");
+            case DOWN -> state = ServiceState.newDown("health probe reported down");
+            default -> state = ServiceState.newPending();
+        }
+        updateLastState(id, state);
     }
 
     @Override

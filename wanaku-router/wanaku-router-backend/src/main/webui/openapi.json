@@ -11,14 +11,17 @@
           "lastSeen" : {
             "$ref" : "#/components/schemas/Instant"
           },
-          "active" : {
-            "type" : "boolean"
+          "healthStatus" : {
+            "$ref" : "#/components/schemas/HealthStatus"
           },
           "states" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/ServiceState"
             }
+          },
+          "active" : {
+            "type" : "boolean"
           }
         }
       },
@@ -29,11 +32,19 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "active" : {
+          "healthy" : {
             "type" : "integer",
             "format" : "int64"
           },
-          "inactive" : {
+          "unhealthy" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "down" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "pending" : {
             "type" : "integer",
             "format" : "int64"
           }
@@ -133,6 +144,30 @@
           }
         }
       },
+      "FleetStatus" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "healthy" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warning" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "down" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "overall" : {
+            "type" : "string"
+          }
+        }
+      },
       "ForwardReference" : {
         "type" : "object",
         "properties" : {
@@ -149,6 +184,10 @@
             "type" : "string"
           }
         }
+      },
+      "HealthStatus" : {
+        "type" : "string",
+        "enum" : [ "PENDING", "HEALTHY", "UNHEALTHY", "DOWN" ]
       },
       "InputSchema" : {
         "type" : "object",
@@ -450,6 +489,9 @@
           "healthy" : {
             "type" : "boolean"
           },
+          "healthStatus" : {
+            "$ref" : "#/components/schemas/HealthStatus"
+          },
           "reason" : {
             "type" : "string"
           }
@@ -507,8 +549,8 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "active" : {
-            "type" : "boolean"
+          "healthStatus" : {
+            "type" : "string"
           },
           "lastSeen" : {
             "$ref" : "#/components/schemas/Instant"
@@ -626,6 +668,17 @@
           },
           "data" : {
             "$ref" : "#/components/schemas/DataStore"
+          }
+        }
+      },
+      "WanakuResponseFleetStatus" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/FleetStatus"
           }
         }
       },
@@ -881,6 +934,24 @@
           }
         },
         "summary" : "List",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/fleet/status" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseFleetStatus"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Fleet Status",
         "tags" : [ "Capabilities Resource" ]
       }
     },

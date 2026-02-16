@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.infinispan.protostream.MessageMarshaller;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 
 public class ActivityRecordMarshaller implements MessageMarshaller<ActivityRecord> {
@@ -30,7 +31,14 @@ public class ActivityRecordMarshaller implements MessageMarshaller<ActivityRecor
             record.setLastSeen(Instant.ofEpochMilli(lastSeenMillis));
         }
 
-        record.setActive(reader.readBoolean("active"));
+        String healthStatusValue = reader.readString("healthStatus");
+        if (healthStatusValue != null) {
+            record.setHealthStatus(HealthStatus.fromValue(healthStatusValue));
+        } else {
+            // Backward compatibility: derive health status from the legacy active boolean
+            boolean active = reader.readBoolean("active");
+            record.setHealthStatus(active ? HealthStatus.HEALTHY : HealthStatus.DOWN);
+        }
 
         List<ServiceState> states = reader.readCollection("states", new ArrayList<>(), ServiceState.class);
         record.setStates(states);
@@ -44,7 +52,8 @@ public class ActivityRecordMarshaller implements MessageMarshaller<ActivityRecor
         if (activityRecord.getLastSeen() != null) {
             writer.writeLong("lastSeen", activityRecord.getLastSeen().toEpochMilli());
         }
-        writer.writeBoolean("active", activityRecord.isActive());
+        writer.writeBoolean("active", activityRecord.isActive()); // backward compatibility
+        writer.writeString("healthStatus", activityRecord.getHealthStatus().asValue());
         writer.writeCollection("states", activityRecord.getStates(), ServiceState.class);
     }
 }

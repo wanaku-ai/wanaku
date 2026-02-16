@@ -10,33 +10,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CapabilitiesHelperTest {
 
     @Test
-    void testComputeStatusSummaryAllActive() {
+    void testComputeStatusSummaryAllHealthy() {
         List<PrintableCapability> capabilities = List.of(
-                cap("http", "tool-invoker", "active"),
-                cap("sqs", "tool-invoker", "active"),
-                cap("file", "resource-provider", "active"));
+                cap("http", "tool-invoker", "healthy"),
+                cap("sqs", "tool-invoker", "healthy"),
+                cap("file", "resource-provider", "healthy"));
 
         StatusSummary summary = CapabilitiesHelper.computeStatusSummary(capabilities);
 
         assertEquals(3, summary.total());
-        assertEquals(3, summary.active());
-        assertEquals(0, summary.inactive());
-        assertEquals(0, summary.unknown());
+        assertEquals(3, summary.healthy());
+        assertEquals(0, summary.unhealthy());
+        assertEquals(0, summary.down());
+        assertEquals(0, summary.pending());
     }
 
     @Test
     void testComputeStatusSummaryMixed() {
         List<PrintableCapability> capabilities = List.of(
-                cap("http", "tool-invoker", "active"),
-                cap("sqs", "tool-invoker", "inactive"),
-                cap("file", "resource-provider", "-"));
+                cap("http", "tool-invoker", "healthy"),
+                cap("sqs", "tool-invoker", "down"),
+                cap("file", "resource-provider", "pending"));
 
         StatusSummary summary = CapabilitiesHelper.computeStatusSummary(capabilities);
 
         assertEquals(3, summary.total());
-        assertEquals(1, summary.active());
-        assertEquals(1, summary.inactive());
-        assertEquals(1, summary.unknown());
+        assertEquals(1, summary.healthy());
+        assertEquals(0, summary.unhealthy());
+        assertEquals(1, summary.down());
+        assertEquals(1, summary.pending());
     }
 
     @Test
@@ -44,45 +46,62 @@ class CapabilitiesHelperTest {
         StatusSummary summary = CapabilitiesHelper.computeStatusSummary(List.of());
 
         assertEquals(0, summary.total());
-        assertEquals(0, summary.active());
-        assertEquals(0, summary.inactive());
-        assertEquals(0, summary.unknown());
+        assertEquals(0, summary.healthy());
+        assertEquals(0, summary.unhealthy());
+        assertEquals(0, summary.down());
+        assertEquals(0, summary.pending());
     }
 
     @Test
-    void testComputeStatusSummaryAllInactive() {
+    void testComputeStatusSummaryAllDown() {
         List<PrintableCapability> capabilities =
-                List.of(cap("http", "tool-invoker", "inactive"), cap("sqs", "tool-invoker", "inactive"));
+                List.of(cap("http", "tool-invoker", "down"), cap("sqs", "tool-invoker", "down"));
 
         StatusSummary summary = CapabilitiesHelper.computeStatusSummary(capabilities);
 
         assertEquals(2, summary.total());
-        assertEquals(0, summary.active());
-        assertEquals(2, summary.inactive());
-        assertEquals(0, summary.unknown());
+        assertEquals(0, summary.healthy());
+        assertEquals(0, summary.unhealthy());
+        assertEquals(2, summary.down());
+        assertEquals(0, summary.pending());
     }
 
     @Test
-    void testComputeStatusSummaryAllUnknown() {
+    void testComputeStatusSummaryAllPending() {
         List<PrintableCapability> capabilities =
                 List.of(cap("http", "tool-invoker", "-"), cap("sqs", "tool-invoker", ""));
 
         StatusSummary summary = CapabilitiesHelper.computeStatusSummary(capabilities);
 
         assertEquals(2, summary.total());
-        assertEquals(0, summary.active());
-        assertEquals(0, summary.inactive());
-        assertEquals(2, summary.unknown());
+        assertEquals(0, summary.healthy());
+        assertEquals(0, summary.unhealthy());
+        assertEquals(0, summary.down());
+        assertEquals(2, summary.pending());
     }
 
     @Test
-    void testDetermineServiceStatusActive() {
-        assertEquals("active", CapabilitiesHelper.determineServiceStatus(activeRecord()));
+    void testComputeStatusSummaryUnhealthy() {
+        List<PrintableCapability> capabilities =
+                List.of(cap("http", "tool-invoker", "unhealthy"), cap("sqs", "tool-invoker", "healthy"));
+
+        StatusSummary summary = CapabilitiesHelper.computeStatusSummary(capabilities);
+
+        assertEquals(2, summary.total());
+        assertEquals(1, summary.healthy());
+        assertEquals(1, summary.unhealthy());
+        assertEquals(0, summary.down());
+        assertEquals(0, summary.pending());
     }
 
     @Test
-    void testDetermineServiceStatusInactive() {
-        assertEquals("inactive", CapabilitiesHelper.determineServiceStatus(inactiveRecord()));
+    void testDetermineServiceStatusHealthy() {
+        assertEquals("healthy", CapabilitiesHelper.determineServiceStatus(activeRecord()));
+    }
+
+    @Test
+    void testDetermineServiceStatusDown() {
+        assertEquals("down", CapabilitiesHelper.determineServiceStatus(inactiveRecord()));
     }
 
     @Test
@@ -96,13 +115,13 @@ class CapabilitiesHelperTest {
 
     private static ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord activeRecord() {
         var record = new ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord();
-        record.setActive(true);
+        record.setHealthStatus(ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus.HEALTHY);
         return record;
     }
 
     private static ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord inactiveRecord() {
         var record = new ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord();
-        record.setActive(false);
+        record.setHealthStatus(ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus.DOWN);
         return record;
     }
 }

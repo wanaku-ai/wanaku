@@ -150,11 +150,11 @@ public class CapabilitiesCleanup extends BaseCommand {
 
     private void printStaleCapabilitiesTable(List<StaleCapabilityInfo> capabilities, WanakuPrinter printer)
             throws IOException {
-        // Format: id | serviceName | serviceType | host:port | active | lastSeen
+        // Format: id | serviceName | serviceType | host:port | status | lastSeen
         String[][] tableData = new String[capabilities.size() + 1][];
 
         // Header
-        tableData[0] = new String[] {"ID", "Service", "Type", "Host:Port", "Active", "Last Seen"};
+        tableData[0] = new String[] {"ID", "Service", "Type", "Host:Port", "Status", "Last Seen"};
 
         // Data rows
         for (int i = 0; i < capabilities.size(); i++) {
@@ -163,12 +163,7 @@ public class CapabilitiesCleanup extends BaseCommand {
             String hostPort = cap.host() + ":" + cap.port();
 
             tableData[i + 1] = new String[] {
-                truncate(cap.id(), 12),
-                cap.serviceName(),
-                cap.serviceType(),
-                hostPort,
-                cap.active() ? "Yes" : "No",
-                lastSeen
+                truncate(cap.id(), 12), cap.serviceName(), cap.serviceType(), hostPort, cap.healthStatus(), lastSeen
             };
         }
 

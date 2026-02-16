@@ -52,11 +52,15 @@ public class StatisticsResourceTest extends WanakuRouterTest {
                 .body("data.dataStoresCount", is(0))
                 .body("data.toolCapabilities", notNullValue())
                 .body("data.toolCapabilities.total", is(0))
-                .body("data.toolCapabilities.active", is(0))
-                .body("data.toolCapabilities.inactive", is(0))
+                .body("data.toolCapabilities.healthy", is(0))
+                .body("data.toolCapabilities.unhealthy", is(0))
+                .body("data.toolCapabilities.down", is(0))
+                .body("data.toolCapabilities.pending", is(0))
                 .body("data.resourceCapabilities", notNullValue())
                 .body("data.resourceCapabilities.total", is(0))
-                .body("data.resourceCapabilities.active", is(0))
-                .body("data.resourceCapabilities.inactive", is(0));
+                .body("data.resourceCapabilities.healthy", is(0))
+                .body("data.resourceCapabilities.unhealthy", is(0))
+                .body("data.resourceCapabilities.down", is(0))
+                .body("data.resourceCapabilities.pending", is(0));
     }
 }

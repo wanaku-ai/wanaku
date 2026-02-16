@@ -27,6 +27,7 @@ import ai.wanaku.backend.common.ServiceTargetEvent;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.core.services.api.FleetStatus;
 import ai.wanaku.core.services.api.StaleCapabilityInfo;
 
 @ApplicationScoped
@@ -120,5 +121,12 @@ public class CapabilitiesResource {
         }
 
         return new WanakuResponse<>(removedTargets.size());
+    }
+
+    @Path("/fleet/status")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<FleetStatus> fleetStatus() {
+        return new WanakuResponse<>(capabilitiesBean.getFleetStatus());
     }
 }

@@ -15,7 +15,9 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.eventbus.EventBus;
 import ai.wanaku.backend.common.ServiceTargetEvent;
+import ai.wanaku.backend.health.PeriodicHealthCheckService;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -33,6 +35,9 @@ public class DiscoveryResource {
     @OnOverflow(OnOverflow.Strategy.DROP)
     MutinyEmitter<ServiceTargetEvent> serviceTargetEventEmitter;
 
+    @Inject
+    EventBus eventBus;
+
     @Path("/register")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -40,6 +45,7 @@ public class DiscoveryResource {
         var ret = discoveryBean.registerService(serviceTarget);
 
         emitEvent(ServiceTargetEvent.register(ret));
+        eventBus.send(PeriodicHealthCheckService.HEALTH_CHECK_ADDRESS, ret);
         return RestResponse.ok(new WanakuResponse<>(ret));
     }
 

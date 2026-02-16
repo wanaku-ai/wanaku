@@ -157,12 +157,12 @@ const CapabilityDetails: React.FC<CapabilityDetailsProps> = ({ stats }) => {
         <div className="capability-label">Total</div>
       </div>
       <div className="capability-stat capability-stat--active">
-        <div className="capability-value">{stats?.active ?? 0}</div>
-        <div className="capability-label">Active</div>
+        <div className="capability-value">{stats?.healthy ?? 0}</div>
+        <div className="capability-label">Healthy</div>
       </div>
       <div className="capability-stat capability-stat--inactive">
-        <div className="capability-value">{stats?.inactive ?? 0}</div>
-        <div className="capability-label">Inactive</div>
+        <div className="capability-value">{stats?.down ?? 0}</div>
+        <div className="capability-label">Down</div>
       </div>
     </div>
   );

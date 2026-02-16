@@ -13,6 +13,7 @@ import ai.wanaku.backend.api.v1.resources.ResourcesBean;
 import ai.wanaku.backend.api.v1.tools.ToolsBean;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.core.util.CollectionsHelper;
 
 @ApplicationScoped
@@ -59,19 +60,23 @@ public class StatisticsBean {
     }
 
     private CapabilityStatistics buildCapabilityStatistics(Map<String, List<ActivityRecord>> stateMap) {
-        long active = 0;
-        long inactive = 0;
+        long healthy = 0;
+        long unhealthy = 0;
+        long down = 0;
+        long pending = 0;
 
         for (List<ActivityRecord> records : stateMap.values()) {
             for (ActivityRecord record : records) {
-                if (record.isActive()) {
-                    active++;
-                } else {
-                    inactive++;
+                HealthStatus status = record.getHealthStatus();
+                switch (status) {
+                    case HEALTHY -> healthy++;
+                    case UNHEALTHY -> unhealthy++;
+                    case DOWN -> down++;
+                    case PENDING -> pending++;
                 }
             }
         }
 
-        return new CapabilityStatistics(active + inactive, active, inactive);
+        return new CapabilityStatistics(healthy + unhealthy + down + pending, healthy, unhealthy, down, pending);
     }
 }

@@ -11,10 +11,12 @@ import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
+import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.core.mcp.providers.StaleCapability;
+import ai.wanaku.core.services.api.FleetStatus;
 import ai.wanaku.core.services.api.StaleCapabilityInfo;
 
 @ApplicationScoped
@@ -126,6 +128,45 @@ public class CapabilitiesBean {
         return removedTargets;
     }
 
+    /**
+     * Computes the aggregated fleet health status across all registered capabilities.
+     *
+     * @return the fleet status summary
+     */
+    public FleetStatus getFleetStatus() {
+        List<ServiceTarget> allEntries = serviceRegistry.getEntries();
+        int total = allEntries.size();
+        int healthy = 0;
+        int warning = 0;
+        int down = 0;
+
+        for (ServiceTarget entry : allEntries) {
+            ActivityRecord record = serviceRegistry.getStates(entry.getId());
+            if (record == null) {
+                warning++;
+                continue;
+            }
+
+            HealthStatus status = record.getHealthStatus();
+            switch (status) {
+                case HEALTHY -> healthy++;
+                case UNHEALTHY, PENDING -> warning++;
+                case DOWN -> down++;
+            }
+        }
+
+        String overall;
+        if (down > 0) {
+            overall = "Down";
+        } else if (warning > 0) {
+            overall = "Warning";
+        } else {
+            overall = "Healthy";
+        }
+
+        return new FleetStatus(total, healthy, warning, down, overall);
+    }
+
     private StaleCapabilityInfo toStaleCapabilityInfo(StaleCapability stale) {
         ServiceTarget target = stale.serviceTarget();
         ActivityRecord activity = stale.activityRecord();
@@ -136,7 +177,7 @@ public class CapabilitiesBean {
                 target.getServiceType(),
                 target.getHost(),
                 target.getPort(),
-                activity != null && activity.isActive(),
+                activity != null ? activity.getHealthStatus().asValue() : HealthStatus.PENDING.asValue(),
                 activity != null ? activity.getLastSeen() : null);
     }
 }

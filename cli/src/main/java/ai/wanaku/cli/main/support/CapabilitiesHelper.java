@@ -46,16 +46,6 @@ public final class CapabilitiesHelper {
     public static final String DEFAULT_STATUS = "-";
 
     /**
-     * Status value indicating an active service.
-     */
-    public static final String ACTIVE_STATUS = "active";
-
-    /**
-     * Status value indicating an inactive service.
-     */
-    public static final String INACTIVE_STATUS = "inactive";
-
-    /**
      * Formatter for verbose timestamp display.
      * Format: "EEE, MMM dd, yyyy 'at' HH:mm:ss" (e.g., "Mon, Jan 15, 2024 at 14:30:45")
      */
@@ -303,13 +293,13 @@ public final class CapabilitiesHelper {
      * Determines the service status based on activity record.
      *
      * @param activityRecord the activity record to check (may be null)
-     * @return {@link #ACTIVE_STATUS}, {@link #INACTIVE_STATUS}, or {@link #DEFAULT_STATUS}
+     * @return the health status value string, or {@link #DEFAULT_STATUS} if unknown
      */
     public static String determineServiceStatus(ActivityRecord activityRecord) {
         if (activityRecord == null) {
             return DEFAULT_STATUS;
         }
-        return activityRecord.isActive() ? ACTIVE_STATUS : INACTIVE_STATUS;
+        return activityRecord.getHealthStatus().asValue();
     }
 
     /**
@@ -364,40 +354,44 @@ public final class CapabilitiesHelper {
     }
 
     /**
-     * Computes a summary of capabilities grouped by status.
+     * Computes a summary of capabilities grouped by health status.
      *
      * @param capabilities the list of capabilities to summarize
-     * @return a {@link StatusSummary} with counts per status and the grouped capabilities
+     * @return a {@link StatusSummary} with counts per health status
      * @throws NullPointerException if capabilities is null
      */
     public static StatusSummary computeStatusSummary(List<PrintableCapability> capabilities) {
         Objects.requireNonNull(capabilities, "Capabilities list cannot be null");
 
-        int active = 0;
-        int inactive = 0;
-        int unknown = 0;
+        int healthy = 0;
+        int unhealthy = 0;
+        int down = 0;
+        int pending = 0;
 
         for (PrintableCapability cap : capabilities) {
             switch (cap.status()) {
-                case ACTIVE_STATUS -> active++;
-                case INACTIVE_STATUS -> inactive++;
-                default -> unknown++;
+                case "healthy" -> healthy++;
+                case "unhealthy" -> unhealthy++;
+                case "down" -> down++;
+                case "pending" -> pending++;
+                default -> pending++;
             }
         }
 
-        return new StatusSummary(capabilities.size(), active, inactive, unknown);
+        return new StatusSummary(capabilities.size(), healthy, unhealthy, down, pending);
     }
 
     /**
-     * Record representing a summary of capability statuses.
+     * Record representing a summary of capability health statuses.
      *
      * @param total total number of capabilities
-     * @param active number of active capabilities
-     * @param inactive number of inactive capabilities
-     * @param unknown number of capabilities with unknown status
+     * @param healthy number of healthy capabilities
+     * @param unhealthy number of unhealthy capabilities
+     * @param down number of down capabilities
+     * @param pending number of pending capabilities
      */
     @RegisterForReflection
-    public record StatusSummary(int total, int active, int inactive, int unknown) {}
+    public record StatusSummary(int total, int healthy, int unhealthy, int down, int pending) {}
 
     /**
      * Prints a single capability in map format.
