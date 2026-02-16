@@ -57,6 +57,7 @@ For complete installation and configuration instructions, see the [Usage Guide](
 
 ## Documentation
 
+- **[Wanaku Documentation](https://wanaku.ai/docs/)** - Main documentation website
 - **[Usage Guide](docs/usage.md)** - Installation, deployment, and CLI usage
 - **[Architecture](docs/architecture.md)** - System architecture and components
 - **[Building](docs/building.md)** - Build and package the project
