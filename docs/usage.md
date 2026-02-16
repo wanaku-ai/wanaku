@@ -442,7 +442,26 @@ The basic steps to install and run Wanaku on OpenShift are:
 
 ### Configuring the Wanaku MCP Router
 
-You can find a comprehensive list of configuration options for Wanaku in the [Configuration Guide](configurations.md).
+Wanaku is built on [Quarkus](https://quarkus.io/) and uses `application.properties` files for configuration. Each
+component ships with built-in defaults, but you can override any property at runtime in three ways:
+
+1. **External file**: place an `application.properties` in a `config/` directory next to the JAR
+2. **System properties**: pass `-D<property>=<value>` on the command line
+3. **Environment variables**: export the property name in uppercase with dots/hyphens replaced by underscores
+
+For example, to change the HTTP port:
+
+```shell
+# Via system property
+java -Dquarkus.http.port=9090 -jar wanaku-router-backend-runner.jar
+
+# Via environment variable
+export QUARKUS_HTTP_PORT=9090
+java -jar wanaku-router-backend-runner.jar
+```
+
+For the full list of available properties and more details on configuration precedence, see the
+[Configuration Guide](configurations.md).
 
 ### Accessing the Administration Web User Interface 
 
@@ -471,7 +490,9 @@ This is done by setting a few essential properties.
 
 ### Configuring Capabilities
 
-You can configure capabilities using environment variables or by passing system properties directly on the command line.
+You can configure capabilities using environment variables, system properties on the command line, or by placing an
+`application.properties` file in a `config/` directory next to the capability JAR (see the
+[Configuration Basics](configurations.md#configuration-basics) section for details on how Quarkus loads configuration).
 
 Here are the key properties you need to set:
 
