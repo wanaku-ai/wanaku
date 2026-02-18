@@ -3,7 +3,7 @@ package ai.wanaku.core.runtime.camel;
 import java.net.URISyntaxException;
 import java.util.Map;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,8 +20,8 @@ public class CamelUriTest {
         ToolInvokeRequest toolInvokeRequest = ToolInvokeRequest.newBuilder()
                 .setBody("")
                 .setUri("tool://uri")
-                .setConfigurationURI("ignored")
-                .setSecretsURI("ignored")
+                .setConfigurationUri("ignored")
+                .setSecretsUri("ignored")
                 .putAllHeaders(Map.of())
                 .putAllArguments(Map.of())
                 .build();

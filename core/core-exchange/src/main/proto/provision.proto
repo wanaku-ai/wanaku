@@ -1,14 +1,14 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "ai.wanaku.core.exchange";
+option java_package = "ai.wanaku.core.exchange.v1";
 option java_outer_classname = "ProvisionExchange";
 
-package tool;
+package ai.wanaku.provision.v1;
 
-// The inquirer exchange service definition.
+// The provisioner service definition.
 service Provisioner {
-  // Invokes a tool
+  // Provisions configuration and secrets
   rpc Provision (ProvisionRequest) returns (ProvisionReply) {}
 }
 
@@ -17,12 +17,20 @@ service Provisioner {
  * itself, etc
  */
 enum PayloadType {
-  REFERENCE = 0;
+  /**
+   * Unspecified payload type.
+   */
+  PAYLOAD_TYPE_UNSPECIFIED = 0;
 
   /**
-   * Invokes tools
+   * A reference to an external configuration or secret.
    */
-  BUILTIN = 1;
+  PAYLOAD_TYPE_REFERENCE = 1;
+
+  /**
+   * A built-in configuration or secret payload.
+   */
+  PAYLOAD_TYPE_BUILTIN = 2;
 }
 
 // Represents a configuration reference
@@ -52,9 +60,9 @@ message PropertySchema {
   bool required = 3;
 }
 
-// The invocation response message
+// The provision response message
 message ProvisionReply {
-  string configurationUri = 1;
-  string secretUri = 2;
+  string configuration_uri = 1;
+  string secret_uri = 2;
   map<string, PropertySchema> properties = 3;
 }

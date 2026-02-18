@@ -1,29 +1,30 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "ai.wanaku.core.exchange";
+option java_package = "ai.wanaku.core.exchange.v1";
 option java_outer_classname = "ResourceExchange";
 
-package resource;
+package ai.wanaku.resource.v1;
 
-// The tool exchange service definition.
+// The resource exchange service definition.
 service ResourceAcquirer {
-  // Invokes a tool
+  // Acquires a resource
   rpc ResourceAcquire (ResourceRequest) returns (ResourceReply) {}
 }
 
-// The invocation request message
+// The resource request message
 message ResourceRequest {
   string location = 1;
   string type = 2;
   string name = 3;
   map<string, string> params = 4;
-  string configurationURI = 5;
-  string secretsURI = 6;
+  string configuration_uri = 5;
+  string secrets_uri = 6;
 }
 
-// The invocation response message
+// The resource response message
 message ResourceReply {
-  bool isError = 1;
+  reserved 1;
+  reserved "isError";
   repeated string content = 2;
 }

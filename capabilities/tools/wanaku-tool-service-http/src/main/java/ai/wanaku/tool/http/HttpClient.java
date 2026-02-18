@@ -11,7 +11,7 @@ import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.capabilities.sdk.config.provider.api.ReservedConfigs;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.tool.Client;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import ai.wanaku.core.util.CollectionsHelper;
 

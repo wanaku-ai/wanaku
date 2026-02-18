@@ -15,5 +15,5 @@ public interface ProvisionAware {
      * @return A {@code Map} representation of valid properties keyed by name. These properties will be passed to the model as
      * acceptable arguments for the tools using this service.
      */
-    ProvisionReply provision(ProvisionRequest request);
+    ai.wanaku.core.exchange.v1.ProvisionReply provision(ai.wanaku.core.exchange.v1.ProvisionRequest request);
 }

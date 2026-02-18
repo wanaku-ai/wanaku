@@ -3,12 +3,12 @@ package ai.wanaku.backend.bridge;
 import java.util.Iterator;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.CodeExecutionReply;
-import ai.wanaku.core.exchange.CodeExecutionRequest;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.CodeExecutionReply;
+import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
+import ai.wanaku.core.exchange.v1.ResourceReply;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeReply;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
 /**
  * Transport abstraction for Wanaku bridge operations.

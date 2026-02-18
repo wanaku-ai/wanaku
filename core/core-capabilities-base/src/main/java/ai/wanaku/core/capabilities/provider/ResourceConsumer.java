@@ -1,6 +1,6 @@
 package ai.wanaku.core.capabilities.provider;
 
-import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
 
 /**
  * Interface for consuming resources from capability provider services.

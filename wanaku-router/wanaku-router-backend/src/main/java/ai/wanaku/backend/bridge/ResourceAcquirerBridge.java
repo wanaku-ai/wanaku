@@ -15,8 +15,8 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.exchange.v1.ResourceReply;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
 import com.google.protobuf.ProtocolStringList;
 
 /**
@@ -79,8 +79,8 @@ public class ResourceAcquirerBridge implements ResourceBridge {
                 .setLocation(mcpResource.getLocation())
                 .setType(mcpResource.getType())
                 .setName(mcpResource.getName())
-                .setConfigurationURI(Objects.requireNonNullElse(mcpResource.getConfigurationURI(), EMPTY_ARGUMENT))
-                .setSecretsURI(Objects.requireNonNullElse(mcpResource.getSecretsURI(), EMPTY_ARGUMENT))
+                .setConfigurationUri(Objects.requireNonNullElse(mcpResource.getConfigurationURI(), EMPTY_ARGUMENT))
+                .setSecretsUri(Objects.requireNonNullElse(mcpResource.getSecretsURI(), EMPTY_ARGUMENT))
                 .build();
     }
 
@@ -94,28 +94,14 @@ public class ResourceAcquirerBridge implements ResourceBridge {
      */
     private List<ResourceContents> processReply(
             ResourceReply reply, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-
-        if (reply.getIsError()) {
-            LOG.errorf(
-                    "Unable to acquire resource for connection: %s",
-                    arguments.connection().id());
-
-            TextResourceContents textResourceContents = new TextResourceContents(
-                    arguments.requestUri().value(), reply.getContentList().get(0), "text/plain");
-            return List.of(textResourceContents);
-        } else {
-            ProtocolStringList contentList = reply.getContentList();
-            List<ResourceContents> textResourceContentsList = new ArrayList<>();
-
-            for (String content : contentList) {
-                TextResourceContents textResourceContents =
-                        new TextResourceContents(arguments.requestUri().value(), content, mcpResource.getMimeType());
-
-                textResourceContentsList.add(textResourceContents);
-            }
-
-            return textResourceContentsList;
+        ProtocolStringList contentList = reply.getContentList();
+        List<ResourceContents> textResourceContentsList = new ArrayList<>();
+        for (String content : contentList) {
+            TextResourceContents textResourceContents =
+                    new TextResourceContents(arguments.requestUri().value(), content, mcpResource.getMimeType());
+            textResourceContentsList.add(textResourceContents);
         }
+        return textResourceContentsList;
     }
 
     @Override

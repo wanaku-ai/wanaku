@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.uri.Parameter;
 import ai.wanaku.core.uri.URIHelper;
 import ai.wanaku.core.uri.URIParser;

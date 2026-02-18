@@ -32,9 +32,9 @@ import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionEventType;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionResponse;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionTask;
-import ai.wanaku.core.exchange.CodeExecutionReply;
-import ai.wanaku.core.exchange.ExecutionStatus;
-import ai.wanaku.core.exchange.OutputType;
+import ai.wanaku.core.exchange.v1.CodeExecutionReply;
+import ai.wanaku.core.exchange.v1.ExecutionStatus;
+import ai.wanaku.core.exchange.v1.OutputType;
 import ai.wanaku.core.persistence.infinispan.codeexecution.InfinispanCodeTaskRepository;
 
 /**
@@ -151,35 +151,38 @@ public class CodeExecutionBean {
      */
     private void streamExecution(CodeExecutionReply reply, String taskId) {
 
-        final long timestamp = reply.getTimestamp();
+        final long timestamp = reply.hasTimestamp()
+                ? reply.getTimestamp().getSeconds() * 1000
+                        + reply.getTimestamp().getNanos() / 1_000_000
+                : 0L;
 
         CodeExecutionEvent codeExecutionEvent = new CodeExecutionEvent();
         codeExecutionEvent.setTaskId(taskId);
 
         final ExecutionStatus status = reply.getStatus();
         switch (status) {
-            case PENDING: {
+            case EXECUTION_STATUS_PENDING: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.STARTED);
                 break;
             }
-            case RUNNING: {
+            case EXECUTION_STATUS_RUNNING: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.OUTPUT);
                 break;
             }
-            case COMPLETED: {
+            case EXECUTION_STATUS_COMPLETED: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.COMPLETED);
                 break;
             }
-            case FAILED: {
+            case EXECUTION_STATUS_FAILED: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.FAILED);
                 break;
             }
 
-            case TIMEOUT: {
+            case EXECUTION_STATUS_TIMEOUT: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.TIMEOUT);
                 break;
             }
-            case CANCELLED: {
+            case EXECUTION_STATUS_CANCELLED: {
                 codeExecutionEvent.setEventType(CodeExecutionEventType.CANCELLED);
                 break;
             }
@@ -190,17 +193,11 @@ public class CodeExecutionBean {
 
         codeExecutionEvent.setTimestamp(timestamp);
 
-        if (reply.getIsError()) {
-            String errorContent = reply.getContentCount() > 0 ? reply.getContent(0) : "Unknown error";
-            codeExecutionEvent.setMessage(errorContent);
-            codeExecutionEvent.setExitCode(reply.getExitCode());
-        }
-
         // Send output content
         StringBuffer sb = new StringBuffer();
         OutputType outputType = reply.getOutputType();
         for (String content : reply.getContentList()) {
-            if (outputType == OutputType.STDERR) {
+            if (outputType == OutputType.OUTPUT_TYPE_STDERR) {
                 sb.append("STDERR: ");
                 sb.append(content);
                 sb.append("\n");
@@ -213,11 +210,11 @@ public class CodeExecutionBean {
         codeExecutionEvent.setOutput(sb.toString());
 
         // Check for completion
-        if (outputType == OutputType.COMPLETION || status == ExecutionStatus.COMPLETED) {
+        if (outputType == OutputType.OUTPUT_TYPE_COMPLETION || status == ExecutionStatus.EXECUTION_STATUS_COMPLETED) {
             codeExecutionEvent.setExitCode(reply.getExitCode());
         }
 
-        if (status == ExecutionStatus.FAILED) {
+        if (status == ExecutionStatus.EXECUTION_STATUS_FAILED) {
             String errorMsg = reply.getContentCount() > 0 ? reply.getContent(0) : "Execution failed";
             codeExecutionEvent.setMessage(errorMsg);
         }

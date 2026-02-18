@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "ai.wanaku.core.exchange";
+option java_package = "ai.wanaku.core.exchange.v1";
 option java_outer_classname = "HealthProbeExchange";
 
-package health;
+package ai.wanaku.health.v1;
 
 // The health probe service definition.
 service HealthProbe {
@@ -19,10 +19,30 @@ message HealthProbeRequest {
 
 // The runtime status of the capability
 enum RuntimeStatus {
-  STOPPED = 0;
-  STOPPING = 1;
-  STARTING = 2;
-  STARTED = 3;
+  /**
+   * Unspecified runtime status.
+   */
+  RUNTIME_STATUS_UNSPECIFIED = 0;
+
+  /**
+   * The capability is stopped.
+   */
+  RUNTIME_STATUS_STOPPED = 1;
+
+  /**
+   * The capability is stopping.
+   */
+  RUNTIME_STATUS_STOPPING = 2;
+
+  /**
+   * The capability is starting.
+   */
+  RUNTIME_STATUS_STARTING = 3;
+
+  /**
+   * The capability is started.
+   */
+  RUNTIME_STATUS_STARTED = 4;
 }
 
 // The health probe response message

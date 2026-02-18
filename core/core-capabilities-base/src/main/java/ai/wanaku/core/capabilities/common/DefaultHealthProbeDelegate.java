@@ -3,7 +3,7 @@ package ai.wanaku.core.capabilities.common;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import ai.wanaku.core.exchange.HealthProbeDelegate;
-import ai.wanaku.core.exchange.RuntimeStatus;
+import ai.wanaku.core.exchange.v1.RuntimeStatus;
 
 /**
  * Default health probe delegate implementation.
@@ -16,6 +16,6 @@ public class DefaultHealthProbeDelegate implements HealthProbeDelegate {
 
     @Override
     public RuntimeStatus getStatus(String id) {
-        return RuntimeStatus.STARTED;
+        return RuntimeStatus.RUNTIME_STATUS_STARTED;
     }
 }
