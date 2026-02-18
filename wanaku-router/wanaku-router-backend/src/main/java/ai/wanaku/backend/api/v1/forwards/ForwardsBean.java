@@ -243,8 +243,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         return listForwards(null);
     }
 
-    public void update(ForwardReference resource) {
-        forwardReferenceRepository.update(resource.getName(), resource);
+    public void update(ForwardReference forwardReference) {
+        forwardReferenceRepository.update(forwardReference.getId(), forwardReference);
     }
 
     public void refresh(ForwardReference forwardReferenceHint) {
