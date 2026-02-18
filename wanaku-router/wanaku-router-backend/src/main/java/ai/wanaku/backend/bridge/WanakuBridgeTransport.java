@@ -2,6 +2,7 @@ package ai.wanaku.backend.bridge;
 
 import java.util.Iterator;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
@@ -67,9 +68,10 @@ public interface WanakuBridgeTransport {
      *
      * @param request the tool invocation request containing tool details and arguments
      * @param service the target service that will execute the tool
-     * @return the tool invocation reply containing the execution result or error information
+     * @return the tool invocation reply containing the execution result
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
-     *         if the service cannot be reached or returns an error
+     *         if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
      */
     ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service);
 
@@ -83,9 +85,10 @@ public interface WanakuBridgeTransport {
      *
      * @param request the resource acquisition request containing resource details
      * @param service the target service that provides the resource
-     * @return the resource reply containing the resource content or error information
+     * @return the resource reply containing the resource content
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
-     *         if the service cannot be reached or returns an error
+     *         if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
      */
     ResourceReply acquireResource(ResourceRequest request, ServiceTarget service);
 
@@ -101,7 +104,8 @@ public interface WanakuBridgeTransport {
      * @param service the target service that will execute the code
      * @return an iterator over the streaming code execution replies
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
-     *         if the service cannot be reached or returns an error
+     *         if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
      */
     Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service);
 }

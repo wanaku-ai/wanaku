@@ -1,5 +1,6 @@
 package ai.wanaku.core.mcp.common;
 
+import io.smallrye.common.annotation.Blocking;
 import java.util.Objects;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
@@ -39,6 +40,7 @@ public class ToolAdapter implements Tool {
      * @return a tool response containing the execution results
      */
     @Override
+    @Blocking
     public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         return executor.execute(toolArguments, toolReference);
     }
