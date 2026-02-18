@@ -1,6 +1,6 @@
 import React from "react";
 import {Modal, Tag} from "@carbon/react";
-import type {InputSchema} from "../../models";
+import type {InputSchema, Property} from "../../models";
 
 interface InputSchemaModalProps {
   inputSchema?: InputSchema;
@@ -17,7 +17,7 @@ export const InputSchemaModal: React.FC<InputSchemaModalProps> = ({
 }) => {
   const properties = inputSchema?.properties || {};
   const requiredFields = inputSchema?.required || [];
-  const entries = Object.entries(properties);
+  const entries = Object.entries(properties) as [string, Property][];
 
   return (
     <Modal
