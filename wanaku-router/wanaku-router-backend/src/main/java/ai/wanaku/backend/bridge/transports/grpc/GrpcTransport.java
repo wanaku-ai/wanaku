@@ -2,8 +2,13 @@ package ai.wanaku.backend.bridge.transports.grpc;
 
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import io.grpc.Deadline;
 import io.grpc.ManagedChannel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.InvokerToolExecutor;
 import ai.wanaku.backend.bridge.ProvisioningService;
@@ -11,6 +16,7 @@ import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
@@ -48,9 +54,12 @@ import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
  */
 public class GrpcTransport implements WanakuBridgeTransport {
     private static final Logger LOG = Logger.getLogger(GrpcTransport.class);
+    private static final String WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS =
+            "wanaku.bridge.grpc.transport.deadline-seconds";
 
     private final GrpcChannelManager channelManager;
     private final ProvisioningService provisioningService;
+    private final int deadlineSeconds;
 
     /**
      * Creates a new GrpcTransport with default channel manager and provisioning service.
@@ -58,6 +67,9 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public GrpcTransport() {
         this.channelManager = new GrpcChannelManager();
         this.provisioningService = new ProvisioningService();
+
+        deadlineSeconds =
+                ConfigProvider.getConfig().getValue(WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS, Integer.class);
     }
 
     /**
@@ -72,6 +84,9 @@ public class GrpcTransport implements WanakuBridgeTransport {
     GrpcTransport(GrpcChannelManager channelManager, ProvisioningService provisioningService) {
         this.channelManager = channelManager;
         this.provisioningService = provisioningService;
+
+        deadlineSeconds =
+                ConfigProvider.getConfig().getValue(WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS, Integer.class);
     }
 
     /**
@@ -137,19 +152,24 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @param service the target service
      * @return the tool invocation reply from the remote service
      * @throws ServiceUnavailableException if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
      */
     @Override
     public ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service) {
         LOG.debugf("Invoking tool on service: %s", service.toAddress());
 
-        ManagedChannel channel = createChannel(service);
-
         try {
+            ManagedChannel channel = createChannel(service);
+
             ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
-            return blockingStub.invokeTool(request);
+            return blockingStub
+                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                    .invokeTool(request);
+        } catch (StatusRuntimeException e) {
+            throw mapStatusRuntimeException(e, service);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to invoke tool on service: %s", service.toAddress());
-            throw ServiceUnavailableException.forAddress(service.toAddress());
+            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
         }
     }
 
@@ -164,20 +184,25 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @param service the target service
      * @return the resource reply from the remote service
      * @throws ServiceUnavailableException if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
      */
     @Override
     public ResourceReply acquireResource(ResourceRequest request, ServiceTarget service) {
         LOG.debugf("Acquiring resource from service: %s", service.toAddress());
 
-        ManagedChannel channel = createChannel(service);
-
         try {
+            ManagedChannel channel = createChannel(service);
+
             ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub =
                     ResourceAcquirerGrpc.newBlockingStub(channel);
-            return blockingStub.resourceAcquire(request);
+            return blockingStub
+                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                    .resourceAcquire(request);
+        } catch (StatusRuntimeException e) {
+            throw mapStatusRuntimeException(e, service);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
-            throw ServiceUnavailableException.forAddress(service.toAddress());
+            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
         }
     }
 
@@ -192,19 +217,63 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @param service the target service
      * @return an iterator over the streaming code execution replies
      * @throws ServiceUnavailableException if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
      */
     @Override
     public Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service) {
         LOG.debugf("Executing code on service: %s", service.toAddress());
 
-        ManagedChannel channel = createChannel(service);
-
         try {
+            ManagedChannel channel = createChannel(service);
+
             CodeExecutorGrpc.CodeExecutorBlockingStub blockingStub = CodeExecutorGrpc.newBlockingStub(channel);
-            return blockingStub.executeCode(request);
+            return blockingStub
+                    .withDeadline(Deadline.after(deadlineSeconds * 2L, TimeUnit.SECONDS))
+                    .executeCode(request);
+        } catch (StatusRuntimeException e) {
+            throw mapStatusRuntimeException(e, service);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to execute code on service: %s", service.toAddress());
-            throw ServiceUnavailableException.forAddress(service.toAddress());
+            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
         }
+    }
+
+    /**
+     * Maps a gRPC StatusRuntimeException to the appropriate wanaku-specific exception.
+     * <p>
+     * This method examines the gRPC status code to determine the correct exception type:
+     * <ul>
+     *   <li>{@code UNAVAILABLE} - the service is unreachable, maps to {@link ServiceUnavailableException}</li>
+     *   <li>{@code INTERNAL} - the service reported an error, maps to {@link WanakuException}
+     *       with the server-side error description preserved</li>
+     *   <li>All other codes - maps to {@link WanakuException} with the status description</li>
+     * </ul>
+     *
+     * @param e the gRPC status runtime exception
+     * @param service the target service that produced the error
+     * @return the mapped wanaku-specific exception
+     */
+    private RuntimeException mapStatusRuntimeException(StatusRuntimeException e, ServiceTarget service) {
+        Status status = e.getStatus();
+        String description = status.getDescription();
+
+        if (status.getCode() == Status.Code.UNAVAILABLE) {
+            LOG.errorf(e, "Service unavailable: %s", service.toAddress());
+            return new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        }
+
+        if (status.getCode() == Status.Code.DEADLINE_EXCEEDED) {
+            LOG.errorf(e, "Service %s did not respond within a reasonable time frame", service.getServiceName());
+            return new ServiceUnavailableException(
+                    String.format(
+                            "Service %s did not respond within a reasonable time frame", service.getServiceName()),
+                    e);
+        }
+
+        String message = description != null
+                ? description
+                : "gRPC error (" + status.getCode() + ") from service " + service.toAddress();
+        LOG.errorf(e, "Service error from %s: %s (code: %s)", service.toAddress(), message, status.getCode());
+        return new WanakuException(message, e);
     }
 }
