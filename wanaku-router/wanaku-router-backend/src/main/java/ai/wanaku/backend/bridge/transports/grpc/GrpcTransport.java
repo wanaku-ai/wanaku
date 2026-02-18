@@ -1,5 +1,6 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
+import java.net.URI;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -11,7 +12,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.InvokerToolExecutor;
-import ai.wanaku.backend.bridge.ProvisioningService;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
@@ -23,6 +23,9 @@ import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
 import ai.wanaku.core.exchange.v1.CodeExecutorGrpc;
 import ai.wanaku.core.exchange.v1.Configuration;
 import ai.wanaku.core.exchange.v1.PayloadType;
+import ai.wanaku.core.exchange.v1.ProvisionReply;
+import ai.wanaku.core.exchange.v1.ProvisionRequest;
+import ai.wanaku.core.exchange.v1.ProvisionerGrpc;
 import ai.wanaku.core.exchange.v1.ResourceAcquirerGrpc;
 import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
@@ -38,7 +41,7 @@ import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
  * separating transport concerns from business logic in bridge classes. It manages:
  * <ul>
  *   <li>Channel creation and lifecycle via {@link GrpcChannelManager}</li>
- *   <li>Configuration and secret provisioning via {@link ProvisioningService}</li>
+ *   <li>Configuration and secret provisioning via gRPC</li>
  *   <li>Tool invocation via gRPC stubs</li>
  *   <li>Resource acquisition via gRPC stubs</li>
  * </ul>
@@ -58,32 +61,28 @@ public class GrpcTransport implements WanakuBridgeTransport {
             "wanaku.bridge.grpc.transport.deadline-seconds";
 
     private final GrpcChannelManager channelManager;
-    private final ProvisioningService provisioningService;
     private final int deadlineSeconds;
 
     /**
-     * Creates a new GrpcTransport with default channel manager and provisioning service.
+     * Creates a new GrpcTransport with default channel manager.
      */
     public GrpcTransport() {
         this.channelManager = new GrpcChannelManager();
-        this.provisioningService = new ProvisioningService();
 
         deadlineSeconds =
                 ConfigProvider.getConfig().getValue(WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS, Integer.class);
     }
 
     /**
-     * Creates a new GrpcTransport with custom channel manager and provisioning service.
+     * Creates a new GrpcTransport with a custom channel manager.
      * <p>
      * This constructor is primarily intended for testing purposes, allowing
      * injection of mock or custom implementations.
      *
      * @param channelManager the channel manager for creating gRPC channels
-     * @param provisioningService the provisioning service for handling provisioning operations
      */
-    GrpcTransport(GrpcChannelManager channelManager, ProvisioningService provisioningService) {
+    GrpcTransport(GrpcChannelManager channelManager) {
         this.channelManager = channelManager;
-        this.provisioningService = provisioningService;
 
         deadlineSeconds =
                 ConfigProvider.getConfig().getValue(WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS, Integer.class);
@@ -124,21 +123,44 @@ public class GrpcTransport implements WanakuBridgeTransport {
 
         LOG.debugf("Provisioning '%s' to service: %s", name, service.toAddress());
 
-        ManagedChannel channel = createChannel(service);
+        try {
+            ManagedChannel channel = createChannel(service);
 
-        Configuration cfg = Configuration.newBuilder()
-                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                .setName(name)
-                .setPayload(Objects.requireNonNullElse(configData, ""))
-                .build();
+            Configuration cfg = Configuration.newBuilder()
+                    .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
+                    .setName(name)
+                    .setPayload(Objects.requireNonNullElse(configData, ""))
+                    .build();
 
-        Secret secret = Secret.newBuilder()
-                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                .setName(name)
-                .setPayload(Objects.requireNonNullElse(secretsData, ""))
-                .build();
+            Secret secret = Secret.newBuilder()
+                    .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
+                    .setName(name)
+                    .setPayload(Objects.requireNonNullElse(secretsData, ""))
+                    .build();
 
-        return provisioningService.provision(cfg, secret, channel, service);
+            ProvisionRequest request = ProvisionRequest.newBuilder()
+                    .setConfiguration(cfg)
+                    .setSecret(secret)
+                    .build();
+
+            ProvisionerGrpc.ProvisionerBlockingStub stub = ProvisionerGrpc.newBlockingStub(channel);
+            ProvisionReply reply = stub.withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                    .provision(request);
+
+            LOG.debugf(
+                    "Successfully provisioned configuration '%s' (config URI: %s, secret URI: %s)",
+                    name, reply.getConfigurationUri(), reply.getSecretUri());
+
+            return new ProvisioningReference(
+                    URI.create(reply.getConfigurationUri()),
+                    URI.create(reply.getSecretUri()),
+                    reply.getPropertiesMap());
+        } catch (StatusRuntimeException e) {
+            throw mapStatusRuntimeException(e, service);
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to provision configuration '%s' to service: %s", name, service.toAddress());
+            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        }
     }
 
     /**
