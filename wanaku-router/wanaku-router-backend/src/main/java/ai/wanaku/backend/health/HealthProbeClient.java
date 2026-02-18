@@ -1,6 +1,5 @@
 package ai.wanaku.backend.health;
 
-import io.grpc.Status;
 import java.util.concurrent.TimeUnit;
 import org.jboss.logging.Logger;
 import io.grpc.ManagedChannel;
