@@ -3,19 +3,21 @@ import React, {useEffect, useState} from "react";
 import {ForwardReference, Namespace} from "../../models";
 import {listNamespaces} from "../../hooks/api/use-namespaces";
 
-interface AddForwardModalProps {
+interface ForwardModalProps {
+  forward?: ForwardReference
   onRequestClose: () => void;
   onSubmit: (newForward: ForwardReference) => void;
 }
 
-export const AddForwardModal: React.FC<AddForwardModalProps> = ({
+export const ForwardModal: React.FC<ForwardModalProps> = ({
+  forward,
   onRequestClose,
   onSubmit,
 }) => {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [namespaces, setNamespaces] = useState<Namespace[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState("");
+  const [name, setName] = useState(forward?.name || "")
+  const [address, setAddress] = useState(forward?.address || "")
+  const [namespaces, setNamespaces] = useState<Namespace[]>([])
+  const [selectedNamespace, setSelectedNamespace] = useState(forward?.namespace|| "")
 
   useEffect(() => {
     listNamespaces().then((result) => {
@@ -29,6 +31,7 @@ export const AddForwardModal: React.FC<AddForwardModalProps> = ({
 
   const handleSubmit = () => {
     onSubmit({
+      id: forward?.id,
       name,
       address,
       namespace: selectedNamespace || undefined,
@@ -38,8 +41,8 @@ export const AddForwardModal: React.FC<AddForwardModalProps> = ({
   return (
     <Modal
       open={true}
-      modalHeading="Add a Forward"
-      primaryButtonText="Add"
+      modalHeading={forward ? "Edit forward" : "Add a Forward"}
+      primaryButtonText={forward ? "Save" : "Add"}
       secondaryButtonText="Cancel"
       onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}
