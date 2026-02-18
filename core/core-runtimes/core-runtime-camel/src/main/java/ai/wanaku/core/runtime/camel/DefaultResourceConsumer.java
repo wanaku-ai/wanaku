@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ConsumerTemplate;
 import ai.wanaku.core.capabilities.provider.ResourceConsumer;
-import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
 
 /**
  * A simple consumer of resources implemented on top of Camel's ConsumerTemplate

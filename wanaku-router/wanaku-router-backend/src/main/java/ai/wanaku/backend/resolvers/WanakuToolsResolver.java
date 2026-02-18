@@ -7,7 +7,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
-import ai.wanaku.core.exchange.PropertySchema;
+import ai.wanaku.core.exchange.v1.PropertySchema;
 import ai.wanaku.core.mcp.common.Tool;
 import ai.wanaku.core.mcp.common.ToolAdapter;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;

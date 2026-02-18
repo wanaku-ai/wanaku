@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "ai.wanaku.core.exchange";
+option java_package = "ai.wanaku.core.exchange.v1";
 option java_outer_classname = "ToolExchange";
 
-package tool;
+package ai.wanaku.tool.v1;
 
 // The tool exchange service definition.
 service ToolInvoker {
@@ -17,13 +17,14 @@ message ToolInvokeRequest {
   string uri = 1;
   string body = 2;
   map<string, string> arguments = 3;
-  string configurationURI = 4;
-  string secretsURI = 5;
+  string configuration_uri = 4;
+  string secrets_uri = 5;
   map<string, string> headers = 6;
 }
 
 // The invocation response message
 message ToolInvokeReply {
-  bool isError = 1;
+  reserved 1;
+  reserved "isError";
   repeated string content = 2;
 }

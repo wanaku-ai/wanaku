@@ -10,5 +10,5 @@ public interface InvocationDelegate extends RegisterAware, ProvisionAware {
      * @param request the tool invocation request, including the body and parameters passed
      * @return A ToolInvokeReply instance with details about the tool execution status
      */
-    ToolInvokeReply invoke(ToolInvokeRequest request);
+    ai.wanaku.core.exchange.v1.ToolInvokeReply invoke(ai.wanaku.core.exchange.v1.ToolInvokeRequest request);
 }

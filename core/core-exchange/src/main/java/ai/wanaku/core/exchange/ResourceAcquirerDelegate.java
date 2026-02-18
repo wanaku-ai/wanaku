@@ -10,5 +10,5 @@ public interface ResourceAcquirerDelegate extends RegisterAware, ProvisionAware 
      * @param request the resource request
      * @return the resource data and associated metadata about the request
      */
-    ResourceReply acquire(ResourceRequest request);
+    ai.wanaku.core.exchange.v1.ResourceReply acquire(ai.wanaku.core.exchange.v1.ResourceRequest request);
 }

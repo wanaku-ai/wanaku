@@ -17,7 +17,7 @@ package ai.wanaku.backend.bridge;
 
 import java.util.Iterator;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
-import ai.wanaku.core.exchange.CodeExecutionReply;
+import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 
 /**
  * Bridge interface for code execution services.

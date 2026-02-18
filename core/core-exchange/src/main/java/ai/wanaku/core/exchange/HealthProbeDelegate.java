@@ -1,5 +1,7 @@
 package ai.wanaku.core.exchange;
 
+import ai.wanaku.core.exchange.v1.RuntimeStatus;
+
 /**
  * A delegate that handles health probe requests from the router.
  * <p>

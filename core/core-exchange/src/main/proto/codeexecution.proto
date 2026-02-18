@@ -1,10 +1,12 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 option java_multiple_files = true;
-option java_package = "ai.wanaku.core.exchange";
+option java_package = "ai.wanaku.core.exchange.v1";
 option java_outer_classname = "CodeExecutionExchange";
 
-package codeexecution;
+package ai.wanaku.codeexecution.v1;
 
 /**
  * The code execution service definition.
@@ -51,20 +53,20 @@ message CodeExecutionRequest {
    * Optional URI reference to configuration data.
    * Used to provide additional configuration for the execution environment.
    */
-  string configurationURI = 5;
+  string configuration_uri = 5;
 
   /**
    * Optional URI reference to secrets data.
    * Used to provide secure credentials or sensitive data needed for execution.
    */
-  string secretsURI = 6;
+  string secrets_uri = 6;
 
   /**
    * Optional timeout in milliseconds.
    * Maximum time allowed for code execution before termination.
    * If not specified, a default timeout will be applied.
    */
-  int64 timeout = 7;
+  optional int64 timeout = 7;
 
   /**
    * Optional map of environment variables.
@@ -79,11 +81,8 @@ message CodeExecutionRequest {
  * Multiple messages may be sent for a single execution request.
  */
 message CodeExecutionReply {
-  /**
-   * Indicates whether this message represents an error condition.
-   * true if the execution encountered an error, false otherwise.
-   */
-  bool isError = 1;
+  reserved 1;
+  reserved "isError";
 
   /**
    * The execution output content.
@@ -97,7 +96,7 @@ message CodeExecutionReply {
    * The type of output this reply represents.
    * Indicates whether this is stdout, stderr, or a status message.
    */
-  OutputType outputType = 3;
+  OutputType output_type = 3;
 
   /**
    * The current execution status.
@@ -110,13 +109,12 @@ message CodeExecutionReply {
    * Only present in the final message when execution completes.
    * A value of 0 typically indicates successful execution.
    */
-  int32 exitCode = 5;
+  optional int32 exit_code = 5;
 
   /**
    * Optional timestamp when this output was generated.
-   * Unix timestamp in milliseconds since epoch.
    */
-  int64 timestamp = 6;
+  google.protobuf.Timestamp timestamp = 6;
 }
 
 /**
@@ -124,24 +122,29 @@ message CodeExecutionReply {
  */
 enum OutputType {
   /**
+   * Unspecified output type.
+   */
+  OUTPUT_TYPE_UNSPECIFIED = 0;
+
+  /**
    * Standard output (stdout) from the executed code.
    */
-  STDOUT = 0;
+  OUTPUT_TYPE_STDOUT = 1;
 
   /**
    * Standard error (stderr) from the executed code.
    */
-  STDERR = 1;
+  OUTPUT_TYPE_STDERR = 2;
 
   /**
    * Status or informational message about execution progress.
    */
-  STATUS = 2;
+  OUTPUT_TYPE_STATUS = 3;
 
   /**
    * Final completion message indicating execution has finished.
    */
-  COMPLETION = 3;
+  OUTPUT_TYPE_COMPLETION = 4;
 }
 
 /**
@@ -149,32 +152,37 @@ enum OutputType {
  */
 enum ExecutionStatus {
   /**
+   * Unspecified execution status.
+   */
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+
+  /**
    * Execution is pending and has not yet started.
    */
-  PENDING = 0;
+  EXECUTION_STATUS_PENDING = 1;
 
   /**
    * Code is currently being executed.
    */
-  RUNNING = 1;
+  EXECUTION_STATUS_RUNNING = 2;
 
   /**
    * Execution completed successfully.
    */
-  COMPLETED = 2;
+  EXECUTION_STATUS_COMPLETED = 3;
 
   /**
    * Execution failed with an error.
    */
-  FAILED = 3;
+  EXECUTION_STATUS_FAILED = 4;
 
   /**
    * Execution was cancelled by the client.
    */
-  CANCELLED = 4;
+  EXECUTION_STATUS_CANCELLED = 5;
 
   /**
    * Execution exceeded the timeout limit.
    */
-  TIMEOUT = 5;
+  EXECUTION_STATUS_TIMEOUT = 6;
 }

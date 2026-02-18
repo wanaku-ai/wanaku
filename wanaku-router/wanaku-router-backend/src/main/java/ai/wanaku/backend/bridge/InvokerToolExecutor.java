@@ -21,8 +21,8 @@ import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeReply;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.mcp.common.ToolExecutor;
 import ai.wanaku.core.util.CollectionsHelper;
 import com.google.protobuf.ProtocolStringList;
@@ -164,17 +164,8 @@ public class InvokerToolExecutor implements ToolExecutor {
     }
 
     private void doEmitEvents(ToolInvokeReply invokeReply, ToolCallEvent startedEvent, long duration) {
-        if (invokeReply.getIsError()) {
-            String errorMsg = invokeReply.getContentList().isEmpty()
-                    ? "Tool execution error"
-                    : invokeReply.getContentList().get(0);
-            ToolCallEvent.ErrorCategory category = categorizeToolError(errorMsg);
-            emitFailedEvent(startedEvent.getEventId(), category, errorMsg, duration);
-        } else {
-            String content =
-                    invokeReply.getContentList().isEmpty() ? "" : String.join("\n", invokeReply.getContentList());
-            emitCompletedEvent(startedEvent.getEventId(), content, duration);
-        }
+        String content = invokeReply.getContentList().isEmpty() ? "" : String.join("\n", invokeReply.getContentList());
+        emitCompletedEvent(startedEvent.getEventId(), content, duration);
     }
 
     /**
@@ -184,10 +175,6 @@ public class InvokerToolExecutor implements ToolExecutor {
      * @return a ToolResponse containing either success or error information
      */
     private ToolResponse processToolInvokeReply(ToolInvokeReply invokeReply) {
-        if (invokeReply.getIsError()) {
-            return ToolResponse.error(invokeReply.getContentList().get(0));
-        }
-
         ProtocolStringList contentList = invokeReply.getContentList();
         List<TextContent> contents = new ArrayList<>(contentList.size());
         contentList.stream().map(TextContent::new).forEach(contents::add);
@@ -234,8 +221,8 @@ public class InvokerToolExecutor implements ToolExecutor {
         return ToolInvokeRequest.newBuilder()
                 .setBody(body)
                 .setUri(toolReference.getUri())
-                .setConfigurationURI(Objects.requireNonNullElse(toolReference.getConfigurationURI(), EMPTY_ARGUMENT))
-                .setSecretsURI(Objects.requireNonNullElse(toolReference.getSecretsURI(), EMPTY_ARGUMENT))
+                .setConfigurationUri(Objects.requireNonNullElse(toolReference.getConfigurationURI(), EMPTY_ARGUMENT))
+                .setSecretsUri(Objects.requireNonNullElse(toolReference.getSecretsURI(), EMPTY_ARGUMENT))
                 .putAllHeaders(headers)
                 .putAllArguments(argumentsMap)
                 .build();
@@ -361,8 +348,8 @@ public class InvokerToolExecutor implements ToolExecutor {
                     argumentsMap,
                     request.getHeadersMap(),
                     request.getBody(),
-                    request.getConfigurationURI(),
-                    request.getSecretsURI());
+                    request.getConfigurationUri(),
+                    request.getSecretsUri());
 
             if (toolCallEventEmitter.hasRequests()) {
                 toolCallEventEmitter.sendAndForget(event);

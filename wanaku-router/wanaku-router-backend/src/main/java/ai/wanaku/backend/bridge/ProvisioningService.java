@@ -6,11 +6,11 @@ import io.grpc.ManagedChannel;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.Configuration;
-import ai.wanaku.core.exchange.ProvisionReply;
-import ai.wanaku.core.exchange.ProvisionRequest;
-import ai.wanaku.core.exchange.ProvisionerGrpc;
-import ai.wanaku.core.exchange.Secret;
+import ai.wanaku.core.exchange.v1.Configuration;
+import ai.wanaku.core.exchange.v1.ProvisionReply;
+import ai.wanaku.core.exchange.v1.ProvisionRequest;
+import ai.wanaku.core.exchange.v1.ProvisionerGrpc;
+import ai.wanaku.core.exchange.v1.Secret;
 
 /**
  * Service for handling provisioning operations across all proxy implementations.

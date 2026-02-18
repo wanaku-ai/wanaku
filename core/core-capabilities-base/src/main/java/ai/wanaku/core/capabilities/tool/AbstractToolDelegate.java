@@ -19,10 +19,10 @@ import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.exchange.InvocationDelegate;
-import ai.wanaku.core.exchange.ProvisionReply;
-import ai.wanaku.core.exchange.ProvisionRequest;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ProvisionReply;
+import ai.wanaku.core.exchange.v1.ProvisionRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeReply;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
 /**
  * Base delegate class for tool invoker implementations.
@@ -88,7 +88,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
             List<String> response = coerceResponse(obj);
 
-            ToolInvokeReply.Builder builder = ToolInvokeReply.newBuilder().setIsError(false);
+            ToolInvokeReply.Builder builder = ToolInvokeReply.newBuilder();
             builder.addAllContent(response);
 
             registrationManager.lastAsSuccessful();
@@ -97,26 +97,17 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
-            return ToolInvokeReply.newBuilder()
-                    .setIsError(true)
-                    .addAllContent(List.of(stateMsg))
-                    .build();
+            throw new RuntimeException(stateMsg, e);
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
-            return ToolInvokeReply.newBuilder()
-                    .setIsError(true)
-                    .addAllContent(List.of(stateMsg))
-                    .build();
+            throw new RuntimeException(stateMsg, e);
         } catch (Exception e) {
             String stateMsg = findRootCause(e);
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
-            return ToolInvokeReply.newBuilder()
-                    .setIsError(true)
-                    .addAllContent(List.of(stateMsg))
-                    .build();
+            throw new RuntimeException(stateMsg, e);
         }
     }
 

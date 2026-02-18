@@ -10,8 +10,8 @@ import ai.wanaku.capabilities.sdk.config.provider.api.NoopSecretStore;
 import ai.wanaku.capabilities.sdk.config.provider.api.SecretStore;
 import ai.wanaku.capabilities.sdk.config.provider.file.ConfigFileStore;
 import ai.wanaku.capabilities.sdk.config.provider.file.SecretFileStore;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.util.StringHelper;
 
 /**
@@ -52,8 +52,8 @@ public final class ConfigResourceLoader {
      * @return a {@link ConfigResource} instance with loaded configuration and secrets
      */
     public static ConfigResource loadFromRequest(ToolInvokeRequest request) {
-        final String cfgResourceRef = request.getConfigurationURI();
-        final String secretResourceRef = request.getSecretsURI();
+        final String cfgResourceRef = request.getConfigurationUri();
+        final String secretResourceRef = request.getSecretsUri();
         return loadFromReference(cfgResourceRef, secretResourceRef);
     }
 
@@ -67,8 +67,8 @@ public final class ConfigResourceLoader {
      * @return a {@link ConfigResource} instance with loaded configuration and secrets
      */
     public static ConfigResource loadFromRequest(ResourceRequest request) {
-        final String cfgResourceRef = request.getConfigurationURI();
-        final String secretResourceRef = request.getSecretsURI();
+        final String cfgResourceRef = request.getConfigurationUri();
+        final String secretResourceRef = request.getSecretsUri();
         return loadFromReference(cfgResourceRef, secretResourceRef);
     }
 

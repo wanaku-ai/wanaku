@@ -11,17 +11,17 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
-import ai.wanaku.core.exchange.HealthProbe;
 import ai.wanaku.core.exchange.HealthProbeDelegate;
-import ai.wanaku.core.exchange.HealthProbeReply;
-import ai.wanaku.core.exchange.HealthProbeRequest;
-import ai.wanaku.core.exchange.ProvisionReply;
-import ai.wanaku.core.exchange.ProvisionRequest;
-import ai.wanaku.core.exchange.Provisioner;
-import ai.wanaku.core.exchange.ResourceAcquirer;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
+import ai.wanaku.core.exchange.v1.HealthProbe;
+import ai.wanaku.core.exchange.v1.HealthProbeReply;
+import ai.wanaku.core.exchange.v1.HealthProbeRequest;
+import ai.wanaku.core.exchange.v1.ProvisionReply;
+import ai.wanaku.core.exchange.v1.ProvisionRequest;
+import ai.wanaku.core.exchange.v1.Provisioner;
+import ai.wanaku.core.exchange.v1.ResourceAcquirer;
+import ai.wanaku.core.exchange.v1.ResourceReply;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
 
 @GrpcService
 public class ResourceService implements ResourceAcquirer, Provisioner, HealthProbe {

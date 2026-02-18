@@ -31,7 +31,7 @@ import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.CodeExecutionReply;
+import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 
 /**
  * Bridge implementation for code execution services via gRPC.
@@ -103,7 +103,7 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
         ServiceTarget service = resolveService(engineType, language);
 
         // Build the gRPC request
-        ai.wanaku.core.exchange.CodeExecutionRequest grpcRequest = buildGrpcRequest(engineType, language, request);
+        ai.wanaku.core.exchange.v1.CodeExecutionRequest grpcRequest = buildGrpcRequest(engineType, language, request);
 
         // Emit STARTED event
         ToolCallEvent startedEvent = null;
@@ -189,14 +189,8 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
         @Override
         public CodeExecutionReply next() {
             try {
-                CodeExecutionReply reply = delegate.next();
-                if (reply.getIsError()) {
-                    hasError = true;
-                    lastErrorMessage = reply.getContentCount() > 0 ? reply.getContent(0) : "Code execution error";
-                }
-                return reply;
+                return delegate.next();
             } catch (Exception e) {
-                // Emit FAILED event for exceptions during iteration
                 if (!completed) {
                     hasError = true;
                     lastErrorMessage = e.getMessage() != null ? e.getMessage() : "Error during iteration";
@@ -277,7 +271,7 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
      * @param request the SDK code execution request
      * @return the gRPC code execution request
      */
-    private ai.wanaku.core.exchange.CodeExecutionRequest buildGrpcRequest(
+    private ai.wanaku.core.exchange.v1.CodeExecutionRequest buildGrpcRequest(
             String engineType, String language, CodeExecutionRequest request) {
 
         String uri = String.format("code-execution-engine://%s/%s", engineType, language);
@@ -285,8 +279,8 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
         // Decode the base64-encoded code
         String decodedCode = decodeBase64Code(request.getCode());
 
-        ai.wanaku.core.exchange.CodeExecutionRequest.Builder builder =
-                ai.wanaku.core.exchange.CodeExecutionRequest.newBuilder()
+        ai.wanaku.core.exchange.v1.CodeExecutionRequest.Builder builder =
+                ai.wanaku.core.exchange.v1.CodeExecutionRequest.newBuilder()
                         .setUri(uri)
                         .setCode(decodedCode)
                         .setTimeout(request.getTimeout());

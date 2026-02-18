@@ -16,7 +16,7 @@ import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
-import ai.wanaku.core.exchange.PropertySchema;
+import ai.wanaku.core.exchange.v1.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
 
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;

@@ -12,18 +12,18 @@ import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.CodeExecutionReply;
-import ai.wanaku.core.exchange.CodeExecutionRequest;
-import ai.wanaku.core.exchange.CodeExecutorGrpc;
-import ai.wanaku.core.exchange.Configuration;
-import ai.wanaku.core.exchange.PayloadType;
-import ai.wanaku.core.exchange.ResourceAcquirerGrpc;
-import ai.wanaku.core.exchange.ResourceReply;
-import ai.wanaku.core.exchange.ResourceRequest;
-import ai.wanaku.core.exchange.Secret;
-import ai.wanaku.core.exchange.ToolInvokeReply;
-import ai.wanaku.core.exchange.ToolInvokeRequest;
-import ai.wanaku.core.exchange.ToolInvokerGrpc;
+import ai.wanaku.core.exchange.v1.CodeExecutionReply;
+import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
+import ai.wanaku.core.exchange.v1.CodeExecutorGrpc;
+import ai.wanaku.core.exchange.v1.Configuration;
+import ai.wanaku.core.exchange.v1.PayloadType;
+import ai.wanaku.core.exchange.v1.ResourceAcquirerGrpc;
+import ai.wanaku.core.exchange.v1.ResourceReply;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
+import ai.wanaku.core.exchange.v1.Secret;
+import ai.wanaku.core.exchange.v1.ToolInvokeReply;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
 
 /**
  * Encapsulates all gRPC transport operations for bridge implementations.
@@ -112,13 +112,13 @@ public class GrpcTransport implements WanakuBridgeTransport {
         ManagedChannel channel = createChannel(service);
 
         Configuration cfg = Configuration.newBuilder()
-                .setType(PayloadType.BUILTIN)
+                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
                 .setName(name)
                 .setPayload(Objects.requireNonNullElse(configData, ""))
                 .build();
 
         Secret secret = Secret.newBuilder()
-                .setType(PayloadType.BUILTIN)
+                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
                 .setName(name)
                 .setPayload(Objects.requireNonNullElse(secretsData, ""))
                 .build();

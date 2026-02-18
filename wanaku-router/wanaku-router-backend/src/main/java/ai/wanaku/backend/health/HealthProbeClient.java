@@ -7,10 +7,10 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.HealthProbeGrpc;
-import ai.wanaku.core.exchange.HealthProbeReply;
-import ai.wanaku.core.exchange.HealthProbeRequest;
-import ai.wanaku.core.exchange.RuntimeStatus;
+import ai.wanaku.core.exchange.v1.HealthProbeGrpc;
+import ai.wanaku.core.exchange.v1.HealthProbeReply;
+import ai.wanaku.core.exchange.v1.HealthProbeRequest;
+import ai.wanaku.core.exchange.v1.RuntimeStatus;
 
 /**
  * Client for probing the health of remote capabilities via gRPC.
@@ -63,7 +63,7 @@ class HealthProbeClient {
 
     private static HealthStatus mapRuntimeStatus(RuntimeStatus status) {
         return switch (status) {
-            case STARTED -> HealthStatus.HEALTHY;
+            case RUNTIME_STATUS_STARTED -> HealthStatus.HEALTHY;
             default -> HealthStatus.UNHEALTHY;
         };
     }
