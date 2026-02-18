@@ -154,7 +154,7 @@ public class CodeExecutionBean {
         final long timestamp = reply.hasTimestamp()
                 ? reply.getTimestamp().getSeconds() * 1000
                         + reply.getTimestamp().getNanos() / 1_000_000
-                : 0L;
+                : System.currentTimeMillis();
 
         CodeExecutionEvent codeExecutionEvent = new CodeExecutionEvent();
         codeExecutionEvent.setTaskId(taskId);

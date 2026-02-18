@@ -6,6 +6,8 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import org.jboss.logging.Logger;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.oidc.client.Tokens;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
@@ -97,17 +99,20 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
-            throw new RuntimeException(stateMsg, e);
+            throw new StatusRuntimeException(
+                    Status.INTERNAL.withDescription(stateMsg).withCause(e));
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
-            throw new RuntimeException(stateMsg, e);
+            throw new StatusRuntimeException(
+                    Status.INTERNAL.withDescription(stateMsg).withCause(e));
         } catch (Exception e) {
             String stateMsg = findRootCause(e);
             LOG.error(stateMsg, e);
             registrationManager.lastAsFail(stateMsg);
-            throw new RuntimeException(stateMsg, e);
+            throw new StatusRuntimeException(
+                    Status.INTERNAL.withDescription(stateMsg).withCause(e));
         }
     }
 
