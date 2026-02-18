@@ -18,7 +18,7 @@ import ai.wanaku.core.persistence.api.WanakuRepository;
 public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K> implements WanakuRepository<A, K> {
 
     protected final EmbeddedCacheManager cacheManager;
-    private final ReentrantLock lock = new ReentrantLock();
+    protected final ReentrantLock lock = new ReentrantLock();
 
     private static final String DEFAULT_DELETE_TEMPLATE = "DELETE FROM %s r WHERE %s";
 

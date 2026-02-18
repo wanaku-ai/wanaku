@@ -223,7 +223,7 @@ public class DataStoresResourceTest extends WanakuRouterTest {
                 .then()
                 .statusCode(200);
 
-        // Add second entry with same name
+        // Add second entry with same name — should be rejected as duplicate
         DataStore dataStore2 = new DataStore();
         dataStore2.setName("duplicate-test");
         dataStore2.setData("Second entry");
@@ -234,16 +234,17 @@ public class DataStoresResourceTest extends WanakuRouterTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .post("/api/v1/data-store/add")
                 .then()
-                .statusCode(200);
+                .statusCode(409);
 
-        // Get by name should return both
+        // Get by name should return only the first entry
         given().queryParam("name", "duplicate-test")
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
                 .get("/api/v1/data-store/get")
                 .then()
                 .statusCode(200)
-                .body("data.size()", equalTo(2));
+                .body("data.size()", equalTo(1))
+                .body("data[0].data", equalTo("First entry"));
     }
 
     @Order(10)

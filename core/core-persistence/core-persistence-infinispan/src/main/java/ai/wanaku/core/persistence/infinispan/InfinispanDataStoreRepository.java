@@ -2,9 +2,11 @@ package ai.wanaku.core.persistence.infinispan;
 
 import java.util.List;
 import java.util.UUID;
+import org.infinispan.Cache;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.persistence.api.DataStoreRepository;
 
@@ -31,6 +33,24 @@ public class InfinispanDataStoreRepository extends AbstractLabelAwareInfinispanR
     @Override
     protected String newId() {
         return UUID.randomUUID().toString();
+    }
+
+    @Override
+    public DataStore persist(DataStore entity) {
+        try {
+            lock.lock();
+            if (!findByName(entity.getName()).isEmpty()) {
+                throw EntityAlreadyExistsException.forName(entity.getName());
+            }
+            if (entity.getId() == null) {
+                entity.setId(newId());
+            }
+            final Cache<Object, DataStore> cache = cacheManager.getCache(entityName());
+            cache.put(entity.getId(), entity);
+        } finally {
+            lock.unlock();
+        }
+        return entity;
     }
 
     @Override
