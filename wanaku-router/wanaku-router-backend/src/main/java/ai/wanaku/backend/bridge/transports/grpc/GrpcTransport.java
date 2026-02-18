@@ -123,9 +123,8 @@ public class GrpcTransport implements WanakuBridgeTransport {
 
         LOG.debugf("Provisioning '%s' to service: %s", name, service.toAddress());
 
+        ManagedChannel channel = createChannel(service);
         try {
-            ManagedChannel channel = createChannel(service);
-
             Configuration cfg = Configuration.newBuilder()
                     .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
                     .setName(name)
@@ -157,9 +156,11 @@ public class GrpcTransport implements WanakuBridgeTransport {
                     reply.getPropertiesMap());
         } catch (StatusRuntimeException e) {
             throw mapStatusRuntimeException(e, service);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.errorf(e, "Failed to provision configuration '%s' to service: %s", name, service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        } finally {
+            channelManager.closeChannel(channel);
         }
     }
 
@@ -180,18 +181,19 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service) {
         LOG.debugf("Invoking tool on service: %s", service.toAddress());
 
+        ManagedChannel channel = createChannel(service);
         try {
-            ManagedChannel channel = createChannel(service);
-
             ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
             return blockingStub
                     .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
                     .invokeTool(request);
         } catch (StatusRuntimeException e) {
             throw mapStatusRuntimeException(e, service);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.errorf(e, "Failed to invoke tool on service: %s", service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        } finally {
+            channelManager.closeChannel(channel);
         }
     }
 
@@ -212,9 +214,8 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public ResourceReply acquireResource(ResourceRequest request, ServiceTarget service) {
         LOG.debugf("Acquiring resource from service: %s", service.toAddress());
 
+        ManagedChannel channel = createChannel(service);
         try {
-            ManagedChannel channel = createChannel(service);
-
             ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub =
                     ResourceAcquirerGrpc.newBlockingStub(channel);
             return blockingStub
@@ -222,9 +223,11 @@ public class GrpcTransport implements WanakuBridgeTransport {
                     .resourceAcquire(request);
         } catch (StatusRuntimeException e) {
             throw mapStatusRuntimeException(e, service);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        } finally {
+            channelManager.closeChannel(channel);
         }
     }
 
@@ -254,7 +257,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
                     .executeCode(request);
         } catch (StatusRuntimeException e) {
             throw mapStatusRuntimeException(e, service);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.errorf(e, "Failed to execute code on service: %s", service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
         }
