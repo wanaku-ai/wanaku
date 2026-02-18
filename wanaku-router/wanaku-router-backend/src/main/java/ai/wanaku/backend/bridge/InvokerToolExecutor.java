@@ -138,7 +138,7 @@ public class InvokerToolExecutor implements ToolExecutor {
             final ToolInvokeReply invokeReply = transport.invokeTool(request, service);
             long duration = Duration.between(startTime, Instant.now()).toMillis();
 
-            // Emit COMPLETED or FAILED event based on response
+            // Emit COMPLETED event (failures arrive as exceptions and are handled in the catch block)
             if (toolCallEventEmitter != null && startedEvent != null) {
                 doEmitEvents(invokeReply, startedEvent, duration);
             }
