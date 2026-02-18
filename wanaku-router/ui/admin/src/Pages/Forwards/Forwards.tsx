@@ -1,8 +1,6 @@
 import {
     Button,
-    Column,
     DataTable,
-    Grid,
     Table,
     TableBody,
     TableCell,
@@ -44,69 +42,65 @@ interface ForwardsTableProps {
 
 const ForwardsTable = ({rows: forwardRows, onAdd, onDelete, onRefresh}: ForwardsTableProps) => {
     return (
-        <Grid>
-            <Column lg={12} md={8} sm={4}>
-                <DataTable rows={forwardRows} headers={headers}>
-                    {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
-                        <TableContainer>
-                            <TableToolbar>
-                                <TableToolbarContent>
-                                    <Button
-                                        renderIcon={Add}
-                                        onClick={onAdd}
-                                    >
-                                        Add Forward
-                                    </Button>
-                                </TableToolbarContent>
-                            </TableToolbar>
-                            <Table {...getTableProps()}>
-                                <TableHead>
-                                    <TableRow>
-                                        {headers.map((header) => (
-                                            <TableHeader {...getHeaderProps({header})}>
-                                                {header.header}
-                                            </TableHeader>
-                                        ))}
-                                        <TableHeader>Actions</TableHeader>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {rows.map((row) => (
-                                        <TableRow {...getRowProps({row})}>
-                                            {row.cells.map((cell) => (
-                                                <TableCell key={cell.id}>{cell.value}</TableCell>
-                                            ))}
-                                            <TableCell>
-                                                <Button
-                                                    kind="ghost"
-                                                    renderIcon={Renew}
-                                                    iconDescription="Refresh"
-                                                    hasIconOnly
-                                                    onClick={() => {
-                                                        const forwardRow = forwardRows.find(r => r.id === row.id);
-                                                        if (forwardRow) onRefresh(forwardRow.original);
-                                                    }}
-                                                />
-                                                <Button
-                                                    kind="ghost"
-                                                    renderIcon={TrashCan}
-                                                    iconDescription="Delete"
-                                                    hasIconOnly
-                                                    onClick={() => {
-                                                        const forwardRow = forwardRows.find(r => r.id === row.id);
-                                                        if (forwardRow) onDelete(forwardRow.original);
-                                                    }}
-                                                />
-                                            </TableCell>
-                                        </TableRow>
+        <DataTable rows={forwardRows} headers={headers}>
+            {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
+                <TableContainer>
+                    <TableToolbar>
+                        <TableToolbarContent>
+                            <Button
+                                renderIcon={Add}
+                                onClick={onAdd}
+                            >
+                                Add Forward
+                            </Button>
+                        </TableToolbarContent>
+                    </TableToolbar>
+                    <Table {...getTableProps()}>
+                        <TableHead>
+                            <TableRow>
+                                {headers.map((header) => (
+                                    <TableHeader {...getHeaderProps({header})}>
+                                        {header.header}
+                                    </TableHeader>
+                                ))}
+                                <TableHeader>Actions</TableHeader>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {rows.map((row) => (
+                                <TableRow {...getRowProps({row})}>
+                                    {row.cells.map((cell) => (
+                                        <TableCell key={cell.id}>{cell.value}</TableCell>
                                     ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    )}
-                </DataTable>
-            </Column>
-        </Grid>
+                                    <TableCell>
+                                        <Button
+                                            kind="ghost"
+                                            renderIcon={Renew}
+                                            iconDescription="Refresh"
+                                            hasIconOnly
+                                            onClick={() => {
+                                                const forwardRow = forwardRows.find(r => r.id === row.id);
+                                                if (forwardRow) onRefresh(forwardRow.original);
+                                            }}
+                                        />
+                                        <Button
+                                            kind="ghost"
+                                            renderIcon={TrashCan}
+                                            iconDescription="Delete"
+                                            hasIconOnly
+                                            onClick={() => {
+                                                const forwardRow = forwardRows.find(r => r.id === row.id);
+                                                if (forwardRow) onDelete(forwardRow.original);
+                                            }}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+        </DataTable>
     );
 };
 
@@ -194,6 +188,7 @@ const ForwardsPage = () => {
                     subtitle={errorMessage}
                     onCloseButtonClick={() => setErrorMessage(null)}
                     timeout={5000}
+                    style={{ float: "right" }}
                 />
             )}
             {isAddModalOpen && (

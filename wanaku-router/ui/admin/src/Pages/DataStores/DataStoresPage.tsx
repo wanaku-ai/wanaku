@@ -109,7 +109,7 @@ export const DataStoresPage: React.FC = () => {
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
           timeout={10000}
-          style={{ position: "fixed", top: "3rem", right: "1rem", zIndex: 9999 }}
+          style={{ float: "right" }}
         />
       )}
       <h1 className="title">Data Stores</h1>

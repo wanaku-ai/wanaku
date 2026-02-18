@@ -1,4 +1,4 @@
-import {Column, DataTable, Grid, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@carbon/react";
+import {DataTable, Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow,} from "@carbon/react";
 import React from "react";
 import {ServiceTargetState} from "./ServiceTargetState";
 
@@ -14,38 +14,29 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
   targets,
 }) => {
   return (
-  <Grid>
-    <Column lg={12} md={8} sm={4}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-        }}
-      >
-      </div>
-      <DataTable
-        rows={targets.map((target, index) => ({
-          id: `${target.serviceName}-${index}`,
-          service: target.serviceName,
-          serviceType: target.serviceType,
-          host: target.host,
-          port: target.port,
-          status: formatStatus(target.healthStatus ?? "pending"),
-          lastSeen: target.lastSeen,
-          reason: target.reason
-        }))}
-        headers={[
-          { key: 'service', header: 'Service' },
-          { key: 'serviceType', header: 'Service Type' },
-          { key: 'host', header: 'Host' },
-          { key: 'port', header: 'Port' },
-          { key: 'status', header: 'Status' },
-          { key: 'lastSeen', header: 'Last Seen' },
-          { key: 'reason', header: 'Reason' },
-        ]}
-      >
-{({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
+    <DataTable
+      rows={targets.map((target, index) => ({
+        id: `${target.serviceName}-${index}`,
+        service: target.serviceName,
+        serviceType: target.serviceType,
+        host: target.host,
+        port: target.port,
+        status: formatStatus(target.healthStatus ?? "pending"),
+        lastSeen: target.lastSeen,
+        reason: target.reason
+      }))}
+      headers={[
+        { key: 'service', header: 'Service' },
+        { key: 'serviceType', header: 'Service Type' },
+        { key: 'host', header: 'Host' },
+        { key: 'port', header: 'Port' },
+        { key: 'status', header: 'Status' },
+        { key: 'lastSeen', header: 'Last Seen' },
+        { key: 'reason', header: 'Reason' },
+      ]}
+    >
+      {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
+        <TableContainer>
           <Table {...getTableProps()} aria-label="Targets table">
             <TableHead>
               <TableRow>
@@ -69,9 +60,8 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
               })}
             </TableBody>
           </Table>
-        )}
-      </DataTable>
-    </Column>
-  </Grid>
-);
+        </TableContainer>
+      )}
+    </DataTable>
+  );
 };

@@ -1,18 +1,19 @@
 import React from "react";
 import {
     Button,
-    Column,
     DataTable,
-    Grid,
     Table,
     TableBody,
     TableCell,
+    TableContainer,
     TableHead,
     TableHeader,
     TableRow,
+    TableToolbar,
+    TableToolbarContent,
     Tooltip,
 } from "@carbon/react";
-import {Download, TrashCan, View} from "@carbon/icons-react";
+import {Add, Download, TrashCan, View} from "@carbon/icons-react";
 import type {DataStore} from "../../models";
 
 interface DataStoresTableProps {
@@ -37,31 +38,67 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
   };
 
   return (
-    <Grid>
-      <Column lg={16} md={8} sm={4}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-          <Button onClick={onAdd}>Add Data Store</Button>
-        </div>
-        {dataStores.length === 0 ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--cds-text-secondary)" }}>
-            No data stores found. Click "Add Data Store" to upload a file.
-          </div>
-        ) : (
-          <DataTable
-            rows={dataStores.map((dataStore, index) => ({
-              id: dataStore.id || `datastore-${index}`,
-              name: dataStore.name || "N/A",
-              data: dataStore.data || "",
-              dataTruncated: truncateData(dataStore.data),
-            }))}
-            headers={[
-              { key: "id", header: "ID" },
-              { key: "name", header: "Name" },
-              { key: "dataTruncated", header: "Data (Base64)" },
-              { key: "actions", header: "Actions" },
-            ]}
-          >
-            {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
+    <>
+      {dataStores.length === 0 ? (
+        <DataTable
+          rows={[]}
+          headers={[
+            { key: "id", header: "ID" },
+            { key: "name", header: "Name" },
+            { key: "dataTruncated", header: "Data (Base64)" },
+            { key: "actions", header: "Actions" },
+          ]}
+        >
+          {({ headers, getTableProps, getHeaderProps }) => (
+            <TableContainer>
+              <TableToolbar>
+                <TableToolbarContent>
+                  <Button renderIcon={Add} onClick={onAdd}>Add Data Store</Button>
+                </TableToolbarContent>
+              </TableToolbar>
+              <Table {...getTableProps()}>
+                <TableHead>
+                  <TableRow>
+                    {headers.map((header) => (
+                      <TableHeader {...getHeaderProps({ header })} key={header.key}>
+                        {header.header}
+                      </TableHeader>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={headers.length} style={{ textAlign: "center", color: "var(--cds-text-secondary)" }}>
+                      No data stores found. Click "Add Data Store" to upload a file.
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DataTable>
+      ) : (
+        <DataTable
+          rows={dataStores.map((dataStore, index) => ({
+            id: dataStore.id || `datastore-${index}`,
+            name: dataStore.name || "N/A",
+            data: dataStore.data || "",
+            dataTruncated: truncateData(dataStore.data),
+          }))}
+          headers={[
+            { key: "id", header: "ID" },
+            { key: "name", header: "Name" },
+            { key: "dataTruncated", header: "Data (Base64)" },
+            { key: "actions", header: "Actions" },
+          ]}
+        >
+          {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
+            <TableContainer>
+              <TableToolbar>
+                <TableToolbarContent>
+                  <Button renderIcon={Add} onClick={onAdd}>Add Data Store</Button>
+                </TableToolbarContent>
+              </TableToolbar>
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
@@ -98,8 +135,6 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
                                   hasIconOnly
                                   iconDescription="View"
                                   onClick={() => dataStore && onView(dataStore)}
-                                  size="sm"
-                                  style={{ marginRight: "0.5rem" }}
                                 />
                                 <Button
                                   kind="ghost"
@@ -107,16 +142,13 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
                                   hasIconOnly
                                   iconDescription="Download"
                                   onClick={() => dataStore && onDownload(dataStore)}
-                                  size="sm"
-                                  style={{ marginRight: "0.5rem" }}
                                 />
                                 <Button
-                                  kind="danger--ghost"
+                                  kind="ghost"
                                   renderIcon={TrashCan}
                                   hasIconOnly
                                   iconDescription="Delete"
                                   onClick={() => dataStore?.id && onDelete(dataStore.id)}
-                                  size="sm"
                                 />
                               </TableCell>
                             );
@@ -128,10 +160,10 @@ export const DataStoresTable: React.FC<DataStoresTableProps> = ({
                   })}
                 </TableBody>
               </Table>
-            )}
-          </DataTable>
-        )}
-      </Column>
-    </Grid>
+            </TableContainer>
+          )}
+        </DataTable>
+      )}
+    </>
   );
 };
