@@ -52,7 +52,6 @@ classDiagram
 
     class GrpcTransport {
         -channelManager GrpcChannelManager
-        -provisioningService ProvisioningService
         +provision(...) ProvisioningReference
         +invokeTool(...) ToolInvokeReply
         +acquireResource(...) ResourceReply
@@ -218,7 +217,7 @@ The provisioning system allows runtime configuration of services through gRPC-ba
 
 Provisioning is implemented through:
 
-1. **gRPC Protocol**: Capability services implement the `ProvisioningService` gRPC interface
+1. **gRPC Protocol**: Capability services implement the `Provisioner` gRPC interface
 2. **Configuration Store**: Router backend stores tool/resource configurations in Infinispan
 3. **Secret Integration**: Integration with Kubernetes Secrets or external secret managers
 4. **Validation**: Schema-based validation ensures configuration correctness
