@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.commands.users;
 
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.admin.BaseAdminCommand;
-import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.keycloak.KeycloakAdminClient;
 import picocli.CommandLine;
@@ -32,12 +31,8 @@ public class UsersAdd extends BaseAdminCommand {
         super();
     }
 
-    public UsersAdd(AuthCredentialStore credentialStore) {
-        super(credentialStore);
-    }
-
-    public UsersAdd(AuthCredentialStore credentialStore, KeycloakAdminClient adminClient) {
-        super(credentialStore, adminClient);
+    public UsersAdd(KeycloakAdminClient adminClient) {
+        super(adminClient);
     }
 
     @Override

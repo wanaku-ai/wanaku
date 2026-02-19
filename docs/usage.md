@@ -929,6 +929,69 @@ wanaku tools list --token $WANAKU_API_TOKEN
 wanaku tools list --no-auth
 ```
 
+## Admin Commands
+
+The `wanaku admin` command group provides Keycloak administration operations for managing users and service client credentials. These commands authenticate directly against Keycloak using admin credentials rather than the user's stored token.
+
+### Common Options
+
+All admin commands share the following options:
+
+| Option | Description | Default |
+|---|---|---|
+| `--admin-username` | Admin username for Keycloak (required) | |
+| `--admin-password` | Admin password for Keycloak (required, interactive) | |
+| `--keycloak-url` | Keycloak server URL | `http://localhost:8543` |
+| `--realm` | Keycloak realm to manage | `wanaku` |
+
+### User Management
+
+```shell
+# List all users in the realm
+wanaku admin users list --admin-username admin --admin-password admin
+
+# Create a new user
+wanaku admin users add --admin-username admin --admin-password admin \
+  --username alice --password secretpass --email alice@example.com
+
+# Remove a user
+wanaku admin users remove --admin-username admin --admin-password admin \
+  --username alice
+
+# Set a user's password
+wanaku admin users set-password --admin-username admin --admin-password admin \
+  --username alice --password newpass
+```
+
+### Service Client Credential Management
+
+```shell
+# List service clients (filters out internal Keycloak clients)
+wanaku admin credentials list --admin-username admin --admin-password admin
+
+# Create a new service client
+wanaku admin credentials add --admin-username admin --admin-password admin \
+  --client-id my-service --description "My service client"
+
+# Create a service client and display its secret
+wanaku admin credentials add --admin-username admin --admin-password admin \
+  --client-id my-service --show-secret
+
+# Show an existing client's secret
+wanaku admin credentials show --admin-username admin --admin-password admin \
+  --client-id my-service --show-secret
+
+# Regenerate a client's secret
+wanaku admin credentials regenerate --admin-username admin --admin-password admin \
+  --client-id my-service --show-secret
+
+# Remove a service client
+wanaku admin credentials remove --admin-username admin --admin-password admin \
+  --client-id my-service
+```
+
+> **Note:** The `--show-secret` flag is required to display client secrets. Without it, `credentials show` will print a warning instead. Use with caution as secrets may leak into logs or shell history.
+
 ## Understanding Capabilities
 
 Wanaku itself does not have any builtin MCP tool, resource or functionality itself. The router itself is just a blank MCP server. 

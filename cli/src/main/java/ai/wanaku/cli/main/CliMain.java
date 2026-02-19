@@ -6,10 +6,10 @@ import java.util.concurrent.Callable;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.commands.admin.Admin;
 import ai.wanaku.cli.main.commands.auth.Auth;
 import ai.wanaku.cli.main.commands.capabilities.Capabilities;
 import ai.wanaku.cli.main.commands.completion.Completion;
-import ai.wanaku.cli.main.commands.credentials.Credentials;
 import ai.wanaku.cli.main.commands.datastores.DataStores;
 import ai.wanaku.cli.main.commands.forwards.Forwards;
 import ai.wanaku.cli.main.commands.man.Man;
@@ -19,7 +19,6 @@ import ai.wanaku.cli.main.commands.resources.Resources;
 import ai.wanaku.cli.main.commands.start.Start;
 import ai.wanaku.cli.main.commands.tools.Tools;
 import ai.wanaku.cli.main.commands.toolset.ToolSet;
-import ai.wanaku.cli.main.commands.users.Users;
 import ai.wanaku.cli.main.support.WanakuExceptionHandler;
 import ai.wanaku.core.util.VersionHelper;
 import picocli.CommandLine;
@@ -28,8 +27,8 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "wanaku",
         subcommands = {
+            Admin.class,
             Auth.class,
-            Credentials.class,
             Forwards.class,
             Resources.class,
             Prompts.class,
@@ -38,7 +37,6 @@ import picocli.CommandLine;
             Tools.class,
             ToolSet.class,
             Namespaces.class,
-            Users.class,
             Man.class,
             Completion.class,
             DataStores.class

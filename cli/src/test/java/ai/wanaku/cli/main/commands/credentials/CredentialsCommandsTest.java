@@ -1,10 +1,8 @@
 package ai.wanaku.cli.main.commands.credentials;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
-import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.keycloak.KeycloakAdminClient;
 
@@ -13,11 +11,9 @@ import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_OK;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -26,11 +22,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CredentialsCommandsTest {
-
-    private static final String NO_TOKEN_MSG = "No authentication token found. Please run 'wanaku auth login' first.";
-
-    @TempDir
-    Path tempDir;
 
     @Mock
     private Terminal terminal;
@@ -41,43 +32,9 @@ class CredentialsCommandsTest {
     @Mock
     private KeycloakAdminClient adminClient;
 
-    private AuthCredentialStore credentialStore;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        Path credentialsFile = tempDir.resolve("test-credentials");
-        credentialStore = new AuthCredentialStore(credentialsFile.toUri());
-    }
-
-    // ---- No-token guard tests ----
-
-    @Test
-    void credentialsAddShouldFailWithNoToken() {
-        CredentialsAdd cmd = new CredentialsAdd(credentialStore);
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> cmd.doCall(terminal, printer));
-        assertEquals(NO_TOKEN_MSG, e.getMessage());
-    }
-
-    @Test
-    void credentialsListShouldFailWithNoToken() {
-        CredentialsList cmd = new CredentialsList(credentialStore);
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> cmd.doCall(terminal, printer));
-        assertEquals(NO_TOKEN_MSG, e.getMessage());
-    }
-
-    @Test
-    void credentialsRemoveShouldFailWithNoToken() {
-        CredentialsRemove cmd = new CredentialsRemove(credentialStore);
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> cmd.doCall(terminal, printer));
-        assertEquals(NO_TOKEN_MSG, e.getMessage());
-    }
-
-    @Test
-    void credentialsRegenerateShouldFailWithNoToken() {
-        CredentialsRegenerate cmd = new CredentialsRegenerate(credentialStore);
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> cmd.doCall(terminal, printer));
-        assertEquals(NO_TOKEN_MSG, e.getMessage());
     }
 
     // ---- Happy-path tests ----
@@ -86,7 +43,7 @@ class CredentialsCommandsTest {
     void credentialsAddHappyPath() throws Exception {
         doNothing().when(adminClient).createClient(any(), any(), any());
 
-        CredentialsAdd cmd = new CredentialsAdd(credentialStore, adminClient);
+        CredentialsAdd cmd = new CredentialsAdd(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
@@ -98,7 +55,7 @@ class CredentialsCommandsTest {
         when(adminClient.listClients(any()))
                 .thenReturn(List.of(Map.of("clientId", "my-service", "description", "test", "enabled", true)));
 
-        CredentialsList cmd = new CredentialsList(credentialStore, adminClient);
+        CredentialsList cmd = new CredentialsList(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
@@ -113,7 +70,7 @@ class CredentialsCommandsTest {
                         Map.of("clientId", "admin-cli", "description", "", "enabled", true),
                         Map.of("clientId", "my-service", "description", "custom", "enabled", true)));
 
-        CredentialsList cmd = new CredentialsList(credentialStore, adminClient);
+        CredentialsList cmd = new CredentialsList(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
@@ -123,7 +80,7 @@ class CredentialsCommandsTest {
     void credentialsRemoveHappyPath() throws Exception {
         doNothing().when(adminClient).deleteClient(any(), any());
 
-        CredentialsRemove cmd = new CredentialsRemove(credentialStore, adminClient);
+        CredentialsRemove cmd = new CredentialsRemove(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
@@ -134,7 +91,7 @@ class CredentialsCommandsTest {
     void credentialsRegenerateHappyPath() throws Exception {
         when(adminClient.regenerateClientSecret(any(), any())).thenReturn("new-secret");
 
-        CredentialsRegenerate cmd = new CredentialsRegenerate(credentialStore, adminClient);
+        CredentialsRegenerate cmd = new CredentialsRegenerate(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
@@ -143,7 +100,7 @@ class CredentialsCommandsTest {
 
     @Test
     void credentialsShowWithoutFlagShouldWarn() throws Exception {
-        CredentialsShow cmd = new CredentialsShow(credentialStore, adminClient);
+        CredentialsShow cmd = new CredentialsShow(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
@@ -158,7 +115,7 @@ class CredentialsCommandsTest {
                 .when(adminClient)
                 .createClient(any(), any(), any());
 
-        CredentialsAdd cmd = new CredentialsAdd(credentialStore, adminClient);
+        CredentialsAdd cmd = new CredentialsAdd(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_ERROR, result);
@@ -169,7 +126,7 @@ class CredentialsCommandsTest {
     void credentialsListShouldReturnErrorOnKeycloakException() throws Exception {
         when(adminClient.listClients(any())).thenThrow(new KeycloakAdminClient.KeycloakAdminException("forbidden"));
 
-        CredentialsList cmd = new CredentialsList(credentialStore, adminClient);
+        CredentialsList cmd = new CredentialsList(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_ERROR, result);
@@ -182,7 +139,7 @@ class CredentialsCommandsTest {
                 .when(adminClient)
                 .deleteClient(any(), any());
 
-        CredentialsRemove cmd = new CredentialsRemove(credentialStore, adminClient);
+        CredentialsRemove cmd = new CredentialsRemove(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_ERROR, result);
@@ -194,7 +151,7 @@ class CredentialsCommandsTest {
         when(adminClient.regenerateClientSecret(any(), any()))
                 .thenThrow(new KeycloakAdminClient.KeycloakAdminException("cannot regenerate"));
 
-        CredentialsRegenerate cmd = new CredentialsRegenerate(credentialStore, adminClient);
+        CredentialsRegenerate cmd = new CredentialsRegenerate(adminClient);
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_ERROR, result);

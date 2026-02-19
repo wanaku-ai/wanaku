@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.commands.credentials;
 
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.admin.BaseAdminCommand;
-import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.keycloak.KeycloakAdminClient;
 import picocli.CommandLine;
@@ -25,12 +24,8 @@ public class CredentialsShow extends BaseAdminCommand {
         super();
     }
 
-    public CredentialsShow(AuthCredentialStore credentialStore) {
-        super(credentialStore);
-    }
-
-    public CredentialsShow(AuthCredentialStore credentialStore, KeycloakAdminClient adminClient) {
-        super(credentialStore, adminClient);
+    public CredentialsShow(KeycloakAdminClient adminClient) {
+        super(adminClient);
     }
 
     @Override
