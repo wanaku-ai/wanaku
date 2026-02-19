@@ -19,7 +19,8 @@ public class UsersAdd extends BaseAdminCommand {
             names = {"--password"},
             description = "Password for the new user",
             required = true,
-            interactive = true)
+            interactive = true,
+            arity = "0..1")
     private String password;
 
     @CommandLine.Option(

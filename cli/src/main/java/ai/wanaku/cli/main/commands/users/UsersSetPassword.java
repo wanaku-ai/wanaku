@@ -19,7 +19,8 @@ public class UsersSetPassword extends BaseAdminCommand {
             names = {"--password"},
             description = "New password for the user",
             required = true,
-            interactive = true)
+            interactive = true,
+            arity = "0..1")
     private String password;
 
     public UsersSetPassword() {

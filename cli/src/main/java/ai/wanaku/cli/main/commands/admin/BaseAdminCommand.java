@@ -41,7 +41,8 @@ public abstract class BaseAdminCommand extends BaseCommand {
             names = {"--admin-password"},
             description = "Admin password for Keycloak",
             required = true,
-            interactive = true)
+            interactive = true,
+            arity = "0..1")
     protected String adminPassword;
 
     private final KeycloakAdminClient adminClientOverride;
