@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.commands.credentials;
 
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.admin.BaseAdminCommand;
-import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.keycloak.KeycloakAdminClient;
 import picocli.CommandLine;
@@ -20,12 +19,8 @@ public class CredentialsRemove extends BaseAdminCommand {
         super();
     }
 
-    public CredentialsRemove(AuthCredentialStore credentialStore) {
-        super(credentialStore);
-    }
-
-    public CredentialsRemove(AuthCredentialStore credentialStore, KeycloakAdminClient adminClient) {
-        super(credentialStore, adminClient);
+    public CredentialsRemove(KeycloakAdminClient adminClient) {
+        super(adminClient);
     }
 
     @Override

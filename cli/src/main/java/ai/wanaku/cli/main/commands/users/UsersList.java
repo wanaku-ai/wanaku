@@ -5,7 +5,6 @@ import java.util.Map;
 import org.jline.terminal.Terminal;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import ai.wanaku.cli.main.commands.admin.BaseAdminCommand;
-import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.keycloak.KeycloakAdminClient;
 import picocli.CommandLine;
@@ -20,12 +19,8 @@ public class UsersList extends BaseAdminCommand {
         super();
     }
 
-    public UsersList(AuthCredentialStore credentialStore) {
-        super(credentialStore);
-    }
-
-    public UsersList(AuthCredentialStore credentialStore, KeycloakAdminClient adminClient) {
-        super(credentialStore, adminClient);
+    public UsersList(KeycloakAdminClient adminClient) {
+        super(adminClient);
     }
 
     @Override
