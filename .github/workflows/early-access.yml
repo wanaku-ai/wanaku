@@ -15,14 +15,14 @@ jobs:
       contents: write
     steps:
       - name: Checkout Wanaku Capabilities SDK Main Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: wanaku-ai/wanaku-capabilities-java-sdk
           persist-credentials: false
           ref: main
           path: wanaku-capabilities-java-sdk
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -31,7 +31,7 @@ jobs:
         run: mvn -DskipTests clean install
         working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

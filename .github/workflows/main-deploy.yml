@@ -15,7 +15,7 @@ jobs:
     if: github.repository == 'wanaku-ai/wanaku'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Install CLI tools from Mirror
       uses: redhat-actions/openshift-tools-installer@v1
       with:
