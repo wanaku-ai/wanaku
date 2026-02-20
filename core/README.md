@@ -10,7 +10,6 @@ This directory contains essential libraries and infrastructure used throughout W
 - MCP protocol implementation
 - gRPC communication protocols
 - Data persistence abstractions
-- Security and authentication
 - Service discovery mechanisms
 - Base classes for capabilities
 
@@ -27,9 +26,6 @@ Data persistence abstractions with Infinispan implementation for storing tools, 
 
 ### core-capabilities-base
 Base classes and utilities for building capability services (tools and resource providers).
-
-### core-security
-Security framework including OIDC integration and service-to-service authentication.
 
 ### core-service-discovery
 Service registration, discovery, and health monitoring mechanisms.
