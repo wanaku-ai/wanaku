@@ -157,6 +157,19 @@
             <artifactId>quarkus-test-keycloak-server</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkiverse.mcp</groupId>
+            <artifactId>quarkus-mcp-server-test</artifactId>
+            <version>${quarkus-mcp-server.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
