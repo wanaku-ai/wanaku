@@ -8,7 +8,7 @@ import ai.wanaku.core.exchange.v1.RuntimeStatus;
 /**
  * Default health probe delegate implementation.
  * <p>
- * Returns {@link RuntimeStatus#STARTED} when the capability is responding.
+ * Returns {@link RuntimeStatus#RUNTIME_STATUS_STARTED} when the capability is responding.
  * If a capability can respond to the probe, it is considered started.
  */
 @ApplicationScoped
