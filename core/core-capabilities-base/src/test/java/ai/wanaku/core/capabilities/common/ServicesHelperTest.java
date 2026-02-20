@@ -20,6 +20,19 @@ class ServicesHelperTest {
     }
 
     @Test
+    void waitAndRetryWithZeroRetriesReturnsNegative() {
+        // When called with 0 retries, it decrements to -1 and does not hit the == 0 check
+        int result = ServicesHelper.waitAndRetry("test-service", new RuntimeException("fail"), 0, 0);
+        assertEquals(-1, result);
+    }
+
+    @Test
+    void waitAndRetryWithNegativeRetriesReturnsDecrementedValue() {
+        int result = ServicesHelper.waitAndRetry("test-service", new RuntimeException("fail"), -1, 0);
+        assertEquals(-2, result);
+    }
+
+    @Test
     void getCanonicalServiceHomeExpandsPlaceholder() {
         String userHome = System.getProperty("user.home");
         // Create a minimal config implementation for testing
