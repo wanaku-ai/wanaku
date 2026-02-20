@@ -17,6 +17,7 @@ Please read our comprehensive [Contributing Guide](docs/contributing.md) for det
 - **Contributing Guide**: [docs/contributing.md](docs/contributing.md)
 - **Building Guide**: [docs/building.md](docs/building.md)
 - **Architecture Overview**: [docs/architecture.md](docs/architecture.md)
+- **gRPC Bridge Guide**: [docs/grpc-bridge.md](docs/grpc-bridge.md)
 - **Release Guide**: [docs/release-guide.md](docs/release-guide.md)
 
 ## Code of Conduct
