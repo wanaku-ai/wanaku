@@ -1,5 +1,8 @@
 package ai.wanaku.core.capabilities.common;
 
+import java.io.File;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -41,9 +44,20 @@ class ServicesHelperTest {
     }
 
     @Test
+    void getCanonicalServiceHome_handlesTrailingSeparatorInServiceHome() {
+        String userHome = System.getProperty("user.home");
+        TestServiceConfig config =
+                new TestServiceConfig("my-service", userHome + File.separator + ".wanaku" + File.separator);
+
+        String result = ServicesHelper.getCanonicalServiceHome(config);
+
+        assertEquals(java.nio.file.Path.of(userHome, ".wanaku", "my-service").toString(), result);
+    }
+
+    @Test
     void getCanonicalServiceHomeWithoutPlaceholder() {
         TestServiceConfig config = new TestServiceConfig("my-service", "/opt/wanaku");
         String result = ServicesHelper.getCanonicalServiceHome(config);
-        assertEquals(java.nio.file.Path.of("/opt/wanaku", "my-service").toString(), result);
+        assertEquals(Path.of("/opt/wanaku", "my-service").toString(), result);
     }
 }
