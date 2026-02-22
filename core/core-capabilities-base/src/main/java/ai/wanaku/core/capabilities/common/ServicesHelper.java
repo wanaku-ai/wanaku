@@ -2,7 +2,6 @@ package ai.wanaku.core.capabilities.common;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 
-import java.io.File;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
@@ -22,15 +21,18 @@ import ai.wanaku.core.service.discovery.client.DiscoveryService;
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
 /**
- * Utility class providing helper methods for service registration, configuration, and lifecycle management.
+ * Utility class providing helper methods for service registration,
+ * configuration, and lifecycle management.
  * <p>
- * This class contains static utility methods that support capability provider services in their
- * interactions with the MCP router's discovery service. It handles common tasks such as:
+ * This class contains static utility methods that support capability provider
+ * services in their
+ * interactions with the MCP router's discovery service. It handles common tasks
+ * such as:
  * <ul>
- *   <li>Creating and configuring registration managers</li>
- *   <li>Building property schemas from service configurations</li>
- *   <li>Managing retry logic for registration operations</li>
- *   <li>Resolving service home directories and addresses</li>
+ * <li>Creating and configuring registration managers</li>
+ * <li>Building property schemas from service configurations</li>
+ * <li>Managing retry logic for registration operations</li>
+ * <li>Resolving service home directories and addresses</li>
  * </ul>
  *
  * @see RegistrationManager
@@ -43,14 +45,17 @@ public class ServicesHelper {
     private ServicesHelper() {}
 
     /**
-     * Implements a wait-and-retry mechanism for failed service registration attempts.
+     * Implements a wait-and-retry mechanism for failed service registration
+     * attempts.
      * <p>
-     * This method decrements the retry counter and waits for the specified duration before
-     * allowing another attempt. If no retries remain, it logs an error and returns 0.
+     * This method decrements the retry counter and waits for the specified duration
+     * before
+     * allowing another attempt. If no retries remain, it logs an error and returns
+     * 0.
      *
-     * @param service the name of the service being registered
-     * @param e the exception that caused the failure
-     * @param retries the current number of retries remaining
+     * @param service     the name of the service being registered
+     * @param e           the exception that caused the failure
+     * @param retries     the current number of retries remaining
      * @param waitSeconds the number of seconds to wait before the next retry
      * @return the updated retry count, or 0 if no retries remain or if interrupted
      */
@@ -75,11 +80,14 @@ public class ServicesHelper {
     /**
      * Builds a map of property schemas from the service configuration.
      * <p>
-     * This method converts the property definitions in the service configuration into
-     * {@link PropertySchema} objects that can be used for validation and documentation
+     * This method converts the property definitions in the service configuration
+     * into
+     * {@link PropertySchema} objects that can be used for validation and
+     * documentation
      * purposes.
      *
-     * @param config the Wanaku service configuration containing property definitions
+     * @param config the Wanaku service configuration containing property
+     *               definitions
      * @return a map of property names to their corresponding schemas
      */
     public static Map<String, PropertySchema> buildPropertiesMap(WanakuServiceConfig config) {
@@ -102,11 +110,15 @@ public class ServicesHelper {
     }
 
     /**
-     * Creates a new RegistrationManager instance for the given configuration and service type.
+     * Creates a new RegistrationManager instance for the given configuration and
+     * service type.
      *
-     * @param config the Wanaku service configuration
-     * @param serviceType the type of service to register (e.g., "resource-provider", "tool-invoker", "code-execution-engine")
-     * @param tokens the access token used for authenticating requests to the registration service
+     * @param config      the Wanaku service configuration
+     * @param serviceType the type of service to register (e.g.,
+     *                    "resource-provider", "tool-invoker",
+     *                    "code-execution-engine")
+     * @param tokens      the access token used for authenticating requests to the
+     *                    registration service
      * @return a new RegistrationManager instance
      */
     public static RegistrationManager newRegistrationManager(
@@ -126,17 +138,18 @@ public class ServicesHelper {
     /**
      * Resolves the canonical service home directory path.
      * <p>
-     * This method resolves the service home directory by expanding any {@code ${user.home}}
-     * placeholders and appending the service name. The result is a fully qualified path
+     * This method resolves the service home directory by expanding any
+     * {@code ${user.home}}
+     * placeholders and appending the service name. The result is a fully qualified
+     * path
      * where service-specific data and configuration can be stored.
      *
      * @param config the Wanaku service configuration
      * @return the canonical service home directory path
      */
     public static String getCanonicalServiceHome(WanakuServiceConfig config) {
-        return config.serviceHome().replace("${user.home}", System.getProperty("user.home"))
-                + File.separator
-                + config.name();
+        String home = config.serviceHome().replace("${user.home}", System.getProperty("user.home"));
+        return java.nio.file.Path.of(home).resolve(config.name()).normalize().toString();
     }
 
     private static ServiceTarget newServiceTarget(WanakuServiceConfig config, String service, String serviceType) {

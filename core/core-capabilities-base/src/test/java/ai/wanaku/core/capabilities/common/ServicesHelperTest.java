@@ -1,7 +1,5 @@
 package ai.wanaku.core.capabilities.common;
 
-import java.io.File;
-
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -21,7 +19,8 @@ class ServicesHelperTest {
 
     @Test
     void waitAndRetryWithZeroRetriesReturnsNegative() {
-        // When called with 0 retries, it decrements to -1 and does not hit the == 0 check
+        // When called with 0 retries, it decrements to -1 and does not hit the == 0
+        // check
         int result = ServicesHelper.waitAndRetry("test-service", new RuntimeException("fail"), 0, 0);
         assertEquals(-1, result);
     }
@@ -38,13 +37,13 @@ class ServicesHelperTest {
         // Create a minimal config implementation for testing
         TestServiceConfig config = new TestServiceConfig("my-service", "${user.home}/.wanaku");
         String result = ServicesHelper.getCanonicalServiceHome(config);
-        assertEquals(userHome + File.separator + ".wanaku" + File.separator + "my-service", result);
+        assertEquals(java.nio.file.Path.of(userHome, ".wanaku", "my-service").toString(), result);
     }
 
     @Test
     void getCanonicalServiceHomeWithoutPlaceholder() {
         TestServiceConfig config = new TestServiceConfig("my-service", "/opt/wanaku");
         String result = ServicesHelper.getCanonicalServiceHome(config);
-        assertEquals("/opt/wanaku" + File.separator + "my-service", result);
+        assertEquals(java.nio.file.Path.of("/opt/wanaku", "my-service").toString(), result);
     }
 }
