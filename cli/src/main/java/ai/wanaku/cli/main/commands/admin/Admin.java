@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.commands.admin;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.commands.credentials.Credentials;
+import ai.wanaku.cli.main.commands.realm.Realm;
 import ai.wanaku.cli.main.commands.users.Users;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
@@ -10,7 +11,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "admin",
         description = "Keycloak administration commands",
-        subcommands = {Users.class, Credentials.class})
+        subcommands = {Users.class, Credentials.class, Realm.class})
 public class Admin extends BaseCommand {
 
     @Override
