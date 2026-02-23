@@ -159,6 +159,18 @@ public class KeycloakAdminClient {
         return extractSecret(response.body());
     }
 
+    // ---- Realm methods ----
+
+    public void importRealm(String realmJson) throws KeycloakAdminException {
+        String url = keycloakUrl + "/admin/realms";
+        HttpRequest request = postRawJsonRequest(url, realmJson);
+        HttpResponse<String> response = send(request);
+
+        if (response.statusCode() != 201) {
+            throw new KeycloakAdminException("Failed to import realm: " + response.body());
+        }
+    }
+
     // ---- Private helpers ----
 
     private String resolveUserId(String realm, String username) throws KeycloakAdminException {
@@ -227,6 +239,16 @@ public class KeycloakAdminClient {
         } catch (IOException e) {
             throw new KeycloakAdminException("Failed to serialize request body", e);
         }
+    }
+
+    private HttpRequest postRawJsonRequest(String url, String json) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
     }
 
     private HttpRequest putRequest(String url, Object body) throws KeycloakAdminException {
