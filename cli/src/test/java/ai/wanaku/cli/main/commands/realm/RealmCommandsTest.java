@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -75,6 +76,15 @@ class RealmCommandsTest {
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_ERROR, result);
-        verify(printer).printErrorMessage(any());
+        verify(printer).printErrorMessage(contains("/nonexistent/path/realm.json"));
+    }
+
+    @Test
+    void realmCreateWithDefaultConfigShouldReturnErrorWhenFileMissing() throws Exception {
+        RealmCreate cmd = new RealmCreate(adminClient);
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_ERROR, result);
+        verify(printer).printErrorMessage(contains("deploy/auth/wanaku-config.json"));
     }
 }

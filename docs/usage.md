@@ -125,13 +125,22 @@ This will create all the necessary resources for Keycloak to run.
 oc apply -f deploy/auth
 ```
 
-### Importing the Wanaku Realm Configuration (via CLI)
+### Importing the Wanaku Realm Configuration (via Wanaku CLI)
 
-Next, you'll use Keycloak's Admin API to automatically configure the `wanaku` realm.
-Wanaku comes with a [script that simplifies importing](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/configure-auth.sh)
-the realm configuration into keycloak. 
+The simplest way to import the realm configuration is using the Wanaku CLI:
 
-To run that script: 
+```shell
+wanaku admin realm create --admin-username admin --admin-password admin
+```
+
+This imports the default realm configuration from `deploy/auth/wanaku-config.json`. You can specify a custom configuration file with `--config /path/to/realm.json` and a custom Keycloak URL with `--keycloak-url`.
+
+### Importing the Wanaku Realm Configuration (via Shell Script)
+
+Alternatively, Wanaku comes with a [script that simplifies importing](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/configure-auth.sh)
+the realm configuration into keycloak.
+
+To run that script:
 - set the `WANAKU_KEYCLOAK_PASS` variable to the admin password of your Keycloak instance
 - set `WANAKU_KEYCLOAK_HOST` to the address of your Keycloak instance (i.e.; `localhost` if using Podman or the result of `oc get routes keycloak -o json  | jq -r .spec.host` if using OpenShift)
 
@@ -931,7 +940,7 @@ wanaku tools list --no-auth
 
 ## Admin Commands
 
-The `wanaku admin` command group provides Keycloak administration operations for managing users and service client credentials. These commands authenticate directly against Keycloak using admin credentials rather than the user's stored token.
+The `wanaku admin` command group provides Keycloak administration operations for managing realms, users, and service client credentials. These commands authenticate directly against Keycloak using admin credentials rather than the user's stored token.
 
 ### Common Options
 
@@ -991,6 +1000,21 @@ wanaku admin credentials remove --admin-username admin --admin-password admin \
 ```
 
 > **Note:** The `--show-secret` flag is required to display client secrets. Without it, `credentials show` will print a warning instead. Use with caution as secrets may leak into logs or shell history.
+
+### Realm Management
+
+```shell
+# Import the default realm configuration (deploy/auth/wanaku-config.json)
+wanaku admin realm create --admin-username admin --admin-password admin
+
+# Import a custom realm configuration file
+wanaku admin realm create --admin-username admin --admin-password admin \
+  --config /path/to/realm.json
+
+# Import with a custom Keycloak URL
+wanaku admin realm create --keycloak-url http://keycloak:8080 \
+  --admin-username admin --admin-password admin
+```
 
 ## Understanding Capabilities
 
