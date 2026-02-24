@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -167,7 +168,8 @@ public class KeycloakAdminClient {
         HttpResponse<String> response = send(request);
 
         if (response.statusCode() != 201) {
-            throw new KeycloakAdminException("Failed to import realm: " + response.body());
+            throw new KeycloakAdminException(
+                    "Failed to import realm (HTTP " + response.statusCode() + "): " + response.body());
         }
     }
 
@@ -245,9 +247,9 @@ public class KeycloakAdminClient {
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Authorization", "Bearer " + accessToken)
-                .header("Content-Type", "application/json")
+                .header("Content-Type", "application/json; charset=UTF-8")
                 .header("Accept", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
                 .build();
     }
 
