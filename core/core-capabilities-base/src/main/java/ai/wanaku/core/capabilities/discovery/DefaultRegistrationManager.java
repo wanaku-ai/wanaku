@@ -52,6 +52,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
     private ServiceTarget target;
     private int retries;
     private final int waitSeconds;
+    private final boolean pingEnabled;
     private final InstanceDataManager instanceDataManager;
     private volatile boolean registered;
     private final ReentrantLock lock = new ReentrantLock();
@@ -77,6 +78,9 @@ public class DefaultRegistrationManager implements RegistrationManager {
 
         // the number of seconds to wait between retry attempts
         this.waitSeconds = config.registration().retryWaitSeconds();
+
+        // whether capability-side ping is enabled
+        this.pingEnabled = config.registration().pingEnabled();
 
         // the directory path for persisting service identity data
         String dataDir = ServicesHelper.getCanonicalServiceHome(config);
@@ -169,7 +173,9 @@ public class DefaultRegistrationManager implements RegistrationManager {
     @Override
     public void register() {
         if (isRegistered()) {
-            ping();
+            if (pingEnabled) {
+                ping();
+            }
         } else {
             LOG.debugf(
                     "Registering %s service %s with address %s",
