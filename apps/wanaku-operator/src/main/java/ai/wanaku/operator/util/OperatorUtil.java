@@ -443,8 +443,12 @@ public final class OperatorUtil {
         }
     }
 
+    public static String getRouterBaseUrl(String routerRef) {
+        return "http://internal-" + routerRef + ":8080";
+    }
+
     private static String getInternalRegistrationUri(WanakuCapability resource) {
-        return "http://internal-" + resource.getSpec().getRouterRef() + ":8080/";
+        return getRouterBaseUrl(resource.getSpec().getRouterRef()) + "/";
     }
 
     private static Deployment configureCapabilityDeployment(
