@@ -70,6 +70,9 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.DataStores}>
                     Data Stores
                 </HeaderMenuItem>
+                <HeaderMenuItem as={Link} to={Links.ServiceCatalog}>
+                    Service Catalog
+                </HeaderMenuItem>
                 <HeaderMenu aria-label="Developer" menuLinkName="Developer">
                     <HeaderMenuItem as={Link} to={Links.LLMChat}>
                         LLMChat
