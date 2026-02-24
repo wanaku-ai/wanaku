@@ -611,6 +611,73 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/ToolReference"
+    ServiceCatalogSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        services:
+          type: array
+          items:
+            type: string
+    ServiceCatalogDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceCatalogSystem"
+    ServiceCatalogSystem:
+      type: object
+      properties:
+        name:
+          type: string
+        routesFile:
+          type: string
+        rulesFile:
+          type: string
+        dependenciesFile:
+          type: string
+    ServiceCatalogDeployRequest:
+      type: object
+      required:
+      - name
+      - data
+      properties:
+        name:
+          type: string
+        data:
+          type: string
+    WanakuResponseListServiceCatalogSummary:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceCatalogSummary"
+    WanakuResponseServiceCatalogDetail:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ServiceCatalogDetail"
   securitySchemes:
     SecurityScheme:
       type: openIdConnect
@@ -722,6 +789,103 @@ paths:
       summary: Tools State
       tags:
       - Capabilities Resource
+  /api/v1/service-catalog/list:
+    get:
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListServiceCatalogSummary"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: List Service Catalogs
+      tags:
+      - Service Catalog Resource
+  /api/v1/service-catalog/get:
+    get:
+      parameters:
+      - name: name
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseServiceCatalogDetail"
+        "404":
+          description: Not Found
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get Service Catalog
+      tags:
+      - Service Catalog Resource
+  /api/v1/service-catalog/deploy:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceCatalogDeployRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "400":
+          description: Bad Request
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Deploy Service Catalog
+      tags:
+      - Service Catalog Resource
+  /api/v1/service-catalog/remove:
+    delete:
+      parameters:
+      - name: name
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not Found
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove Service Catalog
+      tags:
+      - Service Catalog Resource
   /api/v1/data-store/add:
     post:
       requestBody:

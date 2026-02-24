@@ -1,0 +1,183 @@
+# Service Catalog API Contract
+# Extends the existing /api/v1/data-store endpoints with catalog-specific operations
+
+openapi: 3.0.3
+info:
+  title: Wanaku Service Catalog API
+  version: 1.0.0
+
+paths:
+  /api/v1/service-catalog/list:
+    get:
+      operationId: listServiceCatalogs
+      summary: List all service catalog entries from the data store
+      description: >
+        Returns all DataStore entries with fileType=CATALOG.
+        Each entry contains the Base64-encoded ZIP package.
+        The response includes parsed index metadata (name, icon, description, services list).
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional search term to filter catalogs by name or description
+      responses:
+        '200':
+          description: List of service catalog entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WanakuResponseServiceCatalogList'
+
+  /api/v1/service-catalog/get:
+    get:
+      operationId: getServiceCatalog
+      summary: Get a specific service catalog by name
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The catalog name (as defined in index.properties)
+      responses:
+        '200':
+          description: Service catalog details with parsed index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WanakuResponseServiceCatalogDetail'
+        '404':
+          description: Catalog not found
+
+  /api/v1/service-catalog/deploy:
+    post:
+      operationId: deployServiceCatalog
+      summary: Upload and deploy a service catalog ZIP package
+      description: >
+        Accepts a Base64-encoded ZIP package containing the service catalog.
+        Validates the ZIP structure (index.properties, required files).
+        Stores in DataStore with fileType=CATALOG.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCatalogDeployRequest'
+      responses:
+        '200':
+          description: Catalog deployed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WanakuResponseDataStore'
+        '400':
+          description: Invalid ZIP structure or missing required files
+
+  /api/v1/service-catalog/remove:
+    delete:
+      operationId: removeServiceCatalog
+      summary: Remove a service catalog by name
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The catalog name to remove
+      responses:
+        '200':
+          description: Catalog removed successfully
+        '404':
+          description: Catalog not found
+
+components:
+  schemas:
+    ServiceCatalogSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          description: DataStore entry ID
+        name:
+          type: string
+          description: Catalog name from index.properties
+        icon:
+          type: string
+          description: Display icon (emoji or identifier)
+        description:
+          type: string
+          description: Catalog description from index.properties
+        services:
+          type: array
+          items:
+            type: string
+          description: List of system identifiers in this catalog
+
+    ServiceCatalogDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCatalogSystem'
+
+    ServiceCatalogSystem:
+      type: object
+      properties:
+        name:
+          type: string
+          description: System identifier
+        routesFile:
+          type: string
+          description: Relative path to Camel route YAML
+        rulesFile:
+          type: string
+          description: Relative path to Wanaku rules YAML
+        dependenciesFile:
+          type: string
+          nullable: true
+          description: Relative path to dependencies file (optional)
+
+    ServiceCatalogDeployRequest:
+      type: object
+      required:
+        - name
+        - data
+      properties:
+        name:
+          type: string
+          description: The ZIP file name (e.g., finance.service.zip)
+        data:
+          type: string
+          description: Base64-encoded ZIP file content
+
+    WanakuResponseServiceCatalogList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCatalogSummary'
+
+    WanakuResponseServiceCatalogDetail:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ServiceCatalogDetail'
+
+    WanakuResponseDataStore:
+      type: object
+      properties:
+        data:
+          type: object
+          description: The created DataStore entry
