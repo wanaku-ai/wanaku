@@ -50,7 +50,7 @@ jobs:
       - name: Create a release build with container push (x86)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          mvn -Pdist -Dnative -DskipTests \
+          mvn --no-transfer-progress -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.tag=${{ github.event.inputs.currentDevelopmentVersion }}-${{ steps.arch.outputs.arch }} \
@@ -59,7 +59,7 @@ jobs:
       - name: Create a release build with container push (x86)
         if: matrix.os == 'ubuntu-24.04-arm'
         run: |
-          mvn -Pdist -Dnative -DskipTests \
+          mvn --no-transfer-progress -Pdist -Dnative -DskipTests \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.tag=${{ github.event.inputs.currentDevelopmentVersion }}-${{ steps.arch.outputs.arch }} \
@@ -68,7 +68,7 @@ jobs:
       - name: Create a release build with native executables (macos)
         if: matrix.os != 'ubuntu-latest' || matrix.os != 'ubuntu-24.04-arm'
         run: |
-          mvn -Pdist -Dnative -DskipTests clean package
+          mvn --no-transfer-progress -Pdist -Dnative -DskipTests clean package
       - name: Run JReleaser
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
         uses: jreleaser/release-action@v2
