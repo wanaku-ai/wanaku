@@ -28,7 +28,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Build Wanaku Capabilities SDK Main Project
-        run: mvn -DskipTests clean install
+        run: mvn --no-transfer-progress -DskipTests clean install
         working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
       - name: Checkout
         uses: actions/checkout@v6
@@ -52,7 +52,7 @@ jobs:
 
       - name: Create a snapshot build (with container push)
         run: |
-          mvn -Dnative -Pdist \
+          mvn --no-transfer-progress -Dnative -Pdist \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
           -Dquarkus.container-image.additional-tags=${{ github.event.inputs.currentDevelopmentVersion }} \

@@ -55,8 +55,8 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build Wanaku Capabilities SDK Main Project
-      run: mvn -DskipTests clean install
+      run: mvn --no-transfer-progress -DskipTests clean install
       working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
     - uses: actions/checkout@v6
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B --no-transfer-progress package --file pom.xml

@@ -49,10 +49,10 @@ jobs:
           export GPG_TTY=$(tty)
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
-          mvn --batch-mode -Dtag=wanaku-${{ github.event.inputs.currentDevelopmentVersion }} -DreleaseVersion=${{ github.event.inputs.currentDevelopmentVersion }} -DdevelopmentVersion=${{ github.event.inputs.nextDevelopmentVersion }}-SNAPSHOT release:prepare
+          mvn --batch-mode --no-transfer-progress -Dtag=wanaku-${{ github.event.inputs.currentDevelopmentVersion }} -DreleaseVersion=${{ github.event.inputs.currentDevelopmentVersion }} -DdevelopmentVersion=${{ github.event.inputs.nextDevelopmentVersion }}-SNAPSHOT release:prepare
           sed -i -e "s/${{ github.event.inputs.previousDevelopmentVersion }}/${{ github.event.inputs.currentDevelopmentVersion }}/g" jbang-catalog.json
-          mvn -PcommitFiles scm:checkin
+          mvn --no-transfer-progress -PcommitFiles scm:checkin
           git tag -d wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
           git tag wanaku-${{ github.event.inputs.currentDevelopmentVersion }} HEAD~2
           git push origin wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
-          mvn -Pdist release:perform
+          mvn --no-transfer-progress -Pdist release:perform
