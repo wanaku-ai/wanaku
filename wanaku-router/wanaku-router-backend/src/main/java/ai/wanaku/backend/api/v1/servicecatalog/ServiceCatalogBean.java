@@ -62,20 +62,27 @@ public class ServiceCatalogBean {
     }
 
     /**
-     * Get a specific service catalog by name.
+     * Get a specific service catalog by its catalog index name.
+     * Searches all catalog entries and matches against the name stored in the ZIP's index.properties.
      *
-     * @param name the catalog name
+     * @param name the catalog name (from index.properties, not the DataStore name)
      * @return the data store entry, or null if not found
      */
     public DataStore get(String name) {
         LOG.debugf("Getting service catalog: %s", name);
-        List<DataStore> matches = dataStoreRepository.findByName(name);
-        if (matches == null || matches.isEmpty()) {
-            return null;
-        }
+        List<DataStore> catalogs = list(null);
 
-        // Find the one with the catalog label
-        return matches.stream().filter(this::isCatalog).findFirst().orElse(null);
+        for (DataStore ds : catalogs) {
+            try {
+                ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(ds.getData());
+                if (name.equals(index.getName())) {
+                    return ds;
+                }
+            } catch (WanakuException e) {
+                LOG.debugf("Failed to parse catalog index for '%s': %s", ds.getName(), e.getMessage());
+            }
+        }
+        return null;
     }
 
     /**

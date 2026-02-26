@@ -44,6 +44,7 @@ export * from "./getApiV1ManagementTargetsResourcesList200";
 export * from "./getApiV1ManagementTargetsToolsList200";
 export * from "./getApiV1NamespacesListParams";
 export * from "./getApiV1ResourcesListParams";
+export * from "./getApiV1ServiceCatalogDownloadParams";
 export * from "./getApiV1ServiceCatalogGetParams";
 export * from "./getApiV1ServiceCatalogListParams";
 export * from "./getApiV1ToolsListParams";

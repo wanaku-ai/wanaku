@@ -1,7 +1,8 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {ToastNotification} from "@carbon/react";
-import {ServiceCatalogTable} from "./ServiceCatalogTable";
+import {ServiceCatalogCards} from "./ServiceCatalogCards";
 import {useServiceCatalog} from "../../hooks/api/use-service-catalog";
+import "./ServiceCatalogPage.scss";
 
 interface ServiceCatalogSummary {
   id: string;
@@ -81,7 +82,7 @@ export const ServiceCatalogPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="service-catalog-page">
       {errorMessage && (
         <ToastNotification
           kind="error"
@@ -107,14 +108,12 @@ export const ServiceCatalogPage: React.FC = () => {
         View and manage deployed service catalogs. Services are packaged via the CLI and contain
         Camel routes, Wanaku rules, and optional dependencies for one or more systems.
       </p>
-      <div id="page-content">
-        <ServiceCatalogTable
-          catalogs={catalogs}
-          onDelete={handleDelete}
-          onSearch={handleSearch}
-          getDetail={handleGetDetail}
-        />
-      </div>
+      <ServiceCatalogCards
+        catalogs={catalogs}
+        onDelete={handleDelete}
+        onSearch={handleSearch}
+        getDetail={handleGetDetail}
+      />
     </div>
   );
 };

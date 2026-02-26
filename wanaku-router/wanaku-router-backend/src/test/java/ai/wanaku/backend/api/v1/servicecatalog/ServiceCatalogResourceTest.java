@@ -88,10 +88,10 @@ class ServiceCatalogResourceTest {
 
     @Test
     void testGetFound() throws Exception {
-        when(serviceCatalogBean.get("test.service.zip")).thenReturn(testCatalog);
+        when(serviceCatalogBean.get("testservice")).thenReturn(testCatalog);
         when(serviceCatalogBean.parseIndex(testCatalog)).thenReturn(testIndex);
 
-        WanakuResponse<Map<String, Object>> response = resource.get("test.service.zip");
+        WanakuResponse<Map<String, Object>> response = resource.get("testservice");
         assertNotNull(response);
         assertEquals("testservice", response.data().get("name"));
     }
@@ -106,6 +106,29 @@ class ServiceCatalogResourceTest {
     void testGetMissingName() {
         assertThrows(WanakuException.class, () -> resource.get(null));
         assertThrows(WanakuException.class, () -> resource.get(""));
+    }
+
+    @Test
+    void testDownloadFound() throws Exception {
+        when(serviceCatalogBean.get("testservice")).thenReturn(testCatalog);
+
+        WanakuResponse<DataStore> response = resource.download("testservice");
+        assertNotNull(response);
+        assertNotNull(response.data());
+        assertEquals("test-id", response.data().getId());
+        assertNotNull(response.data().getData());
+    }
+
+    @Test
+    void testDownloadNotFound() {
+        when(serviceCatalogBean.get("nonexistent")).thenReturn(null);
+        assertThrows(WanakuException.class, () -> resource.download("nonexistent"));
+    }
+
+    @Test
+    void testDownloadMissingName() {
+        assertThrows(WanakuException.class, () -> resource.download(null));
+        assertThrows(WanakuException.class, () -> resource.download(""));
     }
 
     @Test

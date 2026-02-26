@@ -2119,6 +2119,41 @@
         "tags" : [ "Service Catalog Resource" ]
       }
     },
+    "/api/v1/service-catalog/download" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Download",
+        "tags" : [ "Service Catalog Resource" ]
+      }
+    },
     "/api/v1/service-catalog/get" : {
       "get" : {
         "parameters" : [ {

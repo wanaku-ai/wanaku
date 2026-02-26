@@ -117,6 +117,31 @@ public class ServiceCatalogResource {
     }
 
     /**
+     * Download a service catalog by name, returning the raw DataStore with Base64-encoded ZIP data.
+     * GET /api/v1/service-catalog/download?name={name}
+     *
+     * @param name the catalog name
+     * @return response with the DataStore containing the Base64-encoded ZIP
+     */
+    @Path("/download")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
+        LOG.debugf("REST: Downloading service catalog: %s", name);
+
+        if (name == null || name.isBlank()) {
+            throw new WanakuException("Query parameter 'name' is required");
+        }
+
+        DataStore catalog = serviceCatalogBean.get(name);
+        if (catalog == null) {
+            throw new WanakuException("Service catalog not found: " + name);
+        }
+
+        return new WanakuResponse<>(catalog);
+    }
+
+    /**
      * Deploy a service catalog ZIP package.
      * POST /api/v1/service-catalog/deploy
      *

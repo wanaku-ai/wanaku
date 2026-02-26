@@ -67,6 +67,18 @@ public interface ServiceCatalogService {
     WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException;
 
     /**
+     * Download a service catalog by name, returning the raw DataStore with Base64-encoded ZIP data.
+     *
+     * @param name the catalog name
+     * @return response with the DataStore containing the Base64-encoded ZIP
+     * @throws WanakuException if catalog not found
+     */
+    @Path("/download")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException;
+
+    /**
      * Remove a service catalog by name.
      *
      * @param name the catalog name to remove

@@ -22,6 +22,7 @@ import type {
   GetApiV1ForwardsListParams,
   GetApiV1NamespacesListParams,
   GetApiV1ResourcesListParams,
+  GetApiV1ServiceCatalogDownloadParams,
   GetApiV1ServiceCatalogGetParams,
   GetApiV1ServiceCatalogListParams,
   GetApiV1ToolsListParams,
@@ -1744,6 +1745,59 @@ export const postApiV1ServiceCatalogDeploy = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(dataStore),
+    },
+  );
+};
+
+/**
+ * @summary Download
+ */
+export type getApiV1ServiceCatalogDownloadResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type getApiV1ServiceCatalogDownloadResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceCatalogDownloadResponseComposite =
+  | getApiV1ServiceCatalogDownloadResponse200
+  | getApiV1ServiceCatalogDownloadResponse500;
+
+export type getApiV1ServiceCatalogDownloadResponse =
+  getApiV1ServiceCatalogDownloadResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1ServiceCatalogDownloadUrl = (
+  params?: GetApiV1ServiceCatalogDownloadParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-catalog/download?${stringifiedParams}`
+    : `/api/v1/service-catalog/download`;
+};
+
+export const getApiV1ServiceCatalogDownload = async (
+  params?: GetApiV1ServiceCatalogDownloadParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceCatalogDownloadResponse> => {
+  return customFetch<getApiV1ServiceCatalogDownloadResponse>(
+    getGetApiV1ServiceCatalogDownloadUrl(params),
+    {
+      ...options,
+      method: "GET",
     },
   );
 };
