@@ -1,10 +1,14 @@
-package $
+package ${package};
 
 import java.util.List;
 import java.util.Map;
 
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
+import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
+import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
+import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
+import ai.wanaku.core.exchange.v1.ResourceRequest;
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
