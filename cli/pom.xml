@@ -220,6 +220,8 @@
                     --initialize-at-run-time=org.jline.terminal.impl.jna.linux.LinuxNativePty$UtilLibrary,
                     --initialize-at-run-time=org.jline.terminal.impl.jna.freebsd.FreeBsdNativePty,
                     --initialize-at-run-time=org.jline.terminal.impl.jna.solaris.SolarisNativePty,
+                    --initialize-at-run-time=org.jline.nativ.CLibrary,
+                    --initialize-at-run-time=org.fusesource.jansi.internal.CLibrary$WinSize,
                     --initialize-at-run-time=org.jline.nativ.Kernel32,
                     --initialize-at-run-time=org.jline.nativ.Kernel32$CONSOLE_SCREEN_BUFFER_INFO,
                     --initialize-at-run-time=org.jline.nativ.Kernel32$CHAR_INFO,

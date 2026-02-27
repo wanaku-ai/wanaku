@@ -1,7 +1,5 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
-import jakarta.enterprise.context.Dependent;
-
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Objects;
@@ -12,9 +10,12 @@ import io.grpc.Deadline;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.InvokerToolExecutor;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
+import ai.wanaku.backend.bridge.ResourceResponseTransformer;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
@@ -60,7 +61,6 @@ import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
  * @see ResourceAcquirerBridge
  * @see InvokerToolExecutor
  */
-@Dependent
 public class GrpcTransport implements WanakuBridgeTransport {
     private static final Logger LOG = Logger.getLogger(GrpcTransport.class);
     private static final String WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS =
@@ -225,6 +225,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
         try {
             ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub =
                     ResourceAcquirerGrpc.newBlockingStub(channel);
+
             return blockingStub
                     .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
                     .resourceAcquire(request);
@@ -236,6 +237,53 @@ public class GrpcTransport implements WanakuBridgeTransport {
         } finally {
             channelManager.closeChannel(channel);
         }
+    }
+
+    /**
+     * Acquires a resource from a remote service via gRPC asynchronously.
+     * <p>
+     * This method creates a channel, builds a gRPC future stub, and acquires the resource
+     * with the provided request. The result is returned as a {@link Uni} that completes
+     * when the gRPC future resolves, without blocking any thread.
+     *
+     * @param request the resource acquisition request
+     * @param service the target service
+     * @return a Uni that will emit the resource reply
+     * @throws ServiceUnavailableException if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
+     */
+    @Override
+    public Uni<ResourceReply> acquireResourceAsync(ResourceRequest request, ServiceTarget service) {
+        LOG.debugf("Acquiring resource asynchronously from service: %s", service.toAddress());
+
+        return Uni.createFrom().emitter(em -> {
+            ManagedChannel channel = createChannel(service);
+            try {
+                var future = ResourceAcquirerGrpc.newFutureStub(channel)
+                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                        .resourceAcquire(request);
+
+                future.addListener(
+                        () -> {
+                            try {
+                                em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                            } catch (Exception e) {
+                                em.fail(e);
+                            } finally {
+                                channelManager.closeChannel(channel);
+                            }
+                        },
+                        Infrastructure.getDefaultExecutor());
+            } catch (StatusRuntimeException e) {
+                channelManager.closeChannel(channel);
+                em.fail(mapStatusRuntimeException(e, service));
+            } catch (RuntimeException e) {
+                channelManager.closeChannel(channel);
+                LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
+                em.fail(new ServiceUnavailableException(
+                        "Service is not available at the address " + service.toAddress(), e));
+            }
+        });
     }
 
     /**
@@ -340,5 +388,10 @@ public class GrpcTransport implements WanakuBridgeTransport {
                 : "gRPC error (" + status.getCode() + ") from service " + service.toAddress();
         LOG.errorf(e, "Service error from %s: %s (code: %s)", service.toAddress(), message, status.getCode());
         return new WanakuException(message, e);
+    }
+
+    @Override
+    public ResourceResponseTransformer<ResourceReply> newResourceResponseTransformer() {
+        return new GrpcResourceResponseTransformer();
     }
 }

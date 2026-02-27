@@ -3,6 +3,8 @@ package ai.wanaku.backend.bridge;
 import java.util.List;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ResourceResponse;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
@@ -26,5 +28,14 @@ public interface ResourceBridge extends Bridge {
      * @param mcpResource the resource to eval
      * @return Returns the data read by the proxy.
      */
-    List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
+    @Deprecated
+    List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
+
+    /**
+     * Eval an MCP URI handling it as appropriate by the component asynchronously.
+     * @param arguments the resource request arguments
+     * @param mcpResource the resource to eval
+     * @return Returns a Uni emitting the resource response.
+     */
+    Uni<ResourceResponse> readAsync(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
 }

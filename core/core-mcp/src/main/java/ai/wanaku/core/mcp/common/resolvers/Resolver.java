@@ -12,12 +12,10 @@ package ai.wanaku.core.mcp.common.resolvers;
  * specific resolution strategies for different capability types:
  * <ul>
  *   <li>{@link ToolsResolver} - Resolves tool capability requests</li>
- *   <li>{@link ResourceResolver} - Resolves resource capability requests</li>
  *   <li>{@link ForwardResolver} - Resolves forward proxy requests</li>
  * </ul>
  *
  * @see ToolsResolver
- * @see ResourceResolver
  * @see ForwardResolver
  */
 public interface Resolver {}
