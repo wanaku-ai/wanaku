@@ -9,14 +9,11 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.bridge.InvokerBridge;
-import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
-import ai.wanaku.backend.resolvers.WanakuResourceResolver;
 import ai.wanaku.backend.resolvers.WanakuToolsResolver;
 import ai.wanaku.backend.service.support.FirstAvailable;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
@@ -50,11 +47,15 @@ public class E2ETestProvider {
     }
 
     @Produces
-    ResourceResolver resourceResolver() {
-        LOG.info("Creating real ResourceResolver for e2e tests");
-        ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        WanakuBridgeTransport transport = new GrpcTransport();
-        return new WanakuResourceResolver(new ResourceAcquirerBridge(resolver, transport));
+    ServiceResolver getServiceResolver() {
+        LOG.info("Creating real ServiceResolver for e2e tests");
+        return new FirstAvailable(serviceRegistry);
+    }
+
+    @Produces
+    WanakuBridgeTransport getTransport() {
+        LOG.info("Creating real GrpcTransport for e2e tests");
+        return new GrpcTransport();
     }
 
     @Produces

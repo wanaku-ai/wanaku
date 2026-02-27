@@ -4,6 +4,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.util.concurrent.TimeUnit;
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.runtime.ShutdownEvent;
@@ -36,16 +37,18 @@ public class ResourceService implements ResourceAcquirer, Provisioner, HealthPro
     @Inject
     WanakuServiceConfig config;
 
-    @Blocking
+    @Inject
+    ManagedExecutor executor;
+
     @Override
     public Uni<ResourceReply> resourceAcquire(ResourceRequest request) {
-        return Uni.createFrom().item(() -> delegate.acquire(request));
+        return Uni.createFrom().item(() -> delegate.acquire(request)).runSubscriptionOn(executor);
     }
 
     @Blocking
     @Override
     public Uni<ProvisionReply> provision(ProvisionRequest request) {
-        return Uni.createFrom().item(() -> delegate.provision(request));
+        return Uni.createFrom().item(() -> delegate.provision(request)).runSubscriptionOn(executor);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -25,6 +27,7 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
  */
 class GrpcChannelManager {
     private static final Logger LOG = Logger.getLogger(GrpcChannelManager.class);
+    private static final Map<ServiceTarget, ManagedChannel> CHANNEL_MAP = new ConcurrentHashMap<>();
 
     /**
      * Creates a new gRPC channel for the specified service target.
@@ -36,10 +39,37 @@ class GrpcChannelManager {
      * @return a new ManagedChannel configured for the service
      */
     public ManagedChannel createChannel(ServiceTarget service) {
+        if (CHANNEL_MAP.containsKey(service)) {
+            LOG.debugf("Reusing gRPC channel for service: %s", service.toAddress());
+            return CHANNEL_MAP.get(service);
+        }
+
         LOG.debugf("Creating gRPC channel for service: %s", service.toAddress());
-        return ManagedChannelBuilder.forTarget(service.toAddress())
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
                 .usePlaintext()
                 .build();
+
+        CHANNEL_MAP.put(service, channel);
+        return channel;
+    }
+
+    /**
+     * Closes a gRPC channel gracefully.
+     * <p>
+     * This method attempts to shutdown the channel. If an error occurs during
+     * shutdown, it is logged but not propagated to avoid disrupting the caller.
+     *
+     * @param channel the channel to close, may be null
+     */
+    public void doCloseChannel(ManagedChannel channel) {
+        if (channel != null && !channel.isShutdown()) {
+            try {
+                LOG.debugf("Closing gRPC channel");
+                channel.shutdown();
+            } catch (Exception e) {
+                LOG.warnf(e, "Error closing gRPC channel");
+            }
+        }
     }
 
     /**
@@ -51,13 +81,12 @@ class GrpcChannelManager {
      * @param channel the channel to close, may be null
      */
     public void closeChannel(ManagedChannel channel) {
-        if (channel != null && !channel.isShutdown()) {
-            try {
-                LOG.debugf("Closing gRPC channel");
-                channel.shutdown();
-            } catch (Exception e) {
-                LOG.warnf(e, "Error closing gRPC channel");
-            }
+        // NO-OP
+    }
+
+    public void shutdown() {
+        for (Map.Entry<ServiceTarget, ManagedChannel> entry : CHANNEL_MAP.entrySet()) {
+            doCloseChannel(entry.getValue());
         }
     }
 }

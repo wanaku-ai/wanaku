@@ -7,17 +7,18 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
+import ai.wanaku.backend.bridge.ResourceBridge;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
-import ai.wanaku.core.mcp.common.resolvers.ResourceResolver;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
@@ -30,7 +31,7 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     ResourceManager resourceManager;
 
     @Inject
-    ResourceResolver resourceResolver;
+    ResourceBridge resourceBridge;
 
     @Inject
     NamespacesBean namespacesBean;
@@ -39,19 +40,31 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     Instance<ResourceReferenceRepository> resourceReferenceRepositoryInstance;
 
     private ResourceReferenceRepository resourceReferenceRepository;
+    private boolean async = false;
 
     @PostConstruct
     public void init() {
         resourceReferenceRepository = resourceReferenceRepositoryInstance.get();
+
+        final Boolean value = ConfigProvider.getConfig().getValue("wanaku.router.async", Boolean.class);
+        async = value != null && value;
+        if (async) {
+            LOG.info("Serving resources in async mode with executor");
+        }
     }
 
     public ResourceReference expose(ResourceReference mcpResource) {
-        doExposeResource(mcpResource);
+        if (async) {
+            doExposeResourceAsync(mcpResource);
+        } else {
+            doExposeResource(mcpResource);
+        }
+
         return resourceReferenceRepository.persist(mcpResource);
     }
 
     public ResourceReference expose(ResourcePayload resourcePayload) {
-        resourceResolver.provision(resourcePayload);
+        resourceBridge.provision(resourcePayload);
 
         return expose(resourcePayload.getPayload());
     }
@@ -73,7 +86,7 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
 
         for (ResourceReference resourceReference : list()) {
             try {
-                doExposeResource(resourceReference);
+                expose(resourceReference);
             } catch (EntityAlreadyExistsException e) {
                 LOG.errorf(
                         "Error registering a resource named %s during startup, but it already exists",
@@ -82,13 +95,24 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
         }
     }
 
+    @Deprecated
     private void doExposeResource(ResourceReference resourceReference) {
         if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
             final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
 
-            ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceResolver::read);
+            ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceBridge::read);
         } else {
-            ResourceHelper.expose(resourceReference, resourceManager, resourceResolver::read);
+            ResourceHelper.expose(resourceReference, resourceManager, resourceBridge::read);
+        }
+    }
+
+    private void doExposeResourceAsync(ResourceReference resourceReference) {
+        if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
+            final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
+
+            ResourceHelper.exposeAsync(resourceReference, resourceManager, namespace, resourceBridge::readAsync);
+        } else {
+            ResourceHelper.exposeAsync(resourceReference, resourceManager, resourceBridge::readAsync);
         }
     }
 

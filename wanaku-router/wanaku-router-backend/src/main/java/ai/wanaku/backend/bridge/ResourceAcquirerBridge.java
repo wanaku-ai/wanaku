@@ -1,12 +1,15 @@
 package ai.wanaku.backend.bridge;
 
-import java.util.ArrayList;
+import jakarta.inject.Inject;
+
 import java.util.List;
 import java.util.Objects;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.TextResourceContents;
+import io.quarkiverse.mcp.server.ResourceResponse;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
@@ -17,7 +20,6 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
-import com.google.protobuf.ProtocolStringList;
 
 /**
  * A proxy class for acquiring resources via gRPC.
@@ -35,8 +37,29 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     private static final String EMPTY_ARGUMENT = "";
     private static final String SERVICE_TYPE_RESOURCE_PROVIDER = ServiceType.RESOURCE_PROVIDER.asValue();
 
-    private final ServiceResolver serviceResolver;
-    private final WanakuBridgeTransport transport;
+    @Inject
+    ServiceResolver serviceResolver;
+
+    @Inject
+    WanakuBridgeTransport transport;
+
+    static class WanakuResourceContext {
+        ResourceManager.ResourceArguments arguments;
+        ResourceReference mcpResource;
+        ServiceTarget serviceTarget;
+        ResourceRequest request;
+
+        static WanakuResourceContext create(
+                ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+            WanakuResourceContext wanakuResourceContext = new WanakuResourceContext();
+
+            wanakuResourceContext.arguments = arguments;
+            wanakuResourceContext.mcpResource = mcpResource;
+            return wanakuResourceContext;
+        }
+    }
+
+    private final ResourceResponseTransformer<ResourceReply> responseTransformer;
 
     /**
      * Creates a new ResourceAcquirerBridge with the specified service resolver and transport.
@@ -50,10 +73,11 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     public ResourceAcquirerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
+        this.responseTransformer = transport.newResourceResponseTransformer();
     }
 
     @Override
-    public List<ResourceContents> eval(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+    public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         LOG.infof(
                 "Requesting resource on behalf of connection %s",
                 arguments.connection().id());
@@ -65,7 +89,19 @@ public class ResourceAcquirerBridge implements ResourceBridge {
         ResourceRequest request = buildResourceRequest(mcpResource);
         ResourceReply reply = transport.acquireResource(request, service);
 
-        return processReply(reply, arguments, mcpResource);
+        return responseTransformer.transformReply(reply, arguments, mcpResource);
+    }
+
+    @Override
+    public Uni<ResourceResponse> readAsync(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+        return Uni.createFrom()
+                .item(() -> WanakuResourceContext.create(arguments, mcpResource))
+                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
+                .invoke(this::resolveServiceV2)
+                .chain(ctx -> transport
+                        .acquireResourceAsync(ctx.request, ctx.serviceTarget)
+                        .map(reply -> responseTransformer.transformReply(reply, arguments, mcpResource))
+                        .map(ResourceResponse::new));
     }
 
     /**
@@ -82,26 +118,6 @@ public class ResourceAcquirerBridge implements ResourceBridge {
                 .setConfigurationUri(Objects.requireNonNullElse(mcpResource.getConfigurationURI(), EMPTY_ARGUMENT))
                 .setSecretsUri(Objects.requireNonNullElse(mcpResource.getSecretsURI(), EMPTY_ARGUMENT))
                 .build();
-    }
-
-    /**
-     * Processes the resource reply and converts it to resource contents.
-     *
-     * @param reply the reply from the remote service
-     * @param arguments the original request arguments
-     * @param mcpResource the resource reference
-     * @return a list of resource contents
-     */
-    private List<ResourceContents> processReply(
-            ResourceReply reply, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-        ProtocolStringList contentList = reply.getContentList();
-        List<ResourceContents> textResourceContentsList = new ArrayList<>();
-        for (String content : contentList) {
-            TextResourceContents textResourceContents =
-                    new TextResourceContents(arguments.requestUri().value(), content, mcpResource.getMimeType());
-            textResourceContentsList.add(textResourceContents);
-        }
-        return textResourceContentsList;
     }
 
     @Override
@@ -135,5 +151,13 @@ public class ResourceAcquirerBridge implements ResourceBridge {
         }
         LOG.debugf("Resolved service: %s", service.toAddress());
         return service;
+    }
+
+    private WanakuResourceContext resolveServiceV2(WanakuResourceContext context) {
+
+        context.serviceTarget = resolveService(context.mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
+        context.request = buildResourceRequest(context.mcpResource);
+
+        return context;
     }
 }

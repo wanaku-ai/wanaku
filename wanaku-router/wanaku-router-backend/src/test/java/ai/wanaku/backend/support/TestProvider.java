@@ -17,14 +17,6 @@ public class TestProvider {
     @Produces
     @DefaultBean
     @Priority(100)
-    TestResourceResolver resourceProvider() {
-        LOG.infof("Creating test resource resolver");
-        return new TestResourceResolver();
-    }
-
-    @Produces
-    @DefaultBean
-    @Priority(100)
     ToolsResolver toolsResolver() {
         LOG.infof("Creating test tools resolver");
         return new TestToolsResolver();

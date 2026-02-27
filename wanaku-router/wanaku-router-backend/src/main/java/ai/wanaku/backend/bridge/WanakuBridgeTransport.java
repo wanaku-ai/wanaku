@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.Iterator;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -95,6 +96,23 @@ public interface WanakuBridgeTransport {
     ResourceReply acquireResource(ResourceRequest request, ServiceTarget service);
 
     /**
+     * Acquires a resource from a remote service asynchronously.
+     * <p>
+     * This method sends a resource acquisition request to the specified service
+     * and returns the resource content as a {@link Uni}. The request specifies
+     * which resource to acquire and may include references to provisioned
+     * configuration and secrets needed to access the resource.
+     *
+     * @param request the resource acquisition request containing resource details
+     * @param service the target service that provides the resource
+     * @return a Uni that will emit the resource reply
+     * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
+     *         if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
+     */
+    Uni<ResourceReply> acquireResourceAsync(ResourceRequest request, ServiceTarget service);
+
+    /**
      * Executes code on a remote code execution service via streaming.
      * <p>
      * This method sends a code execution request to the specified service and
@@ -126,4 +144,6 @@ public interface WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service);
+
+    ResourceResponseTransformer<ResourceReply> newResourceResponseTransformer();
 }
