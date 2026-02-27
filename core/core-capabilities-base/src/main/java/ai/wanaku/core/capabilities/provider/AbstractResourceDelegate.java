@@ -72,11 +72,12 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     public void init() {
         registrationManager =
                 ServicesHelper.newRegistrationManager(config, SERVICE_TYPE_RESOURCE_PROVIDER, tokensInstance.get());
+        initializeRegistrationManager(registrationManager);
     }
 
     /**
      * Gets the endpoint URI.
-     * Here you build the Camel URI based on the request parameters.
+     * Here you build the URI based on the request parameters.
      * The parameters are already merged w/ the requested ones, but feel free to override or
      * add more if necessary.
      * @param request the request
@@ -157,5 +158,13 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
     @Override
     public void deregister() {
         registrationManager.deregister();
+    }
+
+    /**
+     * Allow implementations to execute initialization tasks on the registration manager
+     * @param registrationManager the registration manager to use
+     */
+    protected void initializeRegistrationManager(RegistrationManager registrationManager) {
+        // no-op by default
     }
 }

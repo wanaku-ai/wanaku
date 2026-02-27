@@ -68,6 +68,7 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
     public void init() {
         registrationManager =
                 ServicesHelper.newRegistrationManager(config, SERVICE_TYPE_TOOL_INVOKER, tokensInstance.get());
+        initializeRegistrationManager(registrationManager);
     }
 
     /**
@@ -144,5 +145,13 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
                 .setConfigurationUri(provision.configurationsUri().toString())
                 .setSecretUri(provision.secretsUri().toString())
                 .build();
+    }
+
+    /**
+     * Allow implementations to execute initialization tasks on the registration manager
+     * @param registrationManager the registration manager to use
+     */
+    protected void initializeRegistrationManager(RegistrationManager registrationManager) {
+        // no-op by default
     }
 }
