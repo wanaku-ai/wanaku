@@ -65,6 +65,11 @@ distributions:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
         platform: linux-x86_64
+  provider-performance-static-file:
+    artifacts:
+      - path: capabilities/providers/wanaku-provider-performance-static-file/target/distributions/wanaku-provider-performance-static-file-{{projectVersion}}.zip
+        platform: linux-x86_64
+    type: JAVA_BINARY
     type: JAVA_BINARY
 
   cli-native:
