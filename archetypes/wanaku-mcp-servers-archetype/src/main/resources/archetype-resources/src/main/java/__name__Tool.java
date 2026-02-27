@@ -1,8 +1,9 @@
-package $
+package ${package};
 
 import ai.wanaku.core.forward.discovery.client.ForwardRegistrationManager;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
