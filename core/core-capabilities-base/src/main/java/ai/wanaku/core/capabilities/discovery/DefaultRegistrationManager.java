@@ -16,7 +16,6 @@ import ai.wanaku.capabilities.sdk.api.discovery.DiscoveryCallback;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.data.files.InstanceDataManager;
 import ai.wanaku.capabilities.sdk.data.files.ServiceEntry;
@@ -52,7 +51,6 @@ public class DefaultRegistrationManager implements RegistrationManager {
     private ServiceTarget target;
     private int retries;
     private final int waitSeconds;
-    private final boolean pingEnabled;
     private final InstanceDataManager instanceDataManager;
     private volatile boolean registered;
     private final ReentrantLock lock = new ReentrantLock();
@@ -78,9 +76,6 @@ public class DefaultRegistrationManager implements RegistrationManager {
 
         // the number of seconds to wait between retry attempts
         this.waitSeconds = config.registration().retryWaitSeconds();
-
-        // whether capability-side ping is enabled
-        this.pingEnabled = config.registration().pingEnabled();
 
         // the directory path for persisting service identity data
         String dataDir = ServicesHelper.getCanonicalServiceHome(config);
@@ -172,11 +167,7 @@ public class DefaultRegistrationManager implements RegistrationManager {
 
     @Override
     public void register() {
-        if (isRegistered()) {
-            if (pingEnabled) {
-                ping();
-            }
-        } else {
+        if (!isRegistered()) {
             LOG.debugf(
                     "Registering %s service %s with address %s",
                     target.getServiceType(), target.getServiceName(), target.toAddress());
@@ -206,57 +197,11 @@ public class DefaultRegistrationManager implements RegistrationManager {
         }
     }
 
-    @Override
-    public void ping() {
-        if (target != null && target.getId() != null) {
-            LOG.tracef("Pinging router ...");
-            try (var response = service.ping(target.getId())) {
-                final int status = response.getStatus();
-
-                runCallBack(c -> c.onPing(this, target, status));
-            } catch (Exception e) {
-                logServiceFailure(e, "Pinging router failed with %s");
-            }
-        }
-    }
-
-    @Override
-    public void lastAsFail(String reason) {
-        if (target.getId() == null) {
-            LOG.warnf("Trying to update the state of an unknown service %s", target.getServiceName());
-            return;
-        }
-
-        try (final Response response = service.updateState(target.getId(), ServiceState.newUnhealthy(reason))) {
-            if (response.getStatus() != 200) {
-                LOG.errorf("Could not update the state of an service %s (%s)", target.getServiceName(), target.getId());
-            }
-        } catch (Exception e) {
-            logServiceFailure(e, "Updating last status failed with %s");
-        }
-    }
-
     private static void logServiceFailure(Exception e, String format) {
         if (LOG.isTraceEnabled()) {
             LOG.errorf(e, format, e.getMessage());
         } else {
             LOG.errorf(format, e.getMessage());
-        }
-    }
-
-    @Override
-    public void lastAsSuccessful() {
-        if (target.getId() == null) {
-            LOG.warnf("Trying to update the state of an unknown service %s", target.getServiceName());
-            return;
-        }
-
-        try (final Response response = service.updateState(target.getId(), ServiceState.newHealthy())) {
-            if (response.getStatus() != 200) {
-                LOG.errorf("Could not update the state of an service %s (%s)", target.getServiceName(), target.getId());
-            }
-        } catch (Exception e) {
-            logServiceFailure(e, "Updating last status failed with %s");
         }
     }
 

@@ -106,24 +106,21 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
 
             List<String> response = coerceResponse(obj);
 
-            registrationManager.lastAsSuccessful();
             return ResourceReply.newBuilder().addAllContent(response).build();
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
             LOG.error(stateMsg, e);
-            registrationManager.lastAsFail(stateMsg);
+
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.error(stateMsg, e);
-            registrationManager.lastAsFail(stateMsg);
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
         } catch (Exception e) {
             String stateMsg = findRootCause(e);
             LOG.error(stateMsg, e);
-            registrationManager.lastAsFail(stateMsg);
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
         }

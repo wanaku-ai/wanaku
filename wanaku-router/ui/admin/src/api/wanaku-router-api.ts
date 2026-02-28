@@ -31,7 +31,6 @@ import type {
   PutApiV1ToolsRemoveParams,
   ResourcePayload,
   ResourceReference,
-  ServiceState,
   ServiceTarget,
   ToolPayload,
   ToolReference,
@@ -890,6 +889,7 @@ export const postApiV1ManagementDiscoveryDeregister = async (
 };
 
 /**
+ * @deprecated
  * @summary Ping
  */
 export type postApiV1ManagementDiscoveryPingResponse200 = {
@@ -961,48 +961,6 @@ export const postApiV1ManagementDiscoveryRegister = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(serviceTarget),
-    },
-  );
-};
-
-/**
- * @summary Update State
- */
-export type postApiV1ManagementDiscoveryUpdateIdResponse200 = {
-  data: null;
-  status: 200;
-};
-
-export type postApiV1ManagementDiscoveryUpdateIdResponse400 = {
-  data: null;
-  status: 400;
-};
-
-export type postApiV1ManagementDiscoveryUpdateIdResponseComposite =
-  | postApiV1ManagementDiscoveryUpdateIdResponse200
-  | postApiV1ManagementDiscoveryUpdateIdResponse400;
-
-export type postApiV1ManagementDiscoveryUpdateIdResponse =
-  postApiV1ManagementDiscoveryUpdateIdResponseComposite & {
-    headers: Headers;
-  };
-
-export const getPostApiV1ManagementDiscoveryUpdateIdUrl = (id: string) => {
-  return `/api/v1/management/discovery/update/${id}`;
-};
-
-export const postApiV1ManagementDiscoveryUpdateId = async (
-  id: string,
-  serviceState: ServiceState,
-  options?: RequestInit,
-): Promise<postApiV1ManagementDiscoveryUpdateIdResponse> => {
-  return customFetch<postApiV1ManagementDiscoveryUpdateIdResponse>(
-    getPostApiV1ManagementDiscoveryUpdateIdUrl(id),
-    {
-      ...options,
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(serviceState),
     },
   );
 };

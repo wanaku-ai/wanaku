@@ -93,24 +93,20 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             ToolInvokeReply.Builder builder = ToolInvokeReply.newBuilder();
             builder.addAllContent(response);
 
-            registrationManager.lastAsSuccessful();
             return builder.build();
         } catch (InvalidResponseTypeException e) {
             String stateMsg = "Invalid response type from the consumer: " + e.getMessage();
             LOG.error(stateMsg, e);
-            registrationManager.lastAsFail(stateMsg);
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
         } catch (NonConvertableResponseException e) {
             String stateMsg = "Non-convertable response from the consumer " + e.getMessage();
             LOG.error(stateMsg, e);
-            registrationManager.lastAsFail(stateMsg);
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
         } catch (Exception e) {
             String stateMsg = findRootCause(e);
             LOG.error(stateMsg, e);
-            registrationManager.lastAsFail(stateMsg);
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
         }

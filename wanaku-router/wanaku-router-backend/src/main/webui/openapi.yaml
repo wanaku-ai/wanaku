@@ -983,6 +983,7 @@ paths:
       - Discovery Resource
   /api/v1/management/discovery/ping:
     post:
+      deprecated: true
       requestBody:
         content:
           application/json:
@@ -1013,28 +1014,6 @@ paths:
         "400":
           description: Bad Request
       summary: Register
-      tags:
-      - Discovery Resource
-  /api/v1/management/discovery/update/{id}:
-    post:
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ServiceState"
-        required: true
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-      summary: Update State
       tags:
       - Discovery Resource
   /api/v1/management/info/version:

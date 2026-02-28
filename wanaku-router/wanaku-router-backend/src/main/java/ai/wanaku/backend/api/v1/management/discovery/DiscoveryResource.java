@@ -5,8 +5,6 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -19,7 +17,6 @@ import io.vertx.core.eventbus.EventBus;
 import ai.wanaku.backend.common.ServiceTargetEvent;
 import ai.wanaku.backend.health.PeriodicHealthCheckService;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 @ApplicationScoped
@@ -58,19 +55,10 @@ public class DiscoveryResource {
         return Response.ok().build();
     }
 
-    @Path("/update/{id}")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response updateState(@PathParam("id") String id, ServiceState serviceState) {
-        discoveryBean.updateState(id, serviceState);
-        emitEvent(ServiceTargetEvent.update(id, serviceState));
-        return Response.ok().build();
-    }
-
     @Path("/ping")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
+    @Deprecated
     public Response ping(String id) {
         LOG.tracef("Service %s is pinging", id);
         discoveryBean.ping(id);
