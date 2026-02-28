@@ -34,6 +34,8 @@ import ai.wanaku.core.util.StringHelper;
  */
 public final class ConfigResourceLoader {
     private static final Logger LOG = Logger.getLogger(ConfigResourceLoader.class);
+    private static final NoopConfigStore NONE_CONFIG = new NoopConfigStore();
+    private static final NoopSecretStore NONE_SECRET = new NoopSecretStore();
 
     /**
      * Constant identifying the file-based storage scheme.
@@ -88,8 +90,8 @@ public final class ConfigResourceLoader {
             }
         }
 
-        LOG.warnf("Creating a new NO-OP secret store");
-        return new NoopSecretStore();
+        LOG.warnf("Returning an empty NO-OP secret store");
+        return NONE_SECRET;
     }
 
     private static ConfigStore createConfigFromRef(String cfgResourceRefs) {
@@ -100,7 +102,7 @@ public final class ConfigResourceLoader {
             }
         }
 
-        LOG.warnf("Creating a new NO-OP config store");
-        return new NoopConfigStore();
+        LOG.warnf("Creating an empty NO-OP config store");
+        return NONE_CONFIG;
     }
 }
