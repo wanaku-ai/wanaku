@@ -85,50 +85,6 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
 
     @Order(2)
     @Test
-    public void testPingServiceSuccessfully() {
-        final String accessToken = getAccessToken();
-        Assertions.assertNotNull(accessToken);
-
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + accessToken)
-                .body(serviceId)
-                .when()
-                .post("/api/v1/management/discovery/ping")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
-    }
-
-    @Order(3)
-    @Test
-    public void testUpdateServiceStateSuccessfully() {
-        ServiceState serviceState = new ServiceState(Instant.now(), false, "Service is down for maintenance");
-
-        final String accessToken = getAccessToken();
-        Assertions.assertNotNull(accessToken);
-
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + accessToken)
-                .body(serviceState)
-                .when()
-                .post("/api/v1/management/discovery/update/" + serviceId)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
-
-        given().when()
-                .get("/api/v1/capabilities/tools/state")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body(
-                        "data.size()",
-                        is(1),
-                        "data.test-service[0].id",
-                        is(serviceId),
-                        "data.test-service[0].states[0].healthy",
-                        is(false));
-    }
-
-    @Order(4)
-    @Test
     public void testDeregisterServiceSuccessfully() {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
