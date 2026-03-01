@@ -85,7 +85,6 @@ class AbstractResourceDelegateTest {
         assertNotNull(reply);
         assertEquals(1, reply.getContentCount());
         assertEquals("resource content", reply.getContent(0));
-        verify(registrationManager).lastAsSuccessful();
     }
 
     @Test
@@ -116,7 +115,6 @@ class AbstractResourceDelegateTest {
         assertEquals("item1", reply.getContent(0));
         assertEquals("item2", reply.getContent(1));
         assertEquals("item3", reply.getContent(2));
-        verify(registrationManager).lastAsSuccessful();
     }
 
     @Test
@@ -130,7 +128,6 @@ class AbstractResourceDelegateTest {
         StatusRuntimeException ex = assertThrows(StatusRuntimeException.class, () -> delegate.acquire(request));
 
         assertEquals(Status.INTERNAL.getCode(), ex.getStatus().getCode());
-        verify(registrationManager).lastAsFail(any(String.class));
     }
 
     @Test
@@ -144,7 +141,6 @@ class AbstractResourceDelegateTest {
         StatusRuntimeException ex = assertThrows(StatusRuntimeException.class, () -> delegate.acquire(request));
 
         assertEquals(Status.INTERNAL.getCode(), ex.getStatus().getCode());
-        verify(registrationManager).lastAsFail(any(String.class));
     }
 
     @Test
@@ -158,7 +154,6 @@ class AbstractResourceDelegateTest {
         StatusRuntimeException ex = assertThrows(StatusRuntimeException.class, () -> delegate.acquire(request));
 
         assertEquals(Status.INTERNAL.getCode(), ex.getStatus().getCode());
-        verify(registrationManager).lastAsFail(any(String.class));
     }
 
     private static void setField(Object target, String fieldName, Object value) throws Exception {

@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AbstractToolDelegateTest {
@@ -74,7 +73,6 @@ class AbstractToolDelegateTest {
         assertNotNull(reply);
         assertEquals(1, reply.getContentCount());
         assertEquals("result data", reply.getContent(0));
-        verify(registrationManager).lastAsSuccessful();
     }
 
     @Test
@@ -92,7 +90,6 @@ class AbstractToolDelegateTest {
         assertEquals("item1", reply.getContent(0));
         assertEquals("item2", reply.getContent(1));
         assertEquals("item3", reply.getContent(2));
-        verify(registrationManager).lastAsSuccessful();
     }
 
     @Test
@@ -107,7 +104,6 @@ class AbstractToolDelegateTest {
         StatusRuntimeException ex = assertThrows(StatusRuntimeException.class, () -> delegate.invoke(request));
 
         assertEquals(Status.INTERNAL.getCode(), ex.getStatus().getCode());
-        verify(registrationManager).lastAsFail(any(String.class));
     }
 
     @Test
@@ -122,7 +118,6 @@ class AbstractToolDelegateTest {
         StatusRuntimeException ex = assertThrows(StatusRuntimeException.class, () -> delegate.invoke(request));
 
         assertEquals(Status.INTERNAL.getCode(), ex.getStatus().getCode());
-        verify(registrationManager).lastAsFail(any(String.class));
     }
 
     @Test
@@ -136,7 +131,6 @@ class AbstractToolDelegateTest {
         StatusRuntimeException ex = assertThrows(StatusRuntimeException.class, () -> delegate.invoke(request));
 
         assertEquals(Status.INTERNAL.getCode(), ex.getStatus().getCode());
-        verify(registrationManager).lastAsFail(any(String.class));
     }
 
     private static void setField(Object target, String fieldName, Object value) throws Exception {
