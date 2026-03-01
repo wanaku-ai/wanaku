@@ -90,7 +90,7 @@ public final class ConfigResourceLoader {
             }
         }
 
-        LOG.warnf("Returning an empty NO-OP secret store");
+        LOG.debugf("Returning an empty NO-OP secret store");
         return NONE_SECRET;
     }
 
@@ -102,7 +102,7 @@ public final class ConfigResourceLoader {
             }
         }
 
-        LOG.warnf("Creating an empty NO-OP config store");
+        LOG.debugf("Creating an empty NO-OP config store");
         return NONE_CONFIG;
     }
 }
