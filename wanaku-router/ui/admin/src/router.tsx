@@ -53,6 +53,10 @@ export const router = createHashRouter([
         path: Links.DataStores,
         lazy: async () => import("./Pages/DataStores"),
       },
+      {
+        path: Links.ServiceCatalog,
+        lazy: async () => import("./Pages/ServiceCatalog"),
+      },
     ],
   },
 ]);

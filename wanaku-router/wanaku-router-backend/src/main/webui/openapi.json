@@ -722,6 +722,21 @@
           }
         }
       },
+      "WanakuResponseListMapStringObject" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "additionalProperties" : { }
+            }
+          }
+        }
+      },
       "WanakuResponseListNamespace" : {
         "type" : "object",
         "properties" : {
@@ -820,6 +835,18 @@
                 "$ref" : "#/components/schemas/ActivityRecord"
               }
             }
+          }
+        }
+      },
+      "WanakuResponseMapStringObject" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : { }
           }
         }
       },
@@ -2049,6 +2076,180 @@
         },
         "summary" : "Update",
         "tags" : [ "Resources Resource" ]
+      }
+    },
+    "/api/v1/service-catalog/deploy" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataStore"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Deploy",
+        "tags" : [ "Service Catalog Resource" ]
+      }
+    },
+    "/api/v1/service-catalog/download" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Download",
+        "tags" : [ "Service Catalog Resource" ]
+      }
+    },
+    "/api/v1/service-catalog/get" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringObject"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get",
+        "tags" : [ "Service Catalog Resource" ]
+      }
+    },
+    "/api/v1/service-catalog/list" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "search",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListMapStringObject"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Service Catalog Resource" ]
+      }
+    },
+    "/api/v1/service-catalog/remove" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Service Catalog Resource" ]
       }
     },
     "/api/v1/tools" : {

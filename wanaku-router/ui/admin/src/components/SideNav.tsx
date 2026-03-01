@@ -95,6 +95,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 >
                     Data Stores
                 </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
+                    to={Links.ServiceCatalog}
+                    onClick={onClickSideNavExpand}
+                >
+                    Service Catalog
+                </SideNavMenuItem>
             </SideNavItems>
         </SideNav>
     );
