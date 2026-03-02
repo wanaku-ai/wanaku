@@ -72,7 +72,6 @@ public class PerformanceFileResourceDelegate extends AbstractResourceDelegate {
 
     @Override
     protected String getEndpointUri(ResourceRequest request, ConfigResource configResource) {
-        LOG.info("Converting endpoint ...");
         return request.getLocation();
     }
 
