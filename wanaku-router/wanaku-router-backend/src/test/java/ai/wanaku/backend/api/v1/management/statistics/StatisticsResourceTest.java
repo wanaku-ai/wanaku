@@ -2,7 +2,6 @@ package ai.wanaku.backend.api.v1.management.statistics;
 
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -30,8 +29,8 @@ public class StatisticsResourceTest extends WanakuRouterTest {
     }
 
     @BeforeAll
-    static void setup() throws IOException {
-        TestIndexHelper.deleteRecursively("target/wanaku/router");
+    static void setup() {
+        TestIndexHelper.clearAllCaches();
         keycloakClient = new KeycloakTestClient();
     }
 

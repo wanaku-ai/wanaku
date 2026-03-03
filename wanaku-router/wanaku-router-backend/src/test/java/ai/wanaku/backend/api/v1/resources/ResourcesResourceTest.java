@@ -3,7 +3,6 @@ package ai.wanaku.backend.api.v1.resources;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
 import org.jboss.logging.Logger;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -33,8 +32,8 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     private static String createdName;
 
     @BeforeAll
-    static void setup() throws IOException {
-        TestIndexHelper.deleteRecursively("target/wanaku/router");
+    static void setup() {
+        TestIndexHelper.clearAllCaches();
     }
 
     @Order(1)
