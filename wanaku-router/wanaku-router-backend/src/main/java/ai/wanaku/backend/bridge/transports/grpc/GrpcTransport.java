@@ -1,5 +1,7 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Objects;
@@ -58,6 +60,7 @@ import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
  * @see ResourceAcquirerBridge
  * @see InvokerToolExecutor
  */
+@Dependent
 public class GrpcTransport implements WanakuBridgeTransport {
     private static final Logger LOG = Logger.getLogger(GrpcTransport.class);
     private static final String WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS =
