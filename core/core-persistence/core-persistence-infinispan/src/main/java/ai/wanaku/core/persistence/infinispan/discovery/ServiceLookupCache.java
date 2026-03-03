@@ -57,7 +57,7 @@ public class ServiceLookupCache {
      * @param result the query result to cache
      */
     public void put(String serviceName, String serviceType, List<ServiceTarget> result) {
-        cache.put(key(serviceName, serviceType), result);
+        cache.put(key(serviceName, serviceType), List.copyOf(result));
     }
 
     /**
