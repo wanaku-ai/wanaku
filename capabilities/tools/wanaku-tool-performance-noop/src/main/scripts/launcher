@@ -1,0 +1,7 @@
+#!/bin/sh
+
+localDir="$(dirname $0)"
+installDir="$(dirname "${localDir}")"
+WANAKU_JAVA_OPTS="${WANAKU_JAVA_OPTS:-""}"
+
+java ${WANAKU_JAVA_OPTS} -jar "${installDir}"/quarkus-run.jar "$@"
