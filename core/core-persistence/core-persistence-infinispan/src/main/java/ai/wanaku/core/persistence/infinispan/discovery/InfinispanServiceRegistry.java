@@ -132,7 +132,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
             case UNHEALTHY -> state = ServiceState.newUnhealthy("health probe reported unhealthy");
             case DOWN -> {
                 state = ServiceState.newDown("health probe reported down");
-                lookupCache.clear();
+                evictById(id);
             }
             default -> state = ServiceState.newPending();
         }
@@ -154,6 +154,13 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
         }
 
         states.add(state);
+    }
+
+    private void evictById(String id) {
+        ServiceTarget target = capabilitiesRepository.findById(id);
+        if (target != null) {
+            lookupCache.evictByServiceName(target.getServiceName());
+        }
     }
 
     public int getMaxStateCount() {
@@ -201,12 +208,10 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public boolean removeById(String id) {
+        evictById(id);
+
         boolean capabilityRemoved = capabilitiesRepository.deleteById(id);
         boolean activityRemoved = activityRecordRepository.deleteById(id);
-
-        if (capabilityRemoved) {
-            lookupCache.clear();
-        }
 
         LOG.debugf("Removed capability %s: capability=%b, activity=%b", id, capabilityRemoved, activityRemoved);
 
