@@ -4,11 +4,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.File;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.common.ProcessRunner;
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.tool.Client;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
-import ai.wanaku.core.util.ProcessRunner;
 
 @ApplicationScoped
 public class ExecClient implements Client {

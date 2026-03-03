@@ -10,11 +10,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.common.ProcessRunner;
 import ai.wanaku.cli.main.support.Downloader;
 import ai.wanaku.cli.main.support.RuntimeConstants;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
 import ai.wanaku.cli.main.support.ZipHelper;
-import ai.wanaku.core.util.ProcessRunner;
 import ai.wanaku.core.util.VersionHelper;
 
 public class LocalRunner {
