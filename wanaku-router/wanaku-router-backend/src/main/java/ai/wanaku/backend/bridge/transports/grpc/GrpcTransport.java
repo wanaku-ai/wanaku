@@ -22,6 +22,9 @@ import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
 import ai.wanaku.core.exchange.v1.CodeExecutorGrpc;
 import ai.wanaku.core.exchange.v1.Configuration;
+import ai.wanaku.core.exchange.v1.HealthProbeGrpc;
+import ai.wanaku.core.exchange.v1.HealthProbeReply;
+import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.PayloadType;
 import ai.wanaku.core.exchange.v1.ProvisionReply;
 import ai.wanaku.core.exchange.v1.ProvisionRequest;
@@ -260,6 +263,39 @@ public class GrpcTransport implements WanakuBridgeTransport {
         } catch (RuntimeException e) {
             LOG.errorf(e, "Failed to execute code on service: %s", service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        }
+    }
+
+    /**
+     * Probes the health of a remote service via gRPC.
+     * <p>
+     * This method creates a channel, builds a gRPC stub, and probes the service
+     * health with the provided request. It handles connection errors and converts
+     * them to appropriate exceptions.
+     *
+     * @param request the health probe request
+     * @param service the target service
+     * @return the health probe reply from the remote service
+     * @throws ServiceUnavailableException if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
+     */
+    @Override
+    public HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service) {
+        LOG.debugf("Probing health of service: %s", service.toAddress());
+
+        ManagedChannel channel = createChannel(service);
+        try {
+            HealthProbeGrpc.HealthProbeBlockingStub blockingStub = HealthProbeGrpc.newBlockingStub(channel);
+            return blockingStub
+                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                    .getStatus(request);
+        } catch (StatusRuntimeException e) {
+            throw mapStatusRuntimeException(e, service);
+        } catch (RuntimeException e) {
+            LOG.errorf(e, "Failed to probe health of service: %s", service.toAddress());
+            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        } finally {
+            channelManager.closeChannel(channel);
         }
     }
 

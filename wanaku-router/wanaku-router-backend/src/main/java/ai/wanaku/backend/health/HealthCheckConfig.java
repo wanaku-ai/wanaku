@@ -14,7 +14,4 @@ public interface HealthCheckConfig {
 
     @WithDefault("10")
     int maxConcurrent();
-
-    @WithDefault("10")
-    int timeoutSeconds();
 }

@@ -1,27 +1,23 @@
 package ai.wanaku.backend.health;
 
-import java.util.concurrent.TimeUnit;
 import org.jboss.logging.Logger;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
+import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.v1.HealthProbeGrpc;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
 import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.RuntimeStatus;
 
 /**
- * Client for probing the health of remote capabilities via gRPC.
+ * Client for probing the health of remote capabilities via the bridge transport.
  */
 class HealthProbeClient {
     private static final Logger LOG = Logger.getLogger(HealthProbeClient.class);
 
-    private final int timeoutSeconds;
+    private final WanakuBridgeTransport transport;
 
-    HealthProbeClient(int timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
+    HealthProbeClient(WanakuBridgeTransport transport) {
+        this.transport = transport;
     }
 
     /**
@@ -31,33 +27,15 @@ class HealthProbeClient {
      * @return the health status based on the probe result
      */
     HealthStatus probe(ServiceTarget target) {
-        ManagedChannel channel = null;
         try {
-            channel = ManagedChannelBuilder.forTarget(target.toAddress())
-                    .usePlaintext()
-                    .build();
+            HealthProbeRequest request =
+                    HealthProbeRequest.newBuilder().setId(target.getId()).build();
 
-            HealthProbeGrpc.HealthProbeBlockingStub stub =
-                    HealthProbeGrpc.newBlockingStub(channel).withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS);
-
-            HealthProbeReply reply = stub.getStatus(
-                    HealthProbeRequest.newBuilder().setId(target.getId()).build());
-
+            HealthProbeReply reply = transport.probeHealth(request, target);
             return mapRuntimeStatus(reply.getStatus());
-        } catch (StatusRuntimeException e) {
-            LOG.warnf("Health probe failed for %s: %s %s", target.toAddress(), e.getMessage(), e.getStatus());
-            return HealthStatus.DOWN;
         } catch (Exception e) {
-            LOG.debugf(e, "Health probe error for %s", target.toAddress());
+            LOG.warnf("Health probe failed for %s: %s", target.toAddress(), e.getMessage());
             return HealthStatus.DOWN;
-        } finally {
-            if (channel != null && !channel.isShutdown()) {
-                try {
-                    channel.shutdown();
-                } catch (Exception e) {
-                    LOG.warnf(e, "Error closing gRPC channel for %s", target.toAddress());
-                }
-            }
         }
     }
 

@@ -6,6 +6,8 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
+import ai.wanaku.core.exchange.v1.HealthProbeReply;
+import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
@@ -108,4 +110,20 @@ public interface WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service);
+
+    /**
+     * Probes the health of a remote service.
+     * <p>
+     * This method sends a health probe request to the specified service and
+     * returns the health status reply. It is used by the periodic health check
+     * service to determine whether capabilities are reachable and operational.
+     *
+     * @param request the health probe request containing the service identifier
+     * @param service the target service to probe
+     * @return the health probe reply containing the runtime status
+     * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
+     *         if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
+     */
+    HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service);
 }

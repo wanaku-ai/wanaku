@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ServiceTargetEvent;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
@@ -51,7 +52,7 @@ public class PeriodicHealthCheckService {
     @PostConstruct
     void init() {
         serviceRegistry = serviceRegistryInstance.get();
-        probeClient = new HealthProbeClient(config.timeoutSeconds());
+        probeClient = new HealthProbeClient(new GrpcTransport());
     }
 
     @Scheduled(
