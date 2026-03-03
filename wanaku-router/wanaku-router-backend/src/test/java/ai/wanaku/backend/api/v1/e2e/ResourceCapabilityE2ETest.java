@@ -60,7 +60,7 @@ public class ResourceCapabilityE2ETest extends WanakuRouterTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        TestIndexHelper.deleteRecursively("target/wanaku/router");
+        TestIndexHelper.clearAllCaches();
         keycloakClient = new KeycloakTestClient();
 
         mockServer = new MockGrpcCapabilityServer(List.of(EXPECTED_CONTENT));
