@@ -45,6 +45,11 @@ public abstract class BaseCommand implements Callable<Integer> {
             description = "Disable authentication for this command")
     protected boolean noAuth = false;
 
+    @CommandLine.Option(
+            names = {"--plain"},
+            description = "Route output through stdout so it can be captured by a parent process")
+    boolean plain = false;
+
     /**
      * Initializes and configures the REST client for communicating with the Wanaku service.
      *
@@ -102,9 +107,12 @@ public abstract class BaseCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+        WanakuPrinter.setPlainMode(plain);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
             WanakuPrinter printer = new WanakuPrinter(null, terminal);
             return doCall(terminal, printer);
+        } finally {
+            WanakuPrinter.setPlainMode(false);
         }
     }
 

@@ -62,6 +62,23 @@ import static org.jline.console.Printer.TableRows.EVEN;
  */
 public class WanakuPrinter extends DefaultPrinter {
 
+    /**
+     * When {@code true}, the terminal is created with {@code system(false)} so that output
+     * goes through {@code System.out} instead of {@code /dev/tty}.  This keeps ANSI
+     * colors/formatting intact but allows a parent process to capture the output.
+     */
+    private static volatile boolean plainMode = false;
+
+    /**
+     * Enables or disables plain output mode.
+     *
+     * @param plain {@code true} to route output through stdout (capturable),
+     *              {@code false} (default) to use the system terminal directly
+     */
+    public static void setPlainMode(boolean plain) {
+        plainMode = plain;
+    }
+
     // Styling constants for different message types
     /** Style for error messages - bold red text. */
     private static final AttributedStyle ERROR_STYLE = AttributedStyle.BOLD.foreground(AttributedStyle.RED);
@@ -120,45 +137,54 @@ public class WanakuPrinter extends DefaultPrinter {
     }
 
     /**
-     * Creates a new terminal instance with resilient fallback handling.
+     * Creates a new terminal instance, respecting the current {@link #setPlainMode(boolean) plainMode} setting.
      *
-     * <p>This factory method attempts to create a terminal in the following order:</p>
+     * <p>When {@code plainMode} is {@code false} (default), JLine opens {@code /dev/tty}
+     * directly for the best interactive experience. When {@code true}, JLine uses
+     * {@code System.in} and {@code System.out} instead with color and Jansi disabled,
+     * producing clean output without ANSI escape sequences that is easy to parse by a
+     * parent process.</p>
+     *
+     * <p>In interactive mode, terminal creation is attempted in the following order:</p>
      * <ol>
-     *   <li>System terminal with Jansi and color support (best experience)</li>
-     *   <li>System terminal without Jansi if native libraries fail</li>
-     *   <li>Dumb terminal if system terminal is unavailable (fallback)</li>
+     *   <li>Terminal with Jansi and color support (best experience)</li>
+     *   <li>Terminal without Jansi if native libraries fail</li>
+     *   <li>Dumb terminal if all else fails (fallback, no colors)</li>
      * </ol>
-     *
-     * <p>This approach ensures the CLI works in various environments including:
-     * standard terminals, CI/CD pipelines, Docker containers, and IDEs.</p>
      *
      * @return a new terminal instance, guaranteed to be non-null
      * @throws IOException if terminal creation fails catastrophically
+     * @see #setPlainMode(boolean)
      */
     public static Terminal terminalInstance() throws IOException {
-        TerminalBuilder builder = TerminalBuilder.builder();
+        if (plainMode) {
+            // Plain mode: route I/O through System.in/System.out with no ANSI escapes
+            // Disable all native providers (JNI, JNA, Jansi) to avoid loading issues
+            return newBuilder().jansi(false).jni(false).jna(false).color(false).build();
+        }
 
         try {
-            // First attempt: full-featured system terminal with Jansi
-            return builder.system(true)
-                    .jansi(true)
-                    .color(true)
-                    .jna(false) // Disable JNA to avoid native library issues
-                    .build();
+            // First attempt: Jansi-backed terminal with color support
+            return newBuilder().jansi(true).color(true).jna(false).build();
         } catch (Exception e) {
-            // Second attempt: system terminal without Jansi
+            // Second attempt: without Jansi (native library may be unavailable)
             try {
-                return TerminalBuilder.builder()
-                        .system(true)
-                        .jansi(false)
-                        .jna(false)
-                        .build();
+                return newBuilder().jansi(false).jna(false).build();
             } catch (Exception ex) {
-                // Final fallback: dumb terminal (always works but no colors)
-                // This won't print warnings and will silently work
+                // Final fallback: dumb terminal (no colors, but always works)
                 return TerminalBuilder.builder().dumb(true).build();
             }
         }
+    }
+
+    private static TerminalBuilder newBuilder() {
+        TerminalBuilder builder = TerminalBuilder.builder().system(!plainMode);
+        if (plainMode) {
+            // When not using the system terminal, JLine needs explicit streams
+            // otherwise masterInput/masterOutput are null and any I/O throws NPE
+            builder.streams(System.in, System.out);
+        }
+        return builder;
     }
 
     /**
@@ -373,7 +399,7 @@ public class WanakuPrinter extends DefaultPrinter {
         }
 
         AttributedString rendered = MarkdownRenderer.render(markdown);
-        terminal.writer().println(rendered.toAnsi());
+        terminal.writer().println(rendered.toAnsi(terminal));
         terminal.flush();
     }
 
@@ -414,7 +440,7 @@ public class WanakuPrinter extends DefaultPrinter {
 
         // Render Markdown to styled text
         AttributedString rendered = MarkdownRenderer.render(markdown);
-        String styledContent = rendered.toAnsi();
+        String styledContent = rendered.toAnsi(terminal);
 
         // Count lines in the rendered content
         long lineCount = styledContent.lines().count();
@@ -507,10 +533,13 @@ public class WanakuPrinter extends DefaultPrinter {
      * @param style the styling to apply to the message
      */
     private void printStyledMessage(String message, AttributedStyle style) {
-        AttributedString styledMessage =
-                new AttributedStringBuilder().style(style).append(message).toAttributedString();
-
-        terminal.writer().println(styledMessage.toAnsi());
+        if (plainMode) {
+            terminal.writer().println(message);
+        } else {
+            AttributedString styledMessage =
+                    new AttributedStringBuilder().style(style).append(message).toAttributedString();
+            terminal.writer().println(styledMessage.toAnsi(terminal));
+        }
         terminal.flush();
     }
 

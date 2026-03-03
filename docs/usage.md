@@ -2401,7 +2401,7 @@ wanaku completion generate --output ~/.wanaku_completion
 The generated script includes completion support for:
 - All parent commands (namespaces, tools, resources, forwards, capabilities, etc.)
 - All subcommands (namespaces label add, tools list, etc.)
-- All command options (--help, --verbose, command-specific options)
+- All command options (--help, --verbose, --plain, command-specific options)
 - Automatic detection of bash vs zsh shell
 
 ### Quick Setup for Current Session Only
@@ -2521,7 +2521,7 @@ wanaku namespaces <TAB>
 
 # Tab-complete options
 wanaku tools add --<TAB>
-# Shows: --description, --help, --name, --namespace, --property, --required, --type, --uri, --verbose
+# Shows: --description, --help, --name, --namespace, --plain, --property, --required, --type, --uri, --verbose
 
 # Tab-complete after partial input
 wanaku name<TAB>
@@ -3262,6 +3262,11 @@ quarkus.log.category."ai.wanaku".level=DEBUG
 **CLI:**
 ```shell
 wanaku --verbose tools list
+```
+
+To produce clean, parsable output without ANSI colors or escape sequences (useful for scripting and piping):
+```shell
+wanaku tools list --plain
 ```
 
 #### Access logs

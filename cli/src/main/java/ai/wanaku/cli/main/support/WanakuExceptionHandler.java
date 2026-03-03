@@ -41,6 +41,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
     @Override
     public int handleExecutionException(Exception ex, CommandLine commandLine, ParseResult parseResult)
             throws Exception {
+        WanakuPrinter.setPlainMode(isPlainOutput(parseResult));
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
             WanakuPrinter printer = new WanakuPrinter(null, terminal);
 
@@ -79,6 +80,8 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
 
             terminal.flush();
             return BaseCommand.EXIT_ERROR;
+        } finally {
+            WanakuPrinter.setPlainMode(false);
         }
     }
 
@@ -132,17 +135,45 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
 
     /**
      * Checks if verbose mode is enabled from the parse result.
+     * Traverses the subcommand chain because the flag may be defined on a subcommand.
      *
      * @param parseResult the command line parse result
      * @return true if --verbose flag is present, false otherwise
      */
     private boolean isVerbose(ParseResult parseResult) {
+        return hasOptionAnywhere(parseResult, "--verbose");
+    }
+
+    /**
+     * Checks if plain output mode is enabled from the parse result.
+     * Traverses the subcommand chain because the flag is defined on {@link BaseCommand}.
+     *
+     * @param parseResult the command line parse result
+     * @return true if --plain flag is present, false otherwise
+     */
+    private boolean isPlainOutput(ParseResult parseResult) {
+        return hasOptionAnywhere(parseResult, "--plain");
+    }
+
+    /**
+     * Searches for a matched option anywhere in the parse result chain (current command
+     * and all resolved subcommands).
+     *
+     * @param parseResult the top-level parse result
+     * @param option the option name to look for (e.g. "--plain")
+     * @return true if the option was matched at any level, false otherwise
+     */
+    private boolean hasOptionAnywhere(ParseResult parseResult, String option) {
         try {
-            if (parseResult.hasMatchedOption("--verbose")) {
-                return true;
+            ParseResult current = parseResult;
+            while (current != null) {
+                if (current.hasMatchedOption(option)) {
+                    return true;
+                }
+                current = current.hasSubcommand() ? current.subcommand() : null;
             }
         } catch (Exception e) {
-            // Ignore and return false if unable to check verbose flag
+            // Ignore and return false if unable to check the flag
         }
         return false;
     }

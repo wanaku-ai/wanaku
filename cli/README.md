@@ -22,6 +22,7 @@ The Wanaku CLI provides a user-friendly interface for:
 - **Project Scaffolding**: Generate new tool and provider projects from templates
 - **Authentication**: OAuth 2.0/OIDC authentication with the router
 - **Label Filtering**: Advanced filtering using label expressions
+- **Plain Output Mode**: `--plain` flag for clean, parsable output without ANSI colors (useful for scripting and piping)
 
 ## Installation
 
