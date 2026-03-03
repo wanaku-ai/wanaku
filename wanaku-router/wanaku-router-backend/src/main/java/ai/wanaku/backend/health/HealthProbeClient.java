@@ -34,7 +34,7 @@ class HealthProbeClient {
             HealthProbeReply reply = transport.probeHealth(request, target);
             return mapRuntimeStatus(reply.getStatus());
         } catch (Exception e) {
-            LOG.warnf("Health probe failed for %s: %s", target.toAddress(), e.getMessage());
+            LOG.warnf(e, "Health probe failed for %s: %s", target.toAddress(), e.getMessage());
             return HealthStatus.DOWN;
         }
     }
