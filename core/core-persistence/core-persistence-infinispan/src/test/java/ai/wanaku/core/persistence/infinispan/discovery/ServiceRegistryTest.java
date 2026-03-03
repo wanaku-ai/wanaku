@@ -104,11 +104,20 @@ public class ServiceRegistryTest {
 
     @Test
     @Order(5)
-    public void deregister() {
+    public void cachedLookupInvalidatedOnDeregister() {
+        // First lookup populates the cache
+        List<ServiceTarget> services = serviceRegistry.getServiceByName(TEST_SERVICE_NAME, SERVICE_TYPE_TOOL_INVOKER);
+        assertFalse(services.isEmpty());
+
+        // Deregister the service
         ServiceTarget serviceTarget = new ServiceTarget(
                 TEST_SERVICE_ID, TEST_SERVICE_NAME, "localhost", 0, SERVICE_TYPE_TOOL_INVOKER, "mcp", null, null, null);
-
         serviceRegistry.deregister(serviceTarget);
+
+        // Cached entry must be gone — lookup should return empty
+        List<ServiceTarget> afterDeregister =
+                serviceRegistry.getServiceByName(TEST_SERVICE_NAME, SERVICE_TYPE_TOOL_INVOKER);
+        assertTrue(afterDeregister.isEmpty());
 
         List<ServiceTarget> tools = serviceRegistry.getEntries(SERVICE_TYPE_TOOL_INVOKER);
         assertEquals(0, tools.size());
