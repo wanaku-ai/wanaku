@@ -14,6 +14,9 @@ public class InfinispanServiceConfiguration {
     @ConfigProperty(name = "wanaku.persistence.infinispan.max-state-count", defaultValue = "10")
     int maxStateCount;
 
+    @ConfigProperty(name = "wanaku.persistence.infinispan.service-lookup-cache-ttl-seconds", defaultValue = "30")
+    long lookupCacheTtlSeconds;
+
     @Inject
     EmbeddedCacheManager cacheManager;
 
@@ -28,8 +31,10 @@ public class InfinispanServiceConfiguration {
 
     @Produces
     ServiceRegistry serviceRegistry() {
-        InfinispanServiceRegistry registry =
-                new InfinispanServiceRegistry(capabilitiesRepositoryInstance.get(), serviceRecordInstance.get());
+        ServiceLookupCache lookupCache = new ServiceLookupCache(cacheManager, lookupCacheTtlSeconds);
+
+        InfinispanServiceRegistry registry = new InfinispanServiceRegistry(
+                capabilitiesRepositoryInstance.get(), serviceRecordInstance.get(), lookupCache);
 
         registry.setMaxStateCount(maxStateCount);
         return registry;

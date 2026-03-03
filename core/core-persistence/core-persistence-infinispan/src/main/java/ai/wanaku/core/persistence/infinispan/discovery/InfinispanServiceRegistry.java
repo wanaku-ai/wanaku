@@ -16,14 +16,17 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     private final InfinispanCapabilitiesRepository capabilitiesRepository;
     private final InfinispanServiceRecordRepository activityRecordRepository;
+    private final ServiceLookupCache lookupCache;
 
     private int maxStateCount;
 
     public InfinispanServiceRegistry(
             InfinispanCapabilitiesRepository capabilitiesRepository,
-            InfinispanServiceRecordRepository activityRecordRepository) {
+            InfinispanServiceRecordRepository activityRecordRepository,
+            ServiceLookupCache lookupCache) {
         this.capabilitiesRepository = capabilitiesRepository;
         this.activityRecordRepository = activityRecordRepository;
+        this.lookupCache = lookupCache;
     }
 
     private static void updatePing(ActivityRecord e) {
@@ -39,6 +42,8 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     public void deregister(ServiceTarget serviceTarget) {
         capabilitiesRepository.deleteById(serviceTarget.getId());
 
+        lookupCache.evictByServiceName(serviceTarget.getServiceName());
+
         activityRecordRepository.update(serviceTarget.getId(), a -> applyDeregistration(serviceTarget.getId(), a));
     }
 
@@ -50,7 +55,16 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public List<ServiceTarget> getServiceByName(String serviceName, String serviceType) {
-        return capabilitiesRepository.findByService(serviceName, serviceType);
+        List<ServiceTarget> cached = lookupCache.get(serviceName, serviceType);
+        if (cached != null) {
+            return cached;
+        }
+
+        List<ServiceTarget> result = capabilitiesRepository.findByService(serviceName, serviceType);
+        if (result != null && !result.isEmpty()) {
+            lookupCache.put(serviceName, serviceType, result);
+        }
+        return result;
     }
 
     @Override
@@ -84,6 +98,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public void update(ServiceTarget serviceTarget) {
+        lookupCache.evictByServiceName(serviceTarget.getServiceName());
         register(serviceTarget);
     }
 
@@ -93,6 +108,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     void clear() {
         capabilitiesRepository.deleteAll();
         activityRecordRepository.deleteAll();
+        lookupCache.clear();
     }
 
     @Override
@@ -114,7 +130,10 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
         switch (healthStatus) {
             case HEALTHY -> state = ServiceState.newHealthy();
             case UNHEALTHY -> state = ServiceState.newUnhealthy("health probe reported unhealthy");
-            case DOWN -> state = ServiceState.newDown("health probe reported down");
+            case DOWN -> {
+                state = ServiceState.newDown("health probe reported down");
+                lookupCache.clear();
+            }
             default -> state = ServiceState.newPending();
         }
         updateLastState(id, state);
@@ -184,6 +203,10 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     public boolean removeById(String id) {
         boolean capabilityRemoved = capabilitiesRepository.deleteById(id);
         boolean activityRemoved = activityRecordRepository.deleteById(id);
+
+        if (capabilityRemoved) {
+            lookupCache.clear();
+        }
 
         LOG.debugf("Removed capability %s: capability=%b, activity=%b", id, capabilityRemoved, activityRemoved);
 
