@@ -10,6 +10,7 @@ export const enum Links {
   Namespaces = "/namespaces",
   Forwards = "/forwards",
   DataStores = "/data-stores",
+  ServiceCatalog = "/service-catalog",
   Logout = "/logout"
 }
 
