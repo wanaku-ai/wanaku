@@ -36,6 +36,12 @@
         </dependency>
 
         <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-services-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
