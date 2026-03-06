@@ -392,21 +392,20 @@ public class FirstAvailable implements ServiceResolver {
 
 ### Provider Pattern
 
-Resolvers are exposed via CDI producers:
+Tool bridges are exposed via CDI producers:
 
 ```java
 @ApplicationScoped
 public class ToolsProvider {
     @Inject
-    Instance<ServiceRegistry> serviceRegistryInstance;
+    ServiceResolver serviceResolver;
+
+    @Inject
+    WanakuBridgeTransport transport;
 
     @Produces
-    @DefaultBean
-    ToolsResolver getResolver() {
-        ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        WanakuBridgeTransport transport = new GrpcTransport();
-        return new WanakuToolsResolver(
-            new InvokerBridge(resolver, transport, toolCallEventEmitter));
+    ToolsBridge getToolsBridge() {
+        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter);
     }
 }
 ```

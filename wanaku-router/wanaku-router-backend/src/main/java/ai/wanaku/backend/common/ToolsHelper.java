@@ -5,6 +5,7 @@ import java.util.function.BiFunction;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
@@ -58,6 +59,7 @@ public class ToolsHelper {
      * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
      *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
      */
+    @Deprecated
     public static void registerTool(
             CallableReference toolReference,
             ToolManager toolManager,
@@ -75,6 +77,7 @@ public class ToolsHelper {
      * @param handler       A BiFunction that takes ToolArguments and ToolReference as input,
      *                      and returns a ToolResponse. This function will be applied to invoke the tool's functionality.
      */
+    @Deprecated
     public static void registerTool(
             CallableReference toolReference,
             ToolManager toolManager,
@@ -108,6 +111,74 @@ public class ToolsHelper {
                 LOG.debugf("Registering tool %s", toolReference.getName());
                 toolDefinition
                         .setHandler(ta -> handler.apply(ta, toolReference))
+                        .register();
+            }
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("already exists")) {
+                throw EntityAlreadyExistsException.forName(toolReference.getName());
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Registers a tool with the given tool manager using an async handler.
+     *
+     * @param toolReference The reference to the tool being registered
+     * @param toolManager   The tool manager instance responsible for managing tools
+     * @param handler       A BiFunction that takes ToolArguments and CallableReference as input,
+     *                      and returns a Uni of ToolResponse.
+     */
+    public static void registerToolAsync(
+            CallableReference toolReference,
+            ToolManager toolManager,
+            BiFunction<ToolManager.ToolArguments, CallableReference, Uni<ToolResponse>> handler) {
+        registerToolAsync(toolReference, toolManager, null, handler);
+    }
+
+    /**
+     * Registers a tool with the given tool manager using an async handler.
+     *
+     * @param toolReference The reference to the tool being registered
+     * @param toolManager   The tool manager instance responsible for managing tools
+     * @param namespace     The namespace to use for registering the tool
+     * @param handler       A BiFunction that takes ToolArguments and CallableReference as input,
+     *                      and returns a Uni of ToolResponse.
+     */
+    public static void registerToolAsync(
+            CallableReference toolReference,
+            ToolManager toolManager,
+            Namespace namespace,
+            BiFunction<ToolManager.ToolArguments, CallableReference, Uni<ToolResponse>> handler) {
+
+        if (toolManager.getTool(toolReference.getName()) != null) {
+            throw EntityAlreadyExistsException.forName(toolReference.getName());
+        }
+
+        try {
+            ToolManager.ToolDefinition toolDefinition =
+                    toolManager.newTool(toolReference.getName()).setDescription(toolReference.getDescription());
+
+            final boolean required = isRequired(toolReference);
+
+            InputSchema inputSchema = toolReference.getInputSchema();
+            if (inputSchema != null) {
+                inputSchema.getProperties().forEach((key, value) -> addArgument(key, value, toolDefinition, required));
+            }
+
+            if (namespace != null) {
+                LOG.debugf(
+                        "Registering tool %s in namespace %s with path %s",
+                        toolReference.getName(), namespace.getName(), namespace.getPath());
+                toolDefinition
+                        .setServerName(namespace.getPath())
+                        .setAsyncHandler(ta -> handler.apply(ta, toolReference))
+                        .register();
+            } else {
+                LOG.debugf("Registering tool %s", toolReference.getName());
+                toolDefinition
+                        .setAsyncHandler(ta -> handler.apply(ta, toolReference))
                         .register();
             }
         } catch (IllegalArgumentException e) {

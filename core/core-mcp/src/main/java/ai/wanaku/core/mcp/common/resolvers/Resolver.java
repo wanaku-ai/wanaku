@@ -11,11 +11,9 @@ package ai.wanaku.core.mcp.common.resolvers;
  * Specialized resolver interfaces extend this base interface to provide
  * specific resolution strategies for different capability types:
  * <ul>
- *   <li>{@link ToolsResolver} - Resolves tool capability requests</li>
  *   <li>{@link ForwardResolver} - Resolves forward proxy requests</li>
  * </ul>
  *
- * @see ToolsResolver
  * @see ForwardResolver
  */
 public interface Resolver {}

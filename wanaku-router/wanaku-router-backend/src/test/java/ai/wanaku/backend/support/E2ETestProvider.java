@@ -9,18 +9,17 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.bridge.InvokerBridge;
+import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
-import ai.wanaku.backend.resolvers.WanakuToolsResolver;
 import ai.wanaku.backend.service.support.FirstAvailable;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 
 /**
- * CDI alternative provider for e2e tests that produces real resolvers backed by gRPC transport.
+ * CDI alternative provider for e2e tests that produces real bridges backed by gRPC transport.
  * Activated only when the {@link E2ETestProfile} is active.
  */
 @Alternative
@@ -39,11 +38,11 @@ public class E2ETestProvider {
     }
 
     @Produces
-    ToolsResolver toolsResolver() {
-        LOG.info("Creating real ToolsResolver for e2e tests");
+    ToolsBridge toolsBridge() {
+        LOG.info("Creating real ToolsBridge for e2e tests");
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
         WanakuBridgeTransport transport = new GrpcTransport();
-        return new WanakuToolsResolver(new InvokerBridge(resolver, transport));
+        return new InvokerBridge(resolver, transport);
     }
 
     @Produces
