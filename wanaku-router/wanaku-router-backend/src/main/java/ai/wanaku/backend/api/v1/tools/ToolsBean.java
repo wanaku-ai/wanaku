@@ -7,21 +7,25 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.Map;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.micrometer.common.util.StringUtils;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
+import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
+import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
-import ai.wanaku.core.mcp.common.Tool;
-import ai.wanaku.core.mcp.common.resolvers.ToolsResolver;
+import ai.wanaku.core.exchange.v1.PropertySchema;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
@@ -34,7 +38,7 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     ToolManager toolManager;
 
     @Inject
-    ToolsResolver toolsResolver;
+    ToolsBridge toolsBridge;
 
     @Inject
     NamespacesBean namespacesBean;
@@ -43,10 +47,17 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     Instance<ToolReferenceRepository> toolReferenceRepositoryInstance;
 
     private ToolReferenceRepository toolReferenceRepository;
+    private boolean async = false;
 
     @PostConstruct
     void init() {
         toolReferenceRepository = toolReferenceRepositoryInstance.get();
+
+        final Boolean value = ConfigProvider.getConfig().getValue("wanaku.router.async", Boolean.class);
+        async = value != null && value;
+        if (async) {
+            LOG.info("Serving tools in async mode with executor");
+        }
     }
 
     public ToolReference add(ToolReference toolReference) {
@@ -59,22 +70,64 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
 
     public ToolReference add(ToolPayload toolPayload) {
         // First, provision the tool (i.e.: configuration, secrets, etc) in the target defined by the remote
-        toolsResolver.provision(toolPayload);
+        provision(toolPayload);
 
         return add(toolPayload.getPayload());
     }
 
+    private void provision(ToolPayload toolPayload) {
+        final ProvisioningReference provisioningReference = toolsBridge.provision(toolPayload);
+
+        final Map<String, PropertySchema> serviceProperties = provisioningReference.properties();
+
+        ToolReference toolReference = toolPayload.getPayload();
+        final Map<String, Property> clientProperties =
+                toolReference.getInputSchema().getProperties();
+        for (var serviceProperty : serviceProperties.entrySet()) {
+            clientProperties.computeIfAbsent(
+                    serviceProperty.getKey(), v -> toProperty(serviceProperty, serviceProperties));
+        }
+
+        toolReference.setConfigurationURI(
+                provisioningReference.configurationURI().toString());
+        toolReference.setSecretsURI(provisioningReference.secretsURI().toString());
+    }
+
+    private static Property toProperty(
+            Map.Entry<String, PropertySchema> serviceProperty, Map<String, PropertySchema> serviceProperties) {
+        PropertySchema schema = serviceProperties.get(serviceProperty.getKey());
+        Property property = new Property();
+
+        property.setDescription(schema.getDescription());
+        property.setType(schema.getType());
+
+        return property;
+    }
+
     private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
-        if (!StringHelper.isEmpty(toolReference.getNamespace())) {
-
-            final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
-
-            Tool tool = toolsResolver.resolve(toolReference);
-            ToolsHelper.registerTool(toolReference, toolManager, namespace, tool::call);
-
+        if (async) {
+            doRegisterToolAsync(toolReference);
         } else {
-            Tool tool = toolsResolver.resolve(toolReference);
-            ToolsHelper.registerTool(toolReference, toolManager, tool::call);
+            doRegisterTool(toolReference);
+        }
+    }
+
+    @Deprecated
+    private void doRegisterTool(ToolReference toolReference) {
+        if (!StringHelper.isEmpty(toolReference.getNamespace())) {
+            final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
+            ToolsHelper.registerTool(toolReference, toolManager, namespace, toolsBridge::execute);
+        } else {
+            ToolsHelper.registerTool(toolReference, toolManager, toolsBridge::execute);
+        }
+    }
+
+    private void doRegisterToolAsync(ToolReference toolReference) {
+        if (!StringHelper.isEmpty(toolReference.getNamespace())) {
+            final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
+            ToolsHelper.registerToolAsync(toolReference, toolManager, namespace, toolsBridge::executeAsync);
+        } else {
+            ToolsHelper.registerToolAsync(toolReference, toolManager, toolsBridge::executeAsync);
         }
     }
 
@@ -131,35 +184,6 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
         return toolReferenceRepository;
     }
 
-    /**
-     * Removes all tool references that match the given label expression.
-     * <p>
-     * This method extends the superclass implementation by also unregistering
-     * each matching tool from the {@link ToolManager} before removing it from
-     * the repository. This ensures that removed tools are no longer available
-     * for execution by AI agents.
-     * </p>
-     * <p>
-     * The removal process for each matching tool:
-     * </p>
-     * <ol>
-     *   <li>Query all tools matching the label expression</li>
-     *   <li>For each tool: unregister from ToolManager and remove from repository</li>
-     *   <li>Return the count of successfully removed tools</li>
-     * </ol>
-     * <p>
-     * For detailed information about label expression syntax and examples,
-     * see the superclass documentation.
-     * </p>
-     *
-     * @param labelExpression the label filter expression to match tools for removal
-     * @return the number of tool references that were removed
-     * @throws WanakuException if the label expression is invalid or malformed, or if the
-     *                         removal operation fails
-     * @see LabelsAwareWanakuEntityBean#removeIf(String)
-     * @see #remove(String)
-     * @see ToolManager#removeTool(String)
-     */
     @Override
     public int removeIf(String labelExpression) throws WanakuException {
         List<ToolReference> toRemove = list(labelExpression);

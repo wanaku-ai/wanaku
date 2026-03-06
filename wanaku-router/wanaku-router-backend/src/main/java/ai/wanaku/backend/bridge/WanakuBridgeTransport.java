@@ -79,6 +79,23 @@ public interface WanakuBridgeTransport {
     ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service);
 
     /**
+     * Invokes a tool on a remote service asynchronously.
+     * <p>
+     * This method sends a tool invocation request to the specified service and
+     * returns the result as a {@link Uni}. The request contains all necessary
+     * information for the service to execute the tool, including arguments,
+     * headers, and references to provisioned configuration and secrets.
+     *
+     * @param request the tool invocation request containing tool details and arguments
+     * @param service the target service that will execute the tool
+     * @return a Uni that will emit the tool invocation reply
+     * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
+     *         if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
+     */
+    Uni<ToolInvokeReply> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service);
+
+    /**
      * Acquires a resource from a remote service.
      * <p>
      * This method sends a resource acquisition request to the specified service
@@ -146,4 +163,6 @@ public interface WanakuBridgeTransport {
     HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service);
 
     ResourceResponseTransformer<ResourceReply> newResourceResponseTransformer();
+
+    ToolResponseTransformer<ToolInvokeReply> newToolResponseTransformer();
 }

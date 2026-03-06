@@ -16,6 +16,7 @@ import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.InvokerToolExecutor;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.ResourceResponseTransformer;
+import ai.wanaku.backend.bridge.ToolResponseTransformer;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
@@ -202,6 +203,53 @@ public class GrpcTransport implements WanakuBridgeTransport {
         } finally {
             channelManager.closeChannel(channel);
         }
+    }
+
+    /**
+     * Invokes a tool on a remote service via gRPC asynchronously.
+     * <p>
+     * This method creates a channel, builds a gRPC future stub, and invokes the tool
+     * with the provided request. The result is returned as a {@link Uni} that completes
+     * when the gRPC future resolves, without blocking any thread.
+     *
+     * @param request the tool invocation request
+     * @param service the target service
+     * @return a Uni that will emit the tool invocation reply
+     * @throws ServiceUnavailableException if the service cannot be reached
+     * @throws WanakuException if the remote service returns an error
+     */
+    @Override
+    public Uni<ToolInvokeReply> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service) {
+        LOG.debugf("Invoking tool asynchronously on service: %s", service.toAddress());
+
+        return Uni.createFrom().emitter(em -> {
+            ManagedChannel channel = createChannel(service);
+            try {
+                var future = ToolInvokerGrpc.newFutureStub(channel)
+                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                        .invokeTool(request);
+
+                future.addListener(
+                        () -> {
+                            try {
+                                em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                            } catch (Exception e) {
+                                em.fail(e);
+                            } finally {
+                                channelManager.closeChannel(channel);
+                            }
+                        },
+                        Infrastructure.getDefaultExecutor());
+            } catch (StatusRuntimeException e) {
+                channelManager.closeChannel(channel);
+                em.fail(mapStatusRuntimeException(e, service));
+            } catch (RuntimeException e) {
+                channelManager.closeChannel(channel);
+                LOG.errorf(e, "Failed to invoke tool on service: %s", service.toAddress());
+                em.fail(new ServiceUnavailableException(
+                        "Service is not available at the address " + service.toAddress(), e));
+            }
+        });
     }
 
     /**
@@ -393,5 +441,10 @@ public class GrpcTransport implements WanakuBridgeTransport {
     @Override
     public ResourceResponseTransformer<ResourceReply> newResourceResponseTransformer() {
         return new GrpcResourceResponseTransformer();
+    }
+
+    @Override
+    public ToolResponseTransformer<ToolInvokeReply> newToolResponseTransformer() {
+        return new GrpcToolResponseTransformer();
     }
 }

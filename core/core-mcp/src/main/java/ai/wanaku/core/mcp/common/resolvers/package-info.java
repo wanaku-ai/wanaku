@@ -11,7 +11,6 @@
  * <p>
  * Key resolver types:
  * <ul>
- *   <li>{@link ai.wanaku.core.mcp.common.resolvers.ToolsResolver} - Resolves tool capabilities</li>
  *   <li>{@link ai.wanaku.core.mcp.common.resolvers.ForwardResolver} - Resolves forward proxies</li>
  * </ul>
  *

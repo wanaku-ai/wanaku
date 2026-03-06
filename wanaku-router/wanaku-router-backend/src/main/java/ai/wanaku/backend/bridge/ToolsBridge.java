@@ -1,16 +1,17 @@
 package ai.wanaku.backend.bridge;
 
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.support.ProvisioningReference;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
-import ai.wanaku.core.mcp.common.ToolExecutor;
 
 /**
  * Proxies between MCP URIs and Camel components capable of handling them.
  * <p>
  * This interface defines the contract for tool proxies, which are responsible
- * for provisioning tool configurations and providing access to tool executors.
- * The separation between proxy concerns and tool execution is achieved through
- * composition, where the proxy provides a ToolExecutor for handling invocations.
+ * for provisioning tool configurations and executing tool invocations.
  */
 public interface ToolsBridge extends Bridge {
     /**
@@ -22,12 +23,21 @@ public interface ToolsBridge extends Bridge {
     ProvisioningReference provision(ToolPayload payload);
 
     /**
-     * Gets the tool executor for this proxy.
-     * <p>
-     * The executor handles the actual tool invocation logic, allowing
-     * separation of proxy management from execution concerns.
+     * Executes a tool with the specified arguments synchronously.
      *
-     * @return the tool executor
+     * @param toolArguments the arguments to pass to the tool
+     * @param toolReference the reference to the tool being called
+     * @return a tool response containing the execution results
      */
-    ToolExecutor getExecutor();
+    @Deprecated
+    ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
+
+    /**
+     * Executes a tool with the specified arguments asynchronously.
+     *
+     * @param toolArguments the arguments to pass to the tool
+     * @param toolReference the reference to the tool being called
+     * @return a Uni emitting the tool response
+     */
+    Uni<ToolResponse> executeAsync(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
 }

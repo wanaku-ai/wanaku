@@ -199,7 +199,7 @@ public class InvokerToolExecutor implements ToolExecutor {
      * @param toolArguments the arguments provided for the tool invocation
      * @return a fully constructed ToolInvokeRequest
      */
-    private ToolInvokeRequest buildToolInvokeRequest(
+    static ToolInvokeRequest buildToolInvokeRequest(
             ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
 
         // Filter out metadata args before converting to string map

@@ -1,44 +1,63 @@
 package ai.wanaku.backend.bridge;
 
+import jakarta.inject.Inject;
+
 import org.jboss.logging.Logger;
+import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.mcp.common.ToolExecutor;
+import ai.wanaku.core.exchange.v1.ToolInvokeReply;
+import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
 /**
  * A proxy class for invoking tools via gRPC.
  * <p>
  * This proxy is responsible for provisioning tool configurations and
- * providing access to a tool executor. The actual tool execution logic
- * is delegated to {@link InvokerToolExecutor} through composition,
- * separating proxy management from execution concerns.
- * <p>
- * This class uses composition to delegate gRPC transport operations to
+ * executing tool invocations. It delegates gRPC transport operations to
  * {@link GrpcTransport}, separating business logic from transport concerns.
- * It focuses solely on tool-specific concerns while delegating infrastructure
- * concerns to the transport layer.
  */
 public class InvokerBridge implements ToolsBridge {
     private static final Logger LOG = Logger.getLogger(InvokerBridge.class);
     private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
+    private static final String SERVICE__TYPE_CODE_EXECUTION_ENGINE = ServiceType.CODE_EXECUTION_ENGINE.asValue();
 
-    private final ServiceResolver serviceResolver;
-    private final WanakuBridgeTransport transport;
-    private final ToolExecutor executor;
+    @Inject
+    ServiceResolver serviceResolver;
+
+    @Inject
+    WanakuBridgeTransport transport;
+
+    private final InvokerToolExecutor executor;
+    private final ToolResponseTransformer<ToolInvokeReply> responseTransformer;
+
+    static class WanakuToolContext {
+        ToolManager.ToolArguments arguments;
+        ToolReference toolReference;
+        ServiceTarget serviceTarget;
+        ToolInvokeRequest request;
+
+        static WanakuToolContext create(ToolManager.ToolArguments arguments, ToolReference toolReference) {
+            WanakuToolContext context = new WanakuToolContext();
+            context.arguments = arguments;
+            context.toolReference = toolReference;
+            return context;
+        }
+    }
 
     /**
      * Creates a new InvokerBridge with the specified service resolver and transport.
-     * <p>
-     * This constructor is primarily intended for testing purposes, allowing
-     * injection of a mock or custom transport implementation.
      *
      * @param serviceResolver the resolver for locating tool services
      * @param transport the gRPC transport for communication
@@ -61,11 +80,34 @@ public class InvokerBridge implements ToolsBridge {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
         this.executor = new InvokerToolExecutor(serviceResolver, transport, toolCallEventEmitter);
+        this.responseTransformer = transport.newToolResponseTransformer();
     }
 
     @Override
-    public ToolExecutor getExecutor() {
-        return executor;
+    @Deprecated
+    public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+        return executor.execute(toolArguments, toolReference);
+    }
+
+    @Override
+    public Uni<ToolResponse> executeAsync(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+        if (!(toolReference instanceof ToolReference ref)) {
+            LOG.errorf(
+                    "Tool reference %s not supported",
+                    toolReference == null ? "null" : toolReference.getClass().getName());
+            return Uni.createFrom()
+                    .failure(new UnsupportedOperationException(
+                            "Only local tool call references should be invoked by this executor"));
+        }
+
+        return Uni.createFrom()
+                .item(() -> WanakuToolContext.create(toolArguments, ref))
+                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
+                .invoke(this::resolveServiceV2)
+                .invoke(ctx -> ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments))
+                .chain(ctx -> transport
+                        .invokeToolAsync(ctx.request, ctx.serviceTarget)
+                        .map(responseTransformer::transformReply));
     }
 
     @Override
@@ -80,17 +122,6 @@ public class InvokerBridge implements ToolsBridge {
                 toolReference.getName(), toolPayload.getConfigurationData(), toolPayload.getSecretsData(), service);
     }
 
-    /**
-     * Resolves a service target for the specified type and service type.
-     * <p>
-     * This method uses the service resolver to locate the appropriate service
-     * and throws an exception if no service is found.
-     *
-     * @param type the service type identifier
-     * @param serviceType the category of service (e.g., "tool-invoker", "resource-provider")
-     * @return the resolved service target
-     * @throws ServiceNotFoundException if no service is registered for the given type
-     */
     private ServiceTarget resolveService(String type, String serviceType) {
         LOG.debugf("Resolving service for type '%s' and service type '%s'", type, serviceType);
         ServiceTarget service = serviceResolver.resolve(type, serviceType);
@@ -99,5 +130,19 @@ public class InvokerBridge implements ToolsBridge {
         }
         LOG.debugf("Resolved service: %s", service.toAddress());
         return service;
+    }
+
+    private WanakuToolContext resolveServiceV2(WanakuToolContext context) {
+        context.serviceTarget = serviceResolver.resolve(context.toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
+        if (context.serviceTarget == null) {
+            // Code engines may also provide specialized tools
+            context.serviceTarget =
+                    serviceResolver.resolve(context.toolReference.getType(), SERVICE__TYPE_CODE_EXECUTION_ENGINE);
+            if (context.serviceTarget == null) {
+                throw new ServiceNotFoundException(
+                        "There is no host registered for service " + context.toolReference.getType());
+            }
+        }
+        return context;
     }
 }

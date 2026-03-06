@@ -1,10 +1,26 @@
 #!/bin/bash
+# run-perf-test.sh — k6 performance test runner for Wanaku
+#
+# Adding new tests:
+#   1. Create a k6 script in tests/load/ (e.g. mcp-prompts-get-streamable-http.js)
+#   2. Register it in a built-in suite by adding an entry to the SUITES associative
+#      array below. Each entry is "name|path" separated by spaces:
+#
+#        SUITES[streamable-http]="resources-read-http|${SCRIPT_DIR}/mcp-resources-read-streamable-http.js \
+#                                 tools-invoke-http|${SCRIPT_DIR}/mcp-tools-invoke-streamable-http.js"
+#
+#   3. Or run it ad-hoc without modifying this script:
+#
+#        ./run-perf-test.sh --test my-test ./tests/load/my-custom-test.js ...
+#
+#   Suites and --test flags can be combined freely.
+
 set -euo pipefail
 
 # ---- Defaults ----
 ROUTER_FROM=""
-TEST_FILE_FROM=""
 TEST_NAME=""
+TEST_SUITE=""
 TEST_BASE_DIR=""
 CAPABILITY_SOURCES=()
 CAPABILITY_ARGS=()
@@ -16,10 +32,22 @@ VU_LEVELS=(1 10 500 1000 2000 30000)
 TEST_DURATION="30s"
 GRPC_PORT_START=9190
 
+# Collect individual test entries: each is "name|source"
+TEST_ENTRIES=()
+
 # ---- Tracked PIDs & temp dir ----
 PIDS=()
 TMPDIR_PATH=""
 KEYCLOAK_STARTED=false
+
+# ---- Built-in test suites ----
+# Each suite is a list of "name|source" entries relative to the script directory.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -A SUITES
+SUITES[sse]="resources-read-sse|${SCRIPT_DIR}/mcp-resources-read-sse.js tools-invoke-sse|${SCRIPT_DIR}/mcp-tools-invoke-sse.js"
+SUITES[resources-sse]="resources-read-sse|${SCRIPT_DIR}/mcp-resources-read-sse.js"
+SUITES[tools-sse]="tools-invoke-sse|${SCRIPT_DIR}/mcp-tools-invoke-sse.js"
 
 usage() {
     cat <<'EOF'
@@ -29,10 +57,17 @@ Options:
   --router-from URL|PATH       Router archive URL or local path (required)
   --capability-from URL|PATH   Capability archive URL or local path (repeatable)
   --capability-args 'ARGS'     Extra CLI args for the preceding --capability-from (repeatable, paired)
-  --test-file-from URL|PATH    k6 test file URL or local path (required)
-  --test-name NAME             Test name, used in output directory (required)
+  --test NAME URL|PATH         Add a test: NAME is used in output dirs, URL|PATH is the k6 script (repeatable)
+  --suite SUITE                Run a built-in test suite (see below)
+  --test-name NAME             Label for this test run (e.g. baseline, approach-1). Used as a parent
+                               directory for results so different runs of the same tests can be compared.
   --test-base-dir DIR          Override default test results directory
   --help                       Show this help message
+
+Built-in suites:
+  sse             All SSE tests (resources + tools)
+  resources-sse   Resource read over SSE only
+  tools-sse       Tool invocation over SSE only
 
 Environment variables:
   K6_BIN          Path to k6 binary (default: $HOME/bin/k6)
@@ -40,21 +75,36 @@ Environment variables:
   JAVA_OPTS       JVM options for router and capabilities (default: -XX:+UseNUMA -Xmx4G -Xms4G)
 
 Examples:
-  # From URLs:
-  ./run-perf-test.sh \
-    --router-from https://example.com/router.tar.gz \
-    --capability-from https://example.com/cap1.tar.gz \
-    --capability-args '--name mock-provider' \
-    --test-file-from https://example.com/test.js \
-    --test-name smoke
-
-  # From local paths:
+  # Run all SSE tests:
   ./run-perf-test.sh \
     --router-from /path/to/router.tar.gz \
     --capability-from /path/to/capability.zip \
     --capability-args '--name mock-provider' \
-    --test-file-from ./tests/load/mcp-resources-read-sse.js \
-    --test-name smoke
+    --suite sse
+
+  # Run individual tests with a run label for comparison:
+  ./run-perf-test.sh \
+    --router-from /path/to/router.tar.gz \
+    --capability-from /path/to/capability.zip \
+    --capability-args '--name mock-provider' \
+    --test-name baseline \
+    --test resources-read-sse ./tests/load/mcp-resources-read-sse.js
+
+  # Then re-run with a different code version:
+  ./run-perf-test.sh \
+    --router-from /path/to/router-v2.tar.gz \
+    --capability-from /path/to/capability.zip \
+    --capability-args '--name mock-provider' \
+    --test-name approach-1 \
+    --test resources-read-sse ./tests/load/mcp-resources-read-sse.js
+
+  # Mix suite and individual tests:
+  ./run-perf-test.sh \
+    --router-from /path/to/router.tar.gz \
+    --capability-from /path/to/capability.zip \
+    --capability-args '--name mock-provider' \
+    --suite sse \
+    --test custom-test ./my-custom-test.js
 EOF
     exit 0
 }
@@ -112,8 +162,10 @@ while [ $# -gt 0 ]; do
                 CAPABILITY_ARGS+=("")
             done
             CAPABILITY_ARGS+=("$2"); shift 2 ;;
-        --test-file-from)
-            TEST_FILE_FROM="$2"; shift 2 ;;
+        --test)
+            TEST_ENTRIES+=("$2|$3"); shift 3 ;;
+        --suite)
+            TEST_SUITE="$2"; shift 2 ;;
         --test-name)
             TEST_NAME="$2"; shift 2 ;;
         --test-base-dir)
@@ -130,25 +182,24 @@ while [ ${#CAPABILITY_ARGS[@]} -lt ${#CAPABILITY_SOURCES[@]} ]; do
     CAPABILITY_ARGS+=("")
 done
 
+# ---- Expand suite into test entries ----
+if [ -n "$TEST_SUITE" ]; then
+    if [ -z "${SUITES[$TEST_SUITE]+x}" ]; then
+        echo "Error: unknown suite '$TEST_SUITE'. Available: ${!SUITES[*]}" >&2
+        exit 1
+    fi
+    # shellcheck disable=SC2206
+    suite_entries=(${SUITES[$TEST_SUITE]})
+    TEST_ENTRIES+=("${suite_entries[@]}")
+fi
+
 # ---- Validate required args ----
 if [ -z "$ROUTER_FROM" ]; then
     echo "Error: --router-from is required" >&2; exit 1
 fi
-if [ -z "$TEST_FILE_FROM" ]; then
-    echo "Error: --test-file-from is required" >&2; exit 1
+if [ ${#TEST_ENTRIES[@]} -eq 0 ]; then
+    echo "Error: at least one --test or --suite is required" >&2; exit 1
 fi
-if [ -z "$TEST_NAME" ]; then
-    echo "Error: --test-name is required" >&2; exit 1
-fi
-
-# ---- Resolve output directory ----
-if [ -z "$TEST_BASE_DIR" ]; then
-    TEST_DATA_DIR="$HOME/Sync/Data/test-results/wanaku/$TEST_NAME"
-else
-    TEST_DATA_DIR="$TEST_BASE_DIR/$TEST_NAME"
-fi
-mkdir -p "$TEST_DATA_DIR"
-echo "Test results will be saved to: $TEST_DATA_DIR"
 
 # ---- Create temp dir ----
 TMPDIR_PATH=$(mktemp -d)
@@ -185,6 +236,27 @@ resolve_source() {
         *.zip)
             unzip -qo "$dest/$filename" -d "$dest"
             rm -f "$dest/$filename"
+            ;;
+    esac
+}
+
+# ---- Resolve k6 test file (URL or local path) ----
+resolve_test_file() {
+    local source="$1"
+    local dest="$2"
+
+    case "$source" in
+        http://*|https://*)
+            echo "Downloading $source ..."
+            curl -fsSL -o "$dest" "$source"
+            ;;
+        *)
+            if [ ! -f "$source" ]; then
+                echo "Error: test file does not exist: $source" >&2
+                return 1
+            fi
+            echo "Copying from local path $source ..."
+            cp "$source" "$dest"
             ;;
     esac
 }
@@ -269,24 +341,21 @@ for i in "${!CAPABILITY_SOURCES[@]}"; do
     CAP_JARS+=("$cap_jar")
 done
 
-# ---- Step 3: Resolve test file ----
-echo "=== Resolving k6 test file ==="
-TEST_FILE="$TMPDIR_PATH/test.js"
-case "$TEST_FILE_FROM" in
-    http://*|https://*)
-        echo "Downloading $TEST_FILE_FROM ..."
-        curl -fsSL -o "$TEST_FILE" "$TEST_FILE_FROM"
-        ;;
-    *)
-        if [ ! -f "$TEST_FILE_FROM" ]; then
-            echo "Error: test file does not exist: $TEST_FILE_FROM" >&2
-            exit 1
-        fi
-        echo "Copying from local path $TEST_FILE_FROM ..."
-        cp "$TEST_FILE_FROM" "$TEST_FILE"
-        ;;
-esac
-echo "Test file ready at $TEST_FILE"
+# ---- Step 3: Resolve all test files ----
+echo "=== Resolving k6 test files ==="
+TEST_NAMES=()
+TEST_FILES=()
+for entry in "${TEST_ENTRIES[@]}"; do
+    t_name="${entry%%|*}"
+    t_source="${entry#*|}"
+
+    t_file="$TMPDIR_PATH/test-${t_name}.js"
+    resolve_test_file "$t_source" "$t_file"
+
+    TEST_NAMES+=("$t_name")
+    TEST_FILES+=("$t_file")
+    echo "  Test '$t_name' ready at $t_file"
+done
 
 # ---- Resolve hostnames ----
 HOSTNAME_FQDN=$(hostname -f)
@@ -395,28 +464,46 @@ else
     wait_for_http "http://localhost:8543" "Keycloak" 90
 fi
 
-# ---- Step 5: Run k6 tests (restart services each iteration) ----
+# ---- Step 5: Run k6 tests (restart services each VU level) ----
 echo "=== Running k6 tests ==="
 for vus in "${VU_LEVELS[@]}"; do
     echo "===== Iteration: $vus VUs ====="
 
     start_services
 
-    echo "--- Running k6 with $vus VUs ---"
-    "$K6_BIN" run \
-        --no-usage-report \
-        --tag "name=$TEST_NAME" \
-        --out "csv=$TEST_DATA_DIR/test-results-vus-${vus}.csv" \
-        --summary-export "$TEST_DATA_DIR/test-summary-vus-${vus}.json" \
-        --vus "$vus" \
-        --duration "$TEST_DURATION" \
-        --console-output "$TEST_DATA_DIR/test-output-vus-${vus}.log" \
-        --no-color \
-        "$TEST_FILE" || echo "Warning: k6 run with $vus VUs exited with non-zero status"
-    echo "--- Completed $vus VUs ---"
+    for t_idx in "${!TEST_NAMES[@]}"; do
+        t_name="${TEST_NAMES[$t_idx]}"
+        t_file="${TEST_FILES[$t_idx]}"
+
+        # Resolve output directory: <base>/<test-name>/<script-name> or <base>/<script-name>
+        if [ -z "$TEST_BASE_DIR" ]; then
+            t_base="$HOME/Sync/Data/test-results/wanaku"
+        else
+            t_base="$TEST_BASE_DIR"
+        fi
+        if [ -n "$TEST_NAME" ]; then
+            t_data_dir="$t_base/$TEST_NAME/$t_name"
+        else
+            t_data_dir="$t_base/$t_name"
+        fi
+        mkdir -p "$t_data_dir"
+
+        echo "--- Running k6: $t_name with $vus VUs ---"
+        "$K6_BIN" run \
+            --no-usage-report \
+            --tag "name=$t_name" \
+            --out "csv=$t_data_dir/test-results-vus-${vus}.csv" \
+            --summary-export "$t_data_dir/test-summary-vus-${vus}.json" \
+            --vus "$vus" \
+            --duration "$TEST_DURATION" \
+            --console-output "$t_data_dir/test-output-vus-${vus}.log" \
+            --no-color \
+            "$t_file" || echo "Warning: k6 run '$t_name' with $vus VUs exited with non-zero status"
+        echo "--- Completed $t_name with $vus VUs ---"
+    done
 
     stop_services
 done
 
 echo "=== All tests complete ==="
-echo "Results saved to: $TEST_DATA_DIR"
+echo "Results saved per test under: ${TEST_BASE_DIR:-$HOME/Sync/Data/test-results/wanaku}/"
