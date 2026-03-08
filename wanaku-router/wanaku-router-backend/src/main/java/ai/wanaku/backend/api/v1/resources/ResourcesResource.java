@@ -20,6 +20,7 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * JAX-RS REST resource implementation for resource management endpoints.
@@ -58,8 +59,8 @@ public class ResourcesResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resource) throws WanakuException {
-        ResourceReference ret = resourcesBean.expose(resource);
         validatePayload(resource);
+        ResourceReference ret = resourcesBean.expose(resource);
         return new WanakuResponse<>(ret);
     }
 
@@ -75,6 +76,10 @@ public class ResourcesResource {
         }
         if (resource.getPayload() == null) {
             throw new WanakuException("The 'payload' is required for this request");
+        }
+        if (resource.getPayload() instanceof ResourceReference resourceReference
+                && StringHelper.isEmpty(resourceReference.getName())) {
+            throw new WanakuException("The 'payload.name' is required for this request");
         }
     }
 

@@ -128,18 +128,19 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public ProvisioningReference provision(String name, String configData, String secretsData, ServiceTarget service) {
 
         LOG.debugf("Provisioning '%s' to service: %s", name, service.toAddress());
+        String safeName = Objects.requireNonNullElse(name, "");
 
         ManagedChannel channel = createChannel(service);
         try {
             Configuration cfg = Configuration.newBuilder()
                     .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                    .setName(name)
+                    .setName(safeName)
                     .setPayload(Objects.requireNonNullElse(configData, ""))
                     .build();
 
             Secret secret = Secret.newBuilder()
                     .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                    .setName(name)
+                    .setName(safeName)
                     .setPayload(Objects.requireNonNullElse(secretsData, ""))
                     .build();
 
