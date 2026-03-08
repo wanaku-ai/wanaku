@@ -22,6 +22,7 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * JAX-RS REST resource implementation for tool management endpoints.
@@ -74,8 +75,8 @@ public class ToolsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException {
-        var ret = toolsBean.add(resource);
         validatePayload(resource);
+        var ret = toolsBean.add(resource);
         return new WanakuResponse<>(ret);
     }
 
@@ -91,6 +92,10 @@ public class ToolsResource {
         }
         if (resource.getPayload() == null) {
             throw new WanakuException("The 'payload' is required for this request");
+        }
+        if (resource.getPayload() instanceof ToolReference toolReference
+                && StringHelper.isEmpty(toolReference.getName())) {
+            throw new WanakuException("The 'payload.name' is required for this request");
         }
     }
 

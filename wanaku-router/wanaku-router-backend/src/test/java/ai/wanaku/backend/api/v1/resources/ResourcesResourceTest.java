@@ -13,6 +13,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 import static ai.wanaku.core.util.support.ResourcesHelper.createResource;
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -114,5 +115,29 @@ public class ResourcesResourceTest extends WanakuRouterTest {
                         is("image/jpeg"),
                         "data[0].location",
                         is("/tmp/resource1.jpg"));
+    }
+
+    @Order(5)
+    @Test
+    void testExposeWithPayloadRejectsMissingPayload() {
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body("{\"configurationData\":\"token=123\"}")
+                .when()
+                .post("/api/v1/resources/exposeWithPayload")
+                .then()
+                .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
+                .body("error", containsString("The 'payload' is required for this request"));
+    }
+
+    @Order(6)
+    @Test
+    void testExposeWithPayloadRejectsMissingPayloadName() {
+        given().header("Content-Type", MediaType.APPLICATION_JSON)
+                .body("{\"payload\":{\"location\":\"/tmp/nameless.txt\",\"type\":\"text/plain\"}}")
+                .when()
+                .post("/api/v1/resources/exposeWithPayload")
+                .then()
+                .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
+                .body("error", containsString("The 'payload.name' is required for this request"));
     }
 }
