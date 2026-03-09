@@ -20,14 +20,10 @@ public final class ResourceHelper {
     private ResourceHelper() {}
 
     /**
-     * Expose a resource by applying the given handler to the resource reference and
-     * resource manager, which returns a list of resource contents.
-     *
-     * @param resourceReference The reference to the resource being exposed
-     * @param resourceManager   The resource manager instance responsible for managing resources
-     * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
-     *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
+     * @deprecated Use {@link #exposeAsync} instead. This synchronous variant is retained
+     *             only for forwarding use cases that have not yet been migrated.
      */
+    @Deprecated
     public static void expose(
             ResourceReference resourceReference,
             ResourceManager resourceManager,
@@ -36,13 +32,8 @@ public final class ResourceHelper {
     }
 
     /**
-     * Expose a resource by applying the given handler to the resource reference and
-     * resource manager, which returns a list of resource contents.
-     *
-     * @param resourceReference The reference to the resource being exposed
-     * @param resourceManager   The resource manager instance responsible for managing resources
-     * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
-     *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
+     * @deprecated Use {@link #exposeAsync} instead. This synchronous variant is retained
+     *             only for forwarding use cases that have not yet been migrated.
      */
     @Deprecated
     public static void expose(
@@ -81,13 +72,12 @@ public final class ResourceHelper {
     }
 
     /**
-     * Expose a resource by applying the given handler to the resource reference and
-     * resource manager, which returns a list of resource contents.
+     * Expose a resource by applying the given async handler.
      *
      * @param resourceReference The reference to the resource being exposed
      * @param resourceManager   The resource manager instance responsible for managing resources
      * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
-     *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
+     *                          and returns a Uni of ResourceResponse.
      */
     public static void exposeAsync(
             ResourceReference resourceReference,

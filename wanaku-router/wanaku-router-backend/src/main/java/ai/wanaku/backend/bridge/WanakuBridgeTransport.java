@@ -14,7 +14,6 @@ import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
 import ai.wanaku.core.exchange.v1.HealthProbeRequest;
-import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
@@ -80,7 +79,11 @@ public interface WanakuBridgeTransport {
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
+     * @deprecated Use {@link #invokeToolAsync(ToolInvokeRequest, ServiceTarget)} instead.
+     *             This synchronous method will be removed once tool call event emission
+     *             is migrated to the async path.
      */
+    @Deprecated
     ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service);
 
     /**
@@ -99,23 +102,6 @@ public interface WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service);
-
-    /**
-     * Acquires a resource from a remote service.
-     * <p>
-     * This method sends a resource acquisition request to the specified service
-     * and returns the resource content. The request specifies which resource to
-     * acquire and may include references to provisioned configuration and secrets
-     * needed to access the resource.
-     *
-     * @param request the resource acquisition request containing resource details
-     * @param service the target service that provides the resource
-     * @return the resource reply containing the resource content
-     * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
-     *         if the service cannot be reached
-     * @throws WanakuException if the remote service returns an error
-     */
-    ResourceReply acquireResource(ResourceRequest request, ServiceTarget service);
 
     /**
      * Acquires a resource from a remote service asynchronously.

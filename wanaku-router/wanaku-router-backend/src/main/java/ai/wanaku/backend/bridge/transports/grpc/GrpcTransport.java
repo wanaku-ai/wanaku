@@ -187,7 +187,9 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @return the tool invocation reply from the remote service
      * @throws ServiceUnavailableException if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
+     * @deprecated Use {@link #invokeToolAsync(ToolInvokeRequest, ServiceTarget)} instead.
      */
+    @Deprecated
     @Override
     public ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service) {
         LOG.debugf("Invoking tool on service: %s", service.toAddress());
@@ -256,41 +258,6 @@ public class GrpcTransport implements WanakuBridgeTransport {
                     }
                 })
                 .map(transformer::transformReply);
-    }
-
-    /**
-     * Acquires a resource from a remote service via gRPC.
-     * <p>
-     * This method creates a channel, builds a gRPC stub, and acquires the resource
-     * with the provided request. It handles connection errors and converts them
-     * to appropriate exceptions.
-     *
-     * @param request the resource acquisition request
-     * @param service the target service
-     * @return the resource reply from the remote service
-     * @throws ServiceUnavailableException if the service cannot be reached
-     * @throws WanakuException if the remote service returns an error
-     */
-    @Override
-    public ResourceReply acquireResource(ResourceRequest request, ServiceTarget service) {
-        LOG.debugf("Acquiring resource from service: %s", service.toAddress());
-
-        ManagedChannel channel = createChannel(service);
-        try {
-            ResourceAcquirerGrpc.ResourceAcquirerBlockingStub blockingStub =
-                    ResourceAcquirerGrpc.newBlockingStub(channel);
-
-            return blockingStub
-                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                    .resourceAcquire(request);
-        } catch (StatusRuntimeException e) {
-            throw mapStatusRuntimeException(e, service);
-        } catch (RuntimeException e) {
-            LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
-            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
-        } finally {
-            channelManager.closeChannel(channel);
-        }
     }
 
     /**

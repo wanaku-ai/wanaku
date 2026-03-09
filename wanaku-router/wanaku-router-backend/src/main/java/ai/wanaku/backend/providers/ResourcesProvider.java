@@ -7,7 +7,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import java.util.List;
-import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
@@ -54,17 +53,10 @@ public class ResourcesProvider {
     @Produces
     ResourceBridge getResourceBridge() {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
-            // TODO
             return new ResourceBridge() {
                 @Override
                 public ProvisioningReference provision(ResourcePayload payload) {
                     return null;
-                }
-
-                @Override
-                public List<ResourceContents> read(
-                        ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-                    return List.of();
                 }
 
                 @Override
