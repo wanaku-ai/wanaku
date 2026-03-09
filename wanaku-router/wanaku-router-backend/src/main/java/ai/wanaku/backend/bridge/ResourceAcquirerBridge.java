@@ -7,9 +7,7 @@ import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
-import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
-import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
@@ -17,8 +15,8 @@ import ai.wanaku.core.exchange.v1.ResourceRequest;
 /**
  * A proxy class for acquiring resources via gRPC.
  * <p>
- * This proxy is responsible for provisioning resource configurations and
- * evaluating resource requests by delegating to remote resource providers.
+ * This proxy is responsible for evaluating resource requests by delegating
+ * to remote resource providers.
  * <p>
  * This class uses composition to delegate gRPC transport operations to
  * {@link GrpcTransport}, separating business logic from transport concerns.
@@ -85,18 +83,6 @@ public class ResourceAcquirerBridge implements ResourceBridge {
                 .setConfigurationUri(Objects.requireNonNullElse(mcpResource.getConfigurationURI(), EMPTY_ARGUMENT))
                 .setSecretsUri(Objects.requireNonNullElse(mcpResource.getSecretsURI(), EMPTY_ARGUMENT))
                 .build();
-    }
-
-    @Override
-    public ProvisioningReference provision(ResourcePayload payload) {
-        ResourceReference resourceReference = payload.getPayload();
-
-        LOG.debugf("Provisioning resource: %s (type: %s)", resourceReference.getName(), resourceReference.getType());
-
-        ServiceTarget service = provisioner.resolveService(resourceReference.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
-
-        return provisioner.provision(
-                resourceReference.getName(), payload.getConfigurationData(), payload.getSecretsData(), service);
     }
 
     private WanakuResourceContext resolveServiceV2(WanakuResourceContext context) {

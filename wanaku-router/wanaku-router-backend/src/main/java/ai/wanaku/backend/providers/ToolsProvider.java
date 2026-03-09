@@ -12,14 +12,11 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.InvokerBridge;
-import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
-import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.util.VersionHelper;
 import picocli.CommandLine;
 
@@ -49,11 +46,6 @@ public class ToolsProvider {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
             return new ToolsBridge() {
                 @Override
-                public ProvisioningReference provision(ToolPayload payload) {
-                    return null;
-                }
-
-                @Override
                 public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
                     return null;
                 }
@@ -67,7 +59,6 @@ public class ToolsProvider {
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        ProvisionerBridge provisioner = new ProvisionerBridge(serviceResolver, transport);
-        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter, provisioner);
+        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter);
     }
 }

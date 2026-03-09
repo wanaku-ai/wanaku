@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
+import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceBridge;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
@@ -18,6 +19,8 @@ import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
@@ -31,6 +34,9 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
 
     @Inject
     ResourceBridge resourceBridge;
+
+    @Inject
+    ProvisionerBridge provisionerBridge;
 
     @Inject
     NamespacesBean namespacesBean;
@@ -52,7 +58,14 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     }
 
     public ResourceReference expose(ResourcePayload resourcePayload) {
-        resourceBridge.provision(resourcePayload);
+        ResourceReference resourceReference = resourcePayload.getPayload();
+        ServiceTarget service =
+                provisionerBridge.resolveService(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER.asValue());
+        provisionerBridge.provision(
+                resourceReference.getName(),
+                resourcePayload.getConfigurationData(),
+                resourcePayload.getSecretsData(),
+                service);
 
         return expose(resourcePayload.getPayload());
     }

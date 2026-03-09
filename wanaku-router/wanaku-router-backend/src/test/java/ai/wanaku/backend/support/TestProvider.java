@@ -9,9 +9,9 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.arc.DefaultBean;
 import io.smallrye.mutiny.Uni;
+import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
-import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
 import ai.wanaku.core.mcp.providers.ForwardRegistry;
 
@@ -26,11 +26,6 @@ public class TestProvider {
         LOG.infof("Creating test tools bridge");
         return new ToolsBridge() {
             @Override
-            public ProvisioningReference provision(ToolPayload payload) {
-                return null;
-            }
-
-            @Override
             public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
                 return null;
             }
@@ -41,6 +36,14 @@ public class TestProvider {
                 return Uni.createFrom().nullItem();
             }
         };
+    }
+
+    @Produces
+    @DefaultBean
+    @Priority(100)
+    ProvisionerBridge provisionerBridge() {
+        LOG.infof("Creating test provisioner bridge");
+        return new ProvisionerBridge(null, null);
     }
 
     @Produces

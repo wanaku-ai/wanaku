@@ -9,7 +9,6 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.bridge.InvokerBridge;
-import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
@@ -43,8 +42,7 @@ public class E2ETestProvider {
         LOG.info("Creating real ToolsBridge for e2e tests");
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
         WanakuBridgeTransport transport = new GrpcTransport();
-        ProvisionerBridge provisioner = new ProvisionerBridge(resolver, transport);
-        return new InvokerBridge(resolver, transport, provisioner);
+        return new InvokerBridge(resolver, transport);
     }
 
     @Produces
