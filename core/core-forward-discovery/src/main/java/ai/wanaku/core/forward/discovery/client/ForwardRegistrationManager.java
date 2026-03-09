@@ -2,10 +2,9 @@ package ai.wanaku.core.forward.discovery.client;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.jboss.logging.Logger;
@@ -19,16 +18,8 @@ public class ForwardRegistrationManager {
     @Inject
     ForwardDiscoveryClient discoveryClient;
 
-    private final List<ForwardDiscoveryCallback> callbacks = new CopyOnWriteArrayList<>();
-
-    /**
-     * Adds a callback to be invoked after forward registration lifecycle events.
-     *
-     * @param callback the callback to add
-     */
-    public void addCallBack(ForwardDiscoveryCallback callback) {
-        callbacks.add(callback);
-    }
+    @Inject
+    Instance<ForwardDiscoveryCallback> callbacks;
 
     @Scheduled(
             every = "{wanaku.service.registration.interval}",

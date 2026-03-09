@@ -1,8 +1,7 @@
 package ai.wanaku.tests.mcp.server;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
 
 import java.net.URI;
@@ -10,7 +9,6 @@ import java.util.List;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
@@ -20,12 +18,8 @@ import ai.wanaku.core.forward.discovery.client.ForwardRegistrationManager;
 import ai.wanaku.core.services.api.ResourcesService;
 import ai.wanaku.core.services.api.ToolsService;
 
-@ApplicationScoped
-public class MockMcpAutoRegistration {
-    private static final Logger LOG = Logger.getLogger(MockMcpAutoRegistration.class);
-
-    @Inject
-    ForwardRegistrationManager registrationManager;
+public class MockMcpCallbackProducer {
+    private static final Logger LOG = Logger.getLogger(MockMcpCallbackProducer.class);
 
     @ConfigProperty(name = "wanaku.service.registration.uri", defaultValue = "http://localhost:8080")
     String registrationUri;
@@ -33,20 +27,21 @@ public class MockMcpAutoRegistration {
     @ConfigProperty(name = "wanaku.mcp.service.name")
     String serviceName;
 
-    void onStart(@Observes StartupEvent ev) {
-        registrationManager.addCallBack(new ForwardDiscoveryCallback() {
+    @ApplicationScoped
+    @Produces
+    ForwardDiscoveryCallback createCallback() {
+        final ToolsService toolsService = QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(registrationUri))
+                .build(ToolsService.class);
 
-            final ToolsService toolsService = QuarkusRestClientBuilder.newBuilder()
-                    .baseUri(URI.create(registrationUri))
-                    .build(ToolsService.class);
+        final ResourcesService resourcesService = QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(registrationUri))
+                .build(ResourcesService.class);
 
-            final ResourcesService resourcesService = QuarkusRestClientBuilder.newBuilder()
-                    .baseUri(URI.create(registrationUri))
-                    .build(ResourcesService.class);
+        final ToolReference toolReference = new ToolReference();
+        final ResourceReference resourceReference = new ResourceReference();
 
-            final ToolReference toolReference = new ToolReference();
-            final ResourceReference resourceReference = new ResourceReference();
-
+        return new ForwardDiscoveryCallback() {
             @Override
             public void onRegistration(ForwardRegistrationManager manager) {
                 registerTool();
@@ -117,6 +112,6 @@ public class MockMcpAutoRegistration {
                     LOG.warn("Failed to deregister mock resource", e);
                 }
             }
-        });
+        };
     }
 }

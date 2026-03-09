@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
-        <artifactId>tests</artifactId>
+        <artifactId>test-mcp-servers</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mock-mcp-server</artifactId>
-    <name>Wanaku :: Tests :: Mock MCP Server</name>
+    <artifactId>wanaku-performance-test-mock-mcp</artifactId>
+    <name>Wanaku :: Tests :: MCP Servers :: Performance Test Mock MCP</name>
 
     <dependencies>
         <dependency>
