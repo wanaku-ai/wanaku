@@ -1,7 +1,5 @@
 package ai.wanaku.backend.bridge;
 
-import java.util.List;
-import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
@@ -21,15 +19,6 @@ public interface ResourceBridge extends Bridge {
      * @return A provisioning reference instance
      */
     ProvisioningReference provision(ResourcePayload payload);
-
-    /**
-     * Eval an MCP URI handling it as appropriate by the component (i.e.: read a file, GET a static web page, etc.)
-     * @param arguments the resource request arguments
-     * @param mcpResource the resource to eval
-     * @return Returns the data read by the proxy.
-     */
-    @Deprecated
-    List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
 
     /**
      * Eval an MCP URI handling it as appropriate by the component asynchronously.

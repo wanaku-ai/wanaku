@@ -7,7 +7,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.List;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
@@ -40,25 +39,14 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     Instance<ResourceReferenceRepository> resourceReferenceRepositoryInstance;
 
     private ResourceReferenceRepository resourceReferenceRepository;
-    private boolean async = false;
 
     @PostConstruct
     public void init() {
         resourceReferenceRepository = resourceReferenceRepositoryInstance.get();
-
-        final Boolean value = ConfigProvider.getConfig().getValue("wanaku.router.async", Boolean.class);
-        async = value != null && value;
-        if (async) {
-            LOG.info("Serving resources in async mode with executor");
-        }
     }
 
     public ResourceReference expose(ResourceReference mcpResource) {
-        if (async) {
-            doExposeResourceAsync(mcpResource);
-        } else {
-            doExposeResource(mcpResource);
-        }
+        doExposeResourceAsync(mcpResource);
 
         return resourceReferenceRepository.persist(mcpResource);
     }
@@ -92,17 +80,6 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
                         "Error registering a resource named %s during startup, but it already exists",
                         resourceReference.getName());
             }
-        }
-    }
-
-    @Deprecated
-    private void doExposeResource(ResourceReference resourceReference) {
-        if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
-            final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
-
-            ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceBridge::read);
-        } else {
-            ResourceHelper.expose(resourceReference, resourceManager, resourceBridge::read);
         }
     }
 

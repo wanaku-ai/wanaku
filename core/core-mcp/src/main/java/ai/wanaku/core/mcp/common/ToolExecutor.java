@@ -18,6 +18,7 @@ import ai.wanaku.capabilities.sdk.api.types.CallableReference;
  * @see Tool
  * @see ToolAdapter
  */
+@Deprecated
 public interface ToolExecutor {
     /**
      * Executes a tool with the specified arguments.

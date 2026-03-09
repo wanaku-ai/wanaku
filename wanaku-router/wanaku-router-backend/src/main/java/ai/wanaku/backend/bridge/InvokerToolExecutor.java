@@ -96,6 +96,7 @@ public class InvokerToolExecutor implements ToolExecutor {
         this.toolCallEventEmitter = toolCallEventEmitter;
     }
 
+    @Deprecated
     @Override
     public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         LOG.infof(

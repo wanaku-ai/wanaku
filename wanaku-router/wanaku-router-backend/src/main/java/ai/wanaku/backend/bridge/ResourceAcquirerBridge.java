@@ -2,10 +2,8 @@ package ai.wanaku.backend.bridge;
 
 import jakarta.inject.Inject;
 
-import java.util.List;
 import java.util.Objects;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
@@ -70,23 +68,6 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     public ResourceAcquirerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
-    }
-
-    @Override
-    public List<ResourceContents> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-        LOG.infof(
-                "Requesting resource on behalf of connection %s",
-                arguments.connection().id());
-
-        ServiceTarget service = resolveService(mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
-
-        LOG.infof("Requesting %s from %s", mcpResource.getName(), service.toAddress());
-
-        ResourceRequest request = buildResourceRequest(mcpResource);
-        return transport
-                .acquireResourceAsync(request, service, arguments, mcpResource)
-                .await()
-                .indefinitely();
     }
 
     @Override
