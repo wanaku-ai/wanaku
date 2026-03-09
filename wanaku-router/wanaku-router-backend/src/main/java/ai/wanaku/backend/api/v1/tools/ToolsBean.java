@@ -14,6 +14,7 @@ import io.micrometer.common.util.StringUtils;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
+import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
@@ -25,6 +26,8 @@ import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
+import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.PropertySchema;
 import ai.wanaku.core.persistence.api.ToolReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
@@ -39,6 +42,9 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
 
     @Inject
     ToolsBridge toolsBridge;
+
+    @Inject
+    ProvisionerBridge provisionerBridge;
 
     @Inject
     NamespacesBean namespacesBean;
@@ -76,11 +82,14 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     private void provision(ToolPayload toolPayload) {
-        final ProvisioningReference provisioningReference = toolsBridge.provision(toolPayload);
+        ToolReference toolReference = toolPayload.getPayload();
+        ServiceTarget service =
+                provisionerBridge.resolveService(toolReference.getType(), ServiceType.TOOL_INVOKER.asValue());
+        final ProvisioningReference provisioningReference = provisionerBridge.provision(
+                toolReference.getName(), toolPayload.getConfigurationData(), toolPayload.getSecretsData(), service);
 
         final Map<String, PropertySchema> serviceProperties = provisioningReference.properties();
 
-        ToolReference toolReference = toolPayload.getPayload();
         final Map<String, Property> clientProperties =
                 toolReference.getInputSchema().getProperties();
         for (var serviceProperty : serviceProperties.entrySet()) {

@@ -9,11 +9,9 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
@@ -21,9 +19,9 @@ import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 /**
  * A proxy class for invoking tools via gRPC.
  * <p>
- * This proxy is responsible for provisioning tool configurations and
- * executing tool invocations. It delegates gRPC transport operations to
- * {@link GrpcTransport}, separating business logic from transport concerns.
+ * This proxy is responsible for executing tool invocations. It delegates
+ * gRPC transport operations to {@link GrpcTransport}, separating business
+ * logic from transport concerns.
  */
 public class InvokerBridge implements ToolsBridge {
     private static final Logger LOG = Logger.getLogger(InvokerBridge.class);
@@ -32,7 +30,6 @@ public class InvokerBridge implements ToolsBridge {
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
-    private final ProvisionerBridge provisioner;
     private final InvokerToolExecutor executor;
 
     static class WanakuToolContext {
@@ -50,34 +47,28 @@ public class InvokerBridge implements ToolsBridge {
     }
 
     /**
-     * Creates a new InvokerBridge with the specified service resolver, transport, and provisioner.
+     * Creates a new InvokerBridge with the specified service resolver and transport.
      *
      * @param serviceResolver the resolver for locating tool services
      * @param transport the gRPC transport for communication
-     * @param provisioner the provisioner bridge for service resolution and provisioning
      */
-    public InvokerBridge(
-            ServiceResolver serviceResolver, WanakuBridgeTransport transport, ProvisionerBridge provisioner) {
-        this(serviceResolver, transport, null, provisioner);
+    public InvokerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
+        this(serviceResolver, transport, null);
     }
 
     /**
-     * Creates a new InvokerBridge with the specified service resolver, transport, event emitter,
-     * and provisioner.
+     * Creates a new InvokerBridge with the specified service resolver, transport, and event emitter.
      *
      * @param serviceResolver the resolver for locating tool services
      * @param transport the gRPC transport for communication
      * @param toolCallEventEmitter the emitter for tool call events (nullable)
-     * @param provisioner the provisioner bridge for service resolution and provisioning
      */
     public InvokerBridge(
             ServiceResolver serviceResolver,
             WanakuBridgeTransport transport,
-            MutinyEmitter<ToolCallEvent> toolCallEventEmitter,
-            ProvisionerBridge provisioner) {
+            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
-        this.provisioner = provisioner;
         this.executor = new InvokerToolExecutor(serviceResolver, transport, toolCallEventEmitter);
     }
 
@@ -104,18 +95,6 @@ public class InvokerBridge implements ToolsBridge {
                 .invoke(this::resolveServiceV2)
                 .invoke(ctx -> ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments))
                 .chain(ctx -> transport.invokeToolAsync(ctx.request, ctx.serviceTarget));
-    }
-
-    @Override
-    public ProvisioningReference provision(ToolPayload toolPayload) {
-        ToolReference toolReference = toolPayload.getPayload();
-
-        LOG.debugf("Provisioning tool: %s (type: %s)", toolReference.getName(), toolReference.getType());
-
-        ServiceTarget service = provisioner.resolveService(toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
-
-        return provisioner.provision(
-                toolReference.getName(), toolPayload.getConfigurationData(), toolPayload.getSecretsData(), service);
     }
 
     private WanakuToolContext resolveServiceV2(WanakuToolContext context) {

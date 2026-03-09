@@ -17,9 +17,7 @@ import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.service.support.FirstAvailable;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
-import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 import picocli.CommandLine;
 
@@ -52,14 +50,16 @@ public class ResourcesProvider {
     }
 
     @Produces
+    ProvisionerBridge getProvisionerBridge() {
+        ServiceResolver resolver = new FirstAvailable(serviceRegistry);
+        WanakuBridgeTransport transport = new GrpcTransport();
+        return new ProvisionerBridge(resolver, transport);
+    }
+
+    @Produces
     ResourceBridge getResourceBridge() {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
             return new ResourceBridge() {
-                @Override
-                public ProvisioningReference provision(ResourcePayload payload) {
-                    return null;
-                }
-
                 @Override
                 public Uni<ResourceResponse> readAsync(
                         ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
