@@ -11,8 +11,19 @@ public class MockTool {
     @Inject
     Instance<ForwardRegistrationManager> registrationManager;
 
+    @Inject
+    MockMcpPerformanceConfig config;
+
     @Tool(description = "A mock tool that returns static data for testing")
     String mockTool(@ToolArg(description = "A name parameter") String name) {
+        int delay = config.delay();
+        if (delay > 0) {
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         return "1234567890";
     }
 }
