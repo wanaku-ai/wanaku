@@ -40,7 +40,6 @@ public class ToolAdapter implements Tool {
      * @return a tool response containing the execution results
      */
     @Override
-    @Blocking
     public ToolResponse call(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         return executor.execute(toolArguments, toolReference);
     }
