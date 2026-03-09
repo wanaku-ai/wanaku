@@ -2,6 +2,7 @@ package ai.wanaku.backend.bridge.transports.grpc;
 
 import java.net.URI;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -10,17 +11,19 @@ import io.grpc.Deadline;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.InvokerToolExecutor;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
-import ai.wanaku.backend.bridge.ResourceResponseTransformer;
-import ai.wanaku.backend.bridge.ToolResponseTransformer;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
@@ -219,37 +222,40 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public Uni<ToolInvokeReply> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service) {
+    public Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service) {
         LOG.debugf("Invoking tool asynchronously on service: %s", service.toAddress());
 
-        return Uni.createFrom().emitter(em -> {
-            ManagedChannel channel = createChannel(service);
-            try {
-                var future = ToolInvokerGrpc.newFutureStub(channel)
-                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                        .invokeTool(request);
+        final GrpcToolResponseTransformer transformer = new GrpcToolResponseTransformer();
+        return Uni.createFrom()
+                .<ToolInvokeReply>emitter(em -> {
+                    ManagedChannel channel = createChannel(service);
+                    try {
+                        var future = ToolInvokerGrpc.newFutureStub(channel)
+                                .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                                .invokeTool(request);
 
-                future.addListener(
-                        () -> {
-                            try {
-                                em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
-                            } catch (Exception e) {
-                                em.fail(e);
-                            } finally {
-                                channelManager.closeChannel(channel);
-                            }
-                        },
-                        Infrastructure.getDefaultExecutor());
-            } catch (StatusRuntimeException e) {
-                channelManager.closeChannel(channel);
-                em.fail(mapStatusRuntimeException(e, service));
-            } catch (RuntimeException e) {
-                channelManager.closeChannel(channel);
-                LOG.errorf(e, "Failed to invoke tool on service: %s", service.toAddress());
-                em.fail(new ServiceUnavailableException(
-                        "Service is not available at the address " + service.toAddress(), e));
-            }
-        });
+                        future.addListener(
+                                () -> {
+                                    try {
+                                        em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                    } catch (Exception e) {
+                                        em.fail(e);
+                                    } finally {
+                                        channelManager.closeChannel(channel);
+                                    }
+                                },
+                                Infrastructure.getDefaultExecutor());
+                    } catch (StatusRuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        em.fail(mapStatusRuntimeException(e, service));
+                    } catch (RuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        LOG.errorf(e, "Failed to invoke tool on service: %s", service.toAddress());
+                        em.fail(new ServiceUnavailableException(
+                                "Service is not available at the address " + service.toAddress(), e));
+                    }
+                })
+                .map(transformer::transformReply);
     }
 
     /**
@@ -301,37 +307,44 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public Uni<ResourceReply> acquireResourceAsync(ResourceRequest request, ServiceTarget service) {
+    public Uni<List<ResourceContents>> acquireResourceAsync(
+            ResourceRequest request,
+            ServiceTarget service,
+            ResourceManager.ResourceArguments arguments,
+            ResourceReference mcpResource) {
         LOG.debugf("Acquiring resource asynchronously from service: %s", service.toAddress());
 
-        return Uni.createFrom().emitter(em -> {
-            ManagedChannel channel = createChannel(service);
-            try {
-                var future = ResourceAcquirerGrpc.newFutureStub(channel)
-                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                        .resourceAcquire(request);
+        final GrpcResourceResponseTransformer transformer = new GrpcResourceResponseTransformer();
+        return Uni.createFrom()
+                .<ResourceReply>emitter(em -> {
+                    ManagedChannel channel = createChannel(service);
+                    try {
+                        var future = ResourceAcquirerGrpc.newFutureStub(channel)
+                                .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                                .resourceAcquire(request);
 
-                future.addListener(
-                        () -> {
-                            try {
-                                em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
-                            } catch (Exception e) {
-                                em.fail(e);
-                            } finally {
-                                channelManager.closeChannel(channel);
-                            }
-                        },
-                        Infrastructure.getDefaultExecutor());
-            } catch (StatusRuntimeException e) {
-                channelManager.closeChannel(channel);
-                em.fail(mapStatusRuntimeException(e, service));
-            } catch (RuntimeException e) {
-                channelManager.closeChannel(channel);
-                LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
-                em.fail(new ServiceUnavailableException(
-                        "Service is not available at the address " + service.toAddress(), e));
-            }
-        });
+                        future.addListener(
+                                () -> {
+                                    try {
+                                        em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                    } catch (Exception e) {
+                                        em.fail(e);
+                                    } finally {
+                                        channelManager.closeChannel(channel);
+                                    }
+                                },
+                                Infrastructure.getDefaultExecutor());
+                    } catch (StatusRuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        em.fail(mapStatusRuntimeException(e, service));
+                    } catch (RuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        LOG.errorf(e, "Failed to acquire resource from service: %s", service.toAddress());
+                        em.fail(new ServiceUnavailableException(
+                                "Service is not available at the address " + service.toAddress(), e));
+                    }
+                })
+                .map(reply -> transformer.transformReply(reply, arguments, mcpResource));
     }
 
     /**
@@ -436,15 +449,5 @@ public class GrpcTransport implements WanakuBridgeTransport {
                 : "gRPC error (" + status.getCode() + ") from service " + service.toAddress();
         LOG.errorf(e, "Service error from %s: %s (code: %s)", service.toAddress(), message, status.getCode());
         return new WanakuException(message, e);
-    }
-
-    @Override
-    public ResourceResponseTransformer<ResourceReply> newResourceResponseTransformer() {
-        return new GrpcResourceResponseTransformer();
-    }
-
-    @Override
-    public ToolResponseTransformer<ToolInvokeReply> newToolResponseTransformer() {
-        return new GrpcToolResponseTransformer();
     }
 }

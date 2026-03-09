@@ -18,7 +18,6 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
 /**
@@ -40,7 +39,6 @@ public class InvokerBridge implements ToolsBridge {
     WanakuBridgeTransport transport;
 
     private final InvokerToolExecutor executor;
-    private final ToolResponseTransformer<ToolInvokeReply> responseTransformer;
 
     static class WanakuToolContext {
         ToolManager.ToolArguments arguments;
@@ -80,7 +78,6 @@ public class InvokerBridge implements ToolsBridge {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
         this.executor = new InvokerToolExecutor(serviceResolver, transport, toolCallEventEmitter);
-        this.responseTransformer = transport.newToolResponseTransformer();
     }
 
     @Override
@@ -105,9 +102,7 @@ public class InvokerBridge implements ToolsBridge {
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                 .invoke(this::resolveServiceV2)
                 .invoke(ctx -> ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments))
-                .chain(ctx -> transport
-                        .invokeToolAsync(ctx.request, ctx.serviceTarget)
-                        .map(responseTransformer::transformReply));
+                .chain(ctx -> transport.invokeToolAsync(ctx.request, ctx.serviceTarget));
     }
 
     @Override

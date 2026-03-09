@@ -51,10 +51,6 @@ LOCAL_ROUTER="${PROJECT_ROOT}/wanaku-router/wanaku-router-backend/target/distrib
 LOCAL_TOOL_NOOP="${PROJECT_ROOT}/capabilities/tools/wanaku-tool-performance-noop/target/distributions/wanaku-tool-performance-noop-${WANAKU_VERSION}.tar.gz"
 LOCAL_PROVIDER_STATIC="${PROJECT_ROOT}/capabilities/providers/wanaku-provider-performance-static-file/target/distributions/wanaku-provider-performance-static-file-${WANAKU_VERSION}.tar.gz"
 
-# ---- Test scripts ----
-TOOLS_TEST="${SCRIPT_DIR}/mcp-tools-invoke-sse.js"
-RESOURCES_TEST="${SCRIPT_DIR}/mcp-resources-read-sse.js"
-
 # ---- System resource monitoring ----
 MONITOR_PIDS=()
 
@@ -117,28 +113,27 @@ build_current_branch() {
 }
 
 # ---- Run a test suite ----
-# Args: $1=label (baseline|patched), $2=router_source, $3=capability_source, $4=test_file, $5=test_name
+# Args: $1=label (baseline|patched), $2=router_source, $3=capability_source, $4=suite_name
 run_test_suite() {
     local label="$1"
     local router_src="$2"
     local cap_src="$3"
-    local test_file="$4"
-    local test_name="$5"
-    local result_dir="$EVAL_DIR/${label}/${test_name}"
+    local suite_name="$4"
+    local result_dir="$EVAL_DIR/${label}"
 
     echo ""
     echo "======================================================"
-    echo "  Running: ${label} / ${test_name}"
+    echo "  Running: ${label} / ${suite_name}"
     echo "======================================================"
 
-    start_system_monitor "${label}-${test_name}" "$result_dir"
+    start_system_monitor "${label}-${suite_name}" "$result_dir"
 
     "$SCRIPT_DIR/run-perf-test.sh" \
         --router-from "$router_src" \
         --capability-from "$cap_src" \
-        --test-file-from "$test_file" \
-        --test-name "$test_name" \
-        --test-base-dir "$EVAL_DIR/${label}"
+        --suite "$suite_name" \
+        --test-name "$label" \
+        --test-base-dir "$EVAL_DIR"
 
     stop_system_monitor
 
@@ -156,11 +151,11 @@ if [ "$SKIP_BASELINE" != "true" ]; then
     echo "########################################"
 
     if [ "$TEST_SCOPE" = "all" ] || [ "$TEST_SCOPE" = "tools" ]; then
-        run_test_suite "baseline" "$CI_ROUTER" "$CI_TOOL_NOOP" "$TOOLS_TEST" "tools"
+        run_test_suite "baseline" "$CI_ROUTER" "$CI_TOOL_NOOP" "tools-sse"
     fi
 
     if [ "$TEST_SCOPE" = "all" ] || [ "$TEST_SCOPE" = "resources" ]; then
-        run_test_suite "baseline" "$CI_ROUTER" "$CI_PROVIDER_STATIC" "$RESOURCES_TEST" "resources"
+        run_test_suite "baseline" "$CI_ROUTER" "$CI_PROVIDER_STATIC" "resources-sse"
     fi
 else
     echo "=== Skipping baseline (SKIP_BASELINE=true) ==="
@@ -174,11 +169,11 @@ if [ "$SKIP_PATCHED" != "true" ]; then
     echo "########################################"
 
     if [ "$TEST_SCOPE" = "all" ] || [ "$TEST_SCOPE" = "tools" ]; then
-        run_test_suite "patched" "$LOCAL_ROUTER" "$LOCAL_TOOL_NOOP" "$TOOLS_TEST" "tools"
+        run_test_suite "patched" "$LOCAL_ROUTER" "$LOCAL_TOOL_NOOP" "tools-sse"
     fi
 
     if [ "$TEST_SCOPE" = "all" ] || [ "$TEST_SCOPE" = "resources" ]; then
-        run_test_suite "patched" "$LOCAL_ROUTER" "$LOCAL_PROVIDER_STATIC" "$RESOURCES_TEST" "resources"
+        run_test_suite "patched" "$LOCAL_ROUTER" "$LOCAL_PROVIDER_STATIC" "resources-sse"
     fi
 else
     echo "=== Skipping patched (SKIP_PATCHED=true) ==="

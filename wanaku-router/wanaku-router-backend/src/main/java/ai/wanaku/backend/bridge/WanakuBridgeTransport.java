@@ -1,9 +1,14 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.Iterator;
+import java.util.List;
+import io.quarkiverse.mcp.server.ResourceContents;
+import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.CodeExecutionReply;
 import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
@@ -88,12 +93,12 @@ public interface WanakuBridgeTransport {
      *
      * @param request the tool invocation request containing tool details and arguments
      * @param service the target service that will execute the tool
-     * @return a Uni that will emit the tool invocation reply
+     * @return a Uni that will emit the tool response with transport-specific types already transformed
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    Uni<ToolInvokeReply> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service);
+    Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service);
 
     /**
      * Acquires a resource from a remote service.
@@ -122,12 +127,18 @@ public interface WanakuBridgeTransport {
      *
      * @param request the resource acquisition request containing resource details
      * @param service the target service that provides the resource
-     * @return a Uni that will emit the resource reply
+     * @param arguments the original request arguments for URI resolution
+     * @param mcpResource the resource reference for MIME type resolution
+     * @return a Uni that will emit the resource contents with transport-specific types already transformed
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    Uni<ResourceReply> acquireResourceAsync(ResourceRequest request, ServiceTarget service);
+    Uni<List<ResourceContents>> acquireResourceAsync(
+            ResourceRequest request,
+            ServiceTarget service,
+            ResourceManager.ResourceArguments arguments,
+            ResourceReference mcpResource);
 
     /**
      * Executes code on a remote code execution service via streaming.
@@ -161,8 +172,4 @@ public interface WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service);
-
-    ResourceResponseTransformer<ResourceReply> newResourceResponseTransformer();
-
-    ToolResponseTransformer<ToolInvokeReply> newToolResponseTransformer();
 }
