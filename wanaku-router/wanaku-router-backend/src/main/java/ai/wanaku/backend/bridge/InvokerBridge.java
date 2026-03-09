@@ -1,7 +1,5 @@
 package ai.wanaku.backend.bridge;
 
-import jakarta.inject.Inject;
-
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
@@ -32,12 +30,9 @@ public class InvokerBridge implements ToolsBridge {
     private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
     private static final String SERVICE__TYPE_CODE_EXECUTION_ENGINE = ServiceType.CODE_EXECUTION_ENGINE.asValue();
 
-    @Inject
-    ServiceResolver serviceResolver;
-
-    @Inject
-    WanakuBridgeTransport transport;
-
+    private final ServiceResolver serviceResolver;
+    private final WanakuBridgeTransport transport;
+    private final ProvisionerBridge provisioner;
     private final InvokerToolExecutor executor;
 
     static class WanakuToolContext {
@@ -55,28 +50,34 @@ public class InvokerBridge implements ToolsBridge {
     }
 
     /**
-     * Creates a new InvokerBridge with the specified service resolver and transport.
+     * Creates a new InvokerBridge with the specified service resolver, transport, and provisioner.
      *
      * @param serviceResolver the resolver for locating tool services
      * @param transport the gRPC transport for communication
+     * @param provisioner the provisioner bridge for service resolution and provisioning
      */
-    public InvokerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
-        this(serviceResolver, transport, null);
+    public InvokerBridge(
+            ServiceResolver serviceResolver, WanakuBridgeTransport transport, ProvisionerBridge provisioner) {
+        this(serviceResolver, transport, null, provisioner);
     }
 
     /**
-     * Creates a new InvokerBridge with the specified service resolver, transport, and event emitter.
+     * Creates a new InvokerBridge with the specified service resolver, transport, event emitter,
+     * and provisioner.
      *
      * @param serviceResolver the resolver for locating tool services
      * @param transport the gRPC transport for communication
      * @param toolCallEventEmitter the emitter for tool call events (nullable)
+     * @param provisioner the provisioner bridge for service resolution and provisioning
      */
     public InvokerBridge(
             ServiceResolver serviceResolver,
             WanakuBridgeTransport transport,
-            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
+            MutinyEmitter<ToolCallEvent> toolCallEventEmitter,
+            ProvisionerBridge provisioner) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
+        this.provisioner = provisioner;
         this.executor = new InvokerToolExecutor(serviceResolver, transport, toolCallEventEmitter);
     }
 
@@ -111,20 +112,10 @@ public class InvokerBridge implements ToolsBridge {
 
         LOG.debugf("Provisioning tool: %s (type: %s)", toolReference.getName(), toolReference.getType());
 
-        ServiceTarget service = resolveService(toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
+        ServiceTarget service = provisioner.resolveService(toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
 
-        return transport.provision(
+        return provisioner.provision(
                 toolReference.getName(), toolPayload.getConfigurationData(), toolPayload.getSecretsData(), service);
-    }
-
-    private ServiceTarget resolveService(String type, String serviceType) {
-        LOG.debugf("Resolving service for type '%s' and service type '%s'", type, serviceType);
-        ServiceTarget service = serviceResolver.resolve(type, serviceType);
-        if (service == null) {
-            throw new ServiceNotFoundException("There is no host registered for service " + type);
-        }
-        LOG.debugf("Resolved service: %s", service.toAddress());
-        return service;
     }
 
     private WanakuToolContext resolveServiceV2(WanakuToolContext context) {

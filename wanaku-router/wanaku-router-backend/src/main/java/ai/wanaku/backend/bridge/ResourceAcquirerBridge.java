@@ -1,7 +1,5 @@
 package ai.wanaku.backend.bridge;
 
-import jakarta.inject.Inject;
-
 import java.util.Objects;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceManager;
@@ -9,9 +7,7 @@ import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
-import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
-import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -34,11 +30,8 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     private static final String EMPTY_ARGUMENT = "";
     private static final String SERVICE_TYPE_RESOURCE_PROVIDER = ServiceType.RESOURCE_PROVIDER.asValue();
 
-    @Inject
-    ServiceResolver serviceResolver;
-
-    @Inject
-    WanakuBridgeTransport transport;
+    private final ProvisionerBridge provisioner;
+    private final WanakuBridgeTransport transport;
 
     static class WanakuResourceContext {
         ResourceManager.ResourceArguments arguments;
@@ -57,16 +50,13 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     }
 
     /**
-     * Creates a new ResourceAcquirerBridge with the specified service resolver and transport.
-     * <p>
-     * This constructor is primarily intended for testing purposes, allowing
-     * injection of a mock or custom transport implementation.
+     * Creates a new ResourceAcquirerBridge with the specified provisioner and transport.
      *
-     * @param serviceResolver the resolver for locating resource services
-     * @param transport the gRPC transport for communication
+     * @param provisioner the provisioner bridge for service resolution and provisioning
+     * @param transport the transport for communication
      */
-    public ResourceAcquirerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
-        this.serviceResolver = serviceResolver;
+    public ResourceAcquirerBridge(ProvisionerBridge provisioner, WanakuBridgeTransport transport) {
+        this.provisioner = provisioner;
         this.transport = transport;
     }
 
@@ -103,36 +93,16 @@ public class ResourceAcquirerBridge implements ResourceBridge {
 
         LOG.debugf("Provisioning resource: %s (type: %s)", resourceReference.getName(), resourceReference.getType());
 
-        ServiceTarget service = resolveService(resourceReference.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
+        ServiceTarget service = provisioner.resolveService(resourceReference.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
 
-        return transport.provision(
+        return provisioner.provision(
                 resourceReference.getName(), payload.getConfigurationData(), payload.getSecretsData(), service);
-    }
-
-    /**
-     * Resolves a service target for the specified type and service type.
-     * <p>
-     * This method uses the service resolver to locate the appropriate service
-     * and throws an exception if no service is found.
-     *
-     * @param type the service type identifier
-     * @param serviceType the category of service (e.g., "tool-invoker", "resource-provider")
-     * @return the resolved service target
-     * @throws ServiceNotFoundException if no service is registered for the given type
-     */
-    private ServiceTarget resolveService(String type, String serviceType) {
-        LOG.debugf("Resolving service for type '%s' and service type '%s'", type, serviceType);
-        ServiceTarget service = serviceResolver.resolve(type, serviceType);
-        if (service == null) {
-            throw new ServiceNotFoundException("There is no host registered for service " + type);
-        }
-        LOG.debugf("Resolved service: %s", service.toAddress());
-        return service;
     }
 
     private WanakuResourceContext resolveServiceV2(WanakuResourceContext context) {
 
-        context.serviceTarget = resolveService(context.mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
+        context.serviceTarget =
+                provisioner.resolveService(context.mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
         context.request = buildResourceRequest(context.mcpResource);
 
         return context;

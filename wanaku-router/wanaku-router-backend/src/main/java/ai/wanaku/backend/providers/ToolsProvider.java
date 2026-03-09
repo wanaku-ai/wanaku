@@ -12,6 +12,7 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.InvokerBridge;
+import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
@@ -66,6 +67,7 @@ public class ToolsProvider {
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter);
+        ProvisionerBridge provisioner = new ProvisionerBridge(serviceResolver, transport);
+        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter, provisioner);
     }
 }
