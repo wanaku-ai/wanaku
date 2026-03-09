@@ -10,6 +10,7 @@ import java.util.List;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
+import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.ResourceBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
@@ -69,7 +70,8 @@ public class ResourcesProvider {
 
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
         WanakuBridgeTransport transport = new GrpcTransport();
+        ProvisionerBridge provisioner = new ProvisionerBridge(resolver, transport);
 
-        return new ResourceAcquirerBridge(resolver, transport);
+        return new ResourceAcquirerBridge(provisioner, transport);
     }
 }
