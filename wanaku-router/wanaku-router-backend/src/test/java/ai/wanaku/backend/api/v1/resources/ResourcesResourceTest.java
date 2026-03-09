@@ -126,7 +126,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
                 .post("/api/v1/resources/exposeWithPayload")
                 .then()
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
-                .body("error", containsString("The 'payload' is required for this request"));
+                .body("error.message", containsString("The 'payload' is required for this request"));
     }
 
     @Order(6)
@@ -138,6 +138,6 @@ public class ResourcesResourceTest extends WanakuRouterTest {
                 .post("/api/v1/resources/exposeWithPayload")
                 .then()
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
-                .body("error", containsString("The 'payload.name' is required for this request"));
+                .body("error.message", containsString("The 'payload.name' is required for this request"));
     }
 }
