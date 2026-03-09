@@ -18,7 +18,6 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
 
 /**
@@ -59,8 +58,6 @@ public class ResourceAcquirerBridge implements ResourceBridge {
         }
     }
 
-    private final ResourceResponseTransformer<ResourceReply> responseTransformer;
-
     /**
      * Creates a new ResourceAcquirerBridge with the specified service resolver and transport.
      * <p>
@@ -73,7 +70,6 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     public ResourceAcquirerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
-        this.responseTransformer = transport.newResourceResponseTransformer();
     }
 
     @Override
@@ -87,9 +83,10 @@ public class ResourceAcquirerBridge implements ResourceBridge {
         LOG.infof("Requesting %s from %s", mcpResource.getName(), service.toAddress());
 
         ResourceRequest request = buildResourceRequest(mcpResource);
-        ResourceReply reply = transport.acquireResource(request, service);
-
-        return responseTransformer.transformReply(reply, arguments, mcpResource);
+        return transport
+                .acquireResourceAsync(request, service, arguments, mcpResource)
+                .await()
+                .indefinitely();
     }
 
     @Override
@@ -99,8 +96,7 @@ public class ResourceAcquirerBridge implements ResourceBridge {
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                 .invoke(this::resolveServiceV2)
                 .chain(ctx -> transport
-                        .acquireResourceAsync(ctx.request, ctx.serviceTarget)
-                        .map(reply -> responseTransformer.transformReply(reply, arguments, mcpResource))
+                        .acquireResourceAsync(ctx.request, ctx.serviceTarget, arguments, mcpResource)
                         .map(ResourceResponse::new));
     }
 

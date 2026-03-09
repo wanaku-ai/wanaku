@@ -319,11 +319,12 @@ def main():
 
     eval_dir = args.eval_dir
     output_file = args.output or os.path.join(eval_dir, "perf-report.md")
+    # Map test scope to the subdirectory names produced by the k6 suites
     test_names = []
     if args.test_scope in ("all", "tools"):
-        test_names.append("tools")
+        test_names.append("tools-invoke-sse")
     if args.test_scope in ("all", "resources"):
-        test_names.append("resources")
+        test_names.append("resources-read-sse")
 
     report_lines = [
         "# Wanaku Performance Evaluation Report",
