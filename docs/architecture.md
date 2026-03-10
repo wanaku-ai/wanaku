@@ -197,8 +197,8 @@ sequenceDiagram
     LLM->>Router: Call Tool "http://api.example.com/data"
     Router->>Registry: Lookup Service for "http://" URI
     Registry-->>Router: Return HTTP Service Details
-    Router->>Bridge: executeAsync(arguments, reference)
-    Bridge->>Transport: invokeToolAsync(request, service)
+    Router->>Bridge: execute(arguments, reference)
+    Bridge->>Transport: invokeTool(request, service)
     Transport->>ToolSvc: gRPC ToolInvoke(uri, params)
     ToolSvc->>API: HTTP GET /data
     API-->>ToolSvc: JSON Response
@@ -223,8 +223,8 @@ sequenceDiagram
     LLM->>Router: Read Resource "file:///path/to/doc.txt"
     Router->>Registry: Lookup Provider for "file://" URI
     Registry-->>Router: Return File Provider Details
-    Router->>Bridge: readAsync(arguments, resource)
-    Bridge->>Transport: acquireResourceAsync(request, service, ...)
+    Router->>Bridge: read(arguments, resource)
+    Bridge->>Transport: acquireResource(request, service, ...)
     Transport->>FileProv: gRPC ReadResource(uri)
     FileProv->>FS: Read File
     FS-->>FileProv: File Contents
