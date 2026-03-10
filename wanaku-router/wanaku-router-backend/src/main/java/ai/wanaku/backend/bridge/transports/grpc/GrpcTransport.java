@@ -17,7 +17,6 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.InvokerBridge;
-import ai.wanaku.backend.bridge.InvokerToolExecutor;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.support.ProvisioningReference;
@@ -63,7 +62,6 @@ import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
  *
  * @see InvokerBridge
  * @see ResourceAcquirerBridge
- * @see InvokerToolExecutor
  */
 public class GrpcTransport implements WanakuBridgeTransport {
     private static final Logger LOG = Logger.getLogger(GrpcTransport.class);

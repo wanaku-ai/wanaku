@@ -23,7 +23,6 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
-import ai.wanaku.core.mcp.common.ToolExecutor;
 import ai.wanaku.core.util.CollectionsHelper;
 import com.google.protobuf.ProtocolStringList;
 
@@ -47,7 +46,7 @@ import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
  * This executor is used in composition with InvokerProxy to separate
  * tool execution concerns from proxy management concerns.
  */
-public class InvokerToolExecutor implements ToolExecutor {
+public class InvokerToolExecutor {
     private static final Logger LOG = Logger.getLogger(InvokerToolExecutor.class);
     private static final String EMPTY_BODY = "";
     private static final String EMPTY_ARGUMENT = "";
@@ -97,7 +96,6 @@ public class InvokerToolExecutor implements ToolExecutor {
     }
 
     @Deprecated
-    @Override
     public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         LOG.infof(
                 "Executing tool on behalf of connection %s",
