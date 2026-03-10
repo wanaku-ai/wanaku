@@ -20,66 +20,92 @@ classDiagram
 
     class ResourceBridge {
         <<interface>>
-        +eval(arguments, resource) List~ResourceContents~
-        +provision(payload) ProvisioningReference
+        +readAsync(arguments, resource) Uni~ResourceResponse~
     }
 
     class ToolsBridge {
         <<interface>>
-        +getExecutor() ToolExecutor
-        +provision(payload) ProvisioningReference
+        +executeAsync(arguments, reference) Uni~ToolResponse~
+    }
+
+    class ProvisionBridge {
+        <<interface>>
+        +provision(name, configData, secretsData, service) ProvisioningReference
+    }
+
+    class McpBridge {
+        <<interface>>
+        +listTools(client) List~RemoteToolReference~
+        +executeTool(client, arguments, reference) Uni~ToolResponse~
+        +listResources(client) List~ResourceReference~
+        +read(client, arguments, resource) Uni~ResourceResponse~
     }
 
     class WanakuBridgeTransport {
         <<interface>>
         +provision(name, config, secrets, service) ProvisioningReference
-        +invokeTool(request, service) ToolInvokeReply
-        +acquireResource(request, service) ResourceReply
+        +invokeToolAsync(request, service) Uni~ToolResponse~
+        +acquireResourceAsync(request, service, arguments, resource) Uni~List~ResourceContents~~
+        +executeCode(request, service) Iterator~CodeExecutionReply~
+        +probeHealth(request, service) HealthProbeReply
     }
 
     class ResourceAcquirerBridge {
         -transport WanakuBridgeTransport
-        -serviceResolver ServiceResolver
-        +eval(arguments, resource) List~ResourceContents~
+        -provisionerBridge ProvisionerBridge
+        +readAsync(arguments, resource) Uni~ResourceResponse~
     }
 
     class InvokerBridge {
         -transport WanakuBridgeTransport
         -serviceResolver ServiceResolver
-        -executor ToolExecutor
-        +getExecutor() ToolExecutor
+        +executeAsync(arguments, reference) Uni~ToolResponse~
+    }
+
+    class ProvisionerBridge {
+        -serviceResolver ServiceResolver
+        -transport WanakuBridgeTransport
+        +provision(...) ProvisioningReference
+        +resolveService(type, serviceType) ServiceTarget
     }
 
     class GrpcTransport {
         -channelManager GrpcChannelManager
         +provision(...) ProvisioningReference
-        +invokeTool(...) ToolInvokeReply
-        +acquireResource(...) ResourceReply
+        +invokeToolAsync(...) Uni~ToolResponse~
+        +acquireResourceAsync(...) Uni~List~ResourceContents~~
     }
 
     Bridge <|-- ResourceBridge
     Bridge <|-- ToolsBridge
+    ProvisionBridge <|.. ProvisionerBridge
     ResourceBridge <|.. ResourceAcquirerBridge
     ToolsBridge <|.. InvokerBridge
     WanakuBridgeTransport <|.. GrpcTransport
     ResourceAcquirerBridge o-- WanakuBridgeTransport
+    ResourceAcquirerBridge o-- ProvisionerBridge
     InvokerBridge o-- WanakuBridgeTransport
 
     style Bridge fill:#4A90E2
     style ResourceBridge fill:#50C878
     style ToolsBridge fill:#50C878
+    style ProvisionBridge fill:#50C878
+    style McpBridge fill:#50C878
     style WanakuBridgeTransport fill:#9B59B6
     style ResourceAcquirerBridge fill:#FFB347
     style InvokerBridge fill:#FFB347
+    style ProvisionerBridge fill:#FFB347
     style GrpcTransport fill:#E67E22
 ```
 
 The bridge architecture is organized into specialized interfaces and uses composition over inheritance:
 
 * **[`Bridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/Bridge.java)** - Base marker interface for all bridge implementations
-* **[`ResourceBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ResourceBridge.java)** - Extended interface for resource-specific operations with provisioning and evaluation capabilities
-* **[`ToolsBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ToolsBridge.java)** - Extended interface for tool-specific operations with provisioning capabilities
-* **[`WanakuBridgeTransport`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/WanakuBridgeTransport.java)** - Transport abstraction interface that decouples protocol from business logic
+* **[`ResourceBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ResourceBridge.java)** - Extended interface for asynchronous resource reading
+* **[`ToolsBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ToolsBridge.java)** - Extended interface for asynchronous tool execution
+* **[`ProvisionBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ProvisionBridge.java)** - Interface for provisioning configuration and secrets to remote services
+* **[`McpBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/McpBridge.java)** - Interface for interacting with remote MCP servers (forwarding)
+* **[`WanakuBridgeTransport`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/WanakuBridgeTransport.java)** - Transport abstraction interface that decouples protocol from business logic, with async-first operations and built-in response transformation
 
 ### Transport Abstraction
 
@@ -87,13 +113,17 @@ The bridge architecture uses **composition over inheritance** to separate transp
 
 * **`ResourceAcquirerBridge`** and **`InvokerBridge`** delegate all transport operations to a `WanakuBridgeTransport` implementation
 * **`GrpcTransport`** implements `WanakuBridgeTransport` and handles all gRPC-specific communication
+* **`ProvisionerBridge`** consolidates shared provisioning logic and service resolution, eliminating duplication between bridges
+* **Response transformers** (`ToolResponseTransformer`, `ResourceResponseTransformer`) convert transport-specific types (e.g., gRPC protobuf replies) into MCP domain types within the transport layer, keeping bridge implementations protocol-agnostic
 * This design enables:
   - Easy testing with mock transports
   - Support for alternative transport protocols (HTTP, WebSocket, etc.)
   - Clear separation between routing logic and communication details
   - Independent evolution of transport and business logic
 
-Leveraging these specialized interfaces, we have the concrete classes `ResourceAcquirerBridge` and `InvokerBridge` that use [gRPC](https://grpc.io/) via the transport abstraction to exchange data with capability services providing access to resources and tools.
+All bridge operations follow an **async-first** design using Mutiny `Uni` types. The transport layer returns already-transformed domain objects, so bridges never handle transport-specific types directly.
+
+Leveraging these specialized interfaces, we have the concrete classes `ResourceAcquirerBridge` and `InvokerBridge` that use [gRPC](https://grpc.io/) via the transport abstraction to exchange data with capability services providing access to resources and tools. Additionally, `DefaultMcpBridge` provides forwarding to remote MCP servers using the langchain4j MCP client.
  
 ## Resources 
 
@@ -146,7 +176,7 @@ Examples:
 * Executing subprocesses that provide an output
 * Executing an RPC invocation and waiting for its response
 
-In Wanaku, every tool invocation is remote and handled by the `InvokerProxy` class which uses the gRPC protocol to
+In Wanaku, every tool invocation is remote and handled by the `InvokerBridge` class which uses the gRPC protocol via the transport abstraction to
 communicate with the service that provides the tool.
 
 ```mermaid
@@ -174,25 +204,25 @@ graph TB
 
 ## Configuration and Secrets Provisioning System
 
-Both resource providers and tool services support a provisioning system that handles configuration and secret management.
+Both resource providers and tool services support a provisioning system that handles configuration and secret management. Provisioning logic is consolidated in the `ProvisionerBridge` class, which eliminates duplication between `InvokerBridge` and `ResourceAcquirerBridge`.
 
 ### Provisioning Flow
 
 ```mermaid
 sequenceDiagram
     participant Router as Router Backend
-    participant Registry as Service Registry
+    participant PB as ProvisionerBridge
+    participant Transport as WanakuBridgeTransport
     participant Service as Capability Service
     participant ConfigStore as Configuration Store
 
-    Service->>Router: Register Service
-    Router->>Registry: Store Service Info
-    Router->>ConfigStore: Check for Config/Secrets
-    ConfigStore-->>Router: Return Configuration
-    Router->>Service: gRPC Provision(config, secrets)
+    Router->>PB: provision(name, config, secrets, service)
+    PB->>Transport: provision(name, config, secrets, service)
+    Transport->>Service: gRPC Provision(config, secrets)
     Service->>Service: Apply Configuration
-    Service-->>Router: Provisioning Complete
-    Router->>Registry: Update Service Status
+    Service-->>Transport: ProvisionReply
+    Transport-->>PB: ProvisioningReference
+    PB-->>Router: ProvisioningReference
 
     Note over Service: Service ready<br/>with configuration
 ```
@@ -217,10 +247,11 @@ The provisioning system allows runtime configuration of services through gRPC-ba
 
 Provisioning is implemented through:
 
-1. **gRPC Protocol**: Capability services implement the `Provisioner` gRPC interface
-2. **Configuration Store**: Router backend stores tool/resource configurations in Infinispan
-3. **Secret Integration**: Integration with Kubernetes Secrets or external secret managers
-4. **Validation**: Schema-based validation ensures configuration correctness
+1. **`ProvisionerBridge`**: Consolidates provisioning logic and service resolution, shared by both tool and resource bridges
+2. **gRPC Protocol**: Capability services implement the `Provisioner` gRPC interface
+3. **Configuration Store**: Router backend stores tool/resource configurations in Infinispan
+4. **Secret Integration**: Integration with Kubernetes Secrets or external secret managers
+5. **Validation**: Schema-based validation ensures configuration correctness
 
 ## Component Interaction Patterns
 
@@ -233,19 +264,22 @@ sequenceDiagram
     participant MCP as MCP Client
     participant Router as Router Backend
     participant RAB as ResourceAcquirerBridge
+    participant PB as ProvisionerBridge
     participant Transport as GrpcTransport
     participant Provider as Resource Provider
 
     MCP->>Router: ReadResource(file:///data/doc.txt)
-    Router->>Router: Resolve URI scheme (file://)
-    Router->>RAB: Lookup Bridge for "file"
+    Router->>RAB: readAsync(arguments, resource)
+    RAB->>PB: resolveService(type, "resource-provider")
+    PB-->>RAB: ServiceTarget
     RAB->>RAB: Build ResourceRequest
-    RAB->>Transport: acquireResource(request, service)
+    RAB->>Transport: acquireResourceAsync(request, service, arguments, resource)
     Transport->>Provider: gRPC ReadResource(uri)
     Provider->>Provider: Read File from Filesystem
     Provider-->>Transport: gRPC Response (contents)
-    Transport-->>RAB: ResourceReply
-    RAB-->>Router: Resource Contents
+    Transport->>Transport: Transform via ResourceResponseTransformer
+    Transport-->>RAB: Uni~List~ResourceContents~~
+    RAB-->>Router: Uni~ResourceResponse~
     Router-->>MCP: MCP Resource Response
 ```
 
@@ -258,22 +292,19 @@ sequenceDiagram
     participant MCP as MCP Client
     participant Router as Router Backend
     participant IB as InvokerBridge
-    participant Executor as InvokerToolExecutor
     participant Transport as GrpcTransport
     participant Tool as Tool Service
 
     MCP->>Router: CallTool(http://api.example.com/data)
-    Router->>Router: Resolve URI scheme (http://)
-    Router->>IB: Lookup Bridge for "http"
-    IB->>Executor: execute(toolArguments, toolReference)
-    Executor->>Executor: Build ToolInvokeRequest
-    Executor->>Transport: invokeTool(request, service)
+    Router->>IB: executeAsync(toolArguments, toolReference)
+    IB->>IB: Resolve service, build ToolInvokeRequest
+    IB->>Transport: invokeToolAsync(request, service)
     Transport->>Tool: gRPC InvokeTool(uri, params)
     Tool->>Tool: Execute HTTP Request
     Tool-->>Transport: gRPC Response (result)
-    Transport-->>Executor: ToolInvokeReply
-    Executor-->>IB: ToolResponse
-    IB-->>Router: Tool Result
+    Transport->>Transport: Transform via ToolResponseTransformer
+    Transport-->>IB: Uni~ToolResponse~
+    IB-->>Router: Uni~ToolResponse~
     Router-->>MCP: MCP Tool Response
 ```
 
@@ -328,7 +359,7 @@ Different capability types use strategy pattern to:
 ## Related Documentation
 
 - **[Persistence](internals-persistence.md)** - Persistence information
-- **[Persistence](internals-service-registration.md)** - Service registration information
+- **[Service Registration](internals-service-registration.md)** - Service registration information
 - **[Architecture Overview](architecture.md)** - High-level system architecture and components
 - **[Configuration Guide](configurations.md)** - Router and service configuration reference
 - **[Contributing Guide](../CONTRIBUTING.md)** - How to extend Wanaku with new capabilities
