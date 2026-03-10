@@ -176,41 +176,6 @@ public class GrpcTransport implements WanakuBridgeTransport {
     /**
      * Invokes a tool on a remote service via gRPC.
      * <p>
-     * This method creates a channel, builds a gRPC stub, and invokes the tool
-     * with the provided request. It handles connection errors and converts them
-     * to appropriate exceptions.
-     *
-     * @param request the tool invocation request
-     * @param service the target service
-     * @return the tool invocation reply from the remote service
-     * @throws ServiceUnavailableException if the service cannot be reached
-     * @throws WanakuException if the remote service returns an error
-     * @deprecated Use {@link #invokeToolAsync(ToolInvokeRequest, ServiceTarget)} instead.
-     */
-    @Deprecated
-    @Override
-    public ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service) {
-        LOG.debugf("Invoking tool on service: %s", service.toAddress());
-
-        ManagedChannel channel = createChannel(service);
-        try {
-            ToolInvokerGrpc.ToolInvokerBlockingStub blockingStub = ToolInvokerGrpc.newBlockingStub(channel);
-            return blockingStub
-                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                    .invokeTool(request);
-        } catch (StatusRuntimeException e) {
-            throw mapStatusRuntimeException(e, service);
-        } catch (RuntimeException e) {
-            LOG.errorf(e, "Failed to invoke tool on service: %s", service.toAddress());
-            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
-        } finally {
-            channelManager.closeChannel(channel);
-        }
-    }
-
-    /**
-     * Invokes a tool on a remote service via gRPC asynchronously.
-     * <p>
      * This method creates a channel, builds a gRPC future stub, and invokes the tool
      * with the provided request. The result is returned as a {@link Uni} that completes
      * when the gRPC future resolves, without blocking any thread.
@@ -222,8 +187,8 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service) {
-        LOG.debugf("Invoking tool asynchronously on service: %s", service.toAddress());
+    public Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service) {
+        LOG.debugf("Invoking tool on service: %s", service.toAddress());
 
         final GrpcToolResponseTransformer transformer = new GrpcToolResponseTransformer();
         return Uni.createFrom()
@@ -259,7 +224,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
     }
 
     /**
-     * Acquires a resource from a remote service via gRPC asynchronously.
+     * Acquires a resource from a remote service via gRPC.
      * <p>
      * This method creates a channel, builds a gRPC future stub, and acquires the resource
      * with the provided request. The result is returned as a {@link Uni} that completes
@@ -272,12 +237,12 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public Uni<List<ResourceContents>> acquireResourceAsync(
+    public Uni<List<ResourceContents>> acquireResource(
             ResourceRequest request,
             ServiceTarget service,
             ResourceManager.ResourceArguments arguments,
             ResourceReference mcpResource) {
-        LOG.debugf("Acquiring resource asynchronously from service: %s", service.toAddress());
+        LOG.debugf("Acquiring resource from service: %s", service.toAddress());
 
         final GrpcResourceResponseTransformer transformer = new GrpcResourceResponseTransformer();
         return Uni.createFrom()

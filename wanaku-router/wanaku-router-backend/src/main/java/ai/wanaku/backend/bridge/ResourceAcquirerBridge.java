@@ -59,13 +59,13 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     }
 
     @Override
-    public Uni<ResourceResponse> readAsync(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+    public Uni<ResourceResponse> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         return Uni.createFrom()
                 .item(() -> WanakuResourceContext.create(arguments, mcpResource))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .invoke(this::resolveServiceV2)
+                .invoke(this::resolveService)
                 .chain(ctx -> transport
-                        .acquireResourceAsync(ctx.request, ctx.serviceTarget, arguments, mcpResource)
+                        .acquireResource(ctx.request, ctx.serviceTarget, arguments, mcpResource)
                         .map(ResourceResponse::new));
     }
 
@@ -85,7 +85,7 @@ public class ResourceAcquirerBridge implements ResourceBridge {
                 .build();
     }
 
-    private WanakuResourceContext resolveServiceV2(WanakuResourceContext context) {
+    private WanakuResourceContext resolveService(WanakuResourceContext context) {
 
         context.serviceTarget =
                 provisioner.resolveService(context.mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);

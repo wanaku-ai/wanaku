@@ -15,7 +15,6 @@ import ai.wanaku.core.exchange.v1.CodeExecutionRequest;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
 import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
-import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
 /**
@@ -69,27 +68,6 @@ public interface WanakuBridgeTransport {
      * Invokes a tool on a remote service.
      * <p>
      * This method sends a tool invocation request to the specified service and
-     * returns the result. The request contains all necessary information for the
-     * service to execute the tool, including arguments, headers, and references
-     * to provisioned configuration and secrets.
-     *
-     * @param request the tool invocation request containing tool details and arguments
-     * @param service the target service that will execute the tool
-     * @return the tool invocation reply containing the execution result
-     * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
-     *         if the service cannot be reached
-     * @throws WanakuException if the remote service returns an error
-     * @deprecated Use {@link #invokeToolAsync(ToolInvokeRequest, ServiceTarget)} instead.
-     *             This synchronous method will be removed once tool call event emission
-     *             is migrated to the async path.
-     */
-    @Deprecated
-    ToolInvokeReply invokeTool(ToolInvokeRequest request, ServiceTarget service);
-
-    /**
-     * Invokes a tool on a remote service asynchronously.
-     * <p>
-     * This method sends a tool invocation request to the specified service and
      * returns the result as a {@link Uni}. The request contains all necessary
      * information for the service to execute the tool, including arguments,
      * headers, and references to provisioned configuration and secrets.
@@ -101,10 +79,10 @@ public interface WanakuBridgeTransport {
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service);
+    Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service);
 
     /**
-     * Acquires a resource from a remote service asynchronously.
+     * Acquires a resource from a remote service.
      * <p>
      * This method sends a resource acquisition request to the specified service
      * and returns the resource content as a {@link Uni}. The request specifies
@@ -120,7 +98,7 @@ public interface WanakuBridgeTransport {
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    Uni<List<ResourceContents>> acquireResourceAsync(
+    Uni<List<ResourceContents>> acquireResource(
             ResourceRequest request,
             ServiceTarget service,
             ResourceManager.ResourceArguments arguments,

@@ -14,21 +14,11 @@ import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 public interface ToolsBridge extends Bridge {
 
     /**
-     * Executes a tool with the specified arguments synchronously.
-     *
-     * @param toolArguments the arguments to pass to the tool
-     * @param toolReference the reference to the tool being called
-     * @return a tool response containing the execution results
-     */
-    @Deprecated
-    ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
-
-    /**
-     * Executes a tool with the specified arguments asynchronously.
+     * Executes a tool with the specified arguments.
      *
      * @param toolArguments the arguments to pass to the tool
      * @param toolReference the reference to the tool being called
      * @return a Uni emitting the tool response
      */
-    Uni<ToolResponse> executeAsync(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
+    Uni<ToolResponse> execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
 }

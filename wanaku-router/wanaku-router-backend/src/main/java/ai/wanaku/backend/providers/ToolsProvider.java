@@ -7,16 +7,14 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.bridge.EventNotifier;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.core.util.VersionHelper;
 import picocli.CommandLine;
 
@@ -31,34 +29,23 @@ public class ToolsProvider {
     CommandLine.ParseResult parseResult;
 
     @Inject
-    @Channel("tool-call-event")
-    @OnOverflow(OnOverflow.Strategy.DROP)
-    MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
-
-    @Inject
     ServiceResolver serviceResolver;
 
     @Inject
     WanakuBridgeTransport transport;
 
+    @Inject
+    @Channel("tool-call-event")
+    @OnOverflow(OnOverflow.Strategy.DROP)
+    MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
+
     @Produces
     ToolsBridge getToolsBridge() {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
-            return new ToolsBridge() {
-                @Override
-                public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-                    return null;
-                }
-
-                @Override
-                public Uni<ToolResponse> executeAsync(
-                        ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-                    return Uni.createFrom().nullItem();
-                }
-            };
+            return (toolArguments, toolReference) -> Uni.createFrom().nullItem();
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter);
+        return new InvokerBridge(serviceResolver, transport, new EventNotifier(toolCallEventEmitter));
     }
 }

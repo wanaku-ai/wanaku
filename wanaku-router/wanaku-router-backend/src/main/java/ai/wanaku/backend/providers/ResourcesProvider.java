@@ -61,7 +61,7 @@ public class ResourcesProvider {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
             return new ResourceBridge() {
                 @Override
-                public Uni<ResourceResponse> readAsync(
+                public Uni<ResourceResponse> read(
                         ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
                     return Uni.createFrom().item(new ResourceResponse(List.of()));
                 }
