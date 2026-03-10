@@ -132,11 +132,11 @@ Configuration for the main Wanaku Router Backend (`wanaku-router-backend`), whic
 | `quarkus.http.auth.permission.*.paths` | Defines path patterns for different security policies (`permit`, `authenticated`). |
 | `quarkus.http.auth.permission.*.policy` | Assigns a security policy to the corresponding path pattern. |
 
-### Async Mode
+### gRPC Transport
 
 | Property | Description |
 | --- | --- |
-| `wanaku.router.async` | `true` - When enabled, tool registrations and invocations use the async path (`executeAsync`). When disabled, the deprecated synchronous path is used. |
+| `wanaku.bridge.grpc.transport.deadline-seconds` | `10` - The deadline in seconds for gRPC transport calls to capability services. Requests that exceed this deadline will be cancelled. |
 
 ### Persistence (`core-persistence-infinispan`)
 

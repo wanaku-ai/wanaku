@@ -91,18 +91,12 @@ public interface WanakuBridgeTransport {
         ServiceTarget service
     );
 
-    @Deprecated
-    ToolInvokeReply invokeTool(
+    Uni<ToolResponse> invokeTool(
         ToolInvokeRequest request,
         ServiceTarget service
     );
 
-    Uni<ToolResponse> invokeToolAsync(
-        ToolInvokeRequest request,
-        ServiceTarget service
-    );
-
-    Uni<List<ResourceContents>> acquireResourceAsync(
+    Uni<List<ResourceContents>> acquireResource(
         ResourceRequest request,
         ServiceTarget service,
         ResourceManager.ResourceArguments arguments,
@@ -121,7 +115,7 @@ public interface WanakuBridgeTransport {
 }
 ```
 
-The async methods (`invokeToolAsync`, `acquireResourceAsync`) return already-transformed domain types (e.g., `ToolResponse`, `List<ResourceContents>`) rather than transport-specific protobuf types. This keeps bridges protocol-agnostic.
+The async methods (`invokeTool`, `acquireResource`) return already-transformed domain types (e.g., `ToolResponse`, `List<ResourceContents>`) rather than transport-specific protobuf types. This keeps bridges protocol-agnostic.
 
 This abstraction enables:
 - Protocol independence (supports gRPC, HTTP, WebSocket)
@@ -139,10 +133,7 @@ Contract for tool proxy implementations.
 
 ```java
 public interface ToolsBridge extends Bridge {
-    @Deprecated
-    ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
-
-    Uni<ToolResponse> executeAsync(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
+    Uni<ToolResponse> execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference);
 }
 ```
 
@@ -152,7 +143,7 @@ Contract for resource proxy implementations.
 
 ```java
 public interface ResourceBridge extends Bridge {
-    Uni<ResourceResponse> readAsync(
+    Uni<ResourceResponse> read(
         ResourceManager.ResourceArguments arguments,
         ResourceReference mcpResource
     );
@@ -255,17 +246,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
     }
 
     @Override
-    @Deprecated
-    public ToolInvokeReply invokeTool(
-            ToolInvokeRequest request, ServiceTarget service) {
-        ManagedChannel channel = channelManager.createChannel(service);
-        ToolInvokerGrpc.ToolInvokerBlockingStub stub =
-            ToolInvokerGrpc.newBlockingStub(channel);
-        return stub.invokeTool(request);
-    }
-
-    @Override
-    public Uni<ToolResponse> invokeToolAsync(
+    public Uni<ToolResponse> invokeTool(
             ToolInvokeRequest request, ServiceTarget service) {
         ManagedChannel channel = channelManager.createChannel(service);
         ToolInvokerGrpc.ToolInvokerFutureStub stub =
@@ -275,7 +256,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
     }
 
     @Override
-    public Uni<List<ResourceContents>> acquireResourceAsync(
+    public Uni<List<ResourceContents>> acquireResource(
             ResourceRequest request, ServiceTarget service,
             ResourceManager.ResourceArguments arguments,
             ResourceReference mcpResource) {
@@ -362,112 +343,70 @@ public class InvokerBridge implements ToolsBridge {
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
+    private final EventNotifier eventNotifier;
 
     public InvokerBridge(
             ServiceResolver serviceResolver,
             WanakuBridgeTransport transport,
-            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
+            EventNotifier eventNotifier) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
+        this.eventNotifier = eventNotifier;
     }
 
     @Override
-    public Uni<ToolResponse> executeAsync(
+    public Uni<ToolResponse> execute(
             ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         // 1. Resolve service (try TOOL_INVOKER, fallback to CODE_EXECUTION_ENGINE)
-        // 2. Build ToolInvokeRequest
-        // 3. Delegate to transport.invokeToolAsync(request, service)
-    }
-
-    @Override
-    @Deprecated
-    public ToolResponse execute(
-            ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-        // Legacy synchronous path, delegates to InvokerToolExecutor
+        // 2. Build ToolInvokeRequest via InvokerToolExecutor.buildToolInvokeRequest()
+        // 3. Emit started event via EventNotifier
+        // 4. Delegate to transport.invokeTool(request, service)
+        // 5. Emit completed/failed event on response/failure
     }
 }
 ```
 
-### InvokerToolExecutor (Legacy)
+### InvokerToolExecutor
 
 **Package:** `ai.wanaku.backend.bridge`
 
-Handles tool execution via the deprecated synchronous path. The async path in `InvokerBridge.executeAsync()` is now the primary execution path.
+Static utility class providing helper methods for building tool invocation requests. Used by `InvokerBridge` to construct `ToolInvokeRequest` objects from tool references and arguments.
 
 ```java
-public class InvokerToolExecutor {
-    private final ServiceResolver serviceResolver;
-    private final WanakuBridgeTransport transport;
-    private final MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
+public final class InvokerToolExecutor {
+    private InvokerToolExecutor() {}
 
-    @Deprecated
-    public ToolResponse execute(
-            ToolManager.ToolArguments toolArguments,
-            CallableReference toolReference) {
-
-        if (!(toolReference instanceof ToolReference)) {
-            throw new UnsupportedOperationException();
-        }
-
-        return executeToolReference(toolArguments, (ToolReference) toolReference);
-    }
-
-    private ToolResponse executeToolReference(
-            ToolManager.ToolArguments toolArguments,
-            ToolReference toolReference) {
-
-        // 1. Resolve service (try TOOL_INVOKER, fallback to CODE_EXECUTION_ENGINE)
-        ServiceTarget service = resolveServiceWithFallback(toolReference);
-
-        // 2. Build request
-        ToolInvokeRequest request = buildToolInvokeRequest(
-            toolReference, toolArguments);
-
-        // 3. Emit STARTED event
-        ToolCallEvent startedEvent = emitStartedEvent(toolReference, toolArguments);
-        long startTime = System.currentTimeMillis();
-
-        try {
-            // 4. Invoke tool
-            ToolInvokeReply reply = transport.invokeTool(request, service);
-
-            // 5. Emit completion event
-            long duration = System.currentTimeMillis() - startTime;
-            if (reply.getIsError()) {
-                emitFailedEvent(startedEvent.getId(),
-                    categorizeToolError(reply.getContent(0)),
-                    reply.getContent(0), duration);
-            } else {
-                emitCompletedEvent(startedEvent.getId(),
-                    String.join("\n", reply.getContentList()), duration);
-            }
-
-            // 6. Process reply
-            return processToolInvokeReply(reply);
-
-        } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            emitFailedEvent(startedEvent.getId(),
-                categorizeException(e), e.getMessage(), duration);
-            throw e;
-        }
-    }
-
-    private ToolInvokeRequest buildToolInvokeRequest(
+    static ToolInvokeRequest buildToolInvokeRequest(
             ToolReference toolReference,
             ToolManager.ToolArguments toolArguments) {
 
+        // Filter out metadata args before converting to string map
+        Map<String, Object> filteredArgs = filterOutMetadataArgs(toolArguments.args());
+        Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
+
+        // Extract metadata headers from args (with prefix stripped)
+        Map<String, String> metadataHeaders = extractMetadataHeaders(toolArguments);
+
+        // Extract tool-defined headers from schema
+        Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, toolArguments);
+
+        // Merge headers: metadata first, then tool-defined (tool-defined wins on conflict)
+        Map<String, String> headers = new HashMap<>(metadataHeaders);
+        headers.putAll(toolDefinedHeaders);
+
+        String body = extractBody(toolReference, toolArguments);
+
         return ToolInvokeRequest.newBuilder()
+            .setBody(body)
             .setUri(toolReference.getUri())
-            .setBody(extractBody(toolReference, toolArguments))
-            .putAllArguments(toolArguments.asMap())
-            .putAllHeaders(extractHeaders(toolReference, toolArguments))
-            .setConfigurationURI(
+            .setConfigurationUri(
                 Objects.requireNonNullElse(
                     toolReference.getConfigurationURI(), ""))
-            .setSecretsURI(
+            .setSecretsUri(
                 Objects.requireNonNullElse(
                     toolReference.getSecretsURI(), ""))
+            .putAllHeaders(headers)
+            .putAllArguments(argumentsMap)
             .build();
     }
 
@@ -475,14 +414,42 @@ public class InvokerToolExecutor {
             ToolReference toolReference,
             ToolManager.ToolArguments toolArguments) {
         // Filter properties where target == "header" and scope == "service"
-        return toolReference.getProperties().stream()
-            .filter(p -> "header".equals(p.getTarget())
-                      && "service".equals(p.getScope()))
-            .collect(Collectors.toMap(
-                PropertySchema::getName,
-                p -> toolArguments.get(p.getName())
-            ));
     }
+
+    static Map<String, String> extractMetadataHeaders(
+            ToolManager.ToolArguments toolArguments) {
+        // Extract args with "wanaku_meta_" prefix, strip prefix for header name
+    }
+
+    static Map<String, Object> filterOutMetadataArgs(Map<String, Object> args) {
+        // Exclude args with "wanaku_meta_" prefix from the arguments map
+    }
+}
+```
+
+### EventNotifier
+
+**Package:** `ai.wanaku.backend.bridge`
+
+Wraps a `MutinyEmitter<ToolCallEvent>` to emit tool call lifecycle events for observability.
+
+```java
+public class EventNotifier {
+    public EventNotifier(MutinyEmitter<ToolCallEvent> emitter);
+
+    public ToolCallEvent emitStartedEvent(
+        ToolManager.ToolArguments toolArguments,
+        ToolReference toolReference,
+        ServiceTarget service,
+        ToolInvokeRequest request);
+
+    public void emitCompletedEvent(String eventId, String content, long duration);
+
+    public void emitFailedEvent(
+        String eventId, ToolCallEvent.ErrorCategory category,
+        String errorMessage, long duration);
+
+    public ToolCallEvent.ErrorCategory categorizeException(Exception e);
 }
 ```
 
@@ -517,7 +484,7 @@ public class ResourceAcquirerBridge implements ResourceBridge {
     }
 
     @Override
-    public Uni<ResourceResponse> readAsync(
+    public Uni<ResourceResponse> read(
             ResourceManager.ResourceArguments arguments,
             ResourceReference mcpResource) {
 
@@ -525,7 +492,7 @@ public class ResourceAcquirerBridge implements ResourceBridge {
             mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
 
         ResourceRequest request = buildResourceRequest(mcpResource);
-        return transport.acquireResourceAsync(request, service, arguments, mcpResource)
+        return transport.acquireResource(request, service, arguments, mcpResource)
             .map(ResourceResponse::new);
     }
 
@@ -885,7 +852,7 @@ enum ExecutionStatus {
 └────────────────────────────┬────────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 2. InvokerBridge.executeAsync(ToolArguments, CallableReference) │
+│ 2. InvokerBridge.execute(ToolArguments, CallableReference)      │
 └────────────────────────────┬────────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -901,7 +868,7 @@ enum ExecutionStatus {
 └────────────────────────────┬────────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 5. GrpcTransport.invokeToolAsync(request, service)              │
+│ 5. GrpcTransport.invokeTool(request, service)                   │
 │    ├─ GrpcChannelManager.createChannel(ServiceTarget) [cached]  │
 │    ├─ ToolInvokerGrpc.newFutureStub(channel)                    │
 │    ├─ stub.invokeTool(request)                                  │
@@ -917,7 +884,7 @@ enum ExecutionStatus {
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. ResourceAcquirerBridge.readAsync(ResourceArguments, Ref)     │
+│ 1. ResourceAcquirerBridge.read(ResourceArguments, Ref)          │
 └────────────────────────────┬────────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -933,7 +900,7 @@ enum ExecutionStatus {
 └────────────────────────────┬────────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 4. GrpcTransport.acquireResourceAsync(request, service, ...)    │
+│ 4. GrpcTransport.acquireResource(request, service, ...)         │
 │    ├─ GrpcChannelManager.createChannel(ServiceTarget) [cached]  │
 │    ├─ ResourceAcquirerGrpc.newFutureStub(channel)               │
 │    ├─ stub.resourceAcquire(request)                             │
@@ -1025,21 +992,21 @@ enum ExecutionStatus {
 ```java
 // Interface defines protocol-independent contract with async-first design
 interface WanakuBridgeTransport {
-    Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service);
+    Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service);
 }
 
 // gRPC implementation with response transformation
 class GrpcTransport implements WanakuBridgeTransport {
     private final ToolResponseTransformer<ToolInvokeReply> transformer = ...;
 
-    public Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service) {
+    public Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service) {
         // gRPC FutureStub → Uni with transformer applied
     }
 }
 
 // HTTP implementation (future)
 class HttpTransport implements WanakuBridgeTransport {
-    public Uni<ToolResponse> invokeToolAsync(ToolInvokeRequest request, ServiceTarget service) {
+    public Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service) {
         // HTTP-specific logic with its own transformer
     }
 }
@@ -1111,6 +1078,7 @@ try (CloseableCodeExecutionIterator iter = bridge.executeCode(...)) {
 | WanakuBridgeTransport.java | `wanaku-router/wanaku-router-backend/.../bridge/` |
 | InvokerBridge.java | `wanaku-router/wanaku-router-backend/.../bridge/` |
 | InvokerToolExecutor.java | `wanaku-router/wanaku-router-backend/.../bridge/` |
+| EventNotifier.java | `wanaku-router/wanaku-router-backend/.../bridge/` |
 | ResourceAcquirerBridge.java | `wanaku-router/wanaku-router-backend/.../bridge/` |
 | CodeExecutionBridge.java | `wanaku-router/wanaku-router-backend/.../bridge/` |
 | ProvisionerBridge.java | `wanaku-router/wanaku-router-backend/.../bridge/` |

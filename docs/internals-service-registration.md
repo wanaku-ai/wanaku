@@ -403,9 +403,14 @@ public class ToolsProvider {
     @Inject
     WanakuBridgeTransport transport;
 
+    @Inject
+    @Channel("tool-call-event")
+    @OnOverflow(OnOverflow.Strategy.DROP)
+    MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
+
     @Produces
     ToolsBridge getToolsBridge() {
-        return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter);
+        return new InvokerBridge(serviceResolver, transport, new EventNotifier(toolCallEventEmitter));
     }
 }
 

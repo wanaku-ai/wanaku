@@ -20,12 +20,12 @@ classDiagram
 
     class ResourceBridge {
         <<interface>>
-        +readAsync(arguments, resource) Uni~ResourceResponse~
+        +read(arguments, resource) Uni~ResourceResponse~
     }
 
     class ToolsBridge {
         <<interface>>
-        +executeAsync(arguments, reference) Uni~ToolResponse~
+        +execute(arguments, reference) Uni~ToolResponse~
     }
 
     class ProvisionBridge {
@@ -44,8 +44,8 @@ classDiagram
     class WanakuBridgeTransport {
         <<interface>>
         +provision(name, config, secrets, service) ProvisioningReference
-        +invokeToolAsync(request, service) Uni~ToolResponse~
-        +acquireResourceAsync(request, service, arguments, resource) Uni~List~ResourceContents~~
+        +invokeTool(request, service) Uni~ToolResponse~
+        +acquireResource(request, service, arguments, resource) Uni~List~ResourceContents~~
         +executeCode(request, service) Iterator~CodeExecutionReply~
         +probeHealth(request, service) HealthProbeReply
     }
@@ -53,13 +53,13 @@ classDiagram
     class ResourceAcquirerBridge {
         -transport WanakuBridgeTransport
         -provisionerBridge ProvisionerBridge
-        +readAsync(arguments, resource) Uni~ResourceResponse~
+        +read(arguments, resource) Uni~ResourceResponse~
     }
 
     class InvokerBridge {
         -transport WanakuBridgeTransport
         -serviceResolver ServiceResolver
-        +executeAsync(arguments, reference) Uni~ToolResponse~
+        +execute(arguments, reference) Uni~ToolResponse~
     }
 
     class ProvisionerBridge {
@@ -72,8 +72,8 @@ classDiagram
     class GrpcTransport {
         -channelManager GrpcChannelManager
         +provision(...) ProvisioningReference
-        +invokeToolAsync(...) Uni~ToolResponse~
-        +acquireResourceAsync(...) Uni~List~ResourceContents~~
+        +invokeTool(...) Uni~ToolResponse~
+        +acquireResource(...) Uni~List~ResourceContents~~
     }
 
     Bridge <|-- ResourceBridge
@@ -269,11 +269,11 @@ sequenceDiagram
     participant Provider as Resource Provider
 
     MCP->>Router: ReadResource(file:///data/doc.txt)
-    Router->>RAB: readAsync(arguments, resource)
+    Router->>RAB: read(arguments, resource)
     RAB->>PB: resolveService(type, "resource-provider")
     PB-->>RAB: ServiceTarget
     RAB->>RAB: Build ResourceRequest
-    RAB->>Transport: acquireResourceAsync(request, service, arguments, resource)
+    RAB->>Transport: acquireResource(request, service, arguments, resource)
     Transport->>Provider: gRPC ReadResource(uri)
     Provider->>Provider: Read File from Filesystem
     Provider-->>Transport: gRPC Response (contents)
@@ -296,9 +296,9 @@ sequenceDiagram
     participant Tool as Tool Service
 
     MCP->>Router: CallTool(http://api.example.com/data)
-    Router->>IB: executeAsync(toolArguments, toolReference)
+    Router->>IB: execute(toolArguments, toolReference)
     IB->>IB: Resolve service, build ToolInvokeRequest
-    IB->>Transport: invokeToolAsync(request, service)
+    IB->>Transport: invokeTool(request, service)
     Transport->>Tool: gRPC InvokeTool(uri, params)
     Tool->>Tool: Execute HTTP Request
     Tool-->>Transport: gRPC Response (result)
