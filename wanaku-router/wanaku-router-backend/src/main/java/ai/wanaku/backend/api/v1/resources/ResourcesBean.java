@@ -52,7 +52,7 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     }
 
     public ResourceReference expose(ResourceReference mcpResource) {
-        doExposeResourceAsync(mcpResource);
+        doExposeResource(mcpResource);
 
         return resourceReferenceRepository.persist(mcpResource);
     }
@@ -96,13 +96,13 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
         }
     }
 
-    private void doExposeResourceAsync(ResourceReference resourceReference) {
+    private void doExposeResource(ResourceReference resourceReference) {
         if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
             final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
 
-            ResourceHelper.exposeAsync(resourceReference, resourceManager, namespace, resourceBridge::readAsync);
+            ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceBridge::read);
         } else {
-            ResourceHelper.exposeAsync(resourceReference, resourceManager, resourceBridge::readAsync);
+            ResourceHelper.expose(resourceReference, resourceManager, resourceBridge::read);
         }
     }
 

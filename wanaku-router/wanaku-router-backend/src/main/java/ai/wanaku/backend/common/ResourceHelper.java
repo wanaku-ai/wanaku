@@ -1,9 +1,7 @@
 package ai.wanaku.backend.common;
 
-import java.util.List;
 import java.util.function.BiFunction;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
@@ -20,58 +18,6 @@ public final class ResourceHelper {
     private ResourceHelper() {}
 
     /**
-     * @deprecated Use {@link #exposeAsync} instead. This synchronous variant is retained
-     *             only for forwarding use cases that have not yet been migrated.
-     */
-    @Deprecated
-    public static void expose(
-            ResourceReference resourceReference,
-            ResourceManager resourceManager,
-            BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler) {
-        expose(resourceReference, resourceManager, null, handler);
-    }
-
-    /**
-     * @deprecated Use {@link #exposeAsync} instead. This synchronous variant is retained
-     *             only for forwarding use cases that have not yet been migrated.
-     */
-    @Deprecated
-    public static void expose(
-            ResourceReference resourceReference,
-            ResourceManager resourceManager,
-            Namespace namespace,
-            BiFunction<ResourceManager.ResourceArguments, ResourceReference, List<ResourceContents>> handler) {
-        if (resourceManager.getResource(resourceReference.getLocation()) != null) {
-            throw EntityAlreadyExistsException.forName(resourceReference.getName());
-        }
-
-        try {
-            final ResourceManager.ResourceDefinition resourceDefinition = resourceManager
-                    .newResource(resourceReference.getName())
-                    .setUri(resourceReference.getLocation())
-                    .setMimeType(resourceReference.getMimeType())
-                    .setDescription(resourceReference.getDescription())
-                    .setHandler(args -> new ResourceResponse(handler.apply(args, resourceReference)));
-
-            if (namespace != null) {
-                LOG.debugf(
-                        "Exposing resource %s in namespace %s",
-                        resourceReference.getName(), resourceReference.getNamespace());
-                resourceDefinition.setServerName(namespace.getPath()).register();
-            } else {
-                LOG.debugf("Exposing resource %s", resourceReference.getName());
-                resourceDefinition.register();
-            }
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("already exists")) {
-                throw EntityAlreadyExistsException.forName(resourceReference.getName());
-            } else {
-                throw e;
-            }
-        }
-    }
-
-    /**
      * Expose a resource by applying the given async handler.
      *
      * @param resourceReference The reference to the resource being exposed
@@ -79,11 +25,11 @@ public final class ResourceHelper {
      * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
      *                          and returns a Uni of ResourceResponse.
      */
-    public static void exposeAsync(
+    public static void expose(
             ResourceReference resourceReference,
             ResourceManager resourceManager,
             BiFunction<ResourceManager.ResourceArguments, ResourceReference, Uni<ResourceResponse>> handler) {
-        exposeAsync(resourceReference, resourceManager, null, handler);
+        expose(resourceReference, resourceManager, null, handler);
     }
 
     /**
@@ -95,7 +41,7 @@ public final class ResourceHelper {
      * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
      *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
      */
-    public static void exposeAsync(
+    public static void expose(
             ResourceReference resourceReference,
             ResourceManager resourceManager,
             Namespace namespace,

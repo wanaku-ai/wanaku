@@ -8,7 +8,6 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.Map;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.micrometer.common.util.StringUtils;
 import io.quarkiverse.mcp.server.ToolManager;
@@ -20,7 +19,6 @@ import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
-import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.Property;
@@ -53,17 +51,10 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     Instance<ToolReferenceRepository> toolReferenceRepositoryInstance;
 
     private ToolReferenceRepository toolReferenceRepository;
-    private boolean async = false;
 
     @PostConstruct
     void init() {
         toolReferenceRepository = toolReferenceRepositoryInstance.get();
-
-        final Boolean value = ConfigProvider.getConfig().getValue("wanaku.router.async", Boolean.class);
-        async = value != null && value;
-        if (async) {
-            LOG.info("Serving tools in async mode with executor");
-        }
     }
 
     public ToolReference add(ToolReference toolReference) {
@@ -113,30 +104,12 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
         return property;
     }
 
-    private void registerTool(ToolReference toolReference) throws ToolNotFoundException {
-        if (async) {
-            doRegisterToolAsync(toolReference);
-        } else {
-            doRegisterTool(toolReference);
-        }
-    }
-
-    @Deprecated
-    private void doRegisterTool(ToolReference toolReference) {
+    private void registerTool(ToolReference toolReference) {
         if (!StringHelper.isEmpty(toolReference.getNamespace())) {
             final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
             ToolsHelper.registerTool(toolReference, toolManager, namespace, toolsBridge::execute);
         } else {
             ToolsHelper.registerTool(toolReference, toolManager, toolsBridge::execute);
-        }
-    }
-
-    private void doRegisterToolAsync(ToolReference toolReference) {
-        if (!StringHelper.isEmpty(toolReference.getNamespace())) {
-            final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
-            ToolsHelper.registerToolAsync(toolReference, toolManager, namespace, toolsBridge::executeAsync);
-        } else {
-            ToolsHelper.registerToolAsync(toolReference, toolManager, toolsBridge::executeAsync);
         }
     }
 

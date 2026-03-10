@@ -11,10 +11,10 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 public interface ResourceBridge extends Bridge {
 
     /**
-     * Eval an MCP URI handling it as appropriate by the component asynchronously.
+     * Eval an MCP URI handling it as appropriate by the component.
      * @param arguments the resource request arguments
      * @param mcpResource the resource to eval
      * @return Returns a Uni emitting the resource response.
      */
-    Uni<ResourceResponse> readAsync(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
+    Uni<ResourceResponse> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
 }

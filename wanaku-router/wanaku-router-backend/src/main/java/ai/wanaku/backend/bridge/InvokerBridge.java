@@ -1,11 +1,12 @@
 package ai.wanaku.backend.bridge;
 
+import java.time.Duration;
+import java.time.Instant;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
@@ -30,13 +31,15 @@ public class InvokerBridge implements ToolsBridge {
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
-    private final InvokerToolExecutor executor;
+    private final EventNotifier eventNotifier;
 
     static class WanakuToolContext {
         ToolManager.ToolArguments arguments;
         ToolReference toolReference;
         ServiceTarget serviceTarget;
         ToolInvokeRequest request;
+        ToolCallEvent startedEvent;
+        Instant startTime;
 
         static WanakuToolContext create(ToolManager.ToolArguments arguments, ToolReference toolReference) {
             WanakuToolContext context = new WanakuToolContext();
@@ -57,29 +60,21 @@ public class InvokerBridge implements ToolsBridge {
     }
 
     /**
-     * Creates a new InvokerBridge with the specified service resolver, transport, and event emitter.
+     * Creates a new InvokerBridge with the specified service resolver, transport, and event notifier.
      *
      * @param serviceResolver the resolver for locating tool services
      * @param transport the gRPC transport for communication
-     * @param toolCallEventEmitter the emitter for tool call events (nullable)
+     * @param eventNotifier the notifier for tool call events (nullable)
      */
     public InvokerBridge(
-            ServiceResolver serviceResolver,
-            WanakuBridgeTransport transport,
-            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
+            ServiceResolver serviceResolver, WanakuBridgeTransport transport, EventNotifier eventNotifier) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
-        this.executor = new InvokerToolExecutor(serviceResolver, transport, toolCallEventEmitter);
+        this.eventNotifier = eventNotifier;
     }
 
     @Override
-    @Deprecated
-    public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-        return executor.execute(toolArguments, toolReference);
-    }
-
-    @Override
-    public Uni<ToolResponse> executeAsync(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+    public Uni<ToolResponse> execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         if (!(toolReference instanceof ToolReference ref)) {
             LOG.errorf(
                     "Tool reference %s not supported",
@@ -92,12 +87,43 @@ public class InvokerBridge implements ToolsBridge {
         return Uni.createFrom()
                 .item(() -> WanakuToolContext.create(toolArguments, ref))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .invoke(this::resolveServiceV2)
-                .invoke(ctx -> ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments))
-                .chain(ctx -> transport.invokeToolAsync(ctx.request, ctx.serviceTarget));
+                .invoke(this::resolveService)
+                .invoke(ctx -> {
+                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments);
+                    ctx.startTime = Instant.now();
+                    if (eventNotifier != null) {
+                        ctx.startedEvent =
+                                eventNotifier.emitStartedEvent(toolArguments, ref, ctx.serviceTarget, ctx.request);
+                    }
+                })
+                .chain(ctx -> transport
+                        .invokeTool(ctx.request, ctx.serviceTarget)
+                        .invoke(response -> emitCompleted(ctx, response))
+                        .onFailure()
+                        .invoke(failure -> emitFailed(ctx, failure)));
     }
 
-    private WanakuToolContext resolveServiceV2(WanakuToolContext context) {
+    private void emitCompleted(WanakuToolContext ctx, ToolResponse response) {
+        if (eventNotifier != null && ctx.startedEvent != null) {
+            long duration = Duration.between(ctx.startTime, Instant.now()).toMillis();
+            String content = response != null ? response.toString() : "";
+            eventNotifier.emitCompletedEvent(ctx.startedEvent.getEventId(), content, duration);
+        }
+    }
+
+    private void emitFailed(WanakuToolContext ctx, Throwable failure) {
+        if (eventNotifier != null && ctx.startedEvent != null) {
+            long duration = Duration.between(ctx.startTime, Instant.now()).toMillis();
+            ToolCallEvent.ErrorCategory category = failure instanceof Exception ex
+                    ? eventNotifier.categorizeException(ex)
+                    : ToolCallEvent.ErrorCategory.UNKNOWN;
+            String errorMessage =
+                    failure.getMessage() != null ? failure.getMessage() : "An error occurred during tool execution";
+            eventNotifier.emitFailedEvent(ctx.startedEvent.getEventId(), category, errorMessage, duration);
+        }
+    }
+
+    private WanakuToolContext resolveService(WanakuToolContext context) {
         context.serviceTarget = serviceResolver.resolve(context.toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
         if (context.serviceTarget == null) {
             // Code engines may also provide specialized tools

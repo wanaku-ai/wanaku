@@ -164,14 +164,14 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
         for (ResourceReference reference : resourceReferences) {
             LOG.debugf("Exposing remote resource %s", reference.getName());
-            ResourceHelper.exposeAsync(
+            ResourceHelper.expose(
                     reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
         }
 
         List<RemoteToolReference> toolReferences = mcpBridge.listTools(forwardClient);
         for (RemoteToolReference reference : toolReferences) {
             LOG.infof("Binding remote tool %s", reference.getName());
-            ToolsHelper.registerToolAsync(
+            ToolsHelper.registerTool(
                     reference, toolManager, ns, (args, ref) -> mcpBridge.executeTool(forwardClient, args, ref));
         }
 

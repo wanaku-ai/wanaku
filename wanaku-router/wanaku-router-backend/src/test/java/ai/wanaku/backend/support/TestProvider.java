@@ -5,13 +5,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.arc.DefaultBean;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
-import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 
 @ApplicationScoped
 public class TestProvider {
@@ -22,18 +19,7 @@ public class TestProvider {
     @Priority(100)
     ToolsBridge toolsBridge() {
         LOG.infof("Creating test tools bridge");
-        return new ToolsBridge() {
-            @Override
-            public ToolResponse execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-                return null;
-            }
-
-            @Override
-            public Uni<ToolResponse> executeAsync(
-                    ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-                return Uni.createFrom().nullItem();
-            }
-        };
+        return (toolArguments, toolReference) -> Uni.createFrom().nullItem();
     }
 
     @Produces
