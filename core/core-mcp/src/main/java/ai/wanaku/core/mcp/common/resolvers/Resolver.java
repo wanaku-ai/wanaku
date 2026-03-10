@@ -7,13 +7,5 @@ package ai.wanaku.core.mcp.common.resolvers;
  * service provider (tool acquirer or resource acquirer) should handle them.
  * This interface serves as a marker interface for all resolver types within
  * the Wanaku MCP infrastructure.
- * <p>
- * Specialized resolver interfaces extend this base interface to provide
- * specific resolution strategies for different capability types:
- * <ul>
- *   <li>{@link ForwardResolver} - Resolves forward proxy requests</li>
- * </ul>
- *
- * @see ForwardResolver
  */
 public interface Resolver {}

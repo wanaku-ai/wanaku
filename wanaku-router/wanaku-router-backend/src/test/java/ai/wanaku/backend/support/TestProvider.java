@@ -12,8 +12,6 @@ import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
-import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
-import ai.wanaku.core.mcp.providers.ForwardRegistry;
 
 @ApplicationScoped
 public class TestProvider {
@@ -44,12 +42,5 @@ public class TestProvider {
     ProvisionerBridge provisionerBridge() {
         LOG.infof("Creating test provisioner bridge");
         return new ProvisionerBridge(null, null);
-    }
-
-    @Produces
-    @DefaultBean
-    @Priority(100)
-    ForwardRegistry forwardRegistry() {
-        return new NoopForwardRegistry();
     }
 }
