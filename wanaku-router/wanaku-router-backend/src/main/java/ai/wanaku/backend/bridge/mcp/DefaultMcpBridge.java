@@ -9,11 +9,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ResourceResponse;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.JsonObject;
 import ai.wanaku.backend.bridge.ForwardClient;
 import ai.wanaku.backend.bridge.McpBridge;
@@ -63,7 +65,14 @@ public class DefaultMcpBridge implements McpBridge {
     }
 
     @Override
-    public ToolResponse executeTool(
+    public Uni<ToolResponse> executeTool(
+            ForwardClient forwardClient, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+        return Uni.createFrom()
+                .item(() -> doExecuteTool(forwardClient, toolArguments, toolReference))
+                .runSubscriptionOn(Infrastructure.getDefaultExecutor());
+    }
+
+    private ToolResponse doExecuteTool(
             ForwardClient forwardClient, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         LOG.infof(
                 "Calling tool on behalf of connection %s",
@@ -109,8 +118,14 @@ public class DefaultMcpBridge implements McpBridge {
     }
 
     @Override
-    public List<ResourceContents> read(
+    public Uni<ResourceResponse> read(
             ForwardClient forwardClient, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+        return Uni.createFrom()
+                .item(() -> doRead(forwardClient, mcpResource))
+                .runSubscriptionOn(Infrastructure.getDefaultExecutor());
+    }
+
+    private ResourceResponse doRead(ForwardClient forwardClient, ResourceReference mcpResource) {
         try {
             McpReadResourceResult resourceResponse = forwardClient.client().readResource(mcpResource.getLocation());
 
@@ -118,7 +133,7 @@ public class DefaultMcpBridge implements McpBridge {
             TextResourceContents textResourceContents = TextResourceContents.create(
                     mcpResource.getLocation(), contents.getFirst().toString());
 
-            return List.of(textResourceContents);
+            return new ResourceResponse(List.of(textResourceContents));
         } catch (Exception e) {
             throw new WanakuException(e);
         }

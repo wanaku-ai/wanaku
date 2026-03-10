@@ -1,10 +1,11 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.List;
-import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
+import io.quarkiverse.mcp.server.ResourceResponse;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
@@ -20,11 +21,11 @@ public interface McpBridge {
 
     List<RemoteToolReference> listTools(ForwardClient forwardClient) throws ServiceUnavailableException;
 
-    ToolResponse executeTool(
+    Uni<ToolResponse> executeTool(
             ForwardClient forwardClient, ToolManager.ToolArguments toolArguments, CallableReference toolReference);
 
     List<ResourceReference> listResources(ForwardClient forwardClient) throws ServiceUnavailableException;
 
-    List<ResourceContents> read(
+    Uni<ResourceResponse> read(
             ForwardClient forwardClient, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
 }
