@@ -3,7 +3,6 @@ package ai.wanaku.core.mcp.common;
 import java.util.Objects;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
-import io.smallrye.common.annotation.Blocking;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 
 /**
