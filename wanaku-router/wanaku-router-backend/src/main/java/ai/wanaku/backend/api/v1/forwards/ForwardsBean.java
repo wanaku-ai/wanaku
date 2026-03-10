@@ -15,6 +15,9 @@ import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
+import ai.wanaku.backend.bridge.ForwardClient;
+import ai.wanaku.backend.bridge.ForwardRegistry;
+import ai.wanaku.backend.bridge.McpBridge;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.common.ToolsHelper;
@@ -27,9 +30,6 @@ import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.core.mcp.common.Tool;
-import ai.wanaku.core.mcp.common.resolvers.ForwardResolver;
-import ai.wanaku.core.mcp.providers.ForwardRegistry;
 import ai.wanaku.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
@@ -48,13 +48,16 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     ToolManager toolManager;
 
     @Inject
-    ForwardRegistry forwardRegistry;
-
-    @Inject
     NamespacesBean namespacesBean;
 
     @Inject
     Instance<ForwardReferenceRepository> forwardReferenceRepositoryInstance;
+
+    @Inject
+    ForwardRegistry forwardRegistry;
+
+    @Inject
+    McpBridge mcpBridge;
 
     private ForwardReferenceRepository forwardReferenceRepository;
 
@@ -67,14 +70,14 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         final NameNamespacePair nameNamespacePair =
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
-        final ForwardResolver forwardResolver = forwardRegistry.getResolver(nameNamespacePair);
-        if (forwardResolver == null) {
+        final ForwardClient forwardClient = forwardRegistry.getClient(nameNamespacePair);
+        if (forwardClient == null) {
             return false;
         }
 
         try {
-            removeRemoteTools(forwardResolver);
-            removeRemoteResources(forwardResolver);
+            removeRemoteTools(forwardClient);
+            removeRemoteResources(forwardClient);
         } finally {
             forwardRegistry.unlink(nameNamespacePair);
         }
@@ -82,8 +85,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         return true;
     }
 
-    private void removeRemoteResources(ForwardResolver forwardResolver) {
-        final List<ResourceReference> resourceReferences = forwardResolver.listResources();
+    private void removeRemoteResources(ForwardClient forwardClient) {
+        final List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
         for (ResourceReference remoteResource : resourceReferences) {
             LOG.infof("Removing remote resource %s", remoteResource);
             try {
@@ -95,8 +98,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
     }
 
-    private void removeRemoteTools(ForwardResolver forwardResolver) {
-        List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
+    private void removeRemoteTools(ForwardClient forwardClient) {
+        List<RemoteToolReference> remoteToolReferences = mcpBridge.listTools(forwardClient);
         for (RemoteToolReference remoteToolReference : remoteToolReferences) {
             LOG.infof("Removing remote tool %s", remoteToolReference);
             try {
@@ -155,30 +158,30 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         final NameNamespacePair nameNamespacePair =
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
-        ForwardResolver forwardResolver = forwardRegistry.newResolverForService(nameNamespacePair, forwardReference);
-        List<ResourceReference> resourceReferences = forwardResolver.listResources();
+        String address = forwardReference.getAddress();
+        ForwardClient forwardClient = ForwardClient.newClient(address);
+
+        List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
         for (ResourceReference reference : resourceReferences) {
             LOG.debugf("Exposing remote resource %s", reference.getName());
-            ResourceHelper.expose(reference, resourceManager, ns, forwardResolver::read);
+            ResourceHelper.expose(
+                    reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
         }
 
-        List<RemoteToolReference> toolReferences = forwardResolver.listTools();
+        List<RemoteToolReference> toolReferences = mcpBridge.listTools(forwardClient);
         for (RemoteToolReference reference : toolReferences) {
             LOG.infof("Binding remote tool %s", reference.getName());
-            Tool tool = forwardResolver.resolve(reference);
-            ToolsHelper.registerTool(reference, toolManager, ns, tool::call);
+            ToolsHelper.registerTool(
+                    reference, toolManager, ns, (args, ref) -> mcpBridge.executeTool(forwardClient, args, ref));
         }
 
-        forwardRegistry.link(nameNamespacePair, forwardResolver);
+        forwardRegistry.link(nameNamespacePair, forwardClient);
     }
 
     public List<ResourceReference> listAllResources() {
         List<ResourceReference> references = new ArrayList<>();
-        for (NameNamespacePair service : forwardRegistry.services()) {
-            ForwardResolver forwardResolver = forwardRegistry.getResolver(service);
-
-            List<ResourceReference> remoteToolReferences = forwardResolver.listResources();
-            references.addAll(remoteToolReferences);
+        for (ForwardClient forwardClient : forwardRegistry.clients().values()) {
+            references.addAll(mcpBridge.listResources(forwardClient));
         }
 
         return references;
@@ -190,11 +193,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
      */
     public List<RemoteToolReference> listAllTools() {
         List<RemoteToolReference> references = new ArrayList<>();
-        for (NameNamespacePair service : forwardRegistry.services()) {
-            ForwardResolver forwardResolver = forwardRegistry.getResolver(service);
-
-            List<RemoteToolReference> remoteToolReferences = forwardResolver.listTools();
-            references.addAll(remoteToolReferences);
+        for (ForwardClient forwardClient : forwardRegistry.clients().values()) {
+            references.addAll(mcpBridge.listTools(forwardClient));
         }
 
         return references;
@@ -255,7 +255,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
         ForwardReference forwardReference = references.getFirst();
 
-        // Remove existing tools/resources and unlink resolver
+        // Remove existing tools/resources and close the MCP client
         removeLinkedEntries(forwardReference);
 
         // Re-register with fresh data from remote server

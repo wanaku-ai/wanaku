@@ -8,13 +8,7 @@
  *   <li>Resolving capability references to concrete implementations</li>
  *   <li>Managing the lifecycle of registered capabilities</li>
  * </ul>
- * <p>
- * Key resolver types:
- * <ul>
- *   <li>{@link ai.wanaku.core.mcp.common.resolvers.ForwardResolver} - Resolves forward proxies</li>
- * </ul>
  *
  * @see ai.wanaku.core.mcp.common.resolvers.Resolver
- * @see ai.wanaku.core.mcp.common.resolvers.util
  */
 package ai.wanaku.core.mcp.common.resolvers;

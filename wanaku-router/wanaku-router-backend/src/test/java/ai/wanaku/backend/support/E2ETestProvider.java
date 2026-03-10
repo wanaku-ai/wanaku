@@ -14,8 +14,6 @@ import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.service.support.FirstAvailable;
 import ai.wanaku.backend.service.support.ServiceResolver;
-import ai.wanaku.core.mcp.common.resolvers.util.NoopForwardRegistry;
-import ai.wanaku.core.mcp.providers.ForwardRegistry;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
 
 /**
@@ -55,10 +53,5 @@ public class E2ETestProvider {
     WanakuBridgeTransport getTransport() {
         LOG.info("Creating real GrpcTransport for e2e tests");
         return new GrpcTransport();
-    }
-
-    @Produces
-    ForwardRegistry forwardRegistry() {
-        return new NoopForwardRegistry();
     }
 }
