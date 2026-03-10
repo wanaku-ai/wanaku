@@ -392,7 +392,7 @@ public class FirstAvailable implements ServiceResolver {
 
 ### Provider Pattern
 
-Tool bridges are exposed via CDI producers:
+Bridges are exposed via CDI producers:
 
 ```java
 @ApplicationScoped
@@ -406,6 +406,21 @@ public class ToolsProvider {
     @Produces
     ToolsBridge getToolsBridge() {
         return new InvokerBridge(serviceResolver, transport, toolCallEventEmitter);
+    }
+}
+
+@ApplicationScoped
+public class ResourcesProvider {
+
+    @Produces
+    ProvisionerBridge getProvisionerBridge() {
+        return new ProvisionerBridge(new FirstAvailable(serviceRegistry), new GrpcTransport());
+    }
+
+    @Produces
+    ResourceBridge getResourceBridge() {
+        ProvisionerBridge provisioner = new ProvisionerBridge(resolver, transport);
+        return new ResourceAcquirerBridge(provisioner, transport);
     }
 }
 ```

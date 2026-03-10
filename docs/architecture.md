@@ -176,11 +176,11 @@ sequenceDiagram
 2. **Authentication**: Router authenticates the request using Keycloak/OIDC
 3. **Request Processing**: Router receives MCP requests (tool calls, resource reads, prompt requests)
 4. **Bridge Routing**: Bridge layer determines the appropriate service based on tool/resource type and namespace
-5. **Business Logic**: Bridge processes request and prepares for transport
+5. **Business Logic**: Bridge processes request and prepares for transport asynchronously
 6. **Transport Delegation**: Bridge delegates communication to transport layer (composition pattern)
-7. **gRPC Communication**: Transport forwards request to specific capability service via gRPC
+7. **gRPC Communication**: Transport forwards request to specific capability service via gRPC and transforms the response using response transformers
 8. **Service Processing**: Capability service handles actual resource access or tool execution
-9. **Response Aggregation**: Results are returned through transport and bridge layers back to client
+9. **Async Response**: Results are returned as `Uni` types through transport and bridge layers back to client
 
 ### Tool Invocation Flow
 
@@ -197,14 +197,14 @@ sequenceDiagram
     LLM->>Router: Call Tool "http://api.example.com/data"
     Router->>Registry: Lookup Service for "http://" URI
     Registry-->>Router: Return HTTP Service Details
-    Router->>Bridge: Execute Tool
-    Bridge->>Transport: invokeTool(request, service)
+    Router->>Bridge: executeAsync(arguments, reference)
+    Bridge->>Transport: invokeToolAsync(request, service)
     Transport->>ToolSvc: gRPC ToolInvoke(uri, params)
     ToolSvc->>API: HTTP GET /data
     API-->>ToolSvc: JSON Response
     ToolSvc-->>Transport: gRPC Response
-    Transport-->>Bridge: ToolInvokeReply
-    Bridge-->>Router: ToolResponse
+    Transport-->>Bridge: Uni~ToolResponse~
+    Bridge-->>Router: Uni~ToolResponse~
     Router-->>LLM: MCP Tool Result
 ```
 
@@ -223,14 +223,14 @@ sequenceDiagram
     LLM->>Router: Read Resource "file:///path/to/doc.txt"
     Router->>Registry: Lookup Provider for "file://" URI
     Registry-->>Router: Return File Provider Details
-    Router->>Bridge: Evaluate Resource
-    Bridge->>Transport: acquireResource(request, service)
+    Router->>Bridge: readAsync(arguments, resource)
+    Bridge->>Transport: acquireResourceAsync(request, service, ...)
     Transport->>FileProv: gRPC ReadResource(uri)
     FileProv->>FS: Read File
     FS-->>FileProv: File Contents
     FileProv-->>Transport: gRPC Response (contents)
-    Transport-->>Bridge: ResourceReply
-    Bridge-->>Router: ResourceContents
+    Transport-->>Bridge: Uni~List~ResourceContents~~
+    Bridge-->>Router: Uni~ResourceResponse~
     Router-->>LLM: MCP Resource Content
 ```
 
@@ -528,10 +528,10 @@ graph TB
 
 ### Throughput
 
-- **MCP Requests**: Router handles concurrent requests asynchronously
-- **gRPC**: Efficient binary protocol reduces serialization overhead
-- **Connection Pooling**: Reuses gRPC connections to capability services
-- **Async Processing**: Non-blocking I/O throughout the stack
+- **MCP Requests**: Router handles concurrent requests asynchronously using Mutiny `Uni` types
+- **gRPC**: Efficient binary protocol with FutureStub-based async invocations reduces serialization overhead
+- **Connection Caching**: gRPC channels are cached and reused per service target
+- **Async Processing**: Non-blocking I/O throughout the stack with response transformation at the transport layer
 
 ### Latency
 

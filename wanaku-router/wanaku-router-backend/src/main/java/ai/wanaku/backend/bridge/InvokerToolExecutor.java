@@ -43,8 +43,8 @@ import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
  *   <li>Processing and returning the response</li>
  * </ul>
  * <p>
- * This executor is used in composition with InvokerProxy to separate
- * tool execution concerns from proxy management concerns.
+ * This executor is used in composition with InvokerBridge to separate
+ * tool execution concerns from bridge management concerns.
  */
 public class InvokerToolExecutor {
     private static final Logger LOG = Logger.getLogger(InvokerToolExecutor.class);
