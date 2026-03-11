@@ -3,6 +3,7 @@ package ai.wanaku.backend.api.v1.datastores;
 import jakarta.ws.rs.core.MediaType;
 
 import java.io.IOException;
+import java.util.List;
 import org.jboss.logging.Logger;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -14,6 +15,7 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 
 import org.junit.jupiter.api.Assertions;
@@ -155,7 +157,7 @@ public class DataStoresResourceTest extends WanakuRouterTest {
 
     @Order(6)
     @Test
-    void testListWithoutParameters() {
+    void testListAllWithoutQueryParameters() {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
@@ -164,7 +166,9 @@ public class DataStoresResourceTest extends WanakuRouterTest {
                 .get("/api/v1/data-store")
                 .then()
                 .statusCode(200)
-                .body("data", notNullValue());
+                .body("data", notNullValue())
+                .body("data", instanceOf(List.class))
+                .body("data.size()", greaterThanOrEqualTo(1));
     }
 
     @Order(7)

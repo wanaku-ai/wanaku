@@ -465,6 +465,13 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/FleetStatus"
+    WanakuResponseForwardReference:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ForwardReference"
     WanakuResponseInteger:
       type: object
       properties:
@@ -563,12 +570,6 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/Namespace"
-    WanakuResponseObject:
-      type: object
-      properties:
-        error:
-          $ref: "#/components/schemas/WanakuError"
-        data: {}
     WanakuResponsePromptReference:
       type: object
       properties:
@@ -723,31 +724,6 @@ paths:
       tags:
       - Capabilities Resource
   /api/v1/data-store:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DataStore"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-        "400":
-          description: Bad Request
-      summary: Add
-      tags:
-      - Data Stores Resource
     put:
       requestBody:
         content:
@@ -767,6 +743,24 @@ paths:
         "400":
           description: Bad Request
       summary: Update
+      tags:
+      - Data Stores Resource
+    delete:
+      parameters:
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove By Name
       tags:
       - Data Stores Resource
     get:
@@ -792,35 +786,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-      summary: List
+      summary: List Or Get By Name
       tags:
       - Data Stores Resource
-    delete:
-      parameters:
-      - name: name
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Remove By Name
-      tags:
-      - Data Stores Resource
-  /api/v1/data-store/{id}:
-    get:
-      parameters:
-      - name: id
-        in: path
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataStore"
         required: true
-        schema:
-          type: string
       responses:
         "200":
           description: OK
@@ -834,26 +809,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-      summary: Get By Id
-      tags:
-      - Data Stores Resource
-    delete:
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Remove By Id
+        "400":
+          description: Bad Request
+      summary: Add
       tags:
       - Data Stores Resource
   /api/v1/data-store/labels:
@@ -879,7 +837,66 @@ paths:
       summary: Remove If
       tags:
       - Data Stores Resource
+  /api/v1/data-store/{id}:
+    delete:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove By Id
+      tags:
+      - Data Stores Resource
+    get:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get By Id
+      tags:
+      - Data Stores Resource
   /api/v1/forwards:
+    get:
+      parameters:
+      - name: labelFilter
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListForwardReference"
+      summary: List Forwards
+      tags:
+      - Forwards Resource
     post:
       requestBody:
         content:
@@ -901,46 +918,7 @@ paths:
       summary: Add Forward
       tags:
       - Forwards Resource
-    get:
-      parameters:
-      - name: labelFilter
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseListForwardReference"
-      summary: List Forwards
-      tags:
-      - Forwards Resource
   /api/v1/forwards/{name}:
-    get:
-      parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseForwardReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Get By Name
-      tags:
-      - Forwards Resource
     put:
       parameters:
       - name: name
@@ -978,13 +956,24 @@ paths:
       responses:
         "200":
           description: OK
-        "500":
-          description: Wanaku error
+      summary: Remove Forward
+      tags:
+      - Forwards Resource
+    get:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Remove Forward
+                $ref: "#/components/schemas/WanakuResponseForwardReference"
+      summary: Get By Name
       tags:
       - Forwards Resource
   /api/v1/forwards/{name}/refreshes:
@@ -1004,8 +993,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-        "400":
-          description: Bad Request
       summary: Refresh
       tags:
       - Forwards Resource
@@ -1024,12 +1011,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseServiceTarget"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Register
@@ -1045,14 +1026,6 @@ paths:
       responses:
         "200":
           description: OK
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-        "400":
-          description: Bad Request
       summary: Deregister
       tags:
       - Discovery Resource
@@ -1284,6 +1257,28 @@ paths:
       tags:
       - Prompts Resource
   /api/v1/resources:
+    get:
+      parameters:
+      - name: labelFilter
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListResourceReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: List
+      tags:
+      - Resources Resource
     post:
       requestBody:
         content:
@@ -1307,28 +1302,6 @@ paths:
         "400":
           description: Bad Request
       summary: Expose
-      tags:
-      - Resources Resource
-    get:
-      parameters:
-      - name: labelFilter
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseListResourceReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: List
       tags:
       - Resources Resource
   /api/v1/resources/payloads:
@@ -1358,29 +1331,6 @@ paths:
       tags:
       - Resources Resource
   /api/v1/resources/{name}:
-    get:
-      parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseResourceReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Get By Name
-      tags:
-      - Resources Resource
     put:
       parameters:
       - name: name
@@ -1427,7 +1377,52 @@ paths:
       summary: Remove
       tags:
       - Resources Resource
+    get:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseResourceReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get By Name
+      tags:
+      - Resources Resource
   /api/v1/tools:
+    delete:
+      parameters:
+      - name: labelExpression
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseInteger"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove If
+      tags:
+      - Tools Resource
     get:
       parameters:
       - name: labelFilter
@@ -1475,28 +1470,6 @@ paths:
       summary: Add
       tags:
       - Tools Resource
-    delete:
-      parameters:
-      - name: labelExpression
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseInteger"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Remove If
-      tags:
-      - Tools Resource
   /api/v1/tools/payloads:
     post:
       requestBody:
@@ -1524,29 +1497,6 @@ paths:
       tags:
       - Tools Resource
   /api/v1/tools/{name}:
-    get:
-      parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseToolReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
-      summary: Get By Name
-      tags:
-      - Tools Resource
     put:
       parameters:
       - name: name
@@ -1591,6 +1541,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
       summary: Remove
+      tags:
+      - Tools Resource
+    get:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseToolReference"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get By Name
       tags:
       - Tools Resource
   /api/v2/code-execution-engine/{engineType}/{language}:

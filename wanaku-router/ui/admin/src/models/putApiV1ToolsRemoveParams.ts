@@ -5,6 +5,9 @@
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
 
-export type PutApiV1ToolsRemoveParams = {
+export type DeleteApiV1ToolsRemoveParams = {
   tool?: string;
 };
+
+/** @deprecated Use DeleteApiV1ToolsRemoveParams. */
+export type PutApiV1ToolsRemoveParams = DeleteApiV1ToolsRemoveParams;

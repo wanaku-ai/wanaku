@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -15,7 +16,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import org.jboss.resteasy.reactive.RestResponse;
-import jakarta.ws.rs.NotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -71,7 +71,8 @@ public class ForwardsResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("name") String name, ForwardReference resource) throws WanakuException {
-        if (resource != null && (resource.getName() == null || resource.getName().isBlank())) {
+        if (resource != null
+                && (resource.getName() == null || resource.getName().isBlank())) {
             resource.setName(name);
         }
         forwardsBean.update(resource);

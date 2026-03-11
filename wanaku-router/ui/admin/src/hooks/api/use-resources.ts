@@ -8,10 +8,10 @@ import {
     postApiV1ResourcesExpose,
     postApiV1ResourcesExposeResponse,
     postApiV1ResourcesUpdate,
-    putApiV1ResourcesRemove,
-    putApiV1ResourcesRemoveResponse
+    deleteApiV1ResourcesRemove,
+    deleteApiV1ResourcesRemoveResponse
 } from "../../api/wanaku-router-api";
-import {PutApiV1ResourcesRemoveParams, ResourceReference,} from "../../models";
+import {DeleteApiV1ResourcesRemoveParams, ResourceReference,} from "../../models";
 
 export const useResources = () => {
 
@@ -68,10 +68,10 @@ export const useResources = () => {
    */
   const removeResource = useCallback(
     (
-      params?: PutApiV1ResourcesRemoveParams, // Replace with the actual type if available from models.
+      params?: DeleteApiV1ResourcesRemoveParams,
       options?: RequestInit
-    ): Promise<putApiV1ResourcesRemoveResponse> => {
-      return putApiV1ResourcesRemove(params, options);
+    ): Promise<deleteApiV1ResourcesRemoveResponse> => {
+      return deleteApiV1ResourcesRemove(params, options);
     },
     []
   );

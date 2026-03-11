@@ -24,11 +24,11 @@ import type {
   GetApiV1ToolsListParams,
   Namespace,
   OutboundSseEvent,
-  PostApiV1ToolsParams,
+  GetApiV1ToolsParams,
   PromptPayload,
   PromptReference,
-  PutApiV1ResourcesRemoveParams,
-  PutApiV1ToolsRemoveParams,
+  DeleteApiV1ResourcesRemoveParams,
+  DeleteApiV1ToolsRemoveParams,
   ResourcePayload,
   ResourceReference,
   ServiceTarget,
@@ -494,23 +494,21 @@ export type deleteApiV1DataStoreRemoveResponse =
 export const getDeleteApiV1DataStoreRemoveUrl = (
   params?: DeleteApiV1DataStoreRemoveParams,
 ) => {
-  if (params?.id) {
-    return `/api/v1/data-store/${params.id}`;
+  const id = params?.id?.trim();
+  const name = params?.name?.trim();
+
+  if (id) {
+    return `/api/v1/data-store/${id}`;
+  }
+
+  if (!name) {
+    throw new Error("Either 'id' or 'name' must be provided to remove a data store.");
   }
 
   const normalizedParams = new URLSearchParams();
+  normalizedParams.append("name", name);
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/data-store?${stringifiedParams}`
-    : `/api/v1/data-store`;
+  return `/api/v1/data-store?${normalizedParams.toString()}`;
 };
 
 export const deleteApiV1DataStoreRemove = async (
@@ -1564,41 +1562,42 @@ export const getApiV1ResourcesList = async (
 /**
  * @summary Remove
  */
-export type putApiV1ResourcesRemoveResponse200 = {
+export type deleteApiV1ResourcesRemoveResponse200 = {
   data: null;
   status: 200;
 };
 
-export type putApiV1ResourcesRemoveResponse500 = {
+export type deleteApiV1ResourcesRemoveResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type putApiV1ResourcesRemoveResponseComposite =
-  | putApiV1ResourcesRemoveResponse200
-  | putApiV1ResourcesRemoveResponse500;
+export type deleteApiV1ResourcesRemoveResponseComposite =
+  | deleteApiV1ResourcesRemoveResponse200
+  | deleteApiV1ResourcesRemoveResponse500;
 
-export type putApiV1ResourcesRemoveResponse =
-  putApiV1ResourcesRemoveResponseComposite & {
+export type deleteApiV1ResourcesRemoveResponse =
+  deleteApiV1ResourcesRemoveResponseComposite & {
     headers: Headers;
   };
 
-export const getPutApiV1ResourcesRemoveUrl = (
-  params?: PutApiV1ResourcesRemoveParams,
+export const getDeleteApiV1ResourcesRemoveUrl = (
+  params?: DeleteApiV1ResourcesRemoveParams,
 ) => {
-  if (!params?.resource) {
-    return `/api/v1/resources`;
+  const resource = params?.resource?.trim();
+  if (!resource) {
+    throw new Error("Resource name is required to remove a resource.");
   }
 
-  return `/api/v1/resources/${params.resource}`;
+  return `/api/v1/resources/${resource}`;
 };
 
-export const putApiV1ResourcesRemove = async (
-  params?: PutApiV1ResourcesRemoveParams,
+export const deleteApiV1ResourcesRemove = async (
+  params?: DeleteApiV1ResourcesRemoveParams,
   options?: RequestInit,
-): Promise<putApiV1ResourcesRemoveResponse> => {
-  return customFetch<putApiV1ResourcesRemoveResponse>(
-    getPutApiV1ResourcesRemoveUrl(params),
+): Promise<deleteApiV1ResourcesRemoveResponse> => {
+  return customFetch<deleteApiV1ResourcesRemoveResponse>(
+    getDeleteApiV1ResourcesRemoveUrl(params),
     {
       ...options,
       method: "DELETE",
@@ -1703,37 +1702,38 @@ export const deleteApiV1Tools = async (
 /**
  * @summary Get By Name
  */
-export type postApiV1ToolsResponse200 = {
+export type getApiV1ToolsByNameResponse200 = {
   data: WanakuResponseToolReference;
   status: 200;
 };
 
-export type postApiV1ToolsResponse500 = {
+export type getApiV1ToolsByNameResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type postApiV1ToolsResponseComposite =
-  | postApiV1ToolsResponse200
-  | postApiV1ToolsResponse500;
+export type getApiV1ToolsByNameResponseComposite =
+  | getApiV1ToolsByNameResponse200
+  | getApiV1ToolsByNameResponse500;
 
-export type postApiV1ToolsResponse = postApiV1ToolsResponseComposite & {
+export type getApiV1ToolsByNameResponse = getApiV1ToolsByNameResponseComposite & {
   headers: Headers;
 };
 
-export const getPostApiV1ToolsUrl = (params?: PostApiV1ToolsParams) => {
-  if (params?.name) {
-    return `/api/v1/tools/${params.name}`;
+export const getGetApiV1ToolsByNameUrl = (params?: GetApiV1ToolsParams) => {
+  const name = params?.name?.trim();
+  if (!name) {
+    throw new Error("Tool name is required to get a tool by name.");
   }
 
-  return `/api/v1/tools`;
+  return `/api/v1/tools/${name}`;
 };
 
-export const postApiV1Tools = async (
-  params?: PostApiV1ToolsParams,
+export const getApiV1ToolsByName = async (
+  params?: GetApiV1ToolsParams,
   options?: RequestInit,
-): Promise<postApiV1ToolsResponse> => {
-  return customFetch<postApiV1ToolsResponse>(getPostApiV1ToolsUrl(params), {
+): Promise<getApiV1ToolsByNameResponse> => {
+  return customFetch<getApiV1ToolsByNameResponse>(getGetApiV1ToolsByNameUrl(params), {
     ...options,
     method: "GET",
   });
@@ -1882,41 +1882,42 @@ export const getApiV1ToolsList = async (
 /**
  * @summary Remove
  */
-export type putApiV1ToolsRemoveResponse200 = {
+export type deleteApiV1ToolsRemoveResponse200 = {
   data: null;
   status: 200;
 };
 
-export type putApiV1ToolsRemoveResponse500 = {
+export type deleteApiV1ToolsRemoveResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type putApiV1ToolsRemoveResponseComposite =
-  | putApiV1ToolsRemoveResponse200
-  | putApiV1ToolsRemoveResponse500;
+export type deleteApiV1ToolsRemoveResponseComposite =
+  | deleteApiV1ToolsRemoveResponse200
+  | deleteApiV1ToolsRemoveResponse500;
 
-export type putApiV1ToolsRemoveResponse =
-  putApiV1ToolsRemoveResponseComposite & {
+export type deleteApiV1ToolsRemoveResponse =
+  deleteApiV1ToolsRemoveResponseComposite & {
     headers: Headers;
   };
 
-export const getPutApiV1ToolsRemoveUrl = (
-  params?: PutApiV1ToolsRemoveParams,
+export const getDeleteApiV1ToolsRemoveUrl = (
+  params?: DeleteApiV1ToolsRemoveParams,
 ) => {
-  if (!params?.tool) {
-    return `/api/v1/tools`;
+  const tool = params?.tool?.trim();
+  if (!tool) {
+    throw new Error("Tool name is required to remove a tool.");
   }
 
-  return `/api/v1/tools/${params.tool}`;
+  return `/api/v1/tools/${tool}`;
 };
 
-export const putApiV1ToolsRemove = async (
-  params?: PutApiV1ToolsRemoveParams,
+export const deleteApiV1ToolsRemove = async (
+  params?: DeleteApiV1ToolsRemoveParams,
   options?: RequestInit,
-): Promise<putApiV1ToolsRemoveResponse> => {
-  return customFetch<putApiV1ToolsRemoveResponse>(
-    getPutApiV1ToolsRemoveUrl(params),
+): Promise<deleteApiV1ToolsRemoveResponse> => {
+  return customFetch<deleteApiV1ToolsRemoveResponse>(
+    getDeleteApiV1ToolsRemoveUrl(params),
     {
       ...options,
       method: "DELETE",

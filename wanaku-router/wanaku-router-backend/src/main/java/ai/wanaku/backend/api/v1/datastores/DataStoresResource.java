@@ -77,8 +77,8 @@ public class DataStoresResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public WanakuResponse<?> listOrGetByName(@QueryParam("labelFilter") String labelFilter,
-            @QueryParam("name") String name) throws WanakuException {
+    public WanakuResponse<List<DataStore>> listOrGetByName(
+            @QueryParam("labelFilter") String labelFilter, @QueryParam("name") String name) throws WanakuException {
         if (name != null && !name.isEmpty()) {
             LOG.debugf("REST: Getting data stores by name: %s", name);
             List<DataStore> dataStores = dataStoresBean.findByName(name);
