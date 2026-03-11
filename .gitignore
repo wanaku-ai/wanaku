@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 out
 wanaku-router/wanaku-router-backend/.quinoa/
+wanaku-router/wanaku-router-backend/application.dev.properties
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
