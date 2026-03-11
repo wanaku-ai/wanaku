@@ -8,6 +8,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -51,7 +52,6 @@ public class ToolsResource {
      * @return a response containing the registered tool reference
      * @throws WanakuException if registration fails
      */
-    @Path("/add")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -70,7 +70,7 @@ public class ToolsResource {
      * @return a response containing the registered tool reference
      * @throws WanakuException if registration fails or payload validation fails
      */
-    @Path("/addWithPayload")
+    @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -108,7 +108,6 @@ public class ToolsResource {
      * @return a response containing a list of all tool references
      * @throws WanakuException if listing fails
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter)
@@ -126,10 +125,10 @@ public class ToolsResource {
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the tool doesn't exist
      * @throws WanakuException if removal fails
      */
-    @Path("/remove")
-    @PUT
-    public Response remove(@QueryParam("tool") String tool) throws WanakuException {
-        int deleteCount = toolsBean.remove(tool);
+    @Path("/{name}")
+    @DELETE
+    public Response remove(@PathParam("name") String name) throws WanakuException {
+        int deleteCount = toolsBean.remove(name);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
@@ -144,10 +143,13 @@ public class ToolsResource {
      * @return HTTP 200 OK if updated successfully
      * @throws WanakuException if update fails
      */
-    @Path("/update")
-    @POST
+    @Path("/{name}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(ToolReference resource) throws WanakuException {
+    public Response update(@PathParam("name") String name, ToolReference resource) throws WanakuException {
+        if (resource != null && StringHelper.isEmpty(resource.getName())) {
+            resource.setName(name);
+        }
         toolsBean.update(resource);
         return Response.ok().build();
     }
@@ -160,10 +162,10 @@ public class ToolsResource {
      * @throws ToolNotFoundException if the tool is not found
      * @throws WanakuException if retrieval fails
      */
-    @Path("/")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public WanakuResponse<ToolReference> getByName(@QueryParam("name") String name) throws WanakuException {
+    @Path("/{name}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ToolReference> getByName(@PathParam("name") String name) throws WanakuException {
         ToolReference tool = toolsBean.getByName(name);
         if (tool == null) {
             throw new ToolNotFoundException(name);
@@ -177,7 +179,6 @@ public class ToolsResource {
      * @param labelExpression the name of the tool to remove
      * @return a {@link Response} indicating the number of the tools removed.
      */
-    @Path("/")
     @DELETE
     public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
             throws WanakuException {

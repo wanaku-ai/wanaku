@@ -26,7 +26,7 @@ public interface PromptsService {
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<PromptReference> add(PromptReference prompt) throws WanakuException;
 
-    @Path("/with-payload")
+    @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

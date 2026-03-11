@@ -32,7 +32,6 @@ public interface NamespacesService {
      * @param labelFilter optional label expression to filter namespaces by labels
      * @return a {@link WanakuResponse} containing a list of all namespaces
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<Namespace>> list(@QueryParam("labelFilter") String labelFilter);

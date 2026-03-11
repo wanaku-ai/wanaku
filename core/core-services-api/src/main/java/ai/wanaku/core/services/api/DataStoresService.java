@@ -4,7 +4,9 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -28,7 +30,6 @@ public interface DataStoresService {
      * @return response with the created data store
      * @throws WanakuException if addition fails
      */
-    @Path("/add")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -40,7 +41,6 @@ public interface DataStoresService {
      * @param labelFilter optional label expression to filter data stores by labels
      * @return response with list of data stores
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<DataStore>> list(@QueryParam("labelFilter") String labelFilter);
@@ -60,10 +60,10 @@ public interface DataStoresService {
      * @param id the ID of the data store
      * @return response with the data store
      */
-    @Path("/get")
+    @Path("/{id}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> getById(@QueryParam("id") String id);
+    WanakuResponse<DataStore> getById(@PathParam("id") String id);
 
     /**
      * Get data stores by name.
@@ -71,7 +71,6 @@ public interface DataStoresService {
      * @param name the name of the data stores
      * @return response with list of data stores
      */
-    @Path("/get")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<DataStore>> getByName(@QueryParam("name") String name);
@@ -82,9 +81,9 @@ public interface DataStoresService {
      * @param id the ID of the data store to remove
      * @return HTTP response
      */
-    @Path("/remove")
+    @Path("/{id}")
     @DELETE
-    Response remove(@QueryParam("id") String id);
+    Response remove(@PathParam("id") String id);
 
     /**
      * Remove data stores by name.
@@ -92,7 +91,6 @@ public interface DataStoresService {
      * @param name the name of the data stores to remove
      * @return HTTP response
      */
-    @Path("/remove")
     @DELETE
     Response removeByName(@QueryParam("name") String name);
 
@@ -103,7 +101,7 @@ public interface DataStoresService {
      * @return response with count of removed data stores
      * @throws WanakuException if removal fails
      */
-    @Path("/removeByLabel")
+    @Path("/labels")
     @DELETE
     WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) throws WanakuException;
 
@@ -114,8 +112,7 @@ public interface DataStoresService {
      * @return HTTP response
      * @throws WanakuException if update fails
      */
-    @Path("/update")
-    @POST
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     Response update(DataStore dataStore) throws WanakuException;
 }
