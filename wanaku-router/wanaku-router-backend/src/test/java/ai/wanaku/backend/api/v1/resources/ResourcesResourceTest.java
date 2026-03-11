@@ -78,10 +78,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testRemove() {
-        given().when()
-                .delete("/api/v1/resources/" + createdName)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        given().when().delete("/api/v1/resources/" + createdName).then().statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
                 .get("/api/v1/resources")

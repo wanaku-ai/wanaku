@@ -5,6 +5,9 @@
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
 
-export type PutApiV1ResourcesRemoveParams = {
+export type DeleteApiV1ResourcesRemoveParams = {
   resource?: string;
 };
+
+/** @deprecated Use DeleteApiV1ResourcesRemoveParams. */
+export type PutApiV1ResourcesRemoveParams = DeleteApiV1ResourcesRemoveParams;
