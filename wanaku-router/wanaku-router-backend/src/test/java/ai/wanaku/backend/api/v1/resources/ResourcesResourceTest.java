@@ -45,7 +45,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         final io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(resource)
                 .when()
-                .post("/api/v1/resources/expose");
+                .post("/api/v1/resources");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -61,7 +61,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Test
     public void testListResourcesSuccessfully() {
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(
@@ -79,12 +79,12 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Test
     void testRemove() {
         given().when()
-                .put("/api/v1/resources/remove?resource=" + createdName)
+                .delete("/api/v1/resources/" + createdName)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(0));
@@ -98,12 +98,12 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(resource)
                 .when()
-                .post("/api/v1/resources/expose")
+                .post("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(
@@ -123,7 +123,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body("{\"configurationData\":\"token=123\"}")
                 .when()
-                .post("/api/v1/resources/exposeWithPayload")
+                .post("/api/v1/resources/payloads")
                 .then()
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
                 .body("error.message", containsString("The 'payload' is required for this request"));
@@ -135,7 +135,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body("{\"payload\":{\"location\":\"/tmp/nameless.txt\",\"type\":\"text/plain\"}}")
                 .when()
-                .post("/api/v1/resources/exposeWithPayload")
+                .post("/api/v1/resources/payloads")
                 .then()
                 .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
                 .body("error.message", containsString("The 'payload.name' is required for this request"));

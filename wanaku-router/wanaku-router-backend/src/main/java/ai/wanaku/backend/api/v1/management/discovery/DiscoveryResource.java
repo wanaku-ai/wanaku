@@ -3,6 +3,7 @@ package ai.wanaku.backend.api.v1.management.discovery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
@@ -35,7 +36,6 @@ public class DiscoveryResource {
     @Inject
     EventBus eventBus;
 
-    @Path("/register")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public RestResponse<WanakuResponse<ServiceTarget>> register(ServiceTarget serviceTarget) {
@@ -46,8 +46,7 @@ public class DiscoveryResource {
         return RestResponse.ok(new WanakuResponse<>(ret));
     }
 
-    @Path("/deregister")
-    @POST
+    @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
     public Response deregister(ServiceTarget serviceTarget) {
         discoveryBean.deregisterService(serviceTarget);
@@ -55,7 +54,7 @@ public class DiscoveryResource {
         return Response.ok().build();
     }
 
-    @Path("/ping")
+    @Path("/heartbeats")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Deprecated

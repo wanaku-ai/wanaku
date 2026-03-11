@@ -24,7 +24,6 @@ public class NamespacesResource {
     @Inject
     NamespacesBean namespacesBean;
 
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<Namespace>> list(@QueryParam("labelFilter") String labelFilter) {

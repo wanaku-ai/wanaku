@@ -3,10 +3,12 @@ package ai.wanaku.backend.api.v1.resources;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -14,6 +16,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
+import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -54,7 +57,7 @@ public class ResourcesResource {
      * @return a response containing the exposed resource reference
      * @throws WanakuException if exposure fails or payload validation fails
      */
-    @Path("/exposeWithPayload")
+    @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -90,7 +93,6 @@ public class ResourcesResource {
      * @return a response containing the exposed resource reference
      * @throws WanakuException if exposure fails
      */
-    @Path("/expose")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -109,7 +111,6 @@ public class ResourcesResource {
      * @return a response containing a list of all resource references
      * @throws WanakuException if listing fails
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter)
@@ -123,16 +124,35 @@ public class ResourcesResource {
     }
 
     /**
+     * Retrieves a resource capability by name.
+     *
+     * @param name the name of the resource to retrieve
+     * @return a response containing the resource reference
+     * @throws ResourceNotFoundException if the resource is not found
+     * @throws WanakuException if retrieval fails
+     */
+    @Path("/{name}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ResourceReference> getByName(@PathParam("name") String name) throws WanakuException {
+        ResourceReference resource = resourcesBean.getByName(name);
+        if (resource == null) {
+            throw new ResourceNotFoundException(name);
+        }
+        return new WanakuResponse<>(resource);
+    }
+
+    /**
      * Removes a resource capability by name.
      *
      * @param resource the name of the resource to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the resource doesn't exist
      * @throws WanakuException if removal fails
      */
-    @Path("/remove")
-    @PUT
-    public Response remove(@QueryParam("resource") String resource) throws WanakuException {
-        int deleteCount = resourcesBean.remove(resource);
+    @Path("/{name}")
+    @DELETE
+    public Response remove(@PathParam("name") String name) throws WanakuException {
+        int deleteCount = resourcesBean.remove(name);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
@@ -147,10 +167,13 @@ public class ResourcesResource {
      * @return HTTP 200 OK if updated successfully
      * @throws WanakuException if update fails
      */
-    @Path("/update")
-    @POST
+    @Path("/{name}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(ResourceReference resource) throws WanakuException {
+    public Response update(@PathParam("name") String name, ResourceReference resource) throws WanakuException {
+        if (resource != null && StringHelper.isEmpty(resource.getName())) {
+            resource.setName(name);
+        }
         resourcesBean.update(resource);
         return Response.ok().build();
     }

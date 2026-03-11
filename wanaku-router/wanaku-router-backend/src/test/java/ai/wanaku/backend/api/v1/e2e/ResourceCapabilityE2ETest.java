@@ -98,7 +98,7 @@ public class ResourceCapabilityE2ETest extends WanakuRouterTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceTarget)
                 .when()
-                .post("/api/v1/management/discovery/register")
+                .post("/api/v1/management/discovery")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.id", notNullValue());
@@ -120,12 +120,12 @@ public class ResourceCapabilityE2ETest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(resource)
                 .when()
-                .post("/api/v1/resources/expose")
+                .post("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/resources/list")
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(1), "data[0].name", is(RESOURCE_NAME), "data[0].type", is(SERVICE_NAME));
