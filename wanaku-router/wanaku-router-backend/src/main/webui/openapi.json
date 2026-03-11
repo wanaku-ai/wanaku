@@ -682,6 +682,17 @@
           }
         }
       },
+      "WanakuResponseForwardReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ForwardReference"
+          }
+        }
+      },
       "WanakuResponseInteger" : {
         "type" : "object",
         "properties" : {
@@ -832,15 +843,6 @@
           "data" : {
             "$ref" : "#/components/schemas/Namespace"
           }
-        }
-      },
-      "WanakuResponseObject" : {
-        "type" : "object",
-        "properties" : {
-          "error" : {
-            "$ref" : "#/components/schemas/WanakuError"
-          },
-          "data" : { }
         }
       },
       "WanakuResponsePromptReference" : {
@@ -1074,7 +1076,104 @@
         "tags" : [ "Capabilities Resource" ]
       }
     },
-    "/api/v1/data-store/add" : {
+    "/api/v1/data-store" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataStore"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove By Name",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Or Get By Name",
+        "tags" : [ "Data Stores Resource" ]
+      },
       "post" : {
         "requestBody" : {
           "content" : {
@@ -1115,117 +1214,7 @@
         "tags" : [ "Data Stores Resource" ]
       }
     },
-    "/api/v1/data-store/get" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "name",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseObject"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Get",
-        "tags" : [ "Data Stores Resource" ]
-      }
-    },
-    "/api/v1/data-store/list" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "labelFilter",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListDataStore"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "List",
-        "tags" : [ "Data Stores Resource" ]
-      }
-    },
-    "/api/v1/data-store/remove" : {
-      "delete" : {
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "name",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Remove",
-        "tags" : [ "Data Stores Resource" ]
-      }
-    },
-    "/api/v1/data-store/removeByLabel" : {
+    "/api/v1/data-store/labels" : {
       "delete" : {
         "parameters" : [ {
           "name" : "labelExpression",
@@ -1260,18 +1249,16 @@
         "tags" : [ "Data Stores Resource" ]
       }
     },
-    "/api/v1/data-store/update" : {
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DataStore"
-              }
-            }
-          },
-          "required" : true
-        },
+    "/api/v1/data-store/{id}" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK"
@@ -1285,16 +1272,70 @@
                 }
               }
             }
-          },
-          "400" : {
-            "description" : "Bad Request"
           }
         },
-        "summary" : "Update",
+        "summary" : "Remove By Id",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Id",
         "tags" : [ "Data Stores Resource" ]
       }
     },
-    "/api/v1/forwards/add" : {
+    "/api/v1/forwards" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListForwardReference"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Forwards",
+        "tags" : [ "Forwards Resource" ]
+      },
       "post" : {
         "requestBody" : {
           "content" : {
@@ -1328,91 +1369,16 @@
         "tags" : [ "Forwards Resource" ]
       }
     },
-    "/api/v1/forwards/list" : {
-      "get" : {
+    "/api/v1/forwards/{name}" : {
+      "put" : {
         "parameters" : [ {
-          "name" : "labelFilter",
-          "in" : "query",
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
           "schema" : {
             "type" : "string"
           }
         } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListForwardReference"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "List Forwards",
-        "tags" : [ "Forwards Resource" ]
-      }
-    },
-    "/api/v1/forwards/refresh" : {
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ForwardReference"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request"
-          }
-        },
-        "summary" : "Refresh",
-        "tags" : [ "Forwards Resource" ]
-      }
-    },
-    "/api/v1/forwards/remove" : {
-      "put" : {
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ForwardReference"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "400" : {
-            "description" : "Bad Request"
-          }
-        },
-        "summary" : "Remove Forward",
-        "tags" : [ "Forwards Resource" ]
-      }
-    },
-    "/api/v1/forwards/update" : {
-      "post" : {
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1443,55 +1409,79 @@
         },
         "summary" : "Update",
         "tags" : [ "Forwards Resource" ]
-      }
-    },
-    "/api/v1/management/discovery/deregister" : {
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ServiceTarget"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "400" : {
-            "description" : "Bad Request"
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        },
-        "summary" : "Deregister",
-        "tags" : [ "Discovery Resource" ]
-      }
-    },
-    "/api/v1/management/discovery/ping" : {
-      "post" : {
-        "deprecated" : true,
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "string"
-              }
-            }
-          },
-          "required" : true
-        },
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK"
           }
         },
-        "summary" : "Ping",
-        "tags" : [ "Discovery Resource" ]
+        "summary" : "Remove Forward",
+        "tags" : [ "Forwards Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseForwardReference"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
+        "tags" : [ "Forwards Resource" ]
       }
     },
-    "/api/v1/management/discovery/register" : {
+    "/api/v1/forwards/{name}/refreshes" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Refresh",
+        "tags" : [ "Forwards Resource" ]
+      }
+    },
+    "/api/v1/management/discovery" : {
       "post" : {
         "requestBody" : {
           "content" : {
@@ -1519,6 +1509,47 @@
           }
         },
         "summary" : "Register",
+        "tags" : [ "Discovery Resource" ]
+      },
+      "delete" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ServiceTarget"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Deregister",
+        "tags" : [ "Discovery Resource" ]
+      }
+    },
+    "/api/v1/management/discovery/heartbeats" : {
+      "post" : {
+        "deprecated" : true,
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Ping",
         "tags" : [ "Discovery Resource" ]
       }
     },
@@ -1558,7 +1589,7 @@
         "tags" : [ "Statistics Resource" ]
       }
     },
-    "/api/v1/namespaces/list" : {
+    "/api/v1/namespaces" : {
       "get" : {
         "parameters" : [ {
           "name" : "labelFilter",
@@ -1764,7 +1795,7 @@
         "tags" : [ "Prompts Resource" ]
       }
     },
-    "/api/v1/prompts/with-payload" : {
+    "/api/v1/prompts/payloads" : {
       "post" : {
         "requestBody" : {
           "content" : {
@@ -1841,7 +1872,40 @@
         "tags" : [ "Prompts Resource" ]
       }
     },
-    "/api/v1/resources/expose" : {
+    "/api/v1/resources" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Resources Resource" ]
+      },
       "post" : {
         "requestBody" : {
           "content" : {
@@ -1882,7 +1946,7 @@
         "tags" : [ "Resources Resource" ]
       }
     },
-    "/api/v1/resources/exposeWithPayload" : {
+    "/api/v1/resources/payloads" : {
       "post" : {
         "requestBody" : {
           "content" : {
@@ -1923,71 +1987,16 @@
         "tags" : [ "Resources Resource" ]
       }
     },
-    "/api/v1/resources/list" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "labelFilter",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListResourceReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "List",
-        "tags" : [ "Resources Resource" ]
-      }
-    },
-    "/api/v1/resources/remove" : {
+    "/api/v1/resources/{name}" : {
       "put" : {
         "parameters" : [ {
-          "name" : "resource",
-          "in" : "query",
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
           "schema" : {
             "type" : "string"
           }
         } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Remove",
-        "tags" : [ "Resources Resource" ]
-      }
-    },
-    "/api/v1/resources/update" : {
-      "post" : {
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2017,6 +2026,67 @@
           }
         },
         "summary" : "Update",
+        "tags" : [ "Resources Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Resources Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
         "tags" : [ "Resources Resource" ]
       }
     },
@@ -2054,9 +2124,9 @@
         "summary" : "Remove If",
         "tags" : [ "Tools Resource" ]
       },
-      "post" : {
+      "get" : {
         "parameters" : [ {
-          "name" : "name",
+          "name" : "labelFilter",
           "in" : "query",
           "schema" : {
             "type" : "string"
@@ -2068,7 +2138,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseToolReference"
+                  "$ref" : "#/components/schemas/WanakuResponseListToolReference"
                 }
               }
             }
@@ -2084,11 +2154,9 @@
             }
           }
         },
-        "summary" : "Get By Name",
+        "summary" : "List",
         "tags" : [ "Tools Resource" ]
-      }
-    },
-    "/api/v1/tools/add" : {
+      },
       "post" : {
         "requestBody" : {
           "content" : {
@@ -2129,7 +2197,7 @@
         "tags" : [ "Tools Resource" ]
       }
     },
-    "/api/v1/tools/addWithPayload" : {
+    "/api/v1/tools/payloads" : {
       "post" : {
         "requestBody" : {
           "content" : {
@@ -2170,71 +2238,16 @@
         "tags" : [ "Tools Resource" ]
       }
     },
-    "/api/v1/tools/list" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "labelFilter",
-          "in" : "query",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListToolReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "List",
-        "tags" : [ "Tools Resource" ]
-      }
-    },
-    "/api/v1/tools/remove" : {
+    "/api/v1/tools/{name}" : {
       "put" : {
         "parameters" : [ {
-          "name" : "tool",
-          "in" : "query",
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
           "schema" : {
             "type" : "string"
           }
         } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Remove",
-        "tags" : [ "Tools Resource" ]
-      }
-    },
-    "/api/v1/tools/update" : {
-      "post" : {
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2264,6 +2277,67 @@
           }
         },
         "summary" : "Update",
+        "tags" : [ "Tools Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Tools Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
         "tags" : [ "Tools Resource" ]
       }
     },

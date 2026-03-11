@@ -36,7 +36,7 @@ public class PromptsResource {
         return new WanakuResponse<>(ret);
     }
 
-    @Path("/with-payload")
+    @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

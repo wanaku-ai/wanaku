@@ -5,6 +5,9 @@
  * OpenAPI spec version: 0.1.0-SNAPSHOT
  */
 
-export type PostApiV1ToolsParams = {
+export type GetApiV1ToolsParams = {
   name?: string;
 };
+
+/** @deprecated Use GetApiV1ToolsParams. */
+export type PostApiV1ToolsParams = GetApiV1ToolsParams;

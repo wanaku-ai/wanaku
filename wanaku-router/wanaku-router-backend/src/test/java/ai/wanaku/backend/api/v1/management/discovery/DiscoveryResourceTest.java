@@ -61,7 +61,7 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceTarget)
                 .when()
-                .post("/api/v1/management/discovery/register");
+                .post("/api/v1/management/discovery");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -101,7 +101,7 @@ public class DiscoveryResourceTest extends WanakuRouterTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceTarget)
                 .when()
-                .post("/api/v1/management/discovery/deregister")
+                .delete("/api/v1/management/discovery")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 

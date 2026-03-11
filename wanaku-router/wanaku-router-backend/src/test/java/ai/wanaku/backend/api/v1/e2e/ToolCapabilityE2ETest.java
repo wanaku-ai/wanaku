@@ -94,7 +94,7 @@ public class ToolCapabilityE2ETest extends WanakuRouterTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .body(serviceTarget)
                 .when()
-                .post("/api/v1/management/discovery/register")
+                .post("/api/v1/management/discovery")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.id", notNullValue());
@@ -120,12 +120,12 @@ public class ToolCapabilityE2ETest extends WanakuRouterTest {
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(toolReference)
                 .when()
-                .post("/api/v1/tools/add")
+                .post("/api/v1/tools")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
         given().when()
-                .get("/api/v1/tools/list")
+                .get("/api/v1/tools")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.size()", is(1), "data[0].name", is(TOOL_NAME), "data[0].type", is(SERVICE_NAME));

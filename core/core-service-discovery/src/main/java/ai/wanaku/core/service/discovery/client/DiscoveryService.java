@@ -1,6 +1,7 @@
 package ai.wanaku.core.service.discovery.client;
 
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -16,13 +17,11 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 @Path("/api/v1/management/discovery")
 public interface DiscoveryService {
 
-    @Path("/register")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     RestResponse<WanakuResponse<ServiceTarget>> register(ServiceTarget serviceTarget);
 
-    @Path("/deregister")
-    @POST
+    @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
     Response deregister(ServiceTarget serviceTarget);
 
@@ -32,7 +31,7 @@ public interface DiscoveryService {
     @Produces(MediaType.APPLICATION_JSON)
     Response updateState(@PathParam("id") String id, ServiceState serviceState);
 
-    @Path("/ping")
+    @Path("/heartbeats")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response ping(String id);

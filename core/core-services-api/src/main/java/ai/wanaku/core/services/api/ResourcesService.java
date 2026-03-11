@@ -1,10 +1,12 @@
 package ai.wanaku.core.services.api;
 
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -36,7 +38,7 @@ public interface ResourcesService {
      * @param resourceReference the resource payload containing the resource reference and provisioning data
      * @return a {@link Response} indicating the result of the expose operation
      */
-    @Path("/exposeWithPayload")
+    @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -51,7 +53,6 @@ public interface ResourcesService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/expose")
     Response expose(ResourceReference resourceReference);
 
     /**
@@ -60,7 +61,6 @@ public interface ResourcesService {
      * @param labelFilter optional label expression to filter resources by labels
      * @return a {@link WanakuResponse} containing a list of all resource references
      */
-    @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter);
@@ -80,9 +80,9 @@ public interface ResourcesService {
      * @param resource the name of the resource to remove
      * @return a {@link Response} indicating the result of the removal operation
      */
-    @Path("/remove")
-    @PUT
-    Response remove(@QueryParam("resource") String resource);
+    @Path("/{name}")
+    @DELETE
+    Response remove(@PathParam("name") String name);
 
     /**
      * Retrieves a resource capability by its name.
@@ -90,10 +90,10 @@ public interface ResourcesService {
      * @param name the name of the resource to retrieve
      * @return a {@link WanakuResponse} containing the resource reference
      */
-    @Path("/")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    WanakuResponse<ResourceReference> getByName(@QueryParam("name") String name);
+    @Path("/{name}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<ResourceReference> getByName(@PathParam("name") String name);
 
     /**
      * Updates an existing resource capability.
@@ -101,8 +101,8 @@ public interface ResourcesService {
      * @param resource the updated resource reference
      * @return a {@link Response} indicating the result of the update operation
      */
-    @Path("/update")
-    @POST
+    @Path("/{name}")
+    @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(ResourceReference resource);
+    Response update(@PathParam("name") String name, ResourceReference resource);
 }

@@ -8,10 +8,10 @@ import {
     postApiV1ToolsAddResponse,
     postApiV1ToolsUpdate,
     postApiV1ToolsUpdateResponse,
-    putApiV1ToolsRemove,
-    putApiV1ToolsRemoveResponse
+    deleteApiV1ToolsRemove,
+    deleteApiV1ToolsRemoveResponse
 } from "../../api/wanaku-router-api";
-import {GetApiV1ToolsListParams, PutApiV1ToolsRemoveParams, ToolReference,} from "../../models";
+import {DeleteApiV1ToolsRemoveParams, GetApiV1ToolsListParams, ToolReference,} from "../../models";
 
 export const useTools = () => {
   /**
@@ -60,10 +60,10 @@ export const useTools = () => {
    */
   const removeTool = useCallback(
     (
-      params?: PutApiV1ToolsRemoveParams,
+      params?: DeleteApiV1ToolsRemoveParams,
       options?: RequestInit
-    ): Promise<putApiV1ToolsRemoveResponse> => {
-      return putApiV1ToolsRemove(params, options);
+    ): Promise<deleteApiV1ToolsRemoveResponse> => {
+      return deleteApiV1ToolsRemove(params, options);
     },
     []
   );

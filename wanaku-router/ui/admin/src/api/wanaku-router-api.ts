@@ -24,11 +24,11 @@ import type {
   GetApiV1ToolsListParams,
   Namespace,
   OutboundSseEvent,
-  PostApiV1ToolsParams,
+  GetApiV1ToolsParams,
   PromptPayload,
   PromptReference,
-  PutApiV1ResourcesRemoveParams,
-  PutApiV1ToolsRemoveParams,
+  DeleteApiV1ResourcesRemoveParams,
+  DeleteApiV1ToolsRemoveParams,
   ResourcePayload,
   ResourceReference,
   ServiceTarget,
@@ -341,7 +341,7 @@ export type postApiV1DataStoreAddResponse =
   };
 
 export const getPostApiV1DataStoreAddUrl = () => {
-  return `/api/v1/data-store/add`;
+  return `/api/v1/data-store`;
 };
 
 export const postApiV1DataStoreAdd = async (
@@ -384,6 +384,10 @@ export type getApiV1DataStoreGetResponse =
 export const getGetApiV1DataStoreGetUrl = (
   params?: GetApiV1DataStoreGetParams,
 ) => {
+  if (params?.id) {
+    return `/api/v1/data-store/${params.id}`;
+  }
+
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -395,8 +399,8 @@ export const getGetApiV1DataStoreGetUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/data-store/get?${stringifiedParams}`
-    : `/api/v1/data-store/get`;
+    ? `/api/v1/data-store?${stringifiedParams}`
+    : `/api/v1/data-store`;
 };
 
 export const getApiV1DataStoreGet = async (
@@ -448,8 +452,8 @@ export const getGetApiV1DataStoreListUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/data-store/list?${stringifiedParams}`
-    : `/api/v1/data-store/list`;
+    ? `/api/v1/data-store?${stringifiedParams}`
+    : `/api/v1/data-store`;
 };
 
 export const getApiV1DataStoreList = async (
@@ -490,19 +494,21 @@ export type deleteApiV1DataStoreRemoveResponse =
 export const getDeleteApiV1DataStoreRemoveUrl = (
   params?: DeleteApiV1DataStoreRemoveParams,
 ) => {
+  const id = params?.id?.trim();
+  const name = params?.name?.trim();
+
+  if (id) {
+    return `/api/v1/data-store/${id}`;
+  }
+
+  if (!name) {
+    throw new Error("Either 'id' or 'name' must be provided to remove a data store.");
+  }
+
   const normalizedParams = new URLSearchParams();
+  normalizedParams.append("name", name);
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/data-store/remove?${stringifiedParams}`
-    : `/api/v1/data-store/remove`;
+  return `/api/v1/data-store?${normalizedParams.toString()}`;
 };
 
 export const deleteApiV1DataStoreRemove = async (
@@ -554,8 +560,8 @@ export const getDeleteApiV1DataStoreRemoveByLabelUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/data-store/removeByLabel?${stringifiedParams}`
-    : `/api/v1/data-store/removeByLabel`;
+    ? `/api/v1/data-store/labels?${stringifiedParams}`
+    : `/api/v1/data-store/labels`;
 };
 
 export const deleteApiV1DataStoreRemoveByLabel = async (
@@ -600,7 +606,7 @@ export type postApiV1DataStoreUpdateResponse =
   };
 
 export const getPostApiV1DataStoreUpdateUrl = () => {
-  return `/api/v1/data-store/update`;
+  return `/api/v1/data-store`;
 };
 
 export const postApiV1DataStoreUpdate = async (
@@ -611,7 +617,7 @@ export const postApiV1DataStoreUpdate = async (
     getPostApiV1DataStoreUpdateUrl(),
     {
       ...options,
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(dataStore),
     },
@@ -647,7 +653,7 @@ export type postApiV1ForwardsAddResponse =
   };
 
 export const getPostApiV1ForwardsAddUrl = () => {
-  return `/api/v1/forwards/add`;
+  return `/api/v1/forwards`;
 };
 
 export const postApiV1ForwardsAdd = async (
@@ -695,8 +701,8 @@ export const getGetApiV1ForwardsListUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/forwards/list?${stringifiedParams}`
-    : `/api/v1/forwards/list`;
+    ? `/api/v1/forwards?${stringifiedParams}`
+    : `/api/v1/forwards`;
 };
 
 export const getApiV1ForwardsList = async (
@@ -740,21 +746,22 @@ export type postApiV1ForwardsRefreshResponse =
     headers: Headers;
   };
 
-export const getPostApiV1ForwardsRefreshUrl = () => {
-  return `/api/v1/forwards/refresh`;
+export const getPostApiV1ForwardsRefreshUrl = (name: string) => {
+  return `/api/v1/forwards/${name}/refreshes`;
 };
 
 export const postApiV1ForwardsRefresh = async (
   forwardReference: ForwardReference,
   options?: RequestInit,
 ): Promise<postApiV1ForwardsRefreshResponse> => {
+  if (!forwardReference.name) {
+    throw new Error("forwardReference.name is required to refresh a forward.");
+  }
   return customFetch<postApiV1ForwardsRefreshResponse>(
-    getPostApiV1ForwardsRefreshUrl(),
+    getPostApiV1ForwardsRefreshUrl(forwardReference.name),
     {
       ...options,
       method: "POST",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(forwardReference),
     },
   );
 };
@@ -782,7 +789,7 @@ export type putApiV1ForwardsRemoveResponse =
   };
 
 export const getPutApiV1ForwardsRemoveUrl = () => {
-  return `/api/v1/forwards/remove`;
+  return `/api/v1/forwards`;
 };
 
 export const putApiV1ForwardsRemove = async (
@@ -790,12 +797,10 @@ export const putApiV1ForwardsRemove = async (
   options?: RequestInit,
 ): Promise<putApiV1ForwardsRemoveResponse> => {
   return customFetch<putApiV1ForwardsRemoveResponse>(
-    getPutApiV1ForwardsRemoveUrl(),
+    `${getPutApiV1ForwardsRemoveUrl()}/${forwardReference.name}`,
     {
       ...options,
-      method: "PUT",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(forwardReference),
+      method: "DELETE",
     },
   );
 };
@@ -829,7 +834,7 @@ export type postApiV1ForwardsUpdateResponse =
   };
 
 export const getPostApiV1ForwardsUpdateUrl = () => {
-  return `/api/v1/forwards/update`;
+  return `/api/v1/forwards`;
 };
 
 export const postApiV1ForwardsUpdate = async (
@@ -837,10 +842,10 @@ export const postApiV1ForwardsUpdate = async (
   options?: RequestInit,
 ): Promise<postApiV1ForwardsUpdateResponse> => {
   return customFetch<postApiV1ForwardsUpdateResponse>(
-    getPostApiV1ForwardsUpdateUrl(),
+    `${getPostApiV1ForwardsUpdateUrl()}/${forwardReference.name}`,
     {
       ...options,
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(forwardReference),
     },
@@ -870,7 +875,7 @@ export type postApiV1ManagementDiscoveryDeregisterResponse =
   };
 
 export const getPostApiV1ManagementDiscoveryDeregisterUrl = () => {
-  return `/api/v1/management/discovery/deregister`;
+  return `/api/v1/management/discovery`;
 };
 
 export const postApiV1ManagementDiscoveryDeregister = async (
@@ -881,7 +886,7 @@ export const postApiV1ManagementDiscoveryDeregister = async (
     getPostApiV1ManagementDiscoveryDeregisterUrl(),
     {
       ...options,
-      method: "POST",
+      method: "DELETE",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(serviceTarget),
     },
@@ -906,7 +911,7 @@ export type postApiV1ManagementDiscoveryPingResponse =
   };
 
 export const getPostApiV1ManagementDiscoveryPingUrl = () => {
-  return `/api/v1/management/discovery/ping`;
+  return `/api/v1/management/discovery/heartbeats`;
 };
 
 export const postApiV1ManagementDiscoveryPing = async (
@@ -947,7 +952,7 @@ export type postApiV1ManagementDiscoveryRegisterResponse =
   };
 
 export const getPostApiV1ManagementDiscoveryRegisterUrl = () => {
-  return `/api/v1/management/discovery/register`;
+  return `/api/v1/management/discovery`;
 };
 
 export const postApiV1ManagementDiscoveryRegister = async (
@@ -1059,8 +1064,8 @@ export const getGetApiV1NamespacesListUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/namespaces/list?${stringifiedParams}`
-    : `/api/v1/namespaces/list`;
+    ? `/api/v1/namespaces?${stringifiedParams}`
+    : `/api/v1/namespaces`;
 };
 
 export const getApiV1NamespacesList = async (
@@ -1350,7 +1355,7 @@ export type postApiV1PromptsWithPayloadResponse =
   };
 
 export const getPostApiV1PromptsWithPayloadUrl = () => {
-  return `/api/v1/prompts/with-payload`;
+  return `/api/v1/prompts/payloads`;
 };
 
 export const postApiV1PromptsWithPayload = async (
@@ -1436,7 +1441,7 @@ export type postApiV1ResourcesExposeResponse =
   };
 
 export const getPostApiV1ResourcesExposeUrl = () => {
-  return `/api/v1/resources/expose`;
+  return `/api/v1/resources`;
 };
 
 export const postApiV1ResourcesExpose = async (
@@ -1483,7 +1488,7 @@ export type postApiV1ResourcesExposeWithPayloadResponse =
   };
 
 export const getPostApiV1ResourcesExposeWithPayloadUrl = () => {
-  return `/api/v1/resources/exposeWithPayload`;
+  return `/api/v1/resources/payloads`;
 };
 
 export const postApiV1ResourcesExposeWithPayload = async (
@@ -1537,8 +1542,8 @@ export const getGetApiV1ResourcesListUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/resources/list?${stringifiedParams}`
-    : `/api/v1/resources/list`;
+    ? `/api/v1/resources?${stringifiedParams}`
+    : `/api/v1/resources`;
 };
 
 export const getApiV1ResourcesList = async (
@@ -1557,52 +1562,45 @@ export const getApiV1ResourcesList = async (
 /**
  * @summary Remove
  */
-export type putApiV1ResourcesRemoveResponse200 = {
+export type deleteApiV1ResourcesRemoveResponse200 = {
   data: null;
   status: 200;
 };
 
-export type putApiV1ResourcesRemoveResponse500 = {
+export type deleteApiV1ResourcesRemoveResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type putApiV1ResourcesRemoveResponseComposite =
-  | putApiV1ResourcesRemoveResponse200
-  | putApiV1ResourcesRemoveResponse500;
+export type deleteApiV1ResourcesRemoveResponseComposite =
+  | deleteApiV1ResourcesRemoveResponse200
+  | deleteApiV1ResourcesRemoveResponse500;
 
-export type putApiV1ResourcesRemoveResponse =
-  putApiV1ResourcesRemoveResponseComposite & {
+export type deleteApiV1ResourcesRemoveResponse =
+  deleteApiV1ResourcesRemoveResponseComposite & {
     headers: Headers;
   };
 
-export const getPutApiV1ResourcesRemoveUrl = (
-  params?: PutApiV1ResourcesRemoveParams,
+export const getDeleteApiV1ResourcesRemoveUrl = (
+  params?: DeleteApiV1ResourcesRemoveParams,
 ) => {
-  const normalizedParams = new URLSearchParams();
+  const resource = params?.resource?.trim();
+  if (!resource) {
+    throw new Error("Resource name is required to remove a resource.");
+  }
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/resources/remove?${stringifiedParams}`
-    : `/api/v1/resources/remove`;
+  return `/api/v1/resources/${resource}`;
 };
 
-export const putApiV1ResourcesRemove = async (
-  params?: PutApiV1ResourcesRemoveParams,
+export const deleteApiV1ResourcesRemove = async (
+  params?: DeleteApiV1ResourcesRemoveParams,
   options?: RequestInit,
-): Promise<putApiV1ResourcesRemoveResponse> => {
-  return customFetch<putApiV1ResourcesRemoveResponse>(
-    getPutApiV1ResourcesRemoveUrl(params),
+): Promise<deleteApiV1ResourcesRemoveResponse> => {
+  return customFetch<deleteApiV1ResourcesRemoveResponse>(
+    getDeleteApiV1ResourcesRemoveUrl(params),
     {
       ...options,
-      method: "PUT",
+      method: "DELETE",
     },
   );
 };
@@ -1636,7 +1634,7 @@ export type postApiV1ResourcesUpdateResponse =
   };
 
 export const getPostApiV1ResourcesUpdateUrl = () => {
-  return `/api/v1/resources/update`;
+  return `/api/v1/resources`;
 };
 
 export const postApiV1ResourcesUpdate = async (
@@ -1644,10 +1642,10 @@ export const postApiV1ResourcesUpdate = async (
   options?: RequestInit,
 ): Promise<postApiV1ResourcesUpdateResponse> => {
   return customFetch<postApiV1ResourcesUpdateResponse>(
-    getPostApiV1ResourcesUpdateUrl(),
+    `${getPostApiV1ResourcesUpdateUrl()}/${resourceReference.name}`,
     {
       ...options,
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(resourceReference),
     },
@@ -1704,47 +1702,40 @@ export const deleteApiV1Tools = async (
 /**
  * @summary Get By Name
  */
-export type postApiV1ToolsResponse200 = {
+export type getApiV1ToolsByNameResponse200 = {
   data: WanakuResponseToolReference;
   status: 200;
 };
 
-export type postApiV1ToolsResponse500 = {
+export type getApiV1ToolsByNameResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type postApiV1ToolsResponseComposite =
-  | postApiV1ToolsResponse200
-  | postApiV1ToolsResponse500;
+export type getApiV1ToolsByNameResponseComposite =
+  | getApiV1ToolsByNameResponse200
+  | getApiV1ToolsByNameResponse500;
 
-export type postApiV1ToolsResponse = postApiV1ToolsResponseComposite & {
+export type getApiV1ToolsByNameResponse = getApiV1ToolsByNameResponseComposite & {
   headers: Headers;
 };
 
-export const getPostApiV1ToolsUrl = (params?: PostApiV1ToolsParams) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetApiV1ToolsByNameUrl = (params?: GetApiV1ToolsParams) => {
+  const name = params?.name?.trim();
+  if (!name) {
+    throw new Error("Tool name is required to get a tool by name.");
+  }
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/tools?${stringifiedParams}`
-    : `/api/v1/tools`;
+  return `/api/v1/tools/${name}`;
 };
 
-export const postApiV1Tools = async (
-  params?: PostApiV1ToolsParams,
+export const getApiV1ToolsByName = async (
+  params?: GetApiV1ToolsParams,
   options?: RequestInit,
-): Promise<postApiV1ToolsResponse> => {
-  return customFetch<postApiV1ToolsResponse>(getPostApiV1ToolsUrl(params), {
+): Promise<getApiV1ToolsByNameResponse> => {
+  return customFetch<getApiV1ToolsByNameResponse>(getGetApiV1ToolsByNameUrl(params), {
     ...options,
-    method: "POST",
+    method: "GET",
   });
 };
 
@@ -1776,7 +1767,7 @@ export type postApiV1ToolsAddResponse = postApiV1ToolsAddResponseComposite & {
 };
 
 export const getPostApiV1ToolsAddUrl = () => {
-  return `/api/v1/tools/add`;
+  return `/api/v1/tools`;
 };
 
 export const postApiV1ToolsAdd = async (
@@ -1820,7 +1811,7 @@ export type postApiV1ToolsAddWithPayloadResponse =
   };
 
 export const getPostApiV1ToolsAddWithPayloadUrl = () => {
-  return `/api/v1/tools/addWithPayload`;
+  return `/api/v1/tools/payloads`;
 };
 
 export const postApiV1ToolsAddWithPayload = async (
@@ -1871,8 +1862,8 @@ export const getGetApiV1ToolsListUrl = (params?: GetApiV1ToolsListParams) => {
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/v1/tools/list?${stringifiedParams}`
-    : `/api/v1/tools/list`;
+    ? `/api/v1/tools?${stringifiedParams}`
+    : `/api/v1/tools`;
 };
 
 export const getApiV1ToolsList = async (
@@ -1891,52 +1882,45 @@ export const getApiV1ToolsList = async (
 /**
  * @summary Remove
  */
-export type putApiV1ToolsRemoveResponse200 = {
+export type deleteApiV1ToolsRemoveResponse200 = {
   data: null;
   status: 200;
 };
 
-export type putApiV1ToolsRemoveResponse500 = {
+export type deleteApiV1ToolsRemoveResponse500 = {
   data: WanakuResponse;
   status: 500;
 };
 
-export type putApiV1ToolsRemoveResponseComposite =
-  | putApiV1ToolsRemoveResponse200
-  | putApiV1ToolsRemoveResponse500;
+export type deleteApiV1ToolsRemoveResponseComposite =
+  | deleteApiV1ToolsRemoveResponse200
+  | deleteApiV1ToolsRemoveResponse500;
 
-export type putApiV1ToolsRemoveResponse =
-  putApiV1ToolsRemoveResponseComposite & {
+export type deleteApiV1ToolsRemoveResponse =
+  deleteApiV1ToolsRemoveResponseComposite & {
     headers: Headers;
   };
 
-export const getPutApiV1ToolsRemoveUrl = (
-  params?: PutApiV1ToolsRemoveParams,
+export const getDeleteApiV1ToolsRemoveUrl = (
+  params?: DeleteApiV1ToolsRemoveParams,
 ) => {
-  const normalizedParams = new URLSearchParams();
+  const tool = params?.tool?.trim();
+  if (!tool) {
+    throw new Error("Tool name is required to remove a tool.");
+  }
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/v1/tools/remove?${stringifiedParams}`
-    : `/api/v1/tools/remove`;
+  return `/api/v1/tools/${tool}`;
 };
 
-export const putApiV1ToolsRemove = async (
-  params?: PutApiV1ToolsRemoveParams,
+export const deleteApiV1ToolsRemove = async (
+  params?: DeleteApiV1ToolsRemoveParams,
   options?: RequestInit,
-): Promise<putApiV1ToolsRemoveResponse> => {
-  return customFetch<putApiV1ToolsRemoveResponse>(
-    getPutApiV1ToolsRemoveUrl(params),
+): Promise<deleteApiV1ToolsRemoveResponse> => {
+  return customFetch<deleteApiV1ToolsRemoveResponse>(
+    getDeleteApiV1ToolsRemoveUrl(params),
     {
       ...options,
-      method: "PUT",
+      method: "DELETE",
     },
   );
 };
@@ -1970,7 +1954,7 @@ export type postApiV1ToolsUpdateResponse =
   };
 
 export const getPostApiV1ToolsUpdateUrl = () => {
-  return `/api/v1/tools/update`;
+  return `/api/v1/tools`;
 };
 
 export const postApiV1ToolsUpdate = async (
@@ -1978,10 +1962,10 @@ export const postApiV1ToolsUpdate = async (
   options?: RequestInit,
 ): Promise<postApiV1ToolsUpdateResponse> => {
   return customFetch<postApiV1ToolsUpdateResponse>(
-    getPostApiV1ToolsUpdateUrl(),
+    `${getPostApiV1ToolsUpdateUrl()}/${toolReference.name}`,
     {
       ...options,
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(toolReference),
     },
