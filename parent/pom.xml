@@ -50,7 +50,7 @@
         <quarkus-oidc-proxy.version>0.4.2</quarkus-oidc-proxy.version>
         <camel.version>4.14.4</camel.version>
         <picocli.version>4.7.7</picocli.version>
-        <langchain4j.version>1.8.0</langchain4j.version>
+        <langchain4j.version>1.12.2</langchain4j.version>
         <langchain4j-mcp.version>1.10.0-beta18</langchain4j-mcp.version>
         <quarkus-quinoa.version>2.7.1</quarkus-quinoa.version>
         <testcontainers.version>2.0.3</testcontainers.version>
