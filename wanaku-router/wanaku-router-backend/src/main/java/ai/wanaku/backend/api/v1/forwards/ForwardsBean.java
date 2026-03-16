@@ -7,7 +7,11 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
@@ -38,6 +42,9 @@ import ai.wanaku.core.util.StringHelper;
 @ApplicationScoped
 public class ForwardsBean extends AbstractBean<ForwardReference> {
     private static final Logger LOG = Logger.getLogger(ForwardsBean.class);
+
+    private final Map<NameNamespacePair, List<RemoteToolReference>> registeredRemoteToolsByForward =
+            new ConcurrentHashMap<>();
 
     @Inject
     ResourceManager resourceManager;
@@ -74,7 +81,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
 
         try {
-            removeRemoteTools(forwardClient);
+            removeRemoteTools(nameNamespacePair, forwardClient);
             removeRemoteResources(forwardClient);
         } finally {
             forwardRegistry.unlink(nameNamespacePair);
@@ -96,8 +103,13 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
     }
 
-    private void removeRemoteTools(ForwardClient forwardClient) {
-        List<RemoteToolReference> remoteToolReferences = mcpBridge.listTools(forwardClient);
+    private void removeRemoteTools(NameNamespacePair nameNamespacePair, ForwardClient forwardClient) {
+        List<RemoteToolReference> remoteToolReferences = registeredRemoteToolsByForward.remove(nameNamespacePair);
+        if (remoteToolReferences == null) {
+
+            remoteToolReferences = mcpBridge.listTools(forwardClient);
+        }
+
         for (RemoteToolReference remoteToolReference : remoteToolReferences) {
             LOG.infof("Removing remote tool %s", remoteToolReference);
             try {
@@ -159,21 +171,65 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         String address = forwardReference.getAddress();
         ForwardClient forwardClient = ForwardClient.newClient(address);
 
-        List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
-        for (ResourceReference reference : resourceReferences) {
-            LOG.debugf("Exposing remote resource %s", reference.getName());
-            ResourceHelper.expose(
-                    reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
-        }
+        final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
+        try {
+            List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
+            for (ResourceReference reference : resourceReferences) {
+                LOG.debugf("Exposing remote resource %s", reference.getName());
+                ResourceHelper.expose(
+                        reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
+            }
 
-        List<RemoteToolReference> toolReferences = mcpBridge.listTools(forwardClient);
-        for (RemoteToolReference reference : toolReferences) {
-            LOG.infof("Binding remote tool %s", reference.getName());
-            ToolsHelper.registerTool(
-                    reference, toolManager, ns, (args, ref) -> mcpBridge.executeTool(forwardClient, args, ref));
-        }
+            List<RemoteToolReference> toolReferences = mcpBridge.listTools(forwardClient);
+            Set<String> reservedNames = new HashSet<>();
+            for (RemoteToolReference reference : toolReferences) {
+                String remoteName = reference.getName();
+                String localName = ForwardToolHelper.buildUniqueRemoteToolName(
+                        remoteName,
+                        forwardReference.getName(),
+                        name -> toolManager.getTool(name) != null,
+                        reservedNames);
 
-        forwardRegistry.link(nameNamespacePair, forwardClient);
+                if (!remoteName.equals(localName)) {
+                    LOG.infof("Binding remote tool %s as %s", remoteName, localName);
+                } else {
+                    LOG.infof("Binding remote tool %s", remoteName);
+                }
+
+                RemoteToolReference localReference = ForwardToolHelper.copyRemoteToolReference(reference);
+                localReference.setName(localName);
+
+                ToolsHelper.registerTool(
+                        localReference,
+                        toolManager,
+                        ns,
+                        (args, ignored) -> mcpBridge.executeTool(forwardClient, args, reference));
+
+                reservedNames.add(localName);
+                locallyRegisteredTools.add(localReference);
+            }
+
+            registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
+            forwardRegistry.link(nameNamespacePair, forwardClient);
+        } catch (Exception e) {
+            // Best-effort cleanup to avoid leaving partially-registered tools around
+            for (RemoteToolReference toolReference : locallyRegisteredTools) {
+                try {
+                    toolManager.removeTool(toolReference.getName());
+                } catch (Exception ignored) {
+                    LOG.warnf("Failed to remove forward tool %s after registration error", toolReference.getName());
+                }
+            }
+            registeredRemoteToolsByForward.remove(nameNamespacePair);
+
+            try {
+                forwardClient.client().close();
+            } catch (Exception ignored) {
+                LOG.debug("Failed to close forward client after registration error", ignored);
+            }
+
+            throw e;
+        }
     }
 
     public List<ResourceReference> listAllResources() {
@@ -191,9 +247,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
      */
     public List<RemoteToolReference> listAllTools() {
         List<RemoteToolReference> references = new ArrayList<>();
-        for (ForwardClient forwardClient : forwardRegistry.clients().values()) {
-            references.addAll(mcpBridge.listTools(forwardClient));
-        }
+        registeredRemoteToolsByForward.values().forEach(references::addAll);
 
         return references;
     }
