@@ -9,7 +9,6 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
-import io.micrometer.common.util.StringUtils;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
@@ -118,7 +117,7 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     public List<ToolReference> list(String labelFilter) {
-        if (StringUtils.isBlank(labelFilter)) {
+        if (StringHelper.isBlank(labelFilter)) {
             return toolReferenceRepository.listAll();
         }
         return toolReferenceRepository.findAllFilterByLabelExpression(labelFilter);
