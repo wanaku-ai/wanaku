@@ -35,8 +35,6 @@ import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.core.persistence.api.WanakuRepository;
 import ai.wanaku.core.util.StringHelper;
 
-import static io.micrometer.common.util.StringUtils.isBlank;
-
 @ApplicationScoped
 public class ForwardsBean extends AbstractBean<ForwardReference> {
     private static final Logger LOG = Logger.getLogger(ForwardsBean.class);
@@ -205,7 +203,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     public List<ToolReference> listAllAsTools(String labelFilter) {
-        if (isBlank(labelFilter)) {
+        if (StringHelper.isBlank(labelFilter)) {
             return listAllAsTools();
         }
 

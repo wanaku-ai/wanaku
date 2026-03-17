@@ -39,4 +39,17 @@ public final class StringHelper {
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
     }
+
+    /**
+     * Checks if a string is null, empty, or contains only whitespace.
+     * <p>
+     * A string is considered blank if it is {@code null} or {@link String#isBlank()}
+     * returns {@code true}.
+     *
+     * @param str the string to check
+     * @return {@code true} if the string is null, empty, or whitespace-only, {@code false} otherwise
+     */
+    public static boolean isBlank(String str) {
+        return str == null || str.isBlank();
+    }
 }
