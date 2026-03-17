@@ -1,0 +1,37 @@
+# Default owners for the entire repository
+* @wanaku-ai/maintainers
+
+# API
+/api/ @wanaku-ai/maintainers
+
+# Core
+/core/ @wanaku-ai/maintainers
+
+# CLI
+/cli/ @wanaku-ai/maintainers
+
+# Capabilities
+/capabilities/ @wanaku-ai/maintainers
+
+# UI
+/ui/ @wanaku-ai/maintainers-ui
+
+# Router
+/wanaku-router/ @wanaku-ai/maintainers
+/wanaku-router/ui/ @wanaku-ai/maintainers-ui
+
+# Operator
+/wanaku-operator/ @wanaku-ai/maintainers
+
+# Documentation
+/docs/ @wanaku-ai/maintainers
+
+# Deployment
+/deploy/ @wanaku-ai/maintainers
+
+# Archetypes and JBang
+/archetypes/ @wanaku-ai/maintainers
+/jbang/ @wanaku-ai/maintainers
+
+# CI/CD
+/.github/ @wanaku-ai/maintainers
