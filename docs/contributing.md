@@ -263,7 +263,9 @@ podman run -d \
 If it is the first time you are using it, you will need to configure Wanaku's realm. You can use the CLI:
 
 ```shell
-wanaku admin realm create --admin-username admin --admin-password admin
+export WANAKU_ADMIN_USERNAME=admin
+export WANAKU_ADMIN_PASSWORD=admin
+wanaku admin realm create
 ```
 
 Or alternatively, use the shell script:

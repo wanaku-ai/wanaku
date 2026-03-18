@@ -13,11 +13,23 @@ import ai.wanaku.cli.main.support.keycloak.KeycloakAdminClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import picocli.CommandLine;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Spec;
 
 public abstract class BaseAdminCommand extends BaseCommand {
 
+    @FunctionalInterface
+    protected interface EnvironmentProvider {
+        String get(String name);
+    }
+
     private static final String DEFAULT_KEYCLOAK_URL = "http://localhost:8543";
     private static final String DEFAULT_REALM = "wanaku";
+    private static final String ENV_ADMIN_USERNAME = "WANAKU_ADMIN_USERNAME";
+    private static final String ENV_ADMIN_PASSWORD = "WANAKU_ADMIN_PASSWORD";
+
+    @Spec
+    protected CommandSpec spec;
 
     @CommandLine.Option(
             names = {"--keycloak-url"},
@@ -33,26 +45,30 @@ public abstract class BaseAdminCommand extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--admin-username"},
-            description = "Admin username for Keycloak",
-            required = true)
+            description = "Admin username for Keycloak (or set " + ENV_ADMIN_USERNAME + ")")
     protected String adminUsername;
 
     @CommandLine.Option(
             names = {"--admin-password"},
-            description = "Admin password for Keycloak",
-            required = true,
+            description = "Admin password for Keycloak (or set " + ENV_ADMIN_PASSWORD + ")",
             interactive = true,
             arity = "0..1")
     protected String adminPassword;
 
     private final KeycloakAdminClient adminClientOverride;
+    private final EnvironmentProvider environmentProvider;
 
     protected BaseAdminCommand() {
-        this(null);
+        this(null, System::getenv);
     }
 
     protected BaseAdminCommand(KeycloakAdminClient adminClientOverride) {
+        this(adminClientOverride, System::getenv);
+    }
+
+    protected BaseAdminCommand(KeycloakAdminClient adminClientOverride, EnvironmentProvider environmentProvider) {
         this.adminClientOverride = adminClientOverride;
+        this.environmentProvider = environmentProvider == null ? System::getenv : environmentProvider;
     }
 
     protected KeycloakAdminClient createAdminClient() {
@@ -66,11 +82,13 @@ public abstract class BaseAdminCommand extends BaseCommand {
 
     private String obtainAdminToken() {
         String tokenUrl = keycloakUrl + "/realms/master/protocol/openid-connect/token";
+        String resolvedUsername = resolveAdminUsername();
+        String resolvedPassword = resolveAdminPassword();
 
         String formBody = "grant_type=password"
                 + "&client_id=admin-cli"
-                + "&username=" + URLEncoder.encode(adminUsername, StandardCharsets.UTF_8)
-                + "&password=" + URLEncoder.encode(adminPassword, StandardCharsets.UTF_8);
+                + "&username=" + URLEncoder.encode(resolvedUsername, StandardCharsets.UTF_8)
+                + "&password=" + URLEncoder.encode(resolvedPassword, StandardCharsets.UTF_8);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(tokenUrl))
@@ -100,5 +118,32 @@ public abstract class BaseAdminCommand extends BaseCommand {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while obtaining admin token", e);
         }
+    }
+
+    protected String resolveAdminUsername() {
+        if (adminUsername != null && !adminUsername.isBlank()) {
+            return adminUsername;
+        }
+        String envValue = environmentProvider.get(ENV_ADMIN_USERNAME);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        throw missingParameter("Admin username not provided. Use --admin-username or set " + ENV_ADMIN_USERNAME + ".");
+    }
+
+    protected String resolveAdminPassword() {
+        if (adminPassword != null && !adminPassword.isBlank()) {
+            return adminPassword;
+        }
+        String envValue = environmentProvider.get(ENV_ADMIN_PASSWORD);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        throw missingParameter("Admin password not provided. Use --admin-password or set " + ENV_ADMIN_PASSWORD + ".");
+    }
+
+    private CommandLine.ParameterException missingParameter(String message) {
+        CommandLine commandLine = spec == null ? new CommandLine(this) : spec.commandLine();
+        return new CommandLine.ParameterException(commandLine, message);
     }
 }

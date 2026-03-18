@@ -127,10 +127,12 @@ oc apply -f deploy/auth
 
 ### Importing the Wanaku Realm Configuration (via Wanaku CLI)
 
-The simplest way to import the realm configuration is using the Wanaku CLI:
+The simplest way to import the realm configuration is using the Wanaku CLI. You can set admin credentials once via environment variables:
 
 ```shell
-wanaku admin realm create --admin-username admin --admin-password admin
+export WANAKU_ADMIN_USERNAME=admin
+export WANAKU_ADMIN_PASSWORD=admin
+wanaku admin realm create
 ```
 
 This imports the default realm configuration from `deploy/auth/wanaku-config.json`. You can specify a custom configuration file with `--config /path/to/realm.json` and a custom Keycloak URL with `--keycloak-url`.
@@ -948,10 +950,18 @@ All admin commands share the following options:
 
 | Option | Description | Default |
 |---|---|---|
-| `--admin-username` | Admin username for Keycloak (required) | |
-| `--admin-password` | Admin password for Keycloak (required, interactive) | |
+| `--admin-username` | Admin username for Keycloak (required unless `WANAKU_ADMIN_USERNAME` is set) | |
+| `--admin-password` | Admin password for Keycloak (required unless `WANAKU_ADMIN_PASSWORD` is set, interactive) | |
 | `--keycloak-url` | Keycloak server URL | `http://localhost:8543` |
 | `--realm` | Keycloak realm to manage | `wanaku` |
+
+If you prefer not to pass admin credentials on every command, set them once in your environment:
+
+```shell
+export WANAKU_ADMIN_USERNAME=admin
+export WANAKU_ADMIN_PASSWORD=admin
+wanaku admin users list
+```
 
 ### User Management
 
