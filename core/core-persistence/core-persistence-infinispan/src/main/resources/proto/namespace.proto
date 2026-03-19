@@ -8,4 +8,6 @@ message Namespace {
   string name = 2;
   string path = 3;
   map<string, string> labels = 4;
+  int32 tool_count = 5;
+  int32 resource_count = 6;
 }
