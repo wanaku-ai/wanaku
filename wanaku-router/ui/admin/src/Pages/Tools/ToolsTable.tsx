@@ -48,7 +48,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
 
   function toolsToRows() {
     return fetchedData.map((tool: ToolReference, index: number) => ({
-      id: tool.id || `tool-${index}`,
+      id: tool.name || tool.id || `tool-${index}`,
       ...tool
     }))
   }
@@ -159,7 +159,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    const tool = fetchedData.find((item) => item.id === row.id)
+                    const tool = fetchedData.find((item) => (item.name || item.id) === row.id)
                     if (tool && toolHasDetails(tool)) {
                       // tool with details, expansion available
                       return (

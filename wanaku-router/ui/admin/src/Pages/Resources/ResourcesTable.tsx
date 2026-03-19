@@ -44,7 +44,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
 
   function resourcesToRows() {
     return resources.map((resource: ResourceReference, index: number) => ({
-      id: resource.id || `resource-${index}`,
+      id: resource.name || resource.id || `resource-${index}`,
       name: resource.name,
       location: resource.location,
       type: resource.type,
@@ -148,7 +148,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
               </TableHead>
               <TableBody>
                 {rows.map((row) => {
-                  const resource = resources.find((item) => item.id === row.id)
+                  const resource = resources.find((item) => (item.name || item.id) === row.id)
                   if (resource && resourceHasDetails(resource)) {
                     // resource with details, expansion available
                     return (
