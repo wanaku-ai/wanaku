@@ -77,7 +77,6 @@ public interface ResourcesService {
     /**
      * Removes a resource capability from the system.
      *
-     * @param resource the name of the resource to remove
      * @return a {@link Response} indicating the result of the removal operation
      */
     @Path("/{name}")

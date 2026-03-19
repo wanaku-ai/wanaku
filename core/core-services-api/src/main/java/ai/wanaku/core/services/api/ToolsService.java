@@ -78,7 +78,6 @@ public interface ToolsService {
     /**
      * Removes a tool capability from the system.
      *
-     * @param tool the name of the tool to remove
      * @return a {@link Response} indicating the result of the removal operation
      */
     @Path("/{name}")

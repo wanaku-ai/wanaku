@@ -44,7 +44,6 @@ public interface ForwardsService {
     /**
      * Removes a forward reference from the system.
      *
-     * @param reference the forward reference to remove
      * @return a {@link Response} indicating the result of the remove operation
      */
     @Path("/{name}")
@@ -96,7 +95,6 @@ public interface ForwardsService {
     /**
      * Refreshes a forward reference to re-discover tools and resources from the remote server.
      *
-     * @param reference the forward reference to refresh
      * @return a {@link Response} indicating the result of the refresh operation
      */
     @Path("/{name}/refreshes")
