@@ -41,7 +41,8 @@ public class StatisticsBean {
         List<ToolReference> tools = CollectionsHelper.join(toolsBean.list(null), forwardsBean.listAllAsTools(null));
 
         long toolsCount = tools.size();
-        long resourcesCount = resourcesBean.list(null).size();
+        long resourcesCount = CollectionsHelper.join(resourcesBean.list(null), forwardsBean.listAllResources())
+                .size();
         long promptsCount = promptsBean.list().size();
         long forwardsCount = forwardsBean.listForwards().size();
         long dataStoresCount = dataStoresBean.list(null).size();
