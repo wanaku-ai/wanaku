@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -53,7 +54,8 @@ public class ResourcesLabelAddTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("test-resource")).thenReturn(getResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.name = "test-resource";
             command.labels = List.of("category=finance");
@@ -64,7 +66,7 @@ public class ResourcesLabelAddTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ResourceReference> captor = ArgumentCaptor.forClass(ResourceReference.class);
-            verify(resourcesService).update(captor.capture());
+            verify(resourcesService).update(anyString(), captor.capture());
             assertEquals("finance", captor.getValue().getLabels().get("category"));
         }
 
@@ -77,7 +79,8 @@ public class ResourcesLabelAddTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("test-resource")).thenReturn(getResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.name = "test-resource";
             command.labels = List.of("category=data", "year=2024", "department=sales");
@@ -88,7 +91,7 @@ public class ResourcesLabelAddTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ResourceReference> captor = ArgumentCaptor.forClass(ResourceReference.class);
-            verify(resourcesService).update(captor.capture());
+            verify(resourcesService).update(anyString(), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
             assertEquals("data", labels.get("category"));
             assertEquals("2024", labels.get("year"));
@@ -107,7 +110,7 @@ public class ResourcesLabelAddTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).update(any());
+            verify(resourcesService, never()).update(anyString(), any());
         }
     }
 
@@ -124,7 +127,8 @@ public class ResourcesLabelAddTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.name = "my-resource";
             command.labels = List.of("new=value");
@@ -135,7 +139,7 @@ public class ResourcesLabelAddTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ResourceReference> captor = ArgumentCaptor.forClass(ResourceReference.class);
-            verify(resourcesService).update(captor.capture());
+            verify(resourcesService).update(anyString(), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
             assertEquals(2, labels.size());
             assertEquals("label", labels.get("existing"));
@@ -151,7 +155,8 @@ public class ResourcesLabelAddTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.name = "my-resource";
             command.labels = List.of("year=2024");
@@ -162,7 +167,7 @@ public class ResourcesLabelAddTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ResourceReference> captor = ArgumentCaptor.forClass(ResourceReference.class);
-            verify(resourcesService).update(captor.capture());
+            verify(resourcesService).update(anyString(), captor.capture());
             assertEquals("2024", captor.getValue().getLabels().get("year"));
         }
 
@@ -180,7 +185,7 @@ public class ResourcesLabelAddTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).update(any());
+            verify(resourcesService, never()).update(anyString(), any());
         }
     }
 
@@ -199,7 +204,8 @@ public class ResourcesLabelAddTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.list("category=data")).thenReturn(listResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.labelExpression = "category=data";
             command.labels = List.of("migrated=true");
@@ -209,7 +215,7 @@ public class ResourcesLabelAddTest {
 
             // Assert
             assertEquals(0, result);
-            verify(resourcesService, times(2)).update(any(ResourceReference.class));
+            verify(resourcesService, times(2)).update(anyString(), any(ResourceReference.class));
         }
 
         @Test
@@ -228,7 +234,7 @@ public class ResourcesLabelAddTest {
 
             // Assert
             assertEquals(0, result); // Success but no changes
-            verify(resourcesService, never()).update(any());
+            verify(resourcesService, never()).update(anyString(), any());
         }
     }
 

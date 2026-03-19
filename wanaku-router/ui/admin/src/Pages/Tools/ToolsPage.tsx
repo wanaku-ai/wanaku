@@ -101,7 +101,8 @@ export const ToolsPage: React.FC = () => {
 
   const handleDeleteTool = async (toolName?: string) => {
     try {
-      await removeTool({ tool: toolName });
+      if (!toolName) return;
+      await removeTool(toolName);
       await updateTools();
     } catch (error) {
       console.error("Error deleting tool:", error);

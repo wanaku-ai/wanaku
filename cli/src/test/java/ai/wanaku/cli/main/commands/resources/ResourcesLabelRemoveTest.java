@@ -56,7 +56,8 @@ public class ResourcesLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.name = "my-resource";
             command.labelKeys = List.of("year");
@@ -67,7 +68,7 @@ public class ResourcesLabelRemoveTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ResourceReference> captor = ArgumentCaptor.forClass(ResourceReference.class);
-            verify(resourcesService).update(captor.capture());
+            verify(resourcesService).update(anyString(), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
             assertEquals(1, labels.size());
             assertFalse(labels.containsKey("year"));
@@ -84,7 +85,8 @@ public class ResourcesLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.name = "my-resource";
             command.labelKeys = List.of("year", "department");
@@ -95,7 +97,7 @@ public class ResourcesLabelRemoveTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ResourceReference> captor = ArgumentCaptor.forClass(ResourceReference.class);
-            verify(resourcesService).update(captor.capture());
+            verify(resourcesService).update(anyString(), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
             assertEquals(1, labels.size());
             assertEquals("data", labels.get("category"));
@@ -118,7 +120,7 @@ public class ResourcesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success even though label didn't exist
-            verify(resourcesService, never()).update(any()); // No update needed
+            verify(resourcesService, never()).update(anyString(), any()); // No update needed
         }
 
         @Test
@@ -135,7 +137,7 @@ public class ResourcesLabelRemoveTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).update(any());
+            verify(resourcesService, never()).update(anyString(), any());
         }
     }
 
@@ -156,7 +158,8 @@ public class ResourcesLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.list("status=archived")).thenReturn(listResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.labelExpression = "status=archived";
             command.labelKeys = List.of("status");
@@ -166,7 +169,7 @@ public class ResourcesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
-            verify(resourcesService, times(2)).update(any(ResourceReference.class));
+            verify(resourcesService, times(2)).update(anyString(), any(ResourceReference.class));
         }
 
         @Test
@@ -181,7 +184,8 @@ public class ResourcesLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(resourcesService.list(anyString())).thenReturn(listResponse);
-            when(resourcesService.update(any(ResourceReference.class))).thenReturn(updateResponse);
+            when(resourcesService.update(anyString(), any(ResourceReference.class)))
+                    .thenReturn(updateResponse);
 
             command.labelExpression = "category=data|status=active";
             command.labelKeys = List.of("status");
@@ -191,7 +195,8 @@ public class ResourcesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
-            verify(resourcesService, times(1)).update(any(ResourceReference.class)); // Only resource2 updated
+            verify(resourcesService, times(1))
+                    .update(anyString(), any(ResourceReference.class)); // Only resource2 updated
         }
 
         @Test
@@ -210,7 +215,7 @@ public class ResourcesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success but no changes
-            verify(resourcesService, never()).update(any());
+            verify(resourcesService, never()).update(anyString(), any());
         }
     }
 

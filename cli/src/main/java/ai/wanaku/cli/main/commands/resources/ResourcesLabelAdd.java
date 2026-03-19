@@ -169,7 +169,7 @@ public class ResourcesLabelAdd extends BaseCommand {
             resource.setLabels(existingLabels);
 
             // Update the resource
-            Response updateResponse = resourcesService.update(resource);
+            Response updateResponse = resourcesService.update(resource.getName(), resource);
             updateResponse.close();
 
             printer.printSuccessMessage(String.format(
@@ -223,7 +223,7 @@ public class ResourcesLabelAdd extends BaseCommand {
                     resource.setLabels(existingLabels);
 
                     // Update the resource
-                    Response updateResponse = resourcesService.update(resource);
+                    Response updateResponse = resourcesService.update(resource.getName(), resource);
                     updateResponse.close();
 
                     printer.printSuccessMessage("  Updated: " + resource.getName());

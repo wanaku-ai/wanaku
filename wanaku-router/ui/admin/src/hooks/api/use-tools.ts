@@ -2,16 +2,16 @@ import {useCallback} from "react";
 import {
     getApiV1Capabilities,
     getApiV1CapabilitiesResponse,
-    getApiV1ToolsList,
-    getApiV1ToolsListResponse,
-    postApiV1ToolsAdd,
-    postApiV1ToolsAddResponse,
-    postApiV1ToolsUpdate,
-    postApiV1ToolsUpdateResponse,
-    deleteApiV1ToolsRemove,
-    deleteApiV1ToolsRemoveResponse
+    getApiV1Tools,
+    getApiV1ToolsResponse,
+    postApiV1Tools,
+    postApiV1ToolsResponse,
+    putApiV1ToolsName,
+    putApiV1ToolsNameResponse,
+    deleteApiV1ToolsName,
+    deleteApiV1ToolsNameResponse,
 } from "../../api/wanaku-router-api";
-import {DeleteApiV1ToolsRemoveParams, GetApiV1ToolsListParams, ToolReference,} from "../../models";
+import {GetApiV1ToolsParams, ToolReference,} from "../../models";
 
 export const useTools = () => {
   /**
@@ -33,15 +33,18 @@ export const useTools = () => {
     (
       toolReference: ToolReference,
       options?: RequestInit
-    ): Promise<postApiV1ToolsAddResponse> => {
-      return postApiV1ToolsAdd(toolReference, options);
+    ): Promise<postApiV1ToolsResponse> => {
+      return postApiV1Tools(toolReference, options);
     },
     []
   );
 
   const updateTool = useCallback(
-    (tool: ToolReference, options?: RequestInit): Promise<postApiV1ToolsUpdateResponse> => {
-      return postApiV1ToolsUpdate(tool, options)
+    (tool: ToolReference, options?: RequestInit): Promise<putApiV1ToolsNameResponse> => {
+      if (!tool.name) {
+          throw new Error("Tool name is required for update");
+      }
+      return putApiV1ToolsName(tool.name, tool, options)
     }, []
   )
 
@@ -49,8 +52,8 @@ export const useTools = () => {
    * List tools.
    */
   const listTools = useCallback(
-    (params?: GetApiV1ToolsListParams, options?: RequestInit): Promise<getApiV1ToolsListResponse> => {
-      return getApiV1ToolsList(params, options);
+    (params?: GetApiV1ToolsParams, options?: RequestInit): Promise<getApiV1ToolsResponse> => {
+      return getApiV1Tools(params, options);
     },
     []
   );
@@ -60,10 +63,10 @@ export const useTools = () => {
    */
   const removeTool = useCallback(
     (
-      params?: DeleteApiV1ToolsRemoveParams,
+      name: string,
       options?: RequestInit
-    ): Promise<deleteApiV1ToolsRemoveResponse> => {
-      return deleteApiV1ToolsRemove(params, options);
+    ): Promise<deleteApiV1ToolsNameResponse> => {
+      return deleteApiV1ToolsName(name, options);
     },
     []
   );
