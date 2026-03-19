@@ -48,8 +48,8 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
 
   function toolsToRows() {
     return fetchedData.map((tool: ToolReference, index: number) => ({
+      ...tool,
       id: tool.name || tool.id || `tool-${index}`,
-      ...tool
     }))
   }
 
