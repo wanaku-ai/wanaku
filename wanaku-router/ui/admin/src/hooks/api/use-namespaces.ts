@@ -19,7 +19,7 @@ export const listNamespaces = async (options: any = null) => {
   if (process.env.NODE_ENV !== 'production') {
     console.log('Fetching fresh namespaces data');
   }
-  const result = await getApiV1Namespaces(options);
+  const result = await getApiV1Namespaces(undefined, options);
   
   // Cache the result
   namespacesCache = {
@@ -40,7 +40,7 @@ export const getNamespacePathById = (id?: string): string | undefined => {
   }
 
   if (namespacesCache) {
-    const data = namespacesCache.data.data as Namespace[];
+    const data = namespacesCache.data.data.data as Namespace[];
     // Look up by name first (since ToolReference.namespace stores the name)
     // If not found by name, fall back to lookup by id
     const path = data.find(namespace => namespace.name === id || namespace.id === id)?.path;
