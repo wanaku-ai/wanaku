@@ -14,7 +14,7 @@ public class MockTool {
     @Inject
     MockMcpPerformanceConfig config;
 
-    @Tool(description = "A mock tool that returns static data for testing")
+    @Tool(description = "A mock tool that returns static data for testing", name = "performancenoop")
     String mockTool(@ToolArg(description = "A name parameter") String name) {
         int delay = config.delay();
         if (delay > 0) {
