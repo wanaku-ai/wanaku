@@ -54,7 +54,7 @@ public class MockMcpCallbackProducer {
 
             @Override
             public void onDeregistration(ForwardRegistrationManager manager) {
-                try (Response ignored = forwardsService.removeForward(forwardReference)) {
+                try (Response ignored = forwardsService.removeForward(forwardReference.getName())) {
                     LOG.infof("Successfully deregistered mock MCP server forward: %s", serviceName);
                 } catch (WebApplicationException e) {
                     LOG.warn("Failed to deregister mock MCP server forward", e);
