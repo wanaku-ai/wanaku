@@ -137,7 +137,7 @@ public class ToolsLabelRemove extends BaseCommand {
                 tool.setLabels(existingLabels);
 
                 // Update the tool
-                Response updateResponse = toolsService.update(tool);
+                Response updateResponse = toolsService.update(tool.getName(), tool);
                 updateResponse.close();
 
                 printer.printSuccessMessage(String.format(
@@ -202,7 +202,7 @@ public class ToolsLabelRemove extends BaseCommand {
                         tool.setLabels(existingLabels);
 
                         // Update the tool
-                        Response updateResponse = toolsService.update(tool);
+                        Response updateResponse = toolsService.update(tool.getName(), tool);
                         updateResponse.close();
 
                         printer.printSuccessMessage("  Updated: " + tool.getName());

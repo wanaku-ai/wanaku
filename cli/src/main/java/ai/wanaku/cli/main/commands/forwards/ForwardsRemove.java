@@ -4,7 +4,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import org.jline.terminal.Terminal;
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;
@@ -33,11 +32,8 @@ public class ForwardsRemove extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initService(ForwardsService.class, host);
 
-        ForwardReference reference = new ForwardReference();
-        reference.setName(name);
-
-        try (Response ignored = forwardsService.removeForward(reference)) {
-            printer.printSuccessMessage("Successfully removed forward reference '" + reference.getName() + "'");
+        try (Response ignored = forwardsService.removeForward(name)) {
+            printer.printSuccessMessage("Successfully removed forward reference '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {

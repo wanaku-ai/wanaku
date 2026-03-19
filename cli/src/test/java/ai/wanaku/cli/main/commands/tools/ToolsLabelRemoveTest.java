@@ -57,7 +57,7 @@ public class ToolsLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
-            when(toolsService.update(any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
 
             command.name = "my-tool";
             command.labelKeys = List.of("env");
@@ -68,7 +68,7 @@ public class ToolsLabelRemoveTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
-            verify(toolsService).update(captor.capture());
+            verify(toolsService).update(eq("my-tool"), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
             assertEquals(1, labels.size());
             assertFalse(labels.containsKey("env"));
@@ -85,7 +85,7 @@ public class ToolsLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
-            when(toolsService.update(any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
 
             command.name = "my-tool";
             command.labelKeys = List.of("env", "version");
@@ -96,7 +96,7 @@ public class ToolsLabelRemoveTest {
             // Assert
             assertEquals(0, result);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
-            verify(toolsService).update(captor.capture());
+            verify(toolsService).update(eq("my-tool"), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
             assertEquals(1, labels.size());
             assertEquals("backend", labels.get("tier"));
@@ -119,7 +119,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success even though label didn't exist
-            verify(toolsService, never()).update(any()); // No update needed
+            verify(toolsService, never()).update(anyString(), any()); // No update needed
         }
 
         @Test
@@ -139,7 +139,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
-            verify(toolsService, never()).update(any());
+            verify(toolsService, never()).update(anyString(), any());
         }
 
         @Test
@@ -156,7 +156,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR
-            verify(toolsService, never()).update(any());
+            verify(toolsService, never()).update(anyString(), any());
         }
     }
 
@@ -175,7 +175,7 @@ public class ToolsLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(toolsService.list("status=deprecated")).thenReturn(listResponse);
-            when(toolsService.update(any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
 
             command.labelExpression = "status=deprecated";
             command.labelKeys = List.of("status");
@@ -185,7 +185,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
-            verify(toolsService, times(2)).update(any(ToolReference.class));
+            verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
         }
 
         @Test
@@ -200,7 +200,7 @@ public class ToolsLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(toolsService.list(anyString())).thenReturn(listResponse);
-            when(toolsService.update(any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
 
             command.labelExpression = "env=dev|status=active|tier=backend";
             command.labelKeys = List.of("status");
@@ -210,7 +210,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
-            verify(toolsService, times(1)).update(any(ToolReference.class)); // Only tool2 updated
+            verify(toolsService, times(1)).update(eq("tool2"), any(ToolReference.class)); // Only tool2 updated
         }
 
         @Test
@@ -229,7 +229,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success but no changes
-            verify(toolsService, never()).update(any());
+            verify(toolsService, never()).update(anyString(), any());
         }
 
         @Test
@@ -243,8 +243,8 @@ public class ToolsLabelRemoveTest {
             Response updateResponse = mock(Response.class);
 
             when(toolsService.list(anyString())).thenReturn(listResponse);
-            when(toolsService.update(eq(tool1))).thenReturn(updateResponse);
-            when(toolsService.update(eq(tool2))).thenThrow(new WebApplicationException());
+            when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(updateResponse);
+            when(toolsService.update(eq("tool2"), eq(tool2))).thenThrow(new WebApplicationException());
 
             command.labelExpression = "env=dev";
             command.labelKeys = List.of("env");
@@ -254,7 +254,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR due to one failure
-            verify(toolsService, times(2)).update(any(ToolReference.class));
+            verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
         }
     }
 
