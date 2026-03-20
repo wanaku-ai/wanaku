@@ -2662,12 +2662,65 @@ String userId = headers.get("userId");
 > If a metadata header has the same name as a tool-defined header (from the tool's schema), the tool-defined header
 > takes precedence.
 
+### Passing Authentication Tokens as Headers
+
+The `wanaku_auth_` prefix is a special argument prefix that allows MCP clients to propagate access tokens or other
+credentials to downstream capabilities without exposing them to LLMs.
+
+Arguments with this prefix are:
+1. Extracted from the regular arguments (they are never passed to LLMs or to the tool as arguments)
+2. Stripped of the `wanaku_auth_` prefix
+3. Forwarded as headers in the gRPC tool invocation request
+4. Always redacted in logs and observability events
+
+For example, an argument named `wanaku_auth_Authorization` with value `Bearer token-123` becomes a header with key
+`Authorization` and value `Bearer token-123`.
+
+This is useful for propagating access tokens from MCP clients through to downstream capabilities (HTTP, Camel, etc.)
+when calling protected third-party APIs.
+
+#### Security Guarantees
+
+Unlike `wanaku_meta_`, authentication arguments have stricter security handling:
+
+* **Never exposed to LLMs** — filtered from tool arguments before any processing
+* **Never appear in events** — filtered from observability event arguments
+* **Always redacted in headers** — sensitive header names (e.g., `Authorization`) are redacted in event headers
+* **Highest merge priority** — auth headers override both metadata and tool-defined headers on conflict
+
+#### Example: HTTP Capability with Protected API
+
+To call a protected third-party API (e.g., GitHub), the MCP client passes the access token via `wanaku_auth_`:
+
+```
+Arguments from MCP client:
+  wanaku_auth_Authorization = "Bearer ghp_xxxxxxxxxxxx"
+  owner = "octocat"
+  repo = "hello-world"
+```
+
+The `wanaku_auth_Authorization` argument is extracted and becomes an `Authorization` header on the outgoing HTTP
+request, while `owner` and `repo` are passed as regular tool arguments.
+
+#### Example: Multiple Auth Tokens
+
+Multiple auth tokens can be propagated simultaneously:
+
+```
+Arguments from MCP client:
+  wanaku_auth_Authorization = "Bearer internal-token"
+  wanaku_auth_X-Third-Party-Token = "external-token"
+```
+
+Both are extracted and forwarded as separate headers to the downstream capability.
+
 ### Reserved Argument Names
 
 Currently special arguments:
 
 * `wanaku_body` - Indicates the argument should be included in the request body
 * `wanaku_meta_` - Prefix for arguments that are converted to headers (e.g., `wanaku_meta_contextId`)
+* `wanaku_auth_` - Prefix for sensitive authentication arguments that are converted to headers with redaction (e.g., `wanaku_auth_Authorization`)
 
 ## Extending Wanaku: Adding Your Own Capabilities
 

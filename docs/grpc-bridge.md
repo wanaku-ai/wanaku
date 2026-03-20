@@ -380,19 +380,23 @@ public final class InvokerToolExecutor {
             ToolReference toolReference,
             ToolManager.ToolArguments toolArguments) {
 
-        // Filter out metadata args before converting to string map
-        Map<String, Object> filteredArgs = filterOutMetadataArgs(toolArguments.args());
+        // Filter out metadata and auth args before converting to string map
+        Map<String, Object> filteredArgs = filterOutReservedArgs(toolArguments.args());
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
 
         // Extract metadata headers from args (with prefix stripped)
         Map<String, String> metadataHeaders = extractMetadataHeaders(toolArguments);
 
+        // Extract auth headers from args (with prefix stripped)
+        Map<String, String> authHeaders = extractAuthHeaders(toolArguments);
+
         // Extract tool-defined headers from schema
         Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, toolArguments);
 
-        // Merge headers: metadata first, then tool-defined (tool-defined wins on conflict)
+        // Merge headers: metadata first, then tool-defined, then auth (auth wins on conflict)
         Map<String, String> headers = new HashMap<>(metadataHeaders);
         headers.putAll(toolDefinedHeaders);
+        headers.putAll(authHeaders);
 
         String body = extractBody(toolReference, toolArguments);
 
@@ -421,8 +425,14 @@ public final class InvokerToolExecutor {
         // Extract args with "wanaku_meta_" prefix, strip prefix for header name
     }
 
-    static Map<String, Object> filterOutMetadataArgs(Map<String, Object> args) {
-        // Exclude args with "wanaku_meta_" prefix from the arguments map
+    static Map<String, String> extractAuthHeaders(
+            ToolManager.ToolArguments toolArguments) {
+        // Extract args with "wanaku_auth_" prefix, strip prefix for header name
+        // These are treated as sensitive and redacted in logs/events
+    }
+
+    static Map<String, Object> filterOutReservedArgs(Map<String, Object> args) {
+        // Exclude args with "wanaku_meta_" or "wanaku_auth_" prefix from the arguments map
     }
 }
 ```
