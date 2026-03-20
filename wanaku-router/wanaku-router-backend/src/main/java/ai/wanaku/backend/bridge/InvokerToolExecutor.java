@@ -11,6 +11,7 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.util.CollectionsHelper;
 
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.AUTH_PREFIX;
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.METADATA_PREFIX;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
@@ -46,19 +47,23 @@ public final class InvokerToolExecutor {
     static ToolInvokeRequest buildToolInvokeRequest(
             ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
 
-        // Filter out metadata args before converting to string map
-        Map<String, Object> filteredArgs = filterOutMetadataArgs(toolArguments.args());
+        // Filter out metadata and auth args before converting to string map
+        Map<String, Object> filteredArgs = filterOutReservedArgs(toolArguments.args());
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
 
         // Extract metadata headers from args (with prefix stripped)
         Map<String, String> metadataHeaders = extractMetadataHeaders(toolArguments);
 
+        // Extract auth headers from args (with prefix stripped)
+        Map<String, String> authHeaders = extractAuthHeaders(toolArguments);
+
         // Extract tool-defined headers from schema
         Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, toolArguments);
 
-        // Merge headers: metadata first, then tool-defined (tool-defined wins on conflict)
+        // Merge headers: metadata first, then tool-defined, then auth (auth wins on conflict)
         Map<String, String> headers = new HashMap<>(metadataHeaders);
         headers.putAll(toolDefinedHeaders);
+        headers.putAll(authHeaders);
 
         String body = extractBody(toolReference, toolArguments);
 
@@ -91,23 +96,42 @@ public final class InvokerToolExecutor {
      * @return a map of header names (with prefix stripped) to their values
      */
     static Map<String, String> extractMetadataHeaders(ToolManager.ToolArguments toolArguments) {
+        return extractPrefixedHeaders(toolArguments, METADATA_PREFIX);
+    }
+
+    /**
+     * Extracts authentication headers from tool arguments.
+     * Arguments with the "wanaku_auth_" prefix are extracted and the prefix is stripped
+     * to form the header name. These are treated as sensitive and must not be exposed
+     * to LLMs or logged without redaction.
+     *
+     * @param toolArguments the tool arguments containing potential auth credentials
+     * @return a map of header names (with prefix stripped) to their values
+     */
+    static Map<String, String> extractAuthHeaders(ToolManager.ToolArguments toolArguments) {
+        return extractPrefixedHeaders(toolArguments, AUTH_PREFIX);
+    }
+
+    private static Map<String, String> extractPrefixedHeaders(ToolManager.ToolArguments toolArguments, String prefix) {
         return toolArguments.args().entrySet().stream()
-                .filter(e -> e.getKey() != null && e.getKey().startsWith(METADATA_PREFIX))
+                .filter(e -> e.getKey() != null && e.getKey().startsWith(prefix))
                 .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(e -> e.getKey().substring(METADATA_PREFIX.length()), e -> e.getValue()
+                .collect(Collectors.toMap(e -> e.getKey().substring(prefix.length()), e -> e.getValue()
                         .toString()));
     }
 
     /**
-     * Filters out metadata arguments from the arguments map.
-     * Arguments with the "wanaku_meta_" prefix are excluded.
+     * Filters out reserved arguments (metadata and auth) from the arguments map.
+     * Arguments with the "wanaku_meta_" or "wanaku_auth_" prefix are excluded.
      *
      * @param args the original arguments map
-     * @return a new map without metadata arguments
+     * @return a new map without reserved arguments
      */
-    static Map<String, Object> filterOutMetadataArgs(Map<String, Object> args) {
+    static Map<String, Object> filterOutReservedArgs(Map<String, Object> args) {
         return args.entrySet().stream()
-                .filter(e -> e.getKey() == null || !e.getKey().startsWith(METADATA_PREFIX))
+                .filter(e -> e.getKey() == null
+                        || (!e.getKey().startsWith(METADATA_PREFIX)
+                                && !e.getKey().startsWith(AUTH_PREFIX)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
