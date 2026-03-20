@@ -208,14 +208,14 @@ class InvokerBridgeTest {
     }
 
     @Test
-    void filterOutMetadataArgs_removesPrefixedArgs() {
+    void filterOutReservedArgs_removesMetadataPrefixedArgs() {
         Map<String, Object> args = new HashMap<>();
         args.put("wanaku_meta_contextId", "ctx-123");
         args.put("wanaku_meta_userId", "user-456");
         args.put("regularArg", "value");
         args.put("anotherArg", 42);
 
-        Map<String, Object> filtered = InvokerToolExecutor.filterOutMetadataArgs(args);
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutReservedArgs(args);
 
         assertEquals(2, filtered.size());
         assertEquals("value", filtered.get("regularArg"));
@@ -225,15 +225,107 @@ class InvokerBridgeTest {
     }
 
     @Test
-    void filterOutMetadataArgs_returnsAllArgsWhenNoMetadata() {
+    void filterOutReservedArgs_removesAuthPrefixedArgs() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_auth_Authorization", "Bearer token-123");
+        args.put("wanaku_auth_X-Third-Party", "secret-456");
+        args.put("regularArg", "value");
+
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutReservedArgs(args);
+
+        assertEquals(1, filtered.size());
+        assertEquals("value", filtered.get("regularArg"));
+        assertFalse(filtered.containsKey("wanaku_auth_Authorization"));
+        assertFalse(filtered.containsKey("wanaku_auth_X-Third-Party"));
+    }
+
+    @Test
+    void filterOutReservedArgs_removesBothMetadataAndAuthArgs() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_meta_contextId", "ctx-123");
+        args.put("wanaku_auth_Authorization", "Bearer token-123");
+        args.put("regularArg", "value");
+
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutReservedArgs(args);
+
+        assertEquals(1, filtered.size());
+        assertEquals("value", filtered.get("regularArg"));
+        assertFalse(filtered.containsKey("wanaku_meta_contextId"));
+        assertFalse(filtered.containsKey("wanaku_auth_Authorization"));
+    }
+
+    @Test
+    void filterOutReservedArgs_returnsAllArgsWhenNoReserved() {
         Map<String, Object> args = new HashMap<>();
         args.put("regularArg", "value");
         args.put("anotherArg", 42);
 
-        Map<String, Object> filtered = InvokerToolExecutor.filterOutMetadataArgs(args);
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutReservedArgs(args);
 
         assertEquals(2, filtered.size());
         assertEquals("value", filtered.get("regularArg"));
         assertEquals(42, filtered.get("anotherArg"));
+    }
+
+    @Test
+    void extractAuthHeaders_extractsPrefixedArgsAndStripsPrefix() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_auth_Authorization", "Bearer token-123");
+        args.put("wanaku_auth_X-Third-Party", "secret-456");
+        args.put("regularArg", "value");
+        when(toolArguments.args()).thenReturn(args);
+
+        Map<String, String> headers = InvokerToolExecutor.extractAuthHeaders(toolArguments);
+
+        assertEquals(2, headers.size());
+        assertEquals("Bearer token-123", headers.get("Authorization"));
+        assertEquals("secret-456", headers.get("X-Third-Party"));
+        assertFalse(headers.containsKey("regularArg"));
+        assertFalse(headers.containsKey("wanaku_auth_Authorization"));
+    }
+
+    @Test
+    void extractAuthHeaders_handlesNullValues() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_auth_Authorization", "Bearer token-123");
+        args.put("wanaku_auth_nullValue", null);
+        when(toolArguments.args()).thenReturn(args);
+
+        Map<String, String> headers = InvokerToolExecutor.extractAuthHeaders(toolArguments);
+
+        assertEquals(1, headers.size());
+        assertEquals("Bearer token-123", headers.get("Authorization"));
+        assertFalse(headers.containsKey("nullValue"));
+    }
+
+    @Test
+    void extractAuthHeaders_returnsEmptyMapWhenNoAuthArgs() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        when(toolArguments.args()).thenReturn(Map.of("regularArg", "value"));
+
+        Map<String, String> headers = InvokerToolExecutor.extractAuthHeaders(toolArguments);
+
+        assertTrue(headers.isEmpty());
+    }
+
+    @Test
+    void extractAuthHeaders_doesNotInterfereWithMetadataHeaders() {
+        final ToolManager.ToolArguments toolArguments = mockToolArguments();
+        Map<String, Object> args = new HashMap<>();
+        args.put("wanaku_meta_contextId", "ctx-123");
+        args.put("wanaku_auth_Authorization", "Bearer token-123");
+        args.put("regularArg", "value");
+        when(toolArguments.args()).thenReturn(args);
+
+        Map<String, String> authHeaders = InvokerToolExecutor.extractAuthHeaders(toolArguments);
+        Map<String, String> metaHeaders = InvokerToolExecutor.extractMetadataHeaders(toolArguments);
+
+        assertEquals(1, authHeaders.size());
+        assertEquals("Bearer token-123", authHeaders.get("Authorization"));
+
+        assertEquals(1, metaHeaders.size());
+        assertEquals("ctx-123", metaHeaders.get("contextId"));
     }
 }
