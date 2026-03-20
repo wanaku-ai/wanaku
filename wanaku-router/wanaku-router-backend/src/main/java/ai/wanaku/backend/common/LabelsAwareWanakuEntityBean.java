@@ -35,7 +35,6 @@ public abstract class LabelsAwareWanakuEntityBean<W extends LabelsAwareEntity<St
      *   <li>{@code "category=weather & !action=forecast"} - Remove weather entities that are not forecasts</li>
      *   <li>{@code "(category=weather | category=news) & deprecated=true"} - Remove deprecated weather or news entities</li>
      * </ul>
-     * <p>
      *
      * @param labelExpression the label filter expression to match entities for removal;
      *                        must be a valid label expression following the syntax described above
