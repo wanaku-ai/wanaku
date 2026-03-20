@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.quarkus.test.junit.QuarkusTest;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
@@ -24,6 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@QuarkusTest
 class AbstractResourceDelegateTest {
 
     @Mock

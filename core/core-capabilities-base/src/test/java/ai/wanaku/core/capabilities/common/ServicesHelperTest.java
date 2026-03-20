@@ -2,10 +2,12 @@ package ai.wanaku.core.capabilities.common;
 
 import java.io.File;
 import java.nio.file.Path;
+import io.quarkus.test.junit.QuarkusTest;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@QuarkusTest
 class ServicesHelperTest {
 
     @Test
