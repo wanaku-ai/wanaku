@@ -145,7 +145,7 @@ public class ResourcesResource {
     /**
      * Removes a resource capability by name.
      *
-     * @param resource the name of the resource to remove
+     * @param name the name of the resource to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the resource doesn't exist
      * @throws WanakuException if removal fails
      */

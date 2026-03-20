@@ -121,7 +121,7 @@ public class ToolsResource {
     /**
      * Removes a tool capability by name.
      *
-     * @param tool the name of the tool to remove
+     * @param name the name of the tool to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the tool doesn't exist
      * @throws WanakuException if removal fails
      */
