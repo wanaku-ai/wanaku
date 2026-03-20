@@ -2618,11 +2618,56 @@ the body of the data exchange, rather than as a parameter.
 
 For instance, in an HTTP call, `wanaku_body` specifies that the property should be part of the HTTP body, not the HTTP URI.
 
-The handling of such parameters may vary depending on the service being used. 
+The handling of such parameters may vary depending on the service being used.
 
-Currently special arguments: 
+### Passing Metadata as Headers
 
-* `wanaku_body` 
+The `wanaku_meta_` prefix is a special argument prefix that allows AI services to inject headers into tool invocations
+without requiring changes to the tool's configuration or route definition.
+
+Arguments with this prefix are:
+1. Extracted from the regular arguments (they are not passed to the tool as arguments)
+2. Stripped of the `wanaku_meta_` prefix
+3. Forwarded as headers in the gRPC tool invocation request
+
+For example, an argument named `wanaku_meta_contextId` with value `ctx-123` becomes a header with key `contextId` and
+value `ctx-123`.
+
+This is useful for passing context information (such as user IDs, session IDs, or correlation IDs) from the AI service
+through to the downstream capability service.
+
+#### Example: LangChain4j AI Service
+
+```java
+@RegisterAiService
+public interface MyService {
+    @McpToolBox("toolbox")
+    String callTool(
+        @Header("wanaku_meta_contextId") String contextId,
+        @Header("wanaku_meta_userId") String userId,
+        @UserMessage String message
+    );
+}
+```
+
+In the tool implementation, these become accessible as headers in the `ToolInvokeRequest`:
+
+```java
+Map<String, String> headers = request.getHeadersMap();
+String contextId = headers.get("contextId");  // prefix stripped
+String userId = headers.get("userId");
+```
+
+> [!NOTE]
+> If a metadata header has the same name as a tool-defined header (from the tool's schema), the tool-defined header
+> takes precedence.
+
+### Reserved Argument Names
+
+Currently special arguments:
+
+* `wanaku_body` - Indicates the argument should be included in the request body
+* `wanaku_meta_` - Prefix for arguments that are converted to headers (e.g., `wanaku_meta_contextId`)
 
 ## Extending Wanaku: Adding Your Own Capabilities
 
