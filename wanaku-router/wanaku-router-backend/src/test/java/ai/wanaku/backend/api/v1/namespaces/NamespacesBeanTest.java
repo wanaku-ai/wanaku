@@ -4,8 +4,10 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import ai.wanaku.backend.api.v1.resources.ResourcesBean;
 import ai.wanaku.backend.api.v1.tools.ToolsBean;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
+@TestProfile(NoOidcTestProfile.class)
 public class NamespacesBeanTest {
 
     @Inject
