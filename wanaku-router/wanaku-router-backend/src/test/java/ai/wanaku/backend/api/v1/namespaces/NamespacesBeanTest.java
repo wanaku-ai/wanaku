@@ -29,9 +29,9 @@ public class NamespacesBeanTest {
     ResourcesBean resourcesBean;
 
     @Test
-    void testListNamespaces_Empty() {
+    void testListNamespaces_EmptyHasDefaultNamespace() {
         List<Namespace> namespaces = namespacesBean.list();
-        assertThat(namespaces).isNotNull();
+        assertThat(namespaces).extracting(Namespace::getName).containsOnly("default");
     }
 
     @Test
@@ -111,7 +111,7 @@ public class NamespacesBeanTest {
         assertThat(namespaces).extracting(Namespace::getName).contains("mixed-namespace", "another-namespace");
     }
 
-    @Test
+     @Test
     void testListNamespaces_Uniqueness() {
         // Add multiple tools with same namespace
         for (int i = 0; i < 5; i++) {
@@ -121,23 +121,47 @@ public class NamespacesBeanTest {
             tool.setType("http");
             tool.setUri("https://example.com");
             tool.setDescription("Shared Description " + i);
-
             toolsBean.add(tool);
         }
-
         // List namespaces
         List<Namespace> namespaces = namespacesBean.list();
-
         // Verify namespace appears only once
         long count = namespaces.stream()
                 .filter(ns -> "shared-namespace".equals(ns.getName()))
                 .count();
-
+        assertThat(count).isEqualTo(1);
+    }
+    @Test
+    void testListNamespaces_UniquenessAcrossToolsAndResources() {
+        String sharedNamespace = "shared-namespace";
+        // Add a tool with the shared namespace
+        ToolReference tool = new ToolReference();
+        tool.setName("tool-shared");
+        tool.setNamespace(sharedNamespace);
+        tool.setType("http");
+        tool.setUri("https://example.com/tool");
+        tool.setDescription("Shared namespace tool");
+        toolsBean.add(tool);
+        // Add a resource with the same namespace
+        ResourceReference resource = new ResourceReference();
+        resource.setName("resource-shared");
+        resource.setNamespace(sharedNamespace);
+        resource.setType("http");
+        resource.setLocation("https://example.com/resource");
+        resource.setDescription("Shared namespace resource");
+        resourcesBean.expose(resource);
+        // List namespaces
+        List<Namespace> namespaces = namespacesBean.list();
+        // Verify the shared namespace appears only once across tools and resources
+        long count = namespaces.stream()
+                .filter(ns -> sharedNamespace.equals(ns.getName()))
+                .count();
         assertThat(count).isEqualTo(1);
     }
 
     @Test
-    void testListNamespaces_DefaultNamespace() {
+    void testListNamespaces_DefaultNamespaceWhenUsed() {
+        // The "default" namespace should already exist and remain unique after usage.
         // Add tool with default namespace
         ToolReference tool = new ToolReference();
         tool.setName("default-tool");
@@ -151,6 +175,9 @@ public class NamespacesBeanTest {
         // List namespaces
         List<Namespace> namespaces = namespacesBean.list();
 
-        assertThat(namespaces).extracting(Namespace::getName).contains("default");
+        long count = namespaces.stream()
+                .filter(ns -> "default".equals(ns.getName()))
+                .count();
+        assertThat(count).isEqualTo(1);
     }
 }

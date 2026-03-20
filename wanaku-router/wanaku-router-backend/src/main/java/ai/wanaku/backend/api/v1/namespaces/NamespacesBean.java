@@ -76,6 +76,7 @@ public class NamespacesBean {
 
     public List<Namespace> list(String labelFilter) {
         if (labelFilter == null || labelFilter.trim().isEmpty()) {
+            ensureDefaultNamespace();
             return namespaceRepository.listAll();
         }
         return namespaceRepository.findAllFilterByLabelExpression(labelFilter);
@@ -83,6 +84,16 @@ public class NamespacesBean {
 
     public List<Namespace> list() {
         return list(null);
+    }
+
+    private void ensureDefaultNamespace() {
+        List<Namespace> defaultList = namespaceRepository.findByName("default");
+        if (defaultList.isEmpty()) {
+            Namespace defaultNs = new Namespace();
+            defaultNs.setPath("default");
+            defaultNs.setName("default");
+            namespaceRepository.persist(defaultNs);
+        }
     }
 
     public boolean exists(String id) {
