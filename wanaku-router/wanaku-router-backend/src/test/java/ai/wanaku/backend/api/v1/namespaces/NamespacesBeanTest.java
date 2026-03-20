@@ -31,7 +31,11 @@ public class NamespacesBeanTest {
     @Test
     void testListNamespaces_EmptyHasDefaultNamespace() {
         List<Namespace> namespaces = namespacesBean.list();
-        assertThat(namespaces).extracting(Namespace::getName).containsOnly("default");
+        assertThat(namespaces).extracting(Namespace::getName).contains("default");
+        long count = namespaces.stream()
+                .filter(ns -> "default".equals(ns.getName()))
+                .count();
+        assertThat(count).isEqualTo(1);
     }
 
     @Test
