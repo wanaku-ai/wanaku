@@ -12,6 +12,7 @@ import type {
   DeleteApiV1CapabilitiesStaleParams,
   DeleteApiV1DataStoreLabelsParams,
   DeleteApiV1DataStoreParams,
+  DeleteApiV1NamespacesStaleParams,
   DeleteApiV1PromptsParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
@@ -19,6 +20,7 @@ import type {
   GetApiV1DataStoreParams,
   GetApiV1ForwardsParams,
   GetApiV1NamespacesParams,
+  GetApiV1NamespacesStaleParams,
   GetApiV1ResourcesParams,
   GetApiV1ToolsParams,
   Namespace,
@@ -1183,6 +1185,138 @@ export const getApiV1Namespaces = async (
 };
 
 /**
+ * @summary Create
+ */
+export type postApiV1NamespacesResponse200 = {
+  data: WanakuResponseNamespace;
+  status: 200;
+};
+
+export type postApiV1NamespacesResponse400 = {
+  data: null;
+  status: 400;
+};
+
+export type postApiV1NamespacesResponseComposite =
+  | postApiV1NamespacesResponse200
+  | postApiV1NamespacesResponse400;
+
+export type postApiV1NamespacesResponse =
+  postApiV1NamespacesResponseComposite & {
+    headers: Headers;
+  };
+
+export const getPostApiV1NamespacesUrl = () => {
+  return `/api/v1/namespaces`;
+};
+
+export const postApiV1Namespaces = async (
+  namespace: Namespace,
+  options?: RequestInit,
+): Promise<postApiV1NamespacesResponse> => {
+  return customFetch<postApiV1NamespacesResponse>(getPostApiV1NamespacesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(namespace),
+  });
+};
+
+/**
+ * @summary List Stale
+ */
+export type getApiV1NamespacesStaleResponse200 = {
+  data: WanakuResponseListNamespace;
+  status: 200;
+};
+
+export type getApiV1NamespacesStaleResponseComposite =
+  getApiV1NamespacesStaleResponse200;
+
+export type getApiV1NamespacesStaleResponse =
+  getApiV1NamespacesStaleResponseComposite & {
+    headers: Headers;
+  };
+
+export const getGetApiV1NamespacesStaleUrl = (
+  params?: GetApiV1NamespacesStaleParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/namespaces/stale?${stringifiedParams}`
+    : `/api/v1/namespaces/stale`;
+};
+
+export const getApiV1NamespacesStale = async (
+  params?: GetApiV1NamespacesStaleParams,
+  options?: RequestInit,
+): Promise<getApiV1NamespacesStaleResponse> => {
+  return customFetch<getApiV1NamespacesStaleResponse>(
+    getGetApiV1NamespacesStaleUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Cleanup Stale
+ */
+export type deleteApiV1NamespacesStaleResponse200 = {
+  data: WanakuResponseInteger;
+  status: 200;
+};
+
+export type deleteApiV1NamespacesStaleResponseComposite =
+  deleteApiV1NamespacesStaleResponse200;
+
+export type deleteApiV1NamespacesStaleResponse =
+  deleteApiV1NamespacesStaleResponseComposite & {
+    headers: Headers;
+  };
+
+export const getDeleteApiV1NamespacesStaleUrl = (
+  params?: DeleteApiV1NamespacesStaleParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/namespaces/stale?${stringifiedParams}`
+    : `/api/v1/namespaces/stale`;
+};
+
+export const deleteApiV1NamespacesStale = async (
+  params?: DeleteApiV1NamespacesStaleParams,
+  options?: RequestInit,
+): Promise<deleteApiV1NamespacesStaleResponse> => {
+  return customFetch<deleteApiV1NamespacesStaleResponse>(
+    getDeleteApiV1NamespacesStaleUrl(params),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+/**
  * @summary Update
  */
 export type putApiV1NamespacesIdResponse200 = {
@@ -1255,6 +1389,39 @@ export const getApiV1NamespacesId = async (
     {
       ...options,
       method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Delete
+ */
+export type deleteApiV1NamespacesIdResponse200 = {
+  data: null;
+  status: 200;
+};
+
+export type deleteApiV1NamespacesIdResponseComposite =
+  deleteApiV1NamespacesIdResponse200;
+
+export type deleteApiV1NamespacesIdResponse =
+  deleteApiV1NamespacesIdResponseComposite & {
+    headers: Headers;
+  };
+
+export const getDeleteApiV1NamespacesIdUrl = (id: string) => {
+  return `/api/v1/namespaces/${id}`;
+};
+
+export const deleteApiV1NamespacesId = async (
+  id: string,
+  options?: RequestInit,
+): Promise<deleteApiV1NamespacesIdResponse> => {
+  return customFetch<deleteApiV1NamespacesIdResponse>(
+    getDeleteApiV1NamespacesIdUrl(id),
+    {
+      ...options,
+      method: "DELETE",
     },
   );
 };

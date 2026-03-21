@@ -1642,6 +1642,109 @@
         },
         "summary" : "List",
         "tags" : [ "Namespaces Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Namespace"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseNamespace"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Create",
+        "tags" : [ "Namespaces Resource" ]
+      }
+    },
+    "/api/v1/namespaces/stale" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "includeUnlabeled",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "unassignedOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListNamespace"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Stale",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "includeUnlabeled",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "unassignedOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Cleanup Stale",
+        "tags" : [ "Namespaces Resource" ]
       }
     },
     "/api/v1/namespaces/{id}" : {
@@ -1697,6 +1800,23 @@
           }
         },
         "summary" : "Get By Id",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete",
         "tags" : [ "Namespaces Resource" ]
       }
     },

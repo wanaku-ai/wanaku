@@ -131,3 +131,5 @@ export * from "./wanakuResponseServiceTarget";
 export * from "./wanakuResponseString";
 export * from "./wanakuResponseSystemStatistics";
 export * from "./wanakuResponseToolReference";
+export * from "./deleteApiV1NamespacesStaleParams";
+export * from "./getApiV1NamespacesStaleParams";
