@@ -296,7 +296,7 @@ There are multiple ways you can test Wanaku and the integrations you develop.
 
 1. Wanaku's LLMchat page in the Web UI
 2. You can use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to easily test your tool or provider.
-3. Any of the scripts in the `tests` directory 
+3. Use the maintained test suites under `tests/integration`, `tests/mcp-servers`, and `tests/load`.
 4. Any agent application (such as [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat)) 
 
 ## Release Guide
