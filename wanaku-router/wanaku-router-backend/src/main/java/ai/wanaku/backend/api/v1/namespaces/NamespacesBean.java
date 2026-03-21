@@ -5,7 +5,10 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
@@ -13,6 +16,10 @@ import ai.wanaku.core.persistence.api.NamespaceRepository;
 @Singleton
 public class NamespacesBean {
     private static final Logger LOG = Logger.getLogger(NamespacesBean.class);
+    private static final String LABEL_PREALLOCATED = "wanaku.io/preallocated";
+    private static final String LABEL_PREALLOCATED_AT = "wanaku.io/preallocated-at";
+    private static final String LABEL_ALLOCATED_AT = "wanaku.io/allocated-at";
+    private static final String LABEL_EXPIRES_AT = "wanaku.io/expires-at";
 
     @Inject
     Instance<NamespaceRepository> namespaceRepositoryInstance;
@@ -34,6 +41,7 @@ public class NamespacesBean {
                 Namespace namespace = new Namespace();
                 namespace.setPath(namespacePath);
                 namespace.setName(null);
+                markPreallocated(namespace);
 
                 namespaceRepository.persist(namespace);
 
@@ -63,6 +71,7 @@ public class NamespacesBean {
             if (namespace.getName() == null) {
                 LOG.debugf("Allocating namespace with path %s for %s", namespace.getPath(), name);
                 namespace.setName(name);
+                markAllocated(namespace);
                 return namespaceRepository.persist(namespace);
             } else {
                 LOG.debugf("Reusing namespace with path %s for %s", namespace.getPath(), name);
@@ -72,6 +81,24 @@ public class NamespacesBean {
         }
 
         return byName.getFirst();
+    }
+
+    public Namespace create(Namespace namespace) {
+        if (namespace == null) {
+            throw new IllegalArgumentException("Namespace cannot be null");
+        }
+
+        if (namespace.getName() != null && namespace.getName().trim().isEmpty()) {
+            namespace.setName(null);
+        }
+
+        if (namespace.getName() == null) {
+            markPreallocated(namespace);
+        } else {
+            markAllocated(namespace);
+        }
+
+        return namespaceRepository.persist(namespace);
     }
 
     public List<Namespace> list(String labelFilter) {
@@ -95,5 +122,84 @@ public class NamespacesBean {
 
     public boolean update(String id, Namespace namespace) {
         return namespaceRepository.update(id, namespace);
+    }
+
+    public boolean deleteById(String id) {
+        return namespaceRepository.deleteById(id);
+    }
+
+    public List<Namespace> listStale(long maxAgeSeconds, boolean unassignedOnly, boolean includeUnlabeled) {
+        long nowSeconds = Instant.now().getEpochSecond();
+        return namespaceRepository.listAll().stream()
+                .filter(namespace -> !unassignedOnly || namespace.getName() == null)
+                .filter(namespace -> isStale(namespace, nowSeconds, maxAgeSeconds, includeUnlabeled))
+                .toList();
+    }
+
+    public int cleanupStale(long maxAgeSeconds, boolean unassignedOnly, boolean includeUnlabeled) {
+        List<Namespace> staleNamespaces = listStale(maxAgeSeconds, unassignedOnly, includeUnlabeled);
+        int removed = 0;
+        for (Namespace namespace : staleNamespaces) {
+            if (namespace.getId() != null && namespaceRepository.deleteById(namespace.getId())) {
+                removed++;
+            }
+        }
+        LOG.infof("Stale namespace cleanup complete: %d namespaces removed", removed);
+        return removed;
+    }
+
+    private void markPreallocated(Namespace namespace) {
+        Map<String, String> labels = ensureLabels(namespace);
+        labels.put(LABEL_PREALLOCATED, "true");
+        labels.putIfAbsent(LABEL_PREALLOCATED_AT, String.valueOf(Instant.now().getEpochSecond()));
+    }
+
+    private void markAllocated(Namespace namespace) {
+        Map<String, String> labels = ensureLabels(namespace);
+        labels.put(LABEL_PREALLOCATED, "false");
+        labels.put(LABEL_ALLOCATED_AT, String.valueOf(Instant.now().getEpochSecond()));
+    }
+
+    private Map<String, String> ensureLabels(Namespace namespace) {
+        Map<String, String> labels = namespace.getLabels();
+        if (labels == null) {
+            labels = new HashMap<>();
+            namespace.setLabels(labels);
+        }
+        return labels;
+    }
+
+    private boolean isStale(Namespace namespace, long nowSeconds, long maxAgeSeconds, boolean includeUnlabeled) {
+        Map<String, String> labels = namespace.getLabels();
+        if (labels == null || labels.isEmpty()) {
+            return includeUnlabeled;
+        }
+
+        Long expiresAt = parseEpochSeconds(labels.get(LABEL_EXPIRES_AT));
+        if (expiresAt != null && expiresAt <= nowSeconds) {
+            return true;
+        }
+
+        Long preallocatedAt = parseEpochSeconds(labels.get(LABEL_PREALLOCATED_AT));
+        if (preallocatedAt != null) {
+            return maxAgeSeconds > 0 && (nowSeconds - preallocatedAt) >= maxAgeSeconds;
+        }
+
+        return includeUnlabeled;
+    }
+
+    private Long parseEpochSeconds(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            long parsed = Long.parseLong(value.trim());
+            if (parsed > 100000000000L) {
+                return parsed / 1000;
+            }
+            return parsed;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }
