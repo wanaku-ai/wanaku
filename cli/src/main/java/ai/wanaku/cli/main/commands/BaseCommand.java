@@ -94,6 +94,20 @@ public abstract class BaseCommand implements Callable<Integer> {
         }
     }
 
+    protected static <T> T initServiceIfNeeded(T existing, Class<T> clazz, String host) {
+        if (existing != null) {
+            return existing;
+        }
+        return initService(clazz, host);
+    }
+
+    protected <T> T initAuthenticatedServiceIfNeeded(T existing, Class<T> clazz, String host) {
+        if (existing != null) {
+            return existing;
+        }
+        return initAuthenticatedService(clazz, host);
+    }
+
     private static AuthenticationInterceptor newAuthenticationInterceptor(String tokenOverride) {
         return new AuthenticationInterceptor() {
             @Override

@@ -14,6 +14,8 @@ import static picocli.CommandLine.usage;
  * </p>
  * <ul>
  *   <li>Listing available namespaces</li>
+ *   <li>Creating, updating, and deleting namespaces</li>
+ *   <li>Cleaning up stale namespaces</li>
  * </ul>
  * <p>
  * Namespaces provide logical grouping and isolation for tools and other resources,
@@ -23,7 +25,15 @@ import static picocli.CommandLine.usage;
 @CommandLine.Command(
         name = "namespaces",
         description = "Manage namespaces",
-        subcommands = {NamespaceList.class, NamespacesLabel.class})
+        subcommands = {
+            NamespaceList.class,
+            NamespacesShow.class,
+            NamespacesCreate.class,
+            NamespacesUpdate.class,
+            NamespacesDelete.class,
+            NamespacesCleanup.class,
+            NamespacesLabel.class
+        })
 public class Namespaces extends BaseCommand {
 
     @Override

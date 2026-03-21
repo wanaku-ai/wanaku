@@ -56,6 +56,14 @@ wanaku resources list
 # View capability services
 wanaku capabilities list
 
+# Manage namespaces
+wanaku namespaces list
+wanaku namespaces create --path ns-qa --name qa --label env=qa
+wanaku namespaces show <namespace-id>
+wanaku namespaces update <namespace-id> --name qa-updated
+wanaku namespaces delete <namespace-id>
+wanaku namespaces cleanup --max-age-days 7 -y
+
 # Create a new tool project
 wanaku services create tool --name my-tool
 ```
