@@ -1,7 +1,10 @@
 package ai.wanaku.backend.api.v1.exceptions;
 
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
@@ -17,10 +20,20 @@ import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
 public abstract class NotFoundExceptionMapper<T extends Throwable> implements ExceptionMapper<T> {
     private static final Logger LOG = Logger.getLogger(NotFoundExceptionMapper.class);
 
+    @Context
+    UriInfo uriInfo;
+
+    @Context
+    Request request;
+
     @APIResponse(responseCode = "404")
     @Override
     public Response toResponse(T exception) {
-        LOG.error(exception);
+        if (uriInfo != null && request != null) {
+            LOG.errorf("%s %s -> 404", request.getMethod(), uriInfo.getRequestUri());
+        } else {
+            LOG.error(exception);
+        }
 
         return Response.status(Response.Status.NOT_FOUND).build();
     }
