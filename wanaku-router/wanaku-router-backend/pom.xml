@@ -176,6 +176,12 @@
             <artifactId>grpc-netty-shaded</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>integration-tests</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
