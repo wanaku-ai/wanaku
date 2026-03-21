@@ -5,6 +5,7 @@ target/
 out
 wanaku-router/wanaku-router-backend/.quinoa/
 wanaku-router/wanaku-router-backend/application.dev.properties
+wanaku-router/wanaku-router-backend/config/application.properties
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

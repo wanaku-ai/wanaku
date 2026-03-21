@@ -312,7 +312,7 @@ export const getApiV1CapabilitiesToolsState = async (
  * @summary Update
  */
 export type putApiV1DataStoreResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -355,7 +355,7 @@ export const putApiV1DataStore = async (
  * @summary Remove By Name
  */
 export type deleteApiV1DataStoreResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -554,7 +554,7 @@ export const deleteApiV1DataStoreLabels = async (
  * @summary Remove By Id
  */
 export type deleteApiV1DataStoreIdResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -672,7 +672,7 @@ export const getApiV1Forwards = async (
  * @summary Add Forward
  */
 export type postApiV1ForwardsResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -715,7 +715,7 @@ export const postApiV1Forwards = async (
  * @summary Update
  */
 export type putApiV1ForwardsNameResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -763,7 +763,7 @@ export const putApiV1ForwardsName = async (
  * @summary Remove Forward
  */
 export type deleteApiV1ForwardsNameResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -829,7 +829,7 @@ export const getApiV1ForwardsName = async (
  * @summary Refresh
  */
 export type postApiV1ForwardsNameRefreshesResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -909,7 +909,7 @@ export const postApiV1ManagementDiscovery = async (
  * @summary Deregister
  */
 export type deleteApiV1ManagementDiscoveryResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -945,7 +945,7 @@ export const deleteApiV1ManagementDiscovery = async (
  * @summary Ping
  */
 export type postApiV1ManagementDiscoveryHeartbeatsResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1087,7 +1087,7 @@ export const getApiV1Namespaces = async (
  * @summary Update
  */
 export type putApiV1NamespacesIdResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1162,7 +1162,7 @@ export const getApiV1NamespacesId = async (
  * @summary Update
  */
 export type putApiV1PromptsResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1205,7 +1205,7 @@ export const putApiV1Prompts = async (
  * @summary Remove
  */
 export type deleteApiV1PromptsResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1558,7 +1558,7 @@ export const postApiV1ResourcesPayloads = async (
  * @summary Update
  */
 export type putApiV1ResourcesNameResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1606,7 +1606,7 @@ export const putApiV1ResourcesName = async (
  * @summary Remove
  */
 export type deleteApiV1ResourcesNameResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1868,7 +1868,7 @@ export const postApiV1ToolsPayloads = async (
  * @summary Update
  */
 export type putApiV1ToolsNameResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
@@ -1912,7 +1912,7 @@ export const putApiV1ToolsName = async (
  * @summary Remove
  */
 export type deleteApiV1ToolsNameResponse200 = {
-  data: null;
+  data: unknown;
   status: 200;
 };
 
