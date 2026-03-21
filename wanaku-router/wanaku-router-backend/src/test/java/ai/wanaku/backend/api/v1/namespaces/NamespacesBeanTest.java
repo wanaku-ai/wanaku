@@ -32,9 +32,8 @@ public class NamespacesBeanTest {
     void testListNamespaces_EmptyHasDefaultNamespace() {
         List<Namespace> namespaces = namespacesBean.list();
         assertThat(namespaces).extracting(Namespace::getName).contains("default");
-        long count = namespaces.stream()
-                .filter(ns -> "default".equals(ns.getName()))
-                .count();
+        long count =
+                namespaces.stream().filter(ns -> "default".equals(ns.getName())).count();
         assertThat(count).isEqualTo(1);
     }
 
@@ -115,7 +114,7 @@ public class NamespacesBeanTest {
         assertThat(namespaces).extracting(Namespace::getName).contains("mixed-namespace", "another-namespace");
     }
 
-     @Test
+    @Test
     void testListNamespaces_Uniqueness() {
         // Add multiple tools with same namespace
         for (int i = 0; i < 5; i++) {
@@ -135,6 +134,7 @@ public class NamespacesBeanTest {
                 .count();
         assertThat(count).isEqualTo(1);
     }
+
     @Test
     void testListNamespaces_UniquenessAcrossToolsAndResources() {
         String sharedNamespace = "shared-namespace";
@@ -179,9 +179,8 @@ public class NamespacesBeanTest {
         // List namespaces
         List<Namespace> namespaces = namespacesBean.list();
 
-        long count = namespaces.stream()
-                .filter(ns -> "default".equals(ns.getName()))
-                .count();
+        long count =
+                namespaces.stream().filter(ns -> "default".equals(ns.getName())).count();
         assertThat(count).isEqualTo(1);
     }
 }
