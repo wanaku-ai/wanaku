@@ -31,7 +31,7 @@ public class NamespacesDelete extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService = initService(NamespacesService.class, host);
+        namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         try (Response response = namespacesService.delete(id)) {
             printer.printSuccessMessage("Namespace deleted: " + id);

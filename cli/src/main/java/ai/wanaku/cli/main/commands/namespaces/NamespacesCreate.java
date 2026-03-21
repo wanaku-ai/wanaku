@@ -53,7 +53,7 @@ public class NamespacesCreate extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService = initService(NamespacesService.class, host);
+        namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         Namespace namespace = new Namespace();
         namespace.setPath(path);
