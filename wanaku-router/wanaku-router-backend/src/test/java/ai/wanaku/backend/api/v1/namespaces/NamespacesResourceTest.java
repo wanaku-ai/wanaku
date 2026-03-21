@@ -16,6 +16,7 @@ import ai.wanaku.capabilities.sdk.api.types.Namespace;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -170,6 +171,6 @@ public class NamespacesResourceTest extends WanakuRouterTest {
                 .get("/api/v1/namespaces/stale")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body(String.format("data.find { it.id == '%s' }", staleId), is(null));
+                .body(String.format("data.find { it.id == '%s' }", staleId), nullValue());
     }
 }
