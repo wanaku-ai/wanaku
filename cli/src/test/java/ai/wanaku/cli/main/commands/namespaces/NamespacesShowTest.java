@@ -2,9 +2,8 @@ package ai.wanaku.cli.main.commands.namespaces;
 
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.core.services.api.NamespacesService;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-
+import ai.wanaku.core.services.api.NamespacesService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -33,7 +33,7 @@ public class NamespacesShow extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService = initService(NamespacesService.class, host);
+        namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         try {
             WanakuResponse<Namespace> response = namespacesService.getById(id);

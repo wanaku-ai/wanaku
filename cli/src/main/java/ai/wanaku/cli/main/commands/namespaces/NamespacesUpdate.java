@@ -61,7 +61,7 @@ public class NamespacesUpdate extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService = initService(NamespacesService.class, host);
+        namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         if (clearName && name != null) {
             printer.printErrorMessage("Cannot specify both --name and --clear-name.");
