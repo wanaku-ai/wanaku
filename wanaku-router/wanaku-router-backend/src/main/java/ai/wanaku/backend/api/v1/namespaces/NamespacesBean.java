@@ -5,10 +5,12 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
@@ -20,6 +22,7 @@ public class NamespacesBean {
     private static final String LABEL_PREALLOCATED_AT = "wanaku.io/preallocated-at";
     private static final String LABEL_ALLOCATED_AT = "wanaku.io/allocated-at";
     private static final String LABEL_EXPIRES_AT = "wanaku.io/expires-at";
+    private static final Set<String> PROTECTED_NAMESPACES = Set.of("public", "wanaku-internal");
 
     @Inject
     Instance<NamespaceRepository> namespaceRepositoryInstance;
@@ -92,6 +95,10 @@ public class NamespacesBean {
             namespace.setName(null);
         }
 
+        if (isProtectedNamespaceName(namespace.getName()) || isProtectedNamespaceName(namespace.getPath())) {
+            throw new IllegalArgumentException("Reserved namespace names cannot be created");
+        }
+
         if (namespace.getName() == null) {
             markPreallocated(namespace);
         } else {
@@ -136,14 +143,28 @@ public class NamespacesBean {
     }
 
     public boolean deleteById(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return false;
+        }
+
+        Namespace namespace = namespaceRepository.findById(id);
+        if (namespace == null) {
+            return false;
+        }
+
+        if (isProtectedNamespace(namespace)) {
+            LOG.warnf("Refusing to delete protected namespace %s", namespace.getPath());
+            return false;
+        }
+
         return namespaceRepository.deleteById(id);
     }
 
     public List<Namespace> listStale(long maxAgeSeconds, boolean unassignedOnly, boolean includeUnlabeled) {
-        long nowSeconds = Instant.now().getEpochSecond();
+        Instant now = Instant.now();
         return namespaceRepository.listAll().stream()
                 .filter(namespace -> !unassignedOnly || namespace.getName() == null)
-                .filter(namespace -> isStale(namespace, nowSeconds, maxAgeSeconds, includeUnlabeled))
+                .filter(namespace -> isStale(namespace, now, maxAgeSeconds, includeUnlabeled))
                 .toList();
     }
 
@@ -151,7 +172,7 @@ public class NamespacesBean {
         List<Namespace> staleNamespaces = listStale(maxAgeSeconds, unassignedOnly, includeUnlabeled);
         int removed = 0;
         for (Namespace namespace : staleNamespaces) {
-            if (namespace.getId() != null && namespaceRepository.deleteById(namespace.getId())) {
+            if (namespace.getId() != null && deleteById(namespace.getId())) {
                 removed++;
             }
         }
@@ -180,35 +201,54 @@ public class NamespacesBean {
         return labels;
     }
 
-    private boolean isStale(Namespace namespace, long nowSeconds, long maxAgeSeconds, boolean includeUnlabeled) {
+    private boolean isStale(Namespace namespace, Instant now, long maxAgeSeconds, boolean includeUnlabeled) {
         Map<String, String> labels = namespace.getLabels();
         if (labels == null || labels.isEmpty()) {
             return includeUnlabeled;
         }
 
-        Long expiresAt = parseEpochSeconds(labels.get(LABEL_EXPIRES_AT));
-        if (expiresAt != null && expiresAt <= nowSeconds) {
+        Instant expiresAt = parseEpochInstant(labels.get(LABEL_EXPIRES_AT));
+        if (expiresAt != null && !expiresAt.isAfter(now)) {
             return true;
         }
 
-        Long preallocatedAt = parseEpochSeconds(labels.get(LABEL_PREALLOCATED_AT));
+        Instant preallocatedAt = parseEpochInstant(labels.get(LABEL_PREALLOCATED_AT));
         if (preallocatedAt != null) {
-            return maxAgeSeconds > 0 && (nowSeconds - preallocatedAt) >= maxAgeSeconds;
+            if (maxAgeSeconds <= 0) {
+                return false;
+            }
+            Duration age = Duration.between(preallocatedAt, now);
+            return age.compareTo(Duration.ofSeconds(maxAgeSeconds)) >= 0;
         }
 
         return includeUnlabeled;
     }
 
-    private Long parseEpochSeconds(String value) {
+    private boolean isProtectedNamespace(Namespace namespace) {
+        return isProtectedNamespaceName(namespace.getName()) || isProtectedNamespaceName(namespace.getPath());
+    }
+
+    private boolean isProtectedNamespaceName(String value) {
+        if (value == null) {
+            return false;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return false;
+        }
+        return PROTECTED_NAMESPACES.stream().anyMatch(name -> name.equalsIgnoreCase(trimmed));
+    }
+
+    private Instant parseEpochInstant(String value) {
         if (value == null || value.trim().isEmpty()) {
             return null;
         }
         try {
             long parsed = Long.parseLong(value.trim());
             if (parsed > 100000000000L) {
-                return parsed / 1000;
+                return Instant.ofEpochMilli(parsed);
             }
-            return parsed;
+            return Instant.ofEpochSecond(parsed);
         } catch (NumberFormatException ex) {
             return null;
         }
