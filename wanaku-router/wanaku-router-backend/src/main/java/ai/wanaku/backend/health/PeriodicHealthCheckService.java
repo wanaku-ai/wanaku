@@ -16,6 +16,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.common.ServiceTargetEvent;
+import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -83,6 +84,15 @@ public class PeriodicHealthCheckService {
     public void checkInstanceHealth(ServiceTarget target) {
         String id = target.getId();
         if (id == null) {
+            return;
+        }
+
+        // Skip capabilities that were explicitly deregistered.
+        // Capabilities that crashed without deregistering remain ACTIVE
+        // and will still be probed and marked as DOWN.
+        ActivityRecord record = serviceRegistry.getStates(id);
+        if (record != null && !record.isActive()) {
+            LOG.debugf("Skipping health check for deregistered capability %s (%s)", target.getServiceName(), id);
             return;
         }
 
