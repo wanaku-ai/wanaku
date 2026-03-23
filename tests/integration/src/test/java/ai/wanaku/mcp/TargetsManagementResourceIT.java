@@ -1,67 +1,90 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * ...
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ai.wanaku.mcp;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-
 
 import java.util.List;
 
-
 import static io.restassured.RestAssured.given;
-
 
 /**
  * Negative (error-path) integration tests for the Targets Management REST API.
- * Reference: Issue #910 | Related PR: #908
+ *
+ * <p>These tests verify that the API correctly rejects invalid, malformed, or
+ * unauthorized requests and returns appropriate HTTP error status codes.
+ *
+ * <p>Reference: Issue #910. Related PR: #908.
  */
-
-
+@QuarkusTest
 public class TargetsManagementResourceIT extends WanakuIntegrationBase {
 
+    private static final String REGISTER_ENDPOINT = "/api/v1/management/discovery";
+    private static final String LIST_ENDPOINT = "/api/v1/capabilities";
+    private static final String DEFAULT_SERVICE_TYPE = "tool-invoker";
 
     @Override
     public List<WanakuContainerDownstreamService> activeWanakuDownstreamServices() {
         return List.of();
     }
 
+    // -----------------------------------------------------------------------
+    // HELPERS
+    // -----------------------------------------------------------------------
+
+    private String baseUrl() {
+        return "http://localhost:" + router.getMappedPort(8080);
+    }
+
+    private String accessToken() {
+        return keycloak.getAccessToken();
+    }
+
     private static String validTargetJson() {
-        return "{\"host\": \"localhost\", \"port\": 8080, \"service\": \"http\"}";
+        return "{\"serviceName\": \"test-service\", \"host\": \"localhost\","
+                + " \"port\": 8080, \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}";
     }
-
-
-    private static boolean isAuthEnabled() {
-        return System.getProperty("auth.enabled", "false").equals("true");
-    }
-
 
     // -----------------------------------------------------------------------
     // 1. MALFORMED / INVALID PAYLOAD
     // -----------------------------------------------------------------------
 
     @Test
-    void testAddTargetMalformedJson() {
+    void testRegisterTargetMalformedJson() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.TEXT)
                 .body("malformed-body-not-json")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetEmptyBody() {
+    void testRegisterTargetEmptyBody() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
                 .body("{}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -71,34 +94,56 @@ public class TargetsManagementResourceIT extends WanakuIntegrationBase {
     // -----------------------------------------------------------------------
 
     @Test
-    void testAddTargetMissingHost() {
+    void testRegisterTargetMissingHost() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"port\": 8080, \"service\": \"http\"}")
+                .body("{\"serviceName\": \"test\", \"port\": 8080,"
+                        + " \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetMissingPort() {
+    void testRegisterTargetMissingPort() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"service\": \"http\"}")
+                .body("{\"serviceName\": \"test\", \"host\": \"localhost\","
+                        + " \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetMissingService() {
+    void testRegisterTargetMissingServiceType() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": 8080}")
+                .body("{\"serviceName\": \"test\", \"host\": \"localhost\", \"port\": 8080}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void testRegisterTargetMissingServiceName() {
+        given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
+                .contentType(ContentType.JSON)
+                .body("{\"host\": \"localhost\", \"port\": 8080,"
+                        + " \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
+                .when()
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -108,45 +153,57 @@ public class TargetsManagementResourceIT extends WanakuIntegrationBase {
     // -----------------------------------------------------------------------
 
     @Test
-    void testAddTargetPortTooHigh() {
+    void testRegisterTargetPortTooHigh() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": 99999, \"service\": \"http\"}")
+                .body("{\"serviceName\": \"test\", \"host\": \"localhost\","
+                        + " \"port\": 99999, \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetNegativePort() {
+    void testRegisterTargetNegativePort() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": -1, \"service\": \"http\"}")
+                .body("{\"serviceName\": \"test\", \"host\": \"localhost\","
+                        + " \"port\": -1, \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetEmptyHost() {
+    void testRegisterTargetEmptyHost() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"\", \"port\": 8080, \"service\": \"http\"}")
+                .body("{\"serviceName\": \"test\", \"host\": \"\","
+                        + " \"port\": 8080, \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetNullHost() {
+    void testRegisterTargetNullHost() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": null, \"port\": 8080, \"service\": \"http\"}")
+                .body("{\"serviceName\": \"test\", \"host\": null,"
+                        + " \"port\": 8080, \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -156,23 +213,29 @@ public class TargetsManagementResourceIT extends WanakuIntegrationBase {
     // -----------------------------------------------------------------------
 
     @Test
-    void testAddTargetInvalidServiceType() {
+    void testRegisterTargetInvalidServiceType() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": 8080, \"service\": \"INVALID_SERVICE_XYZ\"}")
+                .body("{\"serviceName\": \"test\", \"host\": \"localhost\","
+                        + " \"port\": 8080, \"serviceType\": \"INVALID_SERVICE_XYZ\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
 
     @Test
-    void testAddTargetEmptyServiceType() {
+    void testRegisterTargetEmptyServiceType() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": 8080, \"service\": \"\"}")
+                .body("{\"serviceName\": \"test\", \"host\": \"localhost\","
+                        + " \"port\": 8080, \"serviceType\": \"\"}")
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -182,19 +245,26 @@ public class TargetsManagementResourceIT extends WanakuIntegrationBase {
     // -----------------------------------------------------------------------
 
     @Test
-    void testRemoveNonExistentTarget() {
+    void testDeregisterNonExistentTarget() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
+                .contentType(ContentType.JSON)
+                .body("{\"serviceName\": \"non-existent\", \"host\": \"non-existent-host\","
+                        + " \"port\": 9999, \"serviceType\": \"" + DEFAULT_SERVICE_TYPE + "\"}")
                 .when()
-                .delete("/q/targets/remove/non-existent-host-xyz/99999")
+                .delete(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(404);
     }
 
     @Test
-    void testListTargetsForUnknownService() {
+    void testListCapabilitiesUnknownService() {
         given()
+                .baseUri(baseUrl())
+                .auth().oauth2(accessToken())
                 .when()
-                .get("/q/targets/list/UNKNOWN_SERVICE_XYZ")
+                .get(LIST_ENDPOINT + "?serviceType=UNKNOWN_SERVICE_XYZ")
                 .then()
                 .statusCode(404);
     }
@@ -204,25 +274,25 @@ public class TargetsManagementResourceIT extends WanakuIntegrationBase {
     // -----------------------------------------------------------------------
 
     @Test
-    void testAddTargetUnauthorized() {
-        Assumptions.assumeTrue(isAuthEnabled(),
-                "Skipping — auth is not enabled in this test profile");
+    void testRegisterTargetUnauthorized() {
         given()
+                .baseUri(baseUrl())
                 .contentType(ContentType.JSON)
                 .body(validTargetJson())
                 .when()
-                .post("/q/targets/add")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(401);
     }
 
     @Test
-    void testRemoveTargetUnauthorized() {
-        Assumptions.assumeTrue(isAuthEnabled(),
-                "Skipping — auth is not enabled in this test profile");
+    void testDeregisterTargetUnauthorized() {
         given()
+                .baseUri(baseUrl())
+                .contentType(ContentType.JSON)
+                .body(validTargetJson())
                 .when()
-                .delete("/q/targets/remove/localhost/8080")
+                .delete(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(401);
     }
