@@ -25,7 +25,10 @@ import org.junit.jupiter.api.BeforeEach;
  * This class sets up the necessary Testcontainers environment, including a shared network,
  * a central router, and required downstream services. It also provides utility methods
  * for interacting with the system, such as executing CLI commands.
+ *
+ * NOTE: this is deprecated, as the integration tests are moving to the Wanaku tests project.
  */
+@Deprecated(forRemoval = true)
 public abstract class WanakuIntegrationBase {
     private static final Logger LOG = LoggerFactory.getLogger(WanakuIntegrationBase.class);
 
