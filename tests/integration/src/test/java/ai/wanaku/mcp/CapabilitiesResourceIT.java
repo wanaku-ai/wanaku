@@ -27,14 +27,17 @@ import static io.restassured.RestAssured.given;
 
 /**
  * Negative (error-path) integration tests for the Capabilities REST API.
- *
  * These tests verify that the API correctly rejects invalid, malformed, or
  * unauthorized requests and returns appropriate HTTP error status codes.
- *
  * Reference: Issue #909
  * Related PR: #907
  */
 public class CapabilitiesResourceIT extends WanakuIntegrationBase {
+
+    private static final String REGISTER_ENDPOINT = "/q/capabilities/register";
+    private static final String DEREGISTER_ENDPOINT = "/q/capabilities/deregister";
+    private static final String LIST_ENDPOINT = "/q/capabilities/list";
+    private static final String DEFAULT_SERVICE = "tool-invoker";
 
     @Override
     public List<WanakuContainerDownstreamService> activeWanakuDownstreamServices() {
@@ -42,9 +45,14 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     }
 
     private static String validCapabilityJson() {
-        return "{\"host\": \"localhost\", \"port\": 8080, \"service\": \"tool-invoker\"}";
+        return "{\"host\": \"localhost\", \"port\": 8080, \"service\": \"" + DEFAULT_SERVICE + "\"}";
     }
 
+    /**
+     * Checks if Keycloak auth is enabled in the current test profile.
+     * WanakuIntegrationBase does not expose an equivalent method.
+     * Uses the auth system property consistent with PR #914.
+     */
     private static boolean isAuthEnabled() {
         return System.getProperty("auth.enabled", "false").equals("true");
     }
@@ -59,7 +67,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 .contentType(ContentType.TEXT)
                 .body("malformed-body-not-json")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -70,7 +78,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 .contentType(ContentType.JSON)
                 .body("{}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -83,9 +91,9 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testRegisterCapabilityMissingHost() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"port\": 8080, \"service\": \"tool-invoker\"}")
+                .body("{\"port\": 8080, \"service\": \"" + DEFAULT_SERVICE + "\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -94,9 +102,9 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testRegisterCapabilityMissingPort() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"service\": \"tool-invoker\"}")
+                .body("{\"host\": \"localhost\", \"service\": \"" + DEFAULT_SERVICE + "\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -107,7 +115,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 .contentType(ContentType.JSON)
                 .body("{\"host\": \"localhost\", \"port\": 8080}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -120,9 +128,9 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testRegisterCapabilityPortTooHigh() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": 99999, \"service\": \"tool-invoker\"}")
+                .body("{\"host\": \"localhost\", \"port\": 99999, \"service\": \"" + DEFAULT_SERVICE + "\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -131,9 +139,9 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testRegisterCapabilityNegativePort() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"localhost\", \"port\": -1, \"service\": \"tool-invoker\"}")
+                .body("{\"host\": \"localhost\", \"port\": -1, \"service\": \"" + DEFAULT_SERVICE + "\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -142,9 +150,9 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testRegisterCapabilityEmptyHost() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"host\": \"\", \"port\": 8080, \"service\": \"tool-invoker\"}")
+                .body("{\"host\": \"\", \"port\": 8080, \"service\": \"" + DEFAULT_SERVICE + "\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -153,9 +161,9 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testRegisterCapabilityNullHost() {
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"host\": null, \"port\": 8080, \"service\": \"tool-invoker\"}")
+                .body("{\"host\": null, \"port\": 8080, \"service\": \"" + DEFAULT_SERVICE + "\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -170,7 +178,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 .contentType(ContentType.JSON)
                 .body("{\"host\": \"localhost\", \"port\": 8080, \"service\": \"INVALID_SERVICE_XYZ\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -181,7 +189,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 .contentType(ContentType.JSON)
                 .body("{\"host\": \"localhost\", \"port\": 8080, \"service\": \"\"}")
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(400);
     }
@@ -194,7 +202,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testDeregisterNonExistentCapability() {
         given()
                 .when()
-                .delete("/q/capabilities/deregister/non-existent-host-xyz/99999")
+                .delete(DEREGISTER_ENDPOINT + "/non-existent-host-xyz/99999")
                 .then()
                 .statusCode(404);
     }
@@ -203,7 +211,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
     void testListCapabilitiesForUnknownService() {
         given()
                 .when()
-                .get("/q/capabilities/list/UNKNOWN_SERVICE_XYZ")
+                .get(LIST_ENDPOINT + "/UNKNOWN_SERVICE_XYZ")
                 .then()
                 .statusCode(404);
     }
@@ -220,7 +228,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 .contentType(ContentType.JSON)
                 .body(validCapabilityJson())
                 .when()
-                .post("/q/capabilities/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(401);
     }
@@ -231,7 +239,7 @@ public class CapabilitiesResourceIT extends WanakuIntegrationBase {
                 "Skipping — auth is not enabled in this test profile");
         given()
                 .when()
-                .delete("/q/capabilities/deregister/localhost/8080")
+                .delete(DEREGISTER_ENDPOINT + "/localhost/8080")
                 .then()
                 .statusCode(401);
     }
