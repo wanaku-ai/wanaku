@@ -43,3 +43,10 @@ The `WanakuIntegrationBase` class is the base class for all integration tests. I
 
 For testing purposes, the `src/test/resources` directory of this project is mapped as a read-only volume to the `/app/resources` directory inside the running service containers. This allows tests to access and interact with files (e.g., for file-based resource providers) in a consistent manner.
 
+## Custom Assertions
+
+Wanaku integration tests use a shared, domain-specific assertions library (from the `core-util` test-jar) to reduce
+duplication and improve failure messages.
+
+See `tests/integration/src/test/resources/ASSERTIONS.md` for usage examples and a migration guide.
+
