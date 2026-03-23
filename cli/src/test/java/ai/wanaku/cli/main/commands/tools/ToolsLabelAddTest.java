@@ -10,6 +10,8 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ToolsService;
 
+import static ai.wanaku.test.assertions.WanakuAssertions.assertSuccessResponse;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -66,6 +68,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("test-tool"), captor.capture());
             assertEquals("production", captor.getValue().getLabels().get("env"));
@@ -90,6 +93,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("test-tool"), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
@@ -132,6 +136,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("test-tool"), captor.capture());
             assertEquals("key=value", captor.getValue().getLabels().get("config"));
@@ -161,6 +166,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("my-tool"), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
@@ -188,6 +194,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("my-tool"), captor.capture());
             assertEquals("production", captor.getValue().getLabels().get("env"));
@@ -236,6 +243,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(listResponse);
             verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
         }
 
@@ -255,6 +263,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(0, result); // Success but no changes
+            assertSuccessResponse(listResponse);
             verify(toolsService, never()).update(anyString(), any());
         }
 
@@ -280,6 +289,7 @@ public class ToolsLabelAddTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR due to one failure
+            assertSuccessResponse(listResponse);
             verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
         }
     }

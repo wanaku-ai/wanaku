@@ -12,6 +12,8 @@ import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 
+import static ai.wanaku.test.assertions.WanakuAssertions.assertNamespaceExists;
+
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +33,7 @@ public class NamespacesBeanTest {
     @Test
     void testListNamespaces_EmptyHasDefaultNamespace() {
         List<Namespace> namespaces = namespacesBean.list();
-        assertThat(namespaces).extracting(Namespace::getName).contains("default");
+        assertNamespaceExists("default", namespaces);
         long count =
                 namespaces.stream().filter(ns -> "default".equals(ns.getName())).count();
         assertThat(count).isEqualTo(1);
@@ -60,7 +62,8 @@ public class NamespacesBeanTest {
         // List namespaces
         List<Namespace> namespaces = namespacesBean.list();
 
-        assertThat(namespaces).extracting(Namespace::getName).contains("namespace-a", "namespace-b");
+        assertNamespaceExists("namespace-a", namespaces);
+        assertNamespaceExists("namespace-b", namespaces);
     }
 
     @Test
@@ -84,7 +87,8 @@ public class NamespacesBeanTest {
         // List namespaces
         List<Namespace> namespaces = namespacesBean.list();
 
-        assertThat(namespaces).extracting(Namespace::getName).contains("res-namespace-a", "res-namespace-b");
+        assertNamespaceExists("res-namespace-a", namespaces);
+        assertNamespaceExists("res-namespace-b", namespaces);
     }
 
     @Test
@@ -111,7 +115,8 @@ public class NamespacesBeanTest {
         // List namespaces
         List<Namespace> namespaces = namespacesBean.list();
 
-        assertThat(namespaces).extracting(Namespace::getName).contains("mixed-namespace", "another-namespace");
+        assertNamespaceExists("mixed-namespace", namespaces);
+        assertNamespaceExists("another-namespace", namespaces);
     }
 
     @Test
@@ -182,5 +187,6 @@ public class NamespacesBeanTest {
         long count =
                 namespaces.stream().filter(ns -> "default".equals(ns.getName())).count();
         assertThat(count).isEqualTo(1);
+        assertNamespaceExists("default", namespaces);
     }
 }

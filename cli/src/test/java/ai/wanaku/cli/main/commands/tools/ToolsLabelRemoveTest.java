@@ -10,6 +10,8 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ToolsService;
 
+import static ai.wanaku.test.assertions.WanakuAssertions.assertSuccessResponse;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -67,6 +69,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("my-tool"), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
@@ -95,6 +98,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             ArgumentCaptor<ToolReference> captor = ArgumentCaptor.forClass(ToolReference.class);
             verify(toolsService).update(eq("my-tool"), captor.capture());
             Map<String, String> labels = captor.getValue().getLabels();
@@ -119,6 +123,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success even though label didn't exist
+            assertSuccessResponse(getResponse);
             verify(toolsService, never()).update(anyString(), any()); // No update needed
         }
 
@@ -139,6 +144,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(getResponse);
             verify(toolsService, never()).update(anyString(), any());
         }
 
@@ -185,6 +191,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(listResponse);
             verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
         }
 
@@ -210,6 +217,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
+            assertSuccessResponse(listResponse);
             verify(toolsService, times(1)).update(eq("tool2"), any(ToolReference.class)); // Only tool2 updated
         }
 
@@ -229,6 +237,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success but no changes
+            assertSuccessResponse(listResponse);
             verify(toolsService, never()).update(anyString(), any());
         }
 
@@ -254,6 +263,7 @@ public class ToolsLabelRemoveTest {
 
             // Assert
             assertEquals(1, result); // EXIT_ERROR due to one failure
+            assertSuccessResponse(listResponse);
             verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
         }
     }
