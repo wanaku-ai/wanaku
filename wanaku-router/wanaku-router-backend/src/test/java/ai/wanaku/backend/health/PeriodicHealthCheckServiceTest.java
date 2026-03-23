@@ -1,20 +1,22 @@
 package ai.wanaku.backend.health;
 
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.microprofile.context.ManagedExecutor;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.common.ServiceTargetEvent;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.mcp.providers.ServiceRegistry;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import org.eclipse.microprofile.context.ManagedExecutor;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletableFuture;
-
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link PeriodicHealthCheckService}.
@@ -56,7 +58,8 @@ class PeriodicHealthCheckServiceTest {
     @Test
     void checkInstanceHealth_skipsDeregisteredCapability() {
         // Given: a service target that was already captured in the sweep
-        ServiceTarget target = new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
+        ServiceTarget target =
+                new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
         // And: the capability was deregistered (marked as inactive)
         ActivityRecord inactiveRecord = createInactiveRecord();
@@ -73,7 +76,8 @@ class PeriodicHealthCheckServiceTest {
     @Test
     void checkInstanceHealth_probesActiveCapability() {
         // Given: a service target that is still active
-        ServiceTarget target = new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
+        ServiceTarget target =
+                new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
         // And: the capability is active
         ActivityRecord activeRecord = createActiveRecord();
@@ -91,7 +95,8 @@ class PeriodicHealthCheckServiceTest {
     @Test
     void checkInstanceHealth_probesWhenNoActivityRecord() {
         // Given: a service target with no activity record (newly registered)
-        ServiceTarget target = new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
+        ServiceTarget target =
+                new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
         // And: no activity record exists yet
         when(serviceRegistry.getStates(SERVICE_ID)).thenReturn(null);
@@ -108,7 +113,8 @@ class PeriodicHealthCheckServiceTest {
     @Test
     void checkInstanceHealth_probesCrashedCapability() {
         // Given: a service target that crashed without deregistering
-        ServiceTarget target = new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
+        ServiceTarget target =
+                new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
         // And: the capability is still marked as ACTIVE (because it crashed without deregistering)
         ActivityRecord crashedRecord = createActiveRecord();
@@ -125,14 +131,12 @@ class PeriodicHealthCheckServiceTest {
 
     private ActivityRecord createActiveRecord() {
         ActivityRecord record = new ActivityRecord();
-        record.setActive(true);
         record.setStates(new java.util.ArrayList<>());
         return record;
     }
 
     private ActivityRecord createInactiveRecord() {
         ActivityRecord record = new ActivityRecord();
-        record.setActive(false);
         record.setHealthStatus(HealthStatus.DOWN);
         record.setStates(new java.util.ArrayList<>());
         record.getStates().add(ServiceState.newInactive());
