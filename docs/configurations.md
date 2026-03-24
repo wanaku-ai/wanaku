@@ -147,7 +147,7 @@ Configuration for the main Wanaku Router Backend (`wanaku-router-backend`), whic
 
 ## 2. Capabilities (Tool Services)
 
-### Common Capability Settings (`core-capabilities-base`)
+### Common Capability Settings (`wanaku-capabilities-base`)
 
 These settings apply to most tool services and are foundational for their operation.
 

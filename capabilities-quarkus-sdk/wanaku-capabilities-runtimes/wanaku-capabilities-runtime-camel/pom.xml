@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
-        <artifactId>core-runtimes</artifactId>
+        <artifactId>wanaku-capabilities-runtimes</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>core-runtime-camel</artifactId>
-    <name>Wanaku :: Core :: Runtimes :: Camel</name>
+    <artifactId>wanaku-capabilities-runtime-camel</artifactId>
+    <name>Wanaku :: Capabilities Quarkus SDK :: Runtimes :: Camel</name>
 
     <dependencyManagement>
         <dependencies>
@@ -33,7 +33,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-capabilities-base</artifactId>
+            <artifactId>wanaku-capabilities-base</artifactId>
             <version>${project.version}</version>
         </dependency>
 

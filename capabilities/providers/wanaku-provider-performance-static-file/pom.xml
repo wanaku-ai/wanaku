@@ -21,13 +21,13 @@
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-capabilities-base</artifactId>
+            <artifactId>wanaku-capabilities-base</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-capabilities-provider</artifactId>
+            <artifactId>wanaku-capabilities-provider</artifactId>
             <version>${project.version}</version>
         </dependency>
 

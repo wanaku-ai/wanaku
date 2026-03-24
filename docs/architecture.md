@@ -123,7 +123,7 @@ Shared libraries providing foundational functionality:
 |---------|---------|
 | **core-exchange** | gRPC protocols and message exchange definitions |
 | **core-mcp** | MCP protocol implementation and client libraries |
-| **core-capabilities-base** | Base classes for capability implementations |
+| **wanaku-capabilities-base** | Base classes for capability implementations (in `capabilities-quarkus-sdk`) |
 | **core-service-discovery** | Service registration and health monitoring |
 | **core-persistence** | Data persistence abstractions with Infinispan |
 

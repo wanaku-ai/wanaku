@@ -9,24 +9,16 @@
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>core</artifactId>
+    <artifactId>capabilities-quarkus-sdk</artifactId>
     <packaging>pom</packaging>
-    <name>Wanaku :: Core</name>
+    <name>Wanaku :: Capabilities Quarkus SDK</name>
 
     <modules>
-        <!-- common -->
-        <module>core-util</module>
-        <module>core-mcp</module>
-        <module>core-exchange</module>
-        <module>core-services-api</module>
-
-        <!-- capabilities core -->
-        <module>core-service-discovery</module>
-
-        <!-- router core -->
-        <module>core-persistence</module>
-        <module>core-mcp-client</module>
+        <module>wanaku-capabilities-base</module>
+        <module>wanaku-capabilities-runtimes</module>
+        <module>wanaku-capabilities-tools</module>
+        <module>wanaku-capabilities-provider</module>
+        <module>wanaku-mcp-forward-discovery</module>
     </modules>
-
 
 </project>

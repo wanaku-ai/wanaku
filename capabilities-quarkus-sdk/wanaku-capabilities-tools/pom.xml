@@ -3,17 +3,17 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
-        <artifactId>core</artifactId>
+        <artifactId>capabilities-quarkus-sdk</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>core-capabilities-provider</artifactId>
-    <name>Wanaku :: Core :: Capabilities Provider</name>
+    <artifactId>wanaku-capabilities-tools</artifactId>
+    <name>Wanaku :: Capabilities Quarkus SDK :: Capabilities Tools</name>
 
     <dependencies>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-capabilities-base</artifactId>
+            <artifactId>wanaku-capabilities-base</artifactId>
             <version>${project.version}</version>
         </dependency>
 

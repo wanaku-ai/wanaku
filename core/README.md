@@ -11,8 +11,6 @@ This directory contains essential libraries and infrastructure used throughout W
 - gRPC communication protocols
 - Data persistence abstractions
 - Service discovery mechanisms
-- Base classes for capabilities
-
 ## Sub-Modules
 
 ### core-mcp
@@ -23,9 +21,6 @@ gRPC protocol definitions and message exchange contracts for communication betwe
 
 ### core-persistence
 Data persistence abstractions with Infinispan implementation for storing tools, resources, and router state.
-
-### core-capabilities-base
-Base classes and utilities for building capability services (tools and resource providers).
 
 ### core-service-discovery
 Service registration, discovery, and health monitoring mechanisms.
