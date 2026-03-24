@@ -22,16 +22,16 @@
                 <scope>import</scope>
             </dependency>
         </dependencies>
-    </dependencyManagement> 
+    </dependencyManagement>
 
-    <dependencies> 
+    <dependencies>
         <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-qute</artifactId>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.mcp</groupId>
-                <artifactId>quarkus-mcp-server-sse</artifactId>
+                <artifactId>quarkus-mcp-server-http</artifactId>
                 <version>${quarkus-mcp-server.version}</version>
             </dependency>
             <dependency>
@@ -57,9 +57,9 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-container-image-jib</artifactId>
-            </dependency>  
+            </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
