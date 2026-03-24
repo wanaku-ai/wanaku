@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.backend.common.ServiceTargetEvent;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
@@ -34,7 +35,7 @@ public class PeriodicHealthCheckService {
     private final ConcurrentHashMap<String, Boolean> inProgress = new ConcurrentHashMap<>();
 
     @Inject
-    HealthCheckConfig config;
+    WanakuRouterConfig config;
 
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
@@ -63,7 +64,7 @@ public class PeriodicHealthCheckService {
             every = "${wanaku.router.health-check.interval-seconds:60}s",
             concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     void sweep() {
-        if (!config.enabled()) {
+        if (!config.healthCheck().enabled()) {
             return;
         }
 

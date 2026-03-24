@@ -132,6 +132,16 @@ Configuration for the main Wanaku Router Backend (`wanaku-router-backend`), whic
 | `quarkus.http.auth.permission.*.paths` | Defines path patterns for different security policies (`permit`, `authenticated`). |
 | `quarkus.http.auth.permission.*.policy` | Assigns a security policy to the corresponding path pattern. |
 
+### Health Check
+
+These `wanaku.router.health-check.*` properties control the periodic health probing of registered capabilities.
+
+| Property | Description |
+| --- | --- |
+| `wanaku.router.health-check.enabled` | `true` - Enables periodic health checks of registered capability services. |
+| `wanaku.router.health-check.interval-seconds` | `60` - The interval in seconds between health check sweeps. |
+| `wanaku.router.health-check.max-concurrent` | `10` - The maximum number of concurrent health check probes. |
+
 ### gRPC Transport
 
 | Property | Description |

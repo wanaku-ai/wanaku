@@ -2493,3 +2493,34 @@ export const getApiV2ToolCallsNotificationsConnectionId = async (
     },
   );
 };
+
+/**
+ * @summary Open Id Configuration
+ */
+export type getTestOidcWellKnownOpenidConfigurationResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getTestOidcWellKnownOpenidConfigurationResponseSuccess =
+  getTestOidcWellKnownOpenidConfigurationResponse200 & {
+    headers: Headers;
+  };
+export type getTestOidcWellKnownOpenidConfigurationResponse =
+  getTestOidcWellKnownOpenidConfigurationResponseSuccess;
+
+export const getGetTestOidcWellKnownOpenidConfigurationUrl = () => {
+  return `/test-oidc/.well-known/openid-configuration`;
+};
+
+export const getTestOidcWellKnownOpenidConfiguration = async (
+  options?: RequestInit,
+): Promise<getTestOidcWellKnownOpenidConfigurationResponse> => {
+  return customFetch<getTestOidcWellKnownOpenidConfigurationResponse>(
+    getGetTestOidcWellKnownOpenidConfigurationUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
