@@ -60,17 +60,16 @@ import { customFetch } from "../custom-fetch";
  * @summary Get Authorization Server Metadata
  */
 export type getWellKnownOauthAuthorizationServerResponse200 = {
-  data: null;
+  data: void;
   status: 200;
 };
 
-export type getWellKnownOauthAuthorizationServerResponseComposite =
-  getWellKnownOauthAuthorizationServerResponse200;
-
-export type getWellKnownOauthAuthorizationServerResponse =
-  getWellKnownOauthAuthorizationServerResponseComposite & {
+export type getWellKnownOauthAuthorizationServerResponseSuccess =
+  getWellKnownOauthAuthorizationServerResponse200 & {
     headers: Headers;
   };
+export type getWellKnownOauthAuthorizationServerResponse =
+  getWellKnownOauthAuthorizationServerResponseSuccess;
 
 export const getGetWellKnownOauthAuthorizationServerUrl = () => {
   return `/.well-known/oauth-authorization-server`;
@@ -92,17 +91,16 @@ export const getWellKnownOauthAuthorizationServer = async (
  * @summary Get Authorization Server Metadata For Tenant
  */
 export type getWellKnownOauthAuthorizationServerTenantResponse200 = {
-  data: null;
+  data: void;
   status: 200;
 };
 
-export type getWellKnownOauthAuthorizationServerTenantResponseComposite =
-  getWellKnownOauthAuthorizationServerTenantResponse200;
-
-export type getWellKnownOauthAuthorizationServerTenantResponse =
-  getWellKnownOauthAuthorizationServerTenantResponseComposite & {
+export type getWellKnownOauthAuthorizationServerTenantResponseSuccess =
+  getWellKnownOauthAuthorizationServerTenantResponse200 & {
     headers: Headers;
   };
+export type getWellKnownOauthAuthorizationServerTenantResponse =
+  getWellKnownOauthAuthorizationServerTenantResponseSuccess;
 
 export const getGetWellKnownOauthAuthorizationServerTenantUrl = (
   tenant: string,
@@ -1193,18 +1191,22 @@ export type postApiV1NamespacesResponse200 = {
 };
 
 export type postApiV1NamespacesResponse400 = {
-  data: null;
+  data: void;
   status: 400;
 };
 
-export type postApiV1NamespacesResponseComposite =
-  | postApiV1NamespacesResponse200
-  | postApiV1NamespacesResponse400;
-
-export type postApiV1NamespacesResponse =
-  postApiV1NamespacesResponseComposite & {
+export type postApiV1NamespacesResponseSuccess =
+  postApiV1NamespacesResponse200 & {
     headers: Headers;
   };
+export type postApiV1NamespacesResponseError =
+  postApiV1NamespacesResponse400 & {
+    headers: Headers;
+  };
+
+export type postApiV1NamespacesResponse =
+  | postApiV1NamespacesResponseSuccess
+  | postApiV1NamespacesResponseError;
 
 export const getPostApiV1NamespacesUrl = () => {
   return `/api/v1/namespaces`;
@@ -1230,13 +1232,12 @@ export type getApiV1NamespacesStaleResponse200 = {
   status: 200;
 };
 
-export type getApiV1NamespacesStaleResponseComposite =
-  getApiV1NamespacesStaleResponse200;
-
-export type getApiV1NamespacesStaleResponse =
-  getApiV1NamespacesStaleResponseComposite & {
+export type getApiV1NamespacesStaleResponseSuccess =
+  getApiV1NamespacesStaleResponse200 & {
     headers: Headers;
   };
+export type getApiV1NamespacesStaleResponse =
+  getApiV1NamespacesStaleResponseSuccess;
 
 export const getGetApiV1NamespacesStaleUrl = (
   params?: GetApiV1NamespacesStaleParams,
@@ -1277,13 +1278,12 @@ export type deleteApiV1NamespacesStaleResponse200 = {
   status: 200;
 };
 
-export type deleteApiV1NamespacesStaleResponseComposite =
-  deleteApiV1NamespacesStaleResponse200;
-
-export type deleteApiV1NamespacesStaleResponse =
-  deleteApiV1NamespacesStaleResponseComposite & {
+export type deleteApiV1NamespacesStaleResponseSuccess =
+  deleteApiV1NamespacesStaleResponse200 & {
     headers: Headers;
   };
+export type deleteApiV1NamespacesStaleResponse =
+  deleteApiV1NamespacesStaleResponseSuccess;
 
 export const getDeleteApiV1NamespacesStaleUrl = (
   params?: DeleteApiV1NamespacesStaleParams,
@@ -1397,17 +1397,16 @@ export const getApiV1NamespacesId = async (
  * @summary Delete
  */
 export type deleteApiV1NamespacesIdResponse200 = {
-  data: null;
+  data: void;
   status: 200;
 };
 
-export type deleteApiV1NamespacesIdResponseComposite =
-  deleteApiV1NamespacesIdResponse200;
-
-export type deleteApiV1NamespacesIdResponse =
-  deleteApiV1NamespacesIdResponseComposite & {
+export type deleteApiV1NamespacesIdResponseSuccess =
+  deleteApiV1NamespacesIdResponse200 & {
     headers: Headers;
   };
+export type deleteApiV1NamespacesIdResponse =
+  deleteApiV1NamespacesIdResponseSuccess;
 
 export const getDeleteApiV1NamespacesIdUrl = (id: string) => {
   return `/api/v1/namespaces/${id}`;
@@ -2488,38 +2487,6 @@ export const getApiV2ToolCallsNotificationsConnectionId = async (
 ): Promise<getApiV2ToolCallsNotificationsConnectionIdResponse> => {
   return customFetch<getApiV2ToolCallsNotificationsConnectionIdResponse>(
     getGetApiV2ToolCallsNotificationsConnectionIdUrl(connectionId),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
- * @summary Open Id Configuration
- */
-export type getTestOidcWellKnownOpenidConfigurationResponse200 = {
-  data: string;
-  status: 200;
-};
-
-export type getTestOidcWellKnownOpenidConfigurationResponseComposite =
-  getTestOidcWellKnownOpenidConfigurationResponse200;
-
-export type getTestOidcWellKnownOpenidConfigurationResponse =
-  getTestOidcWellKnownOpenidConfigurationResponseComposite & {
-    headers: Headers;
-  };
-
-export const getGetTestOidcWellKnownOpenidConfigurationUrl = () => {
-  return `/test-oidc/.well-known/openid-configuration`;
-};
-
-export const getTestOidcWellKnownOpenidConfiguration = async (
-  options?: RequestInit,
-): Promise<getTestOidcWellKnownOpenidConfigurationResponse> => {
-  return customFetch<getTestOidcWellKnownOpenidConfigurationResponse>(
-    getGetTestOidcWellKnownOpenidConfigurationUrl(),
     {
       ...options,
       method: "GET",

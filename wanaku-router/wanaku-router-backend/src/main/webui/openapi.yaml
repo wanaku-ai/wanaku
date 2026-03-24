@@ -1776,18 +1776,6 @@ paths:
       summary: Stream Tool Calls By Connection
       tags:
       - Tool Call Resource
-  /test-oidc/.well-known/openid-configuration:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
-      summary: Open Id Configuration
-      tags:
-      - Test Open Id Configuration Resource
 info:
   title: wanaku-router-backend API
   version: 0.1.0-SNAPSHOT
