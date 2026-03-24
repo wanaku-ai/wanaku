@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jboss.logging.Logger;
+import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 
@@ -26,6 +27,9 @@ public class NamespacesBean {
 
     @Inject
     Instance<NamespaceRepository> namespaceRepositoryInstance;
+
+    @Inject
+    WanakuRouterConfig wanakuRouterConfig;
 
     private NamespaceRepository namespaceRepository;
 
@@ -245,7 +249,7 @@ public class NamespacesBean {
         }
         try {
             long parsed = Long.parseLong(value.trim());
-            if (parsed > 100000000000L) {
+            if (parsed > wanakuRouterConfig.namespaceAgeHardLimit()) {
                 return Instant.ofEpochMilli(parsed);
             }
             return Instant.ofEpochSecond(parsed);

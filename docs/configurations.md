@@ -155,6 +155,12 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 | `wanaku.persistence.infinispan.base-folder` | Where to store Infinispan files (defaults to `${user.home}/.wanaku/router/`). |
 | `wanaku.infinispan.max-state-count` | `10` - The maximum number of historical states to keep for each service.      |
 
+### Namespaces
+
+| Property | Description |
+| --- | --- |
+| `wanaku.router.namespace-age-hard-limit` | `100000000000` - Threshold used to distinguish epoch-seconds from epoch-milliseconds when parsing namespace age timestamps. Values above this limit are interpreted as epoch-milliseconds; values at or below are interpreted as epoch-seconds. |
+
 ## 2. Capabilities (Tool Services)
 
 ### Common Capability Settings (`core-capabilities-base`)

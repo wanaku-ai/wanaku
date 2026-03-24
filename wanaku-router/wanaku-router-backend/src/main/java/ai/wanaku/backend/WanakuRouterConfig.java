@@ -19,4 +19,7 @@ public interface WanakuRouterConfig {
         @WithDefault("10")
         int maxConcurrent();
     }
+
+    @WithDefault("100000000000")
+    long namespaceAgeHardLimit();
 }
