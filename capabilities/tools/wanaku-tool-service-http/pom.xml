@@ -20,19 +20,19 @@
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-capabilities-base</artifactId>
+            <artifactId>wanaku-capabilities-base</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-capabilities-tool</artifactId>
+            <artifactId>wanaku-capabilities-tools</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>core-runtime-camel</artifactId>
+            <artifactId>wanaku-capabilities-runtime-camel</artifactId>
             <version>${project.version}</version>
         </dependency>
 

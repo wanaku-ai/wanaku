@@ -609,7 +609,7 @@ void subscribeToEvents() {
 | Infinispan Implementation | `core/core-persistence/core-persistence-infinispan/.../discovery/` |
 | ServiceTarget Model | `capabilities-api/.../types/providers/ServiceTarget.java` |
 | State Models | `capabilities-api/.../types/discovery/` |
-| Registration Manager | `core/core-capabilities-base/.../discovery/DefaultRegistrationManager.java` |
+| Registration Manager | `capabilities-quarkus-sdk/wanaku-capabilities-base/.../discovery/DefaultRegistrationManager.java` |
 | Service Resolver | `wanaku-router/wanaku-router-backend/.../support/ServiceResolver.java` |
 | Event Types | `wanaku-router/wanaku-router-backend/.../common/EventType.java` |
 | SSE Endpoint | `wanaku-router/wanaku-router-backend/.../capabilities/CapabilitiesResource.java` |

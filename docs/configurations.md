@@ -163,7 +163,7 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 
 ## 2. Capabilities (Tool Services)
 
-### Common Capability Settings (`core-capabilities-base`)
+### Common Capability Settings (`wanaku-capabilities-base`)
 
 These settings apply to most tool services and are foundational for their operation.
 

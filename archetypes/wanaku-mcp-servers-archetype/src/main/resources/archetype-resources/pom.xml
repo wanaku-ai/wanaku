@@ -36,7 +36,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.wanaku</groupId>
-                <artifactId>core-forward-discovery</artifactId>
+                <artifactId>wanaku-mcp-forward-discovery</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
