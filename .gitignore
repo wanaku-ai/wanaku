@@ -20,6 +20,7 @@ wanaku-router/wanaku-router-backend/application.dev.properties
 *.iml
 *.ipr
 *aws*.log.*
+*.log
 
 ### Eclipse ###
 .apt_generated
