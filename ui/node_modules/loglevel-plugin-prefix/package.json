@@ -1,0 +1,50 @@
+{
+  "name": "loglevel-plugin-prefix",
+  "description": "Plugin for loglevel message prefixing",
+  "author": {
+    "name": "kutuluk"
+  },
+  "keywords": [
+    "log",
+    "logger",
+    "logging",
+    "browser",
+    "node",
+    "prefix",
+    "colored",
+    "loglevel",
+    "plugin"
+  ],
+  "homepage": "https://github.com/kutuluk/loglevel-plugin-prefix",
+  "bugs": {
+    "url": "https://github.com/kutuluk/loglevel-plugin-prefix/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kutuluk/loglevel-plugin-prefix.git"
+  },
+  "license": "MIT",
+  "version": "0.8.4",
+  "main": "./lib/loglevel-plugin-prefix",
+  "types": "index.d.ts",
+  "scripts": {
+    "eslint": "eslint ./lib/loglevel-plugin-prefix.js",
+    "test": "mocha",
+    "example": "node ./example/example.js",
+    "uglifyjs": "uglifyjs ./lib/loglevel-plugin-prefix.js -o ./dist/loglevel-plugin-prefix.min.js -c -m",
+    "build": "npm install && npm run eslint && npm run test && npm run uglifyjs"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chalk": "^2.4.1",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb-base": "^11.3.2",
+    "eslint-plugin-chai-friendly": "^0.3.6",
+    "eslint-plugin-import": "^2.12.0",
+    "loglevel": "^1.6.1",
+    "loglevel-plugin-mock": "^0.1.0",
+    "mocha": "^3.5.3",
+    "sinon": "^2.4.1",
+    "uglify-js": "^3.4.0"
+  }
+}

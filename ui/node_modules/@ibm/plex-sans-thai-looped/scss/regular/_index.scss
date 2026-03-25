@@ -1,0 +1,14 @@
+@use '../tools' as tools;
+
+@mixin regularComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans Thai Looped';
+		font-style: normal;
+		font-weight: 400;
+		src: local('IBM Plex Sans Thai Looped'), local('IBMPlexSansThaiLooped'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSansThaiLooped-Regular.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSansThaiLooped-Regular.woff') format('woff');
+	}
+}
+
+@mixin all($font-prefix: $font-prefix) {
+	@include regularComplete($font-prefix);
+}

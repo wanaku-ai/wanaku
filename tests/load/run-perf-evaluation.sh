@@ -42,12 +42,12 @@ echo "Project root:          $PROJECT_ROOT"
 echo "=============================================="
 
 # ---- CI artifact URLs ----
-CI_ROUTER="${CI_BASE}/${BRANCH}/lastBuild/artifact/wanaku/wanaku-router/wanaku-router-backend/target/distributions/wanaku-router-backend-${WANAKU_VERSION}.tar.gz"
+CI_ROUTER="${CI_BASE}/${BRANCH}/lastBuild/artifact/wanaku/apps/wanaku-router-backend/target/distributions/wanaku-router-backend-${WANAKU_VERSION}.tar.gz"
 CI_TOOL_NOOP="${CI_BASE}/${BRANCH}/lastBuild/artifact/wanaku/capabilities/tools/wanaku-tool-performance-noop/target/distributions/wanaku-tool-performance-noop-${WANAKU_VERSION}.tar.gz"
 CI_PROVIDER_STATIC="${CI_BASE}/${BRANCH}/lastBuild/artifact/wanaku/capabilities/providers/wanaku-provider-performance-static-file/target/distributions/wanaku-provider-performance-static-file-${WANAKU_VERSION}.tar.gz"
 
 # ---- Local artifact paths ----
-LOCAL_ROUTER="${PROJECT_ROOT}/wanaku-router/wanaku-router-backend/target/distributions/wanaku-router-backend-${WANAKU_VERSION}.tar.gz"
+LOCAL_ROUTER="${PROJECT_ROOT}/apps/wanaku-router-backend/target/distributions/wanaku-router-backend-${WANAKU_VERSION}.tar.gz"
 LOCAL_TOOL_NOOP="${PROJECT_ROOT}/capabilities/tools/wanaku-tool-performance-noop/target/distributions/wanaku-tool-performance-noop-${WANAKU_VERSION}.tar.gz"
 LOCAL_PROVIDER_STATIC="${PROJECT_ROOT}/capabilities/providers/wanaku-provider-performance-static-file/target/distributions/wanaku-provider-performance-static-file-${WANAKU_VERSION}.tar.gz"
 

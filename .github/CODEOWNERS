@@ -7,8 +7,9 @@
 # Core
 /core/ @wanaku-ai/maintainers
 
-# CLI
-/cli/ @wanaku-ai/maintainers
+# Apps
+/apps/ @wanaku-ai/maintainers
+/apps/ui/ @wanaku-ai/maintainers-ui
 
 # Capabilities
 /capabilities/ @wanaku-ai/maintainers
@@ -16,12 +17,8 @@
 # UI
 /ui/ @wanaku-ai/maintainers-ui
 
-# Router
-/wanaku-router/ @wanaku-ai/maintainers
-/wanaku-router/ui/ @wanaku-ai/maintainers-ui
-
 # Operator
-/wanaku-operator/ @wanaku-ai/maintainers
+/apps/wanaku-operator/ @wanaku-ai/maintainers
 
 # Documentation
 /docs/ @wanaku-ai/maintainers
@@ -29,9 +26,8 @@
 # Deployment
 /deploy/ @wanaku-ai/maintainers
 
-# Archetypes and JBang
+# Archetypes
 /archetypes/ @wanaku-ai/maintainers
-/jbang/ @wanaku-ai/maintainers
 
 # CI/CD
 /.github/ @wanaku-ai/maintainers

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@extensions/*": ["./extensions/*"],
+      "@examples/*": ["./examples/*"],
+      "@definitions/*": ["./definitions/*"],
+      "@bindings/*": ["./bindings/*"],
+      "@common/*": ["./common/*"],
+      "@test/*": ["./test/*"]
+    }
+  }
+}

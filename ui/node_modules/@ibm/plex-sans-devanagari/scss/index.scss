@@ -1,0 +1,73 @@
+@use 'sass:map';
+@use './tools/' as tools;
+
+@use 'bold/index' as bold;
+@use 'extralight/index' as extralight;
+@use 'light/index' as light;
+@use 'medium/index' as medium;
+@use 'regular/index' as regular;
+@use 'semibold/index' as semibold;
+@use 'text/index' as text;
+@use 'thin/index' as thin;
+
+$font-prefix: '..' !default;
+$-font-weights: (
+	bold: true,
+	extralight: true,
+	light: true,
+	medium: true,
+	regular: true,
+	semibold: true,
+	text: true,
+	thin: true
+);
+$font-weights: () !default;
+$font-weights: map.merge($-font-weights, $font-weights);
+
+@mixin all($font-prefix: $font-prefix) {
+	@if tools.enabled($font-weights, 'bold') {
+		@include bold.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'extralight') {
+		@include extralight.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'light') {
+		@include light.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'medium') {
+		@include medium.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'regular') {
+		@include regular.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'semibold') {
+		@include semibold.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'text') {
+		@include text.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'thin') {
+		@include thin.all($font-prefix);
+	}
+}
+
+@mixin default($font-prefix: $font-prefix) {
+	@if tools.enabled($font-weights, 'light') {
+		@include light.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'regular') {
+		@include regular.all($font-prefix);
+	}
+
+	@if tools.enabled($font-weights, 'semibold') {
+		@include semibold.all($font-prefix);
+	}
+}

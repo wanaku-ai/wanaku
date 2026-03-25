@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>ai.wanaku</groupId>
-            <artifactId>cli</artifactId>
+            <artifactId>wanaku-cli</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

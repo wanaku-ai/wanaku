@@ -1,0 +1,14 @@
+@use '../tools' as tools;
+
+@mixin semiboldComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans Thai Looped';
+		font-style: normal;
+		font-weight: 600;
+		src: local('IBM Plex Sans Thai Looped SemiBold'), local('IBMPlexSansThaiLooped-SemiBold'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSansThaiLooped-SemiBold.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSansThaiLooped-SemiBold.woff') format('woff');
+	}
+}
+
+@mixin all($font-prefix: $font-prefix) {
+	@include semiboldComplete($font-prefix);
+}

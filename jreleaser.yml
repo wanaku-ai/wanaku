@@ -44,11 +44,11 @@ release:
 distributions:
   cli:
     artifacts:
-      - path: cli/target/distributions/cli-{{projectVersion}}.zip
+      - path: apps/wanaku-cli/target/distributions/cli-{{projectVersion}}.zip
     type: JAVA_BINARY
   router:
     artifacts:
-      - path: wanaku-router/wanaku-router-backend/target/distributions/wanaku-router-backend-{{projectVersion}}.zip
+      - path: apps/wanaku-router-backend/target/distributions/wanaku-router-backend-{{projectVersion}}.zip
         platform: linux-x86_64
     type: JAVA_BINARY
   service-http:
@@ -79,9 +79,9 @@ distributions:
 
   cli-native:
     artifacts:
-      - path: cli/target/distributions/cli-{{projectVersion}}-osx-aarch_64.zip
+      - path: apps/wanaku-cli/target/distributions/cli-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
-      - path: cli/target/distributions/cli-{{projectVersion}}-linux-x86_64.zip
+      - path: apps/wanaku-cli/target/distributions/cli-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
 
 packagers:

@@ -1,0 +1,26 @@
+@use '../tools' as tools;
+
+@mixin boldComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans';
+		font-style: normal;
+		font-weight: 700;
+		src: local('IBM Plex Sans Bold'), local('IBMPlexSans-Bold'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSans-Bold.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSans-Bold.woff') format('woff');
+	}
+}
+
+@mixin boldSplit($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@each $unicode-range in $unicode-ranges {
+		@font-face {
+			font-family: 'IBM Plex Sans';
+			font-style: normal;
+			font-weight: 700;
+			src: local('IBM Plex Sans Bold'), local('IBMPlexSans-Bold'), url('#{$font-prefix}/fonts/split/woff2/IBMPlexSans-Bold-#{tools.split-range($unicode-range)}.woff2') format('woff2');
+			unicode-range: tools.get-range($unicode-range);
+		}	}
+}
+
+@mixin all($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@include boldComplete($font-prefix);
+	@include boldSplit($font-prefix, $unicode-ranges);
+}
