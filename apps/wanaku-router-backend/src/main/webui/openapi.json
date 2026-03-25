@@ -1,0 +1,2673 @@
+{
+  "openapi" : "3.1.0",
+  "components" : {
+    "schemas" : {
+      "ActivityRecord" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "lastSeen" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "healthStatus" : {
+            "$ref" : "#/components/schemas/HealthStatus"
+          },
+          "states" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ServiceState"
+            }
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "CapabilityStatistics" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "healthy" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "unhealthy" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "down" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "pending" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "CodeExecutionError" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "taskId" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "details" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "CodeExecutionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "timeout" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "environment" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "arguments" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "metadata" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          }
+        }
+      },
+      "CodeExecutionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "taskId" : {
+            "type" : "string"
+          },
+          "streamUrl" : {
+            "type" : "string"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/CodeExecutionStatus"
+          },
+          "submittedAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "CodeExecutionStatus" : {
+        "type" : "string",
+        "enum" : [ "PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED", "TIMEOUT" ]
+      },
+      "DataStore" : {
+        "type" : "object",
+        "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "data" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FleetStatus" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "healthy" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warning" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "down" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "overall" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ForwardReference" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "namespace" : {
+            "type" : "string"
+          }
+        }
+      },
+      "HealthStatus" : {
+        "type" : "string",
+        "enum" : [ "PENDING", "HEALTHY", "UNHEALTHY", "DOWN" ]
+      },
+      "InputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Property"
+            }
+          },
+          "required" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "Instant" : {
+        "type" : "string",
+        "format" : "date-time",
+        "examples" : [ "2022-03-10T16:15:50Z" ]
+      },
+      "MediaType" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "subtype" : {
+            "type" : "string"
+          },
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "hash" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "wildcardType" : {
+            "type" : "boolean"
+          },
+          "wildcardSubtype" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "Namespace" : {
+        "type" : "object",
+        "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "path" : {
+            "type" : "string"
+          }
+        }
+      },
+      "OutboundSseEvent" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "reconnectDelay" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reconnectDelaySet" : {
+            "type" : "boolean"
+          },
+          "type" : {
+            "type" : "object"
+          },
+          "genericType" : {
+            "type" : "object"
+          },
+          "mediaType" : {
+            "$ref" : "#/components/schemas/MediaType"
+          },
+          "data" : { }
+        }
+      },
+      "Param" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PromptArgument" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PromptContent" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PromptMessage" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string"
+          },
+          "content" : {
+            "$ref" : "#/components/schemas/PromptContent"
+          }
+        }
+      },
+      "PromptPayload" : {
+        "type" : "object",
+        "properties" : {
+          "promptReference" : {
+            "$ref" : "#/components/schemas/PromptReference"
+          },
+          "configurationData" : {
+            "type" : "string"
+          },
+          "secretsData" : {
+            "type" : "string"
+          },
+          "payload" : {
+            "$ref" : "#/components/schemas/PromptReference"
+          }
+        }
+      },
+      "PromptReference" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromptMessage"
+            }
+          },
+          "arguments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromptArgument"
+            }
+          },
+          "toolReferences" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "namespace" : {
+            "type" : "string"
+          },
+          "configurationURI" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Property" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "target" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ResourcePayload" : {
+        "type" : "object",
+        "properties" : {
+          "resourceReference" : {
+            "$ref" : "#/components/schemas/ResourceReference"
+          },
+          "configurationData" : {
+            "type" : "string"
+          },
+          "secretsData" : {
+            "type" : "string"
+          },
+          "payload" : {
+            "$ref" : "#/components/schemas/ResourceReference"
+          }
+        }
+      },
+      "ResourceReference" : {
+        "type" : "object",
+        "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "location" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "mimeType" : {
+            "type" : "string"
+          },
+          "params" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Param"
+            }
+          },
+          "configurationURI" : {
+            "type" : "string"
+          },
+          "secretsURI" : {
+            "type" : "string"
+          },
+          "namespace" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ServerInfo" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ServiceState" : {
+        "type" : "object",
+        "properties" : {
+          "timestamp" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "healthy" : {
+            "type" : "boolean"
+          },
+          "healthStatus" : {
+            "$ref" : "#/components/schemas/HealthStatus"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ServiceTarget" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "serviceName" : {
+            "type" : "string"
+          },
+          "host" : {
+            "type" : "string"
+          },
+          "port" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "serviceType" : {
+            "type" : "string"
+          },
+          "serviceSubType" : {
+            "type" : "string"
+          },
+          "languageName" : {
+            "type" : "string"
+          },
+          "languageType" : {
+            "type" : "string"
+          },
+          "languageSubType" : {
+            "type" : "string"
+          }
+        }
+      },
+      "StaleCapabilityInfo" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "serviceName" : {
+            "type" : "string"
+          },
+          "serviceType" : {
+            "type" : "string"
+          },
+          "host" : {
+            "type" : "string"
+          },
+          "port" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "healthStatus" : {
+            "type" : "string"
+          },
+          "lastSeen" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "SystemStatistics" : {
+        "type" : "object",
+        "properties" : {
+          "toolsCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "resourcesCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "promptsCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "forwardsCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dataStoresCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "toolCapabilities" : {
+            "$ref" : "#/components/schemas/CapabilityStatistics"
+          },
+          "resourceCapabilities" : {
+            "$ref" : "#/components/schemas/CapabilityStatistics"
+          }
+        }
+      },
+      "ToolPayload" : {
+        "type" : "object",
+        "properties" : {
+          "toolReference" : {
+            "$ref" : "#/components/schemas/ToolReference"
+          },
+          "configurationData" : {
+            "type" : "string"
+          },
+          "secretsData" : {
+            "type" : "string"
+          },
+          "payload" : {
+            "$ref" : "#/components/schemas/ToolReference"
+          }
+        }
+      },
+      "ToolReference" : {
+        "type" : "object",
+        "properties" : {
+          "labels" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "uri" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "inputSchema" : {
+            "$ref" : "#/components/schemas/InputSchema"
+          },
+          "namespace" : {
+            "type" : "string"
+          },
+          "configurationURI" : {
+            "type" : "string"
+          },
+          "secretsURI" : {
+            "type" : "string"
+          }
+        }
+      },
+      "WanakuError" : {
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "WanakuResponse" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : { }
+        }
+      },
+      "WanakuResponseDataStore" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/DataStore"
+          }
+        }
+      },
+      "WanakuResponseFleetStatus" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/FleetStatus"
+          }
+        }
+      },
+      "WanakuResponseForwardReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ForwardReference"
+          }
+        }
+      },
+      "WanakuResponseInteger" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "WanakuResponseListDataStore" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DataStore"
+            }
+          }
+        }
+      },
+      "WanakuResponseListForwardReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ForwardReference"
+            }
+          }
+        }
+      },
+      "WanakuResponseListNamespace" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Namespace"
+            }
+          }
+        }
+      },
+      "WanakuResponseListPromptReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PromptReference"
+            }
+          }
+        }
+      },
+      "WanakuResponseListResourceReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ResourceReference"
+            }
+          }
+        }
+      },
+      "WanakuResponseListServiceTarget" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ServiceTarget"
+            }
+          }
+        }
+      },
+      "WanakuResponseListStaleCapabilityInfo" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StaleCapabilityInfo"
+            }
+          }
+        }
+      },
+      "WanakuResponseListToolReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ToolReference"
+            }
+          }
+        }
+      },
+      "WanakuResponseMapStringListActivityRecord" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/components/schemas/ActivityRecord"
+              }
+            }
+          }
+        }
+      },
+      "WanakuResponseNamespace" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/Namespace"
+          }
+        }
+      },
+      "WanakuResponsePromptReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/PromptReference"
+          }
+        }
+      },
+      "WanakuResponseResourceReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ResourceReference"
+          }
+        }
+      },
+      "WanakuResponseServerInfo" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ServerInfo"
+          }
+        }
+      },
+      "WanakuResponseServiceTarget" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ServiceTarget"
+          }
+        }
+      },
+      "WanakuResponseSystemStatistics" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/SystemStatistics"
+          }
+        }
+      },
+      "WanakuResponseToolReference" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/ToolReference"
+          }
+        }
+      }
+    }
+  },
+  "paths" : {
+    "/.well-known/oauth-authorization-server" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Authorization Server Metadata",
+        "tags" : [ "O Auth Authorization Server Well Known Resource" ]
+      }
+    },
+    "/.well-known/oauth-authorization-server/{tenant}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "tenant",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Authorization Server Metadata For Tenant",
+        "tags" : [ "O Auth Authorization Server Well Known Resource" ]
+      }
+    },
+    "/api/v1/capabilities" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListServiceTarget"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/fleet/status" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseFleetStatus"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Fleet Status",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/notifications" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OutboundSseEvent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Targets Event Stream",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/resources/state" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringListActivityRecord"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Resources State",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/stale" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "inactiveOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListStaleCapabilityInfo"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Stale",
+        "tags" : [ "Capabilities Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "inactiveOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Cleanup Stale",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/capabilities/tools/state" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringListActivityRecord"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Tools State",
+        "tags" : [ "Capabilities Resource" ]
+      }
+    },
+    "/api/v1/data-store" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataStore"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove By Name",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Or Get By Name",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DataStore"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/data-store/labels" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "labelExpression",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove If",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/data-store/{id}" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove By Id",
+        "tags" : [ "Data Stores Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Id",
+        "tags" : [ "Data Stores Resource" ]
+      }
+    },
+    "/api/v1/forwards" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListForwardReference"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Forwards",
+        "tags" : [ "Forwards Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForwardReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add Forward",
+        "tags" : [ "Forwards Resource" ]
+      }
+    },
+    "/api/v1/forwards/{name}" : {
+      "put" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForwardReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Forwards Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Remove Forward",
+        "tags" : [ "Forwards Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseForwardReference"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
+        "tags" : [ "Forwards Resource" ]
+      }
+    },
+    "/api/v1/forwards/{name}/refreshes" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Refresh",
+        "tags" : [ "Forwards Resource" ]
+      }
+    },
+    "/api/v1/management/discovery" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ServiceTarget"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseServiceTarget"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Register",
+        "tags" : [ "Discovery Resource" ]
+      },
+      "delete" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ServiceTarget"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Deregister",
+        "tags" : [ "Discovery Resource" ]
+      }
+    },
+    "/api/v1/management/discovery/heartbeats" : {
+      "post" : {
+        "deprecated" : true,
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Ping",
+        "tags" : [ "Discovery Resource" ]
+      }
+    },
+    "/api/v1/management/info/version" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseServerInfo"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Version",
+        "tags" : [ "Info Resource" ]
+      }
+    },
+    "/api/v1/management/statistics" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseSystemStatistics"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Statistics",
+        "tags" : [ "Statistics Resource" ]
+      }
+    },
+    "/api/v1/namespaces" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListNamespace"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Namespace"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseNamespace"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Create",
+        "tags" : [ "Namespaces Resource" ]
+      }
+    },
+    "/api/v1/namespaces/stale" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "includeUnlabeled",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "unassignedOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListNamespace"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Stale",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "includeUnlabeled",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "maxAgeSeconds",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "unassignedOnly",
+          "in" : "query",
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Cleanup Stale",
+        "tags" : [ "Namespaces Resource" ]
+      }
+    },
+    "/api/v1/namespaces/{id}" : {
+      "put" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Namespace"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseNamespace"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Id",
+        "tags" : [ "Namespaces Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete",
+        "tags" : [ "Namespaces Resource" ]
+      }
+    },
+    "/api/v1/prompts" : {
+      "put" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromptReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Prompts Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "prompt",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Prompts Resource" ]
+      },
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListPromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Prompts Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromptReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponsePromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Prompts Resource" ]
+      }
+    },
+    "/api/v1/prompts/payloads" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromptPayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponsePromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add With Payload",
+        "tags" : [ "Prompts Resource" ]
+      }
+    },
+    "/api/v1/prompts/{name}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponsePromptReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
+        "tags" : [ "Prompts Resource" ]
+      }
+    },
+    "/api/v1/resources" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Resources Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourceReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Expose",
+        "tags" : [ "Resources Resource" ]
+      }
+    },
+    "/api/v1/resources/payloads" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourcePayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Expose With Payload",
+        "tags" : [ "Resources Resource" ]
+      }
+    },
+    "/api/v1/resources/{name}" : {
+      "put" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResourceReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Resources Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Resources Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseResourceReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
+        "tags" : [ "Resources Resource" ]
+      }
+    },
+    "/api/v1/tools" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "labelExpression",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseInteger"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove If",
+        "tags" : [ "Tools Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "labelFilter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Tools Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ToolReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Tools Resource" ]
+      }
+    },
+    "/api/v1/tools/payloads" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ToolPayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add With Payload",
+        "tags" : [ "Tools Resource" ]
+      }
+    },
+    "/api/v1/tools/{name}" : {
+      "put" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ToolReference"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Update",
+        "tags" : [ "Tools Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Tools Resource" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get By Name",
+        "tags" : [ "Tools Resource" ]
+      }
+    },
+    "/api/v2/code-execution-engine/{engineType}/{language}" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "engineType",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "language",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CodeExecutionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeExecutionResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeExecutionError"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeExecutionError"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Submit Code",
+        "tags" : [ "Code Execution Resource" ]
+      }
+    },
+    "/api/v2/code-execution-engine/{engineType}/{language}/{taskId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "engineType",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "language",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OutboundSseEvent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Stream Results",
+        "tags" : [ "Code Execution Resource" ]
+      }
+    },
+    "/api/v2/tool-calls/notifications" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OutboundSseEvent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Stream All Tool Calls",
+        "tags" : [ "Tool Call Resource" ]
+      }
+    },
+    "/api/v2/tool-calls/notifications/{connectionId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "connectionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OutboundSseEvent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Stream Tool Calls By Connection",
+        "tags" : [ "Tool Call Resource" ]
+      }
+    },
+    "/test-oidc/.well-known/openid-configuration" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Open Id Configuration",
+        "tags" : [ "Test Open Id Configuration Resource" ]
+      }
+    }
+  },
+  "info" : {
+    "title" : "wanaku-router-backend API",
+    "version" : "0.1.0-SNAPSHOT"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:8080",
+    "description" : "Auto generated value"
+  }, {
+    "url" : "http://0.0.0.0:8080",
+    "description" : "Auto generated value"
+  } ]
+}

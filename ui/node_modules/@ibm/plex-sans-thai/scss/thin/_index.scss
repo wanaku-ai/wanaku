@@ -1,0 +1,14 @@
+@use '../tools' as tools;
+
+@mixin thinComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans Thai';
+		font-style: normal;
+		font-weight: 100;
+		src: local('IBM Plex Sans Thai Thin'), local('IBMPlexSansThai-Thin'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSansThai-Thin.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSansThai-Thin.woff') format('woff');
+	}
+}
+
+@mixin all($font-prefix: $font-prefix) {
+	@include thinComplete($font-prefix);
+}

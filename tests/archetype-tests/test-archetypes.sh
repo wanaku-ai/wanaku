@@ -3,7 +3,7 @@ installDir="$(dirname "${localDir}")"/../..
 
 workDir=$(pwd)
 
-cliDir=${installDir}/cli/target/quarkus-app/
+cliDir=${installDir}/apps/wanaku-cli/target/quarkus-app/
 cliJar=${cliDir}/quarkus-run.jar
 
 if [[ -d build ]] ; then

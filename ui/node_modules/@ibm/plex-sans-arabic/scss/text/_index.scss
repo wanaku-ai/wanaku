@@ -1,0 +1,14 @@
+@use '../tools' as tools;
+
+@mixin textComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans Arabic';
+		font-style: normal;
+		font-weight: 450;
+		src: local('IBM Plex Sans Arabic Text'), local('IBMPlexSansArabic-Text'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSansArabic-Text.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSansArabic-Text.woff') format('woff');
+	}
+}
+
+@mixin all($font-prefix: $font-prefix) {
+	@include textComplete($font-prefix);
+}

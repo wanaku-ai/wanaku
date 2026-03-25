@@ -6,7 +6,7 @@ API_ENDPOINT?=http://$(HOST):8080
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
-WANAKU_CLI_CMD:= java -jar $(mkfile_dir)/cli/target/quarkus-app/quarkus-run.jar
+WANAKU_CLI_CMD:= java -jar $(mkfile_dir)/apps/wanaku-cli/target/quarkus-app/quarkus-run.jar
 WANAKU_LOCAL_CONFIG_DIR:=$(HOME)/Sync/Data/util/devel/wanaku
 
 help:
@@ -25,7 +25,7 @@ dist-native:
 
 install:
 	mkdir -p $(HOME)/bin
-	install -m755 cli/target/cli-$(WANAKU_VERSION)-runner $(HOME)/bin/wanaku
+	install -m755 apps/wanaku-cli/target/cli-$(WANAKU_VERSION)-runner $(HOME)/bin/wanaku
 	ln -sf $(HOME)/bin/wanaku $(HOME)/bin/wk
 
 load-meta:

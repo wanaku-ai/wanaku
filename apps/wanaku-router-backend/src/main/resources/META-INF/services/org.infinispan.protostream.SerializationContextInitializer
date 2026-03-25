@@ -1,0 +1,15 @@
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ForwardReferenceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.NamespaceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.PropertySchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ServiceStateSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ServiceTypeSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.WanakuErrorSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ResourceReferenceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ContentSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.PromptReferenceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.InputSchemaSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.RemoteToolReferenceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ToolReferenceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ServiceTargetSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ActivityRecordSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.CodeExecutionTaskSchema

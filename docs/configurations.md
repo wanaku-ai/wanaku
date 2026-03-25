@@ -40,9 +40,9 @@ Each Wanaku component ships with a built-in `application.properties` file inside
 
 For the main components:
 
-- **Router Backend**: `wanaku-router/wanaku-router-backend/src/main/resources/application.properties`
+- **Router Backend**: `apps/wanaku-router-backend/src/main/resources/application.properties`
 - **Tool Services**: `capabilities/tools/<service>/src/main/resources/application.properties`
-- **CLI**: `cli/src/main/resources/application.properties`
+- **CLI**: `apps/wanaku-cli/src/main/resources/application.properties`
 
 ### How to override configuration at runtime
 

@@ -1,0 +1,26 @@
+@use '../tools' as tools;
+
+@mixin thinComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Serif';
+		font-style: normal;
+		font-weight: 100;
+		src: local('IBM Plex Serif Thin'), local('IBMPlexSerif-Thin'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSerif-Thin.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSerif-Thin.woff') format('woff');
+	}
+}
+
+@mixin thinSplit($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@each $unicode-range in $unicode-ranges {
+		@font-face {
+			font-family: 'IBM Plex Serif';
+			font-style: normal;
+			font-weight: 100;
+			src: local('IBM Plex Serif Thin'), local('IBMPlexSerif-Thin'), url('#{$font-prefix}/fonts/split/woff2/IBMPlexSerif-Thin-#{tools.split-range($unicode-range)}.woff2') format('woff2');
+			unicode-range: tools.get-range($unicode-range);
+		}	}
+}
+
+@mixin all($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@include thinComplete($font-prefix);
+	@include thinSplit($font-prefix, $unicode-ranges);
+}

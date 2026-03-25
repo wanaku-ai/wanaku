@@ -1,0 +1,8 @@
+@use 'sass:map';
+
+@function enabled($font-weights, $weight) {
+	@if map.has-key($font-weights, $weight) {
+		@return map.get($font-weights, $weight);
+	}
+	@return false;
+}

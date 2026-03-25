@@ -264,10 +264,10 @@ The Wanaku Operator can be deployed using Helm charts. First, ensure you're in t
 kubectl create namespace wanaku
 ```
 
-Then, install the operator using the [Helm chart](https://github.com/wanaku-ai/wanaku/tree/main/wanaku-operator/deploy/helm) from the repository:
+Then, install the operator using the [Helm chart](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator/deploy/helm) from the repository:
 
 ```shell
-helm install wanaku-operator ./wanaku-operator/deploy/helm/wanaku-operator \
+helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
   --namespace wanaku \
   --set operatorNamespace=wanaku
 ```
@@ -277,7 +277,7 @@ By default, the operator will be deployed in the namespace specified by the `ope
 You can customize this during installation:
 
 ```shell
-helm install wanaku-operator ./wanaku-operator/deploy/helm/wanaku-operator \
+helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
   --namespace my-custom-namespace \
   --set operatorNamespace=my-custom-namespace
 ```
@@ -366,7 +366,7 @@ The operator will automatically create:
 > ```
 
 > [!TIP]
-> You can find more complete examples in the [wanaku-operator/samples](https://github.com/wanaku-ai/wanaku/tree/main/wanaku-operator/samples) directory.
+> You can find more complete examples in the [apps/wanaku-operator/samples](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator/samples) directory.
 
 #### Checking the Deployment Status
 

@@ -1,0 +1,14 @@
+@use '../tools' as tools;
+
+@mixin extralightComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans Hebrew';
+		font-style: normal;
+		font-weight: 200;
+		src: local('IBM Plex Sans Hebrew ExtraLight'), local('IBMPlexSansHebrew-ExtraLight'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSansHebrew-ExtraLight.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSansHebrew-ExtraLight.woff') format('woff');
+	}
+}
+
+@mixin all($font-prefix: $font-prefix) {
+	@include extralightComplete($font-prefix);
+}

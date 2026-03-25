@@ -92,12 +92,9 @@
         <module>parent</module>
         <module>core</module>
         <module>capabilities-quarkus-sdk</module>
-        <module>wanaku-router</module>
-        <module>wanaku-operator</module>
-        <module>cli</module>
+        <module>apps</module>
         <module>capabilities</module>
         <module>archetypes</module>
-        <module>jbang</module>
         <module>tests</module>
     </modules>
 
@@ -177,8 +174,8 @@
                             <version>${maven-scm-plugin.version}</version>
                             <configuration>
                                 <message>[maven-scm-plugin] Update version in files</message>
-                                <includes>wanaku-router/ui/admin/**/*.ts,wanaku-router/wanaku-router-backend/src/main/webui/openapi.json,wanaku-router/wanaku-router-backend/src/main/webui/openapi.yaml,jbang-catalog.json</includes>
-                                <excludes>wanaku-router/ui/admin/node_modules/**</excludes>
+                                <includes>apps/ui/admin/**/*.ts,apps/wanaku-router-backend/src/main/webui/openapi.json,apps/wanaku-router-backend/src/main/webui/openapi.yaml,jbang-catalog.json</includes>
+                                <excludes>apps/ui/admin/node_modules/**</excludes>
                             </configuration>
                         </plugin>
                     </plugins>

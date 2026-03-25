@@ -603,13 +603,13 @@ void subscribeToEvents() {
 
 | Component | Path |
 |-----------|------|
-| Discovery REST API | `wanaku-router/wanaku-router-backend/.../discovery/DiscoveryResource.java` |
-| Discovery Bean | `wanaku-router/wanaku-router-backend/.../discovery/DiscoveryBean.java` |
+| Discovery REST API | `apps/wanaku-router-backend/.../discovery/DiscoveryResource.java` |
+| Discovery Bean | `apps/wanaku-router-backend/.../discovery/DiscoveryBean.java` |
 | ServiceRegistry Interface | `core/core-mcp/.../providers/ServiceRegistry.java` |
 | Infinispan Implementation | `core/core-persistence/core-persistence-infinispan/.../discovery/` |
 | ServiceTarget Model | `capabilities-api/.../types/providers/ServiceTarget.java` |
 | State Models | `capabilities-api/.../types/discovery/` |
 | Registration Manager | `capabilities-quarkus-sdk/wanaku-capabilities-base/.../discovery/DefaultRegistrationManager.java` |
-| Service Resolver | `wanaku-router/wanaku-router-backend/.../support/ServiceResolver.java` |
-| Event Types | `wanaku-router/wanaku-router-backend/.../common/EventType.java` |
-| SSE Endpoint | `wanaku-router/wanaku-router-backend/.../capabilities/CapabilitiesResource.java` |
+| Service Resolver | `apps/wanaku-router-backend/.../support/ServiceResolver.java` |
+| Event Types | `apps/wanaku-router-backend/.../common/EventType.java` |
+| SSE Endpoint | `apps/wanaku-router-backend/.../capabilities/CapabilitiesResource.java` |

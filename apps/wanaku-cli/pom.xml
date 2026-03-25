@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>ai.wanaku</groupId>
+        <artifactId>apps</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wanaku-cli</artifactId>
+    <name>Wanaku :: Apps :: CLI</name>
+
+    <properties>
+        <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
+        <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-models</artifactId>
+                <version>${swagger-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-core</artifactId>
+                <version>${swagger-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-console-ui</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser</artifactId>
+                <version>${swagger-parser.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.skyscreamer</groupId>
+                <artifactId>jsonassert</artifactId>
+                <version>${jsonassert.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.googlecode.juniversalchardet</groupId>
+                <artifactId>juniversalchardet</artifactId>
+                <version>${juniversalchardet.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.fusesource.jansi</groupId>
+                <artifactId>jansi</artifactId>
+                <version>${jansi.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.wanaku.sdk</groupId>
+            <artifactId>capabilities-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.wanaku</groupId>
+            <artifactId>core-services-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-picocli</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.parser.v3</groupId>
+            <artifactId>swagger-parser</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-console-ui</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.juniversalchardet</groupId>
+            <artifactId>juniversalchardet</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>oauth2-oidc-sdk</artifactId>
+            <version>${oauth2-oidc-sdk.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+            <version>${commonmark.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+            <version>${commonmark.version}</version>
+        </dependency>
+
+        <!-- tests -->
+      <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-mockito</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <properties>
+                <skipITs>false</skipITs>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
+                <quarkus.native.additional-build-args>
+                    <!-- initialize at build time -->
+                    --initialize-at-build-time=com.sun.jna.internal.Cleaner,
+                    --initialize-at-build-time=com.sun.jna.internal.Cleaner$CleanerThread,
+                    <!-- trace object instantiation -->
+                    --trace-object-instantiation=com.sun.jna.internal.Cleaner$CleanerThread,
+                    <!-- initialize at run time -->
+                    --initialize-at-run-time=org.jline.nativ.Kernel32,
+                    --initialize-at-run-time=com.sun.jna.Native,
+                    --initialize-at-run-time=com.sun.jna.Structure$FFIType,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.osx.OsXNativePty,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.linux.LinuxNativePty,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.linux.LinuxNativePty$UtilLibrary,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.freebsd.FreeBsdNativePty,
+                    --initialize-at-run-time=org.jline.terminal.impl.jna.solaris.SolarisNativePty,
+                    --initialize-at-run-time=org.jline.nativ.CLibrary,
+                    --initialize-at-run-time=org.fusesource.jansi.internal.CLibrary$WinSize,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$CONSOLE_SCREEN_BUFFER_INFO,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$CHAR_INFO,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$MOUSE_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$FOCUS_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$COORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$KEY_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$SMALL_RECT,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$WINDOW_BUFFER_SIZE_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$INPUT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.Kernel32$MENU_EVENT_RECORD,
+                    --initialize-at-run-time=org.jline.nativ.JLineLibrary,
+                    --initialize-at-run-time=com.nimbusds.oauth2.sdk.http.HTTPRequest,
+                    -H:ReflectionConfigurationFiles=reflection-config.json,
+                    -H:IncludeResourceBundles=consoleui_messages,
+                    -H:ResourceConfigurationFiles=resources-config.json
+                </quarkus.native.additional-build-args>
+            </properties>
+            <dependencies>
+                <!-- Required for jline to build/work in native mode -->
+                <dependency>
+                    <groupId>net.java.dev.jna</groupId>
+                    <artifactId>jna</artifactId>
+                    <version>${jna.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>dist</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>${maven-assembly-plugin.version}</version>
+                        <configuration>
+                            <attach>false</attach>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <outputDirectory>${distribution.directory}</outputDirectory>
+                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-distribution</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <finalName>${project.artifactId}-${project.version}</finalName>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/assembly.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>dist-native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>${maven-assembly-plugin.version}</version>
+                        <configuration>
+                            <attach>false</attach>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <outputDirectory>${distribution.directory}</outputDirectory>
+                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-native-distribution</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <finalName>${project.artifactId}-${project.version}-${os.detected.classifier}</finalName>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/assembly-native.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>dist-windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <executable-suffix>.exe</executable-suffix>
+            </properties>
+        </profile>
+    </profiles>
+</project>

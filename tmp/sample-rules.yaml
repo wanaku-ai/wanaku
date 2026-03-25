@@ -1,0 +1,39 @@
+mcp:
+  tools:
+    - get-employee-information:
+        route:
+          id: "get-employee-information"
+        description: "Fetches core profile data for a specific employee (eg. name, id, level and days in level)."
+        properties:
+          - name: employeeId
+            type: int
+            description: The employee ID to retrieve information for
+            required: true
+            mapping:
+              type: header
+              name: EMPLOYEE_ID
+    - get-employee-reviews:
+        route:
+          id: "get-employee-reviews"
+        description: "Displays all past and current performance reviews, ratings, and manager feedback."
+        properties:
+          - name: employeeId
+            type: int
+            description: The employee ID to get the review information for
+            required: true
+            mapping:
+              type: header
+              name: EMPLOYEE_ID
+    - get-employee-compensation:
+        route:
+          id: "get-employee-compensation"
+        description: "Fetches current and historical pay details for the selected employee."
+        properties:
+          - name: employeeId
+            type: int
+            description: The employee ID to fetch the information for
+            required: true
+            mapping:
+              type: header
+              name: EMPLOYEE_ID
+

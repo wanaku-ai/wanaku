@@ -1,0 +1,25 @@
+@use 'sass:map';
+@use "sass:string";
+@use '../unicodes/' as unicodes;
+
+@function get-range($name) {
+	@if map.has-key(unicodes.$ranges, $name) {
+		@return map.get(unicodes.$ranges, $name);
+	}
+	@error 'Unable to find range with the name: #{$name}';
+}
+
+@function split-range($name) {
+	$index: string.index($name, '-');
+	@if $index != null {
+		@return string.slice($name, $index + 1);
+	}
+	@return $name;
+}
+
+@function enabled($font-weights, $weight) {
+	@if map.has-key($font-weights, $weight) {
+		@return map.get($font-weights, $weight);
+	}
+	@return false;
+}

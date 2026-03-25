@@ -1,0 +1,18 @@
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  font-style: normal;
+  font-weight: 300;
+  src: local("IBM Plex Sans Thai Looped Light"), local("IBMPlexSansThaiLooped-Light"), url("../fonts/complete/woff2/IBMPlexSansThaiLooped-Light.woff2") format("woff2"), url("../fonts/complete/woff/IBMPlexSansThaiLooped-Light.woff") format("woff");
+}
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  font-style: normal;
+  font-weight: 400;
+  src: local("IBM Plex Sans Thai Looped"), local("IBMPlexSansThaiLooped"), url("../fonts/complete/woff2/IBMPlexSansThaiLooped-Regular.woff2") format("woff2"), url("../fonts/complete/woff/IBMPlexSansThaiLooped-Regular.woff") format("woff");
+}
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  font-style: normal;
+  font-weight: 600;
+  src: local("IBM Plex Sans Thai Looped SemiBold"), local("IBMPlexSansThaiLooped-SemiBold"), url("../fonts/complete/woff2/IBMPlexSansThaiLooped-SemiBold.woff2") format("woff2"), url("../fonts/complete/woff/IBMPlexSansThaiLooped-SemiBold.woff") format("woff");
+}

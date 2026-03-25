@@ -1,0 +1,122 @@
+@use 'sass:map';
+@use './tools/' as tools;
+
+@use 'bold/index' as bold;
+@use 'bold/italic/index' as boldItalic;
+@use 'extralight/index' as extralight;
+@use 'extralight/italic/index' as extralightItalic;
+@use 'italic/index' as italic;
+@use 'light/index' as light;
+@use 'light/italic/index' as lightItalic;
+@use 'medium/index' as medium;
+@use 'medium/italic/index' as mediumItalic;
+@use 'regular/index' as regular;
+@use 'semibold/index' as semibold;
+@use 'semibold/italic/index' as semiboldItalic;
+@use 'text/index' as text;
+@use 'text/italic/index' as textItalic;
+@use 'thin/index' as thin;
+@use 'thin/italic/index' as thinItalic;
+
+$font-prefix: '..' !default;
+$unicode-ranges: ('Cyrillic','Pi','Latin3','Latin2','Latin1','Greek');
+$-font-weights: (
+	bold: true,
+	boldItalic: true,
+	extralight: true,
+	extralightItalic: true,
+	italic: true,
+	light: true,
+	lightItalic: true,
+	medium: true,
+	mediumItalic: true,
+	regular: true,
+	semibold: true,
+	semiboldItalic: true,
+	text: true,
+	textItalic: true,
+	thin: true,
+	thinItalic: true
+);
+$font-weights: () !default;
+$font-weights: map.merge($-font-weights, $font-weights);
+
+@mixin all($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@if tools.enabled($font-weights, 'bold') {
+		@include bold.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'boldItalic') {
+		@include boldItalic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'extralight') {
+		@include extralight.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'extralightItalic') {
+		@include extralightItalic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'italic') {
+		@include italic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'light') {
+		@include light.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'lightItalic') {
+		@include lightItalic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'medium') {
+		@include medium.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'mediumItalic') {
+		@include mediumItalic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'regular') {
+		@include regular.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'semibold') {
+		@include semibold.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'semiboldItalic') {
+		@include semiboldItalic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'text') {
+		@include text.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'textItalic') {
+		@include textItalic.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'thin') {
+		@include thin.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'thinItalic') {
+		@include thinItalic.all($font-prefix, $unicode-ranges);
+	}
+}
+
+@mixin default($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@if tools.enabled($font-weights, 'light') {
+		@include light.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'regular') {
+		@include regular.all($font-prefix, $unicode-ranges);
+	}
+
+	@if tools.enabled($font-weights, 'semibold') {
+		@include semibold.all($font-prefix, $unicode-ranges);
+	}
+}

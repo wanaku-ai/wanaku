@@ -1,0 +1,26 @@
+@use '../../tools' as tools;
+
+@mixin textItalicComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Mono';
+		font-style: italic;
+		font-weight: 450;
+		src: local('IBM Plex Mono Text Italic'), local('IBMPlexMono-TextItalic'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexMono-TextItalic.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexMono-TextItalic.woff') format('woff');
+	}
+}
+
+@mixin textItalicSplit($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@each $unicode-range in $unicode-ranges {
+		@font-face {
+			font-family: 'IBM Plex Mono';
+			font-style: italic;
+			font-weight: 450;
+			src: local('IBM Plex Mono Text Italic'), local('IBMPlexMono-TextItalic'), url('#{$font-prefix}/fonts/split/woff2/IBMPlexMono-TextItalic-#{tools.split-range($unicode-range)}.woff2') format('woff2');
+			unicode-range: tools.get-range($unicode-range);
+		}	}
+}
+
+@mixin all($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@include textItalicComplete($font-prefix);
+	@include textItalicSplit($font-prefix, $unicode-ranges);
+}

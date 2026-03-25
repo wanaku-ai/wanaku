@@ -1,0 +1,26 @@
+@use '../tools' as tools;
+
+@mixin mediumComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans';
+		font-style: normal;
+		font-weight: 500;
+		src: local('IBM Plex Sans Medium'), local('IBMPlexSans-Medium'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSans-Medium.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSans-Medium.woff') format('woff');
+	}
+}
+
+@mixin mediumSplit($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@each $unicode-range in $unicode-ranges {
+		@font-face {
+			font-family: 'IBM Plex Sans';
+			font-style: normal;
+			font-weight: 500;
+			src: local('IBM Plex Sans Medium'), local('IBMPlexSans-Medium'), url('#{$font-prefix}/fonts/split/woff2/IBMPlexSans-Medium-#{tools.split-range($unicode-range)}.woff2') format('woff2');
+			unicode-range: tools.get-range($unicode-range);
+		}	}
+}
+
+@mixin all($font-prefix: $font-prefix, $unicode-ranges: $unicode-ranges) {
+	@include mediumComplete($font-prefix);
+	@include mediumSplit($font-prefix, $unicode-ranges);
+}

@@ -1,0 +1,14 @@
+@use '../tools' as tools;
+
+@mixin lightComplete($font-prefix: $font-prefix) {
+	@font-face {
+		font-family: 'IBM Plex Sans Arabic';
+		font-style: normal;
+		font-weight: 300;
+		src: local('IBM Plex Sans Arabic Light'), local('IBMPlexSansArabic-Light'), url('#{$font-prefix}/fonts/complete/woff2/IBMPlexSansArabic-Light.woff2') format('woff2'), url('#{$font-prefix}/fonts/complete/woff/IBMPlexSansArabic-Light.woff') format('woff');
+	}
+}
+
+@mixin all($font-prefix: $font-prefix) {
+	@include lightComplete($font-prefix);
+}

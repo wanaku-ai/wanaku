@@ -2,7 +2,7 @@
   "catalogs": {},
   "aliases": {
     "wanaku": {
-      "script-ref": "jbang/src/main/java/ai/wanaku/jbang/WanakuJBang.java",
+      "script-ref": "apps/wanaku-jbang/src/main/java/ai/wanaku/jbang/WanakuJBang.java",
       "dependencies": [
         "ai.wanaku:cli:${wanaku.version:0.0.9}"
       ],
