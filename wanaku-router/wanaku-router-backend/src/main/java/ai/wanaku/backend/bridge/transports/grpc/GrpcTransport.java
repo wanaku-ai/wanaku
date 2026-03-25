@@ -3,14 +3,22 @@ package ai.wanaku.backend.bridge.transports.grpc;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.grpc.Deadline;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import io.quarkiverse.mcp.server.ResourceContents;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ToolResponse;
@@ -42,6 +50,7 @@ import ai.wanaku.core.exchange.v1.Secret;
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Encapsulates all gRPC transport operations for bridge implementations.
@@ -133,44 +142,37 @@ public class GrpcTransport implements WanakuBridgeTransport {
         String safeName = Objects.requireNonNullElse(name, "");
 
         ManagedChannel channel = createChannel(service);
-        try {
-            Configuration cfg = Configuration.newBuilder()
-                    .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                    .setName(safeName)
-                    .setPayload(Objects.requireNonNullElse(configData, ""))
-                    .build();
+        Configuration cfg = Configuration.newBuilder()
+                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
+                .setName(safeName)
+                .setPayload(Objects.requireNonNullElse(configData, ""))
+                .build();
 
-            Secret secret = Secret.newBuilder()
-                    .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                    .setName(safeName)
-                    .setPayload(Objects.requireNonNullElse(secretsData, ""))
-                    .build();
+        Secret secret = Secret.newBuilder()
+                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
+                .setName(safeName)
+                .setPayload(Objects.requireNonNullElse(secretsData, ""))
+                .build();
 
-            ProvisionRequest request = ProvisionRequest.newBuilder()
-                    .setConfiguration(cfg)
-                    .setSecret(secret)
-                    .build();
+        ProvisionRequest request = ProvisionRequest.newBuilder()
+                .setConfiguration(cfg)
+                .setSecret(secret)
+                .build();
 
-            ProvisionerGrpc.ProvisionerBlockingStub stub = ProvisionerGrpc.newBlockingStub(channel);
-            ProvisionReply reply = stub.withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                    .provision(request);
+        ProvisionReply reply = awaitUnary(
+                service,
+                channel,
+                String.format("Failed to provision configuration '%s' to service: %s", name, service.toAddress()),
+                () -> ProvisionerGrpc.newFutureStub(channel)
+                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                        .provision(request));
 
-            LOG.debugf(
-                    "Successfully provisioned configuration '%s' (config URI: %s, secret URI: %s)",
-                    name, reply.getConfigurationUri(), reply.getSecretUri());
+        LOG.debugf(
+                "Successfully provisioned configuration '%s' (config URI: %s, secret URI: %s)",
+                name, reply.getConfigurationUri(), reply.getSecretUri());
 
-            return new ProvisioningReference(
-                    URI.create(reply.getConfigurationUri()),
-                    URI.create(reply.getSecretUri()),
-                    reply.getPropertiesMap());
-        } catch (StatusRuntimeException e) {
-            throw mapStatusRuntimeException(e, service);
-        } catch (RuntimeException e) {
-            LOG.errorf(e, "Failed to provision configuration '%s' to service: %s", name, service.toAddress());
-            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
-        } finally {
-            channelManager.closeChannel(channel);
-        }
+        return new ProvisioningReference(
+                URI.create(reply.getConfigurationUri()), URI.create(reply.getSecretUri()), reply.getPropertiesMap());
     }
 
     /**
@@ -294,16 +296,14 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service) {
         LOG.debugf("Executing code on service: %s", service.toAddress());
 
+        ManagedChannel channel = createChannel(service);
         try {
-            ManagedChannel channel = createChannel(service);
-
-            CodeExecutorGrpc.CodeExecutorBlockingStub blockingStub = CodeExecutorGrpc.newBlockingStub(channel);
-            return blockingStub
-                    .withDeadline(Deadline.after(deadlineSeconds * 2L, TimeUnit.SECONDS))
-                    .executeCode(request);
+            return startCodeExecutionStream(request, service, channel);
         } catch (StatusRuntimeException e) {
+            channelManager.closeChannel(channel);
             throw mapStatusRuntimeException(e, service);
         } catch (RuntimeException e) {
+            channelManager.closeChannel(channel);
             LOG.errorf(e, "Failed to execute code on service: %s", service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
         }
@@ -327,19 +327,13 @@ public class GrpcTransport implements WanakuBridgeTransport {
         LOG.debugf("Probing health of service: %s", service.toAddress());
 
         ManagedChannel channel = createChannel(service);
-        try {
-            HealthProbeGrpc.HealthProbeBlockingStub blockingStub = HealthProbeGrpc.newBlockingStub(channel);
-            return blockingStub
-                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                    .getStatus(request);
-        } catch (StatusRuntimeException e) {
-            throw mapStatusRuntimeException(e, service);
-        } catch (RuntimeException e) {
-            LOG.errorf(e, "Failed to probe health of service: %s", service.toAddress());
-            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
-        } finally {
-            channelManager.closeChannel(channel);
-        }
+        return awaitUnary(
+                service,
+                channel,
+                String.format("Failed to probe health of service: %s", service.toAddress()),
+                () -> HealthProbeGrpc.newFutureStub(channel)
+                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                        .getStatus(request));
     }
 
     /**
@@ -379,5 +373,204 @@ public class GrpcTransport implements WanakuBridgeTransport {
                 : "gRPC error (" + status.getCode() + ") from service " + service.toAddress();
         LOG.errorf(e, "Service error from %s: %s (code: %s)", service.toAddress(), message, status.getCode());
         return new WanakuException(message, e);
+    }
+
+    private <T> T awaitUnary(
+            ServiceTarget service,
+            ManagedChannel channel,
+            String errorLog,
+            Supplier<ListenableFuture<T>> futureSupplier) {
+        return Uni.createFrom()
+                .<T>emitter(em -> {
+                    try {
+                        ListenableFuture<T> future = futureSupplier.get();
+                        future.addListener(
+                                () -> {
+                                    try {
+                                        em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                    } catch (Exception e) {
+                                        em.fail(e);
+                                    } finally {
+                                        channelManager.closeChannel(channel);
+                                    }
+                                },
+                                Infrastructure.getDefaultExecutor());
+                    } catch (StatusRuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        em.fail(mapStatusRuntimeException(e, service));
+                    } catch (RuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        LOG.errorf(e, "%s", errorLog);
+                        em.fail(new ServiceUnavailableException(
+                                "Service is not available at the address " + service.toAddress(), e));
+                    }
+                })
+                .await()
+                .indefinitely();
+    }
+
+    private AsyncCodeExecutionIterator startCodeExecutionStream(
+            CodeExecutionRequest request, ServiceTarget service, ManagedChannel channel) {
+        BlockingQueue<CodeExecutionStreamItem> queue = new LinkedBlockingQueue<>();
+        AtomicReference<ClientCallStreamObserver<CodeExecutionRequest>> callObserverRef = new AtomicReference<>();
+        AtomicBoolean streamCompleted = new AtomicBoolean(false);
+
+        ClientResponseObserver<CodeExecutionRequest, CodeExecutionReply> observer = new ClientResponseObserver<>() {
+            @Override
+            public void beforeStart(ClientCallStreamObserver<CodeExecutionRequest> requestStream) {
+                callObserverRef.set(requestStream);
+            }
+
+            @Override
+            public void onNext(CodeExecutionReply value) {
+                queue.offer(CodeExecutionStreamItem.reply(value));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                streamCompleted.set(true);
+                queue.offer(CodeExecutionStreamItem.error(t));
+            }
+
+            @Override
+            public void onCompleted() {
+                streamCompleted.set(true);
+                queue.offer(CodeExecutionStreamItem.completed());
+            }
+        };
+
+        CodeExecutorGrpc.newStub(channel)
+                .withDeadline(Deadline.after(deadlineSeconds * 2L, TimeUnit.SECONDS))
+                .executeCode(request, observer);
+
+        return new AsyncCodeExecutionIterator(
+                queue, channel, channelManager, service, this, callObserverRef, streamCompleted);
+    }
+
+    private static final class CodeExecutionStreamItem {
+        private final CodeExecutionReply reply;
+        private final Throwable error;
+        private final boolean completed;
+
+        private CodeExecutionStreamItem(CodeExecutionReply reply, Throwable error, boolean completed) {
+            this.reply = reply;
+            this.error = error;
+            this.completed = completed;
+        }
+
+        static CodeExecutionStreamItem reply(CodeExecutionReply reply) {
+            return new CodeExecutionStreamItem(reply, null, false);
+        }
+
+        static CodeExecutionStreamItem error(Throwable error) {
+            return new CodeExecutionStreamItem(null, error, false);
+        }
+
+        static CodeExecutionStreamItem completed() {
+            return new CodeExecutionStreamItem(null, null, true);
+        }
+    }
+
+    private static final class AsyncCodeExecutionIterator implements Iterator<CodeExecutionReply>, AutoCloseable {
+        private final BlockingQueue<CodeExecutionStreamItem> queue;
+        private final ManagedChannel channel;
+        private final GrpcChannelManager channelManager;
+        private final ServiceTarget service;
+        private final GrpcTransport transport;
+        private final AtomicReference<ClientCallStreamObserver<CodeExecutionRequest>> callObserverRef;
+        private final AtomicBoolean streamCompleted;
+        private volatile CodeExecutionStreamItem nextItem;
+        private final AtomicBoolean closed = new AtomicBoolean(false);
+
+        private AsyncCodeExecutionIterator(
+                BlockingQueue<CodeExecutionStreamItem> queue,
+                ManagedChannel channel,
+                GrpcChannelManager channelManager,
+                ServiceTarget service,
+                GrpcTransport transport,
+                AtomicReference<ClientCallStreamObserver<CodeExecutionRequest>> callObserverRef,
+                AtomicBoolean streamCompleted) {
+            this.queue = queue;
+            this.channel = channel;
+            this.channelManager = channelManager;
+            this.service = service;
+            this.transport = transport;
+            this.callObserverRef = callObserverRef;
+            this.streamCompleted = streamCompleted;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (nextItem == null) {
+                nextItem = takeNextItem();
+            }
+
+            if (nextItem.completed) {
+                closeSilently();
+                return false;
+            }
+
+            if (nextItem.error != null) {
+                closeSilently();
+                throw mapStreamError(nextItem.error);
+            }
+
+            return true;
+        }
+
+        @Override
+        public CodeExecutionReply next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException("No more code execution replies");
+            }
+
+            CodeExecutionReply reply = nextItem.reply;
+            nextItem = null;
+            return reply;
+        }
+
+        @Override
+        public void close() {
+            if (closed.compareAndSet(false, true)) {
+                ClientCallStreamObserver<CodeExecutionRequest> callObserver = callObserverRef.get();
+                if (callObserver != null && !streamCompleted.get()) {
+                    callObserver.cancel("Stream closed by client", null);
+                }
+                channelManager.closeChannel(channel);
+            }
+        }
+
+        private void closeSilently() {
+            try {
+                close();
+            } catch (Exception ignored) {
+                // Best effort close
+            }
+        }
+
+        private CodeExecutionStreamItem takeNextItem() {
+            try {
+                return queue.take();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return CodeExecutionStreamItem.error(e);
+            }
+        }
+
+        private RuntimeException mapStreamError(Throwable error) {
+            if (error instanceof StatusRuntimeException sre) {
+                return transport.mapStatusRuntimeException(sre, service);
+            }
+
+            if (error instanceof RuntimeException re) {
+                LOG.errorf(error, "Failed to execute code on service: %s", service.toAddress());
+                return new ServiceUnavailableException(
+                        "Service is not available at the address " + service.toAddress(), re);
+            }
+
+            LOG.errorf(error, "Failed to execute code on service: %s", service.toAddress());
+            return new ServiceUnavailableException(
+                    "Service is not available at the address " + service.toAddress(), error);
+        }
     }
 }
