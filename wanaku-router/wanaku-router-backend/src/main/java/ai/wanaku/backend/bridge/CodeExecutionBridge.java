@@ -210,6 +210,13 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             if (!completed) {
                 emitTerminalEvent();
             }
+            if (delegate instanceof AutoCloseable closeable) {
+                try {
+                    closeable.close();
+                } catch (Exception e) {
+                    LOG.warnf(e, "Failed to close code execution stream");
+                }
+            }
         }
 
         private void emitTerminalEvent() {
