@@ -2,13 +2,13 @@ package ai.wanaku.test.assertions;
 
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.testcontainers.containers.GenericContainer;
 import io.restassured.response.Response;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import org.testcontainers.containers.GenericContainer;
 
 /**
  * Custom assertions for Wanaku testing.
