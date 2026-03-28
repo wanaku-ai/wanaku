@@ -1,4 +1,4 @@
-import {Add, Edit, TrashCan} from "@carbon/icons-react";
+import {Add, Clean, Edit} from "@carbon/icons-react";
 import {
     Button,
     DataTable,
@@ -122,9 +122,9 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                       />
                       <Button
                         kind="ghost"
-                        renderIcon={TrashCan}
+                        renderIcon={Clean}
                         hasIconOnly
-                        iconDescription="Delete"
+                        iconDescription="Clean up"
                         disabled={nsProtected}
                         onClick={() => onDelete(namespace)}
                       />
