@@ -183,4 +183,43 @@ public class NamespacesBeanTest {
                 namespaces.stream().filter(ns -> "default".equals(ns.getName())).count();
         assertThat(count).isEqualTo(1);
     }
+
+    @Test
+    void testUpdateProtectedDefaultNamespaceIsRejected() {
+        List<Namespace> namespaces = namespacesBean.list();
+        Namespace defaultNamespace = namespaces.stream()
+                .filter(ns -> "default".equals(ns.getName()))
+                .findFirst()
+                .orElseThrow();
+
+        Namespace updated = new Namespace();
+        updated.setId(defaultNamespace.getId());
+        updated.setName("default-updated");
+        updated.setPath(defaultNamespace.getPath());
+        updated.setLabels(defaultNamespace.getLabels());
+
+        boolean result = namespacesBean.update(defaultNamespace.getId(), updated);
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void testUpdateProtectedPublicNamespaceIsRejected() {
+        namespacesBean.preload();
+        List<Namespace> namespaces = namespacesBean.list();
+        Namespace publicNamespace = namespaces.stream()
+                .filter(ns -> "public".equals(ns.getName()))
+                .findFirst()
+                .orElseThrow();
+
+        Namespace updated = new Namespace();
+        updated.setId(publicNamespace.getId());
+        updated.setName("public-updated");
+        updated.setPath(publicNamespace.getPath());
+        updated.setLabels(publicNamespace.getLabels());
+
+        boolean result = namespacesBean.update(publicNamespace.getId(), updated);
+
+        assertThat(result).isFalse();
+    }
 }

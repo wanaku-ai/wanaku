@@ -18,7 +18,7 @@ import {
 import React from "react";
 import {Namespace} from "../../models";
 
-const PROTECTED_PATHS = ["public", "wanaku-internal"];
+const PROTECTED_PATHS = ["default", "public", "wanaku-internal"];
 
 interface NamespaceTableProps {
   namespaces: Namespace[];
@@ -117,6 +117,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                         renderIcon={Edit}
                         hasIconOnly
                         iconDescription="Edit"
+                        disabled={nsProtected}
                         onClick={() => onEdit(namespace)}
                       />
                       <Button

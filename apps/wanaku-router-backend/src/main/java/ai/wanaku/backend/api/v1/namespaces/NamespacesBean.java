@@ -23,7 +23,7 @@ public class NamespacesBean {
     private static final String LABEL_PREALLOCATED_AT = "wanaku.io/preallocated-at";
     private static final String LABEL_ALLOCATED_AT = "wanaku.io/allocated-at";
     private static final String LABEL_EXPIRES_AT = "wanaku.io/expires-at";
-    private static final Set<String> PROTECTED_NAMESPACES = Set.of("public", "wanaku-internal");
+    private static final Set<String> PROTECTED_NAMESPACES = Set.of("default", "public", "wanaku-internal");
 
     @Inject
     Instance<NamespaceRepository> namespaceRepositoryInstance;
@@ -143,6 +143,22 @@ public class NamespacesBean {
     }
 
     public boolean update(String id, Namespace namespace) {
+        if (namespace == null) {
+            return false;
+        }
+
+        Namespace existingNamespace = namespaceRepository.findById(id);
+        if (existingNamespace == null) {
+            return false;
+        }
+
+        if (isProtectedNamespace(existingNamespace)
+                || isProtectedNamespaceName(namespace.getName())
+                || isProtectedNamespaceName(namespace.getPath())) {
+            LOG.warnf("Refusing to update protected namespace %s", existingNamespace.getPath());
+            return false;
+        }
+
         return namespaceRepository.update(id, namespace);
     }
 
