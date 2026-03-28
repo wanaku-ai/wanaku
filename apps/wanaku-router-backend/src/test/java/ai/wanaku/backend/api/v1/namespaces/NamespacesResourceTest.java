@@ -123,12 +123,21 @@ public class NamespacesResourceTest extends WanakuRouterTest {
     public void testDeleteNamespace() {
         given().when().delete("/api/v1/namespaces/" + createdId).then().statusCode(Response.Status.OK.getStatusCode());
 
+        given().when()
+                .get("/api/v1/namespaces/" + createdId)
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.id", is(createdId))
+                .body("data.path", is(createdPath))
+                .body("data.name", nullValue())
+                .body("data.labels.'wanaku.io/preallocated'", is("true"));
+
         given().queryParam("labelFilter", TEST_LABEL_KEY + "=" + TEST_LABEL_VALUE)
                 .when()
                 .get("/api/v1/namespaces")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(0));
+                .body(String.format("data.find { it.id == '%s' }", createdId), nullValue());
     }
 
     @Order(6)

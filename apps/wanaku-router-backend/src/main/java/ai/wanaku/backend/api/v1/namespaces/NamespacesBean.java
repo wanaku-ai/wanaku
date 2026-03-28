@@ -177,7 +177,8 @@ public class NamespacesBean {
             return false;
         }
 
-        return namespaceRepository.deleteById(id);
+        resetToUnallocated(namespace);
+        return namespaceRepository.update(id, namespace);
     }
 
     public List<Namespace> listStale(long maxAgeSeconds, boolean unassignedOnly, boolean includeUnlabeled) {
@@ -210,6 +211,12 @@ public class NamespacesBean {
         Map<String, String> labels = ensureLabels(namespace);
         labels.put(LABEL_PREALLOCATED, "false");
         labels.put(LABEL_ALLOCATED_AT, String.valueOf(Instant.now().getEpochSecond()));
+    }
+
+    private void resetToUnallocated(Namespace namespace) {
+        namespace.setName(null);
+        namespace.setLabels(new HashMap<>());
+        markPreallocated(namespace);
     }
 
     private Map<String, String> ensureLabels(Namespace namespace) {

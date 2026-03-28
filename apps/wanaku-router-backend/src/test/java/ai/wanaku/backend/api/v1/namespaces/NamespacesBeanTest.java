@@ -222,4 +222,22 @@ public class NamespacesBeanTest {
 
         assertThat(result).isFalse();
     }
+
+    @Test
+    void testDeleteNamespaceResetsToUnallocated() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("delete-reset-" + System.currentTimeMillis());
+        namespace.setName("allocated-before-delete");
+        Namespace created = namespacesBean.create(namespace);
+
+        boolean deleted = namespacesBean.deleteById(created.getId());
+
+        assertThat(deleted).isTrue();
+        Namespace resetNamespace = namespacesBean.getById(created.getId());
+        assertThat(resetNamespace).isNotNull();
+        assertThat(resetNamespace.getPath()).isEqualTo(created.getPath());
+        assertThat(resetNamespace.getName()).isNull();
+        assertThat(resetNamespace.getLabels())
+                .containsEntry("wanaku.io/preallocated", "true");
+    }
 }
