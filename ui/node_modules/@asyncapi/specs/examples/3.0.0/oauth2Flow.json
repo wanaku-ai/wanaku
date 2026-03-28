@@ -1,8 +1,0 @@
-[{
-	"authorizationUrl": "https://example.com/api/oauth/dialog",
-	"tokenUrl": "https://example.com/api/oauth/token",
-	"availableScopes": {
-		"write:pets": "modify pets in your account",
-		"read:pets": "read your pets"
-	}
-}]

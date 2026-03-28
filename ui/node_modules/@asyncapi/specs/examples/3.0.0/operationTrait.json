@@ -1,7 +1,0 @@
-[{
-	"bindings": {
-		"amqp": {
-			"ack": false
-		}
-	}
-}]

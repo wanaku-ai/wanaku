@@ -1,6 +1,0 @@
-/**
- * Internationalization types.
- *
- * @module
- */
-export {};

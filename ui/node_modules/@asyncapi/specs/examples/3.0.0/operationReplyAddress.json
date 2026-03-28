@@ -1,4 +1,0 @@
-[{
-	"description": "Consumer inbox",
-	"location": "$message.header#/replyTo"
-}]

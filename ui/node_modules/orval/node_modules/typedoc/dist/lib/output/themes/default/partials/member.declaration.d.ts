@@ -1,4 +1,0 @@
-import type { DeclarationReflection } from "../../../../models/index.js";
-import { JSX } from "../../../../utils/index.js";
-import type { DefaultThemeRenderContext } from "../DefaultThemeRenderContext.js";
-export declare function memberDeclaration(context: DefaultThemeRenderContext, props: DeclarationReflection): JSX.Element;

@@ -1,9 +1,0 @@
-[{
-	"address": "user/{userId}/signedup",
-	"parameters": {
-		"userId": {
-			"description": "Id of the user.",
-			"location": "$message.payload#/user/id"
-		}
-	}
-}]
