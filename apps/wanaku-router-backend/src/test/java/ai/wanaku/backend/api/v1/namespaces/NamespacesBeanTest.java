@@ -237,7 +237,6 @@ public class NamespacesBeanTest {
         assertThat(resetNamespace).isNotNull();
         assertThat(resetNamespace.getPath()).isEqualTo(created.getPath());
         assertThat(resetNamespace.getName()).isNull();
-        assertThat(resetNamespace.getLabels())
-                .containsEntry("wanaku.io/preallocated", "true");
+        assertThat(resetNamespace.getLabels()).containsEntry("wanaku.io/preallocated", "true");
     }
 }
