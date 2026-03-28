@@ -1,11 +1,11 @@
 package ai.wanaku.backend.core.persistence.infinispan.protostream.schema;
 
 import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.GeneratedSchema;
+import org.infinispan.protostream.ResourceUtils;
 import org.infinispan.protostream.SerializationContext;
-import org.infinispan.protostream.SerializationContextInitializer;
-import org.infinispan.protostream.impl.ResourceUtils;
 
-public abstract class AbstractWanakuSerializationContextInitializer implements SerializationContextInitializer {
+public abstract class AbstractWanakuSerializationContextInitializer implements GeneratedSchema {
 
     @Override
     public abstract String getProtoFileName();
