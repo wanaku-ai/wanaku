@@ -1,12 +1,13 @@
 package ai.wanaku.backend.api.v1.prompts;
 
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import java.util.List;
 import org.jboss.logging.Logger;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.Response;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
@@ -14,6 +15,7 @@ import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.core.util.support.PromptsHelper;
 
+import static ai.wanaku.test.assertions.WanakuAssertions.assertHttpStatus;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -48,23 +50,23 @@ public class PromptsResourceTest extends WanakuRouterTest {
         PromptReference promptReference =
                 PromptsHelper.createPromptReference("test-prompt-1", "A test prompt for writing tests", messages);
 
-        final var response = given().header("Content-Type", MediaType.APPLICATION_JSON)
+        final Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(promptReference)
                 .when()
                 .post("/api/v1/prompts");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
-        createdName = response.then().statusCode(200).extract().path("data.name");
+        assertHttpStatus(response, Status.OK.getStatusCode());
+        createdName = response.then().extract().path("data.name");
     }
 
     @Order(2)
     @Test
     void testList() {
-        given().when()
-                .get("/api/v1/prompts")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
+        Response response = given().when().get("/api/v1/prompts");
+        assertHttpStatus(response, Status.OK.getStatusCode());
+        response.then()
                 .body(
                         "data.size()",
                         is(1),
@@ -77,10 +79,9 @@ public class PromptsResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testGetByName() {
-        given().when()
-                .get("/api/v1/prompts/" + createdName)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
+        Response response = given().when().get("/api/v1/prompts/" + createdName);
+        assertHttpStatus(response, Status.OK.getStatusCode());
+        response.then()
                 .body(
                         "data.name",
                         is("test-prompt-1"),
@@ -101,33 +102,26 @@ public class PromptsResourceTest extends WanakuRouterTest {
         PromptReference updatedPrompt = PromptsHelper.createPromptReference(
                 "test-prompt-1", "An updated test prompt for writing tests", updatedMessages);
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response updateResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(updatedPrompt)
                 .when()
-                .put("/api/v1/prompts")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+                .put("/api/v1/prompts");
+        assertHttpStatus(updateResponse, Status.OK.getStatusCode());
 
-        given().when()
-                .get("/api/v1/prompts/" + createdName)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.description", is("An updated test prompt for writing tests"));
+        Response getResponse = given().when().get("/api/v1/prompts/" + createdName);
+        assertHttpStatus(getResponse, Status.OK.getStatusCode());
+        getResponse.then().body("data.description", is("An updated test prompt for writing tests"));
     }
 
     @Order(5)
     @Test
     void testRemove() {
-        given().when()
-                .delete("/api/v1/prompts?prompt=" + createdName)
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        Response deleteResponse = given().when().delete("/api/v1/prompts?prompt=" + createdName);
+        assertHttpStatus(deleteResponse, Status.OK.getStatusCode());
 
-        given().when()
-                .get("/api/v1/prompts")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(0));
+        Response listResponse = given().when().get("/api/v1/prompts");
+        assertHttpStatus(listResponse, Status.OK.getStatusCode());
+        listResponse.then().body("data.size()", is(0));
     }
 
     @Order(6)
@@ -140,17 +134,14 @@ public class PromptsResourceTest extends WanakuRouterTest {
         PromptReference promptReference =
                 PromptsHelper.createPromptReference("test-prompt-3", "A prompt for debugging code", messages);
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(promptReference)
                 .when()
-                .post("/api/v1/prompts")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+                .post("/api/v1/prompts");
+        assertHttpStatus(createResponse, Status.OK.getStatusCode());
 
-        given().when()
-                .get("/api/v1/prompts")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(1), "data[0].name", is("test-prompt-3"));
+        Response listResponse = given().when().get("/api/v1/prompts");
+        assertHttpStatus(listResponse, Status.OK.getStatusCode());
+        listResponse.then().body("data.size()", is(1), "data[0].name", is("test-prompt-3"));
     }
 }
