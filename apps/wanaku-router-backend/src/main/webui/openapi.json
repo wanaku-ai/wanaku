@@ -914,36 +914,6 @@
     }
   },
   "paths" : {
-    "/.well-known/oauth-authorization-server" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        },
-        "summary" : "Get Authorization Server Metadata",
-        "tags" : [ "O Auth Authorization Server Well Known Resource" ]
-      }
-    },
-    "/.well-known/oauth-authorization-server/{tenant}" : {
-      "get" : {
-        "parameters" : [ {
-          "name" : "tenant",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        },
-        "summary" : "Get Authorization Server Metadata For Tenant",
-        "tags" : [ "O Auth Authorization Server Well Known Resource" ]
-      }
-    },
     "/api/v1/capabilities" : {
       "get" : {
         "responses" : {
@@ -2638,24 +2608,6 @@
         },
         "summary" : "Stream Tool Calls By Connection",
         "tags" : [ "Tool Call Resource" ]
-      }
-    },
-    "/test-oidc/.well-known/openid-configuration" : {
-      "get" : {
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        },
-        "summary" : "Open Id Configuration",
-        "tags" : [ "Test Open Id Configuration Resource" ]
       }
     }
   },

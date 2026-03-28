@@ -57,71 +57,6 @@ import type {
 
 import { customFetch } from "../custom-fetch";
 /**
- * @summary Get Authorization Server Metadata
- */
-export type getWellKnownOauthAuthorizationServerResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type getWellKnownOauthAuthorizationServerResponseSuccess =
-  getWellKnownOauthAuthorizationServerResponse200 & {
-    headers: Headers;
-  };
-export type getWellKnownOauthAuthorizationServerResponse =
-  getWellKnownOauthAuthorizationServerResponseSuccess;
-
-export const getGetWellKnownOauthAuthorizationServerUrl = () => {
-  return `/.well-known/oauth-authorization-server`;
-};
-
-export const getWellKnownOauthAuthorizationServer = async (
-  options?: RequestInit,
-): Promise<getWellKnownOauthAuthorizationServerResponse> => {
-  return customFetch<getWellKnownOauthAuthorizationServerResponse>(
-    getGetWellKnownOauthAuthorizationServerUrl(),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
- * @summary Get Authorization Server Metadata For Tenant
- */
-export type getWellKnownOauthAuthorizationServerTenantResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type getWellKnownOauthAuthorizationServerTenantResponseSuccess =
-  getWellKnownOauthAuthorizationServerTenantResponse200 & {
-    headers: Headers;
-  };
-export type getWellKnownOauthAuthorizationServerTenantResponse =
-  getWellKnownOauthAuthorizationServerTenantResponseSuccess;
-
-export const getGetWellKnownOauthAuthorizationServerTenantUrl = (
-  tenant: string,
-) => {
-  return `/.well-known/oauth-authorization-server/${tenant}`;
-};
-
-export const getWellKnownOauthAuthorizationServerTenant = async (
-  tenant: string,
-  options?: RequestInit,
-): Promise<getWellKnownOauthAuthorizationServerTenantResponse> => {
-  return customFetch<getWellKnownOauthAuthorizationServerTenantResponse>(
-    getGetWellKnownOauthAuthorizationServerTenantUrl(tenant),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
  * @summary List
  */
 export type getApiV1CapabilitiesResponse200 = {
@@ -2487,37 +2422,6 @@ export const getApiV2ToolCallsNotificationsConnectionId = async (
 ): Promise<getApiV2ToolCallsNotificationsConnectionIdResponse> => {
   return customFetch<getApiV2ToolCallsNotificationsConnectionIdResponse>(
     getGetApiV2ToolCallsNotificationsConnectionIdUrl(connectionId),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
- * @summary Open Id Configuration
- */
-export type getTestOidcWellKnownOpenidConfigurationResponse200 = {
-  data: string;
-  status: 200;
-};
-
-export type getTestOidcWellKnownOpenidConfigurationResponseSuccess =
-  getTestOidcWellKnownOpenidConfigurationResponse200 & {
-    headers: Headers;
-  };
-export type getTestOidcWellKnownOpenidConfigurationResponse =
-  getTestOidcWellKnownOpenidConfigurationResponseSuccess;
-
-export const getGetTestOidcWellKnownOpenidConfigurationUrl = () => {
-  return `/test-oidc/.well-known/openid-configuration`;
-};
-
-export const getTestOidcWellKnownOpenidConfiguration = async (
-  options?: RequestInit,
-): Promise<getTestOidcWellKnownOpenidConfigurationResponse> => {
-  return customFetch<getTestOidcWellKnownOpenidConfigurationResponse>(
-    getGetTestOidcWellKnownOpenidConfigurationUrl(),
     {
       ...options,
       method: "GET",
