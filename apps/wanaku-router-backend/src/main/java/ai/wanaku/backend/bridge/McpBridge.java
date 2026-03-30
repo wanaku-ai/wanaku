@@ -10,6 +10,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.core.mcp.client.McpSamplingHandler;
 
 /**
  * Bridge interface for interacting with remote MCP servers via the langchain4j MCP client.
@@ -28,4 +29,8 @@ public interface McpBridge {
 
     Uni<ResourceResponse> read(
             ForwardClient forwardClient, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
+
+    default McpSamplingHandler createSamplingHandler(String address) {
+        return null;
+    }
 }

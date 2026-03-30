@@ -2,6 +2,7 @@ package ai.wanaku.backend.bridge;
 
 import io.quarkus.logging.Log;
 import ai.wanaku.core.mcp.client.ClientUtil;
+import ai.wanaku.core.mcp.client.McpSamplingHandler;
 import dev.langchain4j.mcp.client.McpClient;
 
 /**
@@ -33,7 +34,21 @@ public record ForwardClient(String address, McpClient client) implements AutoClo
      * @throws IllegalArgumentException if the address is invalid or unsupported
      */
     public static ForwardClient newClient(String address) {
-        return new ForwardClient(address, ClientUtil.createClient(address));
+        return newClient(address, null);
+    }
+
+    /**
+     * Creates a new ForwardClient with a fresh MCP client connection and sampling
+     * support.
+     *
+     * @param address         the remote MCP server address to connect to
+     * @param samplingHandler the sampling handler to support server-initiated
+     *                        sampling/createMessage
+     * @return a new ForwardClient instance with an initialized client
+     * @throws IllegalArgumentException if the address is invalid or unsupported
+     */
+    public static ForwardClient newClient(String address, McpSamplingHandler samplingHandler) {
+        return new ForwardClient(address, ClientUtil.createClient(address, samplingHandler));
     }
 
     @Override
