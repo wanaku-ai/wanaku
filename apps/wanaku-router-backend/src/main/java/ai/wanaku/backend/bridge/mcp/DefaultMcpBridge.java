@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge.mcp;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
@@ -57,8 +58,10 @@ public class DefaultMcpBridge implements McpBridge {
     private final Map<String, Sampling> activeSamplings = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Inject
     Sampling sampling;
+
+    @Inject
+    Instance<Sampling> samplingInstance;
 
     // ---- Tools ----
 
@@ -169,7 +172,7 @@ public class DefaultMcpBridge implements McpBridge {
             String address, com.fasterxml.jackson.databind.JsonNode params) {
         Sampling s = activeSamplings.get(address);
         if (s == null) {
-            s = this.sampling;
+            s = defaultSampling();
         }
 
         if (s == null || !s.isSupported()) {
@@ -229,6 +232,16 @@ public class DefaultMcpBridge implements McpBridge {
         } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
+    }
+
+    private Sampling defaultSampling() {
+        if (sampling != null) {
+            return sampling;
+        }
+        if (samplingInstance != null && samplingInstance.isResolvable()) {
+            return samplingInstance.get();
+        }
+        return null;
     }
 
     private String serializeArguments(Map<String, Object> arguments) {
