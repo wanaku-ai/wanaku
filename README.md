@@ -21,6 +21,10 @@ South America.
 - **Extensible Architecture** - Easy to add custom tools and resource providers
 - **Multi-Namespace Support** - Organize tools and resources across isolated namespaces
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/wanaku-ai-wanaku).
+
 ## Quick Start
 
 [![Getting Started With Wanaku](https://img.youtube.com/vi/-fuNAo2j4SA/0.jpg)](https://www.youtube.com/watch?v=-fuNAo2j4SA)
