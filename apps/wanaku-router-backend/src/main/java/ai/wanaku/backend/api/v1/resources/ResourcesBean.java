@@ -13,6 +13,7 @@ import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceBridge;
+import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.core.persistence.api.ResourceReferenceRepository;
@@ -61,11 +62,14 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
         ResourceReference resourceReference = resourcePayload.getPayload();
         ServiceTarget service =
                 provisionerBridge.resolveService(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER.asValue());
-        provisionerBridge.provision(
+        final ProvisioningReference provisioningReference = provisionerBridge.provision(
                 resourceReference.getName(),
                 resourcePayload.getConfigurationData(),
                 resourcePayload.getSecretsData(),
                 service);
+
+        resourceReference.setConfigurationURI(provisioningReference.configurationURI().toString());
+        resourceReference.setSecretsURI(provisioningReference.secretsURI().toString());
 
         return expose(resourcePayload.getPayload());
     }
