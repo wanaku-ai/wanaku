@@ -7,7 +7,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
-import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.EventNotifier;
@@ -25,11 +24,6 @@ import picocli.CommandLine;
 @ApplicationScoped
 public class ToolsProvider {
     private static final Logger LOG = Logger.getLogger(ToolsProvider.class);
-
-    @Startup
-    void setVersion() {
-        System.setProperty("wanaku.version", VersionHelper.VERSION);
-    }
 
     @Inject
     CommandLine.ParseResult parseResult;
