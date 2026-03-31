@@ -1,12 +1,13 @@
 package ai.wanaku.backend.api.v1.tools;
 
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import java.util.Collections;
 import org.jboss.logging.Logger;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.Response;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
@@ -14,6 +15,7 @@ import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.util.support.ToolsHelper;
 
+import static ai.wanaku.test.assertions.WanakuAssertions.assertHttpStatus;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -50,23 +52,23 @@ public class ToolsResourceTest extends WanakuRouterTest {
                 "https://example.com/test/tool-1",
                 inputSchema1);
 
-        final var response = given().header("Content-Type", MediaType.APPLICATION_JSON)
+        final Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(toolReference1)
                 .when()
                 .post("/api/v1/tools");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
-        createdName = response.then().statusCode(200).extract().path("data.name");
+        assertHttpStatus(response, Status.OK.getStatusCode());
+        createdName = response.then().extract().path("data.name");
     }
 
     @Order(2)
     @Test
     void testList() {
-        given().when()
-                .get("/api/v1/tools")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
+        Response response = given().when().get("/api/v1/tools");
+        assertHttpStatus(response, Status.OK.getStatusCode());
+        response.then()
                 .body(
                         "data.size()",
                         is(1),
@@ -81,13 +83,12 @@ public class ToolsResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testRemove() {
-        given().when().delete("/api/v1/tools/" + createdName).then().statusCode(Response.Status.OK.getStatusCode());
+        Response deleteResponse = given().when().delete("/api/v1/tools/" + createdName);
+        assertHttpStatus(deleteResponse, Status.OK.getStatusCode());
 
-        given().when()
-                .get("/api/v1/tools")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(0));
+        Response listResponse = given().when().get("/api/v1/tools");
+        assertHttpStatus(listResponse, Status.OK.getStatusCode());
+        listResponse.then().body("data.size()", is(0));
     }
 
     @Order(4)
@@ -102,17 +103,14 @@ public class ToolsResourceTest extends WanakuRouterTest {
                 "https://example.com/test/tool-3",
                 inputSchema3);
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(toolReference3)
                 .when()
-                .post("/api/v1/tools")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode());
+                .post("/api/v1/tools");
+        assertHttpStatus(createResponse, Status.OK.getStatusCode());
 
-        given().when()
-                .get("/api/v1/tools")
-                .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(1), "data[0].name", is("test-tool-3"), "data[0].type", is("http"));
+        Response listResponse = given().when().get("/api/v1/tools");
+        assertHttpStatus(listResponse, Status.OK.getStatusCode());
+        listResponse.then().body("data.size()", is(1), "data[0].name", is("test-tool-3"), "data[0].type", is("http"));
     }
 }

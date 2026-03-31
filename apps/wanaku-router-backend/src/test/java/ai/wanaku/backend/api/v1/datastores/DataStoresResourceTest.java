@@ -8,10 +8,12 @@ import org.jboss.logging.Logger;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.restassured.response.Response;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
+import static ai.wanaku.test.assertions.WanakuAssertions.assertHttpStatus;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -61,20 +63,20 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         dataStore.setName(TEST_NAME);
         dataStore.setData(TEST_DATA);
 
-        String response = given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(dataStore)
                 .when()
-                .post("/api/v1/data-store")
-                .then()
-                .statusCode(200)
+                .post("/api/v1/data-store");
+        assertHttpStatus(response, 200);
+        String responseId = response.then()
                 .body("data.name", equalTo(TEST_NAME))
                 .body("data.data", equalTo(TEST_DATA))
                 .body("data.id", notNullValue())
                 .extract()
                 .path("data.id");
 
-        testId = response;
+        testId = responseId;
         LOG.infof("Created data store with ID: %s", testId);
     }
 
@@ -84,13 +86,10 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().when()
-                .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store")
-                .then()
-                .statusCode(200)
-                .body("data", notNullValue())
-                .body("data.size()", greaterThanOrEqualTo(1));
+        Response response =
+                given().when().header("Authorization", "Bearer " + accessToken).get("/api/v1/data-store");
+        assertHttpStatus(response, 200);
+        response.then().body("data", notNullValue()).body("data.size()", greaterThanOrEqualTo(1));
     }
 
     @Order(3)
@@ -99,11 +98,10 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().when()
-                .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store/" + testId)
-                .then()
-                .statusCode(200)
+        Response response =
+                given().when().header("Authorization", "Bearer " + accessToken).get("/api/v1/data-store/" + testId);
+        assertHttpStatus(response, 200);
+        response.then()
                 .body("data.id", equalTo(testId))
                 .body("data.name", equalTo(TEST_NAME))
                 .body("data.data", equalTo(TEST_DATA));
@@ -115,12 +113,12 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().queryParam("name", TEST_NAME)
+        Response response = given().queryParam("name", TEST_NAME)
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store")
-                .then()
-                .statusCode(200)
+                .get("/api/v1/data-store");
+        assertHttpStatus(response, 200);
+        response.then()
                 .body("data", notNullValue())
                 .body("data.size()", greaterThanOrEqualTo(1))
                 .body("data[0].name", equalTo(TEST_NAME));
@@ -137,22 +135,18 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         dataStore.setName(TEST_NAME);
         dataStore.setData("Updated test data content");
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response updateResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(dataStore)
                 .when()
-                .put("/api/v1/data-store")
-                .then()
-                .statusCode(200);
+                .put("/api/v1/data-store");
+        assertHttpStatus(updateResponse, 200);
 
         // Verify the update by fetching the record
-        given().when()
-                .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store/" + testId)
-                .then()
-                .statusCode(200)
-                .body("data.id", equalTo(testId))
-                .body("data.data", equalTo("Updated test data content"));
+        Response getResponse =
+                given().when().header("Authorization", "Bearer " + accessToken).get("/api/v1/data-store/" + testId);
+        assertHttpStatus(getResponse, 200);
+        getResponse.then().body("data.id", equalTo(testId)).body("data.data", equalTo("Updated test data content"));
     }
 
     @Order(6)
@@ -161,11 +155,10 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().when()
-                .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store")
-                .then()
-                .statusCode(200)
+        Response response =
+                given().when().header("Authorization", "Bearer " + accessToken).get("/api/v1/data-store");
+        assertHttpStatus(response, 200);
+        response.then()
                 .body("data", notNullValue())
                 .body("data", instanceOf(List.class))
                 .body("data.size()", greaterThanOrEqualTo(1));
@@ -177,11 +170,10 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().when()
+        Response response = given().when()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store/non-existent-id")
-                .then()
-                .statusCode(404); // Should throw WanakuException for not found
+                .get("/api/v1/data-store/non-existent-id");
+        assertHttpStatus(response, 404); // Should throw WanakuException for not found
     }
 
     @Order(8)
@@ -190,18 +182,14 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().when()
-                .header("Authorization", "Bearer " + accessToken)
-                .delete("/api/v1/data-store/" + testId)
-                .then()
-                .statusCode(200);
+        Response deleteResponse =
+                given().when().header("Authorization", "Bearer " + accessToken).delete("/api/v1/data-store/" + testId);
+        assertHttpStatus(deleteResponse, 200);
 
         // Verify deletion
-        given().when()
-                .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store/" + testId)
-                .then()
-                .statusCode(404); // Should fail to find
+        Response getResponse =
+                given().when().header("Authorization", "Bearer " + accessToken).get("/api/v1/data-store/" + testId);
+        assertHttpStatus(getResponse, 404); // Should fail to find
     }
 
     @Order(9)
@@ -215,36 +203,32 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         dataStore1.setName("duplicate-test");
         dataStore1.setData("First entry");
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response createResponse1 = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(dataStore1)
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
-                .post("/api/v1/data-store")
-                .then()
-                .statusCode(200);
+                .post("/api/v1/data-store");
+        assertHttpStatus(createResponse1, 200);
 
         // Add second entry with same name — should be rejected as duplicate
         DataStore dataStore2 = new DataStore();
         dataStore2.setName("duplicate-test");
         dataStore2.setData("Second entry");
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response createResponse2 = given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .body(dataStore2)
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
-                .post("/api/v1/data-store")
-                .then()
-                .statusCode(409);
+                .post("/api/v1/data-store");
+        assertHttpStatus(createResponse2, 409);
 
         // Get by name should return only the first entry
-        given().queryParam("name", "duplicate-test")
+        Response listResponse = given().queryParam("name", "duplicate-test")
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store")
-                .then()
-                .statusCode(200)
-                .body("data.size()", equalTo(1))
-                .body("data[0].data", equalTo("First entry"));
+                .get("/api/v1/data-store");
+        assertHttpStatus(listResponse, 200);
+        listResponse.then().body("data.size()", equalTo(1)).body("data[0].data", equalTo("First entry"));
     }
 
     @Order(10)
@@ -253,20 +237,18 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().queryParam("name", "duplicate-test")
+        Response deleteResponse = given().queryParam("name", "duplicate-test")
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
-                .delete("/api/v1/data-store")
-                .then()
-                .statusCode(200);
+                .delete("/api/v1/data-store");
+        assertHttpStatus(deleteResponse, 200);
 
         // Verify deletion
-        given().queryParam("name", "duplicate-test")
+        Response getResponse = given().queryParam("name", "duplicate-test")
                 .when()
                 .header("Authorization", "Bearer " + accessToken)
-                .get("/api/v1/data-store")
-                .then()
-                .statusCode(404);
+                .get("/api/v1/data-store");
+        assertHttpStatus(getResponse, 404);
     }
 
     @Order(11)
@@ -275,10 +257,9 @@ public class DataStoresResourceTest extends WanakuRouterTest {
         final String accessToken = getAccessToken();
         Assertions.assertNotNull(accessToken);
 
-        given().when()
+        Response response = given().when()
                 .header("Authorization", "Bearer " + accessToken)
-                .delete("/api/v1/data-store/non-existent-id")
-                .then()
-                .statusCode(404); // Not found
+                .delete("/api/v1/data-store/non-existent-id");
+        assertHttpStatus(response, 404); // Not found
     }
 }
