@@ -2935,7 +2935,14 @@ java -jar target/quarkus-app/quarkus-run.jar
 
 ### Claude
 
-To integrate Wanaku with Claude Desktop, you will need to add an entry into the `claude_desktop_config.json` file - see [instructions for creating a Claude desktop configuration](https://modelcontextprotocol.io/quickstart/user) if you do not already have one.
+You can let the CLI generate the Claude Desktop configuration for you:
+
+```shell
+wanaku configure claude
+```
+
+This updates the `claude_desktop_config.json` file and configures Claude Desktop to proxy Wanaku through `uvx mcp-proxy`.
+If your Wanaku server is exposing streamable HTTP instead of SSE, use `--transport http`.
 
 Claude Desktop does not currently support connecting to SSE-based endpoints, so you will have to configure wanaku using a stdio-to-sse wrapper.   Note that you will have to install ![uv](https://github.com/astral-sh/uv) for this purpose, and specify the SSE URL for your Wanaku instance in the arguments.
 
@@ -2952,6 +2959,16 @@ Claude Desktop does not currently support connecting to SSE-based endpoints, so 
   }
 }
 ```
+
+### Cursor
+
+Cursor can connect directly to Wanaku over HTTP or SSE. The CLI will update the Cursor MCP config for you:
+
+```shell
+wanaku configure cursor --transport http --port 8080
+```
+
+Cursor stores its global MCP config in `~/.cursor/mcp.json` and the command will merge the `wanaku` entry without removing existing servers.
 
 
 ### HyperChat 
