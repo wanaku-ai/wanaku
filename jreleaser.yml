@@ -44,7 +44,7 @@ release:
 distributions:
   cli:
     artifacts:
-      - path: apps/wanaku-cli/target/distributions/cli-{{projectVersion}}.zip
+      - path: apps/wanaku-cli/target/distributions/wanaku-cli-{{projectVersion}}.zip
     type: JAVA_BINARY
   router:
     artifacts:
@@ -79,9 +79,9 @@ distributions:
 
   cli-native:
     artifacts:
-      - path: apps/wanaku-cli/target/distributions/cli-{{projectVersion}}-osx-aarch_64.zip
+      - path: apps/wanaku-cli/target/distributions/wanaku-cli-{{projectVersion}}-osx-aarch_64.zip
         platform: osx-aarch_64
-      - path: apps/wanaku-cli/target/distributions/cli-{{projectVersion}}-linux-x86_64.zip
+      - path: apps/wanaku-cli/target/distributions/wanaku-cli-{{projectVersion}}-linux-x86_64.zip
         platform: linux-x86_64
 
 packagers:
