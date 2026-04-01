@@ -17,14 +17,14 @@ public class ToolReferenceSchema extends AbstractWanakuSerializationContextIniti
     private final InputSchemaSchema inputSchema = new InputSchemaSchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "tool_reference.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
         inputSchema.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override

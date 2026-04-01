@@ -6,7 +6,7 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Code
 public class CodeExecutionStatusSchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "code_execution_status.proto";
     }
 

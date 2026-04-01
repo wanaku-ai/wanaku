@@ -6,7 +6,7 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Serv
 public class ServiceTypeSchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "service_type.proto";
     }
 

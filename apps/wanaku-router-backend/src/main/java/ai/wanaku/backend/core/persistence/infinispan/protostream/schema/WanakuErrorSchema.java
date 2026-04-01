@@ -6,7 +6,7 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Wana
 public class WanakuErrorSchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "wanaku_error.proto";
     }
 

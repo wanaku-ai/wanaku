@@ -20,7 +20,7 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
-import io.javaoperatorsdk.operator.ReconcilerUtils;
+import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCapabilityReconciler;
@@ -170,7 +170,7 @@ public final class OperatorUtil {
 
     public static Deployment makeDesiredRouterBackendDeployment(
             WanakuRouter resource, Context<WanakuRouter> context, String host) {
-        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
+        Deployment desiredDeployment = ReconcilerUtilsInternal.loadYaml(
                 Deployment.class, WanakuRouterReconciler.class, ROUTER_BACKEND_DEPLOYMENT_FILE);
 
         String deploymentName = resource.getMetadata().getName();
@@ -212,7 +212,7 @@ public final class OperatorUtil {
     }
 
     public static Service makeRouterInternalService(WanakuRouter resource) {
-        Service service = ReconcilerUtils.loadYaml(
+        Service service = ReconcilerUtilsInternal.loadYaml(
                 Service.class, WanakuRouterReconciler.class, ROUTER_BACKEND_INTERNAL_SERVICE_FILE);
 
         String deploymentName = resource.getMetadata().getName();
@@ -234,7 +234,7 @@ public final class OperatorUtil {
     }
 
     public static Route makeRouterExternalService(WanakuRouter resource) {
-        Route route = ReconcilerUtils.loadYaml(
+        Route route = ReconcilerUtilsInternal.loadYaml(
                 Route.class, WanakuRouterReconciler.class, ROUTER_BACKEND_EXTERNAL_SERVICE_FILE);
 
         String deploymentName = resource.getMetadata().getName();
@@ -253,7 +253,8 @@ public final class OperatorUtil {
     }
 
     public static Ingress makeRouterIngress(WanakuRouter resource, String host) {
-        Ingress ingress = ReconcilerUtils.loadYaml(Ingress.class, WanakuRouterReconciler.class, ROUTER_INGRESS_FILE);
+        Ingress ingress =
+                ReconcilerUtilsInternal.loadYaml(Ingress.class, WanakuRouterReconciler.class, ROUTER_INGRESS_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -282,7 +283,7 @@ public final class OperatorUtil {
     }
 
     public static PersistentVolumeClaim makeRouterVolumePVC(WanakuRouter resource) {
-        PersistentVolumeClaim pvc = ReconcilerUtils.loadYaml(
+        PersistentVolumeClaim pvc = ReconcilerUtilsInternal.loadYaml(
                 PersistentVolumeClaim.class, WanakuRouterReconciler.class, SERVICES_VOLUME_PVC_FILE);
 
         String deploymentName = resource.getMetadata().getName();
@@ -302,7 +303,7 @@ public final class OperatorUtil {
     // ---- Capability methods ----
 
     public static PersistentVolumeClaim makeServicesVolumePVC(WanakuCapability resource, String serviceName) {
-        PersistentVolumeClaim pvc = ReconcilerUtils.loadYaml(
+        PersistentVolumeClaim pvc = ReconcilerUtilsInternal.loadYaml(
                 PersistentVolumeClaim.class, WanakuCapabilityReconciler.class, SERVICES_VOLUME_PVC_FILE);
 
         String deploymentName = resource.getMetadata().getName();
@@ -494,7 +495,7 @@ public final class OperatorUtil {
             WanakuCapability resource,
             Context<WanakuCapability> context,
             WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
-        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
+        Deployment desiredDeployment = ReconcilerUtilsInternal.loadYaml(
                 Deployment.class, WanakuCapabilityReconciler.class, WANAKU_CAPABILITY_DEPLOYMENT_FILE);
 
         return configureCapabilityDeployment(
@@ -508,7 +509,7 @@ public final class OperatorUtil {
             WanakuCapability resource,
             Context<WanakuCapability> context,
             WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
-        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
+        Deployment desiredDeployment = ReconcilerUtilsInternal.loadYaml(
                 Deployment.class, WanakuCapabilityReconciler.class, CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
 
         return configureCapabilityDeployment(
@@ -520,7 +521,7 @@ public final class OperatorUtil {
 
     public static Service makeCapabilityInternalService(
             WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
-        Service service = ReconcilerUtils.loadYaml(
+        Service service = ReconcilerUtilsInternal.loadYaml(
                 Service.class, WanakuCapabilityReconciler.class, CAPABILITY_INTERNAL_SERVICE_FILE);
 
         String serviceName = capabilitiesSpec.getName();
