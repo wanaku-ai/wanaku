@@ -1,7 +1,11 @@
 package ai.wanaku.operator.util;
 
+import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class OperatorUtilTest {
 
@@ -40,5 +44,26 @@ class OperatorUtilTest {
     @Test
     void createVolumeClaimName() {
         assertEquals("my-service-volume-claim", OperatorUtil.createVolumeClaimName("my-service"));
+    }
+
+    @Test
+    void readyConditionReusesTransitionTimeWhenAlreadyReady() {
+        Condition previous = new ConditionBuilder()
+                .withType(OperatorUtil.READY_CONDITION)
+                .withStatus(OperatorUtil.CONDITION_STATUS_TRUE)
+                .withLastTransitionTime("2024-01-01T00:00:00Z")
+                .build();
+
+        Condition current = OperatorUtil.readyCondition(7L, previous, "ready");
+
+        assertEquals("2024-01-01T00:00:00Z", current.getLastTransitionTime());
+        assertEquals(OperatorUtil.READY_CONDITION, current.getType());
+        assertEquals(OperatorUtil.CONDITION_STATUS_TRUE, current.getStatus());
+        assertEquals(7L, current.getObservedGeneration());
+    }
+
+    @Test
+    void findConditionReturnsNullWhenNoMatchExists() {
+        assertNull(OperatorUtil.findCondition(null, OperatorUtil.READY_CONDITION));
     }
 }

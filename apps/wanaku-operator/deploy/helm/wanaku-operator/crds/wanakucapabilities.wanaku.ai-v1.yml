@@ -57,6 +57,25 @@ spec:
                 type: "object"
             type: "object"
           status:
+            properties:
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      type: "string"
+                    message:
+                      type: "string"
+                    observedGeneration:
+                      format: "int64"
+                      type: "integer"
+                    reason:
+                      type: "string"
+                    status:
+                      type: "string"
+                    type:
+                      type: "string"
+                  type: "object"
+                type: "array"
             type: "object"
         type: "object"
     served: true
