@@ -56,6 +56,9 @@ spec:
           status:
             properties:
               conditions:
+                x-kubernetes-list-type: "map"
+                x-kubernetes-list-map-keys:
+                  - "type"
                 items:
                   properties:
                     lastTransitionTime:
