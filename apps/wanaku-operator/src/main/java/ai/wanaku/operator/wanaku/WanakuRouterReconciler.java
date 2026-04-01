@@ -19,45 +19,106 @@ import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
+import io.quarkiverse.operatorsdk.annotations.RBACRule;
+import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.util.OperatorUtil;
 
 import static ai.wanaku.operator.util.Matchers.match;
-import static ai.wanaku.operator.util.OperatorUtil.createVolumeClaimName;
-import static ai.wanaku.operator.util.OperatorUtil.makeCapabilityInternalService;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCiCCapabilityDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredRouterBackendDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredWanakuCapabilityDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterIngress;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
-@ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku")
-@CSVMetadata(displayName = "Wanaku operator", description = "A simple operator that can deploy and manage Wanaku")
-public class WanakuReconciler implements Reconciler<Wanaku> {
-    private static final Logger LOG = Logger.getLogger(WanakuReconciler.class);
+@ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-router")
+@CSVMetadata(displayName = "Wanaku Router operator", description = "Deploys and manages the Wanaku Router")
+@RBACRule(
+        apiGroups = "",
+        resources = {"persistentvolumeclaims", "services", "configmaps", "secrets", "serviceaccounts"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+@RBACRule(
+        apiGroups = "apps",
+        resources = {"deployments"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+@RBACRule(
+        apiGroups = "route.openshift.io",
+        resources = {"routes"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+@RBACRule(
+        apiGroups = "networking.k8s.io",
+        resources = {"ingresses"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+@RBACRule(
+        apiGroups = "rbac.authorization.k8s.io",
+        resources = {"roles", "rolebindings"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
+    private static final Logger LOG = Logger.getLogger(WanakuRouterReconciler.class);
 
     @Inject
     KubernetesClient kubernetesClient;
 
     @Override
-    public UpdateControl<Wanaku> reconcile(Wanaku resource, Context<Wanaku> context) throws Exception {
-        LOG.infof("Starting reconciliation for %s", resource.getMetadata().getName());
+    public UpdateControl<WanakuRouter> reconcile(WanakuRouter resource, Context<WanakuRouter> context)
+            throws Exception {
+        LOG.infof(
+                "Starting router reconciliation for %s", resource.getMetadata().getName());
 
         final String namespace = resource.getMetadata().getNamespace();
 
-        final WanakuStatus wanakuStatus = new WanakuStatus();
+        final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
         deployRouter(resource, context, namespace, wanakuStatus);
-        deployCapabilities(resource, context, namespace);
 
         resource.setStatus(wanakuStatus);
 
         return UpdateControl.patchStatus(resource);
     }
 
-    private void deployRouter(Wanaku resource, Context<Wanaku> context, String namespace, WanakuStatus wanakuStatus)
+    private void deployRouter(
+            WanakuRouter resource, Context<WanakuRouter> context, String namespace, WanakuRouterStatus wanakuStatus)
             throws WanakuException {
+
         // Create PVCs first, before creating the deployment
         createRouterPVCs(resource, namespace);
 
@@ -124,7 +185,8 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
         }
     }
 
-    private static String createRouteAndGetHost(Wanaku resource, String namespace, OpenShiftClient openShiftClient) {
+    private static String createRouteAndGetHost(
+            WanakuRouter resource, String namespace, OpenShiftClient openShiftClient) {
         final Route desiredRoute = makeRouterExternalService(resource);
         Route existingRoute;
         try {
@@ -168,9 +230,9 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
         }
     }
 
-    private String createIngressAndGetHost(Wanaku resource, String namespace) {
+    private String createIngressAndGetHost(WanakuRouter resource, String namespace) {
         // Get host from spec - required for Kubernetes Ingress
-        WanakuSpec.IngressSpec ingressSpec = resource.getSpec().getIngress();
+        WanakuTypes.IngressSpec ingressSpec = resource.getSpec().getIngress();
         if (ingressSpec == null
                 || ingressSpec.getHost() == null
                 || ingressSpec.getHost().isBlank()) {
@@ -212,71 +274,7 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
         return kubernetesClient.supports("route.openshift.io/v1", "Route");
     }
 
-    private void deployCapabilities(Wanaku resource, Context<Wanaku> context, String namespace) {
-        if (resource.getSpec().getCapabilities() == null
-                || resource.getSpec().getCapabilities().isEmpty()) {
-            LOG.infof("No capabilities to deploy for %s", resource.getMetadata().getName());
-            return;
-        }
-
-        for (WanakuSpec.CapabilitiesSpec capabilitiesSpec : resource.getSpec().getCapabilities()) {
-            String capabilityName = capabilitiesSpec.getName();
-            LOG.infof("Deploying capability: %s", capabilityName);
-            createCapabilityPVCs(resource, namespace, capabilityName);
-
-            // Create the capability deployment
-
-            Deployment desiredDeployment;
-
-            if (capabilitiesSpec.getType() == null) {
-                desiredDeployment = makeDesiredWanakuCapabilityDeployment(resource, context, capabilitiesSpec);
-            } else {
-                if ("camel-integration-capability".equals(capabilitiesSpec.getType())) {
-                    desiredDeployment = makeDesiredCiCCapabilityDeployment(resource, context, capabilitiesSpec);
-                } else {
-                    LOG.error("Invalid capability type: " + capabilitiesSpec.getType());
-                    throw new WanakuException("Invalid capability type: " + capabilitiesSpec.getType());
-                }
-            }
-
-            Deployment existingDeployment = kubernetesClient
-                    .apps()
-                    .deployments()
-                    .inNamespace(namespace)
-                    .withName(capabilityName)
-                    .get();
-
-            if (!match(desiredDeployment, existingDeployment)) {
-                LOG.infof("Creating or updating Deployment %s in %s", capabilityName, namespace);
-                kubernetesClient
-                        .apps()
-                        .deployments()
-                        .inNamespace(namespace)
-                        .resource(desiredDeployment)
-                        .createOr(Replaceable::update);
-            }
-
-            // Create the internal service for the capability
-            final Service desiredService = makeCapabilityInternalService(resource, capabilitiesSpec);
-
-            Service existingService = kubernetesClient
-                    .services()
-                    .inNamespace(namespace)
-                    .withName(capabilityName)
-                    .get();
-
-            if (!match(desiredService, existingService)) {
-                LOG.infof("Creating or updating Service %s in %s", capabilityName, namespace);
-                kubernetesClient
-                        .services()
-                        .inNamespace(namespace)
-                        .resource(desiredService)
-                        .createOr(Replaceable::update);
-            }
-        }
-    }
-
-    private void createRouterPVCs(Wanaku resource, String namespace) {
+    private void createRouterPVCs(WanakuRouter resource, String namespace) {
         // Create services-volume PVC
         final PersistentVolumeClaim servicesVolumePVC = OperatorUtil.makeRouterVolumePVC(resource);
         PersistentVolumeClaim existingServicesVolume = kubernetesClient
@@ -287,25 +285,6 @@ public class WanakuReconciler implements Reconciler<Wanaku> {
 
         if (!match(servicesVolumePVC, existingServicesVolume)) {
             LOG.infof("Creating or updating PVC route-volume-claim in %s", namespace);
-            kubernetesClient
-                    .persistentVolumeClaims()
-                    .inNamespace(namespace)
-                    .resource(servicesVolumePVC)
-                    .createOr(Replaceable::update);
-        }
-    }
-
-    private void createCapabilityPVCs(Wanaku resource, String namespace, String serviceName) {
-        // Create services-volume PVC
-        final PersistentVolumeClaim servicesVolumePVC = OperatorUtil.makeServicesVolumePVC(resource, serviceName);
-        PersistentVolumeClaim existingServicesVolume = kubernetesClient
-                .persistentVolumeClaims()
-                .inNamespace(namespace)
-                .withName(createVolumeClaimName(serviceName))
-                .get();
-
-        if (!match(servicesVolumePVC, existingServicesVolume)) {
-            LOG.infof("Creating or updating PVC %s in %s", createVolumeClaimName(serviceName), namespace);
             kubernetesClient
                     .persistentVolumeClaims()
                     .inNamespace(namespace)

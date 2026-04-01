@@ -7,4 +7,4 @@ import io.fabric8.kubernetes.model.annotation.Version;
 
 @Version("v1alpha1")
 @Group("wanaku.ai")
-public class Wanaku extends CustomResource<WanakuSpec, WanakuStatus> implements Namespaced {}
+public class WanakuRouter extends CustomResource<WanakuRouterSpec, WanakuRouterStatus> implements Namespaced {}
