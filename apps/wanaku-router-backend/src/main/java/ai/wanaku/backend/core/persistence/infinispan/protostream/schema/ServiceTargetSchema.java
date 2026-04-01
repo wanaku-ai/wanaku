@@ -9,14 +9,14 @@ public class ServiceTargetSchema extends AbstractWanakuSerializationContextIniti
     private final ServiceTypeSchema serviceTypeSchema = new ServiceTypeSchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "service_target.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
         serviceTypeSchema.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override

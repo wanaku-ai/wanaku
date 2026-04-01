@@ -6,7 +6,7 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Prop
 public class PropertySchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "property.proto";
     }
 

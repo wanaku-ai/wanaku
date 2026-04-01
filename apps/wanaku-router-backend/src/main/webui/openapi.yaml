@@ -734,6 +734,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -754,6 +757,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -848,6 +854,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -907,6 +916,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -935,6 +947,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -956,6 +971,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
       summary: Remove Forward
       tags:
       - Forwards Resource
@@ -987,6 +1005,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -1026,6 +1047,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
       summary: Deregister
       tags:
       - Discovery Resource
@@ -1041,6 +1065,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
       summary: Ping
       tags:
       - Discovery Resource
@@ -1172,6 +1199,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "400":
           description: Bad Request
       summary: Update
@@ -1204,6 +1234,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
       summary: Delete
       tags:
       - Namespaces Resource
@@ -1218,6 +1251,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -1238,6 +1274,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -1430,6 +1469,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -1451,6 +1493,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -1596,6 +1641,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:
@@ -1617,6 +1665,9 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: {}
         "500":
           description: Wanaku error
           content:

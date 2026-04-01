@@ -20,14 +20,14 @@ public class ContentSchema extends AbstractWanakuSerializationContextInitializer
     private final ResourceReferenceSchema resourceReferenceSchema = new ResourceReferenceSchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "content.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
         resourceReferenceSchema.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override

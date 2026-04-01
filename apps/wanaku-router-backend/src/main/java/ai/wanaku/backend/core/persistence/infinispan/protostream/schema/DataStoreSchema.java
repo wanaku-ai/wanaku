@@ -9,7 +9,7 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Data
 public class DataStoreSchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "data_store.proto";
     }
 

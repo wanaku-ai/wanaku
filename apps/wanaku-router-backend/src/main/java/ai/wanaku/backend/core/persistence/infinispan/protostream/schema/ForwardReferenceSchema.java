@@ -7,13 +7,13 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Forw
 public class ForwardReferenceSchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "forward_reference.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override
