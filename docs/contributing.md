@@ -134,17 +134,19 @@ Alternatively, if you don't have the CLI instanced, you can do so using Maven:
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype \
   -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider.s3 -DartifactId=wanaku-provider-s3 \
-  -Dname=S3 -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
+  -Dname=S3 -Dwanaku-version=0.0.8 -Dwanaku-capability-type=quarkus
 ```
 
 > [!IMPORTANT]
 > Make sure to adjust the version of Wanaku to be used by correctly setting the `wanaku-version` property to the base Wanaku 
 > version to use.
+>
+> If you intentionally want a Camel-based provider, pass `-Dwanaku-capability-type=camel` instead.
 
 ### Adjusting the Provider Service
 
 After creating the service, open the `pom.xml` file to add the dependencies for your project.
-Using the example above, we would include the following dependencies:
+If you want to turn the provider into a Camel-based implementation, include the following dependency:
 
 ```xml
 <dependency>
