@@ -33,12 +33,12 @@ public abstract class CapabilitiesBase extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--type"},
-            description = "The capability type (camel, quarkus, etc)",
+            description = CapabilityTypes.OPTION_DESCRIPTION,
             arity = "0..1")
     protected String type;
 
     protected String defaultCapabilityType() {
-        return "camel";
+        return CapabilityTypes.CAMEL;
     }
 
     protected String resolveCapabilityType() {
@@ -49,13 +49,14 @@ public abstract class CapabilitiesBase extends BaseCommand {
         String version = wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION;
         String packageName = String.format("%s.%s", basePackage, sanitizeName(name));
         return String.format(
-                "%s -Dpackage=%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-capability-type=%s -DarchetypeVersion=%s",
+                "%s -Dpackage=%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s %s%s -DarchetypeVersion=%s",
                 baseCmd,
                 packageName,
                 baseArtifactId,
                 sanitizeName(name),
                 capitalize(name),
                 version,
+                CapabilityTypes.WANAKU_CAPABILITY_TYPE_OPTION,
                 resolveCapabilityType(),
                 version);
     }

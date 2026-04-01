@@ -18,7 +18,7 @@ public class CapabilitiesCreateResources extends CapabilitiesBase {
 
     @Override
     protected String defaultCapabilityType() {
-        return "quarkus";
+        return CapabilityTypes.QUARKUS;
     }
 
     @Override

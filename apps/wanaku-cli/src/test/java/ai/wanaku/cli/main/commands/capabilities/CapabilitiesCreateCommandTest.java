@@ -1,5 +1,7 @@
 package ai.wanaku.cli.main.commands.capabilities;
 
+import java.util.Arrays;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,7 +26,7 @@ class CapabilitiesCreateCommandTest {
 
         String builtCommand = command.buildCommand();
 
-        assertTrue(builtCommand.contains("-Dwanaku-capability-type=camel"));
+        assertTrue(hasToken(builtCommand, CapabilityTypes.WANAKU_CAPABILITY_TYPE_OPTION + CapabilityTypes.CAMEL));
     }
 
     @Test
@@ -34,17 +36,21 @@ class CapabilitiesCreateCommandTest {
 
         String builtCommand = command.buildCommand();
 
-        assertTrue(builtCommand.contains("-Dwanaku-capability-type=quarkus"));
+        assertTrue(hasToken(builtCommand, CapabilityTypes.WANAKU_CAPABILITY_TYPE_OPTION + CapabilityTypes.QUARKUS));
     }
 
     @Test
     void resourceProvidersCanStillOptIntoCamel() {
         TestCapabilitiesCreateResources command = new TestCapabilitiesCreateResources();
         command.name = "S3";
-        command.type = "camel";
+        command.type = CapabilityTypes.CAMEL;
 
         String builtCommand = command.buildCommand();
 
-        assertTrue(builtCommand.contains("-Dwanaku-capability-type=camel"));
+        assertTrue(hasToken(builtCommand, CapabilityTypes.WANAKU_CAPABILITY_TYPE_OPTION + CapabilityTypes.CAMEL));
+    }
+
+    private static boolean hasToken(String command, String token) {
+        return Arrays.stream(command.split("\\s+")).anyMatch(token::equals);
     }
 }
