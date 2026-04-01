@@ -1,6 +1,6 @@
 package ai.wanaku.operator.wanaku;
 
-public class WanakuStatus {
+public class WanakuRouterStatus {
     private String host;
     private String sseEndpoint;
     private String streamableEndpoint;

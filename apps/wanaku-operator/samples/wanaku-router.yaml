@@ -1,5 +1,5 @@
 apiVersion: "wanaku.ai/v1alpha1"
-kind: Wanaku
+kind: WanakuRouter
 metadata:
   name: wanaku-dev
 spec:
@@ -12,10 +12,9 @@ spec:
   secrets:
 # This is the OIDC credentials secret for the services
     oidcCredentialsSecret: ""
-# Global image pull policy for all deployments (router and capabilities)
+# Global image pull policy for all deployments
 # Valid values: Always, IfNotPresent, Never
 # Default: IfNotPresent
-# Can be overridden per-component using router.imagePullPolicy or capability.imagePullPolicy
 #  imagePullPolicy: IfNotPresent
 # Ingress configuration for Kubernetes clusters (not needed for OpenShift)
 # OpenShift clusters auto-generate the host via Routes, but Kubernetes requires explicit configuration
@@ -34,23 +33,3 @@ spec:
 #    image: quay.io/wanaku/wanaku-router-backend:latest # Optional
 # Override pull policy for router only (takes precedence over global setting)
 #    imagePullPolicy: Always
-  capabilities:
-# For the capabilities, you need to provide the name, image to use and any environment variables required:
-# You can also optionally set imagePullPolicy per capability (overrides global setting)
-    - name: wanaku-http
-      image: quay.io/wanaku/wanaku-tool-service-http:latest
-#      imagePullPolicy: Always  # Optional: Always, IfNotPresent, Never
-    - name: finance-system
-      image: quay.io/wanaku/camel-integration-capability:latest
-    - name: employee-system
-      type: camel-integration-capability
-      image: quay.io/wanaku/camel-integration-capability:latest
-      # When using a camel integration capability, must always set the path to the routes file and to the rules file
-      env:
-        # The path to the routes file, should be within /data (i.e.: /data/my-system.camel.yaml)
-        - name: ROUTES_PATH
-          value: ""
-        # The path to the rules file, should be within /data (i.e.: /data/my-system-rules.yaml)
-        - name: ROUTES_RULES
-          value: ""
-        # Note, you can use oc cp file <pod name>:/data/<file> to copy the files

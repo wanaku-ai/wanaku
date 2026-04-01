@@ -5,14 +5,65 @@ metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
     app.kubernetes.io/version: 0.1.0-SNAPSHOT
-  name: wanaku-cluster-role
+  name: wanaku-capability-cluster-role
 rules:
   - apiGroups:
       - wanaku.ai
     resources:
-      - wanakus
-      - wanakus/status
-      - wanakus/finalizers
+      - wanakucapabilities
+      - wanakucapabilities/status
+      - wanakucapabilities/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - update
+      - create
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+      - services
+      - configmaps
+      - secrets
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: wanaku-operator
+    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+  name: wanaku-router-cluster-role
+rules:
+  - apiGroups:
+      - wanaku.ai
+    resources:
+      - wanakurouters
+      - wanakurouters/status
+      - wanakurouters/finalizers
     verbs:
       - get
       - list

@@ -2,13 +2,13 @@
 apiVersion: "apiextensions.k8s.io/v1"
 kind: "CustomResourceDefinition"
 metadata:
-  name: "wanakus.wanaku.ai"
+  name: "wanakurouters.wanaku.ai"
 spec:
   group: "wanaku.ai"
   names:
-    kind: "Wanaku"
-    plural: "wanakus"
-    singular: "wanaku"
+    kind: "WanakuRouter"
+    plural: "wanakurouters"
+    singular: "wanakurouter"
   scope: "Namespaced"
   versions:
   - name: "v1alpha1"
@@ -26,45 +26,11 @@ spec:
                 type: "object"
               imagePullPolicy:
                 type: "string"
-                description: "Global default image pull policy for all deployments"
-                enum:
-                - "Always"
-                - "IfNotPresent"
-                - "Never"
               ingress:
-                description: "Ingress configuration for Kubernetes clusters (not needed for OpenShift)"
                 properties:
                   host:
                     type: "string"
-                    description: "Hostname for Kubernetes Ingress (required on non-OpenShift clusters)"
                 type: "object"
-              capabilities:
-                items:
-                  properties:
-                    env:
-                      items:
-                        properties:
-                          name:
-                            type: "string"
-                          value:
-                            type: "string"
-                        type: "object"
-                      type: "array"
-                    image:
-                      type: "string"
-                    imagePullPolicy:
-                      type: "string"
-                      description: "Override image pull policy for this capability (overrides global)"
-                      enum:
-                      - "Always"
-                      - "IfNotPresent"
-                      - "Never"
-                    name:
-                      type: "string"
-                    type:
-                      type: "string"
-                  type: "object"
-                type: "array"
               router:
                 properties:
                   env:
@@ -80,11 +46,6 @@ spec:
                     type: "string"
                   imagePullPolicy:
                     type: "string"
-                    description: "Override image pull policy for router (overrides global)"
-                    enum:
-                    - "Always"
-                    - "IfNotPresent"
-                    - "Never"
                 type: "object"
               secrets:
                 properties:

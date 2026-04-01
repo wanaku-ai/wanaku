@@ -1,0 +1,36 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-capabilities
+spec:
+  auth:
+# This is the address of the authorization server (in the format: http://address)
+    authServer: ""
+  secrets:
+# This is the OIDC credentials secret for the services
+    oidcCredentialsSecret: ""
+# Global image pull policy for capabilities
+# Valid values: Always, IfNotPresent, Never
+# Default: IfNotPresent
+#  imagePullPolicy: IfNotPresent
+# Reference to the WanakuRouter CR name (required for service discovery)
+  routerRef: wanaku-dev
+# Capabilities to deploy
+  capabilities:
+    - name: wanaku-http
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
+#      imagePullPolicy: Always  # Optional: Always, IfNotPresent, Never
+    - name: finance-system
+      image: quay.io/wanaku/camel-integration-capability:latest
+    - name: employee-system
+      type: camel-integration-capability
+      image: quay.io/wanaku/camel-integration-capability:latest
+      # When using a camel integration capability, must always set the path to the routes file and to the rules file
+      env:
+        # The path to the routes file, should be within /data (i.e.: /data/my-system.camel.yaml)
+        - name: ROUTES_PATH
+          value: ""
+        # The path to the rules file, should be within /data (i.e.: /data/my-system-rules.yaml)
+        - name: ROUTES_RULES
+          value: ""
+        # Note, you can use oc cp file <pod name>:/data/<file> to copy the files

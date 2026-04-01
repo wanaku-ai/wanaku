@@ -18,9 +18,12 @@ import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.ReconcilerUtils;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import ai.wanaku.operator.wanaku.Wanaku;
-import ai.wanaku.operator.wanaku.WanakuReconciler;
-import ai.wanaku.operator.wanaku.WanakuSpec;
+import ai.wanaku.operator.wanaku.WanakuCapability;
+import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
+import ai.wanaku.operator.wanaku.WanakuRouter;
+import ai.wanaku.operator.wanaku.WanakuRouterReconciler;
+import ai.wanaku.operator.wanaku.WanakuRouterSpec;
+import ai.wanaku.operator.wanaku.WanakuTypes;
 
 public final class OperatorUtil {
     private static final Logger LOG = Logger.getLogger(OperatorUtil.class);
@@ -62,7 +65,9 @@ public final class OperatorUtil {
         return resolved;
     }
 
-    private static void setupBackendContainer(Wanaku resource, DeploymentSpec spec, String host) {
+    // ---- Router methods ----
+
+    private static void setupBackendContainer(WanakuRouter resource, DeploymentSpec spec, String host) {
         final List<Container> containers = spec.getTemplate().getSpec().getContainers();
 
         final Container service = containers.stream()
@@ -96,7 +101,7 @@ public final class OperatorUtil {
         envVars.add(authServerEnv);
         envVars.add(authProxyEnv);
 
-        final WanakuSpec.RouterSpec routerSpec = resource.getSpec().getRouter();
+        final WanakuRouterSpec.RouterSpec routerSpec = resource.getSpec().getRouter();
 
         // Resolve pull policy with fallback chain: component -> global -> default
         String componentPolicy = routerSpec != null ? routerSpec.getImagePullPolicy() : null;
@@ -114,7 +119,7 @@ public final class OperatorUtil {
 
             // Add custom environment variables from router spec if provided
             if (routerSpec.getEnv() != null && !routerSpec.getEnv().isEmpty()) {
-                for (ai.wanaku.operator.wanaku.WanakuSpec.EnvVar env : routerSpec.getEnv()) {
+                for (WanakuTypes.EnvVar env : routerSpec.getEnv()) {
                     EnvVar customEnvVar = new EnvVarBuilder()
                             .withName(env.getName())
                             .withValue(env.getValue())
@@ -127,9 +132,10 @@ public final class OperatorUtil {
         service.setEnv(envVars);
     }
 
-    public static Deployment makeDesiredRouterBackendDeployment(Wanaku resource, Context<Wanaku> context, String host) {
-        Deployment desiredDeployment =
-                ReconcilerUtils.loadYaml(Deployment.class, WanakuReconciler.class, ROUTER_BACKEND_DEPLOYMENT_FILE);
+    public static Deployment makeDesiredRouterBackendDeployment(
+            WanakuRouter resource, Context<WanakuRouter> context, String host) {
+        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
+                Deployment.class, WanakuRouterReconciler.class, ROUTER_BACKEND_DEPLOYMENT_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -169,9 +175,9 @@ public final class OperatorUtil {
         return deploymentName + "-mcp-router";
     }
 
-    public static Service makeRouterInternalService(Wanaku resource) {
-        Service service =
-                ReconcilerUtils.loadYaml(Service.class, WanakuReconciler.class, ROUTER_BACKEND_INTERNAL_SERVICE_FILE);
+    public static Service makeRouterInternalService(WanakuRouter resource) {
+        Service service = ReconcilerUtils.loadYaml(
+                Service.class, WanakuRouterReconciler.class, ROUTER_BACKEND_INTERNAL_SERVICE_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -191,9 +197,9 @@ public final class OperatorUtil {
         return service;
     }
 
-    public static Route makeRouterExternalService(Wanaku resource) {
-        Route route =
-                ReconcilerUtils.loadYaml(Route.class, WanakuReconciler.class, ROUTER_BACKEND_EXTERNAL_SERVICE_FILE);
+    public static Route makeRouterExternalService(WanakuRouter resource) {
+        Route route = ReconcilerUtils.loadYaml(
+                Route.class, WanakuRouterReconciler.class, ROUTER_BACKEND_EXTERNAL_SERVICE_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -210,8 +216,8 @@ public final class OperatorUtil {
         return route;
     }
 
-    public static Ingress makeRouterIngress(Wanaku resource, String host) {
-        Ingress ingress = ReconcilerUtils.loadYaml(Ingress.class, WanakuReconciler.class, ROUTER_INGRESS_FILE);
+    public static Ingress makeRouterIngress(WanakuRouter resource, String host) {
+        Ingress ingress = ReconcilerUtils.loadYaml(Ingress.class, WanakuRouterReconciler.class, ROUTER_INGRESS_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -239,9 +245,9 @@ public final class OperatorUtil {
         return ingress;
     }
 
-    public static PersistentVolumeClaim makeRouterVolumePVC(Wanaku resource) {
-        PersistentVolumeClaim pvc =
-                ReconcilerUtils.loadYaml(PersistentVolumeClaim.class, WanakuReconciler.class, SERVICES_VOLUME_PVC_FILE);
+    public static PersistentVolumeClaim makeRouterVolumePVC(WanakuRouter resource) {
+        PersistentVolumeClaim pvc = ReconcilerUtils.loadYaml(
+                PersistentVolumeClaim.class, WanakuRouterReconciler.class, SERVICES_VOLUME_PVC_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -257,9 +263,11 @@ public final class OperatorUtil {
         return pvc;
     }
 
-    public static PersistentVolumeClaim makeServicesVolumePVC(Wanaku resource, String serviceName) {
-        PersistentVolumeClaim pvc =
-                ReconcilerUtils.loadYaml(PersistentVolumeClaim.class, WanakuReconciler.class, SERVICES_VOLUME_PVC_FILE);
+    // ---- Capability methods ----
+
+    public static PersistentVolumeClaim makeServicesVolumePVC(WanakuCapability resource, String serviceName) {
+        PersistentVolumeClaim pvc = ReconcilerUtils.loadYaml(
+                PersistentVolumeClaim.class, WanakuRouterReconciler.class, SERVICES_VOLUME_PVC_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -280,9 +288,9 @@ public final class OperatorUtil {
     }
 
     private static void setupCapabilityContainer(
-            Wanaku resource,
+            WanakuCapability resource,
             DeploymentSpec spec,
-            WanakuSpec.CapabilitiesSpec capabilitiesSpec,
+            WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec,
             Supplier<List<EnvVar>> envVarSupplier) {
         final List<Container> containers = spec.getTemplate().getSpec().getContainers();
 
@@ -316,12 +324,12 @@ public final class OperatorUtil {
     }
 
     private static List<EnvVar> computeWanakuCapabilitiesEnvVars(
-            Wanaku resource, WanakuSpec.CapabilitiesSpec capabilitiesSpec) {
-        List<WanakuSpec.EnvVar> customEnv = capabilitiesSpec.getEnv();
+            WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
+        List<WanakuTypes.EnvVar> customEnv = capabilitiesSpec.getEnv();
         final String authServer = resource.getSpec().getAuth().getAuthServer();
         final String oidcSecret = resource.getSpec().getSecrets().getOidcCredentialsSecret();
 
-        // Build the registration URI - use the internal service name
+        // Build the registration URI - use the router ref for service discovery
         String registrationUri = getInternalRegistrationUri(resource);
 
         EnvVar authServerEnv = new EnvVarBuilder()
@@ -348,12 +356,12 @@ public final class OperatorUtil {
     }
 
     private static List<EnvVar> computeCamelIntegrationCapabilitiesEnvVars(
-            Wanaku resource, WanakuSpec.CapabilitiesSpec capabilitiesSpec) {
-        List<WanakuSpec.EnvVar> customEnv = capabilitiesSpec.getEnv();
+            WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
+        List<WanakuTypes.EnvVar> customEnv = capabilitiesSpec.getEnv();
         final String authServer = resource.getSpec().getAuth().getAuthServer();
         final String oidcSecret = resource.getSpec().getSecrets().getOidcCredentialsSecret();
 
-        // Build the registration URI - use the internal service name
+        // Build the registration URI - use the router ref for service discovery
         String registrationUri = getInternalRegistrationUri(resource);
 
         // TODO: this one should be made more flexible, so it can accept different realms
@@ -385,10 +393,10 @@ public final class OperatorUtil {
         return envVars;
     }
 
-    private static void addCustomVars(List<WanakuSpec.EnvVar> customEnv, List<EnvVar> envVars) {
+    private static void addCustomVars(List<WanakuTypes.EnvVar> customEnv, List<EnvVar> envVars) {
         // Add custom environment variables if provided
         if (customEnv != null && !customEnv.isEmpty()) {
-            for (WanakuSpec.EnvVar env : customEnv) {
+            for (WanakuTypes.EnvVar env : customEnv) {
                 EnvVar customEnvVar = new EnvVarBuilder()
                         .withName(env.getName())
                         .withValue(env.getValue())
@@ -398,14 +406,16 @@ public final class OperatorUtil {
         }
     }
 
-    private static String getInternalRegistrationUri(Wanaku resource) {
-        return "http://internal-" + resource.getMetadata().getName() + ":8080/";
+    private static String getInternalRegistrationUri(WanakuCapability resource) {
+        return "http://internal-" + resource.getSpec().getRouterRef() + ":8080/";
     }
 
     public static Deployment makeDesiredWanakuCapabilityDeployment(
-            Wanaku resource, Context<Wanaku> context, WanakuSpec.CapabilitiesSpec capabilitiesSpec) {
-        Deployment desiredDeployment =
-                ReconcilerUtils.loadYaml(Deployment.class, WanakuReconciler.class, WANAKU_CAPABILITY_DEPLOYMENT_FILE);
+            WanakuCapability resource,
+            Context<WanakuCapability> context,
+            WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
+        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
+                Deployment.class, WanakuRouterReconciler.class, WANAKU_CAPABILITY_DEPLOYMENT_FILE);
 
         String serviceName = capabilitiesSpec.getName();
         String ns = resource.getMetadata().getNamespace();
@@ -450,9 +460,11 @@ public final class OperatorUtil {
     }
 
     public static Deployment makeDesiredCiCCapabilityDeployment(
-            Wanaku resource, Context<Wanaku> context, WanakuSpec.CapabilitiesSpec capabilitiesSpec) {
+            WanakuCapability resource,
+            Context<WanakuCapability> context,
+            WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
         Deployment desiredDeployment = ReconcilerUtils.loadYaml(
-                Deployment.class, WanakuReconciler.class, CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
+                Deployment.class, WanakuRouterReconciler.class, CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
 
         String serviceName = capabilitiesSpec.getName();
         String ns = resource.getMetadata().getNamespace();
@@ -496,9 +508,10 @@ public final class OperatorUtil {
         return desiredDeployment;
     }
 
-    public static Service makeCapabilityInternalService(Wanaku resource, WanakuSpec.CapabilitiesSpec capabilitiesSpec) {
+    public static Service makeCapabilityInternalService(
+            WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
         Service service =
-                ReconcilerUtils.loadYaml(Service.class, WanakuReconciler.class, CAPABILITY_INTERNAL_SERVICE_FILE);
+                ReconcilerUtils.loadYaml(Service.class, WanakuRouterReconciler.class, CAPABILITY_INTERNAL_SERVICE_FILE);
 
         String serviceName = capabilitiesSpec.getName();
         String ns = resource.getMetadata().getNamespace();
