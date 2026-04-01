@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import org.jboss.logging.Logger;
+import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -25,10 +26,13 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.util.OperatorUtil;
 
 import static ai.wanaku.operator.util.Matchers.match;
+import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
+import static ai.wanaku.operator.util.OperatorUtil.findCondition;
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredRouterBackendDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterIngress;
 import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
+import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-router")
@@ -109,6 +113,10 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
         final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
         deployRouter(resource, context, namespace, wanakuStatus);
+        final Condition previousReadyCondition = findCondition(
+                resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
+        wanakuStatus.setConditions(List.of(readyCondition(
+                resource.getMetadata().getGeneration(), previousReadyCondition, "WanakuRouter deployment is ready")));
 
         resource.setStatus(wanakuStatus);
 

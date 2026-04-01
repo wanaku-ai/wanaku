@@ -2,7 +2,9 @@ package ai.wanaku.operator.wanaku;
 
 import jakarta.inject.Inject;
 
+import java.util.List;
 import org.jboss.logging.Logger;
+import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -20,10 +22,13 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.util.OperatorUtil;
 
 import static ai.wanaku.operator.util.Matchers.match;
+import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.createVolumeClaimName;
+import static ai.wanaku.operator.util.OperatorUtil.findCondition;
 import static ai.wanaku.operator.util.OperatorUtil.makeCapabilityInternalService;
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCiCCapabilityDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredWanakuCapabilityDeployment;
+import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-capability")
@@ -87,8 +92,16 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
         }
 
         deployCapabilities(resource, context, namespace);
+        final WanakuCapabilityStatus status = new WanakuCapabilityStatus();
+        final Condition previousReadyCondition = findCondition(
+                resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
+        status.setConditions(List.of(readyCondition(
+                resource.getMetadata().getGeneration(),
+                previousReadyCondition,
+                "WanakuCapability deployment is ready")));
+        resource.setStatus(status);
 
-        return UpdateControl.noUpdate();
+        return UpdateControl.patchStatus(resource);
     }
 
     private void deployCapabilities(WanakuCapability resource, Context<WanakuCapability> context, String namespace) {

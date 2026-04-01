@@ -1,11 +1,15 @@
 package ai.wanaku.operator.util;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
+import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -28,6 +32,9 @@ import ai.wanaku.operator.wanaku.WanakuTypes;
 
 public final class OperatorUtil {
     private static final Logger LOG = Logger.getLogger(OperatorUtil.class);
+    public static final String READY_CONDITION = "Ready";
+    public static final String CONDITION_STATUS_TRUE = "True";
+    public static final String CONDITION_REASON_READY = "ReconciliationSucceeded";
     public static final String ROUTER_BACKEND_DEPLOYMENT_FILE = "wanaku-router-deployment.yaml";
     public static final String ROUTER_BACKEND_INTERNAL_SERVICE_FILE = "wanaku-router-service-internal.yaml";
     public static final String ROUTER_BACKEND_EXTERNAL_SERVICE_FILE = "wanaku-router-service-external.yaml";
@@ -43,6 +50,34 @@ public final class OperatorUtil {
     public static final Set<String> VALID_PULL_POLICIES = Set.of("Always", "IfNotPresent", "Never");
 
     private OperatorUtil() {}
+
+    public static Condition readyCondition(Long generation, Condition previousCondition, String message) {
+        final boolean alreadyReady =
+                previousCondition != null && CONDITION_STATUS_TRUE.equals(previousCondition.getStatus());
+        final String lastTransitionTime = alreadyReady && previousCondition.getLastTransitionTime() != null
+                ? previousCondition.getLastTransitionTime()
+                : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        return new ConditionBuilder()
+                .withType(READY_CONDITION)
+                .withStatus(CONDITION_STATUS_TRUE)
+                .withObservedGeneration(generation)
+                .withLastTransitionTime(lastTransitionTime)
+                .withReason(CONDITION_REASON_READY)
+                .withMessage(message)
+                .build();
+    }
+
+    public static Condition findCondition(List<Condition> conditions, String type) {
+        if (conditions == null || conditions.isEmpty() || type == null) {
+            return null;
+        }
+
+        return conditions.stream()
+                .filter(condition -> type.equals(condition.getType()))
+                .findFirst()
+                .orElse(null);
+    }
 
     /**
      * Resolves image pull policy with priority:
