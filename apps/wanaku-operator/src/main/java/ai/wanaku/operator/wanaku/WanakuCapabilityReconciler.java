@@ -67,10 +67,23 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
 
         final String namespace = resource.getMetadata().getNamespace();
 
-        if (resource.getSpec().getRouterRef() == null
-                || resource.getSpec().getRouterRef().isBlank()) {
+        final String routerRef = resource.getSpec().getRouterRef();
+        if (routerRef == null || routerRef.isBlank()) {
             throw new WanakuException(
                     "routerRef must be specified in the WanakuCapability spec to indicate which WanakuRouter to register with.");
+        }
+
+        // Verify the referenced WanakuRouter exists
+        WanakuRouter router = kubernetesClient
+                .resources(WanakuRouter.class)
+                .inNamespace(namespace)
+                .withName(routerRef)
+                .get();
+        if (router == null) {
+            throw new WanakuException(String.format(
+                    "Referenced WanakuRouter '%s' not found in namespace '%s'. "
+                            + "Ensure the WanakuRouter resource is created before the WanakuCapability.",
+                    routerRef, namespace));
         }
 
         deployCapabilities(resource, context, namespace);

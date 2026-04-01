@@ -19,6 +19,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.ReconcilerUtils;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import ai.wanaku.operator.wanaku.WanakuCapability;
+import ai.wanaku.operator.wanaku.WanakuCapabilityReconciler;
 import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
 import ai.wanaku.operator.wanaku.WanakuRouter;
 import ai.wanaku.operator.wanaku.WanakuRouterReconciler;
@@ -267,7 +268,7 @@ public final class OperatorUtil {
 
     public static PersistentVolumeClaim makeServicesVolumePVC(WanakuCapability resource, String serviceName) {
         PersistentVolumeClaim pvc = ReconcilerUtils.loadYaml(
-                PersistentVolumeClaim.class, WanakuRouterReconciler.class, SERVICES_VOLUME_PVC_FILE);
+                PersistentVolumeClaim.class, WanakuCapabilityReconciler.class, SERVICES_VOLUME_PVC_FILE);
 
         String deploymentName = resource.getMetadata().getName();
         String ns = resource.getMetadata().getNamespace();
@@ -410,12 +411,11 @@ public final class OperatorUtil {
         return "http://internal-" + resource.getSpec().getRouterRef() + ":8080/";
     }
 
-    public static Deployment makeDesiredWanakuCapabilityDeployment(
+    private static Deployment configureCapabilityDeployment(
+            Deployment desiredDeployment,
             WanakuCapability resource,
-            Context<WanakuCapability> context,
-            WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
-        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
-                Deployment.class, WanakuRouterReconciler.class, WANAKU_CAPABILITY_DEPLOYMENT_FILE);
+            WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec,
+            Supplier<List<EnvVar>> envVarSupplier) {
 
         String serviceName = capabilitiesSpec.getName();
         String ns = resource.getMetadata().getNamespace();
@@ -449,14 +449,24 @@ public final class OperatorUtil {
                 .getPersistentVolumeClaim()
                 .setClaimName(createVolumeClaimName(serviceName));
 
-        setupCapabilityContainer(
-                resource,
-                deploymentSpec,
-                capabilitiesSpec,
-                () -> computeWanakuCapabilitiesEnvVars(resource, capabilitiesSpec));
+        setupCapabilityContainer(resource, deploymentSpec, capabilitiesSpec, envVarSupplier);
 
         desiredDeployment.addOwnerReference(resource);
         return desiredDeployment;
+    }
+
+    public static Deployment makeDesiredWanakuCapabilityDeployment(
+            WanakuCapability resource,
+            Context<WanakuCapability> context,
+            WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
+        Deployment desiredDeployment = ReconcilerUtils.loadYaml(
+                Deployment.class, WanakuCapabilityReconciler.class, WANAKU_CAPABILITY_DEPLOYMENT_FILE);
+
+        return configureCapabilityDeployment(
+                desiredDeployment,
+                resource,
+                capabilitiesSpec,
+                () -> computeWanakuCapabilitiesEnvVars(resource, capabilitiesSpec));
     }
 
     public static Deployment makeDesiredCiCCapabilityDeployment(
@@ -464,54 +474,19 @@ public final class OperatorUtil {
             Context<WanakuCapability> context,
             WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
         Deployment desiredDeployment = ReconcilerUtils.loadYaml(
-                Deployment.class, WanakuRouterReconciler.class, CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
+                Deployment.class, WanakuCapabilityReconciler.class, CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
 
-        String serviceName = capabilitiesSpec.getName();
-        String ns = resource.getMetadata().getNamespace();
-        String parentName = resource.getMetadata().getName();
-
-        desiredDeployment.getMetadata().setName(serviceName);
-        desiredDeployment.getMetadata().setNamespace(ns);
-        desiredDeployment.getMetadata().getLabels().put("app", parentName);
-        desiredDeployment.getMetadata().getLabels().put("component", serviceName);
-
-        final DeploymentSpec deploymentSpec = desiredDeployment.getSpec();
-
-        deploymentSpec.getSelector().getMatchLabels().put("app", parentName);
-        deploymentSpec.getSelector().getMatchLabels().put("component", serviceName);
-        deploymentSpec.getTemplate().getMetadata().getLabels().put("app", parentName);
-        deploymentSpec.getTemplate().getMetadata().getLabels().put("component", serviceName);
-        deploymentSpec
-                .getTemplate()
-                .getSpec()
-                .getContainers()
-                .getFirst()
-                .getVolumeMounts()
-                .getFirst()
-                .setName(serviceName + "-volume");
-        deploymentSpec.getTemplate().getSpec().getVolumes().getFirst().setName(serviceName + "-volume");
-        deploymentSpec
-                .getTemplate()
-                .getSpec()
-                .getVolumes()
-                .getFirst()
-                .getPersistentVolumeClaim()
-                .setClaimName(createVolumeClaimName(serviceName));
-
-        setupCapabilityContainer(
+        return configureCapabilityDeployment(
+                desiredDeployment,
                 resource,
-                deploymentSpec,
                 capabilitiesSpec,
                 () -> computeCamelIntegrationCapabilitiesEnvVars(resource, capabilitiesSpec));
-
-        desiredDeployment.addOwnerReference(resource);
-        return desiredDeployment;
     }
 
     public static Service makeCapabilityInternalService(
             WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
-        Service service =
-                ReconcilerUtils.loadYaml(Service.class, WanakuRouterReconciler.class, CAPABILITY_INTERNAL_SERVICE_FILE);
+        Service service = ReconcilerUtils.loadYaml(
+                Service.class, WanakuCapabilityReconciler.class, CAPABILITY_INTERNAL_SERVICE_FILE);
 
         String serviceName = capabilitiesSpec.getName();
         String ns = resource.getMetadata().getNamespace();
