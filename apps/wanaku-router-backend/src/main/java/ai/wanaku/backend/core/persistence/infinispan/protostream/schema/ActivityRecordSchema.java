@@ -9,14 +9,14 @@ public class ActivityRecordSchema extends AbstractWanakuSerializationContextInit
     private final ServiceStateSchema serviceState = new ServiceStateSchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "activity_record.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
         serviceState.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override

@@ -7,7 +7,7 @@ import ai.wanaku.backend.core.persistence.infinispan.protostream.marshaller.Reso
 public class ResourceReferenceSchema extends AbstractWanakuSerializationContextInitializer {
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "resource_reference.proto";
     }
 

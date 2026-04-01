@@ -19,14 +19,14 @@ public class PromptReferenceSchema extends AbstractWanakuSerializationContextIni
     private final ContentSchema contentSchema = new ContentSchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "prompt_reference.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
         contentSchema.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override

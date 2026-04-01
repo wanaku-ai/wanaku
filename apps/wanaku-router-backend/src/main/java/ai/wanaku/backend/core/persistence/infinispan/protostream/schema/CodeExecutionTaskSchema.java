@@ -10,7 +10,7 @@ public class CodeExecutionTaskSchema extends AbstractWanakuSerializationContextI
     private final CodeExecutionRequestSchema requestSchema = new CodeExecutionRequestSchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "code_execution_task.proto";
     }
 
@@ -18,7 +18,7 @@ public class CodeExecutionTaskSchema extends AbstractWanakuSerializationContextI
     public void registerSchema(SerializationContext serCtx) {
         statusSchema.registerSchema(serCtx);
         requestSchema.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override

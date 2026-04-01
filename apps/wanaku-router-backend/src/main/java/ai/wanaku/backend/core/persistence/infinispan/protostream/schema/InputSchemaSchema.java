@@ -9,14 +9,14 @@ public class InputSchemaSchema extends AbstractWanakuSerializationContextInitial
     private final PropertySchema propertySchema = new PropertySchema();
 
     @Override
-    public String getProtoFileName() {
+    public String getName() {
         return "input_schema.proto";
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx) {
         propertySchema.registerSchema(serCtx);
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getProtoFileName(), this.getProtoFile()));
+        serCtx.registerProtoFiles(FileDescriptorSource.fromString(this.getName(), this.getContent()));
     }
 
     @Override
