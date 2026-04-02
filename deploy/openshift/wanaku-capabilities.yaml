@@ -1,0 +1,15 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-dev-capabilities
+spec:
+  auth:
+    authServer: oidc-url-replace
+    # Address of the proxy (could be the same as the auth server - default) or "auto" (for using Wanaku as the proxy via OIDC proxy)
+    authProxy: "auto"
+  secrets:
+    oidcCredentialsSecret: replace-me-with-the-client-credentials-secret
+  routerRef: wanaku-dev
+  capabilities:
+    - name: wanaku-http
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
