@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
+import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
-import ai.wanaku.core.persistence.api.DataStoreRepository;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
 
 /**

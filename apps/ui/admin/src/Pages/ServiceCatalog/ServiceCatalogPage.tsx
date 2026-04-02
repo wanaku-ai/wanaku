@@ -4,6 +4,21 @@ import {ServiceCatalogCards} from "./ServiceCatalogCards";
 import {useServiceCatalog} from "../../hooks/api/use-service-catalog";
 import "./ServiceCatalogPage.scss";
 
+interface ServiceCatalogSystem {
+  name: string;
+  routesFile: string;
+  rulesFile: string;
+  dependenciesFile?: string;
+}
+
+interface ServiceCatalogDetail {
+  id: string;
+  name: string;
+  icon?: string;
+  description: string;
+  services: ServiceCatalogSystem[];
+}
+
 interface ServiceCatalogSummary {
   id: string;
   name: string;
@@ -71,10 +86,10 @@ export const ServiceCatalogPage: React.FC = () => {
     fetchCatalogs(search || undefined);
   };
 
-  const handleGetDetail = async (name: string) => {
+  const handleGetDetail = async (name: string): Promise<ServiceCatalogDetail | null> => {
     try {
       const result = await getServiceCatalog(name);
-      return result.data;
+      return result.data as ServiceCatalogDetail;
     } catch (error) {
       console.error("Error fetching catalog detail:", error);
       return null;
