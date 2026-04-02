@@ -436,20 +436,17 @@ helm uninstall wanaku-operator -n wanaku
 > The operator manages the entire lifecycle of Wanaku instances. Manual modifications to operator-managed resources
 > may be overwritten by the operator's reconciliation process.
 
-### Installing and Running Wanaku on OpenShift or Kubernetes (Manually - Deprecated)
+### Installing and Running Wanaku on OpenShift or Kubernetes (Manually)
 
-It is also possible to manually run Wanaku on Kubernetes distributions, such as OpenShift. 
-The deployment is configured using Kustomize for environment-specific customization.
+It is also possible to manually run Wanaku on Kubernetes distributions, such as OpenShift,
+without the operator. You can use the Helm chart directly:
 
-The basic steps to install and run Wanaku on OpenShift are: 
-
-1. Download the kustomize template files in the [`deploy` directory](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize) making sure to use the branch that matches your Wanaku version
-2. Copy the files from the [`dev`](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize/overlays/dev) directory and use them to create a new overlay (i.e.: `prod`) 
-3. Adjust the kustomize files according to your environment. 
-
-> [!TIP]
-> You may also consult [developer-specific documentation](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/kustomize/CONFIGMAP-USAGE.md)
-> if you need special customizations to your deployment.
+1. Install the operator Helm chart:
+   ```shell
+   helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
+   ```
+2. Create and apply a `WanakuRouter` custom resource for your environment (see [`deploy/openshift/wanaku-router.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/wanaku-router.yaml) for an example)
+3. Create and apply a `WanakuCapability` custom resource for your capabilities (see [`deploy/openshift/wanaku-capabilities.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/wanaku-capabilities.yaml) for an example)
 
 ### Configuring the Wanaku MCP Router
 
@@ -493,7 +490,7 @@ and define a password.
 
 Capabilities are standalone services that connect to the Wanaku router to provide new functionalities. 
 They can be downloaded from the [release page](https://github.com/wanaku-ai/wanaku/releases),
-[deployed to OpenShift](https://github.com/wanaku-ai/wanaku/tree/main/deploy/openshift/kustomize) using [containers](https://quay.io/organization/wanaku)
+deployed to OpenShift using the [operator](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator) and [containers](https://quay.io/organization/wanaku)
 or built from source.
 
 To run a capability, you need to configure it to connect to your Wanaku router instance and authenticate with it.
@@ -552,21 +549,27 @@ Before deploying Wanaku on OpenShift, ensure you have:
 
 #### Deployment
 
-You can deploy Wanaku in OpenShift or Kubernetes using Kustomize. 
+You can deploy Wanaku on OpenShift or Kubernetes using the operator Helm chart.
 
 After having deployed Keycloak, then run the following command to get its route:
- 
+
 ```shell
 oc get route keycloak -o jsonpath='{.spec.host}'
 ```
 
-Lastly, copy the regenerated client secret and add it to the respective overlay:
+Then install the operator and apply the custom resources with your OIDC configuration:
 
 ```shell
-oc apply -k deploy/openshift/kustomize/overlays/my-overlay/
-```
+helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
 
-This updates the OIDC server URLs in the environment variable patch files to point to your Keycloak instance.
+sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
+    -e "s/replace-me-with-the-client-credentials-secret/<your-client-secret>/g" \
+    deploy/openshift/wanaku-router.yaml | oc apply -f -
+
+sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
+    -e "s/replace-me-with-the-client-credentials-secret/<your-client-secret>/g" \
+    deploy/openshift/wanaku-capabilities.yaml | oc apply -f -
+```
 
 #### Environment Configuration
 
@@ -576,7 +579,7 @@ You must configure the router location using environment variables in your deplo
 - Set `WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router
 - Configure OIDC authentication URLs to point to your Keycloak instance
 
-The Kustomize overlays handle these configurations automatically for different environments.
+The operator handles these configurations automatically when using `WanakuRouter` and `WanakuCapability` custom resources.
 
 > [!IMPORTANT]
 > This configuration is also required when running the router and the services on different hosts.
