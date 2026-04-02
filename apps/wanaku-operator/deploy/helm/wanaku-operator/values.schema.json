@@ -42,6 +42,9 @@
             }
           }
         },
+        "imagePullPolicy" : {
+          "type" : "string"
+        },
         "image" : {
           "description" : "The container image to use.",
           "type" : "string"
