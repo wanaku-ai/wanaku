@@ -348,6 +348,7 @@ Apply the custom resource to create your Wanaku instance:
 
 ```shell
 kubectl apply -f wanaku-instance.yaml
+kubectl wait wanakurouter/wanaku-dev --for=condition=Ready --timeout=120s
 ```
 
 The operator will automatically create:
