@@ -290,16 +290,18 @@ kubectl get pods -n wanaku
 
 You should see the operator pod in a Running state.
 
-#### Defining a Wanaku Router Instance
+#### Defining Wanaku Instances
 
-Once the operator is installed, you can create Wanaku router instances by defining a custom resource.
+Once the operator is installed, you can create Wanaku instances by defining two custom resources: a `WanakuRouter` for the router component and a `WanakuCapability` for the capabilities.
 The operator watches for these custom resources and automatically creates all necessary Kubernetes objects.
 
-Create a file named `wanaku-instance.yaml` with the following content:
+##### Deploying the Router
+
+Create a file named `wanaku-router.yaml` with the following content:
 
 ```yaml
 apiVersion: "wanaku.ai/v1alpha1"
-kind: Wanaku
+kind: WanakuRouter
 metadata:
   name: wanaku-dev
 spec:
@@ -324,7 +326,41 @@ spec:
       #   value: value1
       # - name: ENVIRONMENT_VARIABLE_2
       #   value: value2
+```
 
+Apply the custom resource to create your Wanaku router:
+
+```shell
+kubectl apply -f wanaku-router.yaml
+kubectl wait wanakurouter/wanaku-dev --for=condition=Ready --timeout=120s
+```
+
+The operator will automatically create:
+- Deployment for the Wanaku router
+- Services to expose the router
+- ConfigMaps for configuration
+- Secrets for sensitive data
+- Routes/Ingress (if configured)
+- ServiceAccounts and RBAC resources
+
+##### Deploying the Capabilities
+
+Create a file named `wanaku-capabilities.yaml` with the following content:
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-capabilities
+spec:
+  auth:
+    # This is the address of the authorization server (in the format: http://address)
+    authServer: http://keycloak:8080
+  secrets:
+    # This is the OIDC credentials secret for the services
+    oidcCredentialsSecret: your-keycloak-client-secret
+  # Reference to the WanakuRouter CR name (required for service discovery)
+  routerRef: wanaku-dev
   # Define the capabilities you want to enable
   capabilities:
     # HTTP capability for HTTP-based tools
@@ -344,21 +380,21 @@ spec:
           value: "/data/employee-rules.yaml"
 ```
 
-Apply the custom resource to create your Wanaku instance:
+Apply the custom resource to deploy the capabilities:
 
 ```shell
-kubectl apply -f wanaku-instance.yaml
-kubectl wait wanakurouter/wanaku-dev --for=condition=Ready --timeout=120s
+kubectl apply -f wanaku-capabilities.yaml
+kubectl wait wanakucapability/wanaku-capabilities --for=condition=Ready --timeout=120s
 ```
 
 The operator will automatically create:
-- Deployment for the Wanaku router
 - Deployments for each enabled capability
-- Services to expose the router and capabilities
+- Services to expose the capabilities
 - ConfigMaps for configuration
 - Secrets for sensitive data
-- Routes/Ingress (if configured)
-- ServiceAccounts and RBAC resources
+
+> [!NOTE]
+> The `routerRef` field in the `WanakuCapability` CR must match the name of an existing `WanakuRouter` CR. This links the capabilities to the router for service discovery.
 
 > [!NOTE]
 > When using the Camel Integration Capability, you can copy your route and rules files to the capability pods using:
@@ -371,22 +407,29 @@ The operator will automatically create:
 
 #### Checking the Deployment Status
 
-To check the status of your Wanaku instance:
+To check the status of your Wanaku router:
 
 ```shell
-kubectl get wanaku -n wanaku
+kubectl get wanakurouter -n wanaku
+```
+
+To check the status of your capabilities:
+
+```shell
+kubectl get wanakucapability -n wanaku
 ```
 
 To view detailed information:
 
 ```shell
-kubectl describe wanaku my-wanaku-router -n wanaku
+kubectl describe wanakurouter wanaku-dev -n wanaku
+kubectl describe wanakucapability wanaku-capabilities -n wanaku
 ```
 
 To access the logs:
 
 ```shell
-kubectl logs -n wanaku deployment/my-wanaku-router
+kubectl logs -n wanaku deployment/wanaku-dev
 ```
 
 #### Accessing the Wanaku Router
@@ -405,26 +448,29 @@ oc get route my-wanaku-router -n wanaku -o jsonpath='{.spec.host}'
 
 #### Updating the Wanaku Instance
 
-To update your Wanaku instance, simply edit the custom resource and apply the changes:
+To update your Wanaku instance, simply edit the custom resources and apply the changes:
 
 ```shell
-kubectl edit wanaku my-wanaku-router -n wanaku
+kubectl edit wanakurouter wanaku-dev -n wanaku
+kubectl edit wanakucapability wanaku-capabilities -n wanaku
 ```
 
-Or update your YAML file and reapply:
+Or update your YAML files and reapply:
 
 ```shell
-kubectl apply -f wanaku-instance.yaml
+kubectl apply -f wanaku-router.yaml
+kubectl apply -f wanaku-capabilities.yaml
 ```
 
 The operator will automatically handle the update and roll out the changes.
 
 #### Removing the Wanaku Instance
 
-To remove a Wanaku instance:
+To remove a Wanaku instance, delete both the capabilities and router custom resources:
 
 ```shell
-kubectl delete wanaku my-wanaku-router -n wanaku
+kubectl delete wanakucapability wanaku-capabilities -n wanaku
+kubectl delete wanakurouter wanaku-dev -n wanaku
 ```
 
 To uninstall the operator:
