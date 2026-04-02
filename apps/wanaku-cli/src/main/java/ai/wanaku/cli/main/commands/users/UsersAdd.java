@@ -25,8 +25,18 @@ public class UsersAdd extends BaseAdminCommand {
 
     @CommandLine.Option(
             names = {"--email"},
-            description = "Email address for the new user")
+            description = "Email address for the new user (defaults to username@wanaku.local)")
     private String email;
+
+    @CommandLine.Option(
+            names = {"--first-name"},
+            description = "First name for the new user (defaults to username)")
+    private String firstName;
+
+    @CommandLine.Option(
+            names = {"--last-name"},
+            description = "Last name for the new user (defaults to username)")
+    private String lastName;
 
     public UsersAdd() {
         super();
@@ -40,7 +50,7 @@ public class UsersAdd extends BaseAdminCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         try {
             KeycloakAdminClient client = createAdminClient();
-            client.createUser(realm, username, password, email);
+            client.createUser(realm, username, password, email, firstName, lastName);
             printer.printSuccessMessage("User '" + username + "' created successfully");
             return EXIT_OK;
         } catch (KeycloakAdminClient.KeycloakAdminException e) {

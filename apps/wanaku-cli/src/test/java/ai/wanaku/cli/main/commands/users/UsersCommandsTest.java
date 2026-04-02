@@ -41,7 +41,7 @@ class UsersCommandsTest {
 
     @Test
     void usersAddHappyPath() throws Exception {
-        doNothing().when(adminClient).createUser(any(), any(), any(), any());
+        doNothing().when(adminClient).createUser(any(), any(), any(), any(), any(), any());
 
         UsersAdd cmd = new UsersAdd(adminClient);
         int result = cmd.doCall(terminal, printer);
@@ -90,7 +90,7 @@ class UsersCommandsTest {
     void usersAddShouldReturnErrorOnKeycloakException() throws Exception {
         doThrow(new KeycloakAdminClient.KeycloakAdminException("user already exists"))
                 .when(adminClient)
-                .createUser(any(), any(), any(), any());
+                .createUser(any(), any(), any(), any(), any(), any());
 
         UsersAdd cmd = new UsersAdd(adminClient);
         int result = cmd.doCall(terminal, printer);
