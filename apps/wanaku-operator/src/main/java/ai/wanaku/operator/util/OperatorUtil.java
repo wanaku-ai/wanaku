@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
-import io.fabric8.kubernetes.api.model.Condition;
-import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -22,6 +20,7 @@ import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.ReconcilerUtils;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
+import ai.wanaku.operator.wanaku.StatusCondition;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCapabilityReconciler;
 import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
@@ -51,24 +50,24 @@ public final class OperatorUtil {
 
     private OperatorUtil() {}
 
-    public static Condition readyCondition(Long generation, Condition previousCondition, String message) {
+    public static StatusCondition readyCondition(Long generation, StatusCondition previousCondition, String message) {
         final boolean alreadyReady =
                 previousCondition != null && CONDITION_STATUS_TRUE.equals(previousCondition.getStatus());
         final String lastTransitionTime = alreadyReady && previousCondition.getLastTransitionTime() != null
                 ? previousCondition.getLastTransitionTime()
                 : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        return new ConditionBuilder()
-                .withType(READY_CONDITION)
-                .withStatus(CONDITION_STATUS_TRUE)
-                .withObservedGeneration(generation)
-                .withLastTransitionTime(lastTransitionTime)
-                .withReason(CONDITION_REASON_READY)
-                .withMessage(message)
-                .build();
+        StatusCondition condition = new StatusCondition();
+        condition.setType(READY_CONDITION);
+        condition.setStatus(CONDITION_STATUS_TRUE);
+        condition.setObservedGeneration(generation);
+        condition.setLastTransitionTime(lastTransitionTime);
+        condition.setReason(CONDITION_REASON_READY);
+        condition.setMessage(message);
+        return condition;
     }
 
-    public static Condition findCondition(List<Condition> conditions, String type) {
+    public static StatusCondition findCondition(List<StatusCondition> conditions, String type) {
         if (conditions == null || conditions.isEmpty() || type == null) {
             return null;
         }

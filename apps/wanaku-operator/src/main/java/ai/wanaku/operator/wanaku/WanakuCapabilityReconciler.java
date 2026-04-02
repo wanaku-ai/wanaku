@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import org.jboss.logging.Logger;
-import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -93,7 +92,7 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
 
         deployCapabilities(resource, context, namespace);
         final WanakuCapabilityStatus status = new WanakuCapabilityStatus();
-        final Condition previousReadyCondition = findCondition(
+        final StatusCondition previousReadyCondition = findCondition(
                 resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
         status.setConditions(List.of(readyCondition(
                 resource.getMetadata().getGeneration(),

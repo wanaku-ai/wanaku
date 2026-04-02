@@ -1,7 +1,6 @@
 package ai.wanaku.operator.util;
 
-import io.fabric8.kubernetes.api.model.Condition;
-import io.fabric8.kubernetes.api.model.ConditionBuilder;
+import ai.wanaku.operator.wanaku.StatusCondition;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,13 +47,12 @@ class OperatorUtilTest {
 
     @Test
     void readyConditionReusesTransitionTimeWhenAlreadyReady() {
-        Condition previous = new ConditionBuilder()
-                .withType(OperatorUtil.READY_CONDITION)
-                .withStatus(OperatorUtil.CONDITION_STATUS_TRUE)
-                .withLastTransitionTime("2024-01-01T00:00:00Z")
-                .build();
+        StatusCondition previous = new StatusCondition();
+        previous.setType(OperatorUtil.READY_CONDITION);
+        previous.setStatus(OperatorUtil.CONDITION_STATUS_TRUE);
+        previous.setLastTransitionTime("2024-01-01T00:00:00Z");
 
-        Condition current = OperatorUtil.readyCondition(7L, previous, "ready");
+        StatusCondition current = OperatorUtil.readyCondition(7L, previous, "ready");
 
         assertEquals("2024-01-01T00:00:00Z", current.getLastTransitionTime());
         assertEquals(OperatorUtil.READY_CONDITION, current.getType());

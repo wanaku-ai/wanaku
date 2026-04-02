@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import org.jboss.logging.Logger;
-import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -113,7 +112,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
         final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
         deployRouter(resource, context, namespace, wanakuStatus);
-        final Condition previousReadyCondition = findCondition(
+        final StatusCondition previousReadyCondition = findCondition(
                 resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
         wanakuStatus.setConditions(List.of(readyCondition(
                 resource.getMetadata().getGeneration(), previousReadyCondition, "WanakuRouter deployment is ready")));

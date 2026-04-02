@@ -1,16 +1,15 @@
 package ai.wanaku.operator.wanaku;
 
 import java.util.List;
-import io.fabric8.kubernetes.api.model.Condition;
 
 public class WanakuCapabilityStatus {
-    private List<Condition> conditions;
+    private List<StatusCondition> conditions;
 
-    public List<Condition> getConditions() {
+    public List<StatusCondition> getConditions() {
         return conditions;
     }
 
-    public void setConditions(List<Condition> conditions) {
+    public void setConditions(List<StatusCondition> conditions) {
         this.conditions = conditions;
     }
 }

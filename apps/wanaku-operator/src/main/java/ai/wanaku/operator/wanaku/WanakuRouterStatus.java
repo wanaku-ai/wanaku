@@ -1,13 +1,12 @@
 package ai.wanaku.operator.wanaku;
 
 import java.util.List;
-import io.fabric8.kubernetes.api.model.Condition;
 
 public class WanakuRouterStatus {
     private String host;
     private String sseEndpoint;
     private String streamableEndpoint;
-    private List<Condition> conditions;
+    private List<StatusCondition> conditions;
 
     public String getHost() {
         return host;
@@ -33,11 +32,11 @@ public class WanakuRouterStatus {
         this.streamableEndpoint = streamableEndpoint;
     }
 
-    public List<Condition> getConditions() {
+    public List<StatusCondition> getConditions() {
         return conditions;
     }
 
-    public void setConditions(List<Condition> conditions) {
+    public void setConditions(List<StatusCondition> conditions) {
         this.conditions = conditions;
     }
 }
