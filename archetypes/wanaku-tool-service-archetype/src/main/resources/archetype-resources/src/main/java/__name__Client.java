@@ -1,4 +1,4 @@
-package $
+package ${package};
 
 import ai.wanaku.core.capabilities.common.ParsedToolInvokeRequest;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
@@ -9,7 +9,6 @@ import org.apache.camel.ProducerTemplate;
 import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;
-#end
 
 @ApplicationScoped
 public class ${name}Client implements Client {
