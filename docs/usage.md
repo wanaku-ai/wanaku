@@ -1019,9 +1019,10 @@ wanaku admin users list
 # List all users in the realm
 wanaku admin users list --admin-username admin --admin-password admin
 
-# Create a new user
+# Create a new user (email, first-name, last-name are optional and default to username-based values)
 wanaku admin users add --admin-username admin --admin-password admin \
-  --username alice --password secretpass --email alice@example.com
+  --username alice --password secretpass \
+  --email alice@example.com --first-name Alice --last-name Smith
 
 # Remove a user
 wanaku admin users remove --admin-username admin --admin-password admin \

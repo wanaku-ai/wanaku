@@ -32,13 +32,16 @@ public class KeycloakAdminClient {
 
     // ---- User methods ----
 
-    public void createUser(String realm, String username, String password, String email) throws KeycloakAdminException {
+    public void createUser(
+            String realm, String username, String password, String email, String firstName, String lastName)
+            throws KeycloakAdminException {
         Map<String, Object> userRep = new java.util.LinkedHashMap<>();
         userRep.put("username", username);
         userRep.put("enabled", true);
-        if (email != null && !email.isBlank()) {
-            userRep.put("email", email);
-        }
+        userRep.put("emailVerified", true);
+        userRep.put("firstName", (firstName != null && !firstName.isBlank()) ? firstName : username);
+        userRep.put("lastName", (lastName != null && !lastName.isBlank()) ? lastName : username);
+        userRep.put("email", (email != null && !email.isBlank()) ? email : username + "@wanaku.local");
         if (password != null && !password.isBlank()) {
             Map<String, Object> credential = Map.of("type", "password", "value", password, "temporary", false);
             userRep.put("credentials", List.of(credential));

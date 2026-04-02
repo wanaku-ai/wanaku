@@ -54,7 +54,7 @@ class KeycloakAdminClientTest {
     void createUserShouldPostToCorrectUrl() throws Exception {
         mockResponse(201, "");
 
-        adminClient.createUser(REALM, "testuser", "password123", "test@example.com");
+        adminClient.createUser(REALM, "testuser", "password123", "test@example.com", null, null);
 
         ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
         verify(httpClient).send(captor.capture(), any());
@@ -75,7 +75,7 @@ class KeycloakAdminClientTest {
 
         KeycloakAdminClient.KeycloakAdminException ex = assertThrows(
                 KeycloakAdminClient.KeycloakAdminException.class,
-                () -> adminClient.createUser(REALM, "testuser", "pass", null));
+                () -> adminClient.createUser(REALM, "testuser", "pass", null, null, null));
 
         assertTrue(ex.getMessage().contains("testuser"));
     }
