@@ -4,9 +4,9 @@ kind: Deployment
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.27.2
-    app.quarkus.io/commit-id: 673a275273c2098289e479ee7d51e260e189a88d
+    app.quarkus.io/commit-id: 90dc463f352476d0642c0803abf2056abc1af5b0
     app.quarkus.io/vcs-uri: https://github.com/orpiske/wanaku.git
-    app.quarkus.io/build-timestamp: 2026-04-01 - 12:27:06 +0000
+    app.quarkus.io/build-timestamp: 2026-04-02 - 13:40:59 +0000
   labels:
     app.kubernetes.io/name: wanaku-operator
     app.kubernetes.io/version: 0.1.0-SNAPSHOT
@@ -22,9 +22,9 @@ spec:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.27.2
-        app.quarkus.io/commit-id: 673a275273c2098289e479ee7d51e260e189a88d
+        app.quarkus.io/commit-id: 90dc463f352476d0642c0803abf2056abc1af5b0
         app.quarkus.io/vcs-uri: https://github.com/orpiske/wanaku.git
-        app.quarkus.io/build-timestamp: 2026-04-01 - 12:27:06 +0000
+        app.quarkus.io/build-timestamp: 2026-04-02 - 13:40:59 +0000
       labels:
         app.kubernetes.io/managed-by: quarkus
         app.kubernetes.io/name: wanaku-operator

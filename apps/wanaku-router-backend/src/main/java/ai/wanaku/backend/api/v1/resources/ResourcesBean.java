@@ -13,11 +13,11 @@ import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceBridge;
-import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
@@ -68,7 +68,8 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
                 resourcePayload.getSecretsData(),
                 service);
 
-        resourceReference.setConfigurationURI(provisioningReference.configurationURI().toString());
+        resourceReference.setConfigurationURI(
+                provisioningReference.configurationURI().toString());
         resourceReference.setSecretsURI(provisioningReference.secretsURI().toString());
 
         return expose(resourcePayload.getPayload());

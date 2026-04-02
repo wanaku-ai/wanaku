@@ -9,6 +9,7 @@ The following table lists the configurable parameters and their default values.
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES` |   | JOSDK_WATCH_CURRENT |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES` |   | JOSDK_WATCH_CURRENT |
 | `app.image` | The container image to use. | quay.io/wanaku/wanaku-operator:latest |
+| `app.imagePullPolicy` |   | IfNotPresent |
 | `app.livenessProbe.failureThreshold` | The failure threshold to use. | 3 |
 | `app.livenessProbe.httpGet.path` | The http path to use for the probe. | /q/health/live |
 | `app.livenessProbe.httpGet.scheme` | The http schema to use for the probe. | HTTP |

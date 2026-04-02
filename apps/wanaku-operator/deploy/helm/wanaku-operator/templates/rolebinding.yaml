@@ -9,10 +9,11 @@ metadata:
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: wanaku-capability-cluster-role
+  name: {{ .Release.Namespace }}-wanaku-capability-cluster-role
 subjects:
   - kind: ServiceAccount
     name: wanaku-operator
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -24,10 +25,11 @@ metadata:
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: wanaku-router-cluster-role
+  name: {{ .Release.Namespace }}-wanaku-router-cluster-role
 subjects:
   - kind: ServiceAccount
     name: wanaku-operator
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -43,3 +45,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: wanaku-operator
+    namespace: {{ .Release.Namespace }}
