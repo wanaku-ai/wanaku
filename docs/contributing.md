@@ -299,6 +299,19 @@ There are multiple ways you can test Wanaku and the integrations you develop.
 3. Use the maintained test suites under `tests/integration`, `tests/mcp-servers`, and `tests/load`.
 4. Any agent application (such as [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat)) 
 
+## Deploying to the Development Environment
+
+> [!NOTE]
+> Cluster access is restricted to Wanaku Core Committers.
+
+To deploy the current build to the shared development OpenShift cluster, run the deployment script from the repository root:
+
+```shell
+WANAKU_ADMIN_USERNAME=admin WANAKU_ADMIN_PASSWORD="the-password" ./deploy/deploy-to-dev-env.sh <namespace>
+```
+
+The script requires `oc`, `helm`, and the `wanaku` CLI to be installed and an active cluster login.
+
 ## Release Guide
 
 Committers should check the [Release Guide](release-guide) for details about how to build and distribute Wanaku.

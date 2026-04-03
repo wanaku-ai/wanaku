@@ -9,7 +9,7 @@ spec:
     authProxy: "auto"
   secrets:
     oidcCredentialsSecret: replace-me-with-the-client-credentials-secret
-  routerRef: wanaku-dev
+  routerRef: wanaku-ci-dev
   capabilities:
     - name: wanaku-http
       image: quay.io/wanaku/wanaku-tool-service-http:latest
