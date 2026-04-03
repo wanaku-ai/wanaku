@@ -38,6 +38,13 @@ public class UsersAdd extends BaseAdminCommand {
             description = "Last name for the new user (defaults to username)")
     private String lastName;
 
+    @CommandLine.Option(
+            names = {"--verified"},
+            description = "Mark the email address as verified (default: true)",
+            defaultValue = "true",
+            negatable = true)
+    private boolean verified;
+
     public UsersAdd() {
         super();
     }
@@ -50,7 +57,7 @@ public class UsersAdd extends BaseAdminCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         try {
             KeycloakAdminClient client = createAdminClient();
-            client.createUser(realm, username, password, email, firstName, lastName);
+            client.createUser(realm, username, password, email, firstName, lastName, verified);
             printer.printSuccessMessage("User '" + username + "' created successfully");
             return EXIT_OK;
         } catch (KeycloakAdminClient.KeycloakAdminException e) {
