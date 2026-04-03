@@ -1020,9 +1020,14 @@ wanaku admin users list
 wanaku admin users list --admin-username admin --admin-password admin
 
 # Create a new user (email, first-name, last-name are optional and default to username-based values)
+# By default, the email is marked as verified. Use --no-verified to leave it unverified.
 wanaku admin users add --admin-username admin --admin-password admin \
   --username alice --password secretpass \
   --email alice@example.com --first-name Alice --last-name Smith
+
+# Create a user with an unverified email
+wanaku admin users add --admin-username admin --admin-password admin \
+  --username bob --password secretpass --no-verified
 
 # Remove a user
 wanaku admin users remove --admin-username admin --admin-password admin \

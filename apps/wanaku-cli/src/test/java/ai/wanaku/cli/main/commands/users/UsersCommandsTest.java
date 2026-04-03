@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -41,7 +42,7 @@ class UsersCommandsTest {
 
     @Test
     void usersAddHappyPath() throws Exception {
-        doNothing().when(adminClient).createUser(any(), any(), any(), any(), any(), any());
+        doNothing().when(adminClient).createUser(any(), any(), any(), any(), any(), any(), anyBoolean());
 
         UsersAdd cmd = new UsersAdd(adminClient);
         int result = cmd.doCall(terminal, printer);
@@ -90,7 +91,7 @@ class UsersCommandsTest {
     void usersAddShouldReturnErrorOnKeycloakException() throws Exception {
         doThrow(new KeycloakAdminClient.KeycloakAdminException("user already exists"))
                 .when(adminClient)
-                .createUser(any(), any(), any(), any(), any(), any());
+                .createUser(any(), any(), any(), any(), any(), any(), anyBoolean());
 
         UsersAdd cmd = new UsersAdd(adminClient);
         int result = cmd.doCall(terminal, printer);
