@@ -23,14 +23,15 @@
         </dependency>
 
         <dependency>
-            <groupId>io.quarkiverse.infinispan</groupId>
-            <artifactId>quarkus-infinispan-embedded</artifactId>
-            <version>${quarkus-infinispan-embedded.version}</version>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-core</artifactId>
+            <version>${infinispan.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-query</artifactId>
+            <version>${infinispan.version}</version>
         </dependency>
 
         <dependency>
