@@ -33,18 +33,36 @@ public abstract class CapabilitiesBase extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--type"},
-            description = "The capability type (camel, quarkus, etc)",
-            defaultValue = "camel",
-            required = true,
+            description = CapabilityTypes.OPTION_DESCRIPTION,
             arity = "0..1")
     protected String type;
 
-    protected void createProject(String baseCmd, String basePackage, String baseArtifactId) {
+    protected String defaultCapabilityType() {
+        return CapabilityTypes.CAMEL;
+    }
+
+    protected String resolveCapabilityType() {
+        return type != null && !type.isBlank() ? type : defaultCapabilityType();
+    }
+
+    protected String buildCreateCommand(String baseCmd, String basePackage, String baseArtifactId) {
         String version = wanakuVersion != null ? wanakuVersion : VersionHelper.VERSION;
         String packageName = String.format("%s.%s", basePackage, sanitizeName(name));
-        String cmd = String.format(
-                "%s -Dpackage=%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s -Dwanaku-capability-type=%s -DarchetypeVersion=%s",
-                baseCmd, packageName, baseArtifactId, sanitizeName(name), capitalize(name), version, type, version);
+        return String.format(
+                "%s -Dpackage=%s -DartifactId=%s-%s -Dname=%s -Dwanaku-version=%s %s%s -DarchetypeVersion=%s",
+                baseCmd,
+                packageName,
+                baseArtifactId,
+                sanitizeName(name),
+                capitalize(name),
+                version,
+                CapabilityTypes.WANAKU_CAPABILITY_TYPE_OPTION,
+                resolveCapabilityType(),
+                version);
+    }
+
+    protected void createProject(String baseCmd, String basePackage, String baseArtifactId) {
+        String cmd = buildCreateCommand(baseCmd, basePackage, baseArtifactId);
 
         String[] split = cmd.split(" ");
         final File projectDir = new File(path);

@@ -17,6 +17,11 @@ public class CapabilitiesCreateResources extends CapabilitiesBase {
     WanakuCliConfig config;
 
     @Override
+    protected String defaultCapabilityType() {
+        return CapabilityTypes.QUARKUS;
+    }
+
+    @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
         String baseCmd = config.resource().createCmd();
         createProject(baseCmd, "ai.wanaku.provider", "wanaku-provider");
