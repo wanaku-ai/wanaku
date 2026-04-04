@@ -169,7 +169,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
         String address = forwardReference.getAddress();
-        ForwardClient forwardClient = ForwardClient.newClient(address);
+        ForwardClient forwardClient = ForwardClient.newClient(address, mcpBridge.createSamplingHandler(address));
 
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
         try {

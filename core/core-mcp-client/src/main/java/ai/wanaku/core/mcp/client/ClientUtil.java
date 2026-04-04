@@ -9,6 +9,10 @@ import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 public class ClientUtil {
 
     public static McpClient createClient(String address) {
+        return createClient(address, null);
+    }
+
+    public static McpClient createClient(String address, McpSamplingHandler samplingHandler) {
         McpTransport transport;
         if (address.endsWith("sse") || address.endsWith("sse/")) {
             transport = new HttpMcpTransport.Builder()
@@ -22,6 +26,10 @@ public class ClientUtil {
                     .logRequests(true)
                     .logResponses(true)
                     .build();
+        }
+
+        if (samplingHandler != null) {
+            transport = new SamplingMcpTransport(transport, samplingHandler);
         }
 
         return new DefaultMcpClient.Builder().transport(transport).build();
