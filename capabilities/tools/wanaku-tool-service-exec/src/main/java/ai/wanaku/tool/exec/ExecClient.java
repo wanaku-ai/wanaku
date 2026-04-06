@@ -20,7 +20,9 @@ public class ExecClient implements Client {
     public Object exchange(ToolInvokeRequest request, ConfigResource configResource) {
         ParsedToolInvokeRequest parsedRequest = ParsedToolInvokeRequest.parseRequest(request, configResource);
 
-        LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
+        // Log at DEBUG level to avoid exposing sensitive data (API keys, tokens, credentials)
+        // that may be embedded in the URI as query parameters
+        LOG.debugf("Invoking tool at URI: %s", parsedRequest.uri());
         File fullCommand = new File(parsedRequest.uri());
 
         String[] arguments = fullCommand.getAbsolutePath().split(" ");
