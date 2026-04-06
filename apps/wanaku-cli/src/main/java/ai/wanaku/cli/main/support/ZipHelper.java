@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -20,6 +21,9 @@ public class ZipHelper {
 
     public static void unzip(File zipFilePath, File destination, String componentName) throws IOException {
         // Create a ZipInputStream object from the specified ZIP file
+        Path destinationPath = destination.toPath().toAbsolutePath().normalize();
+        Path componentPath = destinationPath.resolve(componentName).normalize();
+
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
 
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -30,15 +34,20 @@ public class ZipHelper {
                 LOG.debugf("Unpacking %s", entry.getName());
 
                 String name = finalEntryName(componentName, entry);
+                Path unzippedPath = destinationPath.resolve(name).normalize();
 
-                // Create a file for the current entry in the unzip folder
-                File unzippedFile = new File(destination, name);
+                if (!unzippedPath.startsWith(componentPath)) {
+                    LOG.warnf("Rejected suspicious zip entry: %s", entry.getName());
+                    continue;
+                }
 
                 if (!entry.isDirectory()) {
                     // Open an input stream to read from the entry
                     try (InputStream in = zipFile.getInputStream(entry)) {
+                        Files.createDirectories(unzippedPath.getParent());
+
                         // Open an output stream to write to the local file
-                        try (OutputStream out = new FileOutputStream(unzippedFile)) {
+                        try (OutputStream out = new FileOutputStream(unzippedPath.toFile())) {
                             in.transferTo(out);
 
                         } catch (IOException e) {
@@ -48,11 +57,7 @@ public class ZipHelper {
                         LOG.errorf(e, "Error reading from entry: %s", e.getMessage());
                     }
                 } else {
-                    if (unzippedFile.exists()) {
-                        return;
-                    }
-
-                    Files.createDirectories(unzippedFile.toPath());
+                    Files.createDirectories(unzippedPath);
                 }
             }
         }
@@ -67,8 +72,12 @@ public class ZipHelper {
      * @return
      */
     private static String finalEntryName(String componentName, ZipEntry entry) {
-        int idx = entry.getName().indexOf("/");
-        String entryName = entry.getName().substring(idx);
+        String entryName = entry.getName().replace('\\', '/');
+        int idx = entryName.indexOf("/");
+        if (idx >= 0 && idx + 1 < entryName.length()) {
+            entryName = entryName.substring(idx + 1);
+        }
+
         return String.format("%s/%s", componentName, entryName);
     }
 }
