@@ -1,7 +1,7 @@
 package ai.wanaku.tool.exec;
 
-import jakarta.enterprise.context.Singleton;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

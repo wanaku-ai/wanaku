@@ -1,6 +1,6 @@
 package ai.wanaku.tool.exec;
 
-import jakarta.enterprise.context.Singleton;
+import jakarta.inject.Singleton;
 
 import ai.wanaku.capabilities.sdk.common.ProcessRunner;
 
