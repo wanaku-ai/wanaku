@@ -2,6 +2,9 @@
 
 Write the description of the tool here
 
+This service now requires an explicit allowlist of executable paths via `wanaku.service.exec.allowed-executables`.
+Only commands whose first token matches one of the configured executables will run.
+
 Sample run for any tool:
 
 ```shell

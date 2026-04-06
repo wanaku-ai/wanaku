@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExecClientIntegrationTest {
 
-    private final ExecClient client = new ExecClient();
-
     @TempDir
     Path tempDir;
 
@@ -32,10 +30,9 @@ class ExecClientIntegrationTest {
 
         ToolInvokeRequest request =
                 ToolInvokeRequest.newBuilder().setUri(scriptPath.toString()).build();
-
         ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
-        Object response = client.exchange(request, configResource);
+        Object response = newClient(scriptPath).exchange(request, configResource);
 
         assertNotNull(response);
 
@@ -54,12 +51,17 @@ class ExecClientIntegrationTest {
 
         ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
-        Object response = client.exchange(request, configResource);
+        Object response = newClient(scriptPath).exchange(request, configResource);
 
         assertNotNull(response);
 
         String output = normalizeOutput(response);
         assertTrue(output.contains("exec-it-template"));
+    }
+
+    private static ExecClient newClient(Path scriptPath) {
+        return new ExecClient(
+                new ExecCommandPolicy(List.of(scriptPath.toString())), new ProcessRunnerCommandExecutor());
     }
 
     private static Path createScript(Path dir, String marker) throws IOException {
