@@ -2,6 +2,7 @@ package ai.wanaku.tool.exec;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,7 +17,9 @@ final class ExecCommandPolicy {
     private final List<String> allowedExecutables;
 
     @Inject
-    ExecCommandPolicy(String allowedExecutables) {
+    ExecCommandPolicy(
+            @ConfigProperty(name = "wanaku.service.exec.allowed-executables", defaultValue = "")
+            String allowedExecutables) {
         this(parseAllowedExecutables(allowedExecutables));
     }
 
