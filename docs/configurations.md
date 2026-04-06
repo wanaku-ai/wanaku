@@ -175,6 +175,7 @@ These settings apply to most tool services and are foundational for their operat
 | `quarkus.qute.strict-rendering`          | `false` - Allows for more lenient Qute template rendering.                                             |
 | `wanaku.service.name`                    | The unique, lowercase name of the service (e.g., `exec`, `http`).                                      |
 | `wanaku.service.base-uri`                | The base URI scheme for tools provided by this service (e.g., `exec://`).                              |
+| `wanaku.service.exec.allowed-executables` | Comma-separated absolute executable paths that the Exec tool may run.                                 |
 | `quarkus.oidc-client.auth-server-url`    | The URL of the Keycloak realm for authentication.                                                      |
 | `quarkus.oidc-client.client-id`          | `wanaku-service` - The shared OIDC client ID for all capabilities.                                     |
 | `quarkus.oidc-client.credentials.secret` | The OIDC client secret for the capability. **Must be replaced with a real secret.**                    |
