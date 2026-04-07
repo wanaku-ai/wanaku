@@ -34,7 +34,7 @@ public abstract class CapabilitiesBase extends BaseCommand {
     @CommandLine.Option(
             names = {"--type"},
             description = "The capability type (camel, quarkus, etc)",
-            defaultValue = "camel",
+            defaultValue = "quarkus",
             required = true,
             arity = "0..1")
     protected String type;
