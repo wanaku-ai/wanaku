@@ -3,7 +3,9 @@ package ai.wanaku.tool.exec;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +14,7 @@ import java.util.Set;
 
 @Singleton
 final class ExecCommandPolicy {
+    private static final Logger LOG = Logger.getLogger(ExecCommandPolicy.class);
     private static final Set<Character> DISALLOWED_CHARACTERS = Set.of(';', '|', '&', '<', '>', '`', '$');
 
     private final List<String> allowedExecutables;
@@ -25,7 +28,7 @@ final class ExecCommandPolicy {
 
     ExecCommandPolicy(List<String> allowedExecutables) {
         this.allowedExecutables = allowedExecutables.stream()
-                .map(ExecCommandPolicy::normalizeExecutable)
+                .map(ExecCommandPolicy::normalizeAllowlistedExecutable)
                 .toList();
     }
 
@@ -43,7 +46,7 @@ final class ExecCommandPolicy {
             throw new SecurityException("Command execution is denied because no executables are allowlisted");
         }
 
-        String executable = normalizeExecutable(command.get(0));
+        String executable = normalizeRequestedExecutable(command.get(0));
         if (!allowedExecutables.contains(executable)) {
             throw new SecurityException(
                     "Command execution is denied because the executable is not allowlisted: " + executable);
@@ -64,12 +67,32 @@ final class ExecCommandPolicy {
                 .toList();
     }
 
-    private static String normalizeExecutable(String executable) {
+    private static String normalizeRequestedExecutable(String executable) {
         if (executable == null || executable.isBlank()) {
             throw new SecurityException("Command execution is denied because the executable path is blank");
         }
 
         return Path.of(executable.trim()).toAbsolutePath().normalize().toString();
+    }
+
+    private static String normalizeAllowlistedExecutable(String executable) {
+        if (executable == null || executable.isBlank()) {
+            throw new SecurityException("Command execution is denied because the executable path is blank");
+        }
+
+        Path path = Path.of(executable.trim());
+        if (!path.isAbsolute()) {
+            throw new SecurityException(
+                    "Command execution is denied because the executable allowlist must use absolute paths: "
+                            + executable.trim());
+        }
+
+        Path normalizedPath = path.toAbsolutePath().normalize();
+        if (!Files.exists(normalizedPath)) {
+            LOG.warnf("Configured executable does not exist yet: %s", normalizedPath);
+        }
+
+        return normalizedPath.toString();
     }
 
     private static List<String> tokenize(String rawCommand) {

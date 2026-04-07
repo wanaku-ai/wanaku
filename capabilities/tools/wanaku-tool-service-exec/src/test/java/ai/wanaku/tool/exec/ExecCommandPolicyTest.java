@@ -7,9 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
+import ai.wanaku.core.util.RuntimeInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +41,42 @@ class ExecCommandPolicyTest {
     }
 
     @Test
+    void rejectsRelativeAllowlistEntries() throws Exception {
+        Path scriptPath = createScript(tempDir, "policy-relative");
+
+        assertThrows(SecurityException.class, () -> new ExecCommandPolicy(List.of(scriptPath.getFileName().toString())));
+    }
+
+    @Test
+    void rejectsBlankCommands() throws Exception {
+        Path scriptPath = createScript(tempDir, "policy-blank");
+
+        ExecCommandPolicy policy = new ExecCommandPolicy(List.of(scriptPath.toString()));
+
+        assertThrows(SecurityException.class, () -> policy.buildCommand("   "));
+    }
+
+    @Test
+    void rejectsCommandsWithUnbalancedQuotes() throws Exception {
+        Path scriptPath = createScript(tempDir, "policy-quotes");
+
+        ExecCommandPolicy policy = new ExecCommandPolicy(List.of(scriptPath.toString()));
+
+        assertThrows(SecurityException.class, () -> policy.buildCommand("\"" + scriptPath + " --mode"));
+    }
+
+    @Test
+    void acceptsAllowlistEntriesWithSurroundingWhitespace() throws Exception {
+        Path scriptPath = createScript(tempDir, "policy-trim");
+
+        ExecCommandPolicy policy = new ExecCommandPolicy(List.of("  " + scriptPath + "  "));
+
+        List<String> command = policy.buildCommand(scriptPath + " --version");
+
+        assertEquals(List.of(scriptPath.toAbsolutePath().normalize().toString(), "--version"), command);
+    }
+
+    @Test
     void rejectsShellMetacharacters() throws Exception {
         Path scriptPath = createScript(tempDir, "policy-meta");
 
@@ -52,8 +88,7 @@ class ExecCommandPolicyTest {
     private static Path createScript(Path dir, String marker) throws IOException {
         Files.createDirectories(dir);
 
-        boolean isWindows =
-                System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
+        boolean isWindows = RuntimeInfo.isWindows();
 
         String extension = isWindows ? ".cmd" : ".sh";
         Path scriptPath = dir.resolve("exec-it-" + marker + extension).toAbsolutePath();
@@ -61,7 +96,7 @@ class ExecCommandPolicyTest {
         String content =
                 isWindows ? "@echo off\r\necho " + marker + "\r\n" : "#!/usr/bin/env sh\n" + "echo " + marker + "\n";
 
-        Files.writeString(scriptPath, content, StandardCharsets.US_ASCII);
+        Files.writeString(scriptPath, content, StandardCharsets.UTF_8);
 
         if (!isWindows) {
             try {

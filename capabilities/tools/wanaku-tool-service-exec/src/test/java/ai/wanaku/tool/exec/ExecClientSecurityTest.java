@@ -7,11 +7,12 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
+
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
+import ai.wanaku.core.util.RuntimeInfo;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,7 +63,7 @@ class ExecClientSecurityTest {
     private static Path createScript(Path dir, String marker) throws IOException {
         Files.createDirectories(dir);
 
-        boolean isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
+        boolean isWindows = RuntimeInfo.isWindows();
 
         String extension = isWindows ? ".cmd" : ".sh";
         Path scriptPath = dir.resolve("exec-security-" + marker + extension).toAbsolutePath();
@@ -70,7 +71,7 @@ class ExecClientSecurityTest {
         String content =
                 isWindows ? "@echo off\r\necho " + marker + "\r\n" : "#!/usr/bin/env sh\n" + "echo " + marker + "\n";
 
-        Files.writeString(scriptPath, content, StandardCharsets.US_ASCII);
+        Files.writeString(scriptPath, content, StandardCharsets.UTF_8);
 
         if (!isWindows) {
             try {
