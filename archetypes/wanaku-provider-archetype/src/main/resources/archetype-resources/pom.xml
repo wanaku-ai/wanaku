@@ -76,10 +76,12 @@
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
 
+#if ( $wanaku-capability-type == "camel")
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-core</artifactId>
         </dependency>
+#end
 
         <!-- For building containers -->
         <dependency>
