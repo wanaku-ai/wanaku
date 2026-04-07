@@ -33,11 +33,12 @@ class ExecCommandPolicyTest {
 
     @Test
     void rejectsNonAllowlistedExecutable() throws Exception {
-        Path scriptPath = createScript(tempDir, "policy-denied");
+        Path allowedScriptPath = createScript(tempDir, "policy-allowed");
+        Path deniedScriptPath = createScript(tempDir, "policy-denied");
 
-        ExecCommandPolicy policy = new ExecCommandPolicy(List.of("/bin/does-not-exist"));
+        ExecCommandPolicy policy = new ExecCommandPolicy(List.of(allowedScriptPath.toString()));
 
-        assertThrows(SecurityException.class, () -> policy.buildCommand(scriptPath.toString()));
+        assertThrows(SecurityException.class, () -> policy.buildCommand(deniedScriptPath.toString()));
     }
 
     @Test
