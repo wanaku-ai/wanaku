@@ -45,13 +45,13 @@ fi
 
 cd "${workDir}"/build
 
-java -jar ${cliJar} capabilities create resource --name test-camel --type camel
-if [[ ! -d wanaku-provider-test-camel ]] ; then
+java -jar ${cliJar} capabilities create resource --name testcamel --type camel
+if [[ ! -d wanaku-provider-testcamel ]] ; then
   echo "The generated directory is wrong for camel resource"
   ls -1
   exit 1
 else
-  cd wanaku-provider-test-camel
+  cd wanaku-provider-testcamel
 fi
 
 mvn -Pdist clean package
@@ -62,12 +62,12 @@ fi
 
 cd "${workDir}"/build
 
-java -jar ${cliJar} capabilities create tool --name test-camel --type camel
-if [[ ! -d wanaku-tool-service-test-camel ]] ; then
+java -jar ${cliJar} capabilities create tool --name testcamel --type camel
+if [[ ! -d wanaku-tool-service-testcamel ]] ; then
   echo "The generated directory is wrong for camel tool"
   exit 1
 else
-  cd wanaku-tool-service-test-camel
+  cd wanaku-tool-service-testcamel
 fi
 
 mvn -Pdist clean package
