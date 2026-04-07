@@ -5,7 +5,9 @@ import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.tool.Client;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+#if ( $wanaku-capability-type == "camel")
 import org.apache.camel.ProducerTemplate;
+#end
 import org.jboss.logging.Logger;
 
 import static ai.wanaku.core.runtime.camel.CamelQueryHelper.safeLog;

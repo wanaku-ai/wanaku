@@ -9,7 +9,9 @@ import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.provider.AbstractResourceDelegate;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
+#if ( $wanaku-capability-type == "camel")
 import ai.wanaku.core.runtime.camel.CamelQueryParameterBuilder;
+#end
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
