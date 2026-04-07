@@ -59,7 +59,7 @@ jobs:
       working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
     - uses: actions/checkout@v6
     - name: Build with Maven
-      run: mvn -B --no-transfer-progress package --file pom.xml
+      run: mvn -B --no-transfer-progress install --file pom.xml
     - name: Test Archetypes
       if: runner.os != 'Windows'
       run: bash tests/archetype-tests/test-archetypes.sh
