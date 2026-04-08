@@ -16,41 +16,29 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
  * features like connection pooling, interceptors, and custom configurations
  * in the future.
  * <p>
- * Current implementation creates channels with plaintext communication.
- * Future enhancements may include:
- * <ul>
- *   <li>Connection pooling for reusing channels</li>
- *   <li>Interceptors for logging and metrics</li>
- *   <li>SSL/TLS configuration</li>
- *   <li>Retry policies and circuit breakers</li>
- * </ul>
+ * Channels are cached per service endpoint and reused across requests.
  */
 class GrpcChannelManager {
     private static final Logger LOG = Logger.getLogger(GrpcChannelManager.class);
-    private static final Map<ServiceTarget, ManagedChannel> CHANNEL_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, ManagedChannel> CHANNEL_MAP = new ConcurrentHashMap<>();
 
     /**
-     * Creates a new gRPC channel for the specified service target.
+     * Returns a cached gRPC channel for the specified service target.
      * <p>
-     * The channel is configured with plaintext communication. The caller
-     * is responsible for managing the channel lifecycle, including shutdown.
+     * The channel is configured with plaintext communication and reused for
+     * subsequent requests to the same endpoint.
      *
      * @param service the service target containing the address to connect to
-     * @return a new ManagedChannel configured for the service
+     * @return a cached ManagedChannel configured for the service
      */
     public ManagedChannel createChannel(ServiceTarget service) {
-        if (CHANNEL_MAP.containsKey(service)) {
-            LOG.debugf("Reusing gRPC channel for service: %s", service.toAddress());
-            return CHANNEL_MAP.get(service);
-        }
-
-        LOG.debugf("Creating gRPC channel for service: %s", service.toAddress());
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
-                .usePlaintext()
-                .build();
-
-        CHANNEL_MAP.put(service, channel);
-        return channel;
+        String target = service.toAddress();
+        return CHANNEL_MAP.computeIfAbsent(target, endpoint -> {
+            LOG.debugf("Creating gRPC channel for service: %s", endpoint);
+            return ManagedChannelBuilder.forTarget(endpoint)
+                    .usePlaintext()
+                    .build();
+        });
     }
 
     /**
@@ -73,10 +61,9 @@ class GrpcChannelManager {
     }
 
     /**
-     * Closes a gRPC channel gracefully.
+     * No-op for request-level cleanup.
      * <p>
-     * This method attempts to shutdown the channel. If an error occurs during
-     * shutdown, it is logged but not propagated to avoid disrupting the caller.
+     * Channels are cached and reused, so they are not closed after each request.
      *
      * @param channel the channel to close, may be null
      */
@@ -84,9 +71,13 @@ class GrpcChannelManager {
         // NO-OP
     }
 
+    /**
+     * Shuts down and removes all cached channels.
+     */
     public void shutdown() {
-        for (Map.Entry<ServiceTarget, ManagedChannel> entry : CHANNEL_MAP.entrySet()) {
+        for (Map.Entry<String, ManagedChannel> entry : CHANNEL_MAP.entrySet()) {
             doCloseChannel(entry.getValue());
         }
+        CHANNEL_MAP.clear();
     }
 }
