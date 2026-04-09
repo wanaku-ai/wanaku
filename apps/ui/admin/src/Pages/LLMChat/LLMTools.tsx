@@ -4,25 +4,26 @@ import {
   InlineLoading,
   Stack
 } from "@carbon/react"
-import {Tool} from "./tools.ts"
-import {useEffect, useState} from "react"
-import {getTools} from "./mcp.ts"
+import React, {useEffect, useState} from "react"
+import {useTools} from "../../hooks/api/use-tools"
+import {ToolReference} from "../../models"
 
 
 interface LLMToolsProps {
-  selectedTools: Tool[]
-  onSelectionChange: (tools: Tool[]) => void
+  selectedTools: ToolReference[]
+  onSelectionChange: (tools: ToolReference[]) => void
 }
 
 export const LLMTools: React.FC<LLMToolsProps> = ({ selectedTools, onSelectionChange }) => {
   
-  const [tools, setTools] = useState<Tool[]>([])
-  const [isLoading, setLoading] = useState<boolean>(true)
+  const [tools, setTools] = useState<ToolReference[]>([])
+  const [isLoading, setLoading] = useState(true)
+  const { listTools } = useTools()
   
   useEffect(() => {
     (async () => {
       try {
-        const tools = await getTools()
+        const tools = await fetchTools()
         setTools(tools)
       } catch (error) {
         console.error("Failed to load tools", error)
@@ -31,7 +32,15 @@ export const LLMTools: React.FC<LLMToolsProps> = ({ selectedTools, onSelectionCh
         setLoading(false)
       }
     })()
-  }, [])
+  }, [listTools])
+  
+  async function fetchTools(): Promise<ToolReference[]> {
+    const response = await listTools()
+    if (response.status !== 200 || !Array.isArray(response.data.data)) {
+      throw new Error("Error while fetching tools: " + response.status)
+    }
+    return response.data.data
+  }
   
   function isAllSelected() {
     const selectedToolNames = selectedTools.map(tool => tool.name)
@@ -64,9 +73,9 @@ export const LLMTools: React.FC<LLMToolsProps> = ({ selectedTools, onSelectionCh
           />
           {tools.map((tool) => (
             <Checkbox
-              id={tool.name}
+              id={tool.name!}
               key={tool.name}
-              labelText={tool.name}
+              labelText={tool.name!}
               helperText={tool.description}
               checked={selectedTools.map(tool => tool.name).includes(tool.name)}
               onChange={(_, { checked }) => {

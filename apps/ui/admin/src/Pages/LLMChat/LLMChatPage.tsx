@@ -1,6 +1,5 @@
 import React, {useRef, useState} from "react"
 import "highlight.js/styles/atom-one-dark.css"
-import {Tool} from "./tools.ts"
 import {LLMSetup} from "./LLMSetup.tsx"
 import {LLMTools} from "./LLMTools.tsx"
 import {LLMChatArea} from "./LLMChatArea.tsx"
@@ -8,6 +7,7 @@ import {MessageResponse} from "./messages.ts"
 import {Column, Grid} from "@carbon/react"
 import {connectedMCPClient} from "./mcp.ts"
 import {LlmConfig, loadConfig} from "./config.ts"
+import {ToolReference} from "../../models"
 
 
 export const LLMChatPage: React.FC = () => {
@@ -33,7 +33,7 @@ export const LLMChatPage: React.FC = () => {
   
   async function runPrompt() {
 
-    function transformTools(tools: Tool[]) {
+    function transformTools(tools: ToolReference[]) {
       return tools.map((tool) => {
         return {
           type: "function",
