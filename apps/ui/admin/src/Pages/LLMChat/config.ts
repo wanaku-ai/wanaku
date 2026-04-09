@@ -1,4 +1,4 @@
-import {Tool} from "./tools.ts"
+import {ToolReference} from "../../models"
 
 
 export interface LlmConfig {
@@ -6,7 +6,7 @@ export interface LlmConfig {
   llmModel?: string
   apiKey?: string
   extraLlmParams?: string
-  tools: Tool[]
+  tools: ToolReference[]
 }
 
 export const baseUrlItems = [
