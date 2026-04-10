@@ -24,8 +24,6 @@ The release build can take up to 30 minutes to complete. This will:
 > [!IMPORTANT]
 > It is **absolutely mandatory** for the artifacts to be validated for the release to proceed.
 
-After the upload is complete, go to [Maven Central](https://central.sonatype.com/publishing/deployments) and publish the deployment.
-
 The publication to Maven Central should take another 30 minutes. 
 
 In the meantime, you can release the artifacts. This will build the zip files and tarballs with each 
@@ -150,6 +148,8 @@ mvn -Pdist release:perform
 ```
 
 After the upload is complete, go to [Maven Central](https://central.sonatype.com/publishing/deployments) and publish the deployment.
+
+> [NOTE] As of 0.1.0, this should be done automatically, but double check on Maven Central.
 
 ### Native Artifacts
 
