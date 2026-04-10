@@ -1,6 +1,6 @@
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3.5
+    image: quay.io/keycloak/keycloak:26.6.0
     command: [ "start-dev", "--import-realm" ]
     environment:
       KEYCLOAK_ADMIN: admin
