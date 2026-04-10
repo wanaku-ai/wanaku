@@ -47,11 +47,13 @@ public class ConfigureClaude extends ConfigureMcpClientCommand {
     protected ObjectNode createServerEntry(URI endpoint) {
         ObjectNode entry = newObjectNode();
         entry.put("command", "uvx");
-        if ("http".equalsIgnoreCase(transport == null ? null : transport.trim())) {
         if ("http".equalsIgnoreCase(transport.trim())) {
-                    .add("mcp-proxy")
-                    .add("--transport=streamablehttp")
-                    .add(endpoint.toString()));
+            entry.set(
+                    "args",
+                    newArrayNode()
+                            .add("mcp-proxy")
+                            .add("--transport=streamablehttp")
+                            .add(endpoint.toString()));
         } else {
             entry.set("args", newArrayNode().add("mcp-proxy").add(endpoint.toString()));
         }
