@@ -82,7 +82,7 @@ public abstract class ConfigureMcpClientCommand extends BaseCommand {
         switch (normalizedTransport) {
             case "sse":
                 path = "/mcp/sse/";
-                break;
+    protected final URI resolveWanakuEndpoint() {
             case "http":
                 path = "/mcp";
                 break;
