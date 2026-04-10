@@ -8,8 +8,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Set;
-
 import ai.wanaku.core.util.RuntimeInfo;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +45,9 @@ class ExecCommandPolicyTest {
     void rejectsRelativeAllowlistEntries() throws Exception {
         Path scriptPath = createScript(tempDir, "policy-relative");
 
-        assertThrows(SecurityException.class, () -> new ExecCommandPolicy(List.of(scriptPath.getFileName().toString())));
+        assertThrows(
+                SecurityException.class,
+                () -> new ExecCommandPolicy(List.of(scriptPath.getFileName().toString())));
     }
 
     @Test

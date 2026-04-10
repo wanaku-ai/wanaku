@@ -13,7 +13,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>integration</module>
         <module>mcp-servers</module>
     </modules>
 

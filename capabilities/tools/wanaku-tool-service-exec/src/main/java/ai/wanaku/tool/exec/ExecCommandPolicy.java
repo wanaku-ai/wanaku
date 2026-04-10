@@ -2,8 +2,6 @@ package ai.wanaku.tool.exec;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 @Singleton
 final class ExecCommandPolicy {
@@ -22,7 +22,7 @@ final class ExecCommandPolicy {
     @Inject
     ExecCommandPolicy(
             @ConfigProperty(name = "wanaku.service.exec.allowed-executables", defaultValue = "")
-            String allowedExecutables) {
+                    String allowedExecutables) {
         this(parseAllowedExecutables(allowedExecutables));
     }
 

@@ -8,7 +8,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Set;
-
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
@@ -30,12 +29,11 @@ class ExecClientSecurityTest {
         Path allowlistedExecutable = createScript(tempDir, "allowed");
 
         RecordingExecutor executor = new RecordingExecutor();
-        ExecClient client = new ExecClient(
-                new ExecCommandPolicy(List.of(allowlistedExecutable.toString())), executor);
+        ExecClient client = new ExecClient(new ExecCommandPolicy(List.of(allowlistedExecutable.toString())), executor);
 
-        ToolInvokeRequest request =
-                ToolInvokeRequest.newBuilder().setUri(createScript(tempDir, "denied").toString() + " --version")
-                        .build();
+        ToolInvokeRequest request = ToolInvokeRequest.newBuilder()
+                .setUri(createScript(tempDir, "denied").toString() + " --version")
+                .build();
         ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
         assertThrows(SecurityException.class, () -> client.exchange(request, configResource));
@@ -47,16 +45,17 @@ class ExecClientSecurityTest {
         Path allowlistedExecutable = createScript(tempDir, "allowed");
 
         RecordingExecutor executor = new RecordingExecutor();
-        ExecClient client = new ExecClient(
-                new ExecCommandPolicy(List.of(allowlistedExecutable.toString())), executor);
+        ExecClient client = new ExecClient(new ExecCommandPolicy(List.of(allowlistedExecutable.toString())), executor);
 
-        ToolInvokeRequest request =
-                ToolInvokeRequest.newBuilder().setUri(allowlistedExecutable.toString() + " --version").build();
+        ToolInvokeRequest request = ToolInvokeRequest.newBuilder()
+                .setUri(allowlistedExecutable.toString() + " --version")
+                .build();
         ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
         client.exchange(request, configResource);
 
-        assertArrayEquals(new String[] {allowlistedExecutable.toAbsolutePath().normalize().toString(), "--version"},
+        assertArrayEquals(
+                new String[] {allowlistedExecutable.toAbsolutePath().normalize().toString(), "--version"},
                 executor.command);
     }
 

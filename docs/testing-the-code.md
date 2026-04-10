@@ -1,6 +1,6 @@
 # Wanaku Assertions Library
 
-This module provides a domain-specific assertions helper designed to keep tests concise and to surface clear,
+Wanaku provides a domain-specific assertions helper designed to keep tests concise and to surface clear,
 actionable failure messages.
 
 **Location**
