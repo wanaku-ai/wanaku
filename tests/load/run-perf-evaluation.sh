@@ -11,7 +11,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-WANAKU_VERSION="0.1.0-SNAPSHOT"
+WANAKU_VERSION="0.1.0"
 CI_BASE="http://integration-ci.usersys.redhat.com:8080/view/Wanaku/job/wanaku-automated-builds/job"
 BRANCH="${BASELINE_BRANCH:-main}"
 EVAL_DIR="${EVAL_DIR:-$HOME/perf-evaluation-$(date +%Y%m%d-%H%M%S)}"
