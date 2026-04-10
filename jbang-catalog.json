@@ -4,7 +4,7 @@
     "wanaku": {
       "script-ref": "apps/wanaku-jbang/src/main/java/ai/wanaku/jbang/WanakuJBang.java",
       "dependencies": [
-        "ai.wanaku:cli:${wanaku.version:0.0.9}"
+        "ai.wanaku:cli:${wanaku.version:0.1.0}"
       ],
       "description": "Run Wanaku easily with JBang"
     }
