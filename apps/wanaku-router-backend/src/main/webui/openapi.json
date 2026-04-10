@@ -2620,7 +2620,7 @@
   },
   "info" : {
     "title" : "wanaku-router-backend API",
-    "version" : "0.1.0-SNAPSHOT"
+    "version" : "0.1.0"
   },
   "servers" : [ {
     "url" : "http://localhost:8080",
