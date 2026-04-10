@@ -5,7 +5,7 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>apps</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>wanaku-operator</artifactId>
