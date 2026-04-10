@@ -76,13 +76,13 @@ public abstract class ConfigureMcpClientCommand extends BaseCommand {
         }
     }
 
-    protected URI resolveWanakuEndpoint() {
+    protected final URI resolveWanakuEndpoint() {
         String normalizedTransport = transport == null ? "" : transport.trim().toLowerCase();
         String path;
         switch (normalizedTransport) {
             case "sse":
                 path = "/mcp/sse/";
-    protected final URI resolveWanakuEndpoint() {
+                break;
             case "http":
                 path = "/mcp";
                 break;
