@@ -170,7 +170,10 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
         String address = forwardReference.getAddress();
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
-        try (ForwardClient forwardClient = ForwardClient.newClient(address, mcpBridge.createSamplingHandler(address))) {
+        try (ForwardClient forwardClient = ForwardClient.newClient(
+                address,
+                mcpBridge.createSamplingHandler(address),
+                mcpBridge.createElicitationHandler(address))) {
             List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
             for (ResourceReference reference : resourceReferences) {
                 LOG.debugf("Exposing remote resource %s", reference.getName());

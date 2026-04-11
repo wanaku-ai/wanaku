@@ -10,6 +10,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.core.mcp.client.McpElicitationHandler;
 import ai.wanaku.core.mcp.client.McpSamplingHandler;
 
 /**
@@ -31,6 +32,19 @@ public interface McpBridge {
             ForwardClient forwardClient, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
 
     default McpSamplingHandler createSamplingHandler(String address) {
+        return null;
+    }
+
+    /**
+     * Creates an {@link McpElicitationHandler} bound to the given remote server address.
+     * <p>
+     * Implementations override this to delegate {@code elicitation/create} requests from
+     * remote MCP servers to the local client-side {@code Elicitation} infrastructure.
+     *
+     * @param address the remote MCP server address
+     * @return the handler, or {@code null} if elicitation is not supported
+     */
+    default McpElicitationHandler createElicitationHandler(String address) {
         return null;
     }
 }
