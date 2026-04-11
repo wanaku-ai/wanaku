@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NonNull;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -14,7 +15,6 @@ import dev.langchain4j.mcp.client.McpRoot;
 import dev.langchain4j.mcp.client.transport.McpOperationHandler;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,7 +124,11 @@ class ElicitationMcpTransportTest {
                 (Supplier) roots,
                 delegate,
                 (Consumer) logMessageConsumer,
-                onToolListUpdate);
+                onToolListUpdate,
+                () -> {},
+                () -> {},
+                (str) -> {},
+                null);
         return originalHandler;
     }
 

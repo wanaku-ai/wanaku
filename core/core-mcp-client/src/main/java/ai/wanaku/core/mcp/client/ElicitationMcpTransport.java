@@ -9,10 +9,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dev.langchain4j.mcp.client.protocol.McpClientMessage;
-import dev.langchain4j.mcp.client.protocol.McpInitializeRequest;
 import dev.langchain4j.mcp.client.transport.McpOperationHandler;
 import dev.langchain4j.mcp.client.transport.McpTransport;
+import dev.langchain4j.mcp.protocol.McpClientMessage;
+import dev.langchain4j.mcp.protocol.McpInitializeRequest;
 
 /**
  * A decorating {@link McpTransport} that intercepts {@code elicitation/create} server-to-client
@@ -35,8 +35,7 @@ public class ElicitationMcpTransport implements McpTransport {
         // Since langchain4j-mcp doesn't support elicitation yet, we use a Mix-In to inject
         // the capability into the initialization request serialized by the client.
         try {
-            Class<?> capabilitiesClass =
-                    Class.forName("dev.langchain4j.mcp.client.protocol.McpInitializeParams$Capabilities");
+            Class<?> capabilitiesClass = Class.forName("dev.langchain4j.mcp.protocol.McpInitializeParams$Capabilities");
             registerMixIn(capabilitiesClass);
         } catch (Exception e) {
             // Log or ignore if classes are not found
@@ -56,8 +55,7 @@ public class ElicitationMcpTransport implements McpTransport {
                 Class<?> clazz = Class.forName(className);
                 Field field = clazz.getDeclaredField("OBJECT_MAPPER");
                 field.setAccessible(true);
-                ObjectMapper mapper =
-                        (ObjectMapper) field.get(null);
+                ObjectMapper mapper = (ObjectMapper) field.get(null);
                 mapper.addMixIn(capabilitiesClass, CapabilitiesMixIn.class);
             } catch (ClassNotFoundException | NoSuchFieldException e) {
                 // Ignore if specific transport is not on the classpath
@@ -102,12 +100,22 @@ public class ElicitationMcpTransport implements McpTransport {
         Supplier<?> roots = getFieldValue(original, "roots");
         Consumer<?> logMessageConsumer = getFieldValue(original, "logMessageConsumer");
         Runnable onToolListUpdate = getFieldValue(original, "onToolListUpdate");
+        Runnable onResourceListUpdate = getFieldValue(original, "onResourceListUpdate");
+        Runnable onPromptListUpdate = getFieldValue(original, "onPromptListUpdate");
+        Consumer<String> onResourceUpdate = getFieldValue(original, "onResourceUpdate");
+        dev.langchain4j.mcp.client.progress.McpProgressHandler progressHandler =
+                getFieldValue(original, "progressHandler");
 
-        // Note: McpOperationHandler constructor signature:
-        // (Map pendingOperations, Supplier roots, McpTransport transport, Consumer logMessageConsumer, Runnable
-        // onToolListUpdate)
         return new McpOperationHandler(
-                pendingOperations, (Supplier) roots, this, (Consumer) logMessageConsumer, onToolListUpdate) {
+                pendingOperations,
+                (Supplier) roots,
+                this,
+                (Consumer) logMessageConsumer,
+                onToolListUpdate,
+                onResourceListUpdate,
+                onPromptListUpdate,
+                onResourceUpdate,
+                progressHandler) {
             @Override
             public void handle(JsonNode node) {
                 if (node.has("method")
@@ -163,6 +171,16 @@ public class ElicitationMcpTransport implements McpTransport {
     }
 
     @Override
+    public CompletableFuture<JsonNode> executeOperationWithResponse(dev.langchain4j.mcp.client.McpCallContext context) {
+        return delegate.executeOperationWithResponse(context);
+    }
+
+    @Override
+    public void executeOperationWithoutResponse(dev.langchain4j.mcp.client.McpCallContext context) {
+        delegate.executeOperationWithoutResponse(context);
+    }
+
+    @Override
     public void checkHealth() {
         delegate.checkHealth();
     }
@@ -186,7 +204,7 @@ public class ElicitationMcpTransport implements McpTransport {
         private final JsonNode result;
 
         public ElicitationResponseMessage(Long id, JsonNode result) {
-            super(id);
+            super(id, null);
             this.result = result;
         }
 
@@ -202,7 +220,7 @@ public class ElicitationMcpTransport implements McpTransport {
         private final JsonNode error;
 
         public ElicitationErrorMessage(Long id, JsonNode error) {
-            super(id);
+            super(id, null);
             this.error = error;
         }
 

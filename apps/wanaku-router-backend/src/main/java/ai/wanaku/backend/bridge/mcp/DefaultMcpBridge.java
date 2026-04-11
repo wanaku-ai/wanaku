@@ -1,16 +1,14 @@
 package ai.wanaku.backend.bridge.mcp;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import java.util.Set;
-import java.util.Map;
-import java.util.List;
-import java.util.HashSet;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -42,7 +40,9 @@ import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.mcp.client.McpElicitationHandler;
 import ai.wanaku.core.mcp.client.McpSamplingHandler;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpReadResourceResult;
@@ -263,8 +263,7 @@ public class DefaultMcpBridge implements McpBridge {
         return null;
     }
 
-    private CompletableFuture<JsonNode> handleElicitation(
-            String address, JsonNode params) {
+    private CompletableFuture<JsonNode> handleElicitation(String address, JsonNode params) {
         Elicitation e = activeElicitations.get(address);
         if (e == null) {
             e = defaultElicitation();

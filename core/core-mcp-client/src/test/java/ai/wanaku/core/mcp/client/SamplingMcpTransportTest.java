@@ -44,7 +44,11 @@ class SamplingMcpTransportTest {
                     (Supplier) roots,
                     delegate,
                     (Consumer) logMessageConsumer,
-                    onToolListUpdate);
+                    onToolListUpdate,
+                    () -> {},
+                    () -> {},
+                    (str) -> {},
+                    null);
 
             // When
             transport.start(originalHandler);
