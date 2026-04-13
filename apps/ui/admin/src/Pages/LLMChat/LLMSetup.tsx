@@ -1,6 +1,5 @@
 import React, {useState} from "react"
 import {
-  ComboBox,
   Form,
   PasswordInput, Stack,
   TextArea,
@@ -8,12 +7,12 @@ import {
   Toggle
 } from "@carbon/react"
 import {
-  baseUrlItems,
   isConfigStoredInLocalStorage,
   LLM_CONFIG,
   LlmConfig,
   STORE_IN_LOCAL_STORAGE
 } from "./config.ts"
+import {BaseUrlSelect} from "./BaseUrlSelect"
 
 
 interface LLMSetupProps {
@@ -51,14 +50,11 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
           }}
           id="enabledLocalStorage"
         />
-        <ComboBox
+        <BaseUrlSelect
           id="base-url"
-          titleText="LLM API Base URL"
-          items={baseUrlItems}
-          selectedItem={config.baseUrl}
-          allowCustomValue
-          onChange={(event) => {
-            const baseUrl = event.selectedItem
+          labelText="LLM API Base URL"
+          value={config.baseUrl || ""}
+          onChange={(baseUrl: string) => {
             applyConfigChange({ ...config, baseUrl })
           }}
         />

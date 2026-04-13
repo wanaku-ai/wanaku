@@ -9,17 +9,9 @@ export interface LlmConfig {
   tools: ToolReference[]
 }
 
-export const baseUrlItems = [
-  "http://localhost:11434",
-  "https://api.openai.com",
-  "https://api.mistral.ai",
-  "https://generativelanguage.googleapis.com/v1beta/openai/",
-  "https://api.anthropic.com"
-]
-
 export function defaultLlmConfig(): LlmConfig {
   return {
-    baseUrl: baseUrlItems[2],
+    baseUrl: "https://api.mistral.ai",
     llmModel: "mistral-small-latest",
     extraLlmParams: '{"max_tokens": 400, "temperature": 0.7, "tool_choice": "auto"}',
     tools: []
