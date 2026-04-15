@@ -19,7 +19,7 @@ import dev.langchain4j.mcp.client.McpClient;
  * @param address the remote MCP server address (e.g., "http://localhost:8080" or "stdio://path/to/server")
  * @param client  the MCP client used to communicate with the server
  */
-public record ForwardClient(String address, McpClient client) {
+public record ForwardClient(String address, McpClient client) implements AutoCloseable {
 
     /**
      * Creates a new ForwardClient with a fresh MCP client connection.
@@ -34,4 +34,10 @@ public record ForwardClient(String address, McpClient client) {
     public static ForwardClient newClient(String address) {
         return new ForwardClient(address, ClientUtil.createClient(address));
     }
+
+    @Override
+    public void close() throws Exception {
+        client.close();
+    }
+
 }

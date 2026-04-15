@@ -169,10 +169,9 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
         String address = forwardReference.getAddress();
-        ForwardClient forwardClient = ForwardClient.newClient(address);
 
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
-        try {
+        try (var forwardClient = ForwardClient.newClient(address)) {
             List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
             for (ResourceReference reference : resourceReferences) {
                 LOG.debugf("Exposing remote resource %s", reference.getName());
@@ -222,13 +221,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             }
             registeredRemoteToolsByForward.remove(nameNamespacePair);
 
-            try {
-                forwardClient.client().close();
-            } catch (Exception ignored) {
-                LOG.debug("Failed to close forward client after registration error", ignored);
-            }
-
-            throw e;
+            throw new WanakuException(e);
         }
     }
 
