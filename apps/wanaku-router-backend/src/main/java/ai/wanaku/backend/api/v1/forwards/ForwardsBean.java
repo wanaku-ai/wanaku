@@ -210,19 +210,31 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
             registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
             forwardRegistry.link(nameNamespacePair, forwardClient);
+        } catch (WanakuException e) {
+            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
+
+            throw e;
         } catch (Exception e) {
-            // Best-effort cleanup to avoid leaving partially-registered tools around
-            for (RemoteToolReference toolReference : locallyRegisteredTools) {
-                try {
-                    toolManager.removeTool(toolReference.getName());
-                } catch (Exception ignored) {
-                    LOG.warnf("Failed to remove forward tool %s after registration error", toolReference.getName());
-                }
-            }
-            registeredRemoteToolsByForward.remove(nameNamespacePair);
+            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
 
             throw new WanakuException(e);
         }
+    }
+
+    /*
+     * Best-effort cleanup to avoid leaving partially-registered tools around
+     */
+    private void cleanupPartiallyRegistered(
+            List<RemoteToolReference> locallyRegisteredTools, NameNamespacePair nameNamespacePair) {
+        // Best-effort cleanup to avoid leaving partially-registered tools around
+        for (RemoteToolReference toolReference : locallyRegisteredTools) {
+            try {
+                toolManager.removeTool(toolReference.getName());
+            } catch (Exception ignored) {
+                LOG.warnf("Failed to remove forward tool %s after registration error", toolReference.getName());
+            }
+        }
+        registeredRemoteToolsByForward.remove(nameNamespacePair);
     }
 
     public List<ResourceReference> listAllResources() {
