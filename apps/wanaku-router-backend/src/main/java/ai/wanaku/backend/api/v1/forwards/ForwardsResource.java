@@ -82,9 +82,13 @@ public class ForwardsResource {
     @Path("/{name}/refreshes")
     @POST
     public Response refresh(@PathParam("name") String name) throws WanakuException {
-        ForwardReference reference = new ForwardReference();
-        reference.setName(name);
-        forwardsBean.refresh(reference);
-        return Response.ok().build();
+        try {
+            ForwardReference reference = new ForwardReference();
+            reference.setName(name);
+            forwardsBean.refresh(reference);
+            return Response.ok().build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

@@ -158,7 +158,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
     }
 
-    private void registerForward(ForwardReference forwardReference) {
+    private void registerForward(ForwardReference forwardReference) throws Exception {
         Namespace ns = null;
 
         if (!StringHelper.isEmpty(forwardReference.getNamespace())) {
@@ -221,7 +221,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             }
             registeredRemoteToolsByForward.remove(nameNamespacePair);
 
-            throw new WanakuException(e);
+            throw e;
         }
     }
 
@@ -292,7 +292,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         forwardReferenceRepository.update(forwardReference.getId(), forwardReference);
     }
 
-    public void refresh(ForwardReference forwardReferenceHint) {
+    public void refresh(ForwardReference forwardReferenceHint) throws Exception {
         List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReferenceHint.getName());
         if (references.isEmpty()) {
             throw new WanakuException("Forward reference not found: " + forwardReferenceHint.getName());
