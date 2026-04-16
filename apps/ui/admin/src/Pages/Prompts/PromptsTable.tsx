@@ -14,7 +14,7 @@ import {
 } from "@carbon/react";
 import {FunctionComponent} from "react";
 import {PromptReference} from "../../models";
-import {getNamespacePathById} from "../../hooks/api/use-namespaces";
+import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 
 interface PromptsListProps {
   fetchedData: PromptReference[];
@@ -55,7 +55,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
       messages: formatMessages(prompt.messages),
       arguments: formatArguments(prompt.arguments),
       toolReferences: prompt.toolReferences?.join(", ") || "None",
-      namespace: getNamespacePathById(prompt.namespace) || "default",
+      namespace: getNamespacePathById(prompt.namespace),
     }));
   }
 

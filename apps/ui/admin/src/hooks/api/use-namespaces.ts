@@ -89,16 +89,11 @@ export const clearNamespacesCache = () => {
 
 export const getNamespacePathById = (id?: string): string | undefined => {
   if (!id) {
-    return undefined;
+    return "default"
   }
-
   if (namespacesCache) {
-    const data = namespacesCache.data.data.data as Namespace[];
-    // Look up by name first (since ToolReference.namespace stores the name)
-    // If not found by name, fall back to lookup by id
-    const path = data.find(namespace => namespace.name === id || namespace.id === id)?.path;
-    return path;
+    const data = namespacesCache.data.data.data as Namespace[]
+    return data.find(namespace => namespace.id === id)?.path
   }
-
   return undefined;
 }
