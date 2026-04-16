@@ -1,5 +1,6 @@
 package ai.wanaku.backend.bridge;
 
+import io.quarkus.logging.Log;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.mcp.client.McpClient;
 
@@ -36,8 +37,11 @@ public record ForwardClient(String address, McpClient client) implements AutoClo
     }
 
     @Override
-    public void close() throws Exception {
-        client.close();
+    public void close() {
+        try {
+            client.close();
+        } catch (Exception e) {
+            Log.error("Failed to close ForwardClient: {}", e.getMessage(), e);
+        }
     }
-
 }
