@@ -17,7 +17,7 @@ import {
 import {Add, Edit, TrashCan} from "@carbon/icons-react";
 import React from "react";
 import {Param, ResourceReference} from "../../models";
-import {getNamespacePathById} from "../../hooks/api/use-namespaces";
+import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 
 interface ResourcesTableProps {
   resources: ResourceReference[];
@@ -72,7 +72,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
         <TableCell>{resource.type}</TableCell>
         <TableCell>{resource.mimeType}</TableCell>
         <TableCell>{resource.description}</TableCell>
-        <TableCell>{getNamespacePathById(resource.namespace) || "default"}</TableCell>
+        <TableCell>{getNamespacePathById(resource.namespace)}</TableCell>
         <TableCell>
           <Button
             kind="ghost"

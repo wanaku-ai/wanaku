@@ -13,7 +13,7 @@ import {
 } from "@carbon/react"
 import {Add, Edit, Renew, TrashCan} from "@carbon/icons-react"
 import {ForwardReference} from "../../models"
-import {getNamespacePathById} from "../../hooks/api/use-namespaces.ts"
+import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import React from "react"
 
 interface ForwardsTableProps {
