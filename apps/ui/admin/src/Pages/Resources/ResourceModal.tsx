@@ -1,11 +1,11 @@
-import {ComboBox, Modal, Select, SelectItem, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react";
-import React, {useEffect, useState} from "react";
-import {Namespace, Param, ResourceReference} from "../../models";
+import {ComboBox, Modal, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react";
+import React, { useState} from "react";
+import {Param, ResourceReference} from "../../models";
 import {commonMimeTypes, commonMimeTypesMapping} from "../../constants/mimeTypes.ts";
-import {listNamespaces} from "../../hooks/api/use-namespaces";
 import {useCapabilities} from "../../hooks/api/use-capabilities";
 import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
 import {ParametersTable} from "./ParametersTable.tsx";
+import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 
 interface ResourceModalProps {
   resource?: ResourceReference
@@ -23,22 +23,11 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
   const [location, setLocation] = useState(resource?.location || "");
   const [resourceType, setResourceType] = useState(resource?.type || "file");
   const [mimeType, setMimeType] = useState(resource?.mimeType || "");
-  const [fetchedData, setFetchedData] = useState<Namespace[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState(resource?.namespace || "");
+  const [selectedNamespace, setSelectedNamespace] = useState(resource?.namespace);
   const [params, setParams] = useState<Param[]>(resource?.params || []);
   const [configurationURI, setConfigurationURI] = useState(resource?.configurationURI || "")
   const [secretsURI, setSecretsURI] = useState(resource?.secretsURI || "")
   const { listManagementResources } = useCapabilities();
-  
-  useEffect(() => {
-    listNamespaces().then((result) => {
-      setFetchedData(result.data.data as Namespace[]);
-    });
-  }, [listNamespaces]);
-
-  const handleSelectionChange = (event) => {
-    setSelectedNamespace(event.target.value);
-  };
 
   const handleSubmit = () => {
     onSubmit({
@@ -144,22 +133,13 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                 }}
                 helperText="Content type of the resource (optional)"
             />
-            <Select
+            <NamespaceSelect
               id="namespace"
               labelText="Select a Namespace"
               helperText="Choose a Namespace from the list"
               value={selectedNamespace}
-              onChange={handleSelectionChange}
-            >
-              <SelectItem text="Choose an option" value="" />
-              {fetchedData.map((namespace) => (
-                <SelectItem
-                  id={namespace.id}
-                  text={namespace.path || "default"}
-                  value={namespace.id}
-                />
-              ))}
-            </Select>
+              onChange={namespace => setSelectedNamespace(namespace.id)}
+            />
           </TabPanel>
           <TabPanel>
             <ParametersTable

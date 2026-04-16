@@ -1,7 +1,7 @@
-import {Modal, Select, SelectItem, TextInput,} from "@carbon/react";
-import React, {useEffect, useState} from "react";
-import {ForwardReference, Namespace} from "../../models";
-import {listNamespaces} from "../../hooks/api/use-namespaces";
+import {Modal, TextInput,} from "@carbon/react";
+import React, {useState} from "react";
+import {ForwardReference} from "../../models";
+import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 
 interface ForwardModalProps {
   forward?: ForwardReference
@@ -16,25 +16,14 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
 }) => {
   const [name, setName] = useState(forward?.name || "")
   const [address, setAddress] = useState(forward?.address || "")
-  const [namespaces, setNamespaces] = useState<Namespace[]>([])
-  const [selectedNamespace, setSelectedNamespace] = useState(forward?.namespace|| "")
-
-  useEffect(() => {
-    listNamespaces().then((result) => {
-      setNamespaces(result.data.data as Namespace[]);
-    });
-  }, []);
-
-  const handleSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedNamespace(event.target.value);
-  };
+  const [selectedNamespace, setSelectedNamespace] = useState(forward?.namespace)
 
   const handleSubmit = () => {
     onSubmit({
       id: forward?.id,
       name,
       address,
-      namespace: selectedNamespace || undefined,
+      namespace: selectedNamespace,
     });
   };
 
@@ -64,22 +53,13 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
         onChange={(e) => setAddress(e.target.value)}
         required
       />
-      <Select
+      <NamespaceSelect
         id="namespace"
         labelText="Select a Namespace"
         helperText="Choose a Namespace from the list (optional)"
         value={selectedNamespace}
-        onChange={handleSelectionChange}
-      >
-        <SelectItem text="Choose an option" value="" />
-        {namespaces.map((namespace) => (
-          <SelectItem
-            key={namespace.id}
-            text={namespace.path || "default"}
-            value={namespace.id}
-          />
-        ))}
-      </Select>
+        onChange={namespace => setSelectedNamespace(namespace.id!)}
+      />
     </Modal>
   );
 };

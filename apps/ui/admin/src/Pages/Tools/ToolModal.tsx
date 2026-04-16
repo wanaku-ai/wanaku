@@ -1,10 +1,18 @@
-import {Modal, Select, SelectItem, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react";
-import React, {useEffect, useState} from "react";
-import {Namespace, ToolReference} from "../../models";
-import {listNamespaces} from "../../hooks/api/use-namespaces";
+import {
+  Modal,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  TextInput
+} from "@carbon/react";
+import React, {useState} from "react";
+import {ToolReference} from "../../models";
 import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
 import {useCapabilities} from "../../hooks/api/use-capabilities";
 import {formatInputSchema, parseInputSchema} from "./tools-utils.ts";
+import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 
 
 interface ToolModalProps {
@@ -23,21 +31,10 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   const [uri, setUri] = useState(tool?.uri || "")
   const [toolType, setToolType] = useState(tool?.type || "http")
   const [inputSchema, setInputSchema] = useState(formatInputSchema(tool?.inputSchema))
-  const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([])
-  const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace || "")
+  const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace)
   const [configurationURI, setConfigurationURI] = useState(tool?.configurationURI || "")
   const [secretsURI, setSecretsURI] = useState(tool?.secretsURI || "")
   const { listManagementTools } = useCapabilities()
-
-  useEffect(() => {
-    listNamespaces().then((result) => {
-      setFetchedNamespaceData(result.data.data as Namespace[])
-    })
-  }, [listNamespaces])
-
-  const handleSelectionChange = (event) => {
-    setSelectedNamespace(event.target.value)
-  }
 
   const handleSubmit = () => {
     try {
@@ -107,23 +104,13 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               value={inputSchema}
               onChange={(event) => setInputSchema(event.target.value)}
             />
-            <Select
+            <NamespaceSelect
               id="namespace"
               labelText="Select a Namespace"
               helperText="Choose a Namespace from the list"
               value={selectedNamespace}
-              onChange={handleSelectionChange}
-            >
-              <SelectItem text="Choose an option" value="" />
-              {fetchedNamespaceData.map((namespace: Namespace) => (
-                <SelectItem
-                  key={namespace.id}
-                  id={namespace.id}
-                  text={namespace.path || "default"}
-                  value={namespace.id}
-                />
-              ))}
-            </Select>
+              onChange={namespace => setSelectedNamespace(namespace.id)}
+            />
           </TabPanel>
           <TabPanel>
             <TextInput
