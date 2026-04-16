@@ -1,9 +1,9 @@
-import {Modal, Select, SelectItem, Stack, TextArea, TextInput, ToastNotification,} from "@carbon/react";
+import {Modal, Stack, TextArea, TextInput, ToastNotification,} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
-import {Namespace, PromptReference} from "../../models";
+import {PromptReference} from "../../models";
 import {PromptsTable} from "./PromptsTable";
-import {listNamespaces} from "../../hooks/api/use-namespaces";
+import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 
 export const PromptsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<PromptReference[]>([]);
@@ -118,18 +118,7 @@ const AddPromptModal: React.FC<AddPromptModalProps> = ({
   const [messagesJson, setMessagesJson] = useState("");
   const [argumentsJson, setArgumentsJson] = useState("");
   const [toolReferences, setToolReferences] = useState("");
-  const [fetchedNamespaceData, setFetchedNamespaceData] = useState<Namespace[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState('');
-
-  useEffect(() => {
-    listNamespaces().then((result) => {
-      setFetchedNamespaceData(result.data.data as Namespace[]);
-    });
-  }, [listNamespaces]);
-
-  const handleSelectionChange = (event) => {
-    setSelectedNamespace(event.target.value);
-  };
+  const [selectedNamespace, setSelectedNamespace] = useState("");
 
   const handleSubmit = () => {
     try {
@@ -201,23 +190,13 @@ Resource: {"role": "user", "content": {"type": "resource", "resource": {"locatio
           value={toolReferences}
           onChange={(e) => setToolReferences(e.target.value)}
         />
-        <Select
+        <NamespaceSelect
           id="namespace"
           labelText="Select a Namespace"
           helperText="Choose a Namespace from the list"
           value={selectedNamespace}
-          onChange={handleSelectionChange}
-        >
-          <SelectItem text="Choose an option" value="" />
-          {fetchedNamespaceData.map((namespace) => (
-            <SelectItem
-              key={namespace.id}
-              id={namespace.id}
-              text={namespace.path || "default"}
-              value={namespace.id}
-            />
-          ))}
-        </Select>
+          onChange={namespace => setSelectedNamespace(namespace.id!)}
+        />
       </Stack>
     </Modal>
   );
