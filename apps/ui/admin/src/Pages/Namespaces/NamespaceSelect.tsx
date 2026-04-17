@@ -2,6 +2,7 @@ import {Select, SelectItem} from "@carbon/react"
 import React, {useEffect, useState} from "react"
 import {Namespace} from "../../models"
 import {useNamespaces} from "../../hooks/api/use-namespaces"
+import {sortedNamespaces} from "./namespaces.ts";
 
 
 interface NamespaceSelectProps {
@@ -22,15 +23,16 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
     (async () => {
       const response = await listNamespaces()
       if (response.status == 200 && Array.isArray(response.data.data)) {
-        let selected = findDefaultNamespaceAmong(response.data.data)
+        const namespaces = sortedNamespaces(response.data.data)
+        let selected = findDefaultNamespaceAmong(namespaces)
         if (value) {
-          selected = findNamespaceAmong(value, response.data.data)
+          selected = findNamespaceAmong(value, namespaces)
         }
-        setNamespaces(response.data.data)
+        setNamespaces(namespaces)
         setSelectedNamespace(selected)
       }
     })()
-  }, [])
+  }, [listNamespaces])
   
   function findNamespace(id: string): Namespace | undefined {
     return findNamespaceAmong(id, namespaces)
