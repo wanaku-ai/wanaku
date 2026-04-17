@@ -5,6 +5,11 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +32,8 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
 
     private final AuthCredentialStore credentialStore;
     private final TokenRefresher tokenRefresher;
+
+    private volatile Boolean routerAuthEnabled;
 
     public AuthenticationInterceptor() {
         this.credentialStore = new AuthCredentialStore();
@@ -51,10 +58,45 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
             return;
         }
 
+        if (!isRouterAuthEnabled(requestContext.getUri())) {
+            LOG.debug("Router is running without authentication, skipping auth header");
+            return;
+        }
+
         String apiToken = getValidAccessToken();
         if (apiToken != null && !apiToken.trim().isEmpty()) {
             requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken);
         }
+    }
+
+    /**
+     * Checks whether the router requires authentication by probing the OIDC well-known endpoint.
+     * The result is cached after the first check.
+     */
+    private boolean isRouterAuthEnabled(URI requestUri) {
+        if (routerAuthEnabled != null) {
+            return routerAuthEnabled;
+        }
+
+        URI wellKnown = requestUri.resolve("/.well-known/oauth-authorization-server");
+        try (HttpClient client =
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build()) {
+            HttpRequest request = HttpRequest.newBuilder(wellKnown)
+                    .timeout(Duration.ofSeconds(5))
+                    .GET()
+                    .build();
+
+            HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+            routerAuthEnabled = response.statusCode() == 200;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            routerAuthEnabled = false;
+        } catch (Exception e) {
+            LOG.debug("Could not reach OIDC endpoint at {}: {}", wellKnown, e.getMessage());
+            routerAuthEnabled = false;
+        }
+
+        return routerAuthEnabled;
     }
 
     /**
