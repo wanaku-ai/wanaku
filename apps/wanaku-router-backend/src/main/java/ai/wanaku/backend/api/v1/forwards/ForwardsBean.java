@@ -159,10 +159,15 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     private void registerForward(ForwardReference forwardReference) {
-        Namespace ns = null;
+        Namespace ns;
 
-        if (!StringHelper.isEmpty(forwardReference.getNamespace())) {
-            ns = namespacesBean.alocateNamespace(forwardReference.getNamespace());
+        if (StringHelper.isEmpty(forwardReference.getNamespace())) {
+            ns = namespacesBean.getDefaultNamespace();
+        } else {
+            if (!namespacesBean.exists(forwardReference.getNamespace())) {
+                throw new WanakuException("Invalid namespace id: " + forwardReference.getNamespace());
+            }
+            ns = namespacesBean.getById(forwardReference.getNamespace());
         }
 
         final NameNamespacePair nameNamespacePair =
@@ -197,6 +202,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
                 RemoteToolReference localReference = ForwardToolHelper.copyRemoteToolReference(reference);
                 localReference.setName(localName);
+                localReference.setNamespace(forwardReference.getNamespace());
 
                 ToolsHelper.registerTool(
                         localReference,
