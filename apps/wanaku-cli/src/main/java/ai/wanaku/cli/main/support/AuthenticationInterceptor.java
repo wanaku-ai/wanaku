@@ -78,6 +78,10 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
             return routerAuthEnabled;
         }
 
+        if (requestUri == null) {
+            return true;
+        }
+
         URI wellKnown = requestUri.resolve("/.well-known/oauth-authorization-server");
         try (HttpClient client =
                 HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build()) {
