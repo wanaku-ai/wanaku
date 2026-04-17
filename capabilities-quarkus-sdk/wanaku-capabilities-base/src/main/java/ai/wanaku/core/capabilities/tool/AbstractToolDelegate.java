@@ -66,8 +66,8 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
      */
     @PostConstruct
     public void init() {
-        registrationManager =
-                ServicesHelper.newRegistrationManager(config, SERVICE_TYPE_TOOL_INVOKER, tokensInstance.get());
+        registrationManager = ServicesHelper.newRegistrationManager(
+                config, SERVICE_TYPE_TOOL_INVOKER, tokensInstance.isResolvable() ? tokensInstance.get() : null);
         initializeRegistrationManager(registrationManager);
     }
 
