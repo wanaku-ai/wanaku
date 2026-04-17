@@ -74,9 +74,14 @@ These services can be implemented in any language that supports gRPC for communi
 Security in Wanaku involves controlling access to the management APIs and web interface while ensuring that only authorized
 users can modify tools, resources, and configurations. Wanaku also ensures secure access to the MCP tools and resources. 
 
-Wanaku uses [Keycloak](https://keycloak.org) for authentication and authorization. As such, a Keycloak instance needs to be up
-and running for Wanaku to work. This section covers the basics of getting Keycloak ready for Wanaku for development and production 
-purposes.
+Wanaku uses [Keycloak](https://keycloak.org) for authentication and authorization. A Keycloak instance is required when running
+Wanaku with authentication enabled. This section covers the basics of getting Keycloak ready for Wanaku for development and
+production purposes.
+
+> [!NOTE]
+> Wanaku can also run **without authentication** by using the `noauth` Quarkus profile. This is useful for local development,
+> testing, or air-gapped environments where an identity provider is not available. See
+> [Running Without Authentication](#running-without-authentication) for details.
 
 ## Keycloak Setup for Wanaku
 
@@ -164,6 +169,52 @@ Finally, for security, you must regenerate the client secret for the `wanaku-ser
 
 ![Screenshot of Keycloak admin console showing the wanaku-service client credentials tab with the Regenerate secret button](imgs/keycloak-service.png)
 
+## Running Without Authentication
+
+Wanaku can run without authentication by activating the `noauth` Quarkus profile. This disables OIDC and permits access
+to all API endpoints, the admin UI, and MCP namespaces without requiring a Bearer token or a Keycloak instance.
+
+This is useful for:
+- **Local development and testing** — no need to set up Keycloak
+- **Air-gapped environments** — where an external identity provider is not available
+- **Quick prototyping** — get started with Wanaku immediately
+
+### Activating the No-Auth Profile
+
+**Using the CLI (default for local):**
+
+```shell
+wanaku start local
+```
+
+The `wanaku start local` command automatically uses the `noauth` profile, so no additional configuration is needed.
+
+**Using an environment variable:**
+
+```shell
+export QUARKUS_PROFILE=noauth
+java -jar quarkus-run.jar
+```
+
+**Using a system property:**
+
+```shell
+java -Dquarkus.profile=noauth -jar quarkus-run.jar
+```
+
+**Using Docker Compose:**
+
+A dedicated compose file is provided at `deploy/docker-compose/docker-compose-noauth.yml` that runs the router
+without Keycloak:
+
+```shell
+docker compose -f deploy/docker-compose/docker-compose-noauth.yml up
+```
+
+> [!WARNING]
+> The `noauth` profile disables all authentication. Do not use it in production environments where access control is
+> required.
+
 # Installing Wanaku
 
 To run Wanaku, you need to first download and install the router and the command line client.
@@ -222,25 +273,39 @@ There are three ways to run the router. They work similarly, with the distinctio
 capabilities by default — continue reading the documentation below for details.
 
 > [!IMPORTANT]
-> Before the router can be executed, it still needs to be configured for secure access and control of its resources. Make sure 
-> you read the section [Securing the Wanaku MCP Router](# Securing the Wanaku MCP Router) **before** running or deploying the router. 
+> For production deployments with authentication, the router needs to be configured for secure access and control of its
+> resources. Make sure you read the section [Securing the Wanaku MCP Router](#securing-the-wanaku-mcp-router) **before**
+> running or deploying the router. For local development or testing, you can
+> [run without authentication](#running-without-authentication).
 
 ### Installing and Running Wanaku Locally Using "Wanaku Start Local"
 
-You can use the Wanaku CLI to start a small/simplified local instance. To do so, you need to run and configure a local Keycloak 
-instance and then use the `wanaku start local` command to run Wanaku pointing to that instance. Make sure you follow the steps
-described in [Option 1: Local Setup with Podman](## Option 1: Local Setup with Podman) the [Keycloak Setup For Wanaku](#Keycloak Setup for Wanaku).
+You can use the Wanaku CLI to start a small/simplified local instance. After downloading the CLI, simply run
+`wanaku start local` and the CLI should download, deploy and start Wanaku with the main server, a file provider
+and an HTTP provider.
 
-After downloading the CLI, simply run `wanaku start local` and the CLI should download, deploy and start Wanaku with the main
-server, a file provider and an HTTP provider. You will need to pass the client secret configured 
-so that the capabilities can connect to the router. 
+```shell
+wanaku start local
+```
 
-```wanaku start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv```
+The local runner uses the `noauth` Quarkus profile by default, so **Keycloak is not required**. The router and all
+capability services will start without authentication.
 
 If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
 
 > [!NOTE]
-> You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details. 
+> You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details.
+
+#### Running with Authentication
+
+If you need authentication for your local instance, first set up Keycloak by following
+[Option 1: Local Setup with Podman](#option-1-local-setup-with-podman) in the
+[Keycloak Setup For Wanaku](#keycloak-setup-for-wanaku) section. Then pass the client secret so that the capabilities
+can authenticate with the router:
+
+```shell
+wanaku start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
+```
 
 ### Installing and Running Wanaku on OpenShift or Kubernetes Using the Wanaku Operator
 

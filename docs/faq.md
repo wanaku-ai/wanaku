@@ -58,21 +58,22 @@ Keycloak provides authentication and authorization for:
 **For development:**
 - Java 17 or later
 - Maven 3.x
-- Keycloak instance (can run via Podman/Docker)
+- Keycloak instance (optional — can run via Podman/Docker, or use the `noauth` profile)
 
 **For production deployment:**
 - OpenShift or Kubernetes cluster (optional but recommended)
-- Keycloak instance
+- Keycloak instance (recommended for production; optional with `noauth` profile)
 - Container runtime (Podman/Docker)
 
 ### Do I need to install Keycloak separately?
 
-Yes, Wanaku requires a Keycloak instance for authentication. You can:
+Keycloak is required only if you want to run Wanaku with authentication enabled. You can:
 - Run Keycloak locally using Podman/Docker (for development)
 - Deploy Keycloak to OpenShift/Kubernetes (for production)
 - Use an existing Keycloak instance
 
-See the [Usage Guide](usage.md#keycloak-setup-for-wanaku) for setup instructions.
+If you don't need authentication (e.g., for local development or testing), you can run Wanaku with the `noauth` profile
+and skip the Keycloak setup entirely. See [Running Without Authentication](usage.md#running-without-authentication).
 
 ### Can I run Wanaku without Kubernetes?
 

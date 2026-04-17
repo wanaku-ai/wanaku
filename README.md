@@ -16,7 +16,7 @@ South America.
 - **Unified Access** - Centralized routing and resource management for AI agents
 - **MCP-to-MCP Bridge** - Act as a gateway or proxy for other MCP servers
 - **Extensive Connectivity** - Leverage 300+ Apache Camel components for integration
-- **Secure by Default** - Built-in authentication and authorization via Keycloak
+- **Secure by Default** - Built-in authentication and authorization via Keycloak (optional — can run without auth)
 - **Kubernetes-Native** - First-class support for OpenShift and Kubernetes deployments
 - **Extensible Architecture** - Easy to add custom tools and resource providers
 - **Multi-Namespace Support** - Organize tools and resources across isolated namespaces

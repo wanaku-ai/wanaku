@@ -132,6 +132,9 @@ Configuration for the main Wanaku Router Backend (`wanaku-router-backend`), whic
 | `quarkus.http.auth.permission.*.paths`  | Defines path patterns for different security policies (`permit`, `authenticated`).       |
 | `quarkus.http.auth.permission.*.policy` | Assigns a security policy to the corresponding path pattern.                             |
 
+To run without authentication, activate the `noauth` Quarkus profile (e.g., `QUARKUS_PROFILE=noauth`). This disables
+OIDC and permits all paths. See the [Usage Guide](usage.md#running-without-authentication) for details.
+
 ### Health Check
 
 These `wanaku.router.health-check.*` properties control the periodic health probing of registered capabilities.
