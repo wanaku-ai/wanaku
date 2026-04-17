@@ -4,6 +4,7 @@ import {Namespace} from "../../models";
 import {NamespaceTable} from "./NamespacesTable";
 import {NamespaceModal} from "./NamespaceModal";
 import {useNamespaces} from "../../hooks/api/use-namespaces";
+import {sortedNamespaces} from "./namespaces"
 
 export const NamespacesPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<Namespace[]>([]);
@@ -19,7 +20,7 @@ export const NamespacesPage: React.FC = () => {
         setErrorMessage("Failed to fetch namespaces. Please try again later.");
         setNamespaces([]);
       } else {
-        setNamespaces(result.data.data);
+        setNamespaces(sortedNamespaces(result.data.data));
       }
       setIsLoading(false);
     });
