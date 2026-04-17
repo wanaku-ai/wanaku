@@ -1,0 +1,18 @@
+services:
+  wanaku-router:
+    image: quay.io/wanaku/wanaku-router-backend:latest
+    environment:
+      QUARKUS_PROFILE: noauth
+      QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED: "true"
+      QUARKUS_HTTP_HOST: 0.0.0.0
+    network_mode: host
+    volumes:
+      - wanaku-router:/home/jboss/.wanaku/router
+    healthcheck:
+      test: curl -f localhost:8080/api/v1/management/info/version || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  wanaku-router:

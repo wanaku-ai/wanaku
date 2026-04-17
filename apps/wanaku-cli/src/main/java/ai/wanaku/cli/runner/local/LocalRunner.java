@@ -72,7 +72,7 @@ public class LocalRunner {
         CountDownLatch countDownLatch = new CountDownLatch(activeServices);
         int grpcPort = config.initialGrpcPort();
 
-        startRouter(RuntimeConstants.WANAKU_ROUTER_BACKEND, executorService, countDownLatch);
+        startRouter(RuntimeConstants.WANAKU_ROUTER_BACKEND, executorService, countDownLatch, environment);
         LOG.infof("Waiting %d seconds for the Wanaku Router Backend to start", config.routerStartWaitSecs());
         try {
             Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
@@ -96,12 +96,22 @@ public class LocalRunner {
         }
     }
 
-    private static void startRouter(String component, ExecutorService executorService, CountDownLatch countDownLatch) {
+    private static void startRouter(
+            String component,
+            ExecutorService executorService,
+            CountDownLatch countDownLatch,
+            LocalRunnerEnvironment environment) {
         File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component);
 
         executorService.submit(() -> {
             try {
-                ProcessRunner.run(componentDir, "java", "-jar", "quarkus-run.jar");
+                ProcessRunner.run(
+                        componentDir,
+                        environment.serviceOptions(),
+                        "java",
+                        "-Dquarkus.profile=noauth",
+                        "-jar",
+                        "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Router Service: %s", e.getMessage(), e);
             } finally {
