@@ -75,12 +75,12 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         final NameNamespacePair nameNamespacePair =
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
-        final ForwardClient forwardClient = forwardRegistry.getClient(nameNamespacePair);
-        if (forwardClient == null) {
+        String address = forwardRegistry.getClientAddress(nameNamespacePair);
+        if (address == null) {
             return false;
         }
 
-        try {
+        try (var forwardClient = ForwardClient.newClient(address)) {
             removeRemoteTools(nameNamespacePair, forwardClient);
             removeRemoteResources(forwardClient);
         } finally {
@@ -209,7 +209,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             }
 
             registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
-            forwardRegistry.link(nameNamespacePair, forwardClient);
+            forwardRegistry.link(nameNamespacePair, forwardClient.address());
         } catch (WanakuException e) {
             cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
 
@@ -239,8 +239,10 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
     public List<ResourceReference> listAllResources() {
         List<ResourceReference> references = new ArrayList<>();
-        for (ForwardClient forwardClient : forwardRegistry.clients().values()) {
-            references.addAll(mcpBridge.listResources(forwardClient));
+        for (String address : forwardRegistry.clients().values()) {
+            try (var client = ForwardClient.newClient(address)) {
+                references.addAll(mcpBridge.listResources(client));
+            }
         }
 
         return references;
