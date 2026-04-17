@@ -70,8 +70,8 @@ public abstract class AbstractResourceDelegate implements ResourceAcquirerDelega
      */
     @PostConstruct
     public void init() {
-        registrationManager =
-                ServicesHelper.newRegistrationManager(config, SERVICE_TYPE_RESOURCE_PROVIDER, tokensInstance.get());
+        registrationManager = ServicesHelper.newRegistrationManager(
+                config, SERVICE_TYPE_RESOURCE_PROVIDER, tokensInstance.isResolvable() ? tokensInstance.get() : null);
         initializeRegistrationManager(registrationManager);
     }
 

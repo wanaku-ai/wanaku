@@ -134,7 +134,13 @@ public class LocalRunner {
         executorService.submit(() -> {
             try {
                 ProcessRunner.run(
-                        componentDir, environment.serviceOptions(), "java", grpcPortOpt, "-jar", "quarkus-run.jar");
+                        componentDir,
+                        environment.serviceOptions(),
+                        "java",
+                        grpcPortOpt,
+                        "-Dquarkus.profile=noauth",
+                        "-jar",
+                        "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Service %s", component.getKey(), e);
             } finally {
