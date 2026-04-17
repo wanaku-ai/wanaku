@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.WanakuRouterConfig;
@@ -140,6 +141,17 @@ public class NamespacesBean {
 
     public Namespace getById(String id) {
         return namespaceRepository.findById(id);
+    }
+
+    public Namespace getDefaultNamespace() {
+        List<Namespace> defaultList = namespaceRepository.findByName("default");
+        if (defaultList.isEmpty()) {
+            throw new NoSuchElementException("No default namespace exists");
+        }
+        if (defaultList.size() > 1) {
+            throw new IllegalStateException("Multiple default namespaces exist");
+        }
+        return defaultList.getFirst();
     }
 
     public boolean update(String id, Namespace namespace) {
