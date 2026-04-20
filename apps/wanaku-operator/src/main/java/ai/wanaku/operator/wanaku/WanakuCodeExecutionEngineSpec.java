@@ -6,7 +6,7 @@ public class WanakuCodeExecutionEngineSpec {
     private WanakuTypes.AuthSpec auth;
     private WanakuTypes.SecretsSpec secrets;
     private String routerRef;
-    private String deploymentMode = "in-cluster";
+    private String deploymentMode = WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
     private String engineType = "camel";
     private String languageName;
     private String image;
@@ -188,7 +188,7 @@ public class WanakuCodeExecutionEngineSpec {
     }
 
     public static class DependencyCacheSpec {
-        private String strategy = "inmemory";
+        private String strategy = WanakuTypes.CACHE_STRATEGY_IN_MEMORY;
         private Boolean enabled = true;
         private String cacheName;
         private String templateNamespace;
