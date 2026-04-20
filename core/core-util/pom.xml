@@ -75,6 +75,12 @@
             <artifactId>testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-model-core</artifactId>
+            <version>${fabric8.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

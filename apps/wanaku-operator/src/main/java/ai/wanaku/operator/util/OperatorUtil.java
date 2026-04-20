@@ -2,6 +2,7 @@ package ai.wanaku.operator.util;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,9 +12,16 @@ import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.EndpointAddress;
+import io.fabric8.kubernetes.api.model.EndpointPort;
+import io.fabric8.kubernetes.api.model.EndpointSubset;
+import io.fabric8.kubernetes.api.model.Endpoints;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -25,6 +33,9 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCapabilityReconciler;
 import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
+import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngine;
+import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineReconciler;
+import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineSpec;
 import ai.wanaku.operator.wanaku.WanakuRouter;
 import ai.wanaku.operator.wanaku.WanakuRouterReconciler;
 import ai.wanaku.operator.wanaku.WanakuRouterSpec;
@@ -42,7 +53,12 @@ public final class OperatorUtil {
     public static final String WANAKU_CAPABILITY_DEPLOYMENT_FILE = "wanaku-capability-deployment.yaml";
     public static final String CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE =
             "camel-integration-capability-deployment.yaml";
+    public static final String CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_FILE =
+            "camel-code-execution-engine-deployment.yaml";
     public static final String CAPABILITY_INTERNAL_SERVICE_FILE = "wanaku-capability-service-internal.yaml";
+    public static final String CODE_EXECUTION_ENGINE_INTERNAL_SERVICE_FILE =
+            "camel-code-execution-engine-service-internal.yaml";
+    public static final String CODE_EXECUTION_ENGINE_ENDPOINTS_FILE = "camel-code-execution-engine-endpoints.yaml";
     public static final String SERVICES_VOLUME_PVC_FILE = "services-volume-pvc.yaml";
     public static final String ROUTER_VOLUME_CLAIM = "router-volume-claim";
 
@@ -566,6 +582,389 @@ public final class OperatorUtil {
         service.addOwnerReference(resource);
 
         return service;
+    }
+
+    // ---- Code execution engine methods ----
+
+    public static Deployment makeDesiredCamelCodeExecutionEngineDeployment(
+            WanakuCodeExecutionEngine resource, Context<WanakuCodeExecutionEngine> context) {
+        Deployment desiredDeployment = ReconcilerUtilsInternal.loadYaml(
+                Deployment.class,
+                WanakuCodeExecutionEngineReconciler.class,
+                CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_FILE);
+
+        return configureCodeExecutionDeployment(desiredDeployment, resource);
+    }
+
+    public static Service makeCodeExecutionEngineInternalService(WanakuCodeExecutionEngine resource) {
+        Service service = ReconcilerUtilsInternal.loadYaml(
+                Service.class, WanakuCodeExecutionEngineReconciler.class, CODE_EXECUTION_ENGINE_INTERNAL_SERVICE_FILE);
+
+        final String serviceName = resource.getMetadata().getName();
+        final String ns = resource.getMetadata().getNamespace();
+        final int port = resolveCodeExecutionPort(resource);
+
+        service.getMetadata().setName(serviceName);
+        service.getMetadata().setNamespace(ns);
+        service.getMetadata().getLabels().put("app", serviceName);
+        service.getMetadata().getLabels().put("component", "camel-code-execution-engine");
+        service.getMetadata().getLabels().put("serviceType", "code-execution-engine");
+        service.getMetadata()
+                .getLabels()
+                .put("serviceSubType", resource.getSpec().getEngineType());
+        service.getMetadata().getLabels().put("languageName", resource.getSpec().getLanguageName());
+        service.getSpec().getPorts().getFirst().setPort(port);
+        service.getSpec().getPorts().getFirst().setTargetPort(new IntOrString(port));
+
+        if (isRemoteDeploymentMode(resource.getSpec())) {
+            if (service.getSpec().getSelector() != null) {
+                service.getSpec().getSelector().clear();
+            }
+        } else {
+            service.getSpec()
+                    .setSelector(Map.of(
+                            "app", serviceName,
+                            "component", "camel-code-execution-engine",
+                            "serviceType", "code-execution-engine"));
+        }
+
+        service.addOwnerReference(resource);
+        return service;
+    }
+
+    public static Endpoints makeCodeExecutionEngineEndpoints(WanakuCodeExecutionEngine resource) {
+        Endpoints endpoints = ReconcilerUtilsInternal.loadYaml(
+                Endpoints.class, WanakuCodeExecutionEngineReconciler.class, CODE_EXECUTION_ENGINE_ENDPOINTS_FILE);
+
+        final String serviceName = resource.getMetadata().getName();
+        final String ns = resource.getMetadata().getNamespace();
+        final int port = resolveCodeExecutionPort(resource);
+
+        endpoints.getMetadata().setName(serviceName);
+        endpoints.getMetadata().setNamespace(ns);
+        endpoints.getMetadata().getLabels().put("app", serviceName);
+        endpoints.getMetadata().getLabels().put("component", "camel-code-execution-engine");
+        endpoints.getMetadata().getLabels().put("serviceType", "code-execution-engine");
+        endpoints
+                .getMetadata()
+                .getLabels()
+                .put("serviceSubType", resource.getSpec().getEngineType());
+        endpoints
+                .getMetadata()
+                .getLabels()
+                .put("languageName", resource.getSpec().getLanguageName());
+
+        final EndpointAddress endpointAddress = new EndpointAddress();
+        endpointAddress.setHostname(resource.getSpec().getRemote().getHost());
+
+        final EndpointPort endpointPort = new EndpointPort();
+        endpointPort.setPort(port);
+        endpointPort.setProtocol("TCP");
+        endpointPort.setName("grpc");
+
+        final EndpointSubset subset = new EndpointSubset();
+        subset.setAddresses(List.of(endpointAddress));
+        subset.setPorts(List.of(endpointPort));
+        endpoints.setSubsets(List.of(subset));
+
+        endpoints.addOwnerReference(resource);
+        return endpoints;
+    }
+
+    private static Deployment configureCodeExecutionDeployment(
+            Deployment desiredDeployment, WanakuCodeExecutionEngine resource) {
+        String serviceName = resource.getMetadata().getName();
+        String ns = resource.getMetadata().getNamespace();
+
+        desiredDeployment.getMetadata().setName(serviceName);
+        desiredDeployment.getMetadata().setNamespace(ns);
+        desiredDeployment.getMetadata().getLabels().put("app", serviceName);
+        desiredDeployment.getMetadata().getLabels().put("component", "camel-code-execution-engine");
+        desiredDeployment.getMetadata().getLabels().put("serviceType", "code-execution-engine");
+        desiredDeployment
+                .getMetadata()
+                .getLabels()
+                .put("serviceSubType", resource.getSpec().getEngineType());
+        desiredDeployment
+                .getMetadata()
+                .getLabels()
+                .put("languageName", resource.getSpec().getLanguageName());
+
+        final DeploymentSpec deploymentSpec = desiredDeployment.getSpec();
+        deploymentSpec.getSelector().getMatchLabels().put("app", serviceName);
+        deploymentSpec.getSelector().getMatchLabels().put("component", "camel-code-execution-engine");
+        deploymentSpec.getTemplate().getMetadata().getLabels().put("app", serviceName);
+        deploymentSpec.getTemplate().getMetadata().getLabels().put("component", "camel-code-execution-engine");
+        deploymentSpec.getTemplate().getMetadata().getLabels().put("serviceType", "code-execution-engine");
+        deploymentSpec
+                .getTemplate()
+                .getMetadata()
+                .getLabels()
+                .put("serviceSubType", resource.getSpec().getEngineType());
+        deploymentSpec
+                .getTemplate()
+                .getMetadata()
+                .getLabels()
+                .put("languageName", resource.getSpec().getLanguageName());
+
+        final Container container =
+                deploymentSpec.getTemplate().getSpec().getContainers().getFirst();
+        container.setName(serviceName);
+        container.setImage(resource.getSpec().getImage());
+        container.setImagePullPolicy(resolveImagePullPolicy(
+                resource.getSpec().getImagePullPolicy(), resource.getSpec().getImagePullPolicy()));
+        container.setEnv(computeCodeExecutionEngineEnvVars(resource));
+
+        final Integer port = resolveCodeExecutionPort(resource);
+        container.getPorts().getFirst().setContainerPort(port);
+        container.getPorts().getFirst().setName("grpc");
+
+        applyResourceRequirements(container, resource.getSpec().getResources());
+
+        desiredDeployment.addOwnerReference(resource);
+        return desiredDeployment;
+    }
+
+    private static void applyResourceRequirements(
+            Container container, WanakuCodeExecutionEngineSpec.ResourceSpec resourceSpec) {
+        if (resourceSpec == null) {
+            return;
+        }
+
+        ResourceRequirements requirements = new ResourceRequirements();
+        Map<String, Quantity> requests = new java.util.HashMap<>();
+        Map<String, Quantity> limits = new java.util.HashMap<>();
+
+        if (resourceSpec.getCpuRequest() != null
+                && !resourceSpec.getCpuRequest().isBlank()) {
+            requests.put("cpu", new Quantity(resourceSpec.getCpuRequest()));
+        }
+        if (resourceSpec.getMemoryRequest() != null
+                && !resourceSpec.getMemoryRequest().isBlank()) {
+            requests.put("memory", new Quantity(resourceSpec.getMemoryRequest()));
+        }
+        if (resourceSpec.getCpuLimit() != null && !resourceSpec.getCpuLimit().isBlank()) {
+            limits.put("cpu", new Quantity(resourceSpec.getCpuLimit()));
+        }
+        if (resourceSpec.getMemoryLimit() != null
+                && !resourceSpec.getMemoryLimit().isBlank()) {
+            limits.put("memory", new Quantity(resourceSpec.getMemoryLimit()));
+        }
+
+        if (!requests.isEmpty()) {
+            requirements.setRequests(requests);
+        }
+        if (!limits.isEmpty()) {
+            requirements.setLimits(limits);
+        }
+
+        if (!requests.isEmpty() || !limits.isEmpty()) {
+            container.setResources(requirements);
+        }
+    }
+
+    private static List<EnvVar> computeCodeExecutionEngineEnvVars(WanakuCodeExecutionEngine resource) {
+        List<EnvVar> envVars = new ArrayList<>();
+        final String serviceName = resource.getMetadata().getName();
+        final String registrationUri =
+                getInternalRegistrationUri(resource.getSpec().getRouterRef());
+        final String authServer = resource.getSpec().getAuth() != null
+                ? resource.getSpec().getAuth().getAuthServer()
+                : null;
+        final String oidcSecret = resource.getSpec().getSecrets() != null
+                ? resource.getSpec().getSecrets().getOidcCredentialsSecret()
+                : null;
+
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_SERVICE_NAME)
+                .withValue(serviceName)
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.WANAKU_SERVICE_REGISTRATION_URI)
+                .withValue(registrationUri)
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_MODE)
+                .withValue(normalizeDeploymentMode(resource.getSpec().getDeploymentMode()))
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_ENGINE_TYPE)
+                .withValue(resource.getSpec().getEngineType())
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_LANGUAGE_NAME)
+                .withValue(resource.getSpec().getLanguageName())
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_GRPC_PORT)
+                .withValue(String.valueOf(
+                        resource.getSpec().getPort() != null
+                                ? resource.getSpec().getPort()
+                                : 9190))
+                .build());
+
+        if (authServer != null && !authServer.isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT)
+                    .withValue(authServer + "/realms/wanaku")
+                    .build());
+        }
+        if (oidcSecret != null && !oidcSecret.isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_SECRET)
+                    .withValue(oidcSecret)
+                    .build());
+        }
+
+        addSecurityEnvVars(resource.getSpec().getSecurity(), envVars);
+        addCacheEnvVars(resource.getSpec().getDependencyCache(), envVars);
+        addRemoteEnvVars(resource.getSpec().getRemote(), envVars);
+        addCustomVars(resource.getSpec().getEnv(), envVars);
+        return envVars;
+    }
+
+    private static void addSecurityEnvVars(
+            WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec, List<EnvVar> envVars) {
+        if (securitySpec == null) {
+            return;
+        }
+
+        addCommaSeparatedEnvVar(
+                EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_COMPONENT_ALLOWLIST,
+                securitySpec.getComponentAllowlist(),
+                envVars);
+        addCommaSeparatedEnvVar(
+                EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_COMPONENT_BLOCKLIST,
+                securitySpec.getComponentBlocklist(),
+                envVars);
+        addCommaSeparatedEnvVar(
+                EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_ENDPOINT_ALLOWLIST,
+                securitySpec.getEndpointAllowlist(),
+                envVars);
+        addCommaSeparatedEnvVar(
+                EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_ENDPOINT_BLOCKLIST,
+                securitySpec.getEndpointBlocklist(),
+                envVars);
+        addCommaSeparatedEnvVar(
+                EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_ROUTE_ALLOWLIST,
+                securitySpec.getRouteAllowlist(),
+                envVars);
+        addCommaSeparatedEnvVar(
+                EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_ROUTE_BLOCKLIST,
+                securitySpec.getRouteBlocklist(),
+                envVars);
+    }
+
+    private static void addCacheEnvVars(
+            WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec, List<EnvVar> envVars) {
+        if (cacheSpec == null) {
+            return;
+        }
+
+        if (cacheSpec.getEnabled() != null) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_STRATEGY)
+                    .withValue(Boolean.TRUE.equals(cacheSpec.getEnabled()) ? cacheSpec.getStrategy() : "disabled")
+                    .build());
+        } else if (cacheSpec.getStrategy() != null) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_STRATEGY)
+                    .withValue(cacheSpec.getStrategy())
+                    .build());
+        }
+
+        if (cacheSpec.getCacheName() != null && !cacheSpec.getCacheName().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_NAME)
+                    .withValue(cacheSpec.getCacheName())
+                    .build());
+        }
+        if (cacheSpec.getTemplateNamespace() != null
+                && !cacheSpec.getTemplateNamespace().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_TEMPLATE_NAMESPACE)
+                    .withValue(cacheSpec.getTemplateNamespace())
+                    .build());
+        }
+        if (cacheSpec.getTemplatePrefix() != null
+                && !cacheSpec.getTemplatePrefix().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_TEMPLATE_PREFIX)
+                    .withValue(cacheSpec.getTemplatePrefix())
+                    .build());
+        }
+    }
+
+    private static void addRemoteEnvVars(WanakuCodeExecutionEngineSpec.RemoteSpec remoteSpec, List<EnvVar> envVars) {
+        if (remoteSpec == null) {
+            return;
+        }
+
+        if (remoteSpec.getHost() != null && !remoteSpec.getHost().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_REMOTE_HOST)
+                    .withValue(remoteSpec.getHost())
+                    .build());
+        }
+        if (remoteSpec.getPort() != null) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_REMOTE_PORT)
+                    .withValue(String.valueOf(remoteSpec.getPort()))
+                    .build());
+        }
+        if (remoteSpec.getScheme() != null && !remoteSpec.getScheme().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_REMOTE_SCHEME)
+                    .withValue(remoteSpec.getScheme())
+                    .build());
+        }
+        if (remoteSpec.getPath() != null && !remoteSpec.getPath().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_REMOTE_PATH)
+                    .withValue(remoteSpec.getPath())
+                    .build());
+        }
+    }
+
+    private static void addCommaSeparatedEnvVar(String name, List<String> values, List<EnvVar> envVars) {
+        if (values == null || values.isEmpty()) {
+            return;
+        }
+
+        envVars.add(new EnvVarBuilder()
+                .withName(name)
+                .withValue(String.join(",", values))
+                .build());
+    }
+
+    private static boolean isRemoteDeploymentMode(WanakuCodeExecutionEngineSpec spec) {
+        return "remote".equalsIgnoreCase(normalizeDeploymentMode(spec.getDeploymentMode()));
+    }
+
+    public static int resolveCodeExecutionPort(WanakuCodeExecutionEngine resource) {
+        if (isRemoteDeploymentMode(resource.getSpec())
+                && resource.getSpec().getRemote() != null
+                && resource.getSpec().getRemote().getPort() != null) {
+            return resource.getSpec().getRemote().getPort();
+        }
+
+        return resource.getSpec().getPort() != null ? resource.getSpec().getPort() : 9190;
+    }
+
+    private static String normalizeDeploymentMode(String deploymentMode) {
+        if (deploymentMode == null || deploymentMode.isBlank()) {
+            return "in-cluster";
+        }
+
+        String normalized = deploymentMode.trim().toLowerCase();
+        if ("remote".equals(normalized) || "in-cluster".equals(normalized) || "incluster".equals(normalized)) {
+            return "remote".equals(normalized) ? "remote" : "in-cluster";
+        }
+        return "in-cluster";
+    }
+
+    private static String getInternalRegistrationUri(String routerRef) {
+        return "http://internal-" + routerRef + ":8080/";
     }
 
     static String resolveAuthRealm(WanakuCapability resource) {
