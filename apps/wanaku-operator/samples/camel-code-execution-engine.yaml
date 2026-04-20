@@ -1,0 +1,33 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCodeExecutionEngine
+metadata:
+  name: camel-code-execution-engine
+spec:
+  routerRef: wanaku-dev
+  deploymentMode: in-cluster
+  engineType: camel
+  languageName: yaml
+  image: quay.io/wanaku/camel-code-execution-engine:latest
+  port: 9190
+  auth:
+    authServer: ""
+  secrets:
+    oidcCredentialsSecret: ""
+  security:
+    componentAllowlist:
+      - camel
+    endpointAllowlist:
+      - "direct:*"
+    routeAllowlist:
+      - "route:*"
+  dependencyCache:
+    strategy: infinispan
+    enabled: true
+    cacheName: camel-code-execution-templates
+    templateNamespace: wanaku
+    templatePrefix: camel-code-execution
+  resources:
+    cpuRequest: 100m
+    memoryRequest: 256Mi
+    cpuLimit: 500m
+    memoryLimit: 512Mi

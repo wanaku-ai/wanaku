@@ -1,0 +1,23 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCodeExecutionEngine
+metadata:
+  name: camel-code-execution-engine-remote
+spec:
+  routerRef: wanaku-dev
+  deploymentMode: remote
+  engineType: camel
+  languageName: yaml
+  remote:
+    host: camel-code-execution.example.com
+    port: 9443
+    scheme: https
+    path: /mcp
+  security:
+    componentAllowlist:
+      - camel
+    endpointAllowlist:
+      - "direct:*"
+    routeAllowlist:
+      - "route:*"
+  dependencyCache:
+    strategy: disabled
