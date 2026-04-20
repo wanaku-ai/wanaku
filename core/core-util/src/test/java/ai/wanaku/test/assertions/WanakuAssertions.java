@@ -3,10 +3,6 @@ package ai.wanaku.test.assertions;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.testcontainers.containers.GenericContainer;
-import io.fabric8.kubernetes.api.model.Condition;
-import io.fabric8.kubernetes.api.model.Endpoints;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Service;
 import io.restassured.response.Response;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
@@ -165,47 +161,6 @@ public final class WanakuAssertions {
                 .withFailMessage("Expected namespace '%s' to exist", namespaceName)
                 .extracting(Namespace::getName)
                 .contains(namespaceName);
-    }
-
-    public static void assertCondition(
-            Condition condition, String expectedType, String expectedStatus, Long expectedObservedGeneration) {
-        Assertions.assertThat(condition).isNotNull();
-        Assertions.assertThat(condition.getType()).isEqualTo(expectedType);
-        Assertions.assertThat(condition.getStatus()).isEqualTo(expectedStatus);
-        Assertions.assertThat(condition.getObservedGeneration()).isEqualTo(expectedObservedGeneration);
-    }
-
-    public static void assertServiceLabel(Service service, String labelKey, String expectedValue) {
-        Assertions.assertThat(service).isNotNull();
-        Assertions.assertThat(service.getMetadata().getLabels()).containsEntry(labelKey, expectedValue);
-    }
-
-    public static void assertMetadataLabel(HasMetadata resource, String labelKey, String expectedValue) {
-        Assertions.assertThat(resource).isNotNull();
-        Assertions.assertThat(resource.getMetadata().getLabels()).containsEntry(labelKey, expectedValue);
-    }
-
-    public static void assertServicePort(Service service, int expectedPort) {
-        Assertions.assertThat(service).isNotNull();
-        Assertions.assertThat(service.getSpec().getPorts()).isNotEmpty();
-        Assertions.assertThat(service.getSpec().getPorts().getFirst().getPort()).isEqualTo(expectedPort);
-    }
-
-    public static void assertEndpointTarget(Endpoints endpoints, String expectedHost, int expectedPort) {
-        Assertions.assertThat(endpoints).isNotNull();
-        Assertions.assertThat(endpoints.getSubsets()).isNotEmpty();
-        Assertions.assertThat(endpoints.getSubsets().getFirst().getAddresses()).isNotEmpty();
-        Assertions.assertThat(endpoints.getSubsets().getFirst().getPorts()).isNotEmpty();
-        Assertions.assertThat(endpoints
-                        .getSubsets()
-                        .getFirst()
-                        .getAddresses()
-                        .getFirst()
-                        .getHostname())
-                .isEqualTo(expectedHost);
-        Assertions.assertThat(
-                        endpoints.getSubsets().getFirst().getPorts().getFirst().getPort())
-                .isEqualTo(expectedPort);
     }
 
     // ========== Helper Methods ==========

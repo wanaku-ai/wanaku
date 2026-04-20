@@ -711,8 +711,8 @@ public final class OperatorUtil {
                 deploymentSpec.getTemplate().getSpec().getContainers().getFirst();
         container.setName(serviceName);
         container.setImage(resource.getSpec().getImage());
-        container.setImagePullPolicy(resolveImagePullPolicy(
-                resource.getSpec().getImagePullPolicy(), resource.getSpec().getImagePullPolicy()));
+        container.setImagePullPolicy(
+                resolveImagePullPolicy(null, resource.getSpec().getImagePullPolicy()));
         container.setEnv(computeCodeExecutionEngineEnvVars(resource));
 
         final Integer port = resolveCodeExecutionPort(resource);
