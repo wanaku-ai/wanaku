@@ -57,7 +57,7 @@
         <commons-pool2.version>2.13.1</commons-pool2.version>
         <jsonassert.version>1.5.3</jsonassert.version>
         <swagger-core.version>2.2.45</swagger-core.version>
-        <jline.version>3.30.6</jline.version>
+        <jline.version>4.0.12</jline.version>
         <swagger-parser.version>2.1.36</swagger-parser.version>
         <quarkus-infinispan-embedded.version>2.0.1</quarkus-infinispan-embedded.version>
         <!-- TEMPORARY: quarkus-infinispan-embedded wrongly set infinispan to 16.0.9
