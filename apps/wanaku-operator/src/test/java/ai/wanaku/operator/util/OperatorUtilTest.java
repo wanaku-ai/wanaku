@@ -7,11 +7,11 @@ import io.fabric8.kubernetes.api.model.Service;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngine;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineSpec;
 
-import static ai.wanaku.test.assertions.WanakuAssertions.assertCondition;
-import static ai.wanaku.test.assertions.WanakuAssertions.assertEndpointTarget;
-import static ai.wanaku.test.assertions.WanakuAssertions.assertMetadataLabel;
-import static ai.wanaku.test.assertions.WanakuAssertions.assertServiceLabel;
-import static ai.wanaku.test.assertions.WanakuAssertions.assertServicePort;
+import static ai.wanaku.operator.assertions.OperatorAssertions.assertCondition;
+import static ai.wanaku.operator.assertions.OperatorAssertions.assertEndpointTarget;
+import static ai.wanaku.operator.assertions.OperatorAssertions.assertMetadataLabel;
+import static ai.wanaku.operator.assertions.OperatorAssertions.assertServiceLabel;
+import static ai.wanaku.operator.assertions.OperatorAssertions.assertServicePort;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
