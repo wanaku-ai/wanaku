@@ -134,6 +134,20 @@ oc wait wanakucapabilities/wanaku-dev-capabilities --for=condition=Ready --timeo
 }
 log_info "Capabilities are ready"
 
+# --- Deploy Camel Code Execution Engine ---
+log_step "Deploying the Camel Code Execution Engine"
+oc apply -f "${REPO_ROOT}/apps/wanaku-operator/samples/camel-code-execution-engine.yaml" || {
+    log_error "Failed to apply camel-code-execution-engine.yaml"
+    exit 1
+}
+
+log_info "Waiting for Camel Code Execution Engine to become ready..."
+oc wait camelcodeexecutionengines/camel-code-execution-engine --for=condition=Ready --timeout=120s || {
+    log_error "Camel Code Execution Engine did not become ready within 120s"
+    exit 1
+}
+log_info "Camel Code Execution Engine is ready"
+
 log_step "Deployment completed successfully"
 
 ROUTER_HOST=$(oc get route wanaku-ci-dev -o jsonpath='{.spec.host}' 2>/dev/null) || true
