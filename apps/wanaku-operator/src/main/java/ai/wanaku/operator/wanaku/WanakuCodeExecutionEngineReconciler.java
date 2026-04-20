@@ -181,6 +181,7 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                     suffix);
         }
 
+        // For in-cluster, always use http since it's internal cluster communication
         return String.format(
                 Locale.ROOT,
                 "http://%s.%s.svc.cluster.local:%d",
@@ -236,8 +237,9 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
         }
 
         String strategy = cacheSpec.getStrategy().trim().toLowerCase(Locale.ROOT);
-        if (!List.of("inmemory", "infinispan", "disabled").contains(strategy)) {
-            throw new WanakuException("dependencyCache.strategy must be one of: inmemory, infinispan, disabled");
+        if (!WanakuTypes.VALID_CACHE_STRATEGIES.contains(strategy)) {
+            throw new WanakuException("dependencyCache.strategy must be one of: "
+                    + String.join(", ", WanakuTypes.VALID_CACHE_STRATEGIES));
         }
     }
 
@@ -261,6 +263,6 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
 
     private boolean isRemote(WanakuCodeExecutionEngine resource) {
         String deploymentMode = resource.getSpec().getDeploymentMode();
-        return deploymentMode != null && "remote".equalsIgnoreCase(deploymentMode.trim());
+        return deploymentMode != null && WanakuTypes.DEPLOYMENT_MODE_REMOTE.equalsIgnoreCase(deploymentMode.trim());
     }
 }
