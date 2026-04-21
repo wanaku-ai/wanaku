@@ -1,4 +1,4 @@
-import {Select, SelectItem} from "@carbon/react";
+import {Select, SelectItem, SelectSkeleton} from "@carbon/react";
 import React, {useEffect, useState} from "react";
 import {ServiceTarget} from "../../models";
 
@@ -13,29 +13,46 @@ export const TargetTypeSelect: React.FC<TargetTypeSelectProps> = ({
   onChange,
   apiCall
 }) => {
-  const [targetTypes, settargetTypes] = useState<ServiceTarget[]>([]);
+  
+  const [targetTypes, setTargetTypes] = useState<ServiceTarget[]>([])
+  const [isLoading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiCall().then((result) => {
-      settargetTypes(result.data.data as ServiceTarget[]);
-    });
+    (async () => {
+      try {
+        const result = await apiCall()
+        if (result.status === 200) {
+          const targetTypes: ServiceTarget[] = result.data.data
+          setTargetTypes(targetTypes)
+        } else {
+          console.error(`Error fetching target types: ${result.status}`)
+          setTargetTypes([])
+        }
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, []);
 
-  return (
-    <Select
-      id="target-type"
-      labelText="Type"
-      defaultValue="file"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {targetTypes.map((targetType) => (
-        <SelectItem
-          key={targetType.id}
-          value={targetType.serviceName}
-          text={targetType.serviceName || ""}
-        />
-      ))}
-    </Select>
-  );
+  if (isLoading) {
+    return <SelectSkeleton />
+  } else {
+    return (
+      <Select
+        id="target-type"
+        labelText="Type"
+        defaultValue="file"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {targetTypes.map((targetType) => (
+          <SelectItem
+            key={targetType.id}
+            value={targetType.serviceName}
+            text={targetType.serviceName || ""}
+          />
+        ))}
+      </Select>
+    )
+  }
 };
