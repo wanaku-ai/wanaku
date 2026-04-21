@@ -1,9 +1,10 @@
-import {Modal, Stack, TextArea, TextInput, ToastNotification,} from "@carbon/react";
+import {ToastNotification,} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {useTools} from "../../hooks/api/use-tools";
 import {ToolReference} from "../../models";
 import {ToolsTable} from "./ToolsTable";
 import {ToolModal} from "./ToolModal"
+import {ImportToolsetModal} from "./ImportToolsetModal"
 
 
 export const ToolsPage: React.FC = () => {
@@ -147,85 +148,11 @@ export const ToolsPage: React.FC = () => {
         )}
         {isImportModalOpen && (
           <ImportToolsetModal
-            onRequestClose={() => setIsImportModalOpen(false)}
             onSubmit={handleImportToolset}
+            onCancel={() => setIsImportModalOpen(false)}
           />
         )}
       </div>
     </div>
-  );
-};
-
-
-
-
-
-interface ImportToolsetModalProps {
-  onRequestClose: () => void;
-  onSubmit: (tools: ToolReference[]) => void;
-}
-
-export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({
-  onRequestClose,
-  onSubmit,
-}) => {
-  const [toolsetJson, setToolsetJson] = useState("");
-  const [toolsetUrl, setToolsetUrl] = useState("");
-
-  const handleFetchToolset = async () => {
-    if (toolsetUrl) {
-      try {
-        const response = await fetch(toolsetUrl);
-        if (!response.ok) {
-          throw new Error("Failed to fetch toolset from URL");
-        }
-        const tools = await response.json();
-        setToolsetJson(JSON.stringify(tools, null, 2));
-      } catch (error) {
-        console.error("Error fetching toolset from URL:", error);
-      }
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const tools = JSON.parse(toolsetJson);
-      onSubmit(tools);
-    } catch (error) {
-      console.error("Invalid JSON for toolset:", error);
-    }
-  };
-
-  return (
-    <Modal
-      open={true}
-      modalHeading="Import Toolset"
-      primaryButtonText="Import"
-      secondaryButtonText="Cancel"
-      onRequestClose={onRequestClose}
-      onRequestSubmit={handleSubmit}
-    >
-      <Stack gap={7}>
-        <TextInput
-          id="toolset-url"
-          labelText="Fetch from Toolset URL"
-          placeholder="Enter the URL of the toolset JSON"
-          value={toolsetUrl}
-          onChange={(e) => setToolsetUrl(e.target.value)}
-          onBlur={handleFetchToolset}
-        />
-        <TextArea
-          id="toolset-json"
-          labelText="Toolset JSON"
-          placeholder="Paste your JSON array here"
-          rows={10}
-          required
-          value={toolsetJson}
-          onChange={(e) => setToolsetJson(e.target.value)}
-          invalid={!toolsetJson}
-          invalidText="This field is required"
-        />
-      </Stack>
-    </Modal>
   );
 };
