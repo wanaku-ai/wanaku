@@ -118,7 +118,8 @@ export const NamespacesPage: React.FC = () => {
         />
         {isModalOpen && (
           <NamespaceModal
-            namespace={openedNamespace}
+            namespaces={namespaces}
+            openedNamespace={openedNamespace}
             onRequestClose={handleModalClose}
             onSubmit={handleModalSubmit}
           />
