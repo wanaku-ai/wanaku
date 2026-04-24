@@ -1,100 +1,67 @@
-import {ToastNotification} from "@carbon/react";
-import {ResourceModal} from "./ResourceModal.tsx";
-import {ResourcesTable} from "./ResourcesTable";
-import React, {useEffect, useState} from "react";
-import {ResourceReference} from "../../models";
-import {useResources} from "../../hooks/api/use-resources";
+import {ToastNotification} from "@carbon/react"
+import {ResourceModal} from "./ResourceModal"
+import {RefreshHandle, ResourcesTable} from "./ResourcesTable"
+import React, {useRef, useState} from "react"
+import {ResourceReference} from "../../models"
+import {useResources} from "../../hooks/api/use-resources"
+
 
 export const ResourcesPage: React.FC = () => {
-  const [fetchedData, setFetchedData] = useState<ResourceReference[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const [errorMessage, setErrorMessage] = useState<string>()
+  const [isModalOpen, setModalOpen] = useState(false)
   const [openedResource, setOpenedResource] = useState<ResourceReference>()
-  const { listResources, exposeResource, updateResource, removeResource } = useResources();
-
-  useEffect(() => {
-    listResources().then((result) => {
-      setFetchedData(result.data.data as ResourceReference[]);
-      setIsLoading(false);
-    });
-  }, [listResources]);
-
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
-
-  if (isLoading) return <div>Loading...</div>;
-
-  function reloadResources() {
-    listResources().then((result) => {
-      setFetchedData(result.data.data as ResourceReference[]);
-    });
-  }
-
-  function handleModalClose() {
-    setOpenedResource(undefined);
-    setIsModalOpen(false);
-  }
-
-  function handleModalSubmit(resource: ResourceReference) {
+  const { exposeResource, updateResource, removeResource } = useResources()
+  const resourceTableRef = useRef<RefreshHandle>({ refresh: () => {} })
+  
+  async function handleModalSubmit(resource: ResourceReference) {
     if (openedResource) {
-      handleUpdateResource(resource)
+      await handleUpdateResource(resource)
     } else {
-      handleAddResource(resource)
+      await handleAddResource(resource)
+    }
+  }
+  
+  function handleModalCancel() {
+    setOpenedResource(undefined)
+    setModalOpen(false)
+  }
+
+  async function handleAddResource(resource: ResourceReference) {
+    try {
+      await exposeResource(resource)
+    } catch (error) {
+      setErrorMessage(`Error adding resource: ${error}`)
+    } finally {
+      setModalOpen(false)
+      refreshResources()
     }
   }
 
-  const handleAddResource = async (newResource: ResourceReference) => {
+  async function handleUpdateResource(resource: ResourceReference) {
     try {
-      await exposeResource(newResource);
-      setErrorMessage(null);
-      reloadResources()
+      await updateResource(resource)
     } catch (error) {
-      console.error("Error adding resource:", error);
-      setErrorMessage("Error adding resource: The resource name must be unique");
+      setErrorMessage(`Error updating resource: ${error}`)
     } finally {
-      handleModalClose()
-    }
-  };
-
-  const handleUpdateResource = async (resource: ResourceReference) => {
-    try {
-      await updateResource(resource);
-      setErrorMessage(null);
-      reloadResources()
-    } catch (error) {
-      console.error("Error updating resource:", error);
-    } finally {
-      handleModalClose()
+      setOpenedResource(undefined)
+      setModalOpen(false)
+      refreshResources()
     }
   }
 
-  const onDelete = async (resourceName?: string) => {
+  async function handleDeleteResource(resourceName: string) {
     try {
-      if (!resourceName) return;
-      await removeResource(resourceName);
-      listResources().then((result) => {
-        setFetchedData(result.data.data as ResourceReference[]);
-      });
+      await removeResource(resourceName)
     } catch (error) {
-      console.error("Error deleting resource:", error);
-      setErrorMessage(`Failed to delete resource: ${resourceName}`);
+      setErrorMessage(`Error deleting resource: ${error}`)
+    } finally {
+      refreshResources()
     }
-  };
-
-  const handleAddClick = () => {
-    setIsModalOpen(true);
-  };
-
-  function handleEditClick(resource: ResourceReference): void {
-    setOpenedResource(resource)
-    setIsModalOpen(true);
+  }
+  
+  function refreshResources() {
+    resourceTableRef.current.refresh()
   }
 
   return (
@@ -104,7 +71,7 @@ export const ResourcesPage: React.FC = () => {
           kind="error"
           title="Error"
           subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
+          onCloseButtonClick={() => setErrorMessage(undefined)}
           timeout={10000}
           style={{ float: "right" }}
         />
@@ -115,22 +82,23 @@ export const ResourcesPage: React.FC = () => {
         expose data and content to LLM clients
       </p>
       <div id="page-content">
-        {fetchedData && (
-          <ResourcesTable
-            resources={fetchedData}
-            onDelete={onDelete}
-            onAdd={handleAddClick}
-            onEdit={handleEditClick}
-          />
-        )}
+        <ResourcesTable
+          onAdd={() => setModalOpen(true)}
+          onEdit={(resource) => {
+            setOpenedResource(resource)
+            setModalOpen(true)
+          }}
+          onDelete={handleDeleteResource}
+          ref={resourceTableRef}
+        />
       </div>
       {isModalOpen && (
         <ResourceModal
-          resource={openedResource}
-          onRequestClose={handleModalClose}
+          openedResource={openedResource}
           onSubmit={handleModalSubmit}
+          onCancel={handleModalCancel}
         />
       )}
     </div>
-  );
-};
+  )
+}

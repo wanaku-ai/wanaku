@@ -1,37 +1,67 @@
+import React, {RefObject, useEffect, useImperativeHandle, useState} from "react"
 import {
-    Button,
-    DataTable,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableExpandedRow,
-    TableExpandHeader,
-    TableExpandRow,
-    TableHead,
-    TableHeader,
-    TableRow,
-    TableToolbar,
-    TableToolbarContent,
-} from "@carbon/react";
-import {Add, Edit, TrashCan} from "@carbon/icons-react";
-import React from "react";
-import {Param, ResourceReference} from "../../models";
+  Button,
+  DataTable, DataTableSkeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableToolbar,
+  TableToolbarContent
+} from "@carbon/react"
+import {Add, Edit, TrashCan} from "@carbon/icons-react"
+import {Param, ResourceReference} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
+import {useResources} from "../../hooks/api/use-resources"
 
-interface ResourcesTableProps {
-  resources: ResourceReference[];
-  onDelete: (resourceName?: string) => void;
-  onAdd: () => void;
-  onEdit: (resource: ResourceReference) => void
+
+export interface RefreshHandle {
+  refresh: () => void
 }
 
-export const ResourcesTable: React.FC<ResourcesTableProps> = ({
-  resources,
-  onDelete,
-  onAdd,
-  onEdit
-}) => {
+interface ResourcesTableProps {
+  onAdd: () => void
+  onEdit: (resource: ResourceReference) => void
+  onDelete: (resourceName: string) => void
+  ref?: RefObject<RefreshHandle>
+}
+
+export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, onDelete, ref }) => {
+  
+  const [resources, setResources] = useState<ResourceReference[]>([])
+  const [isLoading, setLoading] = useState(true)
+  const { listResources } = useResources()
+  
+  useEffect(() => {
+    (async () => {
+      await fetchResources()
+    })()
+  }, [listResources])
+  
+  useImperativeHandle(ref, (): RefreshHandle => ({
+    async refresh() {
+      await fetchResources()
+    }
+  }), [])
+  
+  async function fetchResources() {
+    try {
+      const result = await listResources()
+      const resources = result.data.data as ResourceReference[]
+      setResources(resources)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
   const headers = [
     {key: "name", header: "Name"},
     {key: "location", header: "Location"},
@@ -39,7 +69,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
     {key: "mimeType", header: "MIME Type"},
     {key: "description", header: "Description"},
     {key: "namespace", header: "Namespace"},
-    {key: "actions", header: "Actions"},
+    {key: "actions", header: "Actions"}
   ]
 
   function resourcesToRows() {
@@ -50,7 +80,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
       type: resource.type,
       mimeType: resource.mimeType,
       description: resource.description,
-      namespace: resource.namespace,
+      namespace: resource.namespace
     }))
   }
 
@@ -117,18 +147,19 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
       </TableExpandedRow>
     )
   }
-
-  return (
-    <DataTable headers={headers} rows={resourcesToRows()}>
-      {({
-          headers,
-          rows,
-          getTableProps,
-          getHeaderProps,
-          getRowProps,
-          getExpandedRowProps,
-          getToolbarProps
-        }) => (
+  
+  return isLoading
+    ? (<DataTableSkeleton />)
+    : (<DataTable headers={headers} rows={resourcesToRows()}>
+        {({
+            headers,
+            rows,
+            getTableProps,
+            getHeaderProps,
+            getRowProps,
+            getExpandedRowProps,
+            getToolbarProps
+          }) => (
           <TableContainer>
             <TableToolbar {...getToolbarProps()}>
               <TableToolbarContent>
@@ -138,7 +169,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
             <Table {...getTableProps()}>
               <TableHead>
                 <TableRow>
-                  <TableExpandHeader/>
+                  <TableExpandHeader />
                   {headers.map((header) => (
                     <TableHeader {...getHeaderProps({header})}>
                       {header.header}
@@ -173,6 +204,6 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({
             </Table>
           </TableContainer>
         )}
-    </DataTable>
-  );
-};
+      </DataTable>
+  )
+}
