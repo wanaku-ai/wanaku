@@ -1,55 +1,53 @@
-import {ComboBox, Modal, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react";
-import React, { useState} from "react";
-import {Param, ResourceReference} from "../../models";
-import {commonMimeTypes, commonMimeTypesMapping} from "../../constants/mimeTypes.ts";
-import {useCapabilities} from "../../hooks/api/use-capabilities";
-import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
-import {ParametersTable} from "./ParametersTable.tsx";
-import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
+import {ComboBox, Modal, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react"
+import React, { useState} from "react"
+import {Param, ResourceReference} from "../../models"
+import {commonMimeTypes, commonMimeTypesMapping} from "../../constants/mimeTypes"
+import {useCapabilities} from "../../hooks/api/use-capabilities"
+import {TargetTypeSelect} from "../Targets/TargetTypeSelect"
+import {ParametersTable} from "./ParametersTable"
+import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
+
 
 interface ResourceModalProps {
-  resource?: ResourceReference
-  onRequestClose: () => void;
-  onSubmit: (resource: ResourceReference) => void;
+  openedResource?: ResourceReference
+  onSubmit: (resource: ResourceReference) => void
+  onCancel: () => void
 }
 
-export const ResourceModal: React.FC<ResourceModalProps> = ({
-  resource,
-  onRequestClose,
-  onSubmit,
-}) => {
-  const [resourceName, setResourceName] = useState(resource?.name || "");
-  const [description, setDescription] = useState(resource?.description || "");
-  const [location, setLocation] = useState(resource?.location || "");
-  const [resourceType, setResourceType] = useState(resource?.type || "file");
-  const [mimeType, setMimeType] = useState(resource?.mimeType || "");
-  const [selectedNamespace, setSelectedNamespace] = useState(resource?.namespace);
-  const [params, setParams] = useState<Param[]>(resource?.params || []);
-  const [configurationURI, setConfigurationURI] = useState(resource?.configurationURI || "")
-  const [secretsURI, setSecretsURI] = useState(resource?.secretsURI || "")
-  const { listManagementResources } = useCapabilities();
+export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, onSubmit, onCancel }) => {
+  
+  const [name, setName] = useState(openedResource?.name)
+  const [description, setDescription] = useState(openedResource?.description)
+  const [location, setLocation] = useState(openedResource?.location)
+  const [type, setType] = useState(openedResource?.type || "file")
+  const [mimeType, setMimeType] = useState(openedResource?.mimeType)
+  const [namespace, setNamespace] = useState(openedResource?.namespace)
+  const [params, setParams] = useState<Param[]>(openedResource?.params || [])
+  const [configurationURI, setConfigurationURI] = useState(openedResource?.configurationURI)
+  const [secretsURI, setSecretsURI] = useState(openedResource?.secretsURI)
+  const { listManagementResources } = useCapabilities()
 
-  const handleSubmit = () => {
+  function handleSubmit() {
     onSubmit({
-      id: resource?.id,
-      name: resourceName,
+      id: openedResource?.id,
+      name,
       description,
       location,
-      type: resourceType,
+      type,
       mimeType,
-      namespace: selectedNamespace,
+      namespace,
       params: nonEmptyParameters(),
       configurationURI,
       secretsURI
-    });
-  };
+    })
+  }
 
   function autoDetectMimeType(location: string) {
     const i = location.lastIndexOf(".")
     if (i != -1) {
       const suffix = location.substring(i + 1).toLowerCase()
       const autoDetection = commonMimeTypesMapping.get(suffix)
-      if (autoDetection && mimeType == "") {
+      if (autoDetection && !mimeType) {
         setMimeType(autoDetection)
       }
     }
@@ -57,7 +55,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 
   function newParameter() {
     const temp = [...params]
-    temp.push({name: '', value: ''})
+    temp.push({name: "", value: ""})
     setParams(temp)
   }
 
@@ -68,17 +66,17 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
   }
 
   function nonEmptyParameters() {
-    return params.filter(parameter => parameter.name !== '')
+    return params.filter(parameter => parameter.name !== "")
   }
 
   return (
     <Modal
       open={true}
-      modalHeading={resource ? "Edit resource" : "Add a Resource"}
-      primaryButtonText={resource ? "Save" : "Add"}
+      modalHeading={openedResource ? "Edit resource" : "Add a Resource"}
+      primaryButtonText={openedResource ? "Save" : "Add"}
       secondaryButtonText="Cancel"
-      onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}
+      onRequestClose={onCancel}
     >
       <Tabs>
         <TabList>
@@ -92,62 +90,62 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
               id="resource-name"
               labelText="Resource Name"
               placeholder="e.g. example-resource"
-              value={resourceName}
-              onChange={(e) => setResourceName(e.target.value)}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
             />
             <TextInput
               id="resource-description"
               labelText="Description"
               placeholder="e.g. Description of the resource"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(event) => setDescription(event.target.value)}
             />
             <TextInput
               id="resource-location"
               labelText="Location"
               placeholder="e.g. /path/to/resource"
               value={location}
-              onChange={(e) => {
-                const location = e.target.value
+              onChange={(event) => {
+                const location = event.target.value
                 setLocation(location)
                 autoDetectMimeType(location)
               }}
             />
             <TargetTypeSelect
-              value={resourceType}
-              onChange={setResourceType}
+              value={type}
+              onChange={setType}
               apiCall={listManagementResources}
             />
             <ComboBox
-                id="resource-mime-type"
-                titleText="MIME Type"
-                placeholder="Select or enter MIME type"
-                items={commonMimeTypes}
-                selectedItem={mimeType}
-                onChange={(e) => {
-                  let value = e.selectedItem
-                  if (value === undefined || value === null) {
-                    value = ""
-                  }
-                  setMimeType(value)
-                }}
-                helperText="Content type of the resource (optional)"
+              id="resource-mime-type"
+              titleText="MIME Type"
+              placeholder="Select or enter MIME type"
+              helperText="Content type of the resource (optional)"
+              items={commonMimeTypes}
+              selectedItem={mimeType}
+              onChange={(event) => {
+                let value = event.selectedItem
+                if (value === null) {
+                  value = undefined
+                }
+                setMimeType(value)
+              }}
             />
             <NamespaceSelect
-              id="namespace"
+              id="resource-namespace"
               labelText="Select a Namespace"
               helperText="Choose a Namespace from the list"
-              value={selectedNamespace}
-              onChange={namespace => setSelectedNamespace(namespace.id)}
+              value={namespace}
+              onChange={namespace => setNamespace(namespace.id)}
             />
           </TabPanel>
           <TabPanel>
             <ParametersTable
-                parameters={params}
-                onAdd={newParameter}
-                onSetName={(i, name) => params[i].name = name}
-                onSetValue={(i, value) => params[i].value = value}
-                onDelete={removeParameter}
+              parameters={params}
+              onAdd={newParameter}
+              onSetName={(i, name) => params[i].name = name}
+              onSetValue={(i, value) => params[i].value = value}
+              onDelete={removeParameter}
             />
           </TabPanel>
           <TabPanel>
@@ -169,5 +167,5 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
         </TabPanels>
       </Tabs>
     </Modal>
-  );
-};
+  )
+}
