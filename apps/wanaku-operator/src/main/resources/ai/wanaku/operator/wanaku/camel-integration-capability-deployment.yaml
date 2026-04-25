@@ -38,22 +38,30 @@ spec:
           value: ""
         imagePullPolicy: IfNotPresent
         livenessProbe:
-          initialDelaySeconds: 30
+          failureThreshold: 5
+          httpGet:
+            path: /q/health/live
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 8081
+          initialDelaySeconds: 5
           periodSeconds: 10
-          tcpSocket:
-            port: 9190
+          timeoutSeconds: 5
         ports:
         - containerPort: 9190
           name: grpc
           protocol: TCP
-        readinessProbe:
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          tcpSocket:
-            port: 9190
+        - containerPort: 8081
+          name: health
+          protocol: TCP
         volumeMounts:
-        - mountPath: /data
-          name: ""
+          - mountPath: /data
+            name: ""
       volumes:
         - name: ""
           persistentVolumeClaim:
