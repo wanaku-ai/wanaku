@@ -1,28 +1,43 @@
 package ai.wanaku.core.capabilities.common;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
-import io.quarkus.test.junit.QuarkusTest;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import java.util.Map;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@QuarkusTest
 class ServicesHelperTest {
-    private static final String USE_SEPARATE_SERVER = "quarkus.grpc.server.use-separate-server";
-    private static final String GRPC_PORT = "quarkus.grpc.server.port";
-    private static final String HTTP_HOST_ENABLED = "quarkus.http.host-enabled";
-    private static final String HTTP_PORT = "quarkus.http.port";
+    private static final ConfigProviderResolver CONFIG_PROVIDER_RESOLVER = ConfigProviderResolver.instance();
+    private ClassLoader originalContextClassLoader;
+    private URLClassLoader testContextClassLoader;
+    private Config registeredConfig;
 
     @AfterEach
     void clearConfigOverrides() {
-        System.clearProperty(USE_SEPARATE_SERVER);
-        System.clearProperty(GRPC_PORT);
-        System.clearProperty(HTTP_HOST_ENABLED);
-        System.clearProperty(HTTP_PORT);
+        if (registeredConfig != null) {
+            CONFIG_PROVIDER_RESOLVER.releaseConfig(registeredConfig);
+            registeredConfig = null;
+        }
+        if (originalContextClassLoader != null) {
+            Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+            originalContextClassLoader = null;
+        }
+        if (testContextClassLoader != null) {
+            try {
+                testContextClassLoader.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            testContextClassLoader = null;
+        }
     }
 
     @Test
@@ -80,31 +95,66 @@ class ServicesHelperTest {
 
     @Test
     void resolveRegistrationPortUsesGrpcPortWhenSeparateServerIsEnabled() {
-        System.setProperty(USE_SEPARATE_SERVER, "true");
-        System.setProperty(GRPC_PORT, "9123");
+        useConfig(Map.of(
+                "quarkus.grpc.server.use-separate-server", "true",
+                "quarkus.grpc.server.port", "9123"));
 
         assertEquals(9123, ServicesHelper.resolveRegistrationPort());
     }
 
     @Test
     void resolveRegistrationPortUsesHttpPortWhenGrpcServerSharesTheHttpListener() {
-        System.setProperty(USE_SEPARATE_SERVER, "false");
-        System.setProperty(HTTP_HOST_ENABLED, "true");
-        System.setProperty(HTTP_PORT, "8085");
+        useConfig(Map.of(
+                "quarkus.grpc.server.use-separate-server", "false",
+                "quarkus.http.host-enabled", "true",
+                "quarkus.http.port", "8085"));
 
         assertEquals(8085, ServicesHelper.resolveRegistrationPort());
     }
 
     @Test
     void resolveRegistrationPortFailsFastWhenSharedGrpcNeedsAnHttpServer() {
-        System.setProperty(USE_SEPARATE_SERVER, "false");
-        System.setProperty(HTTP_HOST_ENABLED, "false");
+        useConfig(Map.of(
+                "quarkus.grpc.server.use-separate-server", "false",
+                "quarkus.http.host-enabled", "false"));
 
-        WanakuException exception = assertThrows(WanakuException.class, ServicesHelper::resolveRegistrationPort);
+        RuntimeException exception = assertThrows(RuntimeException.class, ServicesHelper::resolveRegistrationPort);
 
         assertEquals(
                 "quarkus.grpc.server.use-separate-server=false requires quarkus.http.host-enabled=true "
                         + "because the gRPC server shares the HTTP listener in that mode",
                 exception.getMessage());
+    }
+
+    private void useConfig(Map<String, String> properties) {
+        originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+        testContextClassLoader = new URLClassLoader(new URL[0], originalContextClassLoader);
+        registeredConfig = CONFIG_PROVIDER_RESOLVER
+                .getBuilder()
+                .withSources(new org.eclipse.microprofile.config.spi.ConfigSource() {
+                    @Override
+                    public Map<String, String> getProperties() {
+                        return properties;
+                    }
+
+                    @Override
+                    public java.util.Set<String> getPropertyNames() {
+                        return properties.keySet();
+                    }
+
+                    @Override
+                    public String getValue(String propertyName) {
+                        return properties.get(propertyName);
+                    }
+
+                    @Override
+                    public String getName() {
+                        return "services-helper-test";
+                    }
+                })
+                .build();
+
+        CONFIG_PROVIDER_RESOLVER.registerConfig(registeredConfig, testContextClassLoader);
+        Thread.currentThread().setContextClassLoader(testContextClassLoader);
     }
 }
