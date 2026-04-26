@@ -303,6 +303,71 @@ export const getApiV1CapabilitiesToolsState = async (
 };
 
 /**
+ * @summary Get Base Urls
+ */
+export type getApiV1ChatAllowlistResponse200 = {
+  data: string[];
+  status: 200;
+};
+
+export type getApiV1ChatAllowlistResponseSuccess =
+  getApiV1ChatAllowlistResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ChatAllowlistResponse =
+  getApiV1ChatAllowlistResponseSuccess;
+
+export const getGetApiV1ChatAllowlistUrl = () => {
+  return `/api/v1/chat/allowlist`;
+};
+
+export const getApiV1ChatAllowlist = async (
+  options?: RequestInit,
+): Promise<getApiV1ChatAllowlistResponse> => {
+  return customFetch<getApiV1ChatAllowlistResponse>(
+    getGetApiV1ChatAllowlistUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Code Completions
+ */
+export type postApiV1ChatCompletionsResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type postApiV1ChatCompletionsResponseSuccess =
+  postApiV1ChatCompletionsResponse200 & {
+    headers: Headers;
+  };
+export type postApiV1ChatCompletionsResponse =
+  postApiV1ChatCompletionsResponseSuccess;
+
+export const getPostApiV1ChatCompletionsUrl = () => {
+  return `/api/v1/chat/completions`;
+};
+
+export const postApiV1ChatCompletions = async (
+  postApiV1ChatCompletionsBody: string,
+  options?: RequestInit,
+): Promise<postApiV1ChatCompletionsResponse> => {
+  return customFetch<postApiV1ChatCompletionsResponse>(
+    getPostApiV1ChatCompletionsUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(postApiV1ChatCompletionsBody),
+    },
+  );
+};
+
+/**
  * @summary Update
  */
 export type putApiV1DataStoreResponse200 = {

@@ -1076,6 +1076,55 @@
         "tags" : [ "Capabilities Resource" ]
       }
     },
+    "/api/v1/chat/allowlist" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Base Urls",
+        "tags" : [ "Llm Chat Resource" ]
+      }
+    },
+    "/api/v1/chat/completions" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Code Completions",
+        "tags" : [ "Llm Chat Resource" ]
+      }
+    },
     "/api/v1/data-store" : {
       "put" : {
         "requestBody" : {
