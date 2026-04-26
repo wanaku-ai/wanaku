@@ -6,8 +6,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ServicesHelperTest {
     private static final ConfigProviderResolver CONFIG_PROVIDER_RESOLVER = ConfigProviderResolver.instance();
+    private static final Logger LOG = Logger.getLogger(ServicesHelperTest.class.getName());
     private ClassLoader originalContextClassLoader;
     private URLClassLoader testContextClassLoader;
     private Config registeredConfig;
@@ -34,7 +38,7 @@ class ServicesHelperTest {
             try {
                 testContextClassLoader.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                LOG.log(Level.WARNING, "Failed to close test context class loader", e);
             }
             testContextClassLoader = null;
         }
@@ -118,7 +122,7 @@ class ServicesHelperTest {
                 "quarkus.grpc.server.use-separate-server", "false",
                 "quarkus.http.host-enabled", "false"));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, ServicesHelper::resolveRegistrationPort);
+        WanakuException exception = assertThrows(WanakuException.class, ServicesHelper::resolveRegistrationPort);
 
         assertEquals(
                 "quarkus.grpc.server.use-separate-server=false requires quarkus.http.host-enabled=true "
