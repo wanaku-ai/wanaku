@@ -6,16 +6,18 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_ERROR;
 import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 
@@ -54,7 +56,8 @@ class ConfigureCommandsTest {
         JsonNode wanaku = root.path("mcpServers").path("wanaku");
         assertEquals("uvx", wanaku.path("command").asText());
         assertEquals("mcp-proxy", wanaku.path("args").get(0).asText());
-        assertEquals("http://localhost:8080/mcp/sse/", wanaku.path("args").get(1).asText());
+        assertEquals(
+                "http://localhost:8080/mcp/sse/", wanaku.path("args").get(1).asText());
         assertTrue(wanaku.path("env").isObject());
 
         verify(printer).printSuccessMessage(anyString());
@@ -84,7 +87,9 @@ class ConfigureCommandsTest {
     void cursorConfigureShouldMergeExistingConfig() throws Exception {
         Path configPath = tempDir.resolve(".cursor/mcp.json");
         Files.createDirectories(configPath.getParent());
-        Files.writeString(configPath, """
+        Files.writeString(
+                configPath,
+                """
                 {
                   "theme": "dark",
                   "mcpServers": {
@@ -106,8 +111,12 @@ class ConfigureCommandsTest {
 
         JsonNode root = MAPPER.readTree(Files.readString(configPath));
         assertEquals("dark", root.path("theme").asText());
-        assertEquals("http://example.com/mcp", root.path("mcpServers").path("existing").path("url").asText());
-        assertEquals("http://localhost:8080/mcp", root.path("mcpServers").path("wanaku").path("url").asText());
+        assertEquals(
+                "http://example.com/mcp",
+                root.path("mcpServers").path("existing").path("url").asText());
+        assertEquals(
+                "http://localhost:8080/mcp",
+                root.path("mcpServers").path("wanaku").path("url").asText());
         verify(printer).printSuccessMessage(anyString());
     }
 

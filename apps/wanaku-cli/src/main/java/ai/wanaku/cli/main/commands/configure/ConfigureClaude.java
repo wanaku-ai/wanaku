@@ -31,16 +31,19 @@ public class ConfigureClaude extends ConfigureMcpClientCommand {
             if (appData != null && !appData.isBlank()) {
                 return resolveOverrideOrDefault(Path.of(appData, "Claude", "claude_desktop_config.json"));
             }
-            return resolveOverrideOrDefault(home.resolve("AppData").resolve("Roaming").resolve("Claude")
-                    .resolve("claude_desktop_config.json"));
+            return resolveOverrideOrDefault(
+                    home.resolve("AppData").resolve("Roaming").resolve("Claude").resolve("claude_desktop_config.json"));
         }
 
         if (osName.contains("mac")) {
-            return resolveOverrideOrDefault(home.resolve("Library").resolve("Application Support")
-                    .resolve("Claude").resolve("claude_desktop_config.json"));
+            return resolveOverrideOrDefault(home.resolve("Library")
+                    .resolve("Application Support")
+                    .resolve("Claude")
+                    .resolve("claude_desktop_config.json"));
         }
 
-        return resolveOverrideOrDefault(home.resolve(".config").resolve("Claude").resolve("claude_desktop_config.json"));
+        return resolveOverrideOrDefault(
+                home.resolve(".config").resolve("Claude").resolve("claude_desktop_config.json"));
     }
 
     @Override

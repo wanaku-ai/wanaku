@@ -66,8 +66,7 @@ public abstract class ConfigureMcpClientCommand extends BaseCommand {
             mcpServers.set(serverName, createServerEntry(endpoint));
             writeConfig(configPath, root);
 
-            printer.printSuccessMessage(
-                    "Configured " + clientDisplayName() + " at " + configPath.toAbsolutePath());
+            printer.printSuccessMessage("Configured " + clientDisplayName() + " at " + configPath.toAbsolutePath());
             printer.printInfoMessage("Wanaku endpoint: " + endpoint);
             return EXIT_OK;
         } catch (IllegalArgumentException | IOException e) {
