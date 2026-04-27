@@ -15,23 +15,41 @@ spec:
         app: ""
     spec:
       containers:
-        - env:
-            - name: AUTH_SERVER
-              value: ""
-            - name: WANAKU_SERVICE_REGISTRATION_URI
-              # Comes from Wanaku route
-              value: ""
-            - name: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
-              value: ""
-          image: ""
-          imagePullPolicy: IfNotPresent
-          name: wanaku-capability
-          ports:
-            - containerPort: 9000
-              protocol: TCP
-          volumeMounts:
-            - mountPath: /home/default/.wanaku/services
-              name: ""
+      - env:
+        - name: AUTH_SERVER
+          value: ""
+        - name: WANAKU_SERVICE_REGISTRATION_URI
+          # Comes from Wanaku route
+          value: ""
+        - name: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
+          value: ""
+        image: ""
+        imagePullPolicy: IfNotPresent
+        name: wanaku-capability
+        ports:
+        - containerPort: 9000
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /q/health/live
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+          - mountPath: /home/default/.wanaku/services
+            name: ""
       volumes:
         - name: ""
           persistentVolumeClaim:
