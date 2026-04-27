@@ -109,7 +109,7 @@ Configuration for the main Wanaku Router Backend (`wanaku-router-backend`), whic
 
 | Property                                           | Description                                                                                        |
 |----------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| `quarkus.grpc.server.use-separate-server`          | `false` - The gRPC server shares the main HTTP server, avoiding the need for a separate port.      |
+| `quarkus.grpc.server.use-separate-server` | `false` - The gRPC server shares the main HTTP server, avoiding the need for a separate port. Both router and capabilities use this mode by default. |
 | `quarkus.mcp.server.wanaku-internal.sse.root-path` | `/wanaku-internal/mcp` - The SSE endpoint path for the internal MCP namespace.                     |
 | `quarkus.mcp.server.ns-*.sse.root-path`            | `/ns-*/mcp` - The SSE endpoint paths for the 10 available external namespaces (`ns-1` to `ns-10`). |
 | `quarkus.mcp.server.traffic-logging.enabled`       | `true` - Enables logging of all MCP traffic for debugging.                                         |
@@ -170,18 +170,43 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 
 These settings apply to most tool services and are foundational for their operation.
 
-| Property                                 | Description                                                                                            |
+#### Common Settings (All Modes)
+
+These settings apply regardless of whether you use the shared HTTP listener or a separate gRPC server:
+
+| Property | Description |
 |------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `quarkus.http.host-enabled`              | `false` - Disables the standard HTTP server for most capabilities, as they use gRPC for communication. |
-| `quarkus.grpc.server.host`               | `0.0.0.0` - Binds the gRPC server to all available network interfaces.                                 |
-| `quarkus.grpc.server.port`               | A unique port for each capability's gRPC server (e.g., `9009` for `exec`).                             |
-| `quarkus.qute.strict-rendering`          | `false` - Allows for more lenient Qute template rendering.                                             |
-| `wanaku.service.name`                    | The unique, lowercase name of the service (e.g., `exec`, `http`).                                      |
-| `wanaku.service.base-uri`                | The base URI scheme for tools provided by this service (e.g., `exec://`).                              |
-| `wanaku.service.exec.allowed-executables` | Comma-separated absolute executable paths that the Exec tool may run.                                 |
-| `quarkus.oidc-client.auth-server-url`    | The URL of the Keycloak realm for authentication.                                                      |
-| `quarkus.oidc-client.client-id`          | `wanaku-service` - The shared OIDC client ID for all capabilities.                                     |
-| `quarkus.oidc-client.credentials.secret` | The OIDC client secret for the capability. **Must be replaced with a real secret.**                    |
+| `wanaku.service.name` | The unique, lowercase name of the service (e.g., `exec`, `http`). |
+| `wanaku.service.base-uri` | The base URI scheme for tools provided by this service (e.g., `exec://`). |
+| `wanaku.service.exec.allowed-executables` | Comma-separated absolute executable paths that the Exec tool may run. |
+| `quarkus.qute.strict-rendering` | `false` - Allows for more lenient Qute template rendering. |
+| `quarkus.oidc-client.auth-server-url` | The URL of the Keycloak realm for authentication. |
+| `quarkus.oidc-client.client-id` | `wanaku-service` - The shared OIDC client ID for all capabilities. |
+| `quarkus.oidc-client.credentials.secret` | The OIDC client secret for the capability. **Must be replaced with a real secret.** |
+
+#### Shared HTTP Listener (Recommended)
+
+By default, capabilities are configured to share the HTTP listener with gRPC, avoiding the need for a separate gRPC server port. This simplifies deployment and configuration.
+
+| Property | Description |
+|------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `quarkus.http.host-enabled` | `true` - Enables the HTTP server for capabilities (required when using shared listener). |
+| `quarkus.http.port` | The HTTP port for the capability (e.g., `9000` for `http` service). |
+| `quarkus.http.host` | `0.0.0.0` - Binds the HTTP server to all available network interfaces. |
+| `quarkus.grpc.server.use-separate-server` | `false` - The gRPC server shares the HTTP listener (recommended for simpler deployment). |
+
+**Note:** When `use-separate-server=false`, the `quarkus.grpc.server.port` property is ignored because gRPC uses the HTTP port.
+
+#### Separate gRPC Server (Optional)
+
+If you prefer to use a separate gRPC server, set `quarkus.grpc.server.use-separate-server=true` and configure the gRPC-specific properties:
+
+| Property | Description |
+|------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `quarkus.http.host-enabled` | `false` - Disables the standard HTTP server (not needed with separate gRPC). |
+| `quarkus.grpc.server.use-separate-server` | `true` - Uses a separate gRPC server with its own port. |
+| `quarkus.grpc.server.host` | `0.0.0.0` - Binds the gRPC server to all available network interfaces. |
+| `quarkus.grpc.server.port` | A unique port for each capability's gRPC server (e.g., `9009` for `exec`). |
 
 ### Common Service Registration Settings
 
@@ -300,11 +325,37 @@ wanaku.persistence.infinispan.base-folder=/var/lib/wanaku/data
 wanaku.infinispan.max-state-count=20
 ```
 
-### Example: Tool Service with Custom Registration
+### Example: Tool Service with Shared HTTP Listener (Recommended)
 
 ```properties
-# application.properties for a tool service
+# application.properties for a tool service using shared HTTP listener
+quarkus.http.host-enabled=true
+quarkus.http.port=9010
+quarkus.http.host=0.0.0.0
+
+# gRPC shares the HTTP listener - no separate port needed
+quarkus.grpc.server.use-separate-server=false
+
+wanaku.service.name=my-custom-tool
+wanaku.service.base-uri=custom://
+
+wanaku.service.registration.enabled=true
+wanaku.service.registration.uri=http://wanaku-router:8080
+wanaku.service.registration.interval=15s
+wanaku.service.registration.announce-address=my-custom-tool.example.com:9010
+
+quarkus.oidc-client.auth-server-url=https://keycloak.example.com/realms/wanaku
+quarkus.oidc-client.client-id=wanaku-service
+quarkus.oidc-client.credentials.secret=${WANAKU_SERVICE_SECRET}
+```
+
+### Example: Tool Service with Separate gRPC Server
+
+```properties
+# application.properties for a tool service using separate gRPC server
 quarkus.http.host-enabled=false
+
+quarkus.grpc.server.use-separate-server=true
 quarkus.grpc.server.host=0.0.0.0
 quarkus.grpc.server.port=9010
 
