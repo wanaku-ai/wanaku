@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ""
+    component: "camel-code-execution-engine"
+  name: ""
+spec:
+  ports:
+    - name: grpc
+      port: 9190
+      protocol: TCP
+      targetPort: 9190
+  selector:
+    app: ""
+    component: "camel-code-execution-engine"
+  sessionAffinity: None
+  type: ClusterIP

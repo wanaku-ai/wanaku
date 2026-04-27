@@ -2,6 +2,14 @@
 
 This module contains the Wanaku Operator implementation.
 
+The operator currently manages:
+
+- `WanakuRouter`
+- `WanakuCapability`
+- `WanakuCodeExecutionEngine`
+
+Sample manifests are available under `samples/` for both in-cluster and remote code execution engine deployment modes.
+
 
 ### Running the operator
 
