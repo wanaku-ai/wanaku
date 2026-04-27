@@ -38,7 +38,8 @@ export const ServiceCatalogPage: React.FC = () => {
     async (search?: string) => {
       try {
         const result = await listServiceCatalogs(search);
-        setCatalogs((result.data.data as ServiceCatalogSummary[]) || []);
+        const body = result.data as { data: ServiceCatalogSummary[] };
+        setCatalogs(body.data || []);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching service catalogs:", error);
@@ -89,7 +90,8 @@ export const ServiceCatalogPage: React.FC = () => {
   const handleGetDetail = async (name: string): Promise<ServiceCatalogDetail | null> => {
     try {
       const result = await getServiceCatalog(name);
-      return result.data.data as ServiceCatalogDetail;
+      const body = result.data as { data: ServiceCatalogDetail };
+      return body.data;
     } catch (error) {
       console.error("Error fetching catalog detail:", error);
       return null;

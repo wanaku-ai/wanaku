@@ -67,9 +67,6 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.Forwards}>
                     Forwards
                 </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.DataStores}>
-                    Data Stores
-                </HeaderMenuItem>
                 <HeaderMenuItem as={Link} to={Links.ServiceCatalog}>
                     Service Catalog
                 </HeaderMenuItem>
@@ -82,6 +79,9 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                     </HeaderMenuItem>
                     <HeaderMenuItem as={Link} to={Links.ToolCalls}>
                         Tool Call Debugger
+                    </HeaderMenuItem>
+                    <HeaderMenuItem as={Link} to={Links.DataStores}>
+                        Data Stores
                     </HeaderMenuItem>
                 </HeaderMenu>
             </HeaderNavigation>

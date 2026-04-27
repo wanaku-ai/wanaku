@@ -66,6 +66,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                     >
                         Tool Call Debugger
                     </SideNavMenuItem>
+                    <SideNavMenuItem
+                        element={Link}
+                        to={Links.DataStores}
+                        onClick={onClickSideNavExpand}
+                    >
+                        Data Stores
+                    </SideNavMenuItem>
                 </SideNavMenu>
                 <SideNavMenuItem
                     element={Link}
@@ -87,13 +94,6 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                     onClick={onClickSideNavExpand}
                 >
                     Forwards
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to={Links.DataStores}
-                    onClick={onClickSideNavExpand}
-                >
-                    Data Stores
                 </SideNavMenuItem>
                 <SideNavMenuItem
                     element={Link}
