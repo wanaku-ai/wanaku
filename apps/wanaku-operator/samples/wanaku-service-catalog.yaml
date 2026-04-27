@@ -1,0 +1,19 @@
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuServiceCatalog
+metadata:
+  name: wanaku-service-catalogs
+spec:
+# Reference to the WanakuRouter CR name (required for API access)
+  routerRef: wanaku-dev
+# Service catalogs to deploy
+# Each catalog references a ConfigMap containing the Base64-encoded ZIP data
+# under the key "catalog.zip"
+#
+# To create a ConfigMap from a service catalog ZIP:
+#   kubectl create configmap finance-catalog-data \
+#     --from-literal=catalog.zip="$(base64 < my-catalog.zip)"
+  catalogs:
+    - name: finance-catalog
+      configMapRef: finance-catalog-data
+    - name: hr-catalog
+      configMapRef: hr-catalog-data

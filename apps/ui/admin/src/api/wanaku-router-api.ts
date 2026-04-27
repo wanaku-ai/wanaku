@@ -14,6 +14,7 @@ import type {
   DeleteApiV1DataStoreParams,
   DeleteApiV1NamespacesStaleParams,
   DeleteApiV1PromptsParams,
+  DeleteApiV1ServiceCatalogRemoveParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
   GetApiV1CapabilitiesStaleParams,
@@ -22,6 +23,9 @@ import type {
   GetApiV1NamespacesParams,
   GetApiV1NamespacesStaleParams,
   GetApiV1ResourcesParams,
+  GetApiV1ServiceCatalogDownloadParams,
+  GetApiV1ServiceCatalogGetParams,
+  GetApiV1ServiceCatalogListParams,
   GetApiV1ToolsParams,
   Namespace,
   OutboundSseEvent,
@@ -39,6 +43,7 @@ import type {
   WanakuResponseInteger,
   WanakuResponseListDataStore,
   WanakuResponseListForwardReference,
+  WanakuResponseListMapStringObject,
   WanakuResponseListNamespace,
   WanakuResponseListPromptReference,
   WanakuResponseListResourceReference,
@@ -46,6 +51,7 @@ import type {
   WanakuResponseListStaleCapabilityInfo,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
+  WanakuResponseMapStringObject,
   WanakuResponseNamespace,
   WanakuResponsePromptReference,
   WanakuResponseResourceReference,
@@ -1996,6 +2002,286 @@ export const getApiV1ResourcesName = async (
     {
       ...options,
       method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Deploy
+ */
+export type postApiV1ServiceCatalogDeployResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type postApiV1ServiceCatalogDeployResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ServiceCatalogDeployResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ServiceCatalogDeployResponseSuccess =
+  postApiV1ServiceCatalogDeployResponse200 & {
+    headers: Headers;
+  };
+export type postApiV1ServiceCatalogDeployResponseError = (
+  | postApiV1ServiceCatalogDeployResponse400
+  | postApiV1ServiceCatalogDeployResponse500
+) & {
+  headers: Headers;
+};
+
+export type postApiV1ServiceCatalogDeployResponse =
+  | postApiV1ServiceCatalogDeployResponseSuccess
+  | postApiV1ServiceCatalogDeployResponseError;
+
+export const getPostApiV1ServiceCatalogDeployUrl = () => {
+  return `/api/v1/service-catalog/deploy`;
+};
+
+export const postApiV1ServiceCatalogDeploy = async (
+  dataStore: DataStore,
+  options?: RequestInit,
+): Promise<postApiV1ServiceCatalogDeployResponse> => {
+  return customFetch<postApiV1ServiceCatalogDeployResponse>(
+    getPostApiV1ServiceCatalogDeployUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(dataStore),
+    },
+  );
+};
+
+/**
+ * @summary Download
+ */
+export type getApiV1ServiceCatalogDownloadResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type getApiV1ServiceCatalogDownloadResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceCatalogDownloadResponseSuccess =
+  getApiV1ServiceCatalogDownloadResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceCatalogDownloadResponseError =
+  getApiV1ServiceCatalogDownloadResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceCatalogDownloadResponse =
+  | getApiV1ServiceCatalogDownloadResponseSuccess
+  | getApiV1ServiceCatalogDownloadResponseError;
+
+export const getGetApiV1ServiceCatalogDownloadUrl = (
+  params?: GetApiV1ServiceCatalogDownloadParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-catalog/download?${stringifiedParams}`
+    : `/api/v1/service-catalog/download`;
+};
+
+export const getApiV1ServiceCatalogDownload = async (
+  params?: GetApiV1ServiceCatalogDownloadParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceCatalogDownloadResponse> => {
+  return customFetch<getApiV1ServiceCatalogDownloadResponse>(
+    getGetApiV1ServiceCatalogDownloadUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Get
+ */
+export type getApiV1ServiceCatalogGetResponse200 = {
+  data: WanakuResponseMapStringObject;
+  status: 200;
+};
+
+export type getApiV1ServiceCatalogGetResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceCatalogGetResponseSuccess =
+  getApiV1ServiceCatalogGetResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceCatalogGetResponseError =
+  getApiV1ServiceCatalogGetResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceCatalogGetResponse =
+  | getApiV1ServiceCatalogGetResponseSuccess
+  | getApiV1ServiceCatalogGetResponseError;
+
+export const getGetApiV1ServiceCatalogGetUrl = (
+  params?: GetApiV1ServiceCatalogGetParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-catalog/get?${stringifiedParams}`
+    : `/api/v1/service-catalog/get`;
+};
+
+export const getApiV1ServiceCatalogGet = async (
+  params?: GetApiV1ServiceCatalogGetParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceCatalogGetResponse> => {
+  return customFetch<getApiV1ServiceCatalogGetResponse>(
+    getGetApiV1ServiceCatalogGetUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary List
+ */
+export type getApiV1ServiceCatalogListResponse200 = {
+  data: WanakuResponseListMapStringObject;
+  status: 200;
+};
+
+export type getApiV1ServiceCatalogListResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceCatalogListResponseSuccess =
+  getApiV1ServiceCatalogListResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceCatalogListResponseError =
+  getApiV1ServiceCatalogListResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceCatalogListResponse =
+  | getApiV1ServiceCatalogListResponseSuccess
+  | getApiV1ServiceCatalogListResponseError;
+
+export const getGetApiV1ServiceCatalogListUrl = (
+  params?: GetApiV1ServiceCatalogListParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-catalog/list?${stringifiedParams}`
+    : `/api/v1/service-catalog/list`;
+};
+
+export const getApiV1ServiceCatalogList = async (
+  params?: GetApiV1ServiceCatalogListParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceCatalogListResponse> => {
+  return customFetch<getApiV1ServiceCatalogListResponse>(
+    getGetApiV1ServiceCatalogListUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Remove
+ */
+export type deleteApiV1ServiceCatalogRemoveResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type deleteApiV1ServiceCatalogRemoveResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type deleteApiV1ServiceCatalogRemoveResponseSuccess =
+  deleteApiV1ServiceCatalogRemoveResponse200 & {
+    headers: Headers;
+  };
+export type deleteApiV1ServiceCatalogRemoveResponseError =
+  deleteApiV1ServiceCatalogRemoveResponse500 & {
+    headers: Headers;
+  };
+
+export type deleteApiV1ServiceCatalogRemoveResponse =
+  | deleteApiV1ServiceCatalogRemoveResponseSuccess
+  | deleteApiV1ServiceCatalogRemoveResponseError;
+
+export const getDeleteApiV1ServiceCatalogRemoveUrl = (
+  params?: DeleteApiV1ServiceCatalogRemoveParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-catalog/remove?${stringifiedParams}`
+    : `/api/v1/service-catalog/remove`;
+};
+
+export const deleteApiV1ServiceCatalogRemove = async (
+  params?: DeleteApiV1ServiceCatalogRemoveParams,
+  options?: RequestInit,
+): Promise<deleteApiV1ServiceCatalogRemoveResponse> => {
+  return customFetch<deleteApiV1ServiceCatalogRemoveResponse>(
+    getDeleteApiV1ServiceCatalogRemoveUrl(params),
+    {
+      ...options,
+      method: "DELETE",
     },
   );
 };
