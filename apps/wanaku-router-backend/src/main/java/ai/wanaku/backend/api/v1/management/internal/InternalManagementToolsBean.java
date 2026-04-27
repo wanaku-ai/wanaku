@@ -103,9 +103,11 @@ public class InternalManagementToolsBean {
     }
 
     private void registerTool(ToolReference toolReference, ToolHandler handler) {
-        Namespace namespace = internalNamespace();
         ToolsHelper.registerTool(
-                toolReference, toolManager, namespace, (toolArguments, ignored) -> handler.apply(toolArguments.args()));
+                toolReference,
+                toolManager,
+                internalNamespace,
+                (toolArguments, ignored) -> handler.apply(toolArguments.args()));
     }
 
     private Uni<ToolResponse> jsonResponse(Supplier<Object> supplier) {
@@ -113,7 +115,8 @@ public class InternalManagementToolsBean {
             try {
                 return ToolResponse.success(List.of(new TextContent(objectMapper.writeValueAsString(supplier.get()))));
             } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize internal management tool response", e);
+                LOG.errorf(e, "Internal management tool failed");
+                return ToolResponse.error(e.getMessage());
             }
         });
     }
@@ -363,7 +366,9 @@ public class InternalManagementToolsBean {
         return property("object", description);
     }
 
-    private Namespace internalNamespace() {
+    private static final Namespace internalNamespace = createInternalNamespace();
+
+    private static Namespace createInternalNamespace() {
         Namespace namespace = new Namespace();
         namespace.setName(INTERNAL_NAMESPACE);
         namespace.setPath(INTERNAL_NAMESPACE);
@@ -395,7 +400,12 @@ public class InternalManagementToolsBean {
     }
 
     private Namespace buildNamespaceGet(Map<String, Object> args) {
-        return namespacesBean.getById(toRequiredStringArg(args, "id"));
+        String id = toRequiredStringArg(args, "id");
+        Namespace namespace = namespacesBean.getById(id);
+        if (namespace == null) {
+            throw new IllegalArgumentException("Namespace not found: " + id);
+        }
+        return namespace;
     }
 
     private Namespace buildNamespaceCreate(Map<String, Object> args) {
@@ -467,11 +477,7 @@ public class InternalManagementToolsBean {
     }
 
     private Integer buildToolRemove(Map<String, Object> args) {
-        try {
-            return toolsBean.remove(toRequiredStringArg(args, "name"));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to remove tool", e);
-        }
+        return toolsBean.remove(toRequiredStringArg(args, "name"));
     }
 
     private List<ResourceReference> buildResources(Map<String, Object> args) {
@@ -549,11 +555,7 @@ public class InternalManagementToolsBean {
         if (dataStore == null || dataStore.getId() == null) {
             throw new IllegalArgumentException("Data store payload with id is required");
         }
-        try {
-            dataStoresBean.update(dataStore);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to update data store", e);
-        }
+        dataStoresBean.update(dataStore);
         return dataStoresBean.findById(dataStore.getId());
     }
 
