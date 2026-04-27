@@ -117,7 +117,7 @@ podman run -d --name keycloak --rm -p 0.0.0.0:8543:8080 \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   -v keycloak-dev:/opt/keycloak/data \
-  quay.io/keycloak/keycloak:26.6.0 start-dev
+  quay.io/keycloak/keycloak:26.6.1 start-dev
 
 # 2. Start the router
 java -XX:+UseNUMA -Xmx4G -Xms4G \
