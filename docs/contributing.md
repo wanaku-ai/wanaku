@@ -256,7 +256,7 @@ podman run -d \
   -e KC_BOOTSTRAP_ADMIN_USERNAME="admin" \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD="admin" \
   -v keycloak-data:/opt/keycloak/data \
-  quay.io/keycloak/keycloak:26.6.0 \
+  quay.io/keycloak/keycloak:26.6.1 \
   start-dev
 ```
 
