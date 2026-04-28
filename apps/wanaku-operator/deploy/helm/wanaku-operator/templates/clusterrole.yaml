@@ -4,7 +4,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+    app.kubernetes.io/version: 0.1.1-SNAPSHOT
   name: {{ .Release.Namespace }}-wanaku-capability-cluster-role
 rules:
   - apiGroups:
@@ -55,7 +55,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+    app.kubernetes.io/version: 0.1.1-SNAPSHOT
   name: {{ .Release.Namespace }}-wanaku-router-cluster-role
 rules:
   - apiGroups:
@@ -143,7 +143,38 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+    app.kubernetes.io/version: 0.1.1-SNAPSHOT
+  name: wanaku-service-catalog-cluster-role
+rules:
+  - apiGroups:
+      - wanaku.ai
+    resources:
+      - wanakuservicecatalogs
+      - wanakuservicecatalogs/status
+      - wanakuservicecatalogs/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - update
+      - create
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: wanaku-operator
+    app.kubernetes.io/version: 0.1.1-SNAPSHOT
   name: {{ .Release.Namespace }}-josdk-crd-validating-cluster-role
 rules:
   - apiGroups:

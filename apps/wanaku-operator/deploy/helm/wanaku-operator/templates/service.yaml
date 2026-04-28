@@ -3,13 +3,13 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.27.2
-    app.quarkus.io/commit-id: 90dc463f352476d0642c0803abf2056abc1af5b0
+    app.quarkus.io/quarkus-version: 3.33.1
+    app.quarkus.io/commit-id: f64602f29dab57bade54bc1f71e4dab0b9092cb8
     app.quarkus.io/vcs-uri: https://github.com/orpiske/wanaku.git
-    app.quarkus.io/build-timestamp: 2026-04-02 - 13:40:59 +0000
+    app.quarkus.io/build-timestamp: 2026-04-28 - 13:48:02 +0000
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+    app.kubernetes.io/version: 0.1.1-SNAPSHOT
     app.kubernetes.io/managed-by: quarkus
   name: wanaku-operator
 spec:
@@ -20,5 +20,5 @@ spec:
       targetPort: {{ .Values.app.ports.http }}
   selector:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.1.0-SNAPSHOT
+    app.kubernetes.io/version: 0.1.1-SNAPSHOT
   type: ClusterIP
