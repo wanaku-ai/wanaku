@@ -4,36 +4,32 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.EndpointAddress;
-import io.fabric8.kubernetes.api.model.EndpointPort;
-import io.fabric8.kubernetes.api.model.EndpointSubset;
-import io.fabric8.kubernetes.api.model.Endpoints;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.IntOrString;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
-import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
-import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngine;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineReconciler;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineSpec;
 import ai.wanaku.operator.wanaku.WanakuRouter;
+import ai.wanaku.operator.wanaku.WanakuTypes;
 
 /**
  * Shared operator utilities for condition management, image pull policy resolution,
@@ -51,21 +47,10 @@ public final class OperatorUtil {
     public static final String READY_CONDITION = "Ready";
     public static final String CONDITION_STATUS_TRUE = "True";
     public static final String CONDITION_REASON_READY = "ReconciliationSucceeded";
-    public static final String ROUTER_BACKEND_DEPLOYMENT_FILE = "wanaku-router-deployment.yaml";
-    public static final String ROUTER_BACKEND_INTERNAL_SERVICE_FILE = "wanaku-router-service-internal.yaml";
-    public static final String ROUTER_BACKEND_EXTERNAL_SERVICE_FILE = "wanaku-router-service-external.yaml";
-    public static final String ROUTER_INGRESS_FILE = "wanaku-router-ingress.yaml";
-    public static final String WANAKU_CAPABILITY_DEPLOYMENT_FILE = "wanaku-capability-deployment.yaml";
-    public static final String CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE =
-            "camel-integration-capability-deployment.yaml";
     public static final String CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_FILE =
             "camel-code-execution-engine-deployment.yaml";
-    public static final String CAPABILITY_INTERNAL_SERVICE_FILE = "wanaku-capability-service-internal.yaml";
     public static final String CODE_EXECUTION_ENGINE_INTERNAL_SERVICE_FILE =
             "camel-code-execution-engine-service-internal.yaml";
-    public static final String CODE_EXECUTION_ENGINE_ENDPOINTS_FILE = "camel-code-execution-engine-endpoints.yaml";
-    public static final String SERVICES_VOLUME_PVC_FILE = "services-volume-pvc.yaml";
-    public static final String ROUTER_VOLUME_CLAIM = "router-volume-claim";
 
     public static final String DEFAULT_PULL_POLICY = "IfNotPresent";
     public static final Set<String> VALID_PULL_POLICIES = Set.of("Always", "IfNotPresent", "Never");
@@ -190,12 +175,10 @@ public final class OperatorUtil {
         return "http://internal-" + routerRef + ":8080";
     }
 
-    /**
-     * Resolves the auth realm for a WanakuCapability resource.
-     *
-     * @param resource the WanakuCapability custom resource (may be null)
-     * @return the configured realm, or the default "wanaku" realm
-     */
+    static String getInternalRegistrationUri(String routerRef) {
+        return getRouterBaseUrl(routerRef) + "/";
+    }
+
     // ---- Code execution engine methods ----
 
     public static Deployment makeDesiredCamelCodeExecutionEngineDeployment(
@@ -225,14 +208,25 @@ public final class OperatorUtil {
                 .getLabels()
                 .put("serviceSubType", resource.getSpec().getEngineType());
         service.getMetadata().getLabels().put("languageName", resource.getSpec().getLanguageName());
-        service.getSpec().getPorts().getFirst().setPort(port);
-        service.getSpec().getPorts().getFirst().setTargetPort(new IntOrString(port));
 
         if (isRemoteDeploymentMode(resource.getSpec())) {
+            String remoteHost = resource.getSpec().getRemote().getHost();
+            String scheme = resource.getSpec().getRemote().getScheme() != null
+                    ? resource.getSpec().getRemote().getScheme()
+                    : "http";
+            service.getSpec().setType("ExternalName");
+            service.getSpec().setExternalName(remoteHost);
+            service.getSpec().getPorts().clear();
             if (service.getSpec().getSelector() != null) {
                 service.getSpec().getSelector().clear();
             }
+            if (service.getMetadata().getAnnotations() == null) {
+                service.getMetadata().setAnnotations(new java.util.HashMap<>());
+            }
+            service.getMetadata().getAnnotations().put("wanaku.ai/remote-scheme", scheme);
         } else {
+            service.getSpec().getPorts().getFirst().setPort(port);
+            service.getSpec().getPorts().getFirst().setTargetPort(new IntOrString(port));
             service.getSpec()
                     .setSelector(Map.of(
                             "app", serviceName,
@@ -242,45 +236,6 @@ public final class OperatorUtil {
 
         service.addOwnerReference(resource);
         return service;
-    }
-
-    public static Endpoints makeCodeExecutionEngineEndpoints(WanakuCodeExecutionEngine resource) {
-        Endpoints endpoints = ReconcilerUtilsInternal.loadYaml(
-                Endpoints.class, WanakuCodeExecutionEngineReconciler.class, CODE_EXECUTION_ENGINE_ENDPOINTS_FILE);
-
-        final String serviceName = resource.getMetadata().getName();
-        final String ns = resource.getMetadata().getNamespace();
-        final int port = resolveCodeExecutionPort(resource);
-
-        endpoints.getMetadata().setName(serviceName);
-        endpoints.getMetadata().setNamespace(ns);
-        endpoints.getMetadata().getLabels().put("app", serviceName);
-        endpoints.getMetadata().getLabels().put("component", "camel-code-execution-engine");
-        endpoints.getMetadata().getLabels().put("serviceType", "code-execution-engine");
-        endpoints
-                .getMetadata()
-                .getLabels()
-                .put("serviceSubType", resource.getSpec().getEngineType());
-        endpoints
-                .getMetadata()
-                .getLabels()
-                .put("languageName", resource.getSpec().getLanguageName());
-
-        final EndpointAddress endpointAddress = new EndpointAddress();
-        endpointAddress.setHostname(resource.getSpec().getRemote().getHost());
-
-        final EndpointPort endpointPort = new EndpointPort();
-        endpointPort.setPort(port);
-        endpointPort.setProtocol("TCP");
-        endpointPort.setName("grpc");
-
-        final EndpointSubset subset = new EndpointSubset();
-        subset.setAddresses(List.of(endpointAddress));
-        subset.setPorts(List.of(endpointPort));
-        endpoints.setSubsets(List.of(subset));
-
-        endpoints.addOwnerReference(resource);
-        return endpoints;
     }
 
     private static Deployment configureCodeExecutionDeployment(
@@ -322,14 +277,22 @@ public final class OperatorUtil {
         final Container container =
                 deploymentSpec.getTemplate().getSpec().getContainers().getFirst();
         container.setName(serviceName);
+        validateImageAllowed(resource.getSpec().getImage());
         container.setImage(resource.getSpec().getImage());
-        container.setImagePullPolicy(
-                resolveImagePullPolicy(null, resource.getSpec().getImagePullPolicy()));
+        container.setImagePullPolicy(resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
         container.setEnv(computeCodeExecutionEngineEnvVars(resource));
 
         final Integer port = resolveCodeExecutionPort(resource);
         container.getPorts().getFirst().setContainerPort(port);
         container.getPorts().getFirst().setName("grpc");
+
+        if (container.getLivenessProbe() != null && container.getLivenessProbe().getTcpSocket() != null) {
+            container.getLivenessProbe().getTcpSocket().setPort(new IntOrString(port));
+        }
+        if (container.getReadinessProbe() != null
+                && container.getReadinessProbe().getTcpSocket() != null) {
+            container.getReadinessProbe().getTcpSocket().setPort(new IntOrString(port));
+        }
 
         applyResourceRequirements(container, resource.getSpec().getResources());
 
@@ -344,8 +307,8 @@ public final class OperatorUtil {
         }
 
         ResourceRequirements requirements = new ResourceRequirements();
-        Map<String, Quantity> requests = new java.util.HashMap<>();
-        Map<String, Quantity> limits = new java.util.HashMap<>();
+        Map<String, Quantity> requests = new HashMap<>();
+        Map<String, Quantity> limits = new HashMap<>();
 
         if (resourceSpec.getCpuRequest() != null
                 && !resourceSpec.getCpuRequest().isBlank()) {
@@ -380,6 +343,7 @@ public final class OperatorUtil {
         final String serviceName = resource.getMetadata().getName();
         final String registrationUri =
                 getInternalRegistrationUri(resource.getSpec().getRouterRef());
+        final String authRealm = resolveAuthRealm(resource);
         final String authServer = resource.getSpec().getAuth() != null
                 ? resource.getSpec().getAuth().getAuthServer()
                 : null;
@@ -418,7 +382,7 @@ public final class OperatorUtil {
         if (authServer != null && !authServer.isBlank()) {
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT)
-                    .withValue(authServer + "/realms/wanaku")
+                    .withValue(authServer + "/realms/" + authRealm)
                     .build());
         }
         if (oidcSecret != null && !oidcSecret.isBlank()) {
@@ -431,7 +395,7 @@ public final class OperatorUtil {
         addSecurityEnvVars(resource.getSpec().getSecurity(), envVars);
         addCacheEnvVars(resource.getSpec().getDependencyCache(), envVars);
         addRemoteEnvVars(resource.getSpec().getRemote(), envVars);
-        addCustomVars(resource.getSpec().getEnv(), envVars);
+        EnvironmentVariableHelper.addCustomVars(resource.getSpec().getEnv(), envVars);
         return envVars;
     }
 
@@ -549,7 +513,7 @@ public final class OperatorUtil {
                 .build());
     }
 
-    private static boolean isRemoteDeploymentMode(WanakuCodeExecutionEngineSpec spec) {
+    public static boolean isRemoteDeploymentMode(WanakuCodeExecutionEngineSpec spec) {
         return "remote".equalsIgnoreCase(normalizeDeploymentMode(spec.getDeploymentMode()));
     }
 
@@ -563,20 +527,43 @@ public final class OperatorUtil {
         return resource.getSpec().getPort() != null ? resource.getSpec().getPort() : 9190;
     }
 
-    private static String normalizeDeploymentMode(String deploymentMode) {
+    public static String normalizeDeploymentMode(String deploymentMode) {
         if (deploymentMode == null || deploymentMode.isBlank()) {
-            return "in-cluster";
+            return WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
         }
 
         String normalized = deploymentMode.trim().toLowerCase();
-        if ("remote".equals(normalized) || "in-cluster".equals(normalized) || "incluster".equals(normalized)) {
-            return "remote".equals(normalized) ? "remote" : "in-cluster";
+        if (WanakuTypes.VALID_DEPLOYMENT_MODES.contains(normalized) || "incluster".equals(normalized)) {
+            return WanakuTypes.DEPLOYMENT_MODE_REMOTE.equals(normalized)
+                    ? WanakuTypes.DEPLOYMENT_MODE_REMOTE
+                    : WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
         }
-        return "in-cluster";
+        return WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
     }
 
-    private static String getInternalRegistrationUri(String routerRef) {
-        return "http://internal-" + routerRef + ":8080/";
+    public static void validateDeploymentMode(String deploymentMode) {
+        if (deploymentMode == null || deploymentMode.isBlank()) {
+            return;
+        }
+        String normalized = deploymentMode.trim().toLowerCase();
+        if (!WanakuTypes.VALID_DEPLOYMENT_MODES.contains(normalized) && !"incluster".equals(normalized)) {
+            throw new WanakuException(
+                    "deploymentMode must be one of: " + String.join(", ", WanakuTypes.VALID_DEPLOYMENT_MODES));
+        }
+    }
+
+    public static void validateCacheStrategy(WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec) {
+        if (cacheSpec == null
+                || cacheSpec.getStrategy() == null
+                || cacheSpec.getStrategy().isBlank()) {
+            return;
+        }
+
+        String strategy = cacheSpec.getStrategy().trim().toLowerCase();
+        if (!WanakuTypes.VALID_CACHE_STRATEGIES.contains(strategy)) {
+            throw new WanakuException("dependencyCache.strategy must be one of: "
+                    + String.join(", ", WanakuTypes.VALID_CACHE_STRATEGIES));
+        }
     }
 
     static String resolveAuthRealm(WanakuCapability resource) {
@@ -594,6 +581,14 @@ public final class OperatorUtil {
      * @return the configured realm, or the default "wanaku" realm
      */
     static String resolveAuthRealm(WanakuRouter resource) {
+        if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
+            return EnvironmentVariables.DEFAULT_AUTH_REALM;
+        }
+        String realm = resource.getSpec().getAuth().getAuthRealm();
+        return (realm == null || realm.isBlank()) ? EnvironmentVariables.DEFAULT_AUTH_REALM : realm;
+    }
+
+    static String resolveAuthRealm(WanakuCodeExecutionEngine resource) {
         if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
             return EnvironmentVariables.DEFAULT_AUTH_REALM;
         }

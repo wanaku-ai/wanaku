@@ -1,6 +1,6 @@
 # Wanaku Assertions Library
 
-Wanaku provides domain-specific assertions helpers designed to keep tests concise and to surface clear,
+Wanaku provides domain-specific assertion helpers designed to keep tests concise and to surface clear,
 actionable failure messages.
 
 ## Core Assertions
@@ -11,6 +11,7 @@ actionable failure messages.
 This class is shared across modules via the `core-util` test-jar (`classifier` `tests`).
 
 It provides assertions for:
+
 - HTTP responses (status, success/error)
 - Wanaku responses (success/error)
 - Tools, Resources, Forwards (registration, equality)
