@@ -56,7 +56,7 @@ class InfinispanReadinessCheckTest {
     }
 
     @Test
-    void call_returnsDown_whenCacheIsDegraded() {
+    void call_returnsUp_whenCacheIsDegraded() {
         CacheHealth degradedCache = mockCacheHealth("degradedCache", HealthStatus.DEGRADED);
         ClusterHealth clusterHealth = mockClusterHealth(HealthStatus.DEGRADED);
         Health health = mockHealth(clusterHealth, List.of(degradedCache));
@@ -68,7 +68,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
         assertEquals("degradedCache", getDataValue(response, "degradedCaches"));
     }
 
@@ -86,11 +86,11 @@ class InfinispanReadinessCheckTest {
 
         assertEquals("infinispan", response.getName());
         assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
-        assertEquals("failedCache", getDataValue(response, "degradedCaches"));
+        assertEquals("failedCache", getDataValue(response, "failedCaches"));
     }
 
     @Test
-    void call_returnsDown_withMultipleDegradedCaches() {
+    void call_returnsDown_withMultipleDegradedCachesAndAFailedOne() {
         CacheHealth degradedCache = mockCacheHealth("cacheA", HealthStatus.DEGRADED);
         CacheHealth failedCache = mockCacheHealth("cacheB", HealthStatus.FAILED);
         ClusterHealth clusterHealth = mockClusterHealth(HealthStatus.DEGRADED);
@@ -103,9 +103,10 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
-        String degradedCaches = getDataValue(response, "degradedCaches");
+        String degradedCaches = getDataValue(response, "failedCaches");
         assertNotNull(degradedCaches);
-        assertTrue(degradedCaches.contains("cacheA"));
+        // Cache A is degraded and should not appear as failed
+        assertFalse(degradedCaches.contains("cacheA"));
         assertTrue(degradedCaches.contains("cacheB"));
     }
 
@@ -157,7 +158,7 @@ class InfinispanReadinessCheckTest {
     }
 
     @Test
-    void call_returnsDown_withMixedHealthyAndDegradedCaches() {
+    void call_returnsUp_withMixedHealthyAndDegradedCaches() {
         CacheHealth healthyCache = mockCacheHealth("healthyCache", HealthStatus.HEALTHY);
         CacheHealth degradedCache = mockCacheHealth("degradedCache", HealthStatus.DEGRADED);
         ClusterHealth clusterHealth = mockClusterHealth(HealthStatus.DEGRADED);
@@ -169,7 +170,7 @@ class InfinispanReadinessCheckTest {
 
         HealthCheckResponse response = check.call();
 
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
         assertFalse(response.getData().get().containsKey("cacheNames"));
         assertEquals("degradedCache", getDataValue(response, "degradedCaches"));
     }

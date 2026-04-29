@@ -27,6 +27,22 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
         this.capabilitiesRepository = capabilitiesRepository;
         this.activityRecordRepository = activityRecordRepository;
         this.lookupCache = lookupCache;
+
+        /*
+         DO NOT REMOVE.
+
+         These seemingly innocent log messages actually prevent the
+         health check from reporting a failure on the activity record
+         repository. It seems Infinispan doesn't create the data files
+         until there is a hit on the cache, which for some reason cause
+         it to report as FAILED when checking the readiness
+         */
+        LOG.infof(
+                "Number of previously recorded activities: %d",
+                activityRecordRepository.listAll().size());
+        LOG.infof(
+                "Number of previously recorded capabilities: %d",
+                capabilitiesRepository.listAll().size());
     }
 
     private static void updatePing(ActivityRecord e) {

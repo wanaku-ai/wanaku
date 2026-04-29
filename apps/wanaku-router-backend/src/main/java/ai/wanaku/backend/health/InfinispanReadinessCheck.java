@@ -17,7 +17,7 @@ import org.infinispan.manager.EmbeddedCacheManager;
 @ApplicationScoped
 public class InfinispanReadinessCheck implements HealthCheck {
 
-    private static final Set<HealthStatus> UNHEALTHY_STATUSES = Set.of(HealthStatus.DEGRADED, HealthStatus.FAILED);
+    private static final Set<HealthStatus> UNHEALTHY_STATUSES = Set.of(HealthStatus.FAILED, HealthStatus.DEGRADED);
 
     @Inject
     EmbeddedCacheManager cacheManager;
@@ -28,12 +28,17 @@ public class InfinispanReadinessCheck implements HealthCheck {
 
         try {
             Health health = cacheManager.getHealth();
-            if (isDegraded(health)) {
+            if (isFailed(health)) {
                 builder.down();
-                appendDegradedCaches(builder, health);
+                appendDegradedCaches(builder, health, HealthStatus.FAILED);
+                appendDegradedCaches(builder, health, HealthStatus.DEGRADED);
             } else {
                 builder.up();
-                appendHealthyData(builder, health);
+                if (isDegraded(health)) {
+                    appendDegradedCaches(builder, health, HealthStatus.DEGRADED);
+                } else {
+                    appendHealthyData(builder, health);
+                }
             }
         } catch (Exception e) {
             builder.down().withData("error", e.getMessage());
@@ -42,17 +47,33 @@ public class InfinispanReadinessCheck implements HealthCheck {
         return builder.build();
     }
 
-    private boolean isDegraded(Health health) {
-        return health.getCacheHealth().stream().anyMatch(ch -> UNHEALTHY_STATUSES.contains(ch.getStatus()));
+    private boolean isFailed(Health health) {
+        return health.getCacheHealth().stream().anyMatch(ch -> ch.getStatus().equals(HealthStatus.FAILED));
     }
 
-    private void appendDegradedCaches(HealthCheckResponseBuilder builder, Health health) {
+    private boolean isDegraded(Health health) {
+        return health.getCacheHealth().stream().anyMatch(ch -> ch.getStatus().equals(HealthStatus.DEGRADED));
+    }
+
+    private void appendDegradedCaches(HealthCheckResponseBuilder builder, Health health, HealthStatus healthStatus) {
         String degradedCaches = health.getCacheHealth().stream()
-                .filter(ch -> UNHEALTHY_STATUSES.contains(ch.getStatus()))
+                .filter(ch -> ch.getStatus().equals(healthStatus))
                 .map(CacheHealth::getCacheName)
                 .reduce((a, b) -> a + "," + b)
                 .orElse("");
-        builder.withData("degradedCaches", degradedCaches);
+        builder.withData(labelForStatus(healthStatus), degradedCaches);
+    }
+
+    private static String labelForStatus(HealthStatus status) {
+        if (status.equals(HealthStatus.DEGRADED)) {
+            return "degradedCaches";
+        }
+
+        if (status.equals(HealthStatus.FAILED)) {
+            return "failedCaches";
+        }
+
+        return "unspecifiedStatus";
     }
 
     private void appendHealthyData(HealthCheckResponseBuilder builder, Health health) {
