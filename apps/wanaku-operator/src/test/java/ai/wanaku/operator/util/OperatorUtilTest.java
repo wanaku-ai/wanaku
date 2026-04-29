@@ -2,14 +2,13 @@ package ai.wanaku.operator.util;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
-import io.fabric8.kubernetes.api.model.Endpoints;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngine;
 import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineSpec;
+import ai.wanaku.operator.wanaku.WanakuTypes;
 
 import static ai.wanaku.operator.assertions.OperatorAssertions.assertCondition;
-import static ai.wanaku.operator.assertions.OperatorAssertions.assertEndpointTarget;
-import static ai.wanaku.operator.assertions.OperatorAssertions.assertMetadataLabel;
 import static ai.wanaku.operator.assertions.OperatorAssertions.assertServiceLabel;
 import static ai.wanaku.operator.assertions.OperatorAssertions.assertServicePort;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -21,7 +20,9 @@ import ai.wanaku.operator.wanaku.WanakuTypes;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OperatorUtilTest {
 
@@ -55,6 +56,12 @@ class OperatorUtilTest {
         assertEquals("Always", OperatorUtil.resolveImagePullPolicy("Always", null));
         assertEquals("IfNotPresent", OperatorUtil.resolveImagePullPolicy("IfNotPresent", null));
         assertEquals("Never", OperatorUtil.resolveImagePullPolicy("Never", null));
+    }
+
+    @Test
+    void resolveImagePullPolicyCodeExecutionFallsBackCorrectly() {
+        assertEquals("Always", OperatorUtil.resolveImagePullPolicy("Always", null));
+        assertEquals("IfNotPresent", OperatorUtil.resolveImagePullPolicy(null, null));
     }
 
     @Test
@@ -101,7 +108,7 @@ class OperatorUtilTest {
     }
 
     @Test
-    void makeCodeExecutionEngineEndpointsUsesRemoteHostAndPort() {
+    void makeCodeExecutionEngineInternalServiceRemoteUsesExternalName() {
         WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
         WanakuCodeExecutionEngineSpec spec = baseSpec();
         spec.setDeploymentMode("remote");
@@ -114,10 +121,176 @@ class OperatorUtilTest {
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        Endpoints endpoints = OperatorUtil.makeCodeExecutionEngineEndpoints(resource);
+        Service service = OperatorUtil.makeCodeExecutionEngineInternalService(resource);
 
-        assertEndpointTarget(endpoints, "camel-engine.example.com", 9555);
-        assertMetadataLabel(endpoints, "component", "camel-code-execution-engine");
+        assertEquals("ExternalName", service.getSpec().getType());
+        assertEquals("camel-engine.example.com", service.getSpec().getExternalName());
+        assertTrue(service.getSpec().getSelector() == null
+                || service.getSpec().getSelector().isEmpty());
+    }
+
+    @Test
+    void makeDesiredCamelCodeExecutionEngineDeploymentSetsContainerPort() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setPort(9443);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        Deployment deployment = OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+
+        assertNotNull(deployment);
+        assertEquals("test-engine", deployment.getMetadata().getName());
+        assertEquals(
+                9443,
+                deployment
+                        .getSpec()
+                        .getTemplate()
+                        .getSpec()
+                        .getContainers()
+                        .getFirst()
+                        .getPorts()
+                        .getFirst()
+                        .getContainerPort());
+    }
+
+    @Test
+    void makeDesiredCamelCodeExecutionEngineDeploymentUpdatesProbePorts() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setPort(9443);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        Deployment deployment = OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+
+        var container =
+                deployment.getSpec().getTemplate().getSpec().getContainers().getFirst();
+        assertNotNull(container.getLivenessProbe());
+        assertNotNull(container.getReadinessProbe());
+        assertEquals(9443, container.getLivenessProbe().getTcpSocket().getPort().getIntVal());
+        assertEquals(
+                9443, container.getReadinessProbe().getTcpSocket().getPort().getIntVal());
+    }
+
+    @Test
+    void makeDesiredCamelCodeExecutionEngineDeploymentDefaultsPortTo9190() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setPort(null);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        Deployment deployment = OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+
+        var container =
+                deployment.getSpec().getTemplate().getSpec().getContainers().getFirst();
+        assertEquals(9190, container.getPorts().getFirst().getContainerPort());
+        assertEquals(9190, container.getLivenessProbe().getTcpSocket().getPort().getIntVal());
+        assertEquals(
+                9190, container.getReadinessProbe().getTcpSocket().getPort().getIntVal());
+    }
+
+    @Test
+    void resolveCodeExecutionPortUsesSpecPort() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setPort(9443);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        assertEquals(9443, OperatorUtil.resolveCodeExecutionPort(resource));
+    }
+
+    @Test
+    void resolveCodeExecutionPortDefaultsTo9190() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setPort(null);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        assertEquals(9190, OperatorUtil.resolveCodeExecutionPort(resource));
+    }
+
+    @Test
+    void resolveCodeExecutionPortRemoteUsesRemotePort() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setDeploymentMode("remote");
+        WanakuCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCodeExecutionEngineSpec.RemoteSpec();
+        remote.setHost("engine.example.com");
+        remote.setPort(9555);
+        spec.setRemote(remote);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        assertEquals(9555, OperatorUtil.resolveCodeExecutionPort(resource));
+    }
+
+    @Test
+    void resolveCodeExecutionPortRemoteFallsBackToSpecPort() {
+        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        spec.setDeploymentMode("remote");
+        spec.setPort(9443);
+        WanakuCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCodeExecutionEngineSpec.RemoteSpec();
+        remote.setHost("engine.example.com");
+        spec.setRemote(remote);
+        resource.setSpec(spec);
+        resource.getMetadata().setName("test-engine");
+        resource.getMetadata().setNamespace("wanaku");
+        resource.getMetadata().setUid("test-uid");
+
+        assertEquals(9443, OperatorUtil.resolveCodeExecutionPort(resource));
+    }
+
+    @Test
+    void normalizeDeploymentModeReturnsInClusterForNull() {
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER, OperatorUtil.normalizeDeploymentMode(null));
+    }
+
+    @Test
+    void normalizeDeploymentModeReturnsInClusterForBlank() {
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER, OperatorUtil.normalizeDeploymentMode("  "));
+    }
+
+    @Test
+    void normalizeDeploymentModeReturnsRemote() {
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_REMOTE, OperatorUtil.normalizeDeploymentMode("remote"));
+    }
+
+    @Test
+    void normalizeDeploymentModeIsCaseInsensitive() {
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_REMOTE, OperatorUtil.normalizeDeploymentMode("Remote"));
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER, OperatorUtil.normalizeDeploymentMode("In-Cluster"));
+    }
+
+    @Test
+    void normalizeDeploymentModeHandlesInClusterAlias() {
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER, OperatorUtil.normalizeDeploymentMode("incluster"));
+    }
+
+    @Test
+    void normalizeDeploymentModeDefaultsUnknownToInCluster() {
+        assertEquals(WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER, OperatorUtil.normalizeDeploymentMode("unknown"));
+    }
+
+    @Test
+    void getInternalRegistrationUriConstructsCorrectUrl() {
+        assertEquals("http://internal-my-router:8080/", OperatorUtil.getInternalRegistrationUri("my-router"));
     }
 
     private static WanakuCodeExecutionEngineSpec baseSpec() {
