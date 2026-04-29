@@ -1,6 +1,6 @@
 # Wanaku Assertions Library
 
-Wanaku provides domain-specific assertions helpers designed to keep tests concise and to surface clear,
+Wanaku provides domain-specific assertion helpers designed to keep tests concise and to surface clear,
 actionable failure messages.
 
 ## Core Assertions
