@@ -6,7 +6,9 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
 
 import org.junit.jupiter.api.Test;
 
@@ -20,10 +22,9 @@ class OAuthProtectedResourceWellKnownResourceIT {
                 .get("/.well-known/oauth-protected-resource/ns-1/mcp")
                 .then()
                 .statusCode(200)
-                .body(containsString("\"resource\""))
-                .body(containsString("/ns-1/mcp"))
-                .body(containsString("\"authorization_servers\""))
-                .body(containsString("/q/oidc"));
+                .contentType(JSON)
+                .body("resource", endsWith("/ns-1/mcp"))
+                .body("authorization_servers", hasItem(endsWith("/q/oidc")));
     }
 
     @Test
@@ -32,8 +33,9 @@ class OAuthProtectedResourceWellKnownResourceIT {
                 .get("/.well-known/oauth-protected-resource/ns-5/mcp")
                 .then()
                 .statusCode(200)
-                .body(containsString("/ns-5/mcp"))
-                .body(containsString("\"authorization_servers\""));
+                .contentType(JSON)
+                .body("resource", endsWith("/ns-5/mcp"))
+                .body("authorization_servers", hasItem(endsWith("/q/oidc")));
     }
 
     public static class Profile implements QuarkusTestProfile {
