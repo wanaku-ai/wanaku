@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ai.wanaku</groupId>
@@ -29,7 +30,7 @@
         <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
         <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
-        <executable-suffix />
+        <executable-suffix/>
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
 
         <!-- Container stuff -->
@@ -87,7 +88,7 @@
     </properties>
 
     <dependencyManagement>
-        <dependencies>            
+        <dependencies>
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
@@ -142,27 +143,27 @@
                 <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>           
+            </dependency>
             <dependency>
                 <groupId>com.github.docker-java</groupId>
                 <artifactId>docker-java-api</artifactId>
                 <version>${docker-java.version}</version>
             </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-core</artifactId>
-            <version>${docker-java.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport</artifactId>
-            <version>${docker-java.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport-zerodep</artifactId>
-            <version>${docker-java.version}</version>
-        </dependency>
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-core</artifactId>
+                <version>${docker-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-transport</artifactId>
+                <version>${docker-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-transport-zerodep</artifactId>
+                <version>${docker-java.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>info.picocli</groupId>
@@ -251,9 +252,9 @@
                             <palantirJavaFormat>
                                 <version>${palantir-format.version}</version>
                             </palantirJavaFormat>
-                            <removeUnusedImports />
-                            <formatAnnotations />
-                            <forbidWildcardImports />
+                            <removeUnusedImports/>
+                            <formatAnnotations/>
+                            <forbidWildcardImports/>
 
                             <excludes>
                                 <exclude>**/*.properties</exclude>
@@ -262,7 +263,9 @@
 
                             <importOrder>
                                 <wildcardsLast>true</wildcardsLast>
-                                <order>jakarta|javax,org.w3c|org.xml,java|org|io|,,\#,org.junit|org.mockito|\#org.assertj|\#org.junit|\#org.mockito</order>
+                                <order>
+                                    jakarta|javax,org.w3c|org.xml,java|org|io|,,\#,org.junit|org.mockito|\#org.assertj|\#org.junit|\#org.mockito
+                                </order>
                             </importOrder>
                         </java>
                     </configuration>
