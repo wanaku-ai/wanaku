@@ -33,6 +33,9 @@ class HealthProbeClient {
 
             HealthProbeReply reply = transport.probeHealth(request, target);
             return mapRuntimeStatus(reply.getStatus());
+        } catch (ServiceUnavailableException e) {
+            LOG.warnf("Service is not available at %s: %s", target.toAddress(), e.getMessage());
+            return HealthStatus.DOWN;
         } catch (Exception e) {
             LOG.warnf(e, "Health probe failed for %s: %s", target.toAddress(), e.getMessage());
             return HealthStatus.DOWN;
