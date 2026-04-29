@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
-import io.fabric8.kubernetes.api.model.Endpoints;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -23,12 +22,15 @@ import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
+import static ai.wanaku.operator.util.Matchers.match;
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.makeCodeExecutionEngineEndpoints;
+import static ai.wanaku.operator.util.OperatorUtil.isRemoteDeploymentMode;
 import static ai.wanaku.operator.util.OperatorUtil.makeCodeExecutionEngineInternalService;
 import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
+import static ai.wanaku.operator.util.OperatorUtil.validateCacheStrategy;
+import static ai.wanaku.operator.util.OperatorUtil.validateDeploymentMode;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(
@@ -39,7 +41,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
         description = "Deploys and manages the Camel Code Execution Engine capability")
 @RBACRule(
         apiGroups = "",
-        resources = {"services", "configmaps", "secrets", "serviceaccounts", "endpoints"},
+        resources = {"services", "configmaps", "secrets", "serviceaccounts"},
         verbs = {
             RBACVerbs.GET,
             RBACVerbs.LIST,
@@ -77,36 +79,56 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
         validateSpec(resource);
 
         final String namespace = resource.getMetadata().getNamespace();
-        final boolean remote = isRemote(resource);
+        final boolean remote = isRemoteDeploymentMode(resource.getSpec());
         final String serviceName = resource.getMetadata().getName();
+
+        final String routerRef = resource.getSpec().getRouterRef();
+        WanakuRouter router = kubernetesClient
+                .resources(WanakuRouter.class)
+                .inNamespace(namespace)
+                .withName(routerRef)
+                .get();
+        if (router == null) {
+            throw new WanakuException(String.format(
+                    "Referenced WanakuRouter '%s' not found in namespace '%s'. "
+                            + "Ensure the WanakuRouter resource is created before the WanakuCodeExecutionEngine.",
+                    routerRef, namespace));
+        }
+
         final String serviceUrl = buildServiceUrl(resource);
 
         final Service desiredService = makeCodeExecutionEngineInternalService(resource);
 
         if (!remote) {
             final Deployment desiredDeployment = makeDesiredCamelCodeExecutionEngineDeployment(resource, context);
-            LOG.infof("Creating or updating Deployment %s in %s", serviceName, namespace);
-            kubernetesClient
+            Deployment existingDeployment = kubernetesClient
                     .apps()
                     .deployments()
                     .inNamespace(namespace)
-                    .resource(desiredDeployment)
-                    .createOr(Replaceable::update);
+                    .withName(serviceName)
+                    .get();
+            if (!match(desiredDeployment, existingDeployment)) {
+                LOG.infof("Creating or updating Deployment %s in %s", serviceName, namespace);
+                kubernetesClient
+                        .apps()
+                        .deployments()
+                        .inNamespace(namespace)
+                        .resource(desiredDeployment)
+                        .createOr(Replaceable::update);
+            }
         }
 
-        LOG.infof("Creating or updating Service %s in %s", serviceName, namespace);
-        kubernetesClient
+        Service existingService = kubernetesClient
                 .services()
                 .inNamespace(namespace)
-                .resource(desiredService)
-                .createOr(Replaceable::update);
-
-        if (remote) {
-            final Endpoints desiredEndpoints = makeCodeExecutionEngineEndpoints(resource);
+                .withName(serviceName)
+                .get();
+        if (!match(desiredService, existingService)) {
+            LOG.infof("Creating or updating Service %s in %s", serviceName, namespace);
             kubernetesClient
-                    .endpoints()
+                    .services()
                     .inNamespace(namespace)
-                    .resource(desiredEndpoints)
+                    .resource(desiredService)
                     .createOr(Replaceable::update);
         }
 
@@ -167,17 +189,18 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                 : "http";
         Integer port = resource.getSpec().getPort() != null ? resource.getSpec().getPort() : 9190;
 
-        if (isRemote(resource)) {
+        if (isRemoteDeploymentMode(resource.getSpec())) {
             String path = resource.getSpec().getRemote().getPath();
             String suffix = path != null && !path.isBlank() ? path : "";
+            Integer remotePort = resource.getSpec().getRemote().getPort() != null
+                    ? resource.getSpec().getRemote().getPort()
+                    : port;
             return String.format(
                     Locale.ROOT,
                     "%s://%s:%d%s",
                     scheme,
                     resource.getSpec().getRemote().getHost(),
-                    resource.getSpec().getRemote().getPort() != null
-                            ? resource.getSpec().getRemote().getPort()
-                            : port,
+                    remotePort,
                     suffix);
         }
 
@@ -190,7 +213,7 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                 port);
     }
 
-    private void validateSpec(WanakuCodeExecutionEngine resource) {
+    void validateSpec(WanakuCodeExecutionEngine resource) {
         final WanakuCodeExecutionEngineSpec spec = resource.getSpec();
         if (spec == null) {
             throw new WanakuException("spec must be provided");
@@ -204,8 +227,9 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
         if (spec.getEngineType() == null || spec.getEngineType().isBlank()) {
             throw new WanakuException("engineType must be specified for the Camel Code Execution Engine");
         }
+        validateDeploymentMode(spec.getDeploymentMode());
 
-        if (isRemote(resource)) {
+        if (isRemoteDeploymentMode(resource.getSpec())) {
             if (spec.getRemote() == null
                     || spec.getRemote().getHost() == null
                     || spec.getRemote().getHost().isBlank()) {
@@ -219,7 +243,7 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
         validateCacheStrategy(spec.getDependencyCache());
     }
 
-    private void validateSecurityLists(WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec) {
+    void validateSecurityLists(WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec) {
         if (securitySpec == null) {
             return;
         }
@@ -227,20 +251,6 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
         validateNoOverlap("component", securitySpec.getComponentAllowlist(), securitySpec.getComponentBlocklist());
         validateNoOverlap("endpoint", securitySpec.getEndpointAllowlist(), securitySpec.getEndpointBlocklist());
         validateNoOverlap("route", securitySpec.getRouteAllowlist(), securitySpec.getRouteBlocklist());
-    }
-
-    private void validateCacheStrategy(WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec) {
-        if (cacheSpec == null
-                || cacheSpec.getStrategy() == null
-                || cacheSpec.getStrategy().isBlank()) {
-            return;
-        }
-
-        String strategy = cacheSpec.getStrategy().trim().toLowerCase(Locale.ROOT);
-        if (!WanakuTypes.VALID_CACHE_STRATEGIES.contains(strategy)) {
-            throw new WanakuException("dependencyCache.strategy must be one of: "
-                    + String.join(", ", WanakuTypes.VALID_CACHE_STRATEGIES));
-        }
     }
 
     private void validateNoOverlap(String name, List<String> allowlist, List<String> blocklist) {
@@ -259,10 +269,5 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
             throw new WanakuException(
                     String.format("%s allowlist and blocklist cannot contain the same entries: %s", name, overlaps));
         }
-    }
-
-    private boolean isRemote(WanakuCodeExecutionEngine resource) {
-        String deploymentMode = resource.getSpec().getDeploymentMode();
-        return deploymentMode != null && WanakuTypes.DEPLOYMENT_MODE_REMOTE.equalsIgnoreCase(deploymentMode.trim());
     }
 }
