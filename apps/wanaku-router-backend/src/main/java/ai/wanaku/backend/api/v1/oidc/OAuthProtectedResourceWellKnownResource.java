@@ -10,6 +10,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @Path("/.well-known/oauth-protected-resource")
@@ -34,9 +36,9 @@ public class OAuthProtectedResourceWellKnownResource {
         String resource = baseUrl + "/" + namespace + "/mcp";
         String authorizationServer = baseUrl + oidcProxyRootPath;
 
-        String json =
-                "{\"resource\":\"" + resource + "\"," + "\"authorization_servers\":[\"" + authorizationServer + "\"]}";
+        Map<String, Object> metadata =
+                Map.of("resource", resource, "authorization_servers", List.of(authorizationServer));
 
-        return Response.ok(json, MediaType.APPLICATION_JSON).build();
+        return Response.ok(metadata, MediaType.APPLICATION_JSON).build();
     }
 }
