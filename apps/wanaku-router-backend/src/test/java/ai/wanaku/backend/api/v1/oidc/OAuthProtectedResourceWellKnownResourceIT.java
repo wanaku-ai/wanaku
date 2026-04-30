@@ -9,6 +9,7 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,20 @@ class OAuthProtectedResourceWellKnownResourceIT {
                 .contentType(JSON)
                 .body("resource", endsWith("/ns-5/mcp"))
                 .body("authorization_servers", hasItem(endsWith("/q/oidc")));
+    }
+
+    @Test
+    void respectsForwardedProtoHeader() {
+        given().header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "wanaku-backend.dev")
+                .when()
+                .get("/.well-known/oauth-protected-resource/ns-1/mcp")
+                .then()
+                .statusCode(200)
+                .contentType(JSON)
+                .body("resource", startsWith("https://wanaku-backend.dev/"))
+                .body("resource", endsWith("/ns-1/mcp"))
+                .body("authorization_servers", hasItem(startsWith("https://wanaku-backend.dev/")));
     }
 
     public static class Profile implements QuarkusTestProfile {
