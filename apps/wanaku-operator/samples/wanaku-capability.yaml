@@ -25,12 +25,7 @@ spec:
     - name: employee-system
       type: camel-integration-capability
       image: quay.io/wanaku/camel-integration-capability:latest
-      # When using a camel integration capability, must always set the path to the routes file and to the rules file
-      env:
-        # The path to the routes file, should be within /data (i.e.: /data/my-system.camel.yaml)
-        - name: ROUTES_PATH
-          value: ""
-        # The path to the rules file, should be within /data (i.e.: /data/my-system-rules.yaml)
-        - name: ROUTES_RULES
-          value: ""
-        # Note, you can use oc cp file <pod name>:/data/<file> to copy the files
+      # Service catalog name (deployed via WanakuServiceCatalog or 'wanaku service deploy')
+      serviceCatalog: employee-system-v2
+      # System name within the service catalog
+      serviceCatalogSystem: employee-system

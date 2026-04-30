@@ -30,6 +30,10 @@ spec:
           value: ""
         - name: ROUTES_RULES
           value: ""
+        - name: SERVICE_CATALOG
+          value: ""
+        - name: SERVICE_CATALOG_SYSTEM
+          value: ""
         - name: TOKEN_ENDPOINT
           value: ""
         - name: CLIENT_ID

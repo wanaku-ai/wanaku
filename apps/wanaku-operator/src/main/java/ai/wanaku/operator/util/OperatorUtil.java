@@ -426,6 +426,21 @@ public final class OperatorUtil {
         envVars.add(oidcSecretEnv);
         envVars.add(serviceName);
 
+        if (capabilitiesSpec.getServiceCatalog() != null
+                && !capabilitiesSpec.getServiceCatalog().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_CATALOG)
+                    .withValue(capabilitiesSpec.getServiceCatalog())
+                    .build());
+        }
+        if (capabilitiesSpec.getServiceCatalogSystem() != null
+                && !capabilitiesSpec.getServiceCatalogSystem().isBlank()) {
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_CATALOG_SYSTEM)
+                    .withValue(capabilitiesSpec.getServiceCatalogSystem())
+                    .build());
+        }
+
         addCustomVars(customEnv, envVars);
         return envVars;
     }

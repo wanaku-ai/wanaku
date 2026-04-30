@@ -42,6 +42,10 @@ spec:
                       type: "string"
                     name:
                       type: "string"
+                    serviceCatalog:
+                      type: "string"
+                    serviceCatalogSystem:
+                      type: "string"
                     type:
                       type: "string"
                   type: "object"
