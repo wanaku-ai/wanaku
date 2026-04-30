@@ -7,34 +7,53 @@ import {
   Tabs,
   TextInput
 } from "@carbon/react";
-import React, {useState} from "react";
-import {ToolReference} from "../../models";
+import React, {useEffect, useState} from "react";
+import {Namespace, ToolReference} from "../../models";
 import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
 import {useCapabilities} from "../../hooks/api/use-capabilities";
 import {formatInputSchema, parseInputSchema} from "./tools-utils.ts";
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
+import {useNamespaces} from "../../hooks/api/use-namespaces"
+import {Tools} from "./tools"
 
 
 interface ToolModalProps {
+  tools: ToolReference[]
   tool?: ToolReference
   onSubmit: (tool: ToolReference) => void
   onRequestClose: () => void
 }
 
 export const ToolModal: React.FC<ToolModalProps> = ({
+  tools,
   tool,
   onSubmit,
   onRequestClose
 }) => {
+  const [namespaces, setNamespaces] = useState<Namespace[]>([])
   const [toolName, setToolName] = useState(tool?.name || "")
+  const [toolNameInvalid, setToolNameInvalid] = useState(false)
+  const [toolNameInvalidText, setToolNameInvalidText] = useState("")
   const [description, setDescription] = useState(tool?.description || "")
   const [uri, setUri] = useState(tool?.uri || "")
   const [toolType, setToolType] = useState(tool?.type || "http")
   const [inputSchema, setInputSchema] = useState(formatInputSchema(tool?.inputSchema))
+  const [inputSchemaInvalid, setInputSchemaInvalid] = useState(false)
+  const [inputSchemaInvalidText, setInputSchemaInvalidText] = useState("")
   const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace)
   const [configurationURI, setConfigurationURI] = useState(tool?.configurationURI || "")
   const [secretsURI, setSecretsURI] = useState(tool?.secretsURI || "")
   const { listManagementTools } = useCapabilities()
+  const { listNamespaces } = useNamespaces()
+  
+  useEffect(() => {
+    (async () => {
+      const response = await listNamespaces()
+      if (response.status == 200 && Array.isArray(response.data.data)) {
+        setNamespaces(response.data.data)
+      }
+    })()
+  }, [listNamespaces])
 
   const handleSubmit = () => {
     try {
@@ -54,12 +73,48 @@ export const ToolModal: React.FC<ToolModalProps> = ({
       console.error("Invalid JSON in input schema:", error)
     }
   }
-
+  
+  function findNamespace(id: string | undefined | null): Namespace | undefined {
+    return id
+      ? namespaces.find(namespace => namespace.id === id)
+      : namespaces.find(namespace => namespace.path === "default")
+  }
+  
+  function otherTools(): ToolReference[] {
+    return tool ? tools.filter(t => t.id !== tool.id) : tools
+  }
+  
+  function isSameNamespace(namespaceIdA: string | undefined, namespaceIdB: string | undefined): boolean {
+    const namespaceA = findNamespace(namespaceIdA)
+    const namespaceB = findNamespace(namespaceIdB)
+    if (namespaceA && namespaceB) {
+      return namespaceA === namespaceB
+    }
+    return false
+  }
+  
+  function toolNameAlreadyExists(toolName: string, namespaceId: string | undefined): boolean {
+    return otherTools()
+      .filter(tool => tool.name === toolName)
+      .some(tool => isSameNamespace(tool.namespace, namespaceId))
+  }
+  
+  function validateToolName(toolName: string, namespaceId: string | undefined) {
+    setToolNameInvalid(toolNameAlreadyExists(toolName, namespaceId))
+    setToolNameInvalidText(`This tool name already exists in namespace: ${findNamespace(namespaceId)!.path}`)
+  }
+  
+  function validateInputSchema(schema: string) {
+    setInputSchemaInvalid(Tools.isInputSchemaInvalid(schema))
+    setInputSchemaInvalidText(Tools.validateInputSchema(schema))
+  }
+``
   return (
     <Modal
       open={true}
       modalHeading={tool ? "Edit Tool" : "Add a Tool"}
       primaryButtonText={tool ? "Save" : "Add"}
+      primaryButtonDisabled={toolNameInvalid || inputSchemaInvalid}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
@@ -76,7 +131,13 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               labelText="Tool Name"
               placeholder="e.g. meow-facts"
               value={toolName}
-              onChange={(event) => setToolName(event.target.value)}
+              invalid={toolNameInvalid}
+              invalidText={toolNameInvalidText}
+              onChange={(event) => {
+                const name = event.target.value
+                setToolName(name)
+                validateToolName(name, selectedNamespace)
+              }}
             />
             <TextInput
               id="tool-description"
@@ -102,14 +163,23 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               labelText="Input Schema"
               placeholder='e.g. {"type": "object", "properties": {"count": {"type": "int", "description": "The count of facts to retrieve"}}, "required": ["count"]}'
               value={inputSchema}
-              onChange={(event) => setInputSchema(event.target.value)}
+              invalid={inputSchemaInvalid}
+              invalidText={inputSchemaInvalidText}
+              onChange={(event) => {
+                const schema = event.target.value
+                setInputSchema(schema)
+                validateInputSchema(schema)
+              }}
             />
             <NamespaceSelect
               id="namespace"
               labelText="Select a Namespace"
               helperText="Choose a Namespace from the list"
               value={selectedNamespace}
-              onChange={namespace => setSelectedNamespace(namespace.id)}
+              onChange={namespace => {
+                setSelectedNamespace(namespace.id)
+                validateToolName(toolName, namespace.id)
+              }}
             />
           </TabPanel>
           <TabPanel>

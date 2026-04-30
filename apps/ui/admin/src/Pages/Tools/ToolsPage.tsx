@@ -141,6 +141,7 @@ export const ToolsPage: React.FC = () => {
         )}
         {isAddModalOpen && (
           <ToolModal
+            tools={fetchedData}
             tool={openedTool}
             onRequestClose={handleToolModalClose}
             onSubmit={handleToolModalSubmit}
