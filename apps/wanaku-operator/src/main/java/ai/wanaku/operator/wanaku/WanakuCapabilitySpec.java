@@ -53,6 +53,8 @@ public class WanakuCapabilitySpec {
         private String name;
         private String image;
         private String type;
+        private String serviceCatalog;
+        private String serviceCatalogSystem;
         private List<WanakuTypes.EnvVar> env;
         private String imagePullPolicy;
 
@@ -78,6 +80,22 @@ public class WanakuCapabilitySpec {
 
         public void setType(String type) {
             this.type = type;
+        }
+
+        public String getServiceCatalog() {
+            return serviceCatalog;
+        }
+
+        public void setServiceCatalog(String serviceCatalog) {
+            this.serviceCatalog = serviceCatalog;
+        }
+
+        public String getServiceCatalogSystem() {
+            return serviceCatalogSystem;
+        }
+
+        public void setServiceCatalogSystem(String serviceCatalogSystem) {
+            this.serviceCatalogSystem = serviceCatalogSystem;
         }
 
         public List<WanakuTypes.EnvVar> getEnv() {
