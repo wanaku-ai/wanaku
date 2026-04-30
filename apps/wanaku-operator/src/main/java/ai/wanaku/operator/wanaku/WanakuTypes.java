@@ -7,6 +7,7 @@ public final class WanakuTypes {
     public static class AuthSpec {
         private String authServer;
         private String authProxy;
+        private String authRealm;
 
         public String getAuthServer() {
             return authServer;
@@ -22,6 +23,14 @@ public final class WanakuTypes {
 
         public void setAuthProxy(String authProxy) {
             this.authProxy = authProxy;
+        }
+
+        public String getAuthRealm() {
+            return authRealm;
+        }
+
+        public void setAuthRealm(String authRealm) {
+            this.authRealm = authRealm;
         }
     }
 

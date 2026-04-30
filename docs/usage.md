@@ -813,8 +813,11 @@ Some of the settings you may need to adjust are:
 # Address of the Keycloak authentication server - adjust to your Keycloak instance
 auth.server=http://localhost:8543
 
-# Address of the KeyCloak authentication server
-quarkus.oidc-client.auth-server-url=${auth.server}/realms/wanaku
+# Keycloak realm name - adjust to your Keycloak realm (default: wanaku)
+auth.realm=${AUTH_REALM:wanaku}
+
+# Address of the Keycloak authentication server
+quarkus.oidc-client.auth-server-url=${auth.server}/realms/${auth.realm}
 
 # Client secret from Keycloak for service authentication - replace with your actual secret
 quarkus.oidc-client.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
@@ -3223,7 +3226,7 @@ This is particularly helpful when running a capability service in the cloud, beh
 
 ### Adjusting the authentication parameters
 
-* `quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/wanaku`
+* `quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/${auth.realm}` (realm defaults to `wanaku`; configure via `AUTH_REALM`)
 * `quarkus.oidc-client.client-id=wanaku-service`
 * `quarkus.oidc-client.refresh-token-time-skew=1m`
 * `quarkus.oidc-client.credentials.secret=<insert key here>`

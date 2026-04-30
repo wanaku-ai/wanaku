@@ -361,6 +361,7 @@ done
 HOSTNAME_FQDN=$(hostname -f)
 ROUTER_URL="http://${HOSTNAME_FQDN}:8080"
 KEYCLOAK_URL="http://${HOSTNAME_FQDN}:8543"
+KEYCLOAK_REALM=${KEYCLOAK_REALM:-wanaku}
 
 # ---- Stop router & capabilities ----
 stop_services() {
@@ -425,7 +426,7 @@ start_services() {
             java $JAVA_OPTS -Dquarkus.profile=perf \
                 -Dquarkus.grpc.server.port="$GRPC_PORT" \
                 -Dwanaku.service.registration.uri="$ROUTER_URL" \
-                -Dquarkus.oidc-client.auth-server-url="$KEYCLOAK_URL/realms/wanaku" \
+                -Dquarkus.oidc-client.auth-server-url="$KEYCLOAK_URL/realms/$KEYCLOAK_REALM" \
                 -Dquarkus.oidc-client.client-id=wanaku-service \
                 -Dquarkus.oidc-client.credentials.secret="$CLIENT_SECRET" \
                 -jar "$cap_jar" \

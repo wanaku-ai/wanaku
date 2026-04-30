@@ -349,6 +349,8 @@ quarkus.oidc-client.client-id=wanaku-service
 quarkus.oidc-client.credentials.secret=${WANAKU_SERVICE_SECRET}
 ```
 
+> The realm name defaults to `wanaku` and can be configured via the `AUTH_REALM` environment variable or the `auth.realm` property.
+
 ### Example: Tool Service with Separate gRPC Server
 
 ```properties

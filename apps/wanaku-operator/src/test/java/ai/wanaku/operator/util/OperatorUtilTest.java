@@ -2,6 +2,12 @@ package ai.wanaku.operator.util;
 
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import ai.wanaku.operator.wanaku.WanakuCapability;
+import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
+import ai.wanaku.operator.wanaku.WanakuRouter;
+import ai.wanaku.operator.wanaku.WanakuRouterSpec;
+import ai.wanaku.operator.wanaku.WanakuTypes;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,5 +71,139 @@ class OperatorUtilTest {
     @Test
     void findConditionReturnsNullWhenNoMatchExists() {
         assertNull(OperatorUtil.findCondition(null, OperatorUtil.READY_CONDITION));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsConfiguredRealm() {
+        WanakuCapability capability = createCapabilityWithRealm("myrealm");
+        assertEquals("myrealm", OperatorUtil.resolveAuthRealm(capability));
+    }
+
+    @Test
+    void resolveAuthRealmDefaultsToWanakuWhenNull() {
+        WanakuCapability capability = createCapabilityWithRealm(null);
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(capability));
+    }
+
+    @Test
+    void resolveAuthRealmDefaultsToWanakuWhenBlank() {
+        WanakuCapability capability = createCapabilityWithRealm("  ");
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(capability));
+    }
+
+    @Test
+    void resolveAuthRealmDefaultsToWanakuWhenEmpty() {
+        WanakuCapability capability = createCapabilityWithRealm("");
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(capability));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsDefaultWhenCapabilityIsNull() {
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm((WanakuCapability) null));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsDefaultWhenSpecIsNull() {
+        WanakuCapability capability = new WanakuCapability();
+        capability.setMetadata(new ObjectMetaBuilder()
+                .withName("test-capability")
+                .withNamespace("default")
+                .build());
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(capability));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsDefaultWhenAuthIsNull() {
+        WanakuCapability capability = new WanakuCapability();
+        capability.setMetadata(new ObjectMetaBuilder()
+                .withName("test-capability")
+                .withNamespace("default")
+                .build());
+        capability.setSpec(new WanakuCapabilitySpec());
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(capability));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsConfiguredRealmForRouter() {
+        WanakuRouter router = createRouterWithRealm("myrealm");
+        assertEquals("myrealm", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    @Test
+    void resolveAuthRealmDefaultsToWanakuForRouterWhenNull() {
+        WanakuRouter router = createRouterWithRealm(null);
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    @Test
+    void resolveAuthRealmDefaultsToWanakuForRouterWhenBlank() {
+        WanakuRouter router = createRouterWithRealm(" ");
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    @Test
+    void resolveAuthRealmDefaultsToWanakuForRouterWhenEmpty() {
+        WanakuRouter router = createRouterWithRealm("");
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsDefaultWhenRouterIsNull() {
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm((WanakuRouter) null));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsDefaultWhenRouterSpecIsNull() {
+        WanakuRouter router = new WanakuRouter();
+        router.setMetadata(new ObjectMetaBuilder()
+                .withName("test-router")
+                .withNamespace("default")
+                .build());
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    @Test
+    void resolveAuthRealmReturnsDefaultWhenRouterAuthIsNull() {
+        WanakuRouter router = new WanakuRouter();
+        router.setMetadata(new ObjectMetaBuilder()
+                .withName("test-router")
+                .withNamespace("default")
+                .build());
+        router.setSpec(new WanakuRouterSpec());
+        assertEquals("wanaku", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    private static WanakuCapability createCapabilityWithRealm(String realm) {
+        WanakuCapability capability = new WanakuCapability();
+        capability.setMetadata(new ObjectMetaBuilder()
+                .withName("test-capability")
+                .withNamespace("default")
+                .build());
+
+        WanakuCapabilitySpec spec = new WanakuCapabilitySpec();
+        WanakuTypes.AuthSpec auth = new WanakuTypes.AuthSpec();
+        auth.setAuthServer("http://keycloak:8080");
+        auth.setAuthRealm(realm);
+        spec.setAuth(auth);
+        capability.setSpec(spec);
+
+        return capability;
+    }
+
+    private static WanakuRouter createRouterWithRealm(String realm) {
+        WanakuRouter router = new WanakuRouter();
+        router.setMetadata(new ObjectMetaBuilder()
+                .withName("test-router")
+                .withNamespace("default")
+                .build());
+
+        WanakuRouterSpec spec = new WanakuRouterSpec();
+        WanakuTypes.AuthSpec auth = new WanakuTypes.AuthSpec();
+        auth.setAuthServer("http://keycloak:8080");
+        auth.setAuthRealm(realm);
+        spec.setAuth(auth);
+        router.setSpec(spec);
+
+        return router;
     }
 }
