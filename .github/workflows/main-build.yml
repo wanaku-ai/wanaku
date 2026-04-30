@@ -26,6 +26,12 @@ on:
       - jbang-catalog.json
       - Makefile
       - LICENSE
+      - CLAUDE.md
+      - CONTRIBUTING.md
+      - jreleaser.yml
+      - glama.json
+      - SECURITY.md
+      - .*
 
 env:
   PROJECTS: ${{ github.workspace }}
