@@ -43,7 +43,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
             throws Exception {
         WanakuPrinter.setPlainMode(isPlainOutput(parseResult));
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
-            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            WanakuPrinter printer = new WanakuPrinter(terminal);
 
             // Check if verbose mode is enabled from the parse result
             boolean verbose = isVerbose(parseResult);
@@ -51,8 +51,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
             // If verbose mode is enabled, show full stack trace
             if (verbose) {
                 printer.printErrorMessage("Error: " + ex.getMessage());
-                ex.printStackTrace(terminal.writer());
-                terminal.writer().flush();
+                ex.printStackTrace(System.err);
                 return BaseCommand.EXIT_ERROR;
             }
 

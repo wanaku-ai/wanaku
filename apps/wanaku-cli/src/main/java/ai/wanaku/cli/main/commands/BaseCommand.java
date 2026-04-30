@@ -123,7 +123,7 @@ public abstract class BaseCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         WanakuPrinter.setPlainMode(plain);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
-            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            WanakuPrinter printer = new WanakuPrinter(terminal);
             return doCall(terminal, printer);
         } finally {
             WanakuPrinter.setPlainMode(false);

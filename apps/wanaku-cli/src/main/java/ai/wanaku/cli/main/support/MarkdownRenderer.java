@@ -28,65 +28,24 @@ import org.commonmark.node.SoftLineBreak;
 import org.commonmark.node.StrongEmphasis;
 import org.commonmark.node.Text;
 import org.commonmark.parser.Parser;
-import org.jline.utils.AttributedString;
-import org.jline.utils.AttributedStringBuilder;
-import org.jline.utils.AttributedStyle;
+import dev.tamboui.style.Color;
+import dev.tamboui.style.Style;
+import dev.tamboui.text.Line;
+import dev.tamboui.text.Span;
 
-/**
- * Renders Markdown text with terminal styling using JLine3's AttributedString.
- *
- * <p>This class parses Markdown using the CommonMark library and converts it to
- * styled terminal output with ANSI color codes and text formatting.</p>
- *
- * <p>Supported Markdown features:</p>
- * <ul>
- *   <li>Headings (levels 1-6) - rendered in bold cyan</li>
- *   <li>Paragraphs - standard text with proper spacing</li>
- *   <li>Bold text (**text**) - rendered in bold</li>
- *   <li>Italic text (*text*) - rendered in italic (if terminal supports)</li>
- *   <li>Inline code (`code`) - rendered in yellow with background</li>
- *   <li>Bullet lists - rendered with bullet points</li>
- *   <li>Links - rendered in blue underlined with URL</li>
- *   <li>Code blocks - rendered in yellow</li>
- *   <li>Tables (GFM) - rendered with borders and proper alignment</li>
- * </ul>
- *
- * <p>Example usage:</p>
- * <pre>{@code
- * String markdown = "# Hello World\n\nThis is **bold** text.";
- * AttributedString styled = MarkdownRenderer.render(markdown);
- * terminal.writer().println(styled.toAnsi());
- * }</pre>
- *
- */
 public class MarkdownRenderer {
 
-    // Color and style constants
-    private static final AttributedStyle HEADING_STYLE = AttributedStyle.BOLD.foreground(AttributedStyle.CYAN);
+    private static final Style HEADING_STYLE = Style.EMPTY.fg(Color.CYAN).bold();
+    private static final Style BOLD_STYLE = Style.EMPTY.bold();
+    private static final Style ITALIC_STYLE = Style.EMPTY.italic();
+    private static final Style CODE_STYLE = Style.EMPTY.fg(Color.YELLOW).bg(Color.BLACK);
+    private static final Style LINK_STYLE = Style.EMPTY.fg(Color.BLUE).underlined();
 
-    private static final AttributedStyle BOLD_STYLE = AttributedStyle.BOLD;
-
-    private static final AttributedStyle ITALIC_STYLE = AttributedStyle.DEFAULT.italic();
-
-    private static final AttributedStyle CODE_STYLE =
-            AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW).background(AttributedStyle.BLACK);
-
-    private static final AttributedStyle LINK_STYLE =
-            AttributedStyle.DEFAULT.foreground(AttributedStyle.BLUE).underline();
-
-    /**
-     * Renders Markdown text to a styled AttributedString for terminal output.
-     *
-     * @param markdown the Markdown text to render
-     * @return an AttributedString with terminal styling applied
-     * @throws IllegalArgumentException if markdown is null
-     */
-    public static AttributedString render(String markdown) {
+    public static dev.tamboui.text.Text render(String markdown) {
         if (markdown == null) {
             throw new IllegalArgumentException("Markdown text cannot be null");
         }
 
-        // Build parser with GFM tables extension
         Parser parser = Parser.builder()
                 .extensions(Arrays.asList(TablesExtension.create()))
                 .build();
@@ -98,21 +57,18 @@ public class MarkdownRenderer {
         return visitor.getResult();
     }
 
-    /**
-     * Visitor that traverses the Markdown AST and builds styled output.
-     */
     private static class MarkdownVisitor extends AbstractVisitor {
-        private final AttributedStringBuilder builder = new AttributedStringBuilder();
+        private final List<Line> lines = new ArrayList<>();
+        private List<Span> currentLineSpans = new ArrayList<>();
+        private Style currentStyle = Style.EMPTY;
         private int listDepth = 0;
         private List<List<String>> tableRows = new ArrayList<>();
         private List<String> currentRow = new ArrayList<>();
         private StringBuilder currentCell = new StringBuilder();
-        private boolean inTableHeader = false;
         private boolean inTable = false;
 
         @Override
         public void visit(CustomBlock customBlock) {
-            // Handle GFM table extension nodes - TableBlock extends CustomBlock
             if (customBlock instanceof TableBlock) {
                 visit((TableBlock) customBlock);
             } else {
@@ -122,7 +78,6 @@ public class MarkdownRenderer {
 
         @Override
         public void visit(CustomNode customNode) {
-            // Handle GFM table extension nodes - TableHead, TableBody, TableRow, TableCell extend CustomNode
             if (customNode instanceof TableHead) {
                 visit((TableHead) customNode);
             } else if (customNode instanceof TableBody) {
@@ -138,85 +93,81 @@ public class MarkdownRenderer {
 
         @Override
         public void visit(Heading heading) {
-            builder.style(HEADING_STYLE);
-
-            // Add heading level indicator
+            flushLine();
+            currentStyle = HEADING_STYLE;
             String prefix = "#".repeat(heading.getLevel()) + " ";
-            builder.append(prefix);
-
+            currentLineSpans.add(Span.styled(prefix, HEADING_STYLE));
             visitChildren(heading);
-            builder.style(AttributedStyle.DEFAULT);
-            builder.append("\n\n");
+            currentStyle = Style.EMPTY;
+            flushLine();
+            flushLine();
         }
 
         @Override
         public void visit(Paragraph paragraph) {
             visitChildren(paragraph);
-            builder.append("\n\n");
+            flushLine();
+            flushLine();
         }
 
         @Override
         public void visit(Text text) {
             if (inTable) {
-                // Inside a table, collect text for the current cell
                 currentCell.append(text.getLiteral());
             } else {
-                // Normal text rendering
-                builder.append(text.getLiteral());
+                currentLineSpans.add(Span.styled(text.getLiteral(), currentStyle));
             }
         }
 
         @Override
         public void visit(Emphasis emphasis) {
             if (!inTable) {
-                builder.style(ITALIC_STYLE);
-            }
-            visitChildren(emphasis);
-            if (!inTable) {
-                builder.style(AttributedStyle.DEFAULT);
+                Style previousStyle = currentStyle;
+                currentStyle = ITALIC_STYLE;
+                visitChildren(emphasis);
+                currentStyle = previousStyle;
+            } else {
+                visitChildren(emphasis);
             }
         }
 
         @Override
         public void visit(StrongEmphasis strong) {
             if (!inTable) {
-                builder.style(BOLD_STYLE);
-            }
-            visitChildren(strong);
-            if (!inTable) {
-                builder.style(AttributedStyle.DEFAULT);
+                Style previousStyle = currentStyle;
+                currentStyle = BOLD_STYLE;
+                visitChildren(strong);
+                currentStyle = previousStyle;
+            } else {
+                visitChildren(strong);
             }
         }
 
         @Override
         public void visit(Code code) {
             if (inTable) {
-                // Inside a table, collect code text for the current cell
                 currentCell.append(code.getLiteral());
             } else {
-                // Normal code rendering with styling
-                builder.style(CODE_STYLE);
-                builder.append(code.getLiteral());
-                builder.style(AttributedStyle.DEFAULT);
+                currentLineSpans.add(Span.styled(code.getLiteral(), CODE_STYLE));
             }
         }
 
         @Override
         public void visit(FencedCodeBlock codeBlock) {
-            builder.append("\n");
-            builder.style(CODE_STYLE);
-            builder.append(codeBlock.getLiteral());
-            builder.style(AttributedStyle.DEFAULT);
-            builder.append("\n");
+            flushLine();
+            for (String codeLine : codeBlock.getLiteral().split("\n", -1)) {
+                currentLineSpans.add(Span.styled(codeLine, CODE_STYLE));
+                flushLine();
+            }
         }
 
         @Override
         public void visit(IndentedCodeBlock codeBlock) {
-            builder.append("\n");
-            builder.style(CODE_STYLE);
-            builder.append(codeBlock.getLiteral());
-            builder.style(AttributedStyle.DEFAULT);
-            builder.append("\n");
+            flushLine();
+            for (String codeLine : codeBlock.getLiteral().split("\n", -1)) {
+                currentLineSpans.add(Span.styled(codeLine, CODE_STYLE));
+                flushLine();
+            }
         }
 
         @Override
@@ -224,7 +175,7 @@ public class MarkdownRenderer {
             listDepth++;
             visitChildren(bulletList);
             listDepth--;
-            builder.append("\n");
+            flushLine();
         }
 
         @Override
@@ -232,37 +183,36 @@ public class MarkdownRenderer {
             listDepth++;
             visitChildren(orderedList);
             listDepth--;
-            builder.append("\n");
+            flushLine();
         }
 
         @Override
         public void visit(ListItem listItem) {
-            // Add indentation based on list depth
-            builder.append("  ".repeat(listDepth - 1));
-            builder.append("• ");
+            String indent = "  ".repeat(listDepth - 1);
+            currentLineSpans.add(Span.raw(indent + "• "));
             visitChildren(listItem);
         }
 
         @Override
         public void visit(Link link) {
-            builder.style(LINK_STYLE);
+            Style previousStyle = currentStyle;
+            currentStyle = LINK_STYLE;
             visitChildren(link);
-            builder.style(AttributedStyle.DEFAULT);
+            currentStyle = previousStyle;
 
-            // Show URL in parentheses
             if (link.getDestination() != null && !link.getDestination().isEmpty()) {
-                builder.append(" (").append(link.getDestination()).append(")");
+                currentLineSpans.add(Span.raw(" (" + link.getDestination() + ")"));
             }
         }
 
         @Override
         public void visit(HardLineBreak hardLineBreak) {
-            builder.append("\n");
+            flushLine();
         }
 
         @Override
         public void visit(SoftLineBreak softLineBreak) {
-            builder.append(" ");
+            currentLineSpans.add(Span.raw(" "));
         }
 
         public void visit(TableBlock tableBlock) {
@@ -274,9 +224,7 @@ public class MarkdownRenderer {
         }
 
         public void visit(TableHead tableHead) {
-            inTableHeader = true;
             visitChildren(tableHead);
-            inTableHeader = false;
         }
 
         public void visit(TableBody tableBody) {
@@ -300,7 +248,6 @@ public class MarkdownRenderer {
                 return;
             }
 
-            // Calculate column widths
             int numColumns = tableRows.get(0).size();
             int[] columnWidths = new int[numColumns];
 
@@ -310,70 +257,69 @@ public class MarkdownRenderer {
                 }
             }
 
-            // Render table with borders
-            builder.append("\n");
+            flushLine();
 
-            // Top border
             renderBorder(columnWidths, "┌", "┬", "┐");
 
-            // Header row (first row)
             if (!tableRows.isEmpty()) {
                 renderRow(tableRows.get(0), columnWidths, true);
-
-                // Header separator
                 renderBorder(columnWidths, "├", "┼", "┤");
 
-                // Data rows
                 for (int i = 1; i < tableRows.size(); i++) {
                     renderRow(tableRows.get(i), columnWidths, false);
                 }
             }
 
-            // Bottom border
             renderBorder(columnWidths, "└", "┴", "┘");
-
-            builder.append("\n");
+            flushLine();
             tableRows.clear();
         }
 
         private void renderBorder(int[] columnWidths, String left, String middle, String right) {
-            builder.append(left);
+            StringBuilder sb = new StringBuilder();
+            sb.append(left);
             for (int i = 0; i < columnWidths.length; i++) {
-                builder.append("─".repeat(columnWidths[i] + 2)); // +2 for padding
+                sb.append("─".repeat(columnWidths[i] + 2));
                 if (i < columnWidths.length - 1) {
-                    builder.append(middle);
+                    sb.append(middle);
                 }
             }
-            builder.append(right);
-            builder.append("\n");
+            sb.append(right);
+            currentLineSpans.add(Span.raw(sb.toString()));
+            flushLine();
         }
 
         private void renderRow(List<String> row, int[] columnWidths, boolean isHeader) {
-            builder.append("│");
+            List<Span> spans = new ArrayList<>();
+            spans.add(Span.raw("│"));
             for (int i = 0; i < columnWidths.length; i++) {
                 String cell = i < row.size() ? row.get(i) : "";
+                String padded = " " + cell + " ".repeat(columnWidths[i] - cell.length()) + " ";
 
                 if (isHeader) {
-                    builder.style(BOLD_STYLE);
+                    spans.add(Span.styled(padded, BOLD_STYLE));
+                } else {
+                    spans.add(Span.raw(padded));
                 }
-
-                builder.append(" ");
-                builder.append(cell);
-                // Pad to column width
-                builder.append(" ".repeat(columnWidths[i] - cell.length()));
-                builder.append(" ");
-
-                if (isHeader) {
-                    builder.style(AttributedStyle.DEFAULT);
-                }
-
-                builder.append("│");
+                spans.add(Span.raw("│"));
             }
-            builder.append("\n");
+            lines.add(Line.from(spans));
         }
 
-        public AttributedString getResult() {
-            return builder.toAttributedString();
+        private void flushLine() {
+            if (!currentLineSpans.isEmpty()) {
+                lines.add(Line.from(new ArrayList<>(currentLineSpans)));
+                currentLineSpans.clear();
+            } else {
+                lines.add(Line.empty());
+            }
+        }
+
+        public dev.tamboui.text.Text getResult() {
+            if (!currentLineSpans.isEmpty()) {
+                flushLine();
+            }
+            return dev.tamboui.text.Text.from(lines);
         }
     }
 }
