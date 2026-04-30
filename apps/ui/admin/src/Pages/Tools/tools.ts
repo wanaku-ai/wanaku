@@ -42,4 +42,24 @@ export class Tools {
     }
   }
   
+  static isInputSchemaInvalid(inputSchema: string): boolean {
+    const invalidMessage = Tools.validateInputSchema(inputSchema)
+    return !!invalidMessage
+  }
+  
+  static validateInputSchema(inputSchema: string): string {
+    if (!inputSchema) {
+      return ""
+    }
+    try {
+      JSON.parse(inputSchema)
+      return ""
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return error.message
+      }
+      return "Invalid input schema"
+    }
+  }
+  
 }
