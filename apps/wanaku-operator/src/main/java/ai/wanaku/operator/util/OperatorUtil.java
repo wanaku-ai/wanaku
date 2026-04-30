@@ -124,6 +124,8 @@ public final class OperatorUtil {
             }
         }
 
+        String realm = resolveAuthRealm(resource);
+
         EnvVar authServerEnv = new EnvVarBuilder()
                 .withName(EnvironmentVariables.AUTH_SERVER)
                 .withValue(authServer)
@@ -132,10 +134,15 @@ public final class OperatorUtil {
                 .withName(EnvironmentVariables.AUTH_PROXY)
                 .withValue(authProxy)
                 .build();
+        EnvVar authRealmEnv = new EnvVarBuilder()
+                .withName(EnvironmentVariables.AUTH_REALM)
+                .withValue(realm)
+                .build();
 
         List<EnvVar> envVars = new java.util.ArrayList<>();
         envVars.add(authServerEnv);
         envVars.add(authProxyEnv);
+        envVars.add(authRealmEnv);
 
         final WanakuRouterSpec.RouterSpec routerSpec = resource.getSpec().getRouter();
 
@@ -401,10 +408,10 @@ public final class OperatorUtil {
         // Build the registration URI - use the router ref for service discovery
         String registrationUri = getInternalRegistrationUri(resource);
 
-        // TODO: this one should be made more flexible, so it can accept different realms
+        String realm = resolveAuthRealm(resource);
         EnvVar authServerEnv = new EnvVarBuilder()
                 .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT)
-                .withValue(authServer + "/realms/wanaku")
+                .withValue(authServer + "/realms/" + realm)
                 .build();
         EnvVar registrationUriEnv = new EnvVarBuilder()
                 .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_REGISTRATION_URL)
@@ -559,5 +566,21 @@ public final class OperatorUtil {
         service.addOwnerReference(resource);
 
         return service;
+    }
+
+    static String resolveAuthRealm(WanakuCapability resource) {
+        if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
+            return EnvironmentVariables.DEFAULT_AUTH_REALM;
+        }
+        String realm = resource.getSpec().getAuth().getAuthRealm();
+        return (realm == null || realm.isBlank()) ? EnvironmentVariables.DEFAULT_AUTH_REALM : realm;
+    }
+
+    static String resolveAuthRealm(WanakuRouter resource) {
+        if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
+            return EnvironmentVariables.DEFAULT_AUTH_REALM;
+        }
+        String realm = resource.getSpec().getAuth().getAuthRealm();
+        return (realm == null || realm.isBlank()) ? EnvironmentVariables.DEFAULT_AUTH_REALM : realm;
     }
 }

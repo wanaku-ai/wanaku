@@ -6,6 +6,8 @@ spec:
   auth:
 # This is the address of the authorization server (in the format: http://address)
     authServer: ""
+# The Keycloak realm name (defaults to "wanaku" if not set)
+#    authRealm: "wanaku"
 # Address of the proxy (in the format: http://address). It could be the same as the auth server - default) or "auto" (for using
 # Wanaku as the proxy via OIDC proxy.
 #    authProxy: ""

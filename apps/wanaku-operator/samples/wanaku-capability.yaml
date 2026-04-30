@@ -6,6 +6,8 @@ spec:
   auth:
 # This is the address of the authorization server (in the format: http://address)
     authServer: ""
+# The Keycloak realm name (defaults to "wanaku" if not set)
+#    authRealm: "wanaku"
   secrets:
 # This is the OIDC credentials secret for the services
     oidcCredentialsSecret: ""
