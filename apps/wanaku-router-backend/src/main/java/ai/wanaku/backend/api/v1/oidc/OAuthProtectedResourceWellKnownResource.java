@@ -57,6 +57,15 @@ public class OAuthProtectedResourceWellKnownResource {
             authority = forwardedHost.trim().split(",")[0].trim();
         }
 
-        return scheme + "://" + authority;
+        String path = baseUri.getPath();
+        String forwardedPrefix = httpHeaders.getHeaderString("X-Forwarded-Prefix");
+        if (forwardedPrefix != null && !forwardedPrefix.isBlank()) {
+            path = forwardedPrefix.trim();
+        }
+        if (path != null && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+
+        return scheme + "://" + authority + (path != null ? path : "");
     }
 }
