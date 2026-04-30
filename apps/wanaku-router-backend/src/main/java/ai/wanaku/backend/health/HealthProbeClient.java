@@ -1,8 +1,8 @@
 package ai.wanaku.backend.health;
 
-import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
