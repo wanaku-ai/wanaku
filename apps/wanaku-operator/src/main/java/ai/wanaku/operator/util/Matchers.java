@@ -1,6 +1,8 @@
 package ai.wanaku.operator.util;
 
+import java.util.List;
 import java.util.Objects;
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -58,8 +60,42 @@ public final class Matchers {
                                     .getSpec()
                                     .getContainers()
                                     .get(0)
-                                    .getImage());
+                                    .getImage())
+                    && matchEnvVars(
+                            desired.getSpec()
+                                    .getTemplate()
+                                    .getSpec()
+                                    .getContainers()
+                                    .get(0)
+                                    .getEnv(),
+                            existing.getSpec()
+                                    .getTemplate()
+                                    .getSpec()
+                                    .getContainers()
+                                    .get(0)
+                                    .getEnv());
         }
+    }
+
+    private static boolean matchEnvVars(List<EnvVar> desired, List<EnvVar> existing) {
+        if (desired == null && existing == null) {
+            return true;
+        }
+        if (desired == null || existing == null) {
+            return false;
+        }
+        if (desired.size() != existing.size()) {
+            return false;
+        }
+        for (EnvVar desiredVar : desired) {
+            boolean found = existing.stream()
+                    .anyMatch(e -> Objects.equals(e.getName(), desiredVar.getName())
+                            && Objects.equals(e.getValue(), desiredVar.getValue()));
+            if (!found) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean match(Service desired, Service existing) {
