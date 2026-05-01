@@ -2288,7 +2288,7 @@ This creates a `<catalog-name>.b64` file in the current directory. You can speci
 wanaku service package --path=my-service -o /tmp/my-service.b64
 ```
 
-The packaged file is useful for deploying via the Kubernetes operator (see [Deploying Service Catalogs via the Operator](#deploying-service-catalogs-via-the-operator)).
+The packaged file is useful for deploying via the Kubernetes operator (see [Deploying Service Catalogs with the Operator](#deploying-service-catalogs-via-the-operator)).
 
 ### Deploying a Service Catalog
 
