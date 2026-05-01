@@ -162,20 +162,24 @@ class MatchersTest {
 
     // ---- Deployment helpers & tests ----
 
-    private Deployment createDeployment(int replicas, String image) {
-        return new DeploymentBuilder()
+    private Deployment createDeployment(int replicas, String image, String... envPairs) {
+        var builder = new DeploymentBuilder()
                 .withNewSpec()
                 .withReplicas(replicas)
                 .withNewTemplate()
                 .withNewSpec()
                 .addNewContainer()
                 .withName("app")
-                .withImage(image)
-                .endContainer()
-                .endSpec()
-                .endTemplate()
-                .endSpec()
-                .build();
+                .withImage(image);
+
+        for (int i = 0; i < envPairs.length; i += 2) {
+            builder = builder.addNewEnv()
+                    .withName(envPairs[i])
+                    .withValue(envPairs[i + 1])
+                    .endEnv();
+        }
+
+        return builder.endContainer().endSpec().endTemplate().endSpec().build();
     }
 
     @Test
@@ -203,6 +207,34 @@ class MatchersTest {
         Deployment desired = createDeployment(3, "myapp:1.0");
         Deployment existing = createDeployment(3, "myapp:2.0");
         assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchDeploymentWhenEnvVarsMatch() {
+        Deployment desired = createDeployment(1, "myapp:1.0", "SERVICE_CATALOG", "my-catalog", "SERVICE_NAME", "svc");
+        Deployment existing = createDeployment(1, "myapp:1.0", "SERVICE_NAME", "svc", "SERVICE_CATALOG", "my-catalog");
+        assertTrue(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchDeploymentWhenEnvVarValuesDiffer() {
+        Deployment desired = createDeployment(1, "myapp:1.0", "SERVICE_CATALOG", "new-catalog");
+        Deployment existing = createDeployment(1, "myapp:1.0", "SERVICE_CATALOG", "");
+        assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchDeploymentWhenEnvVarCountDiffers() {
+        Deployment desired = createDeployment(1, "myapp:1.0", "SERVICE_CATALOG", "my-catalog", "SERVICE_NAME", "svc");
+        Deployment existing = createDeployment(1, "myapp:1.0", "SERVICE_NAME", "svc");
+        assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchDeploymentWhenBothHaveNoEnvVars() {
+        Deployment desired = createDeployment(1, "myapp:1.0");
+        Deployment existing = createDeployment(1, "myapp:1.0");
+        assertTrue(Matchers.match(desired, existing));
     }
 
     // ---- Service helpers & tests ----
