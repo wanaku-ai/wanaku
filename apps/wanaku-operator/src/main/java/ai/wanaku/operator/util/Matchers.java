@@ -90,7 +90,8 @@ public final class Matchers {
         for (EnvVar desiredVar : desired) {
             boolean found = existing.stream()
                     .anyMatch(e -> Objects.equals(e.getName(), desiredVar.getName())
-                            && Objects.equals(e.getValue(), desiredVar.getValue()));
+                            && Objects.equals(e.getValue(), desiredVar.getValue())
+                            && Objects.equals(e.getValueFrom(), desiredVar.getValueFrom()));
             if (!found) {
                 return false;
             }
