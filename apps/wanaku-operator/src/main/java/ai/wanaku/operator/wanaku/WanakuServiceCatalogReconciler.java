@@ -1,12 +1,9 @@
 package ai.wanaku.operator.wanaku;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +21,10 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.core.services.api.ServiceCatalogService;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
@@ -44,10 +44,6 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
     private static final Logger LOG = Logger.getLogger(WanakuServiceCatalogReconciler.class);
 
     private static final String CATALOG_DATA_KEY = "catalog.zip";
-    private static final String DEPLOY_PATH = "/api/v1/service-catalog/deploy";
-    private static final String REMOVE_PATH = "/api/v1/service-catalog/remove";
-
-    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -167,38 +163,32 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
     }
 
     private void deployServiceCatalog(String routerBaseUrl, String name, String data) throws WanakuException {
-        String json = "{\"name\":\"" + name + "\",\"data\":\"" + data + "\"}";
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(routerBaseUrl + DEPLOY_PATH))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
+        DataStore dataStore = new DataStore();
+        dataStore.setName(name);
+        dataStore.setData(data);
 
         try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new WanakuException(String.format(
-                        "Failed to deploy service catalog '%s': HTTP %d - %s",
-                        name, response.statusCode(), response.body()));
-            }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw new WanakuException("Failed to deploy service catalog '" + name + "': " + e.getMessage());
+            ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl);
+            service.deploy(dataStore);
+        } catch (WebApplicationException e) {
+            throw new WanakuException(
+                    String.format(
+                            "Failed to deploy service catalog '%s': HTTP %d - %s",
+                            name, e.getResponse().getStatus(), e.getResponse().readEntity(String.class)),
+                    e);
+        } catch (Exception e) {
+            throw new WanakuException("Failed to deploy service catalog '" + name + "'", e);
         }
     }
 
-    private void removeServiceCatalog(String routerBaseUrl, String name) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(routerBaseUrl + REMOVE_PATH + "?name=" + name))
-                .DELETE()
-                .build();
+    private void removeServiceCatalog(String routerBaseUrl, String name) {
+        ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl);
+        service.remove(name);
+    }
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            LOG.warnf("Remove service catalog '%s' returned HTTP %d: %s", name, response.statusCode(), response.body());
-        }
+    private static ServiceCatalogService createServiceCatalogClient(String routerBaseUrl) {
+        return QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(routerBaseUrl))
+                .build(ServiceCatalogService.class);
     }
 }
