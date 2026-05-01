@@ -1,6 +1,8 @@
 package ai.wanaku.operator.util;
 
 import java.util.Map;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -235,6 +237,97 @@ class MatchersTest {
         Deployment desired = createDeployment(1, "myapp:1.0");
         Deployment existing = createDeployment(1, "myapp:1.0");
         assertTrue(Matchers.match(desired, existing));
+    }
+
+    private Deployment createDeploymentWithEnvVars(int replicas, String image, EnvVar... envVars) {
+        var builder = new DeploymentBuilder()
+                .withNewSpec()
+                .withReplicas(replicas)
+                .withNewTemplate()
+                .withNewSpec()
+                .addNewContainer()
+                .withName("app")
+                .withImage(image);
+
+        for (EnvVar env : envVars) {
+            builder = builder.addToEnv(env);
+        }
+
+        return builder.endContainer().endSpec().endTemplate().endSpec().build();
+    }
+
+    @Test
+    void testMatchDeploymentWhenValueFromSecretsMatch() {
+        EnvVar desired = new EnvVarBuilder()
+                .withName("DB_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef("password", "db-secret", false)
+                .endValueFrom()
+                .build();
+        EnvVar existing = new EnvVarBuilder()
+                .withName("DB_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef("password", "db-secret", false)
+                .endValueFrom()
+                .build();
+        assertTrue(Matchers.match(
+                createDeploymentWithEnvVars(1, "myapp:1.0", desired),
+                createDeploymentWithEnvVars(1, "myapp:1.0", existing)));
+    }
+
+    @Test
+    void testMatchDeploymentWhenValueFromSecretsDiffer() {
+        EnvVar desired = new EnvVarBuilder()
+                .withName("DB_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef("password", "new-secret", false)
+                .endValueFrom()
+                .build();
+        EnvVar existing = new EnvVarBuilder()
+                .withName("DB_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef("password", "old-secret", false)
+                .endValueFrom()
+                .build();
+        assertFalse(Matchers.match(
+                createDeploymentWithEnvVars(1, "myapp:1.0", desired),
+                createDeploymentWithEnvVars(1, "myapp:1.0", existing)));
+    }
+
+    @Test
+    void testMatchDeploymentWhenValueFromConfigMapsDiffer() {
+        EnvVar desired = new EnvVarBuilder()
+                .withName("APP_CONFIG")
+                .withNewValueFrom()
+                .withNewConfigMapKeyRef("key", "new-config", false)
+                .endValueFrom()
+                .build();
+        EnvVar existing = new EnvVarBuilder()
+                .withName("APP_CONFIG")
+                .withNewValueFrom()
+                .withNewConfigMapKeyRef("key", "old-config", false)
+                .endValueFrom()
+                .build();
+        assertFalse(Matchers.match(
+                createDeploymentWithEnvVars(1, "myapp:1.0", desired),
+                createDeploymentWithEnvVars(1, "myapp:1.0", existing)));
+    }
+
+    @Test
+    void testMatchDeploymentWhenValueChangesToValueFrom() {
+        EnvVar desired = new EnvVarBuilder()
+                .withName("DB_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef("password", "db-secret", false)
+                .endValueFrom()
+                .build();
+        EnvVar existing = new EnvVarBuilder()
+                .withName("DB_PASSWORD")
+                .withValue("plaintext")
+                .build();
+        assertFalse(Matchers.match(
+                createDeploymentWithEnvVars(1, "myapp:1.0", desired),
+                createDeploymentWithEnvVars(1, "myapp:1.0", existing)));
     }
 
     // ---- Service helpers & tests ----
