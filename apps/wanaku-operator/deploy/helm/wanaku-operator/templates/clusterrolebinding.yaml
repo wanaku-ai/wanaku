@@ -37,7 +37,7 @@ metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
     app.kubernetes.io/version: 0.1.1-SNAPSHOT
-  name: wanaku-service-catalog-crd-validating-role-binding
+  name: {{ .Release.Namespace }}-wanaku-service-catalog-crd-validating-role-binding
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
