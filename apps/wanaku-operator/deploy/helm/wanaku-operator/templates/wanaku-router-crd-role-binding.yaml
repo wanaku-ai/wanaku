@@ -11,7 +11,7 @@ metadata:
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: wanaku-router-cluster-role
+  name: {{ $.Release.Namespace }}-wanaku-router-cluster-role
 subjects:
   - kind: ServiceAccount
     name: {{ $.Chart.Name }}
@@ -28,7 +28,7 @@ metadata:
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: wanaku-router-cluster-role
+  name: {{ $.Release.Namespace }}-wanaku-router-cluster-role
 subjects:
   - kind: ServiceAccount
     name: {{ $.Chart.Name }}
@@ -47,7 +47,7 @@ metadata:
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: wanaku-router-cluster-role
+  name: {{ $.Release.Namespace }}-wanaku-router-cluster-role
 subjects:
   - kind: ServiceAccount
     name: {{ $.Chart.Name }}

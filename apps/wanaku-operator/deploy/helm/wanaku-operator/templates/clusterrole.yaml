@@ -144,7 +144,7 @@ metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
     app.kubernetes.io/version: 0.1.1-SNAPSHOT
-  name: wanaku-service-catalog-cluster-role
+  name: {{ .Release.Namespace }}-wanaku-service-catalog-cluster-role
 rules:
   - apiGroups:
       - wanaku.ai
