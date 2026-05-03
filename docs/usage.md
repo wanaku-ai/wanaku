@@ -79,7 +79,7 @@ Wanaku with authentication enabled. This section covers the basics of getting Ke
 production purposes.
 
 > [!NOTE]
-> Wanaku can also run **without authentication** by using the `noauth` Quarkus profile. This is useful for local development,
+> Wanaku can also run **without authentication** by setting `wanaku.http.auth=none`. This is useful for local development,
 > testing, or air-gapped environments where an identity provider is not available. See
 > [Running Without Authentication](#running-without-authentication) for details.
 
@@ -171,15 +171,16 @@ Finally, for security, you must regenerate the client secret for the `wanaku-ser
 
 ## Running Without Authentication
 
-Wanaku can run without authentication by activating the `noauth` Quarkus profile. This disables OIDC and permits access
-to all API endpoints, the admin UI, and MCP namespaces without requiring a Bearer token or a Keycloak instance.
+Wanaku can run without authentication by setting `wanaku.http.auth=none` (or `WANAKU_HTTP_AUTH=none` via
+environment variable). This disables OIDC and permits access to all API endpoints, the admin UI, and MCP namespaces
+without requiring a Bearer token or a Keycloak instance.
 
 This is useful for:
 - **Local development and testing** — no need to set up Keycloak
 - **Air-gapped environments** — where an external identity provider is not available
 - **Quick prototyping** — get started with Wanaku immediately
 
-### Activating the No-Auth Profile
+### Disabling Authentication
 
 **Using the CLI (default for local):**
 
@@ -187,19 +188,19 @@ This is useful for:
 wanaku start local
 ```
 
-The `wanaku start local` command automatically uses the `noauth` profile, so no additional configuration is needed.
+The `wanaku start local` command automatically disables authentication, so no additional configuration is needed.
 
 **Using an environment variable:**
 
 ```shell
-export QUARKUS_PROFILE=noauth
+export WANAKU_HTTP_AUTH=none
 java -jar quarkus-run.jar
 ```
 
 **Using a system property:**
 
 ```shell
-java -Dquarkus.profile=noauth -jar quarkus-run.jar
+java -Dwanaku.http.auth=none -jar quarkus-run.jar
 ```
 
 **Using Docker Compose:**
@@ -211,9 +212,11 @@ without Keycloak:
 docker compose -f deploy/docker-compose/docker-compose-noauth.yml up
 ```
 
+If you extend that compose file with capability services, set `WANAKU_HTTP_AUTH=none` on those services as well.
+
 > [!WARNING]
-> The `noauth` profile disables all authentication. Do not use it in production environments where access control is
-> required.
+> Running without authentication disables all access control. Do not use it in production environments where
+> access control is required.
 
 # Installing Wanaku
 
@@ -288,7 +291,7 @@ and an HTTP provider.
 wanaku start local
 ```
 
-The local runner uses the `noauth` Quarkus profile by default, so **Keycloak is not required**. The router and all
+The local runner disables authentication by default, so **Keycloak is not required**. The router and all
 capability services will start without authentication.
 
 If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.

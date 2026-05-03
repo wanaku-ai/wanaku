@@ -57,6 +57,7 @@ class OAuthProtectedResourceWellKnownResourceIT {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
+                    "wanaku.http.auth", "none",
                     "quarkus.oidc-proxy.enabled", "false",
                     "quarkus.oidc.enabled", "false",
                     "quarkus.oidc-proxy.root-path", "/q/oidc");

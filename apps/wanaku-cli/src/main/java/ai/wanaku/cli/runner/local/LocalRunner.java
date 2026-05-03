@@ -32,6 +32,11 @@ public class LocalRunner {
             return this;
         }
 
+    public LocalRunnerEnvironment withAuthMode(String authMode) {
+        servicesOptions.put("WANAKU_HTTP_AUTH", authMode);
+        return this;
+    }
+
         public Map<String, String> serviceOptions() {
             return servicesOptions;
         }
@@ -105,13 +110,7 @@ public class LocalRunner {
 
         executorService.submit(() -> {
             try {
-                ProcessRunner.run(
-                        componentDir,
-                        environment.serviceOptions(),
-                        "java",
-                        "-Dquarkus.profile=noauth",
-                        "-jar",
-                        "quarkus-run.jar");
+                ProcessRunner.run(componentDir, environment.serviceOptions(), "java", "-jar", "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Router Service: %s", e.getMessage(), e);
             } finally {
@@ -134,13 +133,7 @@ public class LocalRunner {
         executorService.submit(() -> {
             try {
                 ProcessRunner.run(
-                        componentDir,
-                        environment.serviceOptions(),
-                        "java",
-                        grpcPortOpt,
-                        "-Dquarkus.profile=noauth",
-                        "-jar",
-                        "quarkus-run.jar");
+                        componentDir, environment.serviceOptions(), "java", grpcPortOpt, "-jar", "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Service %s", component.getKey(), e);
             } finally {

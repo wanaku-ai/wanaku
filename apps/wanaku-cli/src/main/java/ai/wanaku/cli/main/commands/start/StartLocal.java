@@ -35,6 +35,7 @@ public class StartLocal extends StartBase {
         }
 
         LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment()
+                .withAuthMode(config.auth().mode())
                 .withServiceOption("QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET", capabilitiesClientSecret);
 
         LocalRunner localRunner = new LocalRunner(config, environment);
