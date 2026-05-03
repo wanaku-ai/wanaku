@@ -31,6 +31,9 @@ public class OidcReadinessCheck implements HealthCheck {
     @ConfigProperty(name = "quarkus.oidc.enabled", defaultValue = "false")
     boolean oidcEnabled;
 
+    @ConfigProperty(name = "wanaku.http.auth", defaultValue = "keycloak")
+    String httpAuth;
+
     @ConfigProperty(name = "quarkus.oidc.auth-server-url")
     String authServerUrl;
 
@@ -42,7 +45,7 @@ public class OidcReadinessCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        if (!oidcEnabled) {
+        if (!oidcEnabled || "none".equalsIgnoreCase(httpAuth)) {
             return disabledResponse();
         }
 

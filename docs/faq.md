@@ -58,11 +58,11 @@ Keycloak provides authentication and authorization for:
 **For development:**
 - Java 17 or later
 - Maven 3.x
-- Keycloak instance (optional — can run via Podman/Docker, or use the `noauth` profile)
+- Keycloak instance (optional — can run via Podman/Docker, or set `wanaku.http.auth=none`)
 
 **For production deployment:**
 - OpenShift or Kubernetes cluster (optional but recommended)
-- Keycloak instance (recommended for production; optional with `noauth` profile)
+- Keycloak instance (recommended for production; optional with `wanaku.http.auth=none`)
 - Container runtime (Podman/Docker)
 
 ### Do I need to install Keycloak separately?
@@ -72,7 +72,7 @@ Keycloak is required only if you want to run Wanaku with authentication enabled.
 - Deploy Keycloak to OpenShift/Kubernetes (for production)
 - Use an existing Keycloak instance
 
-If you don't need authentication (e.g., for local development or testing), you can run Wanaku with the `noauth` profile
+If you don't need authentication (e.g., for local development or testing), you can set `wanaku.http.auth=none`
 and skip the Keycloak setup entirely. See [Running Without Authentication](usage.md#running-without-authentication).
 
 ### Can I run Wanaku without Kubernetes?
@@ -216,7 +216,7 @@ Currently, all authenticated users have admin access to tools and resources. Fin
 
 ### Can I disable authentication for development?
 
-While not recommended, you can configure Keycloak in dev mode with simplified settings. However, authentication cannot be completely disabled.
+While not recommended for production, you can set `wanaku.http.auth=none` to disable authentication for development and testing.
 
 ## Troubleshooting
 
