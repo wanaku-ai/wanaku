@@ -4,6 +4,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -46,6 +47,21 @@ public interface ToolsetReposService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Map<String, String>> add(Map<String, String> repo) throws WanakuException;
+
+    /**
+     * Update an existing toolset repository.
+     *
+     * @param name the repository name to update
+     * @param repo map containing: url, description (optional), icon (optional), branch (optional)
+     * @return response with the updated repository
+     * @throws WanakuException if update fails
+     */
+    @Path("/{name}")
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo)
+            throws WanakuException;
 
     /**
      * Remove a toolset repository by name.

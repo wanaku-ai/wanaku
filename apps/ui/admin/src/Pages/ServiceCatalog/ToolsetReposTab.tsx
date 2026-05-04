@@ -16,7 +16,7 @@ import {
   TextInput,
   Tile,
 } from "@carbon/react";
-import {Add, ChevronDown, ChevronUp, TrashCan} from "@carbon/icons-react";
+import {Add, ChevronDown, ChevronUp, Edit, TrashCan} from "@carbon/icons-react";
 import {
   ToolsetEntry,
   ToolsetRepoCatalog,
@@ -35,6 +35,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
   const [repos, setRepos] = useState<ToolsetRepoSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<ToolsetRepoSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [browseTarget, setBrowseTarget] = useState<string | null>(null);
   const [browseCatalog, setBrowseCatalog] = useState<ToolsetRepoCatalog | null>(null);
@@ -45,9 +46,14 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
 
   const [addName, setAddName] = useState("");
   const [addUrl, setAddUrl] = useState("");
+  const [addBranch, setAddBranch] = useState("main");
   const [addDescription, setAddDescription] = useState("");
 
-  const {listRepos, addRepo, removeRepo, browseRepo, fetchToolset} = useToolsetRepos();
+  const [editUrl, setEditUrl] = useState("");
+  const [editBranch, setEditBranch] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  const {listRepos, addRepo, updateRepo, removeRepo, browseRepo, fetchToolset} = useToolsetRepos();
 
   const loadRepos = useCallback(async () => {
     try {
@@ -67,16 +73,37 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
 
   const handleAdd = async () => {
     try {
-      await addRepo({name: addName, url: addUrl, description: addDescription || undefined});
+      await addRepo({name: addName, url: addUrl, branch: addBranch || undefined, description: addDescription || undefined});
       onSuccess(`Toolset repository '${addName}' added`);
       setShowAddModal(false);
       setAddName("");
       setAddUrl("");
+      setAddBranch("main");
       setAddDescription("");
       loadRepos();
     } catch (error) {
       console.error("Error adding repo:", error);
       onError("Failed to add toolset repository");
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget) return;
+    try {
+      await updateRepo(editTarget.name, {
+        url: editUrl,
+        branch: editBranch || undefined,
+        description: editDescription || undefined,
+      });
+      onSuccess(`Toolset repository '${editTarget.name}' updated`);
+      setEditTarget(null);
+      setEditUrl("");
+      setEditBranch("");
+      setEditDescription("");
+      loadRepos();
+    } catch (error) {
+      console.error("Error updating repo:", error);
+      onError("Failed to update toolset repository");
     }
   };
 
@@ -181,21 +208,40 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
                     {repo.icon && <span className="catalog-card-icon">{repo.icon}</span>}
                     <h4 className="catalog-card-name">{repo.name}</h4>
                   </div>
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    renderIcon={TrashCan}
-                    hasIconOnly
-                    iconDescription="Delete"
-                    className="catalog-card-delete"
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      setDeleteTarget(repo.name);
-                    }}
-                  />
+                  <div style={{display: "flex", gap: "0.25rem"}}>
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      renderIcon={Edit}
+                      hasIconOnly
+                      iconDescription="Edit"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        setEditTarget(repo);
+                        setEditUrl(repo.url);
+                        setEditBranch(repo.branch || "main");
+                        setEditDescription(repo.description || "");
+                      }}
+                    />
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      renderIcon={TrashCan}
+                      hasIconOnly
+                      iconDescription="Delete"
+                      className="catalog-card-delete"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        setDeleteTarget(repo.name);
+                      }}
+                    />
+                  </div>
                 </div>
 
-                <p className="catalog-card-description">{repo.description || repo.url}</p>
+                <p className="catalog-card-description">
+                  {repo.description || repo.url}
+                  {repo.branch && <span style={{marginLeft: "0.5rem", fontSize: "0.75rem", opacity: 0.7}}>({repo.branch})</span>}
+                </p>
 
                 <Button
                   kind="ghost"
@@ -271,11 +317,19 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
           />
           <TextInput
             id="repo-url"
-            labelText="Base URL"
-            placeholder="e.g. https://raw.githubusercontent.com/wanaku-ai/wanaku-toolsets/main"
+            labelText="GitHub URL"
+            placeholder="e.g. https://github.com/wanaku-ai/wanaku-toolsets"
             required
             value={addUrl}
             onChange={(e) => setAddUrl(e.target.value)}
+            style={{marginBottom: "1rem"}}
+          />
+          <TextInput
+            id="repo-branch"
+            labelText="Branch"
+            placeholder="main"
+            value={addBranch}
+            onChange={(e) => setAddBranch(e.target.value)}
             style={{marginBottom: "1rem"}}
           />
           <TextInput
@@ -284,6 +338,55 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
             placeholder="Short description of the repository"
             value={addDescription}
             onChange={(e) => setAddDescription(e.target.value)}
+          />
+        </Modal>
+      )}
+
+      {editTarget && (
+        <Modal
+          open={true}
+          modalHeading="Edit Toolset Repository"
+          primaryButtonText="Save"
+          primaryButtonDisabled={!editUrl}
+          secondaryButtonText="Cancel"
+          onRequestSubmit={handleEdit}
+          onRequestClose={() => {
+            setEditTarget(null);
+            setEditUrl("");
+            setEditBranch("");
+            setEditDescription("");
+          }}
+        >
+          <TextInput
+            id="edit-repo-name"
+            labelText="Name"
+            value={editTarget.name}
+            disabled
+            style={{marginBottom: "1rem"}}
+          />
+          <TextInput
+            id="edit-repo-url"
+            labelText="GitHub URL"
+            placeholder="e.g. https://github.com/wanaku-ai/wanaku-toolsets"
+            required
+            value={editUrl}
+            onChange={(e) => setEditUrl(e.target.value)}
+            style={{marginBottom: "1rem"}}
+          />
+          <TextInput
+            id="edit-repo-branch"
+            labelText="Branch"
+            placeholder="main"
+            value={editBranch}
+            onChange={(e) => setEditBranch(e.target.value)}
+            style={{marginBottom: "1rem"}}
+          />
+          <TextInput
+            id="edit-repo-description"
+            labelText="Description (optional)"
+            placeholder="Short description of the repository"
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
           />
         </Modal>
       )}

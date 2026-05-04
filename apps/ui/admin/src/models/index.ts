@@ -83,6 +83,7 @@ export * from "./putApiV1ManagementTargetsToolsUnlinkParams";
 export * from "./putApiV1PromptsRemoveParams";
 export * from "./putApiV1ResourcesRemoveParams";
 export * from "./putApiV1ToolsRemoveParams";
+export * from "./putApiV1ToolsetReposNameBody";
 export * from "./resourcePayload";
 export * from "./resourceReference";
 export * from "./resourceReferenceLabels";
