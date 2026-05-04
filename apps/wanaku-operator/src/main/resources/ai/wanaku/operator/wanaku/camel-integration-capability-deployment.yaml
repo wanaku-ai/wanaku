@@ -45,14 +45,14 @@ spec:
           failureThreshold: 5
           httpGet:
             path: /health/live
-            port: 8080
+            port: health
           initialDelaySeconds: 15
           periodSeconds: 20
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /health/ready
-            port: 8080
+            port: health
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
@@ -60,7 +60,7 @@ spec:
         - containerPort: 9190
           name: grpc
           protocol: TCP
-        - containerPort: 8081
+        - containerPort: 8080
           name: health
           protocol: TCP
         volumeMounts:

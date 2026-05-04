@@ -28,22 +28,20 @@ spec:
         name: wanaku-capability
         ports:
         - containerPort: 9000
-          protocol: TCP
-        - containerPort: 8081
-          name: health
+          name: http
           protocol: TCP
         livenessProbe:
           failureThreshold: 5
           httpGet:
             path: /q/health/live
-            port: 8080
+            port: http
           initialDelaySeconds: 15
           periodSeconds: 20
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /q/health/ready
-            port: 8080
+            port: http
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
