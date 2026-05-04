@@ -43,25 +43,20 @@ spec:
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 5
-          httpGet:
-            path: /health/live
-            port: health
+          tcpSocket:
+            port: 9190
           initialDelaySeconds: 15
           periodSeconds: 20
           timeoutSeconds: 5
         readinessProbe:
-          httpGet:
-            path: /health/ready
-            port: health
+          tcpSocket:
+            port: 9190
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
         ports:
         - containerPort: 9190
           name: grpc
-          protocol: TCP
-        - containerPort: 8080
-          name: health
           protocol: TCP
         volumeMounts:
           - mountPath: /data
