@@ -28,20 +28,18 @@ spec:
         name: wanaku-capability
         ports:
         - containerPort: 9000
-          name: http
+          name: grpc
           protocol: TCP
         livenessProbe:
           failureThreshold: 5
-          httpGet:
-            path: /q/health/live
-            port: http
+          tcpSocket:
+            port: 9000
           initialDelaySeconds: 15
           periodSeconds: 20
           timeoutSeconds: 5
         readinessProbe:
-          httpGet:
-            path: /q/health/ready
-            port: http
+          tcpSocket:
+            port: 9000
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
