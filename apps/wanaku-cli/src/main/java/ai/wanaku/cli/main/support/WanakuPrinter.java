@@ -11,12 +11,12 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.tamboui.inline.InlineDisplay;
+import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Constraint;
+import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.text.Line;
-import dev.tamboui.text.Span;
 import dev.tamboui.text.Text;
 import dev.tamboui.widgets.table.Cell;
 import dev.tamboui.widgets.table.Row;
@@ -124,14 +124,7 @@ public class WanakuPrinter {
                     .columnSpacing(1)
                     .build();
 
-            int lineCount = rows.size() + 3;
-
-            try (InlineDisplay display = InlineDisplay.create(lineCount)) {
-                display.render((area, buffer) -> {
-                    TableState state = new TableState();
-                    table.render(area, buffer, state);
-                });
-            }
+            renderWidgetToTerminal(table, rows.size() + 3);
         } catch (Exception e) {
             printErrorMessage("Failed to print table: " + e.getMessage());
         }
@@ -166,14 +159,7 @@ public class WanakuPrinter {
                     .columnSpacing(1)
                     .build();
 
-            int lineCount = rows.size() + 3;
-
-            try (InlineDisplay display = InlineDisplay.create(lineCount)) {
-                display.render((area, buffer) -> {
-                    TableState state = new TableState();
-                    table.render(area, buffer, state);
-                });
-            }
+            renderWidgetToTerminal(table, rows.size() + 3);
         } catch (Exception e) {
             printErrorMessage("Failed to print object: " + e.getMessage());
         }
@@ -214,8 +200,17 @@ public class WanakuPrinter {
         }
 
         Text rendered = MarkdownRenderer.render(markdown);
-        for (Line line : rendered.lines()) {
-            terminal.writer().println(line.rawContent());
+        if (plainMode) {
+            for (Line line : rendered.lines()) {
+                terminal.writer().println(line.rawContent());
+            }
+        } else {
+            int width = getTerminalWidth();
+            Buffer buf = Buffer.empty(Rect.of(width, rendered.height()));
+            for (int i = 0; i < rendered.lines().size(); i++) {
+                buf.setLine(0, i, rendered.lines().get(i));
+            }
+            terminal.writer().println(buf.toAnsiStringTrimmed());
         }
         terminal.flush();
     }
@@ -234,34 +229,37 @@ public class WanakuPrinter {
         }
 
         if (allLines.size() <= terminalHeight - 2) {
-            for (Line line : allLines) {
-                terminal.writer().println(line.rawContent());
-            }
-            terminal.flush();
+            printMarkdown(markdown);
             return;
         }
 
         int viewportHeight = terminalHeight - 1;
-        try (InlineDisplay display = InlineDisplay.create(viewportHeight)) {
-            int offset = 0;
-            boolean running = true;
+        int width = getTerminalWidth();
+        int offset = 0;
+        boolean running = true;
 
+        terminal.enterRawMode();
+
+        try {
             while (running) {
-                final int currentOffset = offset;
-                display.render((area, buffer) -> {
-                    for (int i = 0; i < area.height() && (currentOffset + i) < allLines.size(); i++) {
-                        Line line = allLines.get(currentOffset + i);
-                        buffer.setLine(area.x(), area.y() + i, line);
-                    }
-                });
+                StringBuilder screen = new StringBuilder();
+                screen.append("\033[H\033[2J");
+
+                for (int i = 0; i < viewportHeight && (offset + i) < allLines.size(); i++) {
+                    Line line = allLines.get(offset + i);
+                    Buffer lineBuf = Buffer.empty(Rect.of(width, 1));
+                    lineBuf.setLine(0, 0, line);
+                    screen.append(lineBuf.toAnsiStringTrimmed());
+                    screen.append("\n");
+                }
+
+                screen.append("\033[7m (q)uit (j/k)scroll (space)page \033[0m");
+                terminal.writer().print(screen);
+                terminal.writer().flush();
 
                 int ch = terminal.reader().read(100);
                 if (ch == -1 || ch == -2) {
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException ie) {
-                        running = false;
-                    }
+                    Thread.sleep(50);
                     continue;
                 }
 
@@ -277,6 +275,9 @@ public class WanakuPrinter {
                     default -> {}
                 }
             }
+        } finally {
+            terminal.writer().print("\033[H\033[2J");
+            terminal.writer().flush();
         }
     }
 
@@ -284,13 +285,27 @@ public class WanakuPrinter {
         if (plainMode) {
             terminal.writer().println(message);
         } else {
-            try (InlineDisplay display = InlineDisplay.create(1)) {
-                display.println(Text.from(Span.styled(message, style)));
-            } catch (IOException e) {
-                terminal.writer().println(message);
-            }
+            int width = getTerminalWidth();
+            Buffer buf = Buffer.empty(Rect.of(width, 1));
+            buf.setString(0, 0, message, style);
+            terminal.writer().println(buf.toAnsiStringTrimmed());
         }
         terminal.flush();
+    }
+
+    private void renderWidgetToTerminal(Table table, int height) {
+        int width = getTerminalWidth();
+        Rect area = Rect.of(width, height);
+        Buffer buf = Buffer.empty(area);
+        TableState state = new TableState();
+        table.render(area, buf, state);
+        terminal.writer().println(buf.toAnsiStringTrimmed());
+        terminal.flush();
+    }
+
+    private int getTerminalWidth() {
+        int width = terminal.getWidth();
+        return width > 0 ? width : 80;
     }
 
     private Map<String, Object> convertToMap(Object obj) {
