@@ -650,11 +650,6 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/ToolReference"
-  securitySchemes:
-    SecurityScheme:
-      type: openIdConnect
-      openIdConnectUrl: http://localhost:8543/realms/wanaku/.well-known/openid-configuration
-      description: Authentication
 paths:
   /api/v1/capabilities:
     get:
@@ -1927,6 +1922,39 @@ paths:
       tags:
       - Toolset Repos Resource
   /api/v1/toolset-repos/{name}:
+    put:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseMapStringString"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Toolset Repos Resource
     delete:
       parameters:
       - name: name

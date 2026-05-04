@@ -35,6 +35,11 @@ public class ToolsetReposBean {
     static final String LABEL_TYPE_KEY = "wanaku.type";
     static final String LABEL_TYPE_VALUE = "toolset-repo";
 
+    static final String DEFAULT_BRANCH = "main";
+    static final String DEFAULT_REPO_NAME = "wanaku-toolsets";
+    static final String DEFAULT_REPO_URL = "https://github.com/wanaku-ai/wanaku-toolsets";
+    static final String DEFAULT_REPO_DESCRIPTION = "Official Wanaku toolset repository";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Inject
@@ -45,6 +50,18 @@ public class ToolsetReposBean {
     @PostConstruct
     void init() {
         dataStoreRepository = dataStoreRepositoryInstance.get();
+        registerDefaultRepo();
+    }
+
+    private void registerDefaultRepo() {
+        try {
+            if (findByName(DEFAULT_REPO_NAME) == null) {
+                LOG.info("Registering default toolset repository: " + DEFAULT_REPO_NAME);
+                add(DEFAULT_REPO_NAME, DEFAULT_REPO_URL, DEFAULT_REPO_DESCRIPTION, null, DEFAULT_BRANCH);
+            }
+        } catch (Exception e) {
+            LOG.warnf("Failed to register default toolset repository: %s", e.getMessage());
+        }
     }
 
     /**
@@ -70,7 +87,8 @@ public class ToolsetReposBean {
      * @return summary of the created repository
      * @throws WanakuException if registration fails
      */
-    public Map<String, String> add(String name, String url, String description, String icon) throws WanakuException {
+    public Map<String, String> add(String name, String url, String description, String icon, String branch)
+            throws WanakuException {
         if (name == null || name.isBlank()) {
             throw new WanakuException("Repository name is required");
         }
@@ -83,8 +101,11 @@ public class ToolsetReposBean {
             throw new WanakuException("Toolset repository already exists: " + name);
         }
 
+        String effectiveBranch = (branch != null && !branch.isBlank()) ? branch : DEFAULT_BRANCH;
+
         Map<String, String> metadata = new HashMap<>();
         metadata.put("url", url);
+        metadata.put("branch", effectiveBranch);
         if (description != null && !description.isBlank()) {
             metadata.put("description", description);
         }
@@ -106,6 +127,48 @@ public class ToolsetReposBean {
 
         DataStore persisted = dataStoreRepository.persist(ds);
         return toSummary(persisted);
+    }
+
+    /**
+     * Update an existing toolset repository.
+     *
+     * @param name the repository name to update
+     * @param url new URL (or null to keep existing)
+     * @param description new description (or null to keep existing)
+     * @param icon new icon (or null to keep existing)
+     * @param branch new branch (or null to keep existing)
+     * @return summary of the updated repository
+     * @throws WanakuException if the repository is not found
+     */
+    public Map<String, String> update(String name, String url, String description, String icon, String branch)
+            throws WanakuException {
+        DataStore ds = findByName(name);
+        if (ds == null) {
+            throw new WanakuException("Toolset repository not found: " + name);
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, String> metadata = MAPPER.readValue(ds.getData(), Map.class);
+            if (url != null && !url.isBlank()) {
+                metadata.put("url", url);
+            }
+            if (branch != null && !branch.isBlank()) {
+                metadata.put("branch", branch);
+            }
+            if (description != null) {
+                metadata.put("description", description);
+            }
+            if (icon != null) {
+                metadata.put("icon", icon);
+            }
+            ds.setData(MAPPER.writeValueAsString(metadata));
+        } catch (JsonProcessingException e) {
+            throw new WanakuException("Failed to serialize repository metadata: " + e.getMessage());
+        }
+
+        dataStoreRepository.update(ds.getId(), ds);
+        return toSummary(ds);
     }
 
     /**
@@ -137,7 +200,7 @@ public class ToolsetReposBean {
             throw new WanakuException("Toolset repository not found: " + name);
         }
 
-        String url = extractUrl(ds);
+        String url = resolveBaseUrl(ds);
         ToolsetRepoIndex index = ToolsetRepoIndex.fromUrl(url);
 
         Map<String, Object> result = new HashMap<>();
@@ -172,7 +235,7 @@ public class ToolsetReposBean {
             throw new WanakuException("Toolset repository not found: " + name);
         }
 
-        String baseUrl = extractUrl(ds);
+        String baseUrl = resolveBaseUrl(ds);
         String toolsetUrl = ToolsetRepoIndex.toolsetUrl(baseUrl, toolsetName);
 
         try {
@@ -192,17 +255,27 @@ public class ToolsetReposBean {
                 .orElse(null);
     }
 
-    private String extractUrl(DataStore ds) throws WanakuException {
+    private String resolveBaseUrl(DataStore ds) throws WanakuException {
         try {
             Map<String, String> metadata = MAPPER.readValue(ds.getData(), Map.class);
             String url = metadata.get("url");
             if (url == null || url.isBlank()) {
                 throw new WanakuException("Repository metadata missing URL for: " + ds.getName());
             }
-            return url;
+            String branch = metadata.getOrDefault("branch", DEFAULT_BRANCH);
+            return toRawContentUrl(url, branch);
         } catch (JsonProcessingException e) {
             throw new WanakuException("Failed to parse repository metadata: " + e.getMessage());
         }
+    }
+
+    static String toRawContentUrl(String url, String branch) {
+        if (url.contains("github.com") && !url.contains("raw.githubusercontent.com")) {
+            String cleaned = url.replaceFirst("https?://github\\.com/", "");
+            cleaned = cleaned.replaceAll("/+$", "");
+            return "https://raw.githubusercontent.com/" + cleaned + "/" + branch;
+        }
+        return url;
     }
 
     @SuppressWarnings("unchecked")

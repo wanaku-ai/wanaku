@@ -7,6 +7,7 @@ const BASE_PATH = "/api/v1/toolset-repos";
 export interface ToolsetRepoSummary {
   name: string;
   url: string;
+  branch?: string;
   description?: string;
   icon?: string;
 }
@@ -39,12 +40,27 @@ export const useToolsetRepos = () => {
   );
 
   const addRepo = useCallback(
-    (repo: { name: string; url: string; description?: string; icon?: string }, options?: RequestInit) => {
+    (repo: { name: string; url: string; branch?: string; description?: string; icon?: string }, options?: RequestInit) => {
       return customFetch<{ data: { data: ToolsetRepoSummary }; status: number; headers: Headers }>(
         BASE_PATH,
         {
           ...options,
           method: "POST",
+          headers: {"Content-Type": "application/json", ...options?.headers},
+          body: JSON.stringify(repo),
+        }
+      );
+    },
+    []
+  );
+
+  const updateRepo = useCallback(
+    (name: string, repo: { url: string; branch?: string; description?: string; icon?: string }, options?: RequestInit) => {
+      return customFetch<{ data: { data: ToolsetRepoSummary }; status: number; headers: Headers }>(
+        `${BASE_PATH}/${encodeURIComponent(name)}`,
+        {
+          ...options,
+          method: "PUT",
           headers: {"Content-Type": "application/json", ...options?.headers},
           body: JSON.stringify(repo),
         }
@@ -95,6 +111,7 @@ export const useToolsetRepos = () => {
   return {
     listRepos,
     addRepo,
+    updateRepo,
     removeRepo,
     browseRepo,
     fetchToolset,

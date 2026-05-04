@@ -41,6 +41,12 @@ public class ToolSetRepoAdd extends BaseCommand {
             description = "Icon for the toolset repository")
     private String icon;
 
+    @CommandLine.Option(
+            names = {"-b", "--branch"},
+            description = "Git branch to use",
+            defaultValue = "main")
+    private String branch;
+
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
@@ -48,6 +54,7 @@ public class ToolSetRepoAdd extends BaseCommand {
         Map<String, String> repo = new java.util.HashMap<>();
         repo.put("name", name);
         repo.put("url", url);
+        repo.put("branch", branch);
         if (description != null) {
             repo.put("description", description);
         }

@@ -32,6 +32,7 @@ import type {
   PostApiV1ToolsetReposBody,
   PromptPayload,
   PromptReference,
+  PutApiV1ToolsetReposNameBody,
   ResourcePayload,
   ResourceReference,
   ServiceTarget,
@@ -2697,6 +2698,59 @@ export const postApiV1ToolsetRepos = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(postApiV1ToolsetReposBody),
+    },
+  );
+};
+
+/**
+ * @summary Update
+ */
+export type putApiV1ToolsetReposNameResponse200 = {
+  data: WanakuResponseMapStringString;
+  status: 200;
+};
+
+export type putApiV1ToolsetReposNameResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type putApiV1ToolsetReposNameResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type putApiV1ToolsetReposNameResponseSuccess =
+  putApiV1ToolsetReposNameResponse200 & {
+    headers: Headers;
+  };
+export type putApiV1ToolsetReposNameResponseError = (
+  | putApiV1ToolsetReposNameResponse400
+  | putApiV1ToolsetReposNameResponse500
+) & {
+  headers: Headers;
+};
+
+export type putApiV1ToolsetReposNameResponse =
+  | putApiV1ToolsetReposNameResponseSuccess
+  | putApiV1ToolsetReposNameResponseError;
+
+export const getPutApiV1ToolsetReposNameUrl = (name: string) => {
+  return `/api/v1/toolset-repos/${name}`;
+};
+
+export const putApiV1ToolsetReposName = async (
+  name: string,
+  putApiV1ToolsetReposNameBody: PutApiV1ToolsetReposNameBody,
+  options?: RequestInit,
+): Promise<putApiV1ToolsetReposNameResponse> => {
+  return customFetch<putApiV1ToolsetReposNameResponse>(
+    getPutApiV1ToolsetReposNameUrl(name),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(putApiV1ToolsetReposNameBody),
     },
   );
 };

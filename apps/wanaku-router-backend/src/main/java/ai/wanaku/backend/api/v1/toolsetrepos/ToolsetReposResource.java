@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -43,8 +44,20 @@ public class ToolsetReposResource {
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, String>> add(Map<String, String> repo) throws WanakuException {
         LOG.debugf("REST: Adding toolset repository: %s", repo.get("name"));
-        Map<String, String> result =
-                toolsetReposBean.add(repo.get("name"), repo.get("url"), repo.get("description"), repo.get("icon"));
+        Map<String, String> result = toolsetReposBean.add(
+                repo.get("name"), repo.get("url"), repo.get("description"), repo.get("icon"), repo.get("branch"));
+        return new WanakuResponse<>(result);
+    }
+
+    @Path("/{name}")
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo)
+            throws WanakuException {
+        LOG.debugf("REST: Updating toolset repository: %s", name);
+        Map<String, String> result = toolsetReposBean.update(
+                name, repo.get("url"), repo.get("description"), repo.get("icon"), repo.get("branch"));
         return new WanakuResponse<>(result);
     }
 
