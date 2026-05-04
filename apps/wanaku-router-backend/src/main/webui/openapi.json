@@ -748,6 +748,23 @@
           }
         }
       },
+      "WanakuResponseListMapStringString" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
       "WanakuResponseListNamespace" : {
         "type" : "object",
         "properties" : {
@@ -858,6 +875,20 @@
           "data" : {
             "type" : "object",
             "additionalProperties" : { }
+          }
+        }
+      },
+      "WanakuResponseMapStringString" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
           }
         }
       },
@@ -2799,6 +2830,179 @@
         },
         "summary" : "Get By Name",
         "tags" : [ "Tools Resource" ]
+      }
+    },
+    "/api/v1/toolset-repos" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListMapStringString"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Toolset Repos Resource" ]
+      },
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringString"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Toolset Repos Resource" ]
+      }
+    },
+    "/api/v1/toolset-repos/{name}" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Toolset Repos Resource" ]
+      }
+    },
+    "/api/v1/toolset-repos/{name}/browse" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringObject"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Browse",
+        "tags" : [ "Toolset Repos Resource" ]
+      }
+    },
+    "/api/v1/toolset-repos/{name}/toolsets/{toolsetName}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toolsetName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseListToolReference"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Wanaku error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Fetch Toolset",
+        "tags" : [ "Toolset Repos Resource" ]
       }
     },
     "/api/v2/code-execution-engine/{engineType}/{language}" : {

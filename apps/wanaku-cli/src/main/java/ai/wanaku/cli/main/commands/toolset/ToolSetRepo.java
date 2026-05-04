@@ -7,10 +7,10 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
 @CommandLine.Command(
-        name = "toolset",
-        description = "Manage toolsets",
-        subcommands = {ToolSetAdd.class, ToolSetRepo.class})
-public class ToolSet extends BaseCommand {
+        name = "repo",
+        description = "Manage toolset repositories",
+        subcommands = {ToolSetRepoAdd.class, ToolSetRepoList.class, ToolSetRepoRemove.class, ToolSetRepoBrowse.class})
+public class ToolSetRepo extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
         CommandLine.usage(this, System.out);

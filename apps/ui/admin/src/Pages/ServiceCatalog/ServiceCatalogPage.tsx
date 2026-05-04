@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {ToastNotification} from "@carbon/react";
+import {Tab, TabList, TabPanel, TabPanels, Tabs, ToastNotification} from "@carbon/react";
 import {ServiceCatalogCards} from "./ServiceCatalogCards";
+import {ToolsetReposTab} from "./ToolsetReposTab";
 import {useServiceCatalog} from "../../hooks/api/use-service-catalog";
 import "./ServiceCatalogPage.scss";
 
@@ -68,10 +69,6 @@ export const ServiceCatalogPage: React.FC = () => {
     }
   }, [successMessage]);
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
   const handleDelete = async (name: string) => {
     try {
       await removeServiceCatalog(name);
@@ -122,15 +119,34 @@ export const ServiceCatalogPage: React.FC = () => {
       )}
       <h1 className="title">Service Catalog</h1>
       <p className="description">
-        View and manage deployed service catalogs. Services are packaged via the CLI and contain
-        Camel routes, Wanaku rules, and optional dependencies for one or more systems.
+        View and manage deployed service catalogs and remote toolset repositories.
       </p>
-      <ServiceCatalogCards
-        catalogs={catalogs}
-        onDelete={handleDelete}
-        onSearch={handleSearch}
-        getDetail={handleGetDetail}
-      />
+      <Tabs>
+        <TabList aria-label="Service catalog tabs">
+          <Tab>Service Catalogs</Tab>
+          <Tab>Toolset Repositories</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            {isLoading ? (
+              <div>Loading...</div>
+            ) : (
+              <ServiceCatalogCards
+                catalogs={catalogs}
+                onDelete={handleDelete}
+                onSearch={handleSearch}
+                getDetail={handleGetDetail}
+              />
+            )}
+          </TabPanel>
+          <TabPanel>
+            <ToolsetReposTab
+              onError={(msg) => setErrorMessage(msg)}
+              onSuccess={(msg) => setSuccessMessage(msg)}
+            />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </div>
   );
 };
