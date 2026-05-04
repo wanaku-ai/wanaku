@@ -1,9 +1,19 @@
 import {useCallback} from "react";
-import {customFetch} from "../../custom-fetch";
-import type {ToolReference} from "../../models";
+import {
+  getApiV1ToolsetRepos,
+  postApiV1ToolsetRepos,
+  putApiV1ToolsetReposName,
+  deleteApiV1ToolsetReposName,
+  getApiV1ToolsetReposNameBrowse,
+  getApiV1ToolsetReposNameToolsetsToolsetName,
+} from "../../api/wanaku-router-api";
+import type {
+  PostApiV1ToolsetReposBody,
+  PutApiV1ToolsetReposNameBody,
+} from "../../models";
 
-const BASE_PATH = "/api/v1/toolset-repos";
-
+// Custom interface types maintained for backward compatibility with ToolsetReposTab.tsx
+// These represent the expected structure, which may differ from the raw API response
 export interface ToolsetRepoSummary {
   name: string;
   url: string;
@@ -25,85 +35,93 @@ export interface ToolsetRepoCatalog {
   toolsets: ToolsetEntry[];
 }
 
+// Helper type to represent the hook's return types while using generated API functions
+interface ListReposResult {
+  data: {
+    data?: ToolsetRepoSummary[];
+  };
+  status: number;
+  headers: Headers;
+}
+
+interface AddRepoResult {
+  data: {
+    data?: ToolsetRepoSummary;
+  };
+  status: number;
+  headers: Headers;
+}
+
+interface UpdateRepoResult {
+  data: {
+    data?: ToolsetRepoSummary;
+  };
+  status: number;
+  headers: Headers;
+}
+
+interface RemoveRepoResult {
+  data: unknown;
+  status: number;
+  headers: Headers;
+}
+
+interface BrowseRepoResult {
+  data: {
+    data?: ToolsetRepoCatalog;
+  };
+  status: number;
+  headers: Headers;
+}
+
+interface FetchToolsetResult {
+  data: {
+    data?: ToolsetRepoSummary[];
+  };
+  status: number;
+  headers: Headers;
+}
+
 export const useToolsetRepos = () => {
   const listRepos = useCallback(
-    (options?: RequestInit) => {
-      return customFetch<{ data: { data: ToolsetRepoSummary[] }; status: number; headers: Headers }>(
-        BASE_PATH,
-        {
-          ...options,
-          method: "GET",
-        }
-      );
+    (options?: RequestInit): Promise<ListReposResult> => {
+      // Cast to expected type - runtime conversion may be needed if API shape differs
+      return getApiV1ToolsetRepos(options) as unknown as Promise<ListReposResult>;
     },
     []
   );
 
   const addRepo = useCallback(
-    (repo: { name: string; url: string; branch?: string; description?: string; icon?: string }, options?: RequestInit) => {
-      return customFetch<{ data: { data: ToolsetRepoSummary }; status: number; headers: Headers }>(
-        BASE_PATH,
-        {
-          ...options,
-          method: "POST",
-          headers: {"Content-Type": "application/json", ...options?.headers},
-          body: JSON.stringify(repo),
-        }
-      );
+    (repo: PostApiV1ToolsetReposBody, options?: RequestInit): Promise<AddRepoResult> => {
+      return postApiV1ToolsetRepos(repo, options) as unknown as Promise<AddRepoResult>;
     },
     []
   );
 
   const updateRepo = useCallback(
-    (name: string, repo: { url: string; branch?: string; description?: string; icon?: string }, options?: RequestInit) => {
-      return customFetch<{ data: { data: ToolsetRepoSummary }; status: number; headers: Headers }>(
-        `${BASE_PATH}/${encodeURIComponent(name)}`,
-        {
-          ...options,
-          method: "PUT",
-          headers: {"Content-Type": "application/json", ...options?.headers},
-          body: JSON.stringify(repo),
-        }
-      );
+    (name: string, repo: PutApiV1ToolsetReposNameBody, options?: RequestInit): Promise<UpdateRepoResult> => {
+      return putApiV1ToolsetReposName(name, repo, options) as unknown as Promise<UpdateRepoResult>;
     },
     []
   );
 
   const removeRepo = useCallback(
-    (name: string, options?: RequestInit) => {
-      return customFetch<{ data: unknown; status: number; headers: Headers }>(
-        `${BASE_PATH}/${encodeURIComponent(name)}`,
-        {
-          ...options,
-          method: "DELETE",
-        }
-      );
+    (name: string, options?: RequestInit): Promise<RemoveRepoResult> => {
+      return deleteApiV1ToolsetReposName(name, options) as unknown as Promise<RemoveRepoResult>;
     },
     []
   );
 
   const browseRepo = useCallback(
-    (name: string, options?: RequestInit) => {
-      return customFetch<{ data: { data: ToolsetRepoCatalog }; status: number; headers: Headers }>(
-        `${BASE_PATH}/${encodeURIComponent(name)}/browse`,
-        {
-          ...options,
-          method: "GET",
-        }
-      );
+    (name: string, options?: RequestInit): Promise<BrowseRepoResult> => {
+      return getApiV1ToolsetReposNameBrowse(name, options) as unknown as Promise<BrowseRepoResult>;
     },
     []
   );
 
   const fetchToolset = useCallback(
-    (repoName: string, toolsetName: string, options?: RequestInit) => {
-      return customFetch<{ data: { data: ToolReference[] }; status: number; headers: Headers }>(
-        `${BASE_PATH}/${encodeURIComponent(repoName)}/toolsets/${encodeURIComponent(toolsetName)}`,
-        {
-          ...options,
-          method: "GET",
-        }
-      );
+    (repoName: string, toolsetName: string, options?: RequestInit): Promise<FetchToolsetResult> => {
+      return getApiV1ToolsetReposNameToolsetsToolsetName(repoName, toolsetName, options) as unknown as Promise<FetchToolsetResult>;
     },
     []
   );
