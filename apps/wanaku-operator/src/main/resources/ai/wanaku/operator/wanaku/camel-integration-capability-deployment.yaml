@@ -44,15 +44,15 @@ spec:
         livenessProbe:
           failureThreshold: 5
           httpGet:
-            path: /q/health/live
-            port: 8081
+            path: /health/live
+            port: 8080
           initialDelaySeconds: 15
           periodSeconds: 20
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /q/health/ready
-            port: 8081
+            path: /health/ready
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
