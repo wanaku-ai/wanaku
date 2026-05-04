@@ -29,6 +29,7 @@ import type {
   GetApiV1ToolsParams,
   Namespace,
   OutboundSseEvent,
+  PostApiV1ToolsetReposBody,
   PromptPayload,
   PromptReference,
   ResourcePayload,
@@ -44,6 +45,7 @@ import type {
   WanakuResponseListDataStore,
   WanakuResponseListForwardReference,
   WanakuResponseListMapStringObject,
+  WanakuResponseListMapStringString,
   WanakuResponseListNamespace,
   WanakuResponseListPromptReference,
   WanakuResponseListResourceReference,
@@ -52,6 +54,7 @@ import type {
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
   WanakuResponseMapStringObject,
+  WanakuResponseMapStringString,
   WanakuResponseNamespace,
   WanakuResponsePromptReference,
   WanakuResponseResourceReference,
@@ -2614,6 +2617,221 @@ export const getApiV1ToolsName = async (
     ...options,
     method: "GET",
   });
+};
+
+/**
+ * @summary List
+ */
+export type getApiV1ToolsetReposResponse200 = {
+  data: WanakuResponseListMapStringString;
+  status: 200;
+};
+
+export type getApiV1ToolsetReposResponseSuccess =
+  getApiV1ToolsetReposResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ToolsetReposResponse = getApiV1ToolsetReposResponseSuccess;
+
+export const getGetApiV1ToolsetReposUrl = () => {
+  return `/api/v1/toolset-repos`;
+};
+
+export const getApiV1ToolsetRepos = async (
+  options?: RequestInit,
+): Promise<getApiV1ToolsetReposResponse> => {
+  return customFetch<getApiV1ToolsetReposResponse>(
+    getGetApiV1ToolsetReposUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Add
+ */
+export type postApiV1ToolsetReposResponse200 = {
+  data: WanakuResponseMapStringString;
+  status: 200;
+};
+
+export type postApiV1ToolsetReposResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type postApiV1ToolsetReposResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ToolsetReposResponseSuccess =
+  postApiV1ToolsetReposResponse200 & {
+    headers: Headers;
+  };
+export type postApiV1ToolsetReposResponseError = (
+  | postApiV1ToolsetReposResponse400
+  | postApiV1ToolsetReposResponse500
+) & {
+  headers: Headers;
+};
+
+export type postApiV1ToolsetReposResponse =
+  | postApiV1ToolsetReposResponseSuccess
+  | postApiV1ToolsetReposResponseError;
+
+export const getPostApiV1ToolsetReposUrl = () => {
+  return `/api/v1/toolset-repos`;
+};
+
+export const postApiV1ToolsetRepos = async (
+  postApiV1ToolsetReposBody: PostApiV1ToolsetReposBody,
+  options?: RequestInit,
+): Promise<postApiV1ToolsetReposResponse> => {
+  return customFetch<postApiV1ToolsetReposResponse>(
+    getPostApiV1ToolsetReposUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(postApiV1ToolsetReposBody),
+    },
+  );
+};
+
+/**
+ * @summary Remove
+ */
+export type deleteApiV1ToolsetReposNameResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type deleteApiV1ToolsetReposNameResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type deleteApiV1ToolsetReposNameResponseSuccess =
+  deleteApiV1ToolsetReposNameResponse200 & {
+    headers: Headers;
+  };
+export type deleteApiV1ToolsetReposNameResponseError =
+  deleteApiV1ToolsetReposNameResponse500 & {
+    headers: Headers;
+  };
+
+export type deleteApiV1ToolsetReposNameResponse =
+  | deleteApiV1ToolsetReposNameResponseSuccess
+  | deleteApiV1ToolsetReposNameResponseError;
+
+export const getDeleteApiV1ToolsetReposNameUrl = (name: string) => {
+  return `/api/v1/toolset-repos/${name}`;
+};
+
+export const deleteApiV1ToolsetReposName = async (
+  name: string,
+  options?: RequestInit,
+): Promise<deleteApiV1ToolsetReposNameResponse> => {
+  return customFetch<deleteApiV1ToolsetReposNameResponse>(
+    getDeleteApiV1ToolsetReposNameUrl(name),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+/**
+ * @summary Browse
+ */
+export type getApiV1ToolsetReposNameBrowseResponse200 = {
+  data: WanakuResponseMapStringObject;
+  status: 200;
+};
+
+export type getApiV1ToolsetReposNameBrowseResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ToolsetReposNameBrowseResponseSuccess =
+  getApiV1ToolsetReposNameBrowseResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ToolsetReposNameBrowseResponseError =
+  getApiV1ToolsetReposNameBrowseResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ToolsetReposNameBrowseResponse =
+  | getApiV1ToolsetReposNameBrowseResponseSuccess
+  | getApiV1ToolsetReposNameBrowseResponseError;
+
+export const getGetApiV1ToolsetReposNameBrowseUrl = (name: string) => {
+  return `/api/v1/toolset-repos/${name}/browse`;
+};
+
+export const getApiV1ToolsetReposNameBrowse = async (
+  name: string,
+  options?: RequestInit,
+): Promise<getApiV1ToolsetReposNameBrowseResponse> => {
+  return customFetch<getApiV1ToolsetReposNameBrowseResponse>(
+    getGetApiV1ToolsetReposNameBrowseUrl(name),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Fetch Toolset
+ */
+export type getApiV1ToolsetReposNameToolsetsToolsetNameResponse200 = {
+  data: WanakuResponseListToolReference;
+  status: 200;
+};
+
+export type getApiV1ToolsetReposNameToolsetsToolsetNameResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ToolsetReposNameToolsetsToolsetNameResponseSuccess =
+  getApiV1ToolsetReposNameToolsetsToolsetNameResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ToolsetReposNameToolsetsToolsetNameResponseError =
+  getApiV1ToolsetReposNameToolsetsToolsetNameResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ToolsetReposNameToolsetsToolsetNameResponse =
+  | getApiV1ToolsetReposNameToolsetsToolsetNameResponseSuccess
+  | getApiV1ToolsetReposNameToolsetsToolsetNameResponseError;
+
+export const getGetApiV1ToolsetReposNameToolsetsToolsetNameUrl = (
+  name: string,
+  toolsetName: string,
+) => {
+  return `/api/v1/toolset-repos/${name}/toolsets/${toolsetName}`;
+};
+
+export const getApiV1ToolsetReposNameToolsetsToolsetName = async (
+  name: string,
+  toolsetName: string,
+  options?: RequestInit,
+): Promise<getApiV1ToolsetReposNameToolsetsToolsetNameResponse> => {
+  return customFetch<getApiV1ToolsetReposNameToolsetsToolsetNameResponse>(
+    getGetApiV1ToolsetReposNameToolsetsToolsetNameUrl(name, toolsetName),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 };
 
 /**
