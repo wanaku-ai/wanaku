@@ -96,6 +96,8 @@ public class ToolsetReposBean {
             throw new WanakuException("Repository URL is required");
         }
 
+        validateUrl(url);
+
         DataStore existing = findByName(name);
         if (existing != null) {
             throw new WanakuException("Toolset repository already exists: " + name);
@@ -145,6 +147,10 @@ public class ToolsetReposBean {
         DataStore ds = findByName(name);
         if (ds == null) {
             throw new WanakuException("Toolset repository not found: " + name);
+        }
+
+        if (url != null && !url.isBlank()) {
+            validateUrl(url);
         }
 
         try {
@@ -243,6 +249,47 @@ public class ToolsetReposBean {
         } catch (Exception e) {
             throw new WanakuException(
                     "Failed to fetch toolset '" + toolsetName + "' from " + toolsetUrl + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Validates a URL to prevent SSRF attacks by blocking non-HTTP schemes
+     * and private/loopback network addresses.
+     *
+     * @param url the URL to validate
+     * @throws WanakuException if the URL is invalid or points to a restricted address
+     */
+    static void validateUrl(String url) throws WanakuException {
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) {
+                throw new WanakuException("Only http and https URLs are allowed");
+            }
+            String host = uri.getHost();
+            if (host == null) {
+                throw new WanakuException("URL must have a valid host");
+            }
+            if (host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1") || host.equals("0.0.0.0")) {
+                throw new WanakuException("URLs pointing to localhost are not allowed");
+            }
+            if (host.startsWith("10.") || host.startsWith("192.168.") || isPrivate172(host)) {
+                throw new WanakuException("URLs pointing to private network ranges are not allowed");
+            }
+        } catch (IllegalArgumentException e) {
+            throw new WanakuException("Invalid URL: " + e.getMessage());
+        }
+    }
+
+    private static boolean isPrivate172(String host) {
+        if (!host.startsWith("172.")) {
+            return false;
+        }
+        try {
+            int second = Integer.parseInt(host.split("\\.")[1]);
+            return second >= 16 && second <= 31;
+        } catch (Exception e) {
+            return false;
         }
     }
 

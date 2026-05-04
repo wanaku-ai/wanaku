@@ -73,7 +73,13 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
 
   const handleAdd = async () => {
     try {
-      await addRepo({name: addName, url: addUrl, branch: addBranch || undefined, description: addDescription || undefined});
+      const repoData: { name: string; url: string; branch?: string; description?: string } = {
+        name: addName,
+        url: addUrl,
+      };
+      if (addBranch) repoData.branch = addBranch;
+      if (addDescription) repoData.description = addDescription;
+      await addRepo(repoData);
       onSuccess(`Toolset repository '${addName}' added`);
       setShowAddModal(false);
       setAddName("");
@@ -90,11 +96,12 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
   const handleEdit = async () => {
     if (!editTarget) return;
     try {
-      await updateRepo(editTarget.name, {
+      const repoData: { url: string; branch?: string; description?: string } = {
         url: editUrl,
-        branch: editBranch || undefined,
-        description: editDescription || undefined,
-      });
+      };
+      if (editBranch) repoData.branch = editBranch;
+      if (editDescription) repoData.description = editDescription;
+      await updateRepo(editTarget.name, repoData);
       onSuccess(`Toolset repository '${editTarget.name}' updated`);
       setEditTarget(null);
       setEditUrl("");
@@ -124,7 +131,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
     setBrowseTarget(name);
     try {
       const result = await browseRepo(name);
-      setBrowseCatalog(result.data.data);
+      setBrowseCatalog(result.data.data ?? null);
     } catch (error) {
       console.error("Error browsing repo:", error);
       onError(`Failed to browse repository '${name}'`);
