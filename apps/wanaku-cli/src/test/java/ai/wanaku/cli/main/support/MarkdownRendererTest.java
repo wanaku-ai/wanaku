@@ -1,51 +1,48 @@
 package ai.wanaku.cli.main.support;
 
-import org.jline.utils.AttributedString;
+import dev.tamboui.text.Text;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Unit tests for MarkdownRenderer.
- */
 class MarkdownRendererTest {
 
     @Test
     void testRenderSimpleText() {
         String markdown = "Hello World";
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("Hello World"));
+        assertTrue(result.rawContent().contains("Hello World"));
     }
 
     @Test
     void testRenderHeading() {
         String markdown = "# Main Heading";
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("Main Heading"));
+        assertTrue(result.rawContent().contains("Main Heading"));
     }
 
     @Test
     void testRenderBold() {
         String markdown = "This is **bold** text";
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("bold"));
+        assertTrue(result.rawContent().contains("bold"));
     }
 
     @Test
     void testRenderCode() {
         String markdown = "Use the `code` command";
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("code"));
+        assertTrue(result.rawContent().contains("code"));
     }
 
     @Test
@@ -56,12 +53,12 @@ class MarkdownRendererTest {
                 - Item 2
                 - Item 3
                 """;
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("Item 1"));
-        assertTrue(result.toString().contains("Item 2"));
-        assertTrue(result.toString().contains("Item 3"));
+        assertTrue(result.rawContent().contains("Item 1"));
+        assertTrue(result.rawContent().contains("Item 2"));
+        assertTrue(result.rawContent().contains("Item 3"));
     }
 
     @Test
@@ -80,23 +77,23 @@ class MarkdownRendererTest {
                 *Note:* Expressions are case-sensitive.
                 """;
 
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("Usage Guide"));
-        assertTrue(result.toString().contains("label expressions"));
-        assertTrue(result.toString().contains("Syntax"));
-        assertTrue(result.toString().contains("case-sensitive"));
+        assertTrue(result.rawContent().contains("Usage Guide"));
+        assertTrue(result.rawContent().contains("label expressions"));
+        assertTrue(result.rawContent().contains("Syntax"));
+        assertTrue(result.rawContent().contains("case-sensitive"));
     }
 
     @Test
     void testRenderLink() {
         String markdown = "Visit [Wanaku](https://wanaku.ai) for more info";
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("Wanaku"));
-        assertTrue(result.toString().contains("https://wanaku.ai"));
+        assertTrue(result.rawContent().contains("Wanaku"));
+        assertTrue(result.rawContent().contains("https://wanaku.ai"));
     }
 
     @Test
@@ -107,7 +104,7 @@ class MarkdownRendererTest {
     @Test
     void testEmptyMarkdown() {
         String markdown = "";
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
     }
@@ -123,12 +120,12 @@ class MarkdownRendererTest {
                 Third paragraph.
                 """;
 
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        assertTrue(result.toString().contains("First paragraph"));
-        assertTrue(result.toString().contains("Second paragraph"));
-        assertTrue(result.toString().contains("Third paragraph"));
+        assertTrue(result.rawContent().contains("First paragraph"));
+        assertTrue(result.rawContent().contains("Second paragraph"));
+        assertTrue(result.rawContent().contains("Third paragraph"));
     }
 
     @Test
@@ -141,10 +138,10 @@ class MarkdownRendererTest {
                 | Cell 3   | Cell 4   |
                 """;
 
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        String output = result.toString();
+        String output = result.rawContent();
 
         assertTrue(output.contains("Header 1"));
         assertTrue(output.contains("Header 2"));
@@ -152,7 +149,6 @@ class MarkdownRendererTest {
         assertTrue(output.contains("Cell 2"));
         assertTrue(output.contains("Cell 3"));
         assertTrue(output.contains("Cell 4"));
-        // Check for table borders
         assertTrue(output.contains("┌") || output.contains("│"));
     }
 
@@ -166,10 +162,10 @@ class MarkdownRendererTest {
                 | `!=` | Not equals | `status!=deprecated` |
                 """;
 
-        AttributedString result = MarkdownRenderer.render(markdown);
+        Text result = MarkdownRenderer.render(markdown);
 
         assertNotNull(result);
-        String output = result.toString();
+        String output = result.rawContent();
         assertTrue(output.contains("Operator"));
         assertTrue(output.contains("Description"));
         assertTrue(output.contains("Example"));

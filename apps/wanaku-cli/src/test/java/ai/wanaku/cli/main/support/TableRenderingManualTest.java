@@ -1,11 +1,7 @@
 package ai.wanaku.cli.main.support;
 
-import org.jline.utils.AttributedString;
+import dev.tamboui.text.Text;
 
-/**
- * Manual test to visualize table rendering.
- * Run this test and check the console output to verify table formatting.
- */
 public class TableRenderingManualTest {
 
     public static void main(String[] args) {
@@ -30,8 +26,8 @@ public class TableRenderingManualTest {
 
         System.out.println("=== Table Rendering Test ===\n");
 
-        AttributedString result = MarkdownRenderer.render(markdown);
-        System.out.println(result.toAnsi());
+        Text result = MarkdownRenderer.render(markdown);
+        System.out.println(result.rawContent());
 
         System.out.println("\n=== End of Test ===");
     }

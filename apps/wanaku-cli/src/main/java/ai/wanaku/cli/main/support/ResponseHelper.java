@@ -10,7 +10,7 @@ public final class ResponseHelper {
 
     public static void commonResponseErrorHandler(Response response) throws IOException {
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
-            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            WanakuPrinter printer = new WanakuPrinter(terminal);
             String message;
 
             // Try to read the response body for more details

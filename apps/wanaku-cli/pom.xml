@@ -36,9 +36,11 @@
                 <version>${jline.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jline</groupId>
-                <artifactId>jline-console-ui</artifactId>
-                <version>${jline.version}</version>
+                <groupId>dev.tamboui</groupId>
+                <artifactId>tamboui-bom</artifactId>
+                <version>${tamboui.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>
@@ -59,11 +61,6 @@
                 <version>${juniversalchardet.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.fusesource.jansi</groupId>
-                <artifactId>jansi</artifactId>
-                <version>${jansi.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -124,18 +121,18 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-console-ui</artifactId>
+            <groupId>dev.tamboui</groupId>
+            <artifactId>tamboui-toolkit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.tamboui</groupId>
+            <artifactId>tamboui-jline3-backend</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.googlecode.juniversalchardet</groupId>
             <artifactId>juniversalchardet</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.fusesource.jansi</groupId>
-            <artifactId>jansi</artifactId>
         </dependency>
 
         <dependency>
@@ -257,7 +254,6 @@
                     --initialize-at-run-time=org.jline.nativ.JLineLibrary,
                     --initialize-at-run-time=com.nimbusds.oauth2.sdk.http.HTTPRequest,
                     -H:ReflectionConfigurationFiles=reflection-config.json,
-                    -H:IncludeResourceBundles=consoleui_messages,
                     -H:ResourceConfigurationFiles=resources-config.json
                 </quarkus.native.additional-build-args>
             </properties>
