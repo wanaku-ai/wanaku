@@ -93,21 +93,20 @@ class PeriodicHealthCheckServiceTest {
     }
 
     @Test
-    void checkInstanceHealth_probesWhenNoActivityRecord() {
-        // Given: a service target with no activity record (newly registered)
+    void checkInstanceHealth_skipsWhenNoActivityRecord() {
+        // Given: a service target with no activity record
         ServiceTarget target =
                 new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
-        // And: no activity record exists yet
+        // And: no activity record exists
         when(serviceRegistry.getStates(SERVICE_ID)).thenReturn(null);
-        when(probeClient.probe(target)).thenReturn(HealthStatus.HEALTHY);
 
         // When: checkInstanceHealth is called
         healthCheckService.checkInstanceHealth(target);
 
-        // Then: the probe should still be called (no record = not explicitly deregistered)
-        verify(probeClient).probe(target);
-        verify(serviceRegistry).updateHealthStatus(SERVICE_ID, HealthStatus.HEALTHY);
+        // Then: the probe should NOT be called (no record = skip)
+        verify(probeClient, never()).probe(any());
+        verify(serviceRegistry, never()).updateHealthStatus(any(), any());
     }
 
     @Test
@@ -116,8 +115,10 @@ class PeriodicHealthCheckServiceTest {
         ServiceTarget target =
                 new ServiceTarget(SERVICE_ID, SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
 
-        // And: the capability is still marked as ACTIVE (because it crashed without deregistering)
+        // And: the capability was previously healthy but crashed without deregistering
         ActivityRecord crashedRecord = createActiveRecord();
+        crashedRecord.setHealthStatus(HealthStatus.HEALTHY);
+        crashedRecord.setLastSeen(java.time.Instant.now());
         when(serviceRegistry.getStates(SERVICE_ID)).thenReturn(crashedRecord);
         when(probeClient.probe(target)).thenThrow(new RuntimeException("Connection refused"));
 
