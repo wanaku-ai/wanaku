@@ -148,13 +148,13 @@ public class ServiceRegistryTest {
         Assertions.assertNotNull(record);
         final List<ServiceState> states = record.getStates();
         Assertions.assertNotNull(states);
-        assertEquals(2, record.getStates().size());
-        final ServiceState first = record.getStates().getFirst();
-        assertEquals(StandardMessages.HEALTHY, first.getReason());
-        assertTrue(first.isHealthy());
+        assertEquals(5, record.getStates().size());
+        final ServiceState healthy = record.getStates().get(3);
+        assertEquals(StandardMessages.HEALTHY, healthy.getReason());
+        assertTrue(healthy.isHealthy());
 
-        final ServiceState second = record.getStates().getLast();
-        assertEquals("test", second.getReason());
-        assertFalse(second.isHealthy());
+        final ServiceState unhealthy = record.getStates().getLast();
+        assertEquals("test", unhealthy.getReason());
+        assertFalse(unhealthy.isHealthy());
     }
 }

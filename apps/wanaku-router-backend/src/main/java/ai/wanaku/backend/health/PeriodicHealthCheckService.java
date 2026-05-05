@@ -95,7 +95,9 @@ public class PeriodicHealthCheckService {
         // and will still be probed and marked as DOWN.
         ActivityRecord activityRecord = serviceRegistry.getStates(id);
         if (activityRecord == null) {
-            LOG.debugf("Skipping health check for capability without activity record %s (%s)", target.getServiceName(), id);
+            LOG.debugf(
+                    "Skipping health check for capability without activity record %s (%s)",
+                    target.getServiceName(), id);
             return;
         }
 
