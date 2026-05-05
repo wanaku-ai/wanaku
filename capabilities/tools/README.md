@@ -14,7 +14,7 @@ which provides access to more than 300 components.
 |--------------|------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | `exec`       | [wanaku-tool-service-exec](./wanaku-tool-service-exec/README.md)             | Executes a process as a tool using an explicit executable allowlist         |
 | `http`       | [wanaku-tool-service-http](./wanaku-tool-service-http/README.md)             | Provides access to HTTP endpoints as tools via Wanaku                       | | Provides access to AWS SQS queues as tools via Wanaku                       |
-| `tavily`     | [wanaku-tool-service-tavily](./wanaku-tool-service-tavily/README.md)         | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
+| `tavily`     | Service catalog packaged under `service-catalogs/tavily`                     | Provides search capabilities on the Web using [Tavily](https://tavily.com/) |
 
 
 > [!NOTE]
