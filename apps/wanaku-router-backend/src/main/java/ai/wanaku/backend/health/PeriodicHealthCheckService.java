@@ -5,6 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -91,8 +93,13 @@ public class PeriodicHealthCheckService {
         // Skip capabilities that were explicitly deregistered.
         // Capabilities that crashed without deregistering remain ACTIVE
         // and will still be probed and marked as DOWN.
-        ActivityRecord record = serviceRegistry.getStates(id);
-        if (record != null && !record.isActive()) {
+        ActivityRecord activityRecord = serviceRegistry.getStates(id);
+        if (activityRecord == null) {
+            LOG.debugf("Skipping health check for capability without activity record %s (%s)", target.getServiceName(), id);
+            return;
+        }
+
+        if (!activityRecord.isActive()) {
             LOG.debugf("Skipping health check for deregistered capability %s (%s)", target.getServiceName(), id);
             return;
         }
@@ -108,9 +115,22 @@ public class PeriodicHealthCheckService {
             serviceRegistry.updateHealthStatus(id, status);
             emitHealthStatusEvent(id, status);
         } catch (Exception e) {
-            LOG.warnf(e, "Error during health check for %s", id);
-            serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
-            emitHealthStatusEvent(id, HealthStatus.DOWN);
+            if (activityRecord.getHealthStatus() == HealthStatus.PENDING) {
+                final Instant lastSeen = activityRecord.getLastSeen();
+                final Duration between = Duration.between(lastSeen, Instant.now());
+
+                if (between.toMinutes() < 1) {
+                    LOG.infof("Recently registered capability %s is in pending health state. ", id);
+                } else {
+                    LOG.warnf(e, "Error during health check for %s", id);
+                    serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
+                    emitHealthStatusEvent(id, HealthStatus.DOWN);
+                }
+            } else {
+                LOG.warnf(e, "Error during health check for %s", id);
+                serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
+                emitHealthStatusEvent(id, HealthStatus.DOWN);
+            }
         } finally {
             inProgress.remove(id);
         }

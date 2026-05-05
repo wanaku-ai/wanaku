@@ -51,6 +51,8 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public ServiceTarget register(ServiceTarget serviceTarget) {
+        updateHealthStatus(serviceTarget.getId(), HealthStatus.PENDING);
+
         return capabilitiesRepository.persist(serviceTarget);
     }
 
