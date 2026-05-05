@@ -58,7 +58,7 @@ distributions:
     type: JAVA_BINARY
   service-tavily:
     artifacts:
-      - path: capabilities/tools/wanaku-tool-service-tavily/target/distributions/wanaku-tool-service-tavily-{{projectVersion}}.zip
+      - path: service-catalogs/tavily/target/distributions/wanaku-service-catalog-tavily-{{projectVersion}}.zip
         platform: linux-x86_64
     type: JAVA_BINARY
   service-exec:
