@@ -96,6 +96,7 @@
         <module>capabilities</module>
         <module>service-catalogs</module>
         <module>archetypes</module>
+        <module>services</module>
         <module>tests</module>
     </modules>
 

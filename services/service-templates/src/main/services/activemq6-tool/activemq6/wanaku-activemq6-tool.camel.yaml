@@ -1,0 +1,16 @@
+- route:
+    from:
+      uri: direct
+      parameters:
+        name: wanaku
+      steps:
+        - log: ${body}
+        - to:
+            id: to-1198
+            uri: activemq6
+            parameters:
+              destinationName: "{{request.queue}}"
+              destinationType: queue
+              replyTo: "{{response.queue}}"
+      id: from-1655
+    id: route-3543
