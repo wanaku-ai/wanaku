@@ -25,6 +25,12 @@ public class ServiceInit extends BaseCommand {
             required = true)
     private String services;
 
+    @CommandLine.Option(
+            names = {"--template"},
+            description = "Initialize as a service template with service.properties files",
+            defaultValue = "false")
+    private boolean template;
+
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         String[] systems = services.split(",");
@@ -93,6 +99,11 @@ public class ServiceInit extends BaseCommand {
             props.setProperty("catalog.rules." + systemName, systemName + "/" + systemName + ".wanaku-rules.yaml");
             props.setProperty(
                     "catalog.dependencies." + systemName, systemName + "/" + systemName + ".dependencies.txt");
+
+            // If --template flag is set, add catalog.properties entry
+            if (template) {
+                props.setProperty("catalog.properties." + systemName, systemName + "/service.properties");
+            }
         }
 
         File indexFile = new File(rootDir, "index.properties");
@@ -134,6 +145,18 @@ public class ServiceInit extends BaseCommand {
         try (PrintWriter pw = new PrintWriter(new FileWriter(depsFile))) {
             pw.println("# Maven dependencies for " + systemName);
             pw.println("# One dependency per line in format: groupId:artifactId:version");
+        }
+
+        // If --template flag is set, create service.properties skeleton
+        if (template) {
+            File propertiesFile = new File(systemDir, "service.properties");
+            try (PrintWriter pw = new PrintWriter(new FileWriter(propertiesFile))) {
+                pw.println("# Parameterized configuration for " + systemName);
+                pw.println("# These properties will be filled in when instantiating the template");
+                pw.println("# Example:");
+                pw.println("# endpoint.url=http://example.com");
+                pw.println("# api.key=your-api-key");
+            }
         }
     }
 }

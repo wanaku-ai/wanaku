@@ -404,6 +404,15 @@ components:
           $ref: "#/components/schemas/CapabilityStatistics"
         resourceCapabilities:
           $ref: "#/components/schemas/CapabilityStatistics"
+    TemplateInstantiationRequest:
+      type: object
+      properties:
+        templateName:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
     ToolPayload:
       type: object
       properties:
@@ -584,6 +593,17 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/ActivityRecord"
+    WanakuResponseMapStringMapStringString:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
     WanakuResponseMapStringObject:
       type: object
       properties:
@@ -1715,6 +1735,159 @@ paths:
       summary: Remove
       tags:
       - Service Catalog Resource
+  /api/v1/service-template/deploy:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataStore"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+  /api/v1/service-template/download:
+    get:
+      parameters:
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+  /api/v1/service-template/get:
+    get:
+      parameters:
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+  /api/v1/service-template/instantiate:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateInstantiationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+  /api/v1/service-template/list:
+    get:
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListDataStore"
+  /api/v1/service-template/properties:
+    get:
+      parameters:
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseMapStringMapStringString"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+  /api/v1/service-template/remove:
+    delete:
+      parameters:
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
   /api/v1/tools:
     delete:
       parameters:

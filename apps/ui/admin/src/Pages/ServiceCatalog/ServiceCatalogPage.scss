@@ -106,6 +106,16 @@
     margin-bottom: 0.75rem;
   }
 
+  .catalog-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .catalog-card-instantiate {
+    width: 100%;
+  }
+
   .catalog-card-expand {
     padding-left: 0;
   }
@@ -164,5 +174,35 @@
 @media (max-width: 672px) {
   .catalog-card .catalog-card-description {
     -webkit-line-clamp: 2;
+  }
+}
+
+.template-wizard-form {
+  .template-wizard-description {
+    margin-bottom: 1.5rem;
+    color: var(--cds-text-secondary, #525252);
+    font-size: 0.875rem;
+  }
+
+  .template-wizard-system {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+
+    &:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+  }
+
+  .template-wizard-system-label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--cds-text-primary, #161616);
+
+    strong {
+      color: var(--cds-interactive-01, #0f62fe);
+    }
   }
 }

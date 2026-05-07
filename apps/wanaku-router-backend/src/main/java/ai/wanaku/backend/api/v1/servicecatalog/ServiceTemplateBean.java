@@ -1,0 +1,362 @@
+package ai.wanaku.backend.api.v1.servicecatalog;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+import org.jboss.logging.Logger;
+import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.core.services.api.ServiceCatalogIndex;
+
+/**
+ * Business logic for service template operations.
+ * <p>
+ * Template entries are stored as DataStore entities with label {@code wanaku.type=template}.
+ * Each entry contains a Base64-encoded ZIP package with an {@code index.properties} manifest
+ * and optional {@code service.properties} files in system directories.
+ * </p>
+ */
+@ApplicationScoped
+public class ServiceTemplateBean {
+    private static final Logger LOG = Logger.getLogger(ServiceTemplateBean.class);
+
+    /** Label key used to identify service template entries in the data store. */
+    public static final String LABEL_TYPE_KEY = "wanaku.type";
+
+    /** Label value used to identify service template entries. */
+    public static final String LABEL_TYPE_VALUE = "template";
+
+    @Inject
+    Instance<DataStoreRepository> dataStoreRepositoryInstance;
+
+    @Inject
+    ServiceCatalogBean serviceCatalogBean;
+
+    private DataStoreRepository dataStoreRepository;
+
+    @PostConstruct
+    void init() {
+        dataStoreRepository = dataStoreRepositoryInstance.get();
+    }
+
+    /**
+     * List all service template entries, optionally filtered by search term.
+     *
+     * @param search optional search term to filter by template name or description
+     * @return list of template data store entries
+     */
+    public List<DataStore> list(String search) {
+        LOG.debug("Listing service templates");
+        List<DataStore> all =
+                dataStoreRepository.findAllFilterByLabelExpression(LABEL_TYPE_KEY + "=" + LABEL_TYPE_VALUE);
+
+        if (search == null || search.isBlank()) {
+            return all;
+        }
+
+        String lowerSearch = search.toLowerCase();
+        return all.stream().filter(ds -> matchesSearch(ds, lowerSearch)).collect(Collectors.toList());
+    }
+
+    /**
+     * Get a specific service template by its catalog index name.
+     * Searches all template entries and matches against the name stored in the ZIP's index.properties.
+     *
+     * @param name the template name (from index.properties, not the DataStore name)
+     * @return the data store entry, or null if not found
+     */
+    public DataStore get(String name) {
+        LOG.debugf("Getting service template: %s", name);
+        List<DataStore> templates = list(null);
+
+        for (DataStore ds : templates) {
+            try {
+                ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(ds.getData());
+                if (name.equals(index.getName())) {
+                    return ds;
+                }
+            } catch (WanakuException e) {
+                LOG.debugf("Failed to parse template index for '%s': %s", ds.getName(), e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Deploy a service template ZIP package.
+     * Validates the ZIP structure, then stores it as a DataStore entry with template labels.
+     *
+     * @param dataStore the data store entry containing the Base64-encoded ZIP
+     * @return the persisted data store entry
+     * @throws WanakuException if validation fails
+     */
+    public DataStore deploy(DataStore dataStore) throws WanakuException {
+        LOG.debugf("Deploying service template: %s", dataStore.getName());
+
+        if (dataStore.getName() == null || dataStore.getName().isBlank()) {
+            throw new WanakuException("Template name is required");
+        }
+        if (dataStore.getData() == null || dataStore.getData().isBlank()) {
+            throw new WanakuException("Template data (Base64-encoded ZIP) is required");
+        }
+
+        // Validate ZIP structure by parsing the index
+        ServiceCatalogIndex.fromBase64(dataStore.getData());
+
+        // Set template label
+        Map<String, String> labels = dataStore.getLabels();
+        if (labels == null) {
+            labels = new HashMap<>();
+        } else {
+            labels = new HashMap<>(labels);
+        }
+        labels.put(LABEL_TYPE_KEY, LABEL_TYPE_VALUE);
+        dataStore.setLabels(labels);
+
+        // Check for existing template with same name and remove it
+        DataStore existing = get(dataStore.getName());
+        if (existing != null) {
+            LOG.debugf("Replacing existing template: %s", dataStore.getName());
+            dataStoreRepository.deleteById(existing.getId());
+        }
+
+        return dataStoreRepository.persist(dataStore);
+    }
+
+    /**
+     * Remove a service template by name.
+     *
+     * @param name the template name to remove
+     * @return the number of entries removed
+     */
+    public int remove(String name) {
+        LOG.debugf("Removing service template: %s", name);
+        DataStore template = get(name);
+        if (template == null) {
+            return 0;
+        }
+        boolean removed = dataStoreRepository.deleteById(template.getId());
+        return removed ? 1 : 0;
+    }
+
+    /**
+     * Parse the catalog index from a data store entry.
+     *
+     * @param dataStore the data store entry containing the ZIP
+     * @return the parsed index
+     * @throws WanakuException if parsing fails
+     */
+    public ServiceCatalogIndex parseIndex(DataStore dataStore) throws WanakuException {
+        return ServiceCatalogIndex.fromBase64(dataStore.getData());
+    }
+
+    /**
+     * Get all properties from a service template.
+     * Returns a map of system name to property key-value pairs.
+     *
+     * @param name the template name
+     * @return map of system → property key → value
+     * @throws WanakuException if template not found or parsing fails
+     */
+    public Map<String, Map<String, String>> getProperties(String name) throws WanakuException {
+        LOG.debugf("Getting properties for template: %s", name);
+
+        DataStore template = get(name);
+        if (template == null) {
+            throw new WanakuException("Service template not found: " + name);
+        }
+
+        ServiceCatalogIndex index = parseIndex(template);
+        Map<String, Map<String, String>> result = new HashMap<>();
+
+        byte[] zipBytes = Base64.getDecoder().decode(template.getData());
+        Map<String, String> fileContents = extractFileContents(zipBytes);
+
+        for (String system : index.getServiceNames()) {
+            String propertiesPath = index.getPropertiesFile(system);
+            if (propertiesPath != null) {
+                String content = fileContents.get(propertiesPath);
+                if (content != null) {
+                    Properties props = new Properties();
+                    try {
+                        props.load(new StringReader(content));
+                        Map<String, String> systemProps = new HashMap<>();
+                        for (String key : props.stringPropertyNames()) {
+                            systemProps.put(key, props.getProperty(key));
+                        }
+                        result.put(system, systemProps);
+                    } catch (IOException e) {
+                        LOG.warnf("Failed to parse properties file for system '%s': %s", system, e.getMessage());
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Instantiate a service template by filling in property values.
+     * Creates a new service catalog from the template.
+     *
+     * @param templateName the template name
+     * @param userProperties flat map of property key → value (no system namespacing)
+     * @return the newly created service catalog DataStore
+     * @throws WanakuException if instantiation fails
+     */
+    public DataStore instantiate(String templateName, Map<String, String> userProperties) throws WanakuException {
+        LOG.debugf(
+                "Instantiating template '%s' with %d properties",
+                templateName, userProperties != null ? userProperties.size() : 0);
+
+        DataStore template = get(templateName);
+        if (template == null) {
+            throw new WanakuException("Service template not found: " + templateName);
+        }
+
+        ServiceCatalogIndex index = parseIndex(template);
+        byte[] originalZip = Base64.getDecoder().decode(template.getData());
+
+        // Build a new ZIP with modified properties files
+        byte[] newZipBytes = buildCatalogZip(originalZip, index, userProperties != null ? userProperties : Map.of());
+
+        // Create a new DataStore for the catalog
+        DataStore catalog = new DataStore();
+        catalog.setName(index.getName());
+        catalog.setData(Base64.getEncoder().encodeToString(newZipBytes));
+
+        // Deploy via ServiceCatalogBean
+        return serviceCatalogBean.deploy(catalog);
+    }
+
+    /**
+     * Build a new catalog ZIP from a template ZIP by:
+     * - Removing catalog.properties.* entries from index.properties
+     * - Replacing property values in service.properties files
+     */
+    private byte[] buildCatalogZip(byte[] templateZip, ServiceCatalogIndex index, Map<String, String> userProperties)
+            throws WanakuException {
+        try {
+            Map<String, byte[]> entries = new HashMap<>();
+
+            // Read all entries from template ZIP
+            try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(templateZip))) {
+                ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    String name = entry.getName();
+                    byte[] content = zis.readAllBytes();
+                    entries.put(name, content);
+                    zis.closeEntry();
+                }
+            }
+
+            // Modify index.properties to remove catalog.properties.* entries
+            byte[] indexBytes = entries.get("index.properties");
+            if (indexBytes == null) {
+                throw new WanakuException("index.properties not found in template ZIP");
+            }
+
+            Properties indexProps = new Properties();
+            indexProps.load(new StringReader(new String(indexBytes)));
+
+            // Remove all catalog.properties.* entries
+            for (String system : index.getServiceNames()) {
+                indexProps.remove("catalog.properties." + system);
+            }
+
+            StringWriter indexWriter = new StringWriter();
+            indexProps.store(indexWriter, null);
+            entries.put("index.properties", indexWriter.toString().getBytes());
+
+            // Modify service.properties files with user values
+            for (String system : index.getServiceNames()) {
+                String propertiesPath = index.getPropertiesFile(system);
+                if (propertiesPath != null && entries.containsKey(propertiesPath)) {
+                    byte[] propsBytes = entries.get(propertiesPath);
+                    Properties props = new Properties();
+                    props.load(new StringReader(new String(propsBytes)));
+
+                    // Override with user-provided values
+                    for (Map.Entry<String, String> userEntry : userProperties.entrySet()) {
+                        if (props.containsKey(userEntry.getKey())) {
+                            props.setProperty(userEntry.getKey(), userEntry.getValue());
+                        }
+                    }
+
+                    StringWriter propsWriter = new StringWriter();
+                    props.store(propsWriter, null);
+                    entries.put(propertiesPath, propsWriter.toString().getBytes());
+                }
+            }
+
+            // Build new ZIP
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                for (Map.Entry<String, byte[]> e : entries.entrySet()) {
+                    ZipEntry zipEntry = new ZipEntry(e.getKey());
+                    zos.putNextEntry(zipEntry);
+                    zos.write(e.getValue());
+                    zos.closeEntry();
+                }
+            }
+
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new WanakuException("Failed to build catalog ZIP: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Extract all file contents from a ZIP archive.
+     */
+    private Map<String, String> extractFileContents(byte[] zipBytes) throws WanakuException {
+        Map<String, String> result = new HashMap<>();
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    byte[] content = zis.readAllBytes();
+                    result.put(entry.getName(), new String(content));
+                }
+                zis.closeEntry();
+            }
+        } catch (IOException e) {
+            throw new WanakuException("Failed to extract ZIP contents: " + e.getMessage());
+        }
+        return result;
+    }
+
+    private boolean matchesSearch(DataStore ds, String lowerSearch) {
+        if (ds.getName() != null && ds.getName().toLowerCase().contains(lowerSearch)) {
+            return true;
+        }
+        // Try to parse the index for description matching
+        try {
+            ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(ds.getData());
+            if (index.getDescription() != null
+                    && index.getDescription().toLowerCase().contains(lowerSearch)) {
+                return true;
+            }
+        } catch (WanakuException e) {
+            LOG.debugf("Failed to parse template index for search: %s", e.getMessage());
+        }
+        return false;
+    }
+}
