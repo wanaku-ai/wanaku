@@ -121,7 +121,7 @@ public class PeriodicHealthCheckService {
                 final Instant lastSeen = activityRecord.getLastSeen();
                 final Duration between = Duration.between(lastSeen, Instant.now());
 
-                if (between.toMinutes() < 1) {
+                if (between.toMinutes() < ActivityRecord.TIME_TO_LET_GO) {
                     LOG.infof("Recently registered capability %s is in pending health state. ", id);
                 } else {
                     LOG.warnf(e, "Error during health check for %s", id);

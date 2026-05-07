@@ -361,6 +361,15 @@ public class GrpcTransport implements WanakuBridgeTransport {
         Status status = e.getStatus();
         String description = status.getDescription();
 
+        if (status.getCode() == Status.Code.FAILED_PRECONDITION) {
+            LOG.errorf(e, "Service unavailable: %s", service.toAddress());
+            return new ServiceUnavailableException(
+                    "Service is not available at the address " + service.toAddress()
+                            + " due to temporary conditions (likely the service is starting up)",
+                    e,
+                    true);
+        }
+
         if (status.getCode() == Status.Code.UNAVAILABLE) {
             LOG.errorf(e, "Service unavailable: %s", service.toAddress());
             return new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
