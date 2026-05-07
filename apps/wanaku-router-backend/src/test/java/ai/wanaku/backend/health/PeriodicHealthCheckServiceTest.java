@@ -132,6 +132,8 @@ class PeriodicHealthCheckServiceTest {
 
     private ActivityRecord createActiveRecord() {
         ActivityRecord record = new ActivityRecord();
+        record.setHealthStatus(HealthStatus.HEALTHY);
+        record.setLastSeen(java.time.Instant.now());
         record.setStates(new java.util.ArrayList<>());
         return record;
     }

@@ -35,6 +35,11 @@ class HealthProbeClient {
             HealthProbeReply reply = transport.probeHealth(request, target);
             return mapRuntimeStatus(reply.getStatus());
         } catch (ServiceUnavailableException e) {
+            if (e.isTransientCondition()) {
+                LOG.warnf("Service is temporarily unavailable at %s: %s", target.toAddress(), e.getMessage());
+                return HealthStatus.PENDING;
+            }
+
             LOG.warnf("Service is not available at %s: %s", target.toAddress(), e.getMessage());
             return HealthStatus.DOWN;
         } catch (Exception e) {
