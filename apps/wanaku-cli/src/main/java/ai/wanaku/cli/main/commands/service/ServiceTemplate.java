@@ -6,16 +6,10 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
 @CommandLine.Command(
-        name = "service",
-        description = "Manage service catalogs",
-        subcommands = {
-            ServiceInit.class,
-            ServiceExpose.class,
-            ServicePackage.class,
-            ServiceDeploy.class,
-            ServiceTemplate.class
-        })
-public class Service extends BaseCommand {
+        name = "template",
+        description = "Manage service templates",
+        subcommands = {ServiceTemplateList.class, ServiceTemplateInstantiate.class})
+public class ServiceTemplate extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         CommandLine.usage(this, System.out);

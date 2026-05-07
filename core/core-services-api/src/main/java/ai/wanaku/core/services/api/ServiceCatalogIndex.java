@@ -42,6 +42,7 @@ public class ServiceCatalogIndex {
     private static final String PROP_ROUTES_PREFIX = "catalog.routes.";
     private static final String PROP_RULES_PREFIX = "catalog.rules.";
     private static final String PROP_DEPENDENCIES_PREFIX = "catalog.dependencies.";
+    private static final String PROP_PROPERTIES_PREFIX = "catalog.properties.";
 
     private final String name;
     private final String icon;
@@ -177,6 +178,16 @@ public class ServiceCatalogIndex {
                             + "' not found in ZIP archive");
                 }
             }
+
+            // Validate optional properties file if declared
+            String propertiesPath = props.getProperty(PROP_PROPERTIES_PREFIX + system);
+            if (propertiesPath != null) {
+                validateZipEntryPath(propertiesPath);
+                if (zipEntries != null && !zipEntries.contains(propertiesPath)) {
+                    throw new WanakuException("Referenced properties file '" + propertiesPath + "' for system '"
+                            + system + "' not found in ZIP archive");
+                }
+            }
         }
 
         return new ServiceCatalogIndex(name, icon, description, serviceNames, props);
@@ -243,5 +254,26 @@ public class ServiceCatalogIndex {
      */
     public String getDependenciesFile(String system) {
         return properties.getProperty(PROP_DEPENDENCIES_PREFIX + system);
+    }
+
+    /**
+     * Get the properties file path for a given system, or null if not set.
+     */
+    public String getPropertiesFile(String system) {
+        return properties.getProperty(PROP_PROPERTIES_PREFIX + system);
+    }
+
+    /**
+     * Check if this catalog has any service.properties files declared.
+     *
+     * @return true if at least one system has a properties file
+     */
+    public boolean hasServiceProperties() {
+        for (String system : serviceNames) {
+            if (properties.getProperty(PROP_PROPERTIES_PREFIX + system) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 }

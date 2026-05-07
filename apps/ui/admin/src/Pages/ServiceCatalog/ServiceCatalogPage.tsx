@@ -1,8 +1,10 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {Tab, TabList, TabPanel, TabPanels, Tabs, ToastNotification} from "@carbon/react";
 import {ServiceCatalogCards} from "./ServiceCatalogCards";
+import {ServiceTemplateCards} from "./ServiceTemplateCards";
 import {ToolsetReposTab} from "./ToolsetReposTab";
 import {useServiceCatalog} from "../../hooks/api/use-service-catalog";
+import {useServiceTemplate} from "../../hooks/api/use-service-template";
 import "./ServiceCatalogPage.scss";
 
 interface ServiceCatalogSystem {
@@ -28,12 +30,24 @@ interface ServiceCatalogSummary {
   services: string[];
 }
 
+interface ServiceTemplateSummary {
+  id: string;
+  name: string;
+  icon?: string;
+  description: string;
+  services: string[];
+  hasProperties?: boolean;
+}
+
 export const ServiceCatalogPage: React.FC = () => {
   const [catalogs, setCatalogs] = useState<ServiceCatalogSummary[]>([]);
+  const [templates, setTemplates] = useState<ServiceTemplateSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { listServiceCatalogs, getServiceCatalog, removeServiceCatalog } = useServiceCatalog();
+  const { listServiceTemplates } = useServiceTemplate();
 
   const fetchCatalogs = useCallback(
     async (search?: string) => {
@@ -51,9 +65,26 @@ export const ServiceCatalogPage: React.FC = () => {
     [listServiceCatalogs]
   );
 
+  const fetchTemplates = useCallback(
+    async (search?: string) => {
+      try {
+        const result = await listServiceTemplates(search);
+        const body = result.data as { data: ServiceTemplateSummary[] };
+        setTemplates(body.data || []);
+        setIsLoadingTemplates(false);
+      } catch (error) {
+        console.error("Error fetching service templates:", error);
+        setErrorMessage("Failed to load service templates");
+        setIsLoadingTemplates(false);
+      }
+    },
+    [listServiceTemplates]
+  );
+
   useEffect(() => {
     fetchCatalogs();
-  }, [fetchCatalogs]);
+    fetchTemplates();
+  }, [fetchCatalogs, fetchTemplates]);
 
   useEffect(() => {
     if (errorMessage) {
@@ -84,6 +115,10 @@ export const ServiceCatalogPage: React.FC = () => {
     fetchCatalogs(search || undefined);
   };
 
+  const handleTemplateSearch = (search: string) => {
+    fetchTemplates(search || undefined);
+  };
+
   const handleGetDetail = async (name: string): Promise<ServiceCatalogDetail | null> => {
     try {
       const result = await getServiceCatalog(name);
@@ -93,6 +128,11 @@ export const ServiceCatalogPage: React.FC = () => {
       console.error("Error fetching catalog detail:", error);
       return null;
     }
+  };
+
+  const handleInstantiateSuccess = (templateName: string) => {
+    setSuccessMessage(`Service catalog created successfully from template '${templateName}'`);
+    fetchCatalogs();
   };
 
   return (
@@ -119,11 +159,12 @@ export const ServiceCatalogPage: React.FC = () => {
       )}
       <h1 className="title">Service Catalog</h1>
       <p className="description">
-        View and manage deployed service catalogs and remote toolset repositories.
+        View and manage deployed service catalogs, service templates, and remote toolset repositories.
       </p>
       <Tabs>
         <TabList aria-label="Service catalog tabs">
           <Tab>Service Catalogs</Tab>
+          <Tab>Service Templates</Tab>
           <Tab>Toolset Repositories</Tab>
         </TabList>
         <TabPanels>
@@ -136,6 +177,17 @@ export const ServiceCatalogPage: React.FC = () => {
                 onDelete={handleDelete}
                 onSearch={handleSearch}
                 getDetail={handleGetDetail}
+              />
+            )}
+          </TabPanel>
+          <TabPanel>
+            {isLoadingTemplates ? (
+              <div>Loading...</div>
+            ) : (
+              <ServiceTemplateCards
+                templates={templates}
+                onSearch={handleTemplateSearch}
+                onInstantiateSuccess={handleInstantiateSuccess}
               />
             )}
           </TabPanel>

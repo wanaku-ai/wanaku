@@ -15,6 +15,7 @@ import type {
   DeleteApiV1NamespacesStaleParams,
   DeleteApiV1PromptsParams,
   DeleteApiV1ServiceCatalogRemoveParams,
+  DeleteApiV1ServiceTemplateRemoveParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
   GetApiV1CapabilitiesStaleParams,
@@ -26,6 +27,10 @@ import type {
   GetApiV1ServiceCatalogDownloadParams,
   GetApiV1ServiceCatalogGetParams,
   GetApiV1ServiceCatalogListParams,
+  GetApiV1ServiceTemplateDownloadParams,
+  GetApiV1ServiceTemplateGetParams,
+  GetApiV1ServiceTemplateListParams,
+  GetApiV1ServiceTemplatePropertiesParams,
   GetApiV1ToolsParams,
   Namespace,
   OutboundSseEvent,
@@ -36,6 +41,7 @@ import type {
   ResourcePayload,
   ResourceReference,
   ServiceTarget,
+  TemplateInstantiationRequest,
   ToolPayload,
   ToolReference,
   WanakuResponse,
@@ -54,6 +60,7 @@ import type {
   WanakuResponseListStaleCapabilityInfo,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
+  WanakuResponseMapStringMapStringString,
   WanakuResponseMapStringObject,
   WanakuResponseMapStringString,
   WanakuResponseNamespace,
@@ -2283,6 +2290,349 @@ export const deleteApiV1ServiceCatalogRemove = async (
 ): Promise<deleteApiV1ServiceCatalogRemoveResponse> => {
   return customFetch<deleteApiV1ServiceCatalogRemoveResponse>(
     getDeleteApiV1ServiceCatalogRemoveUrl(params),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export type postApiV1ServiceTemplateDeployResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type postApiV1ServiceTemplateDeployResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ServiceTemplateDeployResponseSuccess =
+  postApiV1ServiceTemplateDeployResponse200 & {
+    headers: Headers;
+  };
+export type postApiV1ServiceTemplateDeployResponseError =
+  postApiV1ServiceTemplateDeployResponse500 & {
+    headers: Headers;
+  };
+
+export type postApiV1ServiceTemplateDeployResponse =
+  | postApiV1ServiceTemplateDeployResponseSuccess
+  | postApiV1ServiceTemplateDeployResponseError;
+
+export const getPostApiV1ServiceTemplateDeployUrl = () => {
+  return `/api/v1/service-template/deploy`;
+};
+
+export const postApiV1ServiceTemplateDeploy = async (
+  dataStore: DataStore,
+  options?: RequestInit,
+): Promise<postApiV1ServiceTemplateDeployResponse> => {
+  return customFetch<postApiV1ServiceTemplateDeployResponse>(
+    getPostApiV1ServiceTemplateDeployUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(dataStore),
+    },
+  );
+};
+
+export type getApiV1ServiceTemplateDownloadResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type getApiV1ServiceTemplateDownloadResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceTemplateDownloadResponseSuccess =
+  getApiV1ServiceTemplateDownloadResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceTemplateDownloadResponseError =
+  getApiV1ServiceTemplateDownloadResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceTemplateDownloadResponse =
+  | getApiV1ServiceTemplateDownloadResponseSuccess
+  | getApiV1ServiceTemplateDownloadResponseError;
+
+export const getGetApiV1ServiceTemplateDownloadUrl = (
+  params?: GetApiV1ServiceTemplateDownloadParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-template/download?${stringifiedParams}`
+    : `/api/v1/service-template/download`;
+};
+
+export const getApiV1ServiceTemplateDownload = async (
+  params?: GetApiV1ServiceTemplateDownloadParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceTemplateDownloadResponse> => {
+  return customFetch<getApiV1ServiceTemplateDownloadResponse>(
+    getGetApiV1ServiceTemplateDownloadUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type getApiV1ServiceTemplateGetResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type getApiV1ServiceTemplateGetResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceTemplateGetResponseSuccess =
+  getApiV1ServiceTemplateGetResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceTemplateGetResponseError =
+  getApiV1ServiceTemplateGetResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceTemplateGetResponse =
+  | getApiV1ServiceTemplateGetResponseSuccess
+  | getApiV1ServiceTemplateGetResponseError;
+
+export const getGetApiV1ServiceTemplateGetUrl = (
+  params?: GetApiV1ServiceTemplateGetParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-template/get?${stringifiedParams}`
+    : `/api/v1/service-template/get`;
+};
+
+export const getApiV1ServiceTemplateGet = async (
+  params?: GetApiV1ServiceTemplateGetParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceTemplateGetResponse> => {
+  return customFetch<getApiV1ServiceTemplateGetResponse>(
+    getGetApiV1ServiceTemplateGetUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type postApiV1ServiceTemplateInstantiateResponse200 = {
+  data: WanakuResponseDataStore;
+  status: 200;
+};
+
+export type postApiV1ServiceTemplateInstantiateResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type postApiV1ServiceTemplateInstantiateResponseSuccess =
+  postApiV1ServiceTemplateInstantiateResponse200 & {
+    headers: Headers;
+  };
+export type postApiV1ServiceTemplateInstantiateResponseError =
+  postApiV1ServiceTemplateInstantiateResponse500 & {
+    headers: Headers;
+  };
+
+export type postApiV1ServiceTemplateInstantiateResponse =
+  | postApiV1ServiceTemplateInstantiateResponseSuccess
+  | postApiV1ServiceTemplateInstantiateResponseError;
+
+export const getPostApiV1ServiceTemplateInstantiateUrl = () => {
+  return `/api/v1/service-template/instantiate`;
+};
+
+export const postApiV1ServiceTemplateInstantiate = async (
+  templateInstantiationRequest: TemplateInstantiationRequest,
+  options?: RequestInit,
+): Promise<postApiV1ServiceTemplateInstantiateResponse> => {
+  return customFetch<postApiV1ServiceTemplateInstantiateResponse>(
+    getPostApiV1ServiceTemplateInstantiateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(templateInstantiationRequest),
+    },
+  );
+};
+
+export type getApiV1ServiceTemplateListResponse200 = {
+  data: WanakuResponseListDataStore;
+  status: 200;
+};
+
+export type getApiV1ServiceTemplateListResponseSuccess =
+  getApiV1ServiceTemplateListResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceTemplateListResponse =
+  getApiV1ServiceTemplateListResponseSuccess;
+
+export const getGetApiV1ServiceTemplateListUrl = (
+  params?: GetApiV1ServiceTemplateListParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-template/list?${stringifiedParams}`
+    : `/api/v1/service-template/list`;
+};
+
+export const getApiV1ServiceTemplateList = async (
+  params?: GetApiV1ServiceTemplateListParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceTemplateListResponse> => {
+  return customFetch<getApiV1ServiceTemplateListResponse>(
+    getGetApiV1ServiceTemplateListUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type getApiV1ServiceTemplatePropertiesResponse200 = {
+  data: WanakuResponseMapStringMapStringString;
+  status: 200;
+};
+
+export type getApiV1ServiceTemplatePropertiesResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceTemplatePropertiesResponseSuccess =
+  getApiV1ServiceTemplatePropertiesResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceTemplatePropertiesResponseError =
+  getApiV1ServiceTemplatePropertiesResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceTemplatePropertiesResponse =
+  | getApiV1ServiceTemplatePropertiesResponseSuccess
+  | getApiV1ServiceTemplatePropertiesResponseError;
+
+export const getGetApiV1ServiceTemplatePropertiesUrl = (
+  params?: GetApiV1ServiceTemplatePropertiesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-template/properties?${stringifiedParams}`
+    : `/api/v1/service-template/properties`;
+};
+
+export const getApiV1ServiceTemplateProperties = async (
+  params?: GetApiV1ServiceTemplatePropertiesParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceTemplatePropertiesResponse> => {
+  return customFetch<getApiV1ServiceTemplatePropertiesResponse>(
+    getGetApiV1ServiceTemplatePropertiesUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type deleteApiV1ServiceTemplateRemoveResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type deleteApiV1ServiceTemplateRemoveResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type deleteApiV1ServiceTemplateRemoveResponseSuccess =
+  deleteApiV1ServiceTemplateRemoveResponse200 & {
+    headers: Headers;
+  };
+export type deleteApiV1ServiceTemplateRemoveResponseError =
+  deleteApiV1ServiceTemplateRemoveResponse500 & {
+    headers: Headers;
+  };
+
+export type deleteApiV1ServiceTemplateRemoveResponse =
+  | deleteApiV1ServiceTemplateRemoveResponseSuccess
+  | deleteApiV1ServiceTemplateRemoveResponseError;
+
+export const getDeleteApiV1ServiceTemplateRemoveUrl = (
+  params?: DeleteApiV1ServiceTemplateRemoveParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-template/remove?${stringifiedParams}`
+    : `/api/v1/service-template/remove`;
+};
+
+export const deleteApiV1ServiceTemplateRemove = async (
+  params?: DeleteApiV1ServiceTemplateRemoveParams,
+  options?: RequestInit,
+): Promise<deleteApiV1ServiceTemplateRemoveResponse> => {
+  return customFetch<deleteApiV1ServiceTemplateRemoveResponse>(
+    getDeleteApiV1ServiceTemplateRemoveUrl(params),
     {
       ...options,
       method: "DELETE",

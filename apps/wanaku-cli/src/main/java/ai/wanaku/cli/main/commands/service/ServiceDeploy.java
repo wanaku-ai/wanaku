@@ -17,6 +17,7 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ServiceCatalogService;
+import ai.wanaku.core.services.api.ServiceTemplateService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -37,6 +38,12 @@ public class ServiceDeploy extends BaseCommand {
             defaultValue = "http://localhost:8080",
             arity = "0..1")
     protected String host;
+
+    @CommandLine.Option(
+            names = {"--template"},
+            description = "Deploy as a service template instead of a catalog",
+            defaultValue = "false")
+    private boolean template;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
@@ -115,13 +122,21 @@ public class ServiceDeploy extends BaseCommand {
         printer.printInfoMessage(String.format("Uploading '%s' (%d bytes)...%n", zipName, zipBytes.length));
 
         // Upload via REST API
-        ServiceCatalogService service = initService(ServiceCatalogService.class, host);
+        DataStore dataStore = new DataStore();
+        dataStore.setName(zipName);
+        dataStore.setData(base64Data);
+
         try {
-            DataStore dataStore = new DataStore();
-            dataStore.setName(zipName);
-            dataStore.setData(base64Data);
-            WanakuResponse<DataStore> response = service.deploy(dataStore);
-            printer.printSuccessMessage(String.format("Service catalog '%s' deployed successfully%n", catalogName));
+            if (template) {
+                ServiceTemplateService service = initService(ServiceTemplateService.class, host);
+                WanakuResponse<DataStore> response = service.deploy(dataStore);
+                printer.printSuccessMessage(
+                        String.format("Service template '%s' deployed successfully%n", catalogName));
+            } else {
+                ServiceCatalogService service = initService(ServiceCatalogService.class, host);
+                WanakuResponse<DataStore> response = service.deploy(dataStore);
+                printer.printSuccessMessage(String.format("Service catalog '%s' deployed successfully%n", catalogName));
+            }
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
