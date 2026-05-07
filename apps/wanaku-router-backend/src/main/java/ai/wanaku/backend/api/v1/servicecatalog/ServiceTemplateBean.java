@@ -190,7 +190,7 @@ public class ServiceTemplateBean {
         Map<String, String> fileContents = extractFileContents(zipBytes);
 
         for (String system : index.getServiceNames()) {
-            String propertiesPath = index.getPropertiesFile(system);
+            String propertiesPath = resolvePropertiesPath(index, system, fileContents);
             if (propertiesPath != null) {
                 String content = fileContents.get(propertiesPath);
                 if (content != null) {
@@ -287,8 +287,8 @@ public class ServiceTemplateBean {
 
             // Modify service.properties files with user values
             for (String system : index.getServiceNames()) {
-                String propertiesPath = index.getPropertiesFile(system);
-                if (propertiesPath != null && entries.containsKey(propertiesPath)) {
+                String propertiesPath = resolvePropertiesPath(index, system, entries);
+                if (propertiesPath != null) {
                     byte[] propsBytes = entries.get(propertiesPath);
                     Properties props = new Properties();
                     props.load(new StringReader(new String(propsBytes)));
@@ -341,6 +341,24 @@ public class ServiceTemplateBean {
             throw new WanakuException("Failed to extract ZIP contents: " + e.getMessage());
         }
         return result;
+    }
+
+    /**
+     * Resolve the properties file path for a system: first check the explicit declaration
+     * in index.properties, then fall back to the convention {@code <system>/service.properties}.
+     */
+    private static <V> String resolvePropertiesPath(ServiceCatalogIndex index, String system, Map<String, V> entries) {
+        String declared = index.getPropertiesFile(system);
+        if (declared != null && entries.containsKey(declared)) {
+            return declared;
+        }
+
+        String conventional = system + "/service.properties";
+        if (entries.containsKey(conventional)) {
+            return conventional;
+        }
+
+        return null;
     }
 
     private boolean matchesSearch(DataStore ds, String lowerSearch) {

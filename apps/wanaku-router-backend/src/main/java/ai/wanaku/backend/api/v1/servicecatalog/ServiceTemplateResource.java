@@ -57,7 +57,16 @@ public class ServiceTemplateResource implements ServiceTemplateService {
                 summary.put("icon", index.getIcon());
                 summary.put("description", index.getDescription());
                 summary.put("services", index.getServiceNames());
-                summary.put("hasProperties", index.hasServiceProperties());
+                boolean hasProps = index.hasServiceProperties();
+                if (!hasProps) {
+                    try {
+                        hasProps = !serviceTemplateBean
+                                .getProperties(index.getName())
+                                .isEmpty();
+                    } catch (WanakuException ignored) {
+                    }
+                }
+                summary.put("hasProperties", hasProps);
                 summaries.add(summary);
             } catch (WanakuException e) {
                 LOG.warnf("Failed to parse template index for '%s': %s", ds.getName(), e.getMessage());
