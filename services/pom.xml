@@ -15,6 +15,7 @@
 
     <modules>
         <module>service-templates</module>
+        <module>service-catalogs</module>
     </modules>
 
 </project>

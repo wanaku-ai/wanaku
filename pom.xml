@@ -94,7 +94,6 @@
         <module>capabilities-quarkus-sdk</module>
         <module>apps</module>
         <module>capabilities</module>
-        <module>service-catalogs</module>
         <module>archetypes</module>
         <module>services</module>
         <module>tests</module>
