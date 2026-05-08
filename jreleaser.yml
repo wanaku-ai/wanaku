@@ -75,6 +75,9 @@ distributions:
       - path: capabilities/providers/wanaku-provider-performance-static-file/target/distributions/wanaku-provider-performance-static-file-{{projectVersion}}.zip
         platform: linux-x86_64
     type: JAVA_BINARY
+  service-templates:
+    artifacts:
+      - path: services/service-templates/target/distributions/service-templates-{{projectVersion}}.zip
     type: JAVA_BINARY
 
   cli-native:
