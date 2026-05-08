@@ -2,8 +2,14 @@ package ai.wanaku.backend.api.v1.servicecatalog;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
@@ -23,7 +29,7 @@ import ai.wanaku.core.services.api.ServiceTemplateService;
  */
 @ApplicationScoped
 @Path("/api/v1/service-template")
-public class ServiceTemplateResource implements ServiceTemplateService {
+public class ServiceTemplateResource {
     private static final Logger LOG = Logger.getLogger(ServiceTemplateResource.class);
 
     @Inject
@@ -37,8 +43,10 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param search optional search term
      * @return response with list of template summaries
      */
-    @Override
-    public WanakuResponse<List<DataStore>> list(@QueryParam("search") String search) {
+    @Path("/list")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) {
         if (search != null && !search.isBlank()) {
             LOG.debugf("REST: Listing service templates with search: %s", search);
         } else {
@@ -83,8 +91,10 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param name the template name
      * @return response with template detail including system information
      */
-    @Override
-    public WanakuResponse<DataStore> get(@QueryParam("name") String name) throws WanakuException {
+    @Path("/get")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Getting service template: %s", name);
 
         if (name == null || name.isBlank()) {
@@ -125,7 +135,9 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param name the template name
      * @return response with the DataStore containing the Base64-encoded ZIP
      */
-    @Override
+    @Path("/download")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Downloading service template: %s", name);
 
@@ -148,7 +160,10 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param dataStore the data store entry containing the Base64-encoded ZIP
      * @return response with the created data store entry
      */
-    @Override
+    @Path("/deploy")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException {
         LOG.debugf("REST: Deploying service template: %s", dataStore.getName());
         DataStore result = serviceTemplateBean.deploy(dataStore);
@@ -162,7 +177,8 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param name the template name to remove
      * @return HTTP 200 if removed, 404 if not found
      */
-    @Override
+    @Path("/remove")
+    @DELETE
     public Response remove(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Removing service template: %s", name);
 
@@ -185,7 +201,9 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param name the template name
      * @return response with map of system → property key → value
      */
-    @Override
+    @Path("/properties")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name)
             throws WanakuException {
         LOG.debugf("REST: Getting properties for template: %s", name);
@@ -205,8 +223,12 @@ public class ServiceTemplateResource implements ServiceTemplateService {
      * @param request instantiation request containing template name and property values
      * @return response with the newly created service catalog DataStore
      */
-    @Override
-    public WanakuResponse<DataStore> instantiate(TemplateInstantiationRequest request) throws WanakuException {
+    @Path("/instantiate")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<DataStore> instantiate(ServiceTemplateService.TemplateInstantiationRequest request)
+            throws WanakuException {
         LOG.debugf("REST: Instantiating template: %s", request.getTemplateName());
 
         if (request.getTemplateName() == null || request.getTemplateName().isBlank()) {

@@ -118,7 +118,7 @@ public class ServiceTemplateBean {
         }
 
         // Validate ZIP structure by parsing the index
-        ServiceCatalogIndex.fromBase64(dataStore.getData());
+        ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(dataStore.getData());
 
         // Set template label
         Map<String, String> labels = dataStore.getLabels();
@@ -131,7 +131,7 @@ public class ServiceTemplateBean {
         dataStore.setLabels(labels);
 
         // Check for existing template with same name and remove it
-        DataStore existing = get(dataStore.getName());
+        DataStore existing = get(index.getName());
         if (existing != null) {
             LOG.debugf("Replacing existing template: %s", dataStore.getName());
             dataStoreRepository.deleteById(existing.getId());
