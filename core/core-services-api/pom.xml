@@ -27,13 +27,6 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>ai.wanaku</groupId>
-            <artifactId>core-util</artifactId>
-            <version>${project.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 </project>
