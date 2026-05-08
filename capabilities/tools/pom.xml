@@ -11,7 +11,6 @@
   <modules>
     <module>wanaku-tool-service-exec</module>
     <module>wanaku-tool-service-http</module>
-    <module>wanaku-tool-service-tavily</module>
-    <module>wanaku-tool-performance-noop</module>
+    <module>wanaku-tool-performance-noop</module>   
   </modules>
 </project>

@@ -24,7 +24,7 @@ The CLI is used to manage and interact with the Wanaku MCP Router.
 |---|---|
 | HTTP | [wanaku-tool-service-http-{{projectVersion}}.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-tool-service-http-{{projectVersion}}.zip) |
 | Exec | [wanaku-tool-service-exec-{{projectVersion}}.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-tool-service-exec-{{projectVersion}}.zip) |
-| Tavily | [wanaku-tool-service-tavily-{{projectVersion}}.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-tool-service-tavily-{{projectVersion}}.zip) |
+| Tavily service catalog | [wanaku-service-catalog-tavily-{{projectVersion}}.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-service-catalog-tavily-{{projectVersion}}.zip) |
 
 ---
 
