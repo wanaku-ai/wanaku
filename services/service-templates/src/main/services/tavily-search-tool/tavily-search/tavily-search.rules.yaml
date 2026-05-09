@@ -1,0 +1,6 @@
+mcp:
+  tools:
+    - tavily-search:
+        route:
+          id: "tavily-search"
+        description: "{{tool.description}}"
