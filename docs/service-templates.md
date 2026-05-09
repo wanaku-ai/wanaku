@@ -12,7 +12,7 @@ Think of a service template as a blueprint: it defines the structure, routes, an
 
 The lifecycle of a service template follows this pattern:
 
-1. **Template Creation**: A template is created with parameterized `service.properties` files using Camel Property Placeholders (`{{key}}`).
+1. **Template Creation**: A template is created with parameterized `service.properties` files using Camel Property Placeholders (<code v-pre>{{key}}</code>).
 2. **User Fills Parameters**: When instantiating the template, the user provides values for the placeholders.
 3. **Service Catalog Creation**: The template is transformed into a deployable service catalog with the user's values substituted in.
 
@@ -24,7 +24,7 @@ Service Catalog (ready to deploy)
 
 ## How `service.properties` Works with Camel Property Placeholders
 
-Service templates use Camel Property Placeholders to mark values that should be filled in by users. The placeholder syntax is `{{key}}`.
+Service templates use Camel Property Placeholders to mark values that should be filled in by users. The placeholder syntax is <code v-pre>{{key}}</code>.
 
 Example `service.properties` file in a template:
 
@@ -187,7 +187,7 @@ queue.name={{queue.name}}
 topic.name={{topic.name}}
 ```
 
-Use the `{{key}}` syntax for any value that should be filled in by the user.
+Use the <code v-pre>{{key}}</code> syntax for any value that should be filled in by the user.
 
 > [!TIP]
 > You can also use the **convention-based approach**: if a service has a `service.properties` file at `<service>/service.properties`, Wanaku will automatically detect it even if it's not declared in `index.properties`. This means you can omit the `catalog.properties.<system>` declaration if you follow the convention.
@@ -268,9 +268,9 @@ If `wanaku service template list` doesn't show your template, check:
 
 ### Properties Not Replaced
 
-If placeholders like `{{broker.url}}` are not being replaced:
+If placeholders like <code v-pre>{{broker.url}}</code> are not being replaced:
 
-- Ensure you're using the correct Camel Property Placeholder syntax: `{{key}}`, not `${key}`.
+- Ensure you're using the correct Camel Property Placeholder syntax: <code v-pre>{{key}}</code>, not `${key}`.
 - Check that the property key matches exactly what you provided during instantiation.
 - Verify the `service.properties` file is correctly declared in `index.properties` or follows the `<system>/service.properties` convention.
 
