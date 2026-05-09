@@ -1,4 +1,3 @@
-# Camel routes for tavily-search
 - route:
     description: Search the web using the Tavily AI-optimized search engine
     from:
@@ -9,5 +8,5 @@
           parameters:
             webSearchEngine: "#web-search-engine"
             query.resultType: SNIPPET
-            query.maxResults: 10
+            query.maxResults: "{{max.results}}"
     id: tavily-search
