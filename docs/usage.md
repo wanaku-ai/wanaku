@@ -2408,6 +2408,9 @@ wanaku service deploy --path=hr-system --host=http://localhost:8080
 
 The deployed service catalog is now visible in the admin UI and its routes are exposed as MCP tools.
 
+> [!TIP]
+> If you need parameterized, reusable service catalogs, see [Service Templates](service-templates.md) for details on creating and instantiating templates.
+
 ## Managing Capabilities
 
 Configurations in Wanaku have two distinct scopes:
