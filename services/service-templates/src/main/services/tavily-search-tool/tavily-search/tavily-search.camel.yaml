@@ -2,11 +2,11 @@
     description: Search the web using the Tavily AI-optimized search engine
     from:
       uri: direct:wanaku
-    steps:
-      - to:
-          uri: langchain4j-web-search:wanakuTavily
-          parameters:
-            webSearchEngine: "#web-search-engine"
-            query.resultType: SNIPPET
-            query.maxResults: "{{max.results}}"
+      steps:
+        - to:
+            uri: langchain4j-web-search:wanakuTavily
+            parameters:
+              webSearchEngine: "#web-search-engine"
+              resultType: SNIPPET
+              maxResults: "{{max.results}}"
     id: tavily-search
