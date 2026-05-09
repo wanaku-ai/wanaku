@@ -1,13 +1,13 @@
 # Camel routes for tavily-search
 - route:
-    id: tavily-search
     description: Search the web using the Tavily AI-optimized search engine
     from:
-      uri: "direct:tavily-search"
+      uri: direct:wanaku
     steps:
       - to:
-          uri: "langchain4j-web-search:wanakuTavily"
+          uri: langchain4j-web-search:wanakuTavily
           parameters:
-            webSearchEngine: "#tavily"
+            webSearchEngine: "#web-search-engine"
             query.resultType: SNIPPET
             query.maxResults: 10
+    id: tavily-search
