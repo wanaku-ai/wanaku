@@ -52,10 +52,9 @@ public class ToolsResource {
      *
      * @param resource the tool reference to register
      * @return a response containing the registered tool reference
-     * @throws WanakuException if registration fails
      */
     @POST
-    public WanakuResponse<ToolReference> add(ToolReference resource) throws WanakuException {
+    public WanakuResponse<ToolReference> add(ToolReference resource) {
         var ret = toolsBean.add(resource);
         return new WanakuResponse<>(ret);
     }
@@ -68,11 +67,10 @@ public class ToolsResource {
      *
      * @param resource the tool payload containing the tool reference and provisioning data
      * @return a response containing the registered tool reference
-     * @throws WanakuException if registration fails or payload validation fails
      */
     @Path("/payloads")
     @POST
-    public WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException {
+    public WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) {
         PayloadValidator.validate(resource);
         if (resource.getPayload() instanceof ToolReference toolReference
                 && StringHelper.isEmpty(toolReference.getName())) {
@@ -89,11 +87,10 @@ public class ToolsResource {
      * and tools available through forward proxies to remote MCP servers.
      *
      * @return a response containing a list of all tool references
-     * @throws WanakuException if listing fails
      */
     @GET
     public WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter)
-            throws WanakuException {
+            {
         List<ToolReference> forwardTools = forwardsBean.listAllAsTools(labelFilter);
         List<ToolReference> tools = toolsBean.list(labelFilter);
         List<ToolReference> ret = CollectionsHelper.join(tools, forwardTools);
@@ -105,16 +102,15 @@ public class ToolsResource {
      *
      * @param name the name of the tool to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the tool doesn't exist
-     * @throws WanakuException if removal fails
      */
     @Path("/{name}")
     @DELETE
-    public Response remove(@PathParam("name") String name) throws WanakuException {
+    public Response remove(@PathParam("name") String name) {
         int deleteCount = toolsBean.remove(name);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new ToolNotFoundException(name);
         }
     }
 
@@ -123,11 +119,10 @@ public class ToolsResource {
      *
      * @param resource the updated tool reference
      * @return HTTP 200 OK if updated successfully
-     * @throws WanakuException if update fails
      */
     @Path("/{name}")
     @PUT
-    public Response update(@PathParam("name") String name, ToolReference resource) throws WanakuException {
+    public Response update(@PathParam("name") String name, ToolReference resource) {
         if (resource != null && StringHelper.isEmpty(resource.getName())) {
             resource.setName(name);
         }
@@ -141,11 +136,10 @@ public class ToolsResource {
      * @param name the name of the tool to retrieve
      * @return a response containing the tool reference
      * @throws ToolNotFoundException if the tool is not found
-     * @throws WanakuException if retrieval fails
      */
     @Path("/{name}")
     @GET
-    public WanakuResponse<ToolReference> getByName(@PathParam("name") String name) throws WanakuException {
+    public WanakuResponse<ToolReference> getByName(@PathParam("name") String name) {
         ToolReference tool = toolsBean.getByName(name);
         if (tool == null) {
             throw new ToolNotFoundException(name);
@@ -161,7 +155,7 @@ public class ToolsResource {
      */
     @DELETE
     public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
-            throws WanakuException {
+            {
 
         int deleteCount = toolsBean.removeIf(labelExpression);
         return new WanakuResponse<>(deleteCount);
