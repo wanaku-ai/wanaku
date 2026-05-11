@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
@@ -38,6 +39,9 @@ public class DataStoresBean extends LabelsAwareWanakuEntityBean<DataStore> {
      */
     public DataStore add(DataStore dataStore) {
         LOG.debugf("Adding data store: %s", dataStore);
+        if (!dataStoreRepository.findByName(dataStore.getName()).isEmpty()) {
+            throw EntityAlreadyExistsException.forName(dataStore.getName());
+        }
         return dataStoreRepository.persist(dataStore);
     }
 

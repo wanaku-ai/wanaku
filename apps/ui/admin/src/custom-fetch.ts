@@ -62,5 +62,11 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
 
     const data = await getBody<T>(response);
 
+    if (!response.ok) {
+      const errorData = data as Record<string, unknown> | null;
+      const message = (errorData?.error as string) || `Request failed with status ${response.status}`;
+      throw new Error(message);
+    }
+
     return { status: response.status, data, headers: response.headers } as T;
   };

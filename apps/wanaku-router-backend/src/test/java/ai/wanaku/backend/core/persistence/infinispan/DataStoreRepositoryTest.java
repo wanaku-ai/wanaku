@@ -7,7 +7,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.backend.support.NoOidcTestProfile;
-import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -20,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -136,24 +134,21 @@ public class DataStoreRepositoryTest {
 
     @Order(8)
     @Test
-    void testMultipleEntries() {
-        // Insert first entry
+    void testMultipleEntriesWithSameName() {
         DataStore ds1 = new DataStore();
         ds1.setName("duplicate-name");
         ds1.setData("First entry");
         dataStoreRepository.persist(ds1);
 
-        // Second entry with same name should be rejected
         DataStore ds2 = new DataStore();
         ds2.setName("duplicate-name");
         ds2.setData("Second entry");
-        assertThrows(EntityAlreadyExistsException.class, () -> dataStoreRepository.persist(ds2));
+        dataStoreRepository.persist(ds2);
 
         List<DataStore> found = dataStoreRepository.findByName("duplicate-name");
 
         assertNotNull(found, "Result list should not be null");
-        assertEquals(1, found.size(), "Should find only one data store");
-        assertEquals("First entry", found.get(0).getData(), "Original entry should be preserved");
+        assertEquals(2, found.size(), "Should find both data stores with the same name");
 
         // Cleanup
         ((AbstractInfinispanRepository) dataStoreRepository).deleteALl();

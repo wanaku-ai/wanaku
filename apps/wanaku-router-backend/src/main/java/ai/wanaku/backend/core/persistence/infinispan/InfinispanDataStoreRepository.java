@@ -7,7 +7,6 @@ import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
-import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
 /**
@@ -39,9 +38,6 @@ public class InfinispanDataStoreRepository extends AbstractLabelAwareInfinispanR
     public DataStore persist(DataStore entity) {
         try {
             lock.lock();
-            if (!findByName(entity.getName()).isEmpty()) {
-                throw EntityAlreadyExistsException.forName(entity.getName());
-            }
             if (entity.getId() == null) {
                 entity.setId(newId());
             }
