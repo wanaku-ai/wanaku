@@ -88,4 +88,18 @@ public interface ServiceCatalogService {
     @Path("/remove")
     @DELETE
     Response remove(@QueryParam("name") String name) throws WanakuException;
+
+    /**
+     * Get deployment instructions for a service catalog.
+     *
+     * @param name the catalog name
+     * @param model the deployment model: local, docker, or kubernetes
+     * @return response with deployment instructions
+     * @throws WanakuException if catalog not found or model is unsupported
+     */
+    @Path("/instructions")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<DeploymentInstructions> getDeploymentInstructions(
+            @QueryParam("name") String name, @QueryParam("model") String model) throws WanakuException;
 }

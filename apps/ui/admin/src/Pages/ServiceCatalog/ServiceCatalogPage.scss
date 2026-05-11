@@ -116,6 +116,10 @@
     width: 100%;
   }
 
+  .catalog-card-deploy {
+    margin-bottom: 0.5rem;
+  }
+
   .catalog-card-expand {
     padding-left: 0;
   }
@@ -205,4 +209,65 @@
       color: var(--cds-interactive-01, #0f62fe);
     }
   }
+}
+
+.deployment-wizard-progress {
+  margin-bottom: 1.5rem;
+}
+
+.deployment-wizard-step {
+  margin-top: 1rem;
+}
+
+.deployment-wizard-description {
+  margin-bottom: 1rem;
+  color: var(--cds-text-secondary, #525252);
+  font-size: 0.875rem;
+}
+
+.deployment-wizard-radio-group {
+  margin-top: 0.5rem;
+}
+
+.deployment-wizard-type-note {
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary, #525252);
+  margin-bottom: 1rem;
+}
+
+.deployment-wizard-section-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.deployment-wizard-placeholders {
+  margin-bottom: 1rem;
+}
+
+.deployment-wizard-instructions {
+  margin-top: 1rem;
+}
+
+.deployment-wizard-system-block {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.deployment-wizard-system-label {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+
+  strong {
+    color: var(--cds-interactive-01, #0f62fe);
+  }
+}
+
+.deployment-wizard-snippet {
+  max-width: 100%;
 }

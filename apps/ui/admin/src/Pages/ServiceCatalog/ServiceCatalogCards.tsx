@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {Button, Column, Grid, Modal, Search, Tag, Tile} from "@carbon/react";
-import {ChevronDown, ChevronUp, TrashCan} from "@carbon/icons-react";
+import {ChevronDown, ChevronUp, Rocket, TrashCan} from "@carbon/icons-react";
+import {DeploymentWizard} from "./DeploymentWizard";
 import "./ServiceCatalogPage.scss";
 
 interface ServiceCatalogSystem {
@@ -40,6 +41,7 @@ export const ServiceCatalogCards: React.FC<ServiceCatalogCardsProps> = ({
   getDetail,
 }) => {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deployTarget, setDeployTarget] = useState<string | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [expandedDetails, setExpandedDetails] = useState<Record<string, ServiceCatalogDetail>>({});
 
@@ -115,6 +117,19 @@ export const ServiceCatalogCards: React.FC<ServiceCatalogCardsProps> = ({
                   </div>
 
                   <Button
+                    kind="tertiary"
+                    size="sm"
+                    renderIcon={Rocket}
+                    className="catalog-card-deploy"
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      setDeployTarget(catalog.name);
+                    }}
+                  >
+                    Deploy
+                  </Button>
+
+                  <Button
                     kind="ghost"
                     size="sm"
                     renderIcon={isExpanded ? ChevronUp : ChevronDown}
@@ -166,6 +181,13 @@ export const ServiceCatalogCards: React.FC<ServiceCatalogCardsProps> = ({
         >
           <p>Are you sure you want to delete the service catalog <strong>{deleteTarget}</strong>? This action cannot be undone.</p>
         </Modal>
+      )}
+
+      {deployTarget && (
+        <DeploymentWizard
+          catalogName={deployTarget}
+          onClose={() => setDeployTarget(null)}
+        />
       )}
     </>
   );

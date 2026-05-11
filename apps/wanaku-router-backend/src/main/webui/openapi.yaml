@@ -104,6 +104,23 @@ components:
           type: string
         data:
           type: string
+    DeploymentInstructions:
+      type: object
+      properties:
+        catalogName:
+          type: string
+        catalogType:
+          type: string
+        deploymentModel:
+          type: string
+        systems:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemInstruction"
+        placeholders:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlaceholderDefinition"
     FleetStatus:
       type: object
       properties:
@@ -215,6 +232,19 @@ components:
         name:
           type: string
         value:
+          type: string
+    PlaceholderDefinition:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        defaultValue:
+          type: string
+        type:
           type: string
     PromptArgument:
       type: object
@@ -382,6 +412,15 @@ components:
           type: string
         lastSeen:
           $ref: "#/components/schemas/Instant"
+    SystemInstruction:
+      type: object
+      properties:
+        systemName:
+          type: string
+        instruction:
+          type: string
+        format:
+          type: string
     SystemStatistics:
       type: object
       properties:
@@ -467,6 +506,13 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/DataStore"
+    WanakuResponseDeploymentInstructions:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/DeploymentInstructions"
     WanakuResponseFleetStatus:
       type: object
       properties:
@@ -1683,6 +1729,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
       summary: Get
+      tags:
+      - Service Catalog Resource
+  /api/v1/service-catalog/instructions:
+    get:
+      parameters:
+      - name: model
+        in: query
+        schema:
+          type: string
+      - name: name
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDeploymentInstructions"
+        "500":
+          description: Wanaku error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get Deployment Instructions
       tags:
       - Service Catalog Resource
   /api/v1/service-catalog/list:

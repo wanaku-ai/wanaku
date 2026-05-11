@@ -26,6 +26,7 @@ import type {
   GetApiV1ResourcesParams,
   GetApiV1ServiceCatalogDownloadParams,
   GetApiV1ServiceCatalogGetParams,
+  GetApiV1ServiceCatalogInstructionsParams,
   GetApiV1ServiceCatalogListParams,
   GetApiV1ServiceTemplateDownloadParams,
   GetApiV1ServiceTemplateGetParams,
@@ -46,6 +47,7 @@ import type {
   ToolReference,
   WanakuResponse,
   WanakuResponseDataStore,
+  WanakuResponseDeploymentInstructions,
   WanakuResponseFleetStatus,
   WanakuResponseForwardReference,
   WanakuResponseInteger,
@@ -2176,6 +2178,63 @@ export const getApiV1ServiceCatalogGet = async (
 ): Promise<getApiV1ServiceCatalogGetResponse> => {
   return customFetch<getApiV1ServiceCatalogGetResponse>(
     getGetApiV1ServiceCatalogGetUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Get Deployment Instructions
+ */
+export type getApiV1ServiceCatalogInstructionsResponse200 = {
+  data: WanakuResponseDeploymentInstructions;
+  status: 200;
+};
+
+export type getApiV1ServiceCatalogInstructionsResponse500 = {
+  data: WanakuResponse;
+  status: 500;
+};
+
+export type getApiV1ServiceCatalogInstructionsResponseSuccess =
+  getApiV1ServiceCatalogInstructionsResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ServiceCatalogInstructionsResponseError =
+  getApiV1ServiceCatalogInstructionsResponse500 & {
+    headers: Headers;
+  };
+
+export type getApiV1ServiceCatalogInstructionsResponse =
+  | getApiV1ServiceCatalogInstructionsResponseSuccess
+  | getApiV1ServiceCatalogInstructionsResponseError;
+
+export const getGetApiV1ServiceCatalogInstructionsUrl = (
+  params?: GetApiV1ServiceCatalogInstructionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/service-catalog/instructions?${stringifiedParams}`
+    : `/api/v1/service-catalog/instructions`;
+};
+
+export const getApiV1ServiceCatalogInstructions = async (
+  params?: GetApiV1ServiceCatalogInstructionsParams,
+  options?: RequestInit,
+): Promise<getApiV1ServiceCatalogInstructionsResponse> => {
+  return customFetch<getApiV1ServiceCatalogInstructionsResponse>(
+    getGetApiV1ServiceCatalogInstructionsUrl(params),
     {
       ...options,
       method: "GET",
