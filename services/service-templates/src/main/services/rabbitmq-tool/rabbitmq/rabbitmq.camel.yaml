@@ -7,8 +7,10 @@
       steps:
         - log: ${body}
         - to:
-            uri: spring-rabbitmq:{{rabbitmq.exchange}}
+            uri: spring-rabbitmq
             parameters:
               queues: "{{rabbitmq.queue}}"
+              exchangeName: "{{rabbitmq.exchange}}"
+              connectionFactory: "#rabbitConnectionFactory"
       id: from-rabbitmq
     id: rabbitmq-send
