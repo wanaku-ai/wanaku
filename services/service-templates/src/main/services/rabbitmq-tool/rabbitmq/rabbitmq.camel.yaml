@@ -9,7 +9,6 @@
         - to:
             uri: spring-rabbitmq:{{rabbitmq.exchange}}
             parameters:
-              routingKey: "{{rabbitmq.routing.key}}"
               queues: "{{rabbitmq.queue}}"
       id: from-rabbitmq
     id: rabbitmq-send

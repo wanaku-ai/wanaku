@@ -3,7 +3,7 @@ mcp:
     - send-message-to-rabbitmq:
         route:
           id: "rabbitmq-send"
-        description: "{{tool.description}}"
+        description: "Send a message to RabbitMQ"
         properties:
           - name: wanaku_body
             type: string
