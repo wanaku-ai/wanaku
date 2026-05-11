@@ -23,16 +23,17 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.operator.util.OperatorUtil;
+import ai.wanaku.operator.util.RouterResourceFactory;
 
 import static ai.wanaku.operator.util.Matchers.match;
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredRouterBackendDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.makeRouterExternalService;
-import static ai.wanaku.operator.util.OperatorUtil.makeRouterIngress;
-import static ai.wanaku.operator.util.OperatorUtil.makeRouterInternalService;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
+import static ai.wanaku.operator.util.RouterResourceFactory.ROUTER_VOLUME_CLAIM;
+import static ai.wanaku.operator.util.RouterResourceFactory.makeDesiredRouterBackendDeployment;
+import static ai.wanaku.operator.util.RouterResourceFactory.makeRouterExternalService;
+import static ai.wanaku.operator.util.RouterResourceFactory.makeRouterIngress;
+import static ai.wanaku.operator.util.RouterResourceFactory.makeRouterInternalService;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-router")
@@ -136,8 +137,8 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         try {
             existingExternalService =
                     context.getSecondaryResource(Service.class).orElse(null);
-        } catch (Exception e) {
-            LOG.warnf("There is no existing service");
+        } catch (IllegalStateException e) {
+            LOG.warnf(e, "There is no existing service");
             existingExternalService = null;
         }
         if (!match(desiredExternalService, existingExternalService)) {
@@ -173,8 +174,8 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         Deployment existingDeployment;
         try {
             existingDeployment = context.getSecondaryResource(Deployment.class).orElse(null);
-        } catch (Exception e) {
-            LOG.warnf("There is no existing deployment");
+        } catch (IllegalStateException e) {
+            LOG.warnf(e, "There is no existing deployment");
             existingDeployment = null;
         }
 
@@ -204,7 +205,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
                     .withName(desiredRoute.getMetadata().getName())
                     .get();
         } catch (Exception e) {
-            LOG.warnf("There is no existing service");
+            LOG.warnf(e, "There is no existing service");
             existingRoute = null;
         }
         if (!match(desiredRoute, existingRoute)) {
@@ -284,11 +285,11 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
     private void createRouterPVCs(WanakuRouter resource, String namespace) {
         // Create services-volume PVC
-        final PersistentVolumeClaim servicesVolumePVC = OperatorUtil.makeRouterVolumePVC(resource);
+        final PersistentVolumeClaim servicesVolumePVC = RouterResourceFactory.makeRouterVolumePVC(resource);
         PersistentVolumeClaim existingServicesVolume = kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
-                .withName(OperatorUtil.ROUTER_VOLUME_CLAIM)
+                .withName(ROUTER_VOLUME_CLAIM)
                 .get();
 
         if (!match(servicesVolumePVC, existingServicesVolume)) {

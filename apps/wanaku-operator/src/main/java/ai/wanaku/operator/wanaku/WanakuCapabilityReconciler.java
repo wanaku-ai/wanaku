@@ -19,15 +19,16 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.operator.util.OperatorUtil;
+import ai.wanaku.operator.util.CapabilityResourceFactory;
+import ai.wanaku.operator.util.OperatorConstants;
 
+import static ai.wanaku.operator.util.CapabilityResourceFactory.createVolumeClaimName;
+import static ai.wanaku.operator.util.CapabilityResourceFactory.makeCapabilityInternalService;
+import static ai.wanaku.operator.util.CapabilityResourceFactory.makeDesiredCiCCapabilityDeployment;
+import static ai.wanaku.operator.util.CapabilityResourceFactory.makeDesiredWanakuCapabilityDeployment;
 import static ai.wanaku.operator.util.Matchers.match;
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
-import static ai.wanaku.operator.util.OperatorUtil.createVolumeClaimName;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.makeCapabilityInternalService;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCiCCapabilityDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredWanakuCapabilityDeployment;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
@@ -123,7 +124,7 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
             if (capabilitiesSpec.getType() == null) {
                 desiredDeployment = makeDesiredWanakuCapabilityDeployment(resource, context, capabilitiesSpec);
             } else {
-                if ("camel-integration-capability".equals(capabilitiesSpec.getType())) {
+                if (OperatorConstants.CAMEL_INTEGRATION_CAPABILITY_TYPE.equals(capabilitiesSpec.getType())) {
                     desiredDeployment = makeDesiredCiCCapabilityDeployment(resource, context, capabilitiesSpec);
                 } else {
                     LOG.error("Invalid capability type: " + capabilitiesSpec.getType());
@@ -170,7 +171,8 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
 
     private void createCapabilityPVCs(WanakuCapability resource, String namespace, String serviceName) {
         // Create services-volume PVC
-        final PersistentVolumeClaim servicesVolumePVC = OperatorUtil.makeServicesVolumePVC(resource, serviceName);
+        final PersistentVolumeClaim servicesVolumePVC =
+                CapabilityResourceFactory.makeServicesVolumePVC(resource, serviceName);
         PersistentVolumeClaim existingServicesVolume = kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
