@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -281,12 +282,12 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * Executes code on a remote code execution service via gRPC streaming.
      * <p>
      * This method creates a channel, builds a gRPC stub, and initiates a streaming
-     * code execution. The returned iterator allows the caller to consume execution
-     * output as it arrives from the remote service.
+     * code execution. All replies are consumed from the stream and materialized into
+     * a list before the channel is closed, ensuring proper channel lifecycle management.
      *
      * @param request the code execution request
      * @param service the target service
-     * @return an iterator over the streaming code execution replies
+     * @return an iterator over the collected code execution replies
      * @throws ServiceUnavailableException if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
@@ -294,18 +295,23 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public Iterator<CodeExecutionReply> executeCode(CodeExecutionRequest request, ServiceTarget service) {
         LOG.debugf("Executing code on service: %s", service.toAddress());
 
+        ManagedChannel channel = createChannel(service);
         try {
-            ManagedChannel channel = createChannel(service);
-
             CodeExecutorGrpc.CodeExecutorBlockingStub blockingStub = CodeExecutorGrpc.newBlockingStub(channel);
-            return blockingStub
+            Iterator<CodeExecutionReply> replies = blockingStub
                     .withDeadline(Deadline.after(deadlineSeconds * 2L, TimeUnit.SECONDS))
                     .executeCode(request);
+
+            List<CodeExecutionReply> result = new ArrayList<>();
+            replies.forEachRemaining(result::add);
+            return result.iterator();
         } catch (StatusRuntimeException e) {
             throw mapStatusRuntimeException(e, service);
         } catch (RuntimeException e) {
             LOG.errorf(e, "Failed to execute code on service: %s", service.toAddress());
             throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
+        } finally {
+            channelManager.closeChannel(channel);
         }
     }
 
