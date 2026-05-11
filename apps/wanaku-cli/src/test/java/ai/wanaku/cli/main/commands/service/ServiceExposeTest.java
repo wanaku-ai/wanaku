@@ -110,6 +110,96 @@ class ServiceExposeTest {
     }
 
     @Test
+    void testExposeGeneratesResourceRules() throws Exception {
+        setupServiceDir("resservice", "sys1");
+
+        File routeFile = tempDir.resolve("resservice/sys1/sys1.camel.yaml").toFile();
+        try (PrintWriter pw = new PrintWriter(new FileWriter(routeFile))) {
+            pw.println("- route:");
+            pw.println("    id: s3-read");
+            pw.println("    from:");
+            pw.println("      uri: \"direct:start\"");
+        }
+
+        ServiceExpose cmd = new ServiceExpose();
+        setField(cmd, "path", tempDir.resolve("resservice").toString());
+        setField(cmd, "type", "resource");
+
+        Integer result = cmd.call();
+        assertEquals(0, result);
+
+        String content = Files.readString(tempDir.resolve("resservice/sys1/sys1.wanaku-rules.yaml"));
+        assertTrue(content.contains("resources:"), "Should contain resources section");
+        assertFalse(content.contains("tools:"), "Should not contain tools section");
+        assertTrue(content.contains("s3-read"), "Should contain route ID");
+        assertTrue(content.contains("uri: \"wanaku://s3-read\""), "Should contain default URI");
+        assertTrue(content.contains("mimeType: \"application/octet-stream\""), "Should contain default MIME type");
+    }
+
+    @Test
+    void testExposeResourceWithNamespace() throws Exception {
+        setupServiceDir("resns", "sys1");
+
+        File routeFile = tempDir.resolve("resns/sys1/sys1.camel.yaml").toFile();
+        try (PrintWriter pw = new PrintWriter(new FileWriter(routeFile))) {
+            pw.println("- route:");
+            pw.println("    id: ftp-read");
+            pw.println("    from:");
+            pw.println("      uri: \"direct:start\"");
+        }
+
+        ServiceExpose cmd = new ServiceExpose();
+        setField(cmd, "path", tempDir.resolve("resns").toString());
+        setField(cmd, "type", "resource");
+        setField(cmd, "namespace", "staging");
+
+        Integer result = cmd.call();
+        assertEquals(0, result);
+
+        String content = Files.readString(tempDir.resolve("resns/sys1/sys1.wanaku-rules.yaml"));
+        assertTrue(content.contains("resources:"));
+        assertTrue(content.contains("staging"));
+    }
+
+    @Test
+    void testExposeResourceCustomUriAndMimeType() throws Exception {
+        setupServiceDir("rescustom", "sys1");
+
+        File routeFile = tempDir.resolve("rescustom/sys1/sys1.camel.yaml").toFile();
+        try (PrintWriter pw = new PrintWriter(new FileWriter(routeFile))) {
+            pw.println("- route:");
+            pw.println("    id: blob-read");
+            pw.println("    from:");
+            pw.println("      uri: \"direct:start\"");
+        }
+
+        ServiceExpose cmd = new ServiceExpose();
+        setField(cmd, "path", tempDir.resolve("rescustom").toString());
+        setField(cmd, "type", "resource");
+        setField(cmd, "uri", "azure://container/blob");
+        setField(cmd, "mimeType", "text/plain");
+
+        Integer result = cmd.call();
+        assertEquals(0, result);
+
+        String content = Files.readString(tempDir.resolve("rescustom/sys1/sys1.wanaku-rules.yaml"));
+        assertTrue(content.contains("uri: \"azure://container/blob\""), "Should use custom URI");
+        assertTrue(content.contains("mimeType: \"text/plain\""), "Should use custom MIME type");
+    }
+
+    @Test
+    void testExposeInvalidType() throws Exception {
+        setupServiceDir("invalidtype", "sys1");
+
+        ServiceExpose cmd = new ServiceExpose();
+        setField(cmd, "path", tempDir.resolve("invalidtype").toString());
+        setField(cmd, "type", "invalid");
+
+        Integer result = cmd.call();
+        assertEquals(1, result);
+    }
+
+    @Test
     void testExposeIgnoresStepLevelIds() throws Exception {
         setupServiceDir("stepids", "sys1");
 
