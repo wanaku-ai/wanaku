@@ -67,14 +67,14 @@ export const useServiceTemplate = () => {
   );
 
   const instantiateTemplate = useCallback(
-    (templateName: string, properties: Record<string, string>, options?: RequestInit) => {
+    (templateName: string, properties: Record<string, string>, serviceName?: string, serviceSystem?: string, options?: RequestInit) => {
       return customFetch<{ data: unknown; status: number; headers: Headers }>(
         `${BASE_PATH}/instantiate`,
         {
           ...options,
           method: "POST",
           headers: { "Content-Type": "application/json", ...options?.headers },
-          body: JSON.stringify({ templateName, properties }),
+          body: JSON.stringify({ templateName, properties, serviceName: serviceName || undefined, serviceSystem: serviceSystem || undefined }),
         }
       );
     },

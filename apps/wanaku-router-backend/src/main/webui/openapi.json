@@ -659,6 +659,12 @@
             "additionalProperties" : {
               "type" : "string"
             }
+          },
+          "serviceName" : {
+            "type" : "string"
+          },
+          "serviceSystem" : {
+            "type" : "string"
           }
         }
       },

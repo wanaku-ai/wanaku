@@ -9,4 +9,6 @@ import type { TemplateInstantiationRequestProperties } from "./templateInstantia
 export interface TemplateInstantiationRequest {
   templateName?: string;
   properties?: TemplateInstantiationRequestProperties;
+  serviceName?: string;
+  serviceSystem?: string;
 }

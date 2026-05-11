@@ -31,6 +31,8 @@ export const ServiceTemplateWizard: React.FC<ServiceTemplateWizardProps> = ({
 }) => {
   const [properties, setProperties] = useState<TemplateProperties>({});
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [serviceName, setServiceName] = useState("");
+  const [serviceSystem, setServiceSystem] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export const ServiceTemplateWizard: React.FC<ServiceTemplateWizardProps> = ({
     setError(null);
 
     try {
-      await instantiateTemplate(templateName, formValues);
+      await instantiateTemplate(templateName, formValues, serviceName, serviceSystem);
       onSuccess();
     } catch (err) {
       console.error("Error instantiating template:", err);
@@ -94,14 +96,28 @@ export const ServiceTemplateWizard: React.FC<ServiceTemplateWizardProps> = ({
             subtitle={error}
             hideCloseButton
           />
-        ) : !hasProperties ? (
-          <p>This template has no configurable properties. Click "Create" to instantiate it.</p>
         ) : (
           <div className="template-wizard-form">
             <p className="template-wizard-description">
               Fill in the configuration parameters below to create a new service catalog.
             </p>
-            {Object.entries(properties).map(([system, systemProps]) => (
+            <TextInput
+              id="service-name"
+              labelText="Service name"
+              placeholder="Leave empty to use template default"
+              value={serviceName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServiceName(e.target.value)}
+              helperText="Optional: override the catalog name from the template"
+            />
+            <TextInput
+              id="service-system"
+              labelText="System identifier"
+              placeholder="Leave empty to use template default"
+              value={serviceSystem}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServiceSystem(e.target.value)}
+              helperText="Optional: override the system identifier from the template"
+            />
+            {hasProperties && Object.entries(properties).map(([system, systemProps]) => (
               <div key={system} className="template-wizard-system">
                 <FormLabel className="template-wizard-system-label">
                   System: <strong>{system}</strong>
