@@ -116,7 +116,7 @@ public class PromptsResourceTest extends WanakuRouterTest {
     @Order(5)
     @Test
     void testRemove() {
-        Response deleteResponse = given().when().delete("/api/v1/prompts?prompt=" + createdName);
+        Response deleteResponse = given().when().delete("/api/v1/prompts/" + createdName);
         assertHttpStatus(deleteResponse, Status.OK.getStatusCode());
 
         Response listResponse = given().when().get("/api/v1/prompts");

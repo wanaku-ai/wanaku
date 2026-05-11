@@ -14,7 +14,7 @@ export const useServiceCatalog = () => {
         params.append("search", search);
       }
       const query = params.toString();
-      const url = query ? `${BASE_PATH}/list?${query}` : `${BASE_PATH}/list`;
+      const url = query ? `${BASE_PATH}?${query}` : `${BASE_PATH}`;
       return customFetch<{ data: unknown; status: number; headers: Headers }>(url, {
         ...options,
         method: "GET",
@@ -25,9 +25,8 @@ export const useServiceCatalog = () => {
 
   const getServiceCatalog = useCallback(
     (name: string, options?: RequestInit) => {
-      const params = new URLSearchParams({ name });
       return customFetch<{ data: unknown; status: number; headers: Headers }>(
-        `${BASE_PATH}/get?${params.toString()}`,
+        `${BASE_PATH}/${encodeURIComponent(name)}`,
         {
           ...options,
           method: "GET",
@@ -54,7 +53,7 @@ export const useServiceCatalog = () => {
   const deployServiceCatalog = useCallback(
     (dataStore: { name: string; data: string }, options?: RequestInit) => {
       return customFetch<{ data: unknown; status: number; headers: Headers }>(
-        `${BASE_PATH}/deploy`,
+        `${BASE_PATH}`,
         {
           ...options,
           method: "POST",
@@ -68,9 +67,8 @@ export const useServiceCatalog = () => {
 
   const removeServiceCatalog = useCallback(
     (name: string, options?: RequestInit) => {
-      const params = new URLSearchParams({ name });
       return customFetch<{ data: unknown; status: number; headers: Headers }>(
-        `${BASE_PATH}/remove?${params.toString()}`,
+        `${BASE_PATH}/${encodeURIComponent(name)}`,
         {
           ...options,
           method: "DELETE",

@@ -7,6 +7,7 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -22,7 +23,6 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.DeploymentInstructions;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
-import ai.wanaku.core.util.StringHelper;
 
 /**
  * REST API resource for service catalog operations.
@@ -30,8 +30,6 @@ import ai.wanaku.core.util.StringHelper;
  */
 @ApplicationScoped
 @Path("/api/v1/service-catalog")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class ServiceCatalogResource {
     private static final Logger LOG = Logger.getLogger(ServiceCatalogResource.class);
 
@@ -43,13 +41,12 @@ public class ServiceCatalogResource {
 
     /**
      * List all service catalog entries, optionally filtered by search term.
-     * GET /api/v1/service-catalog/list
-     * {@code GET /api/v1/service-catalog/list?search={term}}
+     * GET /api/v1/service-catalog
+     * GET /api/v1/service-catalog?search={term}
      *
      * @param search optional search term
      * @return response with list of catalog summaries
      */
-    @Path("/list")
     @GET
     public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) {
         if (search != null && !search.isBlank()) {
@@ -81,23 +78,19 @@ public class ServiceCatalogResource {
 
     /**
      * Get a specific service catalog by name with system details.
-     * {@code GET /api/v1/service-catalog/get?name={name}}
+     * GET /api/v1/service-catalog/{name}
      *
      * @param name the catalog name
      * @return response with catalog detail including system information
      */
-    @Path("/get")
+    @Path("/{name}")
     @GET
-    public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) {
+    public WanakuResponse<Map<String, Object>> get(@PathParam("name") String name) {
         LOG.debugf("REST: Getting service catalog: %s", name);
-
-        if (StringHelper.isBlank(name)) {
-            throw new WanakuException("Query parameter 'name' is required");
-        }
 
         DataStore catalog = serviceCatalogBean.get(name);
         if (catalog == null) {
-            throw new WanakuException("Service catalog not found: %s".formatted(name));
+            throw new WanakuException("Service catalog not found: " + name);
         }
 
         ServiceCatalogIndex index = serviceCatalogBean.parseIndex(catalog);
@@ -123,7 +116,7 @@ public class ServiceCatalogResource {
 
     /**
      * Download a service catalog by name, returning the raw DataStore with Base64-encoded ZIP data.
-     * {@code GET /api/v1/service-catalog/download?name={name}}
+     * GET /api/v1/service-catalog/download?name={name}
      *
      * @param name the catalog name
      * @return response with the DataStore containing the Base64-encoded ZIP
@@ -133,13 +126,13 @@ public class ServiceCatalogResource {
     public WanakuResponse<DataStore> download(@QueryParam("name") String name) {
         LOG.debugf("REST: Downloading service catalog: %s", name);
 
-        if (StringHelper.isBlank(name)) {
+        if (name == null || name.isBlank()) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
         DataStore catalog = serviceCatalogBean.get(name);
         if (catalog == null) {
-            throw new WanakuException("Service catalog not found: %s".formatted(name));
+            throw new WanakuException("Service catalog not found: " + name);
         }
 
         return new WanakuResponse<>(catalog);
@@ -147,12 +140,11 @@ public class ServiceCatalogResource {
 
     /**
      * Deploy a service catalog ZIP package.
-     * POST /api/v1/service-catalog/deploy
+     * POST /api/v1/service-catalog
      *
      * @param dataStore the data store entry containing the Base64-encoded ZIP
      * @return response with the created data store entry
      */
-    @Path("/deploy")
     @POST
     public WanakuResponse<DataStore> deploy(DataStore dataStore) {
         LOG.debugf("REST: Deploying service catalog: %s", dataStore.getName());
@@ -162,19 +154,15 @@ public class ServiceCatalogResource {
 
     /**
      * Remove a service catalog by name.
-     * {@code DELETE /api/v1/service-catalog/remove?name={name}}
+     * DELETE /api/v1/service-catalog/{name}
      *
      * @param name the catalog name to remove
      * @return HTTP 200 if removed, 404 if not found
      */
-    @Path("/remove")
+    @Path("/{name}")
     @DELETE
-    public WanakuResponse<Void> remove(@QueryParam("name") String name) {
+    public WanakuResponse<Void> remove(@PathParam("name") String name) {
         LOG.debugf("REST: Removing service catalog: %s", name);
-
-        if (StringHelper.isBlank(name)) {
-            throw new WanakuException("Query parameter 'name' is required");
-        }
 
         int removed = serviceCatalogBean.remove(name);
         if (removed > 0) {
@@ -186,7 +174,7 @@ public class ServiceCatalogResource {
 
     /**
      * Get deployment instructions for a service catalog.
-     * {@code GET /api/v1/service-catalog/instructions?name={name}&model={model}}
+     * GET /api/v1/service-catalog/instructions?name={name}&model={model}
      *
      * @param name the catalog name
      * @param model the deployment model: local, docker, or kubernetes
@@ -194,14 +182,15 @@ public class ServiceCatalogResource {
      */
     @Path("/instructions")
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DeploymentInstructions> getDeploymentInstructions(
             @QueryParam("name") String name, @QueryParam("model") String model) {
         LOG.debugf("REST: Getting deployment instructions for catalog '%s' with model '%s'", name, model);
 
-        if (StringHelper.isBlank(name)) {
+        if (name == null || name.isBlank()) {
             throw new WanakuException("Query parameter 'name' is required");
         }
-        if (StringHelper.isBlank(model)) {
+        if (model == null || model.isBlank()) {
             throw new WanakuException("Query parameter 'model' is required");
         }
 

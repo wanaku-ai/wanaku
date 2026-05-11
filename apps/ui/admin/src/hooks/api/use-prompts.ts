@@ -1,7 +1,7 @@
 import {useCallback} from "react";
 import {
-    deleteApiV1Prompts,
-    deleteApiV1PromptsResponse,
+    deleteApiV1PromptsName,
+    deleteApiV1PromptsNameResponse,
     getApiV1Prompts,
     getApiV1PromptsResponse,
     postApiV1Prompts,
@@ -9,7 +9,7 @@ import {
     putApiV1Prompts,
     putApiV1PromptsResponse,
 } from "../../api/wanaku-router-api";
-import {DeleteApiV1PromptsParams, PromptReference,} from "../../models";
+import {PromptReference,} from "../../models";
 
 export const usePrompts = () => {
   /**
@@ -53,10 +53,10 @@ export const usePrompts = () => {
    */
   const removePrompt = useCallback(
     (
-      params?: DeleteApiV1PromptsParams,
+      name: string,
       options?: RequestInit
-    ): Promise<deleteApiV1PromptsResponse> => {
-      return deleteApiV1Prompts(params, options);
+    ): Promise<deleteApiV1PromptsNameResponse> => {
+      return deleteApiV1PromptsName(name, options);
     },
     []
   );

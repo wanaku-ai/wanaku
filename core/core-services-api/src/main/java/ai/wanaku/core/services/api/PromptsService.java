@@ -8,7 +8,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
@@ -34,9 +33,10 @@ public interface PromptsService {
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<PromptReference>> list();
 
+    @Path("/{name}")
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<Void> remove(@QueryParam("prompt") String promptName);
+    WanakuResponse<Void> remove(@PathParam("name") String promptName);
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
