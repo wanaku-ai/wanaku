@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.commands.tools;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +55,9 @@ public class ToolsLabelRemoveTest {
             // Arrange
             ToolReference existingTool = createToolReference("my-tool", Map.of("env", "dev", "tier", "backend"));
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "my-tool";
             command.labelKeys = List.of("env");
@@ -85,10 +83,9 @@ public class ToolsLabelRemoveTest {
             ToolReference existingTool =
                     createToolReference("my-tool", Map.of("env", "dev", "tier", "backend", "version", "1.0"));
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "my-tool";
             command.labelKeys = List.of("env", "version");
@@ -178,10 +175,9 @@ public class ToolsLabelRemoveTest {
             ToolReference tool2 = createToolReference("tool2", Map.of("status", "deprecated", "tier", "backend"));
             List<ToolReference> matchingTools = List.of(tool1, tool2);
             WanakuResponse<List<ToolReference>> listResponse = new WanakuResponse<>(matchingTools);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.list("status=deprecated")).thenReturn(listResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "status=deprecated";
             command.labelKeys = List.of("status");
@@ -204,10 +200,9 @@ public class ToolsLabelRemoveTest {
             ToolReference tool3 = createToolReference("tool3", Map.of("tier", "backend"));
             List<ToolReference> matchingTools = List.of(tool1, tool2, tool3);
             WanakuResponse<List<ToolReference>> listResponse = new WanakuResponse<>(matchingTools);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.list(anyString())).thenReturn(listResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "env=dev|status=active|tier=backend";
             command.labelKeys = List.of("status");
@@ -249,10 +244,9 @@ public class ToolsLabelRemoveTest {
             ToolReference tool2 = createToolReference("tool2", Map.of("env", "dev"));
             List<ToolReference> matchingTools = List.of(tool1, tool2);
             WanakuResponse<List<ToolReference>> listResponse = new WanakuResponse<>(matchingTools);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.list(anyString())).thenReturn(listResponse);
-            when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(updateResponse);
+            when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(new WanakuResponse<>());
             when(toolsService.update(eq("tool2"), eq(tool2))).thenThrow(new WebApplicationException());
 
             command.labelExpression = "env=dev";

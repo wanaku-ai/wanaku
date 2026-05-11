@@ -169,8 +169,7 @@ public class DataStoresLabelAdd extends BaseCommand {
             dataStore.setLabels(existingLabels);
 
             // Update the data store
-            Response updateResponse = dataStoresService.update(dataStore);
-            updateResponse.close();
+            dataStoresService.update(dataStore);
 
             printer.printSuccessMessage(String.format(
                     "Labels updated for data store '%s' (%d added, %d updated)", id, addedCount, updatedCount));
@@ -224,8 +223,7 @@ public class DataStoresLabelAdd extends BaseCommand {
                     dataStore.setLabels(existingLabels);
 
                     // Update the data store
-                    Response updateResponse = dataStoresService.update(dataStore);
-                    updateResponse.close();
+                    dataStoresService.update(dataStore);
 
                     printer.printSuccessMessage("  Updated: " + dataStore.getId());
                     successCount++;

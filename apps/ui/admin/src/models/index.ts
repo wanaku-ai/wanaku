@@ -162,3 +162,4 @@ export * from "./wanakuResponseServiceTarget";
 export * from "./wanakuResponseString";
 export * from "./wanakuResponseSystemStatistics";
 export * from "./wanakuResponseToolReference";
+export * from "./wanakuResponseVoid";

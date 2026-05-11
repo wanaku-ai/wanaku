@@ -7,9 +7,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.RestResponse;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ServiceState;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -19,20 +17,23 @@ public interface DiscoveryService {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    RestResponse<WanakuResponse<ServiceTarget>> register(ServiceTarget serviceTarget);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<ServiceTarget> register(ServiceTarget serviceTarget);
 
     @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
-    Response deregister(ServiceTarget serviceTarget);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> deregister(ServiceTarget serviceTarget);
 
     @Path("/update/{id}")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    Response updateState(@PathParam("id") String id, ServiceState serviceState);
+    WanakuResponse<Void> updateState(@PathParam("id") String id, ServiceState serviceState);
 
     @Path("/heartbeats")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    Response ping(String id);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> ping(String id);
 }

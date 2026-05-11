@@ -154,7 +154,8 @@ public class ToolsRemove extends BaseCommand {
      * @throws IOException if an I/O error occurs during communication with the service
      */
     private Integer removeByName(WanakuPrinter printer) throws IOException {
-        try (Response ignored = toolsService.remove(name)) {
+        try {
+            toolsService.remove(name);
             printer.printSuccessMessage("Successfully removed tool reference '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

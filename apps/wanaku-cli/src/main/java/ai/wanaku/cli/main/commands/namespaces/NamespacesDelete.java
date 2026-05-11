@@ -33,7 +33,8 @@ public class NamespacesDelete extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
-        try (Response response = namespacesService.delete(id)) {
+        try {
+            namespacesService.delete(id);
             printer.printSuccessMessage("Namespace deleted: " + id);
             return EXIT_OK;
         } catch (WebApplicationException ex) {

@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.commands.namespaces;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.NamespacesService;
 
@@ -34,7 +35,7 @@ public class NamespacesDeleteTest {
     @Test
     @DisplayName("Should delete namespace by id")
     void shouldDeleteNamespaceById() throws Exception {
-        when(namespacesService.delete("ns-1")).thenReturn(mock(Response.class));
+        when(namespacesService.delete("ns-1")).thenReturn(new WanakuResponse<>());
 
         command.id = "ns-1";
         Integer result = command.doCall(null, mock(WanakuPrinter.class));

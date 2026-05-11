@@ -9,7 +9,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Map;
@@ -41,12 +40,11 @@ public interface ToolsetReposService {
      *
      * @param repo map containing: name, url, description (optional), icon (optional)
      * @return response with the created repository
-     * @throws WanakuException if registration fails
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<Map<String, String>> add(Map<String, String> repo) throws WanakuException;
+    WanakuResponse<Map<String, String>> add(Map<String, String> repo);
 
     /**
      * Update an existing toolset repository.
@@ -54,37 +52,35 @@ public interface ToolsetReposService {
      * @param name the repository name to update
      * @param repo map containing: url, description (optional), icon (optional), branch (optional)
      * @return response with the updated repository
-     * @throws WanakuException if update fails
      */
     @Path("/{name}")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo)
-            throws WanakuException;
+           ;
 
     /**
      * Remove a toolset repository by name.
      *
      * @param name the repository name
-     * @return HTTP response
-     * @throws WanakuException if removal fails
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @Path("/{name}")
     @DELETE
-    Response remove(@PathParam("name") String name) throws WanakuException;
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@PathParam("name") String name);
 
     /**
      * Browse a toolset repository's catalog by fetching and parsing its index.
      *
      * @param name the repository name
      * @return response with the parsed catalog (toolset entries with descriptions and icons)
-     * @throws WanakuException if the repository is not found or fetching fails
      */
     @Path("/{name}/browse")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<Map<String, Object>> browse(@PathParam("name") String name) throws WanakuException;
+    WanakuResponse<Map<String, Object>> browse(@PathParam("name") String name);
 
     /**
      * Fetch a specific toolset's tools from a repository.
@@ -92,11 +88,10 @@ public interface ToolsetReposService {
      * @param name the repository name
      * @param toolsetName the toolset name within the repository
      * @return response with the list of tool references
-     * @throws WanakuException if fetching fails
      */
     @Path("/{name}/toolsets/{toolsetName}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<ToolReference>> fetchToolset(
-            @PathParam("name") String name, @PathParam("toolsetName") String toolsetName) throws WanakuException;
+            @PathParam("name") String name, @PathParam("toolsetName") String toolsetName);
 }

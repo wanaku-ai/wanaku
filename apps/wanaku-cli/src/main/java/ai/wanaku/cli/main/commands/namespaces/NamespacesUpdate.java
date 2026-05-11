@@ -101,17 +101,16 @@ public class NamespacesUpdate extends BaseCommand {
                 namespace.setLabels(updatedLabels);
             }
 
-            try (Response updateResponse = namespacesService.update(id, namespace)) {
-                if (updateResponse.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                    printer.printErrorMessage("Namespace not found: " + id);
-                    return EXIT_ERROR;
-                }
-                printer.printSuccessMessage("Namespace updated: " + id);
-                return EXIT_OK;
-            }
+            namespacesService.update(id, namespace);
+            printer.printSuccessMessage("Namespace updated: " + id);
+            return EXIT_OK;
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                printer.printErrorMessage("Namespace not found: " + id);
+            } else {
+                commonResponseErrorHandler(response);
+            }
             return EXIT_ERROR;
         }
     }

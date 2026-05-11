@@ -10,7 +10,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -49,13 +48,12 @@ public interface ToolsService {
      *
      * @param resource the tool payload containing the tool reference and provisioning data
      * @return a {@link WanakuResponse} containing the registered tool reference
-     * @throws WanakuException if registration fails
      */
     @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException;
+    WanakuResponse<ToolReference> addWithPayload(ToolPayload resource);
 
     /**
      * Lists all registered tool capabilities.
@@ -78,35 +76,37 @@ public interface ToolsService {
     /**
      * Removes a tool capability from the system.
      *
-     * @return a {@link Response} indicating the result of the removal operation
+     * @param name the name of the tool to remove
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @Path("/{name}")
     @DELETE
-    Response remove(@PathParam("name") String name);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@PathParam("name") String name);
 
     /**
      * Updates an existing tool capability.
      *
+     * @param name the name of the tool to update
      * @param resource the updated tool reference
-     * @return a {@link Response} indicating the result of the update operation
-     * @throws WanakuException if the update fails
+     * @return a {@link WanakuResponse} indicating the result of the update operation
      */
     @Path("/{name}")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(@PathParam("name") String name, ToolReference resource) throws WanakuException;
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> update(@PathParam("name") String name, ToolReference resource);
 
     /**
      * Retrieves a tool capability by its name.
      *
      * @param name the name of the tool to retrieve
      * @return a {@link WanakuResponse} containing the tool reference
-     * @throws WanakuException if the tool is not found
      */
     @Path("/{name}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<ToolReference> getByName(@PathParam("name") String name) throws WanakuException;
+    WanakuResponse<ToolReference> getByName(@PathParam("name") String name);
 
     /**
      * Removes a tool capability from the system.
@@ -115,5 +115,5 @@ public interface ToolsService {
      * @return a {@link Response} indicating the result of the removal operation
      */
     @DELETE
-    WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) throws WanakuException;
+    WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression);
 }

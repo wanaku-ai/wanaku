@@ -1,5 +1,6 @@
 package ai.wanaku.cli.main.commands.toolset;
 
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
@@ -28,19 +29,15 @@ public class ToolSetRepoRemove extends BaseCommand {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         try {
-            Response response = service.remove(name);
-            int status = response.getStatus();
-            if (status == Response.Status.NOT_FOUND.getStatusCode()) {
+            service.remove(name);
+            printer.printSuccessMessage(String.format("Toolset repository '%s' removed", name));
+        } catch (WebApplicationException ex) {
+            if (ex.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
                 printer.printErrorMessage(String.format("Toolset repository '%s' not found", name));
-                return EXIT_ERROR;
-            }
-            if (status >= 200 && status < 300) {
-                printer.printSuccessMessage(String.format("Toolset repository '%s' removed", name));
             } else {
-                printer.printErrorMessage(String.format(
-                        "Failed to remove toolset repository '%s': server returned status %d", name, status));
-                return EXIT_ERROR;
+                printer.printErrorMessage(String.format("Failed to remove toolset repository: %s", ex.getMessage()));
             }
+            return EXIT_ERROR;
         } catch (Exception e) {
             printer.printErrorMessage(String.format("Failed to remove toolset repository: %s", e.getMessage()));
             return EXIT_ERROR;

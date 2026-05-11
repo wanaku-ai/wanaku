@@ -1,7 +1,5 @@
 package ai.wanaku.cli.main.commands.tools;
 
-import jakarta.ws.rs.core.Response;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -25,8 +23,6 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import picocli.CommandLine;
-
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 @CommandLine.Command(name = "edit", description = "edit tool")
 public class ToolsEdit extends BaseCommand {
@@ -105,10 +101,7 @@ public class ToolsEdit extends BaseCommand {
             ToolReference toolModified = mapper.readValue(modifiedContent, ToolReference.class);
             // Force the ID in case the user modified it.
             toolModified.setId(tool.getId());
-            Response response = toolsService.update(tool.getName(), toolModified);
-            if (response.getStatus() != OK.code()) {
-                System.err.println("error!");
-            }
+            toolsService.update(tool.getName(), toolModified);
             System.out.println("done");
         }
         return EXIT_OK;

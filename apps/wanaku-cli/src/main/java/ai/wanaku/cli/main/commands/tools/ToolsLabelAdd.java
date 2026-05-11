@@ -169,8 +169,7 @@ public class ToolsLabelAdd extends BaseCommand {
             tool.setLabels(existingLabels);
 
             // Update the tool
-            Response updateResponse = toolsService.update(tool.getName(), tool);
-            updateResponse.close();
+            toolsService.update(tool.getName(), tool);
 
             printer.printSuccessMessage(String.format(
                     "Labels updated for tool '%s' (%d added, %d updated)", name, addedCount, updatedCount));
@@ -223,8 +222,7 @@ public class ToolsLabelAdd extends BaseCommand {
                     tool.setLabels(existingLabels);
 
                     // Update the tool
-                    Response updateResponse = toolsService.update(tool.getName(), tool);
-                    updateResponse.close();
+                    toolsService.update(tool.getName(), tool);
 
                     printer.printSuccessMessage("  Updated: " + tool.getName());
                     successCount++;

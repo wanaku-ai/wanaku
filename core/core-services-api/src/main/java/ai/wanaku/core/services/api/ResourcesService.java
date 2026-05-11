@@ -10,7 +10,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
@@ -36,24 +35,24 @@ public interface ResourcesService {
      * including configuration settings and secrets required for resource access.
      *
      * @param resourceReference the resource payload containing the resource reference and provisioning data
-     * @return a {@link Response} indicating the result of the expose operation
+     * @return a {@link WanakuResponse} containing the exposed resource reference
      */
     @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    Response exposeWithPayload(ResourcePayload resourceReference);
+    WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resourceReference);
 
     /**
      * Exposes a new resource capability in the system.
      *
      * @param resourceReference the resource reference containing resource metadata
-     * @return a {@link Response} indicating the result of the expose operation
+     * @return a {@link WanakuResponse} containing the exposed resource reference
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    Response expose(ResourceReference resourceReference);
+    WanakuResponse<ResourceReference> expose(ResourceReference resourceReference);
 
     /**
      * Lists all exposed resource capabilities.
@@ -77,11 +76,13 @@ public interface ResourcesService {
     /**
      * Removes a resource capability from the system.
      *
-     * @return a {@link Response} indicating the result of the removal operation
+     * @param name the name of the resource to remove
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @Path("/{name}")
     @DELETE
-    Response remove(@PathParam("name") String name);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@PathParam("name") String name);
 
     /**
      * Retrieves a resource capability by its name.
@@ -97,11 +98,13 @@ public interface ResourcesService {
     /**
      * Updates an existing resource capability.
      *
+     * @param name the name of the resource to update
      * @param resource the updated resource reference
-     * @return a {@link Response} indicating the result of the update operation
+     * @return a {@link WanakuResponse} indicating the result of the update operation
      */
     @Path("/{name}")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(@PathParam("name") String name, ResourceReference resource);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> update(@PathParam("name") String name, ResourceReference resource);
 }

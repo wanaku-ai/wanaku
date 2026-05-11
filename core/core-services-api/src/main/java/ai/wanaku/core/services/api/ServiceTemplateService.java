@@ -8,7 +8,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Map;
@@ -49,48 +48,45 @@ public interface ServiceTemplateService {
      *
      * @param name the template name
      * @return response with template details
-     * @throws WanakuException if template not found
      */
     @Path("/get")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> get(@QueryParam("name") String name) throws WanakuException;
+    WanakuResponse<DataStore> get(@QueryParam("name") String name);
 
     /**
      * Deploy a service template ZIP package.
      *
      * @param dataStore the data store entry containing the Base64-encoded ZIP
      * @return response with the created data store entry
-     * @throws WanakuException if the ZIP is invalid
      */
     @Path("/deploy")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException;
+    WanakuResponse<DataStore> deploy(DataStore dataStore);
 
     /**
      * Download a service template by name, returning the raw DataStore with Base64-encoded ZIP data.
      *
      * @param name the template name
      * @return response with the DataStore containing the Base64-encoded ZIP
-     * @throws WanakuException if template not found
      */
     @Path("/download")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException;
+    WanakuResponse<DataStore> download(@QueryParam("name") String name);
 
     /**
      * Remove a service template by name.
      *
      * @param name the template name to remove
-     * @return HTTP response
-     * @throws WanakuException if removal fails
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @Path("/remove")
     @DELETE
-    Response remove(@QueryParam("name") String name) throws WanakuException;
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@QueryParam("name") String name);
 
     /**
      * Get the properties declared in a service template.
@@ -98,13 +94,12 @@ public interface ServiceTemplateService {
      *
      * @param name the template name
      * @return response with map of system → property key → current value
-     * @throws WanakuException if template not found or parsing fails
      */
     @Path("/properties")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name)
-            throws WanakuException;
+           ;
 
     /**
      * Instantiate a service template by filling in property values.
@@ -112,13 +107,12 @@ public interface ServiceTemplateService {
      *
      * @param request instantiation request containing template name and property values
      * @return response with the newly created service catalog DataStore
-     * @throws WanakuException if instantiation fails
      */
     @Path("/instantiate")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> instantiate(TemplateInstantiationRequest request) throws WanakuException;
+    WanakuResponse<DataStore> instantiate(TemplateInstantiationRequest request);
 
     /**
      * Request body for template instantiation.

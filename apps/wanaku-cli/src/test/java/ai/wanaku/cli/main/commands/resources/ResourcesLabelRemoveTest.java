@@ -1,7 +1,5 @@
 package ai.wanaku.cli.main.commands.resources;
 
-import jakarta.ws.rs.core.Response;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,11 +51,10 @@ public class ResourcesLabelRemoveTest {
             ResourceReference existingResource =
                     createResourceReference("my-resource", Map.of("year", "2024", "category", "data"));
             WanakuResponse<ResourceReference> getResponse = new WanakuResponse<>(existingResource);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.name = "my-resource";
             command.labelKeys = List.of("year");
@@ -82,11 +79,10 @@ public class ResourcesLabelRemoveTest {
             ResourceReference existingResource = createResourceReference(
                     "my-resource", Map.of("year", "2024", "category", "data", "department", "sales"));
             WanakuResponse<ResourceReference> getResponse = new WanakuResponse<>(existingResource);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.name = "my-resource";
             command.labelKeys = List.of("year", "department");
@@ -155,11 +151,10 @@ public class ResourcesLabelRemoveTest {
                     createResourceReference("resource2", Map.of("status", "archived", "category", "data"));
             List<ResourceReference> matchingResources = List.of(resource1, resource2);
             WanakuResponse<List<ResourceReference>> listResponse = new WanakuResponse<>(matchingResources);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.list("status=archived")).thenReturn(listResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "status=archived";
             command.labelKeys = List.of("status");
@@ -181,11 +176,10 @@ public class ResourcesLabelRemoveTest {
                     createResourceReference("resource2", Map.of("status", "active")); // has label to remove
             List<ResourceReference> matchingResources = List.of(resource1, resource2);
             WanakuResponse<List<ResourceReference>> listResponse = new WanakuResponse<>(matchingResources);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.list(anyString())).thenReturn(listResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "category=data|status=active";
             command.labelKeys = List.of("status");

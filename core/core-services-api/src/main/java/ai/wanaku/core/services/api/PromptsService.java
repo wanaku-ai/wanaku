@@ -10,7 +10,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -24,24 +23,26 @@ public interface PromptsService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<PromptReference> add(PromptReference prompt) throws WanakuException;
+    WanakuResponse<PromptReference> add(PromptReference prompt);
 
     @Path("/payloads")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<PromptReference> addWithPayload(PromptPayload resource) throws WanakuException;
+    WanakuResponse<PromptReference> addWithPayload(PromptPayload resource);
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<List<PromptReference>> list();
 
     @DELETE
-    Response remove(@QueryParam("prompt") String promptName);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@QueryParam("prompt") String promptName);
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(PromptReference prompt);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> update(PromptReference prompt);
 
     @Path("/{name}")
     @GET

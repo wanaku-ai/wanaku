@@ -11,10 +11,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import org.jboss.resteasy.reactive.RestResponse;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -29,28 +27,28 @@ public class ForwardsResource {
     ForwardsBean forwardsBean;
 
     @POST
-    public Response addForward(ForwardReference reference) {
+    public WanakuResponse<Void> addForward(ForwardReference reference) {
         forwardsBean.forward(reference);
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 
     @Path("/{name}")
     @DELETE
-    public Response removeForward(@PathParam("name") String name) {
+    public WanakuResponse<Void> removeForward(@PathParam("name") String name) {
         ForwardReference reference = new ForwardReference();
         reference.setName(name);
         int deleteCount = forwardsBean.remove(reference);
         if (deleteCount > 0) {
-            return Response.ok().build();
+            return new WanakuResponse<>();
         }
 
         throw new ResourceNotFoundException(name);
     }
 
     @GET
-    public RestResponse<WanakuResponse<List<ForwardReference>>> listForwards(
+    public WanakuResponse<List<ForwardReference>> listForwards(
             @jakarta.ws.rs.QueryParam("labelFilter") String labelFilter) {
-        return RestResponse.ok(new WanakuResponse<>(forwardsBean.listForwards(labelFilter)));
+        return new WanakuResponse<>(forwardsBean.listForwards(labelFilter));
     }
 
     @Path("/{name}")
@@ -67,20 +65,20 @@ public class ForwardsResource {
 
     @Path("/{name}")
     @PUT
-    public Response update(@PathParam("name") String name, ForwardReference resource) {
+    public WanakuResponse<Void> update(@PathParam("name") String name, ForwardReference resource) {
         if (resource != null && StringHelper.isBlank(resource.getName())) {
             resource.setName(name);
         }
         forwardsBean.update(resource);
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 
     @Path("/{name}/refreshes")
     @POST
-    public Response refresh(@PathParam("name") String name) {
+    public WanakuResponse<Void> refresh(@PathParam("name") String name) {
         ForwardReference reference = new ForwardReference();
         reference.setName(name);
         forwardsBean.refresh(reference);
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 }

@@ -32,7 +32,8 @@ public class ForwardsRefresh extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initService(ForwardsService.class, host);
 
-        try (Response ignored = forwardsService.refreshForward(name)) {
+        try {
+            forwardsService.refreshForward(name);
             printer.printSuccessMessage("Successfully refreshed forward reference '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
