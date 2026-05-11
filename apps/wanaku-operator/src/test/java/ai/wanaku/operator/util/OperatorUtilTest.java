@@ -49,7 +49,7 @@ class OperatorUtilTest {
 
     @Test
     void createVolumeClaimName() {
-        assertEquals("my-service-volume-claim", OperatorUtil.createVolumeClaimName("my-service"));
+        assertEquals("my-service-volume-claim", CapabilityResourceFactory.createVolumeClaimName("my-service"));
     }
 
     @Test
