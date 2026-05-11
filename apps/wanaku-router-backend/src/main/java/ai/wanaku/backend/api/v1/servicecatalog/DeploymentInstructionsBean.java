@@ -163,7 +163,11 @@ public class DeploymentInstructionsBean {
                     "http://host.docker.internal:8080",
                     "url"));
             placeholders.add(new PlaceholderDefinition(
-                    "token-endpoint", "Token Endpoint", "OAuth2 token endpoint URL for authentication", "", "url"));
+                    "token-endpoint",
+                    "Token Endpoint",
+                    "OAuth2 token endpoint URL for authentication",
+                    "http://host.docker.internal:8080",
+                    "url"));
             placeholders.add(new PlaceholderDefinition(
                     "client-secret", "Client Secret", "OIDC client secret for service authentication", ""));
         } else {
