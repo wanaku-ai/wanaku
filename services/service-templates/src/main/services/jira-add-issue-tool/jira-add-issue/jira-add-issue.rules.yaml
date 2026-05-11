@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - jira-add-issue:
+        route:
+          id: "jira-add-issue"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The issue summary and description
+            required: true

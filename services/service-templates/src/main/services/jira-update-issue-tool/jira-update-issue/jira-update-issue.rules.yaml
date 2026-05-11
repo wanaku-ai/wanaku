@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - jira-update-issue:
+        route:
+          id: "jira-update-issue"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The issue fields to update
+            required: true

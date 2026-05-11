@@ -1,0 +1,15 @@
+- route:
+    description: Send and receive messages to and from RabbitMQ
+    from:
+      uri: direct
+      parameters:
+        name: wanaku
+      steps:
+        - log: ${body}
+        - to:
+            uri: spring-rabbitmq:{{rabbitmq.exchange}}
+            parameters:
+              routingKey: "{{rabbitmq.routing.key}}"
+              queues: "{{rabbitmq.queue}}"
+      id: from-rabbitmq
+    id: rabbitmq-send

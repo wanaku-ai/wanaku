@@ -1,0 +1,11 @@
+- route:
+    description: Add a comment to a Jira issue
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: jira:addComment
+            parameters:
+              jiraUrl: "{{jira.url}}"
+              accessToken: "{{jira.access.token}}"
+    id: jira-add-comment

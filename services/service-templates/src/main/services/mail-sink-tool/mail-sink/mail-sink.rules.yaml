@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - mail-send:
+        route:
+          id: "mail-send"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The email body content
+            required: true
