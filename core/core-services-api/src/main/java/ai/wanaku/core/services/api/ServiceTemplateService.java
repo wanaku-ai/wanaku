@@ -126,6 +126,8 @@ public interface ServiceTemplateService {
     class TemplateInstantiationRequest {
         private String templateName;
         private Map<String, String> properties;
+        private String serviceName;
+        private String serviceSystem;
 
         public String getTemplateName() {
             return templateName;
@@ -141,6 +143,22 @@ public interface ServiceTemplateService {
 
         public void setProperties(Map<String, String> properties) {
             this.properties = properties;
+        }
+
+        public String getServiceName() {
+            return serviceName;
+        }
+
+        public void setServiceName(String serviceName) {
+            this.serviceName = serviceName;
+        }
+
+        public String getServiceSystem() {
+            return serviceSystem;
+        }
+
+        public void setServiceSystem(String serviceSystem) {
+            this.serviceSystem = serviceSystem;
         }
     }
 }

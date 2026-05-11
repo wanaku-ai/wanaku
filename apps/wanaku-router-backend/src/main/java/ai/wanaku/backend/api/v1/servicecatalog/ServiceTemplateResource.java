@@ -235,7 +235,9 @@ public class ServiceTemplateResource {
             throw new WanakuException("Template name is required");
         }
 
-        DataStore catalog = serviceTemplateBean.instantiate(request.getTemplateName(), request.getProperties());
+        DataStore catalog = serviceTemplateBean.instantiate(
+                request.getTemplateName(), request.getProperties(),
+                request.getServiceName(), request.getServiceSystem());
         return new WanakuResponse<>(catalog);
     }
 }

@@ -222,6 +222,23 @@ public class ServiceTemplateBean {
      * @throws WanakuException if instantiation fails
      */
     public DataStore instantiate(String templateName, Map<String, String> userProperties) throws WanakuException {
+        return instantiate(templateName, userProperties, null, null);
+    }
+
+    /**
+     * Instantiate a service template by filling in property values, with optional overrides
+     * for the service name and system identifier.
+     *
+     * @param templateName the template name
+     * @param userProperties flat map of property key → value (no system namespacing)
+     * @param serviceName optional override for the catalog name (null to use template default)
+     * @param serviceSystem optional override for the system identifier (null to use template default)
+     * @return the newly created service catalog DataStore
+     * @throws WanakuException if instantiation fails
+     */
+    public DataStore instantiate(
+            String templateName, Map<String, String> userProperties, String serviceName, String serviceSystem)
+            throws WanakuException {
         LOG.debugf(
                 "Instantiating template '%s' with %d properties",
                 templateName, userProperties != null ? userProperties.size() : 0);
@@ -234,12 +251,15 @@ public class ServiceTemplateBean {
         ServiceCatalogIndex index = parseIndex(template);
         byte[] originalZip = Base64.getDecoder().decode(template.getData());
 
+        String effectiveName = (serviceName != null && !serviceName.isBlank()) ? serviceName : index.getName();
+
         // Build a new ZIP with modified properties files
-        byte[] newZipBytes = buildCatalogZip(originalZip, index, userProperties != null ? userProperties : Map.of());
+        byte[] newZipBytes = buildCatalogZip(
+                originalZip, index, userProperties != null ? userProperties : Map.of(), effectiveName, serviceSystem);
 
         // Create a new DataStore for the catalog
         DataStore catalog = new DataStore();
-        catalog.setName(index.getName());
+        catalog.setName(effectiveName);
         catalog.setData(Base64.getEncoder().encodeToString(newZipBytes));
 
         // Deploy via ServiceCatalogBean
@@ -249,9 +269,15 @@ public class ServiceTemplateBean {
     /**
      * Build a new catalog ZIP from a template ZIP by:
      * - Removing catalog.properties.* entries from index.properties
+     * - Optionally overriding catalog.name and catalog.services
      * - Replacing property values in service.properties files
      */
-    private byte[] buildCatalogZip(byte[] templateZip, ServiceCatalogIndex index, Map<String, String> userProperties)
+    private byte[] buildCatalogZip(
+            byte[] templateZip,
+            ServiceCatalogIndex index,
+            Map<String, String> userProperties,
+            String catalogName,
+            String serviceSystem)
             throws WanakuException {
         try {
             Map<String, byte[]> entries = new HashMap<>();
@@ -279,6 +305,22 @@ public class ServiceTemplateBean {
             // Remove all catalog.properties.* entries
             for (String system : index.getServiceNames()) {
                 indexProps.remove("catalog.properties." + system);
+            }
+
+            // Override catalog.name if provided
+            if (catalogName != null && !catalogName.isBlank()) {
+                indexProps.setProperty("catalog.name", catalogName);
+            }
+
+            // Override catalog.services if provided, remapping per-system entries
+            if (serviceSystem != null && !serviceSystem.isBlank()) {
+                for (String oldSystem : index.getServiceNames()) {
+                    remapSystemProperty(indexProps, "catalog.routes.", oldSystem, serviceSystem);
+                    remapSystemProperty(indexProps, "catalog.rules.", oldSystem, serviceSystem);
+                    remapSystemProperty(indexProps, "catalog.dependencies.", oldSystem, serviceSystem);
+                    remapSystemProperty(indexProps, "catalog.properties.", oldSystem, serviceSystem);
+                }
+                indexProps.setProperty("catalog.services", serviceSystem);
             }
 
             StringWriter indexWriter = new StringWriter();
@@ -320,6 +362,15 @@ public class ServiceTemplateBean {
             return baos.toByteArray();
         } catch (IOException e) {
             throw new WanakuException("Failed to build catalog ZIP: " + e.getMessage());
+        }
+    }
+
+    private static void remapSystemProperty(Properties props, String prefix, String oldSystem, String newSystem) {
+        String oldKey = prefix + oldSystem;
+        String value = props.getProperty(oldKey);
+        if (value != null) {
+            props.remove(oldKey);
+            props.setProperty(prefix + newSystem, value);
         }
     }
 

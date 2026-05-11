@@ -35,6 +35,18 @@ public class ServiceTemplateInstantiate extends BaseCommand {
             arity = "0..1")
     private String properties;
 
+    @CommandLine.Option(
+            names = {"--service-name"},
+            description = "Override the service name from the template",
+            arity = "0..1")
+    private String serviceName;
+
+    @CommandLine.Option(
+            names = {"--service-system"},
+            description = "Override the system identifier from the template",
+            arity = "0..1")
+    private String serviceSystem;
+
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ServiceTemplateService service = initService(ServiceTemplateService.class, host);
@@ -62,6 +74,8 @@ public class ServiceTemplateInstantiate extends BaseCommand {
                     new ServiceTemplateService.TemplateInstantiationRequest();
             request.setTemplateName(name);
             request.setProperties(propsMap);
+            request.setServiceName(serviceName);
+            request.setServiceSystem(serviceSystem);
 
             service.instantiate(request);
 
