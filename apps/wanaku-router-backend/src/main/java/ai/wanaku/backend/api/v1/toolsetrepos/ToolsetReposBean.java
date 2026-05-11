@@ -56,7 +56,7 @@ public class ToolsetReposBean {
     private void registerDefaultRepo() {
         try {
             if (findByName(DEFAULT_REPO_NAME) == null) {
-                LOG.info("Registering default toolset repository: " + DEFAULT_REPO_NAME);
+                LOG.infof("Registering default toolset repository: %s", DEFAULT_REPO_NAME);
                 add(DEFAULT_REPO_NAME, DEFAULT_REPO_URL, DEFAULT_REPO_DESCRIPTION, null, DEFAULT_BRANCH);
             }
         } catch (Exception e) {

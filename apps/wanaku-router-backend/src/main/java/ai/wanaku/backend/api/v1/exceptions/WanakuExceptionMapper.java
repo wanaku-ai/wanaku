@@ -21,7 +21,7 @@ public class WanakuExceptionMapper implements ExceptionMapper<WanakuException> {
             content = @Content(schema = @Schema(implementation = WanakuResponse.class)))
     @Override
     public Response toResponse(WanakuException e) {
-        LOG.error(e);
+        LOG.error("Request failed", e);
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new WanakuResponse<Void>(e.getMessage()))
