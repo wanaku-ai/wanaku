@@ -1,0 +1,11 @@
+- route:
+    description: Send a message via Telegram Bot
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: telegram:bots
+            parameters:
+              authorizationToken: "{{telegram.auth.token}}"
+              chatId: "{{telegram.chat.id}}"
+    id: telegram-send

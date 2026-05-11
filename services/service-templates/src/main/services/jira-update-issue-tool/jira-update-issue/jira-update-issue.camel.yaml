@@ -1,0 +1,11 @@
+- route:
+    description: Update an existing Jira issue
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: jira:updateIssue
+            parameters:
+              jiraUrl: "{{jira.url}}"
+              accessToken: "{{jira.access.token}}"
+    id: jira-update-issue

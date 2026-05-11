@@ -1,0 +1,14 @@
+- route:
+    description: Send an email via SMTP
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: smtp:{{smtp.host}}:{{smtp.port}}
+            parameters:
+              username: "{{smtp.username}}"
+              password: "{{smtp.password}}"
+              to: "{{mail.to}}"
+              from: "{{mail.from}}"
+              subject: "{{mail.subject}}"
+    id: mail-send

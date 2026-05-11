@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - telegram-send-message:
+        route:
+          id: "telegram-send"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The message text to send via Telegram
+            required: true

@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - jira-add-comment:
+        route:
+          id: "jira-add-comment"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The comment text to add to the issue
+            required: true
