@@ -80,11 +80,26 @@ export const useServiceCatalog = () => {
     []
   );
 
+  const getDeploymentInstructions = useCallback(
+    (name: string, model: string, options?: RequestInit) => {
+      const params = new URLSearchParams({ name, model });
+      return customFetch<{ data: unknown; status: number; headers: Headers }>(
+        `${BASE_PATH}/instructions?${params.toString()}`,
+        {
+          ...options,
+          method: "GET",
+        }
+      );
+    },
+    []
+  );
+
   return {
     listServiceCatalogs,
     getServiceCatalog,
     downloadServiceCatalog,
     deployServiceCatalog,
     removeServiceCatalog,
+    getDeploymentInstructions,
   };
 };

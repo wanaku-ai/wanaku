@@ -13,7 +13,8 @@ import picocli.CommandLine;
             ServiceExpose.class,
             ServicePackage.class,
             ServiceDeploy.class,
-            ServiceTemplate.class
+            ServiceTemplate.class,
+            ServiceInstructions.class
         })
 public class Service extends BaseCommand {
     @Override

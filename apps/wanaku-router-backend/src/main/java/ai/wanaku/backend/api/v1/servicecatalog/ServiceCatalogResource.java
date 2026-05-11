@@ -20,6 +20,7 @@ import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.core.services.api.DeploymentInstructions;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
 
 /**
@@ -33,6 +34,9 @@ public class ServiceCatalogResource {
 
     @Inject
     ServiceCatalogBean serviceCatalogBean;
+
+    @Inject
+    DeploymentInstructionsBean deploymentInstructionsBean;
 
     /**
      * List all service catalog entries, optionally filtered by search term.
@@ -180,5 +184,31 @@ public class ServiceCatalogResource {
         } else {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
+    }
+
+    /**
+     * Get deployment instructions for a service catalog.
+     * GET /api/v1/service-catalog/instructions?name={name}&model={model}
+     *
+     * @param name the catalog name
+     * @param model the deployment model: local, docker, or kubernetes
+     * @return response with deployment instructions including commands/YAML and placeholder definitions
+     */
+    @Path("/instructions")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<DeploymentInstructions> getDeploymentInstructions(
+            @QueryParam("name") String name, @QueryParam("model") String model) throws WanakuException {
+        LOG.debugf("REST: Getting deployment instructions for catalog '%s' with model '%s'", name, model);
+
+        if (name == null || name.isBlank()) {
+            throw new WanakuException("Query parameter 'name' is required");
+        }
+        if (model == null || model.isBlank()) {
+            throw new WanakuException("Query parameter 'model' is required");
+        }
+
+        DeploymentInstructions instructions = deploymentInstructionsBean.generateInstructions(name, model);
+        return new WanakuResponse<>(instructions);
     }
 }
