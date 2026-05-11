@@ -2297,9 +2297,17 @@ export const deleteApiV1ServiceCatalogRemove = async (
   );
 };
 
+/**
+ * @summary Deploy
+ */
 export type postApiV1ServiceTemplateDeployResponse200 = {
   data: WanakuResponseDataStore;
   status: 200;
+};
+
+export type postApiV1ServiceTemplateDeployResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type postApiV1ServiceTemplateDeployResponse500 = {
@@ -2311,10 +2319,12 @@ export type postApiV1ServiceTemplateDeployResponseSuccess =
   postApiV1ServiceTemplateDeployResponse200 & {
     headers: Headers;
   };
-export type postApiV1ServiceTemplateDeployResponseError =
-  postApiV1ServiceTemplateDeployResponse500 & {
-    headers: Headers;
-  };
+export type postApiV1ServiceTemplateDeployResponseError = (
+  | postApiV1ServiceTemplateDeployResponse400
+  | postApiV1ServiceTemplateDeployResponse500
+) & {
+  headers: Headers;
+};
 
 export type postApiV1ServiceTemplateDeployResponse =
   | postApiV1ServiceTemplateDeployResponseSuccess
@@ -2339,6 +2349,9 @@ export const postApiV1ServiceTemplateDeploy = async (
   );
 };
 
+/**
+ * @summary Download
+ */
 export type getApiV1ServiceTemplateDownloadResponse200 = {
   data: WanakuResponseDataStore;
   status: 200;
@@ -2393,8 +2406,11 @@ export const getApiV1ServiceTemplateDownload = async (
   );
 };
 
+/**
+ * @summary Get
+ */
 export type getApiV1ServiceTemplateGetResponse200 = {
-  data: WanakuResponseDataStore;
+  data: WanakuResponseMapStringObject;
   status: 200;
 };
 
@@ -2447,9 +2463,17 @@ export const getApiV1ServiceTemplateGet = async (
   );
 };
 
+/**
+ * @summary Instantiate
+ */
 export type postApiV1ServiceTemplateInstantiateResponse200 = {
   data: WanakuResponseDataStore;
   status: 200;
+};
+
+export type postApiV1ServiceTemplateInstantiateResponse400 = {
+  data: void;
+  status: 400;
 };
 
 export type postApiV1ServiceTemplateInstantiateResponse500 = {
@@ -2461,10 +2485,12 @@ export type postApiV1ServiceTemplateInstantiateResponseSuccess =
   postApiV1ServiceTemplateInstantiateResponse200 & {
     headers: Headers;
   };
-export type postApiV1ServiceTemplateInstantiateResponseError =
-  postApiV1ServiceTemplateInstantiateResponse500 & {
-    headers: Headers;
-  };
+export type postApiV1ServiceTemplateInstantiateResponseError = (
+  | postApiV1ServiceTemplateInstantiateResponse400
+  | postApiV1ServiceTemplateInstantiateResponse500
+) & {
+  headers: Headers;
+};
 
 export type postApiV1ServiceTemplateInstantiateResponse =
   | postApiV1ServiceTemplateInstantiateResponseSuccess
@@ -2489,8 +2515,11 @@ export const postApiV1ServiceTemplateInstantiate = async (
   );
 };
 
+/**
+ * @summary List
+ */
 export type getApiV1ServiceTemplateListResponse200 = {
-  data: WanakuResponseListDataStore;
+  data: WanakuResponseListMapStringObject;
   status: 200;
 };
 
@@ -2532,6 +2561,9 @@ export const getApiV1ServiceTemplateList = async (
   );
 };
 
+/**
+ * @summary Get Properties
+ */
 export type getApiV1ServiceTemplatePropertiesResponse200 = {
   data: WanakuResponseMapStringMapStringString;
   status: 200;
@@ -2586,6 +2618,9 @@ export const getApiV1ServiceTemplateProperties = async (
   );
 };
 
+/**
+ * @summary Remove
+ */
 export type deleteApiV1ServiceTemplateRemoveResponse200 = {
   data: unknown;
   status: 200;

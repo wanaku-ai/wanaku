@@ -1751,9 +1751,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Deploy
+      tags:
+      - Service Template Resource
   /api/v1/service-template/download:
     get:
       parameters:
@@ -1774,9 +1776,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
+      summary: Download
+      tags:
+      - Service Template Resource
   /api/v1/service-template/get:
     get:
       parameters:
@@ -1790,16 +1792,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponseDataStore"
+                $ref: "#/components/schemas/WanakuResponseMapStringObject"
         "500":
           description: Wanaku error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get
+      tags:
+      - Service Template Resource
   /api/v1/service-template/instantiate:
     post:
       requestBody:
@@ -1821,9 +1823,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
+        "400":
+          description: Bad Request
+      summary: Instantiate
+      tags:
+      - Service Template Resource
   /api/v1/service-template/list:
     get:
       parameters:
@@ -1837,7 +1841,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponseListDataStore"
+                $ref: "#/components/schemas/WanakuResponseListMapStringObject"
+      summary: List
+      tags:
+      - Service Template Resource
   /api/v1/service-template/properties:
     get:
       parameters:
@@ -1858,9 +1865,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
+      summary: Get Properties
+      tags:
+      - Service Template Resource
   /api/v1/service-template/remove:
     delete:
       parameters:
@@ -1880,9 +1887,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
+      summary: Remove
+      tags:
+      - Service Template Resource
   /api/v1/tools:
     delete:
       parameters:
