@@ -10,7 +10,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
@@ -48,13 +47,14 @@ public class PromptsResource {
         return new WanakuResponse<>(prompts);
     }
 
+    @Path("/{name}")
     @DELETE
-    public WanakuResponse<Void> remove(@QueryParam("prompt") String prompt) {
-        int deleteCount = promptsBean.remove(prompt);
+    public WanakuResponse<Void> remove(@PathParam("name") String name) {
+        int deleteCount = promptsBean.remove(name);
         if (deleteCount > 0) {
             return new WanakuResponse<>();
         } else {
-            throw new PromptNotFoundException(prompt);
+            throw new PromptNotFoundException(name);
         }
     }
 

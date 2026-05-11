@@ -56,6 +56,7 @@ export * from "./getApiV1ServiceCatalogGetParams";
 export * from "./getApiV1ServiceCatalogInstructionsModel";
 export * from "./getApiV1ServiceCatalogInstructionsParams";
 export * from "./getApiV1ServiceCatalogListParams";
+export * from "./getApiV1ServiceCatalogParams";
 export * from "./getApiV1ServiceTemplateDownloadParams";
 export * from "./getApiV1ServiceTemplateGetParams";
 export * from "./getApiV1ServiceTemplateListParams";

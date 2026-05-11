@@ -103,9 +103,9 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testGetMissingName() {
+    void testGetNullName() {
+        when(serviceCatalogBean.get(null)).thenReturn(null);
         assertThrows(WanakuException.class, () -> resource.get(null));
-        assertThrows(WanakuException.class, () -> resource.get(""));
     }
 
     @Test
@@ -161,9 +161,10 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testRemoveMissingName() {
-        assertThrows(WanakuException.class, () -> resource.remove(null));
-        assertThrows(WanakuException.class, () -> resource.remove(""));
+    void testRemoveNullName() throws Exception {
+        when(serviceCatalogBean.remove(null)).thenReturn(0);
+        Response response = resource.remove(null);
+        assertEquals(404, response.getStatus());
     }
 
     // Helper

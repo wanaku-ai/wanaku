@@ -59,7 +59,7 @@ export const PromptsPage: React.FC = () => {
 
   const handleDeletePrompt = async (promptName?: string) => {
     try {
-      await removePrompt({ prompt: promptName });
+      await removePrompt(promptName!);
       await updatePrompts();
     } catch (error) {
       console.error("Error deleting prompt:", error);
