@@ -2,7 +2,6 @@ package ai.wanaku.test.assertions;
 
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.testcontainers.containers.GenericContainer;
 import io.restassured.response.Response;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
@@ -139,19 +138,6 @@ public final class WanakuAssertions {
         Assertions.assertThat(actual).isNotNull();
         Assertions.assertThat(actual.getName()).isEqualTo(expected.getName());
         Assertions.assertThat(actual.getAddress()).isEqualTo(expected.getAddress());
-    }
-
-    // ========== Container Assertions ==========
-
-    public static void assertContainerRunning(GenericContainer<?> container) {
-        Assertions.assertThat(container.isRunning())
-                .withFailMessage("Container %s is not running", container.getDockerImageName())
-                .isTrue();
-    }
-
-    public static void assertContainerHealthy(GenericContainer<?> container) {
-        assertContainerRunning(container);
-        // Additional health checks if needed
     }
 
     // ========== Namespace Assertions ==========
