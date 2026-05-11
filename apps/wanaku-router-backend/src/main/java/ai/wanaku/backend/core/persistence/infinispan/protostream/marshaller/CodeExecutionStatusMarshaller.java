@@ -24,7 +24,7 @@ public class CodeExecutionStatusMarshaller implements EnumMarshaller<CodeExecuti
             case 3 -> CodeExecutionStatus.FAILED;
             case 4 -> CodeExecutionStatus.CANCELLED;
             case 5 -> CodeExecutionStatus.TIMEOUT;
-            default -> throw new IllegalArgumentException("Unknown CodeExecutionStatus value: " + enumValue);
+            default -> throw new IllegalArgumentException("Unknown CodeExecutionStatus value: %d".formatted(enumValue));
         };
     }
 

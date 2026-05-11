@@ -47,11 +47,11 @@ public class DeploymentInstructionsBean {
         String path = TEMPLATES_PATH + fileName;
         try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(path)) {
             if (is == null) {
-                throw new IllegalStateException("Template not found on classpath: " + path);
+                throw new IllegalStateException("Template not found on classpath: %s".formatted(path));
             }
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to load template: " + path, e);
+            throw new IllegalStateException("Failed to load template: %s".formatted(path), e);
         }
     }
 
@@ -68,7 +68,7 @@ public class DeploymentInstructionsBean {
 
         DataStore catalog = serviceCatalogBean.get(catalogName);
         if (catalog == null) {
-            throw new WanakuException("Service catalog not found: " + catalogName);
+            throw new WanakuException("Service catalog not found: %s".formatted(catalogName));
         }
 
         ServiceCatalogIndex index = serviceCatalogBean.parseIndex(catalog);
@@ -92,7 +92,7 @@ public class DeploymentInstructionsBean {
                 break;
             default:
                 throw new WanakuException(
-                        "Unsupported deployment model: " + deploymentModel + ". Use: local, docker, kubernetes");
+                        "Unsupported deployment model: %s. Use: local, docker, kubernetes".formatted(deploymentModel));
         }
 
         return new DeploymentInstructions(catalogName, catalogType, deploymentModel, systems, placeholders);

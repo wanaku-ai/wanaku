@@ -165,7 +165,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             ns = namespacesBean.getDefaultNamespace();
         } else {
             if (!namespacesBean.exists(forwardReference.getNamespace())) {
-                throw new WanakuException("Invalid namespace id: " + forwardReference.getNamespace());
+                throw new WanakuException("Invalid namespace id: %s".formatted(forwardReference.getNamespace()));
             }
             ns = namespacesBean.getById(forwardReference.getNamespace());
         }
@@ -281,7 +281,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                     .map(RemoteToolReference::asToolReference)
                     .collect(Collectors.toList());
         } catch (LabelExpressionParser.LabelExpressionParseException e) {
-            throw new WanakuException("Invalid label expression: " + labelFilter, e);
+            throw new WanakuException("Invalid label expression: %s".formatted(labelFilter), e);
         }
     }
 
@@ -315,7 +315,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     public void refresh(ForwardReference forwardReferenceHint) {
         List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReferenceHint.getName());
         if (references.isEmpty()) {
-            throw new WanakuException("Forward reference not found: " + forwardReferenceHint.getName());
+            throw new WanakuException("Forward reference not found: %s".formatted(forwardReferenceHint.getName()));
         }
 
         ForwardReference forwardReference = references.getFirst();

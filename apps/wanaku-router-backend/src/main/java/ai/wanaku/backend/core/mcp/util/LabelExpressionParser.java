@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * Recursive descent parser for label expression filters.
@@ -60,7 +61,7 @@ public class LabelExpressionParser {
      * @throws LabelExpressionParseException if the expression is invalid
      */
     private Predicate<LabelsAwareEntity<?>> parseInternal(String expression) throws LabelExpressionParseException {
-        if (expression == null || expression.trim().isEmpty()) {
+        if (StringHelper.isBlank(expression)) {
             throw new LabelExpressionParseException("Expression string cannot be null or empty");
         }
 
@@ -77,7 +78,8 @@ public class LabelExpressionParser {
 
         // Ensure all tokens were consumed
         if (position < tokens.size()) {
-            throw new LabelExpressionParseException("Unexpected token after expression: " + tokens.get(position).value);
+            throw new LabelExpressionParseException(
+                    "Unexpected token after expression: %s".formatted(tokens.get(position).value));
         }
 
         return result;
@@ -181,7 +183,7 @@ public class LabelExpressionParser {
                 continue;
             }
 
-            throw new LabelExpressionParseException("Unexpected character: " + c);
+            throw new LabelExpressionParseException("Unexpected character: %s".formatted(c));
         }
 
         return result;
@@ -248,7 +250,7 @@ public class LabelExpressionParser {
             Token value = consume(TokenType.IDENTIFIER, "Expected label value after '!='");
             return entity -> !value.value.equals(entity.getLabels().get(key.value));
         } else {
-            throw new LabelExpressionParseException("Expected '=' or '!=' after label key '" + key.value + "'");
+            throw new LabelExpressionParseException("Expected '=' or '!=' after label key '%s'".formatted(key.value));
         }
     }
 
@@ -271,7 +273,7 @@ public class LabelExpressionParser {
         }
         Token token = tokens.get(position);
         if (token.type != type) {
-            throw new LabelExpressionParseException(errorMessage + " but got '" + token.value + "'");
+            throw new LabelExpressionParseException("%s but got '%s'".formatted(errorMessage, token.value));
         }
         position++;
         return token;

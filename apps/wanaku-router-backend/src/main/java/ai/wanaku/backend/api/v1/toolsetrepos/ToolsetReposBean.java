@@ -17,6 +17,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.services.api.ToolsetRepoIndex;
+import ai.wanaku.core.util.StringHelper;
 import ai.wanaku.core.util.ToolsetIndexHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -89,10 +90,10 @@ public class ToolsetReposBean {
      */
     public Map<String, String> add(String name, String url, String description, String icon, String branch)
             throws WanakuException {
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Repository name is required");
         }
-        if (url == null || url.isBlank()) {
+        if (StringHelper.isBlank(url)) {
             throw new WanakuException("Repository URL is required");
         }
 
@@ -100,7 +101,7 @@ public class ToolsetReposBean {
 
         DataStore existing = findByName(name);
         if (existing != null) {
-            throw new WanakuException("Toolset repository already exists: " + name);
+            throw new WanakuException("Toolset repository already exists: %s".formatted(name));
         }
 
         String effectiveBranch = (branch != null && !branch.isBlank()) ? branch : DEFAULT_BRANCH;
@@ -120,7 +121,7 @@ public class ToolsetReposBean {
         try {
             ds.setData(MAPPER.writeValueAsString(metadata));
         } catch (JsonProcessingException e) {
-            throw new WanakuException("Failed to serialize repository metadata: " + e.getMessage());
+            throw new WanakuException("Failed to serialize repository metadata: %s".formatted(e.getMessage()));
         }
 
         Map<String, String> labels = new HashMap<>();
@@ -146,7 +147,7 @@ public class ToolsetReposBean {
             throws WanakuException {
         DataStore ds = findByName(name);
         if (ds == null) {
-            throw new WanakuException("Toolset repository not found: " + name);
+            throw new WanakuException("Toolset repository not found: %s".formatted(name));
         }
 
         if (url != null && !url.isBlank()) {
@@ -170,7 +171,7 @@ public class ToolsetReposBean {
             }
             ds.setData(MAPPER.writeValueAsString(metadata));
         } catch (JsonProcessingException e) {
-            throw new WanakuException("Failed to serialize repository metadata: " + e.getMessage());
+            throw new WanakuException("Failed to serialize repository metadata: %s".formatted(e.getMessage()));
         }
 
         dataStoreRepository.update(ds.getId(), ds);
@@ -203,7 +204,7 @@ public class ToolsetReposBean {
     public Map<String, Object> browse(String name) throws WanakuException {
         DataStore ds = findByName(name);
         if (ds == null) {
-            throw new WanakuException("Toolset repository not found: " + name);
+            throw new WanakuException("Toolset repository not found: %s".formatted(name));
         }
 
         String url = resolveBaseUrl(ds);
@@ -238,7 +239,7 @@ public class ToolsetReposBean {
     public List<ToolReference> fetchToolset(String name, String toolsetName) throws WanakuException {
         DataStore ds = findByName(name);
         if (ds == null) {
-            throw new WanakuException("Toolset repository not found: " + name);
+            throw new WanakuException("Toolset repository not found: %s".formatted(name));
         }
 
         String baseUrl = resolveBaseUrl(ds);
@@ -248,7 +249,7 @@ public class ToolsetReposBean {
             return ToolsetIndexHelper.loadToolsIndex(URI.create(toolsetUrl).toURL());
         } catch (Exception e) {
             throw new WanakuException(
-                    "Failed to fetch toolset '" + toolsetName + "' from " + toolsetUrl + ": " + e.getMessage());
+                    "Failed to fetch toolset '%s' from %s: %s".formatted(toolsetName, toolsetUrl, e.getMessage()));
         }
     }
 
@@ -277,7 +278,7 @@ public class ToolsetReposBean {
                 throw new WanakuException("URLs pointing to private network ranges are not allowed");
             }
         } catch (IllegalArgumentException e) {
-            throw new WanakuException("Invalid URL: " + e.getMessage());
+            throw new WanakuException("Invalid URL: %s".formatted(e.getMessage()));
         }
     }
 
@@ -306,13 +307,13 @@ public class ToolsetReposBean {
         try {
             Map<String, String> metadata = MAPPER.readValue(ds.getData(), Map.class);
             String url = metadata.get("url");
-            if (url == null || url.isBlank()) {
-                throw new WanakuException("Repository metadata missing URL for: " + ds.getName());
+            if (StringHelper.isBlank(url)) {
+                throw new WanakuException("Repository metadata missing URL for: %s".formatted(ds.getName()));
             }
             String branch = metadata.getOrDefault("branch", DEFAULT_BRANCH);
             return toRawContentUrl(url, branch);
         } catch (JsonProcessingException e) {
-            throw new WanakuException("Failed to parse repository metadata: " + e.getMessage());
+            throw new WanakuException("Failed to parse repository metadata: %s".formatted(e.getMessage()));
         }
     }
 

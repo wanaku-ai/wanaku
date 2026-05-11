@@ -19,6 +19,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.core.util.StringHelper;
 
 @ApplicationScoped
 @Path("/api/v1/forwards")
@@ -62,14 +63,13 @@ public class ForwardsResource {
                 return new WanakuResponse<>(reference);
             }
         }
-        throw new NotFoundException("Forward not found with name: " + name);
+        throw new NotFoundException("Forward not found with name: %s".formatted(name));
     }
 
     @Path("/{name}")
     @PUT
     public Response update(@PathParam("name") String name, ForwardReference resource) throws WanakuException {
-        if (resource != null
-                && (resource.getName() == null || resource.getName().isBlank())) {
+        if (resource != null && StringHelper.isBlank(resource.getName())) {
             resource.setName(name);
         }
         forwardsBean.update(resource);

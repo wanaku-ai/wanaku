@@ -22,6 +22,7 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.DeploymentInstructions;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * REST API resource for service catalog operations.
@@ -90,13 +91,13 @@ public class ServiceCatalogResource {
     public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Getting service catalog: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
         DataStore catalog = serviceCatalogBean.get(name);
         if (catalog == null) {
-            throw new WanakuException("Service catalog not found: " + name);
+            throw new WanakuException("Service catalog not found: %s".formatted(name));
         }
 
         ServiceCatalogIndex index = serviceCatalogBean.parseIndex(catalog);
@@ -132,13 +133,13 @@ public class ServiceCatalogResource {
     public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Downloading service catalog: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
         DataStore catalog = serviceCatalogBean.get(name);
         if (catalog == null) {
-            throw new WanakuException("Service catalog not found: " + name);
+            throw new WanakuException("Service catalog not found: %s".formatted(name));
         }
 
         return new WanakuResponse<>(catalog);
@@ -171,7 +172,7 @@ public class ServiceCatalogResource {
     public Response remove(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Removing service catalog: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
@@ -197,10 +198,10 @@ public class ServiceCatalogResource {
             @QueryParam("name") String name, @QueryParam("model") String model) throws WanakuException {
         LOG.debugf("REST: Getting deployment instructions for catalog '%s' with model '%s'", name, model);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
-        if (model == null || model.isBlank()) {
+        if (StringHelper.isBlank(model)) {
             throw new WanakuException("Query parameter 'model' is required");
         }
 

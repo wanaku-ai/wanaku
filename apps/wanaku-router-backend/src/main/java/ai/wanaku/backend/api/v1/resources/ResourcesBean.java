@@ -75,7 +75,7 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     }
 
     public List<ResourceReference> list(String labelFilter) {
-        if (labelFilter == null || labelFilter.trim().isEmpty()) {
+        if (StringHelper.isBlank(labelFilter)) {
             return resourceReferenceRepository.listAll();
         }
         return resourceReferenceRepository.findAllFilterByLabelExpression(labelFilter);

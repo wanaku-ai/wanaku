@@ -172,8 +172,9 @@ public final class InvokerToolExecutor {
             LOG.fatalf(
                     "Malformed value for key %s: neither a default value nor an argument were provided",
                     entry.getKey());
-            throw new NullPointerException("Malformed value for key " + entry.getKey()
-                    + ": neither a default value nor an argument were provided (null)");
+            throw new NullPointerException(
+                    "Malformed value for key %s: neither a default value nor an argument were provided (null)"
+                            .formatted(entry.getKey()));
         }
     }
 

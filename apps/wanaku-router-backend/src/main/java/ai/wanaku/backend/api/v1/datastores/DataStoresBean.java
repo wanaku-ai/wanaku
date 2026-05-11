@@ -13,6 +13,7 @@ import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * Bean for managing DataStore entities.
@@ -58,7 +59,7 @@ public class DataStoresBean extends LabelsAwareWanakuEntityBean<DataStore> {
         }
         DataStore existing = dataStoreRepository.findById(dataStore.getId());
         if (existing == null) {
-            throw new WanakuException("Data store not found with ID: " + dataStore.getId());
+            throw new WanakuException("Data store not found with ID: %s".formatted(dataStore.getId()));
         }
         dataStoreRepository.update(dataStore.getId(), dataStore);
     }
@@ -71,7 +72,7 @@ public class DataStoresBean extends LabelsAwareWanakuEntityBean<DataStore> {
      * @throws WanakuException if label expression is invalid
      */
     public List<DataStore> list(String labelFilter) throws WanakuException {
-        if (labelFilter == null || labelFilter.isBlank()) {
+        if (StringHelper.isBlank(labelFilter)) {
             LOG.debug("Listing all data stores");
             return dataStoreRepository.listAll();
         }

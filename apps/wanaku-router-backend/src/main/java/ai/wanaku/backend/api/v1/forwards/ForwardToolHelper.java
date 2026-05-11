@@ -3,6 +3,7 @@ package ai.wanaku.backend.api.v1.forwards;
 import java.util.Set;
 import java.util.function.Predicate;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
+import ai.wanaku.core.util.StringHelper;
 
 final class ForwardToolHelper {
     private ForwardToolHelper() {}
@@ -53,7 +54,7 @@ final class ForwardToolHelper {
     }
 
     private static String sanitizeToolNameComponent(String input) {
-        if (input == null || input.isBlank()) {
+        if (StringHelper.isBlank(input)) {
             return "remote";
         }
 
