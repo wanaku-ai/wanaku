@@ -318,7 +318,6 @@ public class ServiceTemplateBean {
                     remapSystemProperty(indexProps, "catalog.routes.", oldSystem, serviceSystem);
                     remapSystemProperty(indexProps, "catalog.rules.", oldSystem, serviceSystem);
                     remapSystemProperty(indexProps, "catalog.dependencies.", oldSystem, serviceSystem);
-                    remapSystemProperty(indexProps, "catalog.properties.", oldSystem, serviceSystem);
                 }
                 indexProps.setProperty("catalog.services", serviceSystem);
             }
