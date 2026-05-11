@@ -26,6 +26,8 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
  */
 @ApplicationScoped
 @Path("/api/v1/toolset-repos")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ToolsetReposResource {
     private static final Logger LOG = Logger.getLogger(ToolsetReposResource.class);
 
@@ -33,15 +35,12 @@ public class ToolsetReposResource {
     ToolsetReposBean toolsetReposBean;
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<Map<String, String>>> list() {
         LOG.debug("REST: Listing toolset repositories");
         return new WanakuResponse<>(toolsetReposBean.list());
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, String>> add(Map<String, String> repo) throws WanakuException {
         LOG.debugf("REST: Adding toolset repository: %s", repo.get("name"));
         Map<String, String> result = toolsetReposBean.add(
@@ -51,8 +50,6 @@ public class ToolsetReposResource {
 
     @Path("/{name}")
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo)
             throws WanakuException {
         LOG.debugf("REST: Updating toolset repository: %s", name);
@@ -74,7 +71,6 @@ public class ToolsetReposResource {
 
     @Path("/{name}/browse")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, Object>> browse(@PathParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Browsing toolset repository: %s", name);
         return new WanakuResponse<>(toolsetReposBean.browse(name));
@@ -82,7 +78,6 @@ public class ToolsetReposResource {
 
     @Path("/{name}/toolsets/{toolsetName}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ToolReference>> fetchToolset(
             @PathParam("name") String name, @PathParam("toolsetName") String toolsetName) throws WanakuException {
         LOG.debugf("REST: Fetching toolset '%s' from repository: %s", toolsetName, name);

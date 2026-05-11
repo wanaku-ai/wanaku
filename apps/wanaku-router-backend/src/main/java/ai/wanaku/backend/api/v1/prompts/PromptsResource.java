@@ -24,13 +24,13 @@ import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
 
 @ApplicationScoped
 @Path("/api/v1/prompts")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class PromptsResource {
     @Inject
     PromptsBean promptsBean;
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<PromptReference> add(PromptReference resource) throws WanakuException {
         var ret = promptsBean.add(resource);
         return new WanakuResponse<>(ret);
@@ -38,8 +38,6 @@ public class PromptsResource {
 
     @Path("/payloads")
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<PromptReference> addWithPayload(PromptPayload resource) throws WanakuException {
         validatePayload(resource);
         var ret = promptsBean.add(resource);
@@ -56,7 +54,6 @@ public class PromptsResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<PromptReference>> list() throws WanakuException {
         List<PromptReference> prompts = promptsBean.list();
         return new WanakuResponse<>(prompts);
@@ -73,7 +70,6 @@ public class PromptsResource {
     }
 
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response update(PromptReference resource) throws WanakuException {
         promptsBean.update(resource);
         return Response.ok().build();
@@ -81,7 +77,6 @@ public class PromptsResource {
 
     @Path("/{name}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<PromptReference> getByName(@PathParam("name") String name) throws WanakuException {
         PromptReference prompt = promptsBean.getByName(name);
         if (prompt == null) {

@@ -38,6 +38,8 @@ import ai.wanaku.core.util.StringHelper;
  */
 @ApplicationScoped
 @Path("/api/v1/tools")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ToolsResource {
     @Inject
     ToolsBean toolsBean;
@@ -53,8 +55,6 @@ public class ToolsResource {
      * @throws WanakuException if registration fails
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolReference> add(ToolReference resource) throws WanakuException {
         var ret = toolsBean.add(resource);
         return new WanakuResponse<>(ret);
@@ -72,8 +72,6 @@ public class ToolsResource {
      */
     @Path("/payloads")
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolReference> addWithPayload(ToolPayload resource) throws WanakuException {
         validatePayload(resource);
         var ret = toolsBean.add(resource);
@@ -109,7 +107,6 @@ public class ToolsResource {
      * @throws WanakuException if listing fails
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter)
             throws WanakuException {
         List<ToolReference> forwardTools = forwardsBean.listAllAsTools(labelFilter);
@@ -145,7 +142,6 @@ public class ToolsResource {
      */
     @Path("/{name}")
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("name") String name, ToolReference resource) throws WanakuException {
         if (resource != null && StringHelper.isEmpty(resource.getName())) {
             resource.setName(name);
@@ -164,7 +160,6 @@ public class ToolsResource {
      */
     @Path("/{name}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolReference> getByName(@PathParam("name") String name) throws WanakuException {
         ToolReference tool = toolsBean.getByName(name);
         if (tool == null) {
