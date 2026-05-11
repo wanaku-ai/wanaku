@@ -1,10 +1,16 @@
 package ai.wanaku.backend.api.v1.servicecatalog;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
@@ -19,9 +25,42 @@ public class DeploymentInstructionsBean {
 
     private static final String TYPE_CIC = "camel-integration-capability";
     private static final String TYPE_NATIVE = "native";
+    private static final String TEMPLATES_PATH = "templates/deployment/";
 
     @Inject
     ServiceCatalogBean serviceCatalogBean;
+
+    private final Map<String, String> templates = new HashMap<>();
+
+    @PostConstruct
+    void loadTemplates() {
+        templates.put("local-cic", loadTemplate("local-cic.tpl"));
+        templates.put("local-native", loadTemplate("local-native.tpl"));
+        templates.put("docker-cic", loadTemplate("docker-cic.tpl"));
+        templates.put("docker-native", loadTemplate("docker-native.tpl"));
+        templates.put("kubernetes-header", loadTemplate("kubernetes-header.tpl"));
+        templates.put("kubernetes-capability-cic", loadTemplate("kubernetes-capability-cic.tpl"));
+        templates.put("kubernetes-capability-native", loadTemplate("kubernetes-capability-native.tpl"));
+    }
+
+    private String loadTemplate(String fileName) {
+        String path = TEMPLATES_PATH + fileName;
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IllegalStateException("Template not found on classpath: " + path);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load template: " + path, e);
+        }
+    }
+
+    private String renderTemplate(String templateKey, String catalogName, String systemName) {
+        return templates
+                .get(templateKey)
+                .replace("{{catalogName}}", catalogName)
+                .replace("{{systemName}}", systemName);
+    }
 
     public DeploymentInstructions generateInstructions(String catalogName, String deploymentModel)
             throws WanakuException {
@@ -40,11 +79,11 @@ public class DeploymentInstructionsBean {
 
         switch (deploymentModel) {
             case "local":
-                systems = generateLocalInstructions(index, catalogType);
+                systems = generatePerSystemInstructions(index, catalogType, "local-cic", "local-native", "shell");
                 placeholders = getLocalPlaceholders(catalogType);
                 break;
             case "docker":
-                systems = generateDockerInstructions(index, catalogType);
+                systems = generatePerSystemInstructions(index, catalogType, "docker-cic", "docker-native", "shell");
                 placeholders = getDockerPlaceholders(catalogType);
                 break;
             case "kubernetes":
@@ -68,37 +107,36 @@ public class DeploymentInstructionsBean {
         return TYPE_NATIVE;
     }
 
-    // --- Local instructions ---
-
-    private List<SystemInstruction> generateLocalInstructions(ServiceCatalogIndex index, String catalogType) {
+    private List<SystemInstruction> generatePerSystemInstructions(
+            ServiceCatalogIndex index, String catalogType, String cicTemplate, String nativeTemplate, String format) {
         List<SystemInstruction> instructions = new ArrayList<>();
-        if (TYPE_CIC.equals(catalogType)) {
-            for (String system : index.getServiceNames()) {
-                instructions.add(new SystemInstruction(system, buildLocalCicCommand(index.getName(), system), "shell"));
-            }
-        } else {
-            for (String system : index.getServiceNames()) {
-                instructions.add(new SystemInstruction(system, buildLocalNativeCommand(system), "shell"));
-            }
+        String templateKey = TYPE_CIC.equals(catalogType) ? cicTemplate : nativeTemplate;
+
+        for (String system : index.getServiceNames()) {
+            String rendered = renderTemplate(templateKey, index.getName(), system);
+            instructions.add(new SystemInstruction(system, rendered, format));
         }
         return instructions;
     }
 
-    private String buildLocalCicCommand(String catalogName, String systemName) {
-        return "java -jar camel-integration-capability-main-*-jar-with-dependencies.jar \\\n"
-                + "  --registration-url <registration-url> \\\n"
-                + "  --registration-announce-address localhost \\\n"
-                + "  --grpc-port <grpc-port> \\\n"
-                + "  --name " + systemName + " \\\n"
-                + "  --service-catalog " + catalogName + " \\\n"
-                + "  --service-catalog-system " + systemName + " \\\n"
-                + "  --client-id wanaku-service \\\n"
-                + "  --fail-fast";
+    private List<SystemInstruction> generateKubernetesInstructions(ServiceCatalogIndex index, String catalogType) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(renderTemplate("kubernetes-header", index.getName(), ""));
+
+        String capabilityTemplate =
+                TYPE_CIC.equals(catalogType) ? "kubernetes-capability-cic" : "kubernetes-capability-native";
+
+        for (String system : index.getServiceNames()) {
+            sb.append("\n");
+            sb.append(renderTemplate(capabilityTemplate, index.getName(), system));
+        }
+
+        List<SystemInstruction> instructions = new ArrayList<>();
+        instructions.add(new SystemInstruction("all", sb.toString(), "yaml"));
+        return instructions;
     }
 
-    private String buildLocalNativeCommand(String systemName) {
-        return "java -jar capabilities/tools/wanaku-tool-service-" + systemName + "/target/quarkus-app/quarkus-run.jar";
-    }
+    // --- Placeholder definitions ---
 
     private List<PlaceholderDefinition> getLocalPlaceholders(String catalogType) {
         List<PlaceholderDefinition> placeholders = new ArrayList<>();
@@ -113,47 +151,6 @@ public class DeploymentInstructionsBean {
                     new PlaceholderDefinition("grpc-port", "gRPC Port", "Port for the gRPC service endpoint", "9191"));
         }
         return placeholders;
-    }
-
-    // --- Docker instructions ---
-
-    private List<SystemInstruction> generateDockerInstructions(ServiceCatalogIndex index, String catalogType) {
-        List<SystemInstruction> instructions = new ArrayList<>();
-        if (TYPE_CIC.equals(catalogType)) {
-            for (String system : index.getServiceNames()) {
-                instructions.add(
-                        new SystemInstruction(system, buildDockerCicCommand(index.getName(), system), "shell"));
-            }
-        } else {
-            for (String system : index.getServiceNames()) {
-                instructions.add(new SystemInstruction(system, buildDockerNativeCommand(system), "shell"));
-            }
-        }
-        return instructions;
-    }
-
-    private String buildDockerCicCommand(String catalogName, String systemName) {
-        return "docker run -d \\\n"
-                + "  -e REGISTRATION_URL=<registration-url> \\\n"
-                + "  -e REGISTRATION_ANNOUNCE_ADDRESS=auto \\\n"
-                + "  -e GRPC_PORT=9190 \\\n"
-                + "  -e SERVICE_NAME=" + systemName + " \\\n"
-                + "  -e SERVICE_CATALOG=" + catalogName + " \\\n"
-                + "  -e SERVICE_CATALOG_SYSTEM=" + systemName + " \\\n"
-                + "  -e TOKEN_ENDPOINT=<token-endpoint> \\\n"
-                + "  -e CLIENT_ID=wanaku-service \\\n"
-                + "  -e CLIENT_SECRET=<client-secret> \\\n"
-                + "  -p 9190:9190 \\\n"
-                + "  quay.io/wanaku/camel-integration-capability:latest";
-    }
-
-    private String buildDockerNativeCommand(String systemName) {
-        return "docker run -d \\\n"
-                + "  -e AUTH_SERVER=<auth-server> \\\n"
-                + "  -e WANAKU_SERVICE_REGISTRATION_URI=<registration-url> \\\n"
-                + "  -e QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET=<client-secret> \\\n"
-                + "  -p 9000:9000 \\\n"
-                + "  quay.io/wanaku/wanaku-tool-service-" + systemName + ":latest";
     }
 
     private List<PlaceholderDefinition> getDockerPlaceholders(String catalogType) {
@@ -182,48 +179,6 @@ public class DeploymentInstructionsBean {
                     new PlaceholderDefinition("client-secret", "Client Secret", "OIDC client credentials secret", ""));
         }
         return placeholders;
-    }
-
-    // --- Kubernetes instructions ---
-
-    private List<SystemInstruction> generateKubernetesInstructions(ServiceCatalogIndex index, String catalogType) {
-        List<SystemInstruction> instructions = new ArrayList<>();
-        String yaml = buildKubernetesYaml(index, catalogType);
-        instructions.add(new SystemInstruction("all", yaml, "yaml"));
-        return instructions;
-    }
-
-    private String buildKubernetesYaml(ServiceCatalogIndex index, String catalogType) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("apiVersion: \"wanaku.ai/v1alpha1\"\n");
-        sb.append("kind: WanakuCapability\n");
-        sb.append("metadata:\n");
-        sb.append("  name: wanaku-dev-").append(index.getName()).append("-capability\n");
-        sb.append("spec:\n");
-        sb.append("  auth:\n");
-        sb.append("    authServer: <auth-server-address>\n");
-        sb.append("    authProxy: \"auto\"\n");
-        sb.append("  secrets:\n");
-        sb.append("    oidcCredentialsSecret: <credentials-secret>\n");
-        sb.append("  routerRef: <router-name>\n");
-        sb.append("  capabilities:\n");
-
-        for (String system : index.getServiceNames()) {
-            if (TYPE_CIC.equals(catalogType)) {
-                sb.append("    - name: ").append(system).append("\n");
-                sb.append("      type: camel-integration-capability\n");
-                sb.append("      image: quay.io/wanaku/camel-integration-capability:latest\n");
-                sb.append("      serviceCatalog: ").append(index.getName()).append("\n");
-                sb.append("      serviceCatalogSystem: ").append(system).append("\n");
-            } else {
-                sb.append("    - name: ").append(system).append("\n");
-                sb.append("      type: quay.io/wanaku/wanaku-tool-service-")
-                        .append(system)
-                        .append(":latest\n");
-            }
-        }
-
-        return sb.toString().stripTrailing();
     }
 
     private List<PlaceholderDefinition> getKubernetesPlaceholders() {
