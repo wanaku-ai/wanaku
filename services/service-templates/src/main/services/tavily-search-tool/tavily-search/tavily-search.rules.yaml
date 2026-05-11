@@ -3,4 +3,9 @@ mcp:
     - tavily-search:
         route:
           id: "tavily-search"
-        description: "{{tool.description}}"
+        description: "Search the web using the Tavily AI-optimized search engine"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The search term
+            required: true
