@@ -10,7 +10,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
@@ -72,23 +71,26 @@ public interface NamespacesService {
     /**
      * Updates an existing namespace.
      *
+     * @param id the ID of the namespace to update
      * @param namespace the namespace object with updated information
-     * @return a {@link Response} indicating the result of the update operation
+     * @return a {@link WanakuResponse} indicating the result of the update operation
      */
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(@PathParam("id") String id, Namespace namespace);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> update(@PathParam("id") String id, Namespace namespace);
 
     /**
      * Deletes a namespace by its ID.
      *
      * @param id the ID of the namespace to delete
-     * @return a {@link Response} indicating the result of the delete operation
+     * @return a {@link WanakuResponse} indicating the result of the delete operation
      */
     @Path("/{id}")
     @DELETE
-    Response delete(@PathParam("id") String id);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> delete(@PathParam("id") String id);
 
     /**
      * Lists stale namespaces based on age and optional label presence.

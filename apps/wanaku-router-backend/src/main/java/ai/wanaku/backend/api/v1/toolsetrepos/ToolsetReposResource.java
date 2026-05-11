@@ -11,7 +11,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 
 import java.util.List;
 import java.util.Map;
@@ -59,11 +59,11 @@ public class ToolsetReposResource {
 
     @Path("/{name}")
     @DELETE
-    public Response remove(@PathParam("name") String name) {
+    public WanakuResponse<Void> remove(@PathParam("name") String name) {
         LOG.debugf("REST: Removing toolset repository: %s", name);
         int removed = toolsetReposBean.remove(name);
         if (removed > 0) {
-            return Response.ok().build();
+            return new WanakuResponse<>();
         }
         throw new ResourceNotFoundException(name);
     }

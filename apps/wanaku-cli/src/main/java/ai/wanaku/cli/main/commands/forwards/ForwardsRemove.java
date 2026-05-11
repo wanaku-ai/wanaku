@@ -32,7 +32,8 @@ public class ForwardsRemove extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initService(ForwardsService.class, host);
 
-        try (Response ignored = forwardsService.removeForward(name)) {
+        try {
+            forwardsService.removeForward(name);
             printer.printSuccessMessage("Successfully removed forward reference '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

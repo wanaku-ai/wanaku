@@ -1,7 +1,6 @@
 package ai.wanaku.core.forward.discovery.client;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,7 +48,8 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
             reference.setAddress(actualAnnounceAddress);
 
             final ForwardsService forwardsService = newService();
-            try (Response ignored = forwardsService.addForward(reference)) {
+            try {
+                forwardsService.addForward(reference);
                 registered.set(true);
                 LOG.debugf("The service %s successfully registered.", reference.getName());
             } catch (WebApplicationException ex) {
@@ -71,8 +71,8 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
 
             final ForwardsService forwardsService = newService();
 
-            try (Response ignored = forwardsService.removeForward(name)) {
-
+            try {
+                forwardsService.removeForward(name);
             } catch (WebApplicationException ex) {
                 if (LOG.isTraceEnabled()) {
                     LOG.errorf(ex, "Unable to deregister forward service %s", name);

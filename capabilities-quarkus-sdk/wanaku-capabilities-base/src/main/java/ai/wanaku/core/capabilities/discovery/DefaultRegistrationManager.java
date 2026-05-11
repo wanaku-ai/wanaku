@@ -1,7 +1,6 @@
 package ai.wanaku.core.capabilities.discovery;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestResponse;
 import ai.wanaku.capabilities.sdk.api.discovery.DiscoveryCallback;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -65,7 +63,6 @@ public class DefaultRegistrationManager implements RegistrationManager {
      *
      * @param service the discovery service client for registration operations
      * @param target the service target describing this service's capabilities and location
-     * @throws WanakuException if the data directory cannot be created
      */
     public DefaultRegistrationManager(DiscoveryService service, ServiceTarget target, WanakuServiceConfig config) {
         this.service = Objects.requireNonNull(service);
@@ -99,20 +96,14 @@ public class DefaultRegistrationManager implements RegistrationManager {
 
     private void tryRegistering() {
         do {
-            try (final RestResponse<WanakuResponse<ServiceTarget>> response = service.register(target)) {
-                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    LOG.warnf(
-                            "The service %s failed to register. Response code: %d",
-                            target.getServiceName(), response.getStatus());
-                }
-
-                final WanakuResponse<ServiceTarget> entity = response.getEntity();
-                if (entity == null || entity.data() == null) {
+            try {
+                final WanakuResponse<ServiceTarget> response = service.register(target);
+                if (response == null || response.data() == null) {
                     throw new WanakuException(
                             "Could not register service because the provided response is null or invalid");
                 }
 
-                target = entity.data();
+                target = response.data();
                 instanceDataManager.writeEntry(target);
                 registered = true;
                 runCallBack(c -> c.onRegistration(this, target));
@@ -188,9 +179,9 @@ public class DefaultRegistrationManager implements RegistrationManager {
     @Override
     public void deregister() {
         if (target != null && target.getId() != null) {
-            try (Response response = service.deregister(target)) {
-                final int status = response.getStatus();
-                runCallBack(c -> c.onDeregistration(this, target, status));
+            try {
+                service.deregister(target);
+                runCallBack(c -> c.onDeregistration(this, target, 200));
             } catch (Exception e) {
                 logServiceFailure(e, "De-registering failed with %s");
             }

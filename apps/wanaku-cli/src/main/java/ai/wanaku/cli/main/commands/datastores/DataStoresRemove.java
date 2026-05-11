@@ -56,32 +56,29 @@ public class DataStoresRemove extends BaseCommand {
         dataStoresService = initService(DataStoresService.class, host);
 
         try {
-            Response response;
             String identifier;
 
             // Prefer ID over name if both provided
             if (id != null && !id.trim().isEmpty()) {
-                response = dataStoresService.remove(id.trim());
+                dataStoresService.remove(id.trim());
                 identifier = "ID '" + id.trim() + "'";
             } else {
-                response = dataStoresService.removeByName(name.trim());
+                dataStoresService.removeByName(name.trim());
                 identifier = "name '" + name.trim() + "'";
             }
 
-            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                printer.printSuccessMessage(String.format("Successfully removed data store(s) with %s%n", identifier));
-                LOG.debugf("Removed data store(s) with %s", identifier);
-            } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printWarningMessage(String.format("No data store found with %s%n", identifier));
-                return EXIT_ERROR;
-            } else {
-                commonResponseErrorHandler(response);
-                return EXIT_ERROR;
-            }
+            printer.printSuccessMessage(String.format("Successfully removed data store(s) with %s%n", identifier));
+            LOG.debugf("Removed data store(s) with %s", identifier);
 
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                String identifier =
+                        (id != null && !id.trim().isEmpty()) ? "ID '" + id.trim() + "'" : "name '" + name.trim() + "'";
+                printer.printWarningMessage(String.format("No data store found with %s%n", identifier));
+            } else {
+                commonResponseErrorHandler(response);
+            }
             return EXIT_ERROR;
         }
 

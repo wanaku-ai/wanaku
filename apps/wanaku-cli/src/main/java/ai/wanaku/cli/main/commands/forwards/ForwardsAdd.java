@@ -53,7 +53,8 @@ public class ForwardsAdd extends BaseCommand {
         reference.setAddress(service);
         reference.setNamespace(namespace);
 
-        try (Response ignored = forwardsService.addForward(reference)) {
+        try {
+            forwardsService.addForward(reference);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);

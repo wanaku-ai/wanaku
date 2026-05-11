@@ -12,7 +12,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 
 import java.util.List;
 import org.jboss.logging.Logger;
@@ -58,10 +58,10 @@ public class DataStoresResource {
      * @return HTTP 200 if updated successfully
      */
     @PUT
-    public Response update(DataStore dataStore) {
+    public WanakuResponse<Void> update(DataStore dataStore) {
         LOG.debugf("REST: Updating data store: %s", dataStore);
         dataStoresBean.update(dataStore);
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 
     /**
@@ -120,11 +120,11 @@ public class DataStoresResource {
      */
     @Path("/{id}")
     @DELETE
-    public Response removeById(@PathParam("id") String id) {
+    public WanakuResponse<Void> removeById(@PathParam("id") String id) {
         LOG.debugf("REST: Removing data store by ID: %s", id);
         int deleteCount = dataStoresBean.removeById(id);
         if (deleteCount > 0) {
-            return Response.ok().build();
+            return new WanakuResponse<>();
         } else {
             throw new DataStoreResourceNotFoundException(id);
         }
@@ -138,7 +138,7 @@ public class DataStoresResource {
      * @return HTTP 200 if removed, 404 if not found
      */
     @DELETE
-    public Response removeByName(@QueryParam("name") String name) {
+    public WanakuResponse<Void> removeByName(@QueryParam("name") String name) {
         if (StringHelper.isEmpty(name)) {
             throw new WanakuException("The 'name' query parameter must be provided");
         }
@@ -146,7 +146,7 @@ public class DataStoresResource {
         LOG.debugf("REST: Removing data stores by name: %s", name);
         int deleteCount = dataStoresBean.remove(name);
         if (deleteCount > 0) {
-            return Response.ok().build();
+            return new WanakuResponse<>();
         }
         throw new DataStoreResourceNotFoundException(name);
     }

@@ -10,7 +10,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -28,12 +27,11 @@ public interface DataStoresService {
      *
      * @param dataStore the data store to add
      * @return response with the created data store
-     * @throws WanakuException if addition fails
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> add(DataStore dataStore) throws WanakuException;
+    WanakuResponse<DataStore> add(DataStore dataStore);
 
     /**
      * List all data stores, optionally filtered by label expression.
@@ -79,40 +77,41 @@ public interface DataStoresService {
      * Remove a data store by ID.
      *
      * @param id the ID of the data store to remove
-     * @return HTTP response
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @Path("/{id}")
     @DELETE
-    Response remove(@PathParam("id") String id);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@PathParam("id") String id);
 
     /**
      * Remove data stores by name.
      *
      * @param name the name of the data stores to remove
-     * @return HTTP response
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @DELETE
-    Response removeByName(@QueryParam("name") String name);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> removeByName(@QueryParam("name") String name);
 
     /**
      * Remove data stores matching a label expression.
      *
      * @param labelExpression the label expression to match data stores for removal
      * @return response with count of removed data stores
-     * @throws WanakuException if removal fails
      */
     @Path("/labels")
     @DELETE
-    WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) throws WanakuException;
+    WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression);
 
     /**
      * Update an existing data store entry.
      *
      * @param dataStore the data store to update
-     * @return HTTP response
-     * @throws WanakuException if update fails
+     * @return a {@link WanakuResponse} indicating the result of the update operation
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(DataStore dataStore) throws WanakuException;
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> update(DataStore dataStore);
 }

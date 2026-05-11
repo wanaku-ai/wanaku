@@ -1076,6 +1076,22 @@
             "$ref" : "#/components/schemas/ToolReference"
           }
         }
+      },
+      "WanakuResponseVoid" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : { }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "SecurityScheme" : {
+        "type" : "openIdConnect",
+        "openIdConnectUrl" : "http://localhost:8543/realms/wanaku/.well-known/openid-configuration",
+        "description" : "Authentication"
       }
     }
   },
@@ -1301,7 +1317,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -1325,7 +1343,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1432,7 +1452,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1505,7 +1527,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -1542,7 +1566,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -1567,7 +1593,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1615,7 +1643,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1670,7 +1700,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1697,7 +1729,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1895,7 +1929,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -1944,7 +1980,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -1970,7 +2008,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -1994,7 +2034,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -2215,7 +2257,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -2240,7 +2284,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -2424,7 +2470,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -2609,7 +2657,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -2751,7 +2801,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           },
@@ -2776,7 +2828,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }
@@ -2914,7 +2968,9 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : { }
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
               }
             }
           }

@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +55,9 @@ public class NamespacesLabelRemoveTest {
             // Arrange
             Namespace existingNamespace = createNamespace("my-id", Map.of("env", "dev", "tier", "backend"));
             WanakuResponse<Namespace> getResponse = new WanakuResponse<>(existingNamespace);
-            Response updateResponse = mock(Response.class);
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(updateResponse);
+            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.id = "my-id";
             command.labels = List.of("env");
@@ -84,10 +82,9 @@ public class NamespacesLabelRemoveTest {
             Namespace existingNamespace =
                     createNamespace("my-id", Map.of("env", "dev", "tier", "backend", "version", "1.0"));
             WanakuResponse<Namespace> getResponse = new WanakuResponse<>(existingNamespace);
-            Response updateResponse = mock(Response.class);
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(updateResponse);
+            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.id = "my-id";
             command.labels = List.of("env", "version");
@@ -110,10 +107,9 @@ public class NamespacesLabelRemoveTest {
             // Arrange
             Namespace existingNamespace = createNamespace("my-id", Map.of("env", "dev"));
             WanakuResponse<Namespace> getResponse = new WanakuResponse<>(existingNamespace);
-            Response updateResponse = mock(Response.class);
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(updateResponse);
+            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.id = "my-id";
             command.labels = List.of("nonexistent");
@@ -136,10 +132,9 @@ public class NamespacesLabelRemoveTest {
             // Arrange
             Namespace existingNamespace = createNamespace("my-id", null);
             WanakuResponse<Namespace> getResponse = new WanakuResponse<>(existingNamespace);
-            Response updateResponse = mock(Response.class);
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(updateResponse);
+            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.id = "my-id";
             command.labels = List.of("env");
@@ -186,10 +181,9 @@ public class NamespacesLabelRemoveTest {
             Namespace namespace2 = createNamespace("id2", Map.of("status", "temp", "tier", "backend"));
             List<Namespace> matchingNamespaces = List.of(namespace1, namespace2);
             WanakuResponse<List<Namespace>> listResponse = new WanakuResponse<>(matchingNamespaces);
-            Response updateResponse = mock(Response.class);
 
             when(namespacesService.list("status=temp")).thenReturn(listResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(updateResponse);
+            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "status=temp";
             command.labels = List.of("status");
@@ -229,10 +223,9 @@ public class NamespacesLabelRemoveTest {
             Namespace namespace2 = createNamespace("id2", Map.of("env", "dev"));
             List<Namespace> matchingNamespaces = List.of(namespace1, namespace2);
             WanakuResponse<List<Namespace>> listResponse = new WanakuResponse<>(matchingNamespaces);
-            Response updateResponse = mock(Response.class);
 
             when(namespacesService.list(anyString())).thenReturn(listResponse);
-            when(namespacesService.update(anyString(), eq(namespace1))).thenReturn(updateResponse);
+            when(namespacesService.update(anyString(), eq(namespace1))).thenReturn(new WanakuResponse<>());
             when(namespacesService.update(anyString(), eq(namespace2))).thenThrow(new WebApplicationException());
 
             command.labelExpression = "env=dev";

@@ -10,7 +10,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -178,7 +178,7 @@ public class ServiceTemplateResource {
      */
     @Path("/remove")
     @DELETE
-    public Response remove(@QueryParam("name") String name) {
+    public WanakuResponse<Void> remove(@QueryParam("name") String name) {
         LOG.debugf("REST: Removing service template: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -187,7 +187,7 @@ public class ServiceTemplateResource {
 
         int removed = serviceTemplateBean.remove(name);
         if (removed > 0) {
-            return Response.ok().build();
+            return new WanakuResponse<>();
         } else {
             throw new DataStoreResourceNotFoundException(name);
         }

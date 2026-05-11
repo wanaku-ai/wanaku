@@ -8,12 +8,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestResponse;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.eventbus.EventBus;
 import ai.wanaku.backend.common.ServiceTargetEvent;
@@ -23,8 +21,6 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 @ApplicationScoped
 @Path("/api/v1/management/discovery")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class DiscoveryResource {
     private static final Logger LOG = Logger.getLogger(DiscoveryResource.class);
 
@@ -40,30 +36,36 @@ public class DiscoveryResource {
     EventBus eventBus;
 
     @POST
-    public RestResponse<WanakuResponse<ServiceTarget>> register(ServiceTarget serviceTarget) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ServiceTarget> register(ServiceTarget serviceTarget) {
         var ret = discoveryBean.registerService(serviceTarget);
 
         emitEvent(ServiceTargetEvent.register(ret));
         eventBus.send(PeriodicHealthCheckService.HEALTH_CHECK_ADDRESS, ret);
-        return RestResponse.ok(new WanakuResponse<>(ret));
+        return new WanakuResponse<>(ret);
     }
 
     @DELETE
-    public Response deregister(ServiceTarget serviceTarget) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<Void> deregister(ServiceTarget serviceTarget) {
         discoveryBean.deregisterService(serviceTarget);
         emitEvent(ServiceTargetEvent.deregister(serviceTarget));
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 
     @Path("/heartbeats")
     @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     @Deprecated
-    public Response ping(String id) {
+    public WanakuResponse<Void> ping(String id) {
         LOG.tracef("Service %s is pinging", id);
         discoveryBean.ping(id);
         emitEvent(ServiceTargetEvent.ping(id));
 
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 
     private void emitEvent(ServiceTargetEvent event) {

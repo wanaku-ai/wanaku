@@ -138,8 +138,7 @@ public class ResourcesLabelRemove extends BaseCommand {
                 resource.setLabels(existingLabels);
 
                 // Update the resource
-                Response updateResponse = resourcesService.update(resource.getName(), resource);
-                updateResponse.close();
+                resourcesService.update(resource.getName(), resource);
 
                 printer.printSuccessMessage(String.format(
                         "Labels updated for resource '%s' (%d removed, %d not found)",
@@ -204,8 +203,7 @@ public class ResourcesLabelRemove extends BaseCommand {
                         resource.setLabels(existingLabels);
 
                         // Update the resource
-                        Response updateResponse = resourcesService.update(resource.getName(), resource);
-                        updateResponse.close();
+                        resourcesService.update(resource.getName(), resource);
 
                         printer.printSuccessMessage("  Updated: " + resource.getName());
                         successCount++;

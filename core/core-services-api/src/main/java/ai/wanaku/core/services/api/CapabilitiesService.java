@@ -9,7 +9,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Map;
@@ -59,12 +58,13 @@ public interface CapabilitiesService {
      * @param service the identifier of the service to configure
      * @param option the configuration option name
      * @param value the configuration value to set
-     * @return a {@link Response} indicating the result of the configuration operation
+     * @return a {@link WanakuResponse} indicating the result of the configuration operation
      */
     @Path("/tools/configure/{service}")
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
-    Response toolsConfigure(
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> toolsConfigure(
             @PathParam("service") String service,
             @QueryParam("option") String option,
             @QueryParam("value") String value);
@@ -75,12 +75,13 @@ public interface CapabilitiesService {
      * @param service the identifier of the service to configure
      * @param option the configuration option name
      * @param value the configuration value to set
-     * @return a {@link Response} indicating the result of the configuration operation
+     * @return a {@link WanakuResponse} indicating the result of the configuration operation
      */
     @Path("/resources/configure/{service}")
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
-    Response resourcesConfigure(
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> resourcesConfigure(
             @PathParam("service") String service,
             @QueryParam("option") String option,
             @QueryParam("value") String value);

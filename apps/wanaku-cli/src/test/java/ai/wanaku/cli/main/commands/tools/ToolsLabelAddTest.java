@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.commands.tools;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.util.HashMap;
 import java.util.List;
@@ -55,10 +54,9 @@ public class ToolsLabelAddTest {
             // Arrange
             ToolReference existingTool = createToolReference("test-tool", Map.of());
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("test-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "test-tool";
             command.labels = List.of("env=production");
@@ -80,10 +78,9 @@ public class ToolsLabelAddTest {
             // Arrange
             ToolReference existingTool = createToolReference("test-tool", Map.of());
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("test-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "test-tool";
             command.labels = List.of("env=production", "tier=backend", "version=2.0");
@@ -123,10 +120,9 @@ public class ToolsLabelAddTest {
             // Arrange
             ToolReference existingTool = createToolReference("test-tool", Map.of());
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("test-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "test-tool";
             command.labels = List.of("config=key=value");
@@ -153,10 +149,9 @@ public class ToolsLabelAddTest {
             // Arrange
             ToolReference existingTool = createToolReference("my-tool", Map.of("existing", "label"));
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "my-tool";
             command.labels = List.of("new=value");
@@ -181,10 +176,9 @@ public class ToolsLabelAddTest {
             // Arrange
             ToolReference existingTool = createToolReference("my-tool", Map.of("env", "dev"));
             WanakuResponse<ToolReference> getResponse = new WanakuResponse<>(existingTool);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.name = "my-tool";
             command.labels = List.of("env=production");
@@ -230,10 +224,9 @@ public class ToolsLabelAddTest {
             ToolReference tool2 = createToolReference("tool2", Map.of("category", "weather"));
             List<ToolReference> matchingTools = List.of(tool1, tool2);
             WanakuResponse<List<ToolReference>> listResponse = new WanakuResponse<>(matchingTools);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.list("category=weather")).thenReturn(listResponse);
-            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(updateResponse);
+            when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "category=weather";
             command.labels = List.of("migrated=true");
@@ -275,10 +268,9 @@ public class ToolsLabelAddTest {
             ToolReference tool2 = createToolReference("tool2", Map.of());
             List<ToolReference> matchingTools = List.of(tool1, tool2);
             WanakuResponse<List<ToolReference>> listResponse = new WanakuResponse<>(matchingTools);
-            Response updateResponse = mock(Response.class);
 
             when(toolsService.list(anyString())).thenReturn(listResponse);
-            when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(updateResponse);
+            when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(new WanakuResponse<>());
             when(toolsService.update(eq("tool2"), eq(tool2))).thenThrow(new WebApplicationException());
 
             command.labelExpression = "category=test";

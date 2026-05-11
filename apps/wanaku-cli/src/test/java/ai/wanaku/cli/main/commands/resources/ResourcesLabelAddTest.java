@@ -1,7 +1,5 @@
 package ai.wanaku.cli.main.commands.resources;
 
-import jakarta.ws.rs.core.Response;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,11 +49,10 @@ public class ResourcesLabelAddTest {
             // Arrange
             ResourceReference existingResource = createResourceReference("test-resource", Map.of());
             WanakuResponse<ResourceReference> getResponse = new WanakuResponse<>(existingResource);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("test-resource")).thenReturn(getResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.name = "test-resource";
             command.labels = List.of("category=finance");
@@ -76,11 +73,10 @@ public class ResourcesLabelAddTest {
             // Arrange
             ResourceReference existingResource = createResourceReference("test-resource", Map.of());
             WanakuResponse<ResourceReference> getResponse = new WanakuResponse<>(existingResource);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("test-resource")).thenReturn(getResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.name = "test-resource";
             command.labels = List.of("category=data", "year=2024", "department=sales");
@@ -124,11 +120,10 @@ public class ResourcesLabelAddTest {
             // Arrange
             ResourceReference existingResource = createResourceReference("my-resource", Map.of("existing", "label"));
             WanakuResponse<ResourceReference> getResponse = new WanakuResponse<>(existingResource);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.name = "my-resource";
             command.labels = List.of("new=value");
@@ -152,11 +147,10 @@ public class ResourcesLabelAddTest {
             // Arrange
             ResourceReference existingResource = createResourceReference("my-resource", Map.of("year", "2023"));
             WanakuResponse<ResourceReference> getResponse = new WanakuResponse<>(existingResource);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.name = "my-resource";
             command.labels = List.of("year=2024");
@@ -201,11 +195,10 @@ public class ResourcesLabelAddTest {
             ResourceReference resource2 = createResourceReference("resource2", Map.of("category", "data"));
             List<ResourceReference> matchingResources = List.of(resource1, resource2);
             WanakuResponse<List<ResourceReference>> listResponse = new WanakuResponse<>(matchingResources);
-            Response updateResponse = mock(Response.class);
 
             when(resourcesService.list("category=data")).thenReturn(listResponse);
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
-                    .thenReturn(updateResponse);
+                    .thenReturn(new WanakuResponse<>());
 
             command.labelExpression = "category=data";
             command.labels = List.of("migrated=true");

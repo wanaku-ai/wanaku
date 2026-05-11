@@ -1,7 +1,5 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
-import jakarta.ws.rs.core.Response;
-
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -48,7 +46,7 @@ public class NamespacesUpdateTest {
         existing.setLabels(Map.of("env", "dev"));
 
         when(namespacesService.getById("ns-1")).thenReturn(new WanakuResponse<>(existing));
-        when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(mock(Response.class));
+        when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
         command.id = "ns-1";
         command.name = "new";
@@ -76,7 +74,7 @@ public class NamespacesUpdateTest {
         existing.setName("old");
 
         when(namespacesService.getById("ns-1")).thenReturn(new WanakuResponse<>(existing));
-        when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(mock(Response.class));
+        when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
         command.id = "ns-1";
         command.clearName = true;

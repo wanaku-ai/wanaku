@@ -137,8 +137,7 @@ public class ToolsLabelRemove extends BaseCommand {
                 tool.setLabels(existingLabels);
 
                 // Update the tool
-                Response updateResponse = toolsService.update(tool.getName(), tool);
-                updateResponse.close();
+                toolsService.update(tool.getName(), tool);
 
                 printer.printSuccessMessage(String.format(
                         "Labels updated for tool '%s' (%d removed, %d not found)", name, removedCount, notFoundCount));
@@ -202,8 +201,7 @@ public class ToolsLabelRemove extends BaseCommand {
                         tool.setLabels(existingLabels);
 
                         // Update the tool
-                        Response updateResponse = toolsService.update(tool.getName(), tool);
-                        updateResponse.close();
+                        toolsService.update(tool.getName(), tool);
 
                         printer.printSuccessMessage("  Updated: " + tool.getName());
                         successCount++;

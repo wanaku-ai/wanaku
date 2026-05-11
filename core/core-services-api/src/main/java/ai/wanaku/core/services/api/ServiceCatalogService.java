@@ -8,7 +8,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -46,48 +45,45 @@ public interface ServiceCatalogService {
      *
      * @param name the catalog name
      * @return response with catalog details
-     * @throws WanakuException if catalog not found
      */
     @Path("/get")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> get(@QueryParam("name") String name) throws WanakuException;
+    WanakuResponse<DataStore> get(@QueryParam("name") String name);
 
     /**
      * Deploy a service catalog ZIP package.
      *
      * @param dataStore the data store entry containing the Base64-encoded ZIP
      * @return response with the created data store entry
-     * @throws WanakuException if the ZIP is invalid
      */
     @Path("/deploy")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException;
+    WanakuResponse<DataStore> deploy(DataStore dataStore);
 
     /**
      * Download a service catalog by name, returning the raw DataStore with Base64-encoded ZIP data.
      *
      * @param name the catalog name
      * @return response with the DataStore containing the Base64-encoded ZIP
-     * @throws WanakuException if catalog not found
      */
     @Path("/download")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException;
+    WanakuResponse<DataStore> download(@QueryParam("name") String name);
 
     /**
      * Remove a service catalog by name.
      *
      * @param name the catalog name to remove
-     * @return HTTP response
-     * @throws WanakuException if removal fails
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @Path("/remove")
     @DELETE
-    Response remove(@QueryParam("name") String name) throws WanakuException;
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> remove(@QueryParam("name") String name);
 
     /**
      * Get deployment instructions for a service catalog.
@@ -95,11 +91,10 @@ public interface ServiceCatalogService {
      * @param name the catalog name
      * @param model the deployment model: local, docker, or kubernetes
      * @return response with deployment instructions
-     * @throws WanakuException if catalog not found or model is unsupported
      */
     @Path("/instructions")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<DeploymentInstructions> getDeploymentInstructions(
-            @QueryParam("name") String name, @QueryParam("model") String model) throws WanakuException;
+            @QueryParam("name") String name, @QueryParam("model") String model);
 }

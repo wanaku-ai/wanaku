@@ -149,8 +149,8 @@ public class ResourcesExpose extends BaseCommand {
             resource.setParams(paramsList);
         }
 
-        try (Response response = resourcesService.exposeWithPayload(resourcePayload)) {
-
+        try {
+            resourcesService.exposeWithPayload(resourcePayload);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {

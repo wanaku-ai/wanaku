@@ -12,7 +12,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 
 import java.util.List;
 import ai.wanaku.backend.api.v1.common.PayloadValidator;
@@ -126,10 +126,10 @@ public class ResourcesResource {
      */
     @Path("/{name}")
     @DELETE
-    public Response remove(@PathParam("name") String name) {
+    public WanakuResponse<Void> remove(@PathParam("name") String name) {
         int deleteCount = resourcesBean.remove(name);
         if (deleteCount > 0) {
-            return Response.ok().build();
+            return new WanakuResponse<>();
         } else {
             throw new ResourceNotFoundException(name);
         }
@@ -143,11 +143,11 @@ public class ResourcesResource {
      */
     @Path("/{name}")
     @PUT
-    public Response update(@PathParam("name") String name, ResourceReference resource) {
+    public WanakuResponse<Void> update(@PathParam("name") String name, ResourceReference resource) {
         if (resource != null && StringHelper.isEmpty(resource.getName())) {
             resource.setName(name);
         }
         resourcesBean.update(resource);
-        return Response.ok().build();
+        return new WanakuResponse<>();
     }
 }

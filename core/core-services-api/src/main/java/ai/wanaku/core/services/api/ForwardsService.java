@@ -10,7 +10,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
@@ -34,22 +33,23 @@ public interface ForwardsService {
      * capabilities to a remote server or service.
      *
      * @param reference the forward reference to register
-     * @return a {@link Response} indicating the result of the add operation
+     * @return a {@link WanakuResponse} indicating the result of the add operation
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    Response addForward(ForwardReference reference);
+    WanakuResponse<Void> addForward(ForwardReference reference);
 
     /**
      * Removes a forward reference from the system.
      *
-     * @return a {@link Response} indicating the result of the remove operation
+     * @param name the name of the forward to remove
+     * @return a {@link WanakuResponse} indicating the result of the remove operation
      */
     @Path("/{name}")
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)
-    Response removeForward(@PathParam("name") String name);
+    WanakuResponse<Void> removeForward(@PathParam("name") String name);
 
     /**
      * Lists all registered forward references.
@@ -84,20 +84,24 @@ public interface ForwardsService {
     /**
      * Updates an existing forward reference.
      *
+     * @param name the name of the forward to update
      * @param reference the updated forward reference
-     * @return a {@link Response} indicating the result of the update operation
+     * @return a {@link WanakuResponse} indicating the result of the update operation
      */
     @Path("/{name}")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response updateForward(@PathParam("name") String name, ForwardReference reference);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> updateForward(@PathParam("name") String name, ForwardReference reference);
 
     /**
      * Refreshes a forward reference to re-discover tools and resources from the remote server.
      *
-     * @return a {@link Response} indicating the result of the refresh operation
+     * @param name the name of the forward to refresh
+     * @return a {@link WanakuResponse} indicating the result of the refresh operation
      */
     @Path("/{name}/refreshes")
     @POST
-    Response refreshForward(@PathParam("name") String name);
+    @Produces(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> refreshForward(@PathParam("name") String name);
 }

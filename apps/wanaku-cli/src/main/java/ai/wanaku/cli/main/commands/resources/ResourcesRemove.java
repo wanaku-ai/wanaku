@@ -75,7 +75,8 @@ public class ResourcesRemove extends BaseCommand {
     }
 
     private Integer removeByName(WanakuPrinter printer) throws IOException {
-        try (Response response = resourcesService.remove(name)) {
+        try {
+            resourcesService.remove(name);
             printer.printSuccessMessage("Successfully removed resource reference '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
@@ -110,7 +111,8 @@ public class ResourcesRemove extends BaseCommand {
             int failureCount = 0;
 
             for (ResourceReference resource : matchingResources) {
-                try (Response ignored = resourcesService.remove(resource.getName())) {
+                try {
+                    resourcesService.remove(resource.getName());
                     printer.printSuccessMessage("  Removed: " + resource.getName());
                     successCount++;
                 } catch (WebApplicationException ex) {

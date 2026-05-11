@@ -3,7 +3,6 @@ package ai.wanaku.tests.mcp.server;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.net.URI;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -45,7 +44,8 @@ public class MockMcpCallbackProducer {
                 forwardReference.setNamespace(namespace);
                 forwardReference.setAddress(forwardAddress);
 
-                try (Response ignored = forwardsService.addForward(forwardReference)) {
+                try {
+                    forwardsService.addForward(forwardReference);
                     LOG.infof("Successfully registered mock MCP server as forward: %s", serviceName);
                 } catch (WebApplicationException e) {
                     LOG.warn("Failed to register mock MCP server as forward", e);
@@ -54,7 +54,8 @@ public class MockMcpCallbackProducer {
 
             @Override
             public void onDeregistration(ForwardRegistrationManager manager) {
-                try (Response ignored = forwardsService.removeForward(forwardReference.getName())) {
+                try {
+                    forwardsService.removeForward(forwardReference.getName());
                     LOG.infof("Successfully deregistered mock MCP server forward: %s", serviceName);
                 } catch (WebApplicationException e) {
                     LOG.warn("Failed to deregister mock MCP server forward", e);

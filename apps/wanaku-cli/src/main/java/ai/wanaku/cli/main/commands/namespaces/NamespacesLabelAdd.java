@@ -169,8 +169,7 @@ public class NamespacesLabelAdd extends BaseCommand {
             namespace.setLabels(existingLabels);
 
             // Update the namespace
-            Response updateResponse = namespacesService.update(id, namespace);
-            updateResponse.close();
+            namespacesService.update(id, namespace);
 
             printer.printSuccessMessage(String.format(
                     "Labels updated for namespace with ID '%s' (%d added, %d updated)", id, addedCount, updatedCount));
@@ -224,8 +223,7 @@ public class NamespacesLabelAdd extends BaseCommand {
                     namespace.setLabels(existingLabels);
 
                     // Update the namespace
-                    Response updateResponse = namespacesService.update(namespace.getId(), namespace);
-                    updateResponse.close();
+                    namespacesService.update(namespace.getId(), namespace);
 
                     printer.printSuccessMessage("  Updated: " + namespace.getId());
                     successCount++;
