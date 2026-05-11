@@ -27,6 +27,8 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
  */
 @ApplicationScoped
 @Path("/api/v1/data-store")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class DataStoresResource {
     private static final Logger LOG = Logger.getLogger(DataStoresResource.class);
 
@@ -42,8 +44,6 @@ public class DataStoresResource {
      * @throws WanakuException if addition fails
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> add(DataStore dataStore) throws WanakuException {
         LOG.debugf("REST: Adding data store: %s", dataStore);
         DataStore result = dataStoresBean.add(dataStore);
@@ -59,7 +59,6 @@ public class DataStoresResource {
      * @throws WanakuException if update fails
      */
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response update(DataStore dataStore) throws WanakuException {
         LOG.debugf("REST: Updating data store: %s", dataStore);
         dataStoresBean.update(dataStore);
@@ -76,7 +75,6 @@ public class DataStoresResource {
      * @throws WanakuException if listing or label expression parsing fails
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<DataStore>> listOrGetByName(
             @QueryParam("labelFilter") String labelFilter, @QueryParam("name") String name) throws WanakuException {
         if (name != null && !name.isEmpty()) {
@@ -107,7 +105,6 @@ public class DataStoresResource {
      */
     @Path("/{id}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> getById(@PathParam("id") String id) throws WanakuException {
         LOG.debugf("REST: Getting data store by ID: %s", id);
         DataStore dataStore = dataStoresBean.findById(id);
@@ -169,7 +166,6 @@ public class DataStoresResource {
      */
     @Path("/labels")
     @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
             throws WanakuException {
         LOG.debugf("REST: Removing data stores by label expression: %s", labelExpression);

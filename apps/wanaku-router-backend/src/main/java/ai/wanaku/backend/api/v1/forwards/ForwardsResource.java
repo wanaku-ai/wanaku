@@ -22,13 +22,13 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 @ApplicationScoped
 @Path("/api/v1/forwards")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ForwardsResource {
     @Inject
     ForwardsBean forwardsBean;
 
     @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response addForward(ForwardReference reference) throws WanakuException {
         forwardsBean.forward(reference);
         return Response.ok().build();
@@ -48,7 +48,6 @@ public class ForwardsResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public RestResponse<WanakuResponse<List<ForwardReference>>> listForwards(
             @jakarta.ws.rs.QueryParam("labelFilter") String labelFilter) {
         return RestResponse.ok(new WanakuResponse<>(forwardsBean.listForwards(labelFilter)));
@@ -56,7 +55,6 @@ public class ForwardsResource {
 
     @Path("/{name}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ForwardReference> getByName(@PathParam("name") String name) {
         List<ForwardReference> references = forwardsBean.listForwards();
         for (ForwardReference reference : references) {
@@ -69,7 +67,6 @@ public class ForwardsResource {
 
     @Path("/{name}")
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("name") String name, ForwardReference resource) throws WanakuException {
         if (resource != null
                 && (resource.getName() == null || resource.getName().isBlank())) {

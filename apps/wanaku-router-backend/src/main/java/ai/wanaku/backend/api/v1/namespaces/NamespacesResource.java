@@ -21,6 +21,8 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 @ApplicationScoped
 @Path("/api/v1/namespaces")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class NamespacesResource {
     private static final long DEFAULT_MAX_AGE_SECONDS = 604800; // 7 days
 
@@ -28,15 +30,12 @@ public class NamespacesResource {
     NamespacesBean namespacesBean;
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<Namespace>> list(@QueryParam("labelFilter") String labelFilter) {
         List<Namespace> namespaces = namespacesBean.list(labelFilter);
         return new WanakuResponse<>(namespaces);
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Namespace> create(Namespace namespace) {
         Namespace created = namespacesBean.create(namespace);
         return new WanakuResponse<>(created);
@@ -50,7 +49,6 @@ public class NamespacesResource {
      */
     @Path("/{id}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Namespace> getById(@PathParam("id") String id) {
         Namespace namespace = namespacesBean.getById(id);
         if (namespace == null) {
@@ -67,7 +65,6 @@ public class NamespacesResource {
      */
     @PUT
     @Path("/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("id") String id, Namespace namespace) {
         if (!namespacesBean.exists(id)) {
             throw NamespaceNotFoundException.forId(id);
@@ -89,7 +86,6 @@ public class NamespacesResource {
 
     @Path("/stale")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<Namespace>> listStale(
             @QueryParam("maxAgeSeconds") Long maxAgeSeconds,
             @QueryParam("unassignedOnly") Boolean unassignedOnly,
@@ -104,7 +100,6 @@ public class NamespacesResource {
 
     @Path("/stale")
     @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Integer> cleanupStale(
             @QueryParam("maxAgeSeconds") Long maxAgeSeconds,
             @QueryParam("unassignedOnly") Boolean unassignedOnly,

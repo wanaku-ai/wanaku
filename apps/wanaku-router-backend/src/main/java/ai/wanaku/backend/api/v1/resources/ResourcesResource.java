@@ -39,6 +39,8 @@ import ai.wanaku.core.util.StringHelper;
  */
 @ApplicationScoped
 @Path("/api/v1/resources")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ResourcesResource {
 
     @Inject
@@ -59,8 +61,6 @@ public class ResourcesResource {
      */
     @Path("/payloads")
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resource) throws WanakuException {
         validatePayload(resource);
         ResourceReference ret = resourcesBean.expose(resource);
@@ -94,8 +94,6 @@ public class ResourcesResource {
      * @throws WanakuException if exposure fails
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ResourceReference> expose(ResourceReference resource) throws WanakuException {
         ResourceReference ret = resourcesBean.expose(resource);
         return new WanakuResponse<>(ret);
@@ -112,7 +110,6 @@ public class ResourcesResource {
      * @throws WanakuException if listing fails
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter)
             throws WanakuException {
         List<ResourceReference> list = resourcesBean.list(labelFilter);
@@ -133,7 +130,6 @@ public class ResourcesResource {
      */
     @Path("/{name}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ResourceReference> getByName(@PathParam("name") String name) throws WanakuException {
         ResourceReference resource = resourcesBean.getByName(name);
         if (resource == null) {
@@ -169,7 +165,6 @@ public class ResourcesResource {
      */
     @Path("/{name}")
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("name") String name, ResourceReference resource) throws WanakuException {
         if (resource != null && StringHelper.isEmpty(resource.getName())) {
             resource.setName(name);

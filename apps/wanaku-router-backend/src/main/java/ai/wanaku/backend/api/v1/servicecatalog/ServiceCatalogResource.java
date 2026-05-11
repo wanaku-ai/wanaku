@@ -29,6 +29,8 @@ import ai.wanaku.core.services.api.ServiceCatalogIndex;
  */
 @ApplicationScoped
 @Path("/api/v1/service-catalog")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ServiceCatalogResource {
     private static final Logger LOG = Logger.getLogger(ServiceCatalogResource.class);
 
@@ -48,7 +50,6 @@ public class ServiceCatalogResource {
      */
     @Path("/list")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) throws WanakuException {
         if (search != null && !search.isBlank()) {
             LOG.debugf("REST: Listing service catalogs with search: %s", search);
@@ -86,7 +87,6 @@ public class ServiceCatalogResource {
      */
     @Path("/get")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Getting service catalog: %s", name);
 
@@ -129,7 +129,6 @@ public class ServiceCatalogResource {
      */
     @Path("/download")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Downloading service catalog: %s", name);
 
@@ -154,8 +153,6 @@ public class ServiceCatalogResource {
      */
     @Path("/deploy")
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException {
         LOG.debugf("REST: Deploying service catalog: %s", dataStore.getName());
         DataStore result = serviceCatalogBean.deploy(dataStore);
@@ -196,7 +193,6 @@ public class ServiceCatalogResource {
      */
     @Path("/instructions")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DeploymentInstructions> getDeploymentInstructions(
             @QueryParam("name") String name, @QueryParam("model") String model) throws WanakuException {
         LOG.debugf("REST: Getting deployment instructions for catalog '%s' with model '%s'", name, model);

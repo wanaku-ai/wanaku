@@ -29,6 +29,8 @@ import ai.wanaku.core.services.api.ServiceTemplateService;
  */
 @ApplicationScoped
 @Path("/api/v1/service-template")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ServiceTemplateResource {
     private static final Logger LOG = Logger.getLogger(ServiceTemplateResource.class);
 
@@ -45,7 +47,6 @@ public class ServiceTemplateResource {
      */
     @Path("/list")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) {
         if (search != null && !search.isBlank()) {
             LOG.debugf("REST: Listing service templates with search: %s", search);
@@ -93,7 +94,6 @@ public class ServiceTemplateResource {
      */
     @Path("/get")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Getting service template: %s", name);
 
@@ -137,7 +137,6 @@ public class ServiceTemplateResource {
      */
     @Path("/download")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Downloading service template: %s", name);
 
@@ -162,8 +161,6 @@ public class ServiceTemplateResource {
      */
     @Path("/deploy")
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException {
         LOG.debugf("REST: Deploying service template: %s", dataStore.getName());
         DataStore result = serviceTemplateBean.deploy(dataStore);
@@ -203,7 +200,6 @@ public class ServiceTemplateResource {
      */
     @Path("/properties")
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name)
             throws WanakuException {
         LOG.debugf("REST: Getting properties for template: %s", name);
@@ -225,8 +221,6 @@ public class ServiceTemplateResource {
      */
     @Path("/instantiate")
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<DataStore> instantiate(ServiceTemplateService.TemplateInstantiationRequest request)
             throws WanakuException {
         LOG.debugf("REST: Instantiating template: %s", request.getTemplateName());
