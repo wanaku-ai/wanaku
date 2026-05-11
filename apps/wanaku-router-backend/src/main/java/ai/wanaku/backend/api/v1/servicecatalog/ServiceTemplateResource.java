@@ -22,6 +22,7 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
 import ai.wanaku.core.services.api.ServiceTemplateService;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * REST API resource for service template operations.
@@ -97,13 +98,13 @@ public class ServiceTemplateResource {
     public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Getting service template: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
         DataStore template = serviceTemplateBean.get(name);
         if (template == null) {
-            throw new WanakuException("Service template not found: " + name);
+            throw new WanakuException("Service template not found: %s".formatted(name));
         }
 
         ServiceCatalogIndex index = serviceTemplateBean.parseIndex(template);
@@ -141,13 +142,13 @@ public class ServiceTemplateResource {
     public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Downloading service template: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
         DataStore template = serviceTemplateBean.get(name);
         if (template == null) {
-            throw new WanakuException("Service template not found: " + name);
+            throw new WanakuException("Service template not found: %s".formatted(name));
         }
 
         return new WanakuResponse<>(template);
@@ -182,7 +183,7 @@ public class ServiceTemplateResource {
     public Response remove(@QueryParam("name") String name) throws WanakuException {
         LOG.debugf("REST: Removing service template: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
@@ -208,7 +209,7 @@ public class ServiceTemplateResource {
             throws WanakuException {
         LOG.debugf("REST: Getting properties for template: %s", name);
 
-        if (name == null || name.isBlank()) {
+        if (StringHelper.isBlank(name)) {
             throw new WanakuException("Query parameter 'name' is required");
         }
 
@@ -231,7 +232,7 @@ public class ServiceTemplateResource {
             throws WanakuException {
         LOG.debugf("REST: Instantiating template: %s", request.getTemplateName());
 
-        if (request.getTemplateName() == null || request.getTemplateName().isBlank()) {
+        if (StringHelper.isBlank(request.getTemplateName())) {
             throw new WanakuException("Template name is required");
         }
 

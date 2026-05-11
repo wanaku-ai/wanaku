@@ -10,6 +10,7 @@ import ai.wanaku.backend.core.mcp.util.LabelExpressionParser.LabelExpressionPars
 import ai.wanaku.backend.core.persistence.api.LabelAwareInfinispanRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
+import ai.wanaku.core.util.StringHelper;
 
 public abstract class AbstractLabelAwareInfinispanRepository<A extends LabelsAwareEntity<K>, K>
         extends AbstractInfinispanRepository<A, K> implements LabelAwareInfinispanRepository<A, K> {
@@ -20,7 +21,7 @@ public abstract class AbstractLabelAwareInfinispanRepository<A extends LabelsAwa
 
     public List<A> findAllFilterByLabelExpression(String labelExpression) {
         // If no label expression provided, return all entities
-        if (labelExpression == null || labelExpression.trim().isEmpty()) {
+        if (StringHelper.isBlank(labelExpression)) {
             return listAll();
         }
         try {
@@ -32,9 +33,9 @@ public abstract class AbstractLabelAwareInfinispanRepository<A extends LabelsAwa
             return c.values().stream().filter(predicate).toList();
 
         } catch (LabelExpressionParseException e) {
-            throw new WanakuException("Invalid label expression: " + labelExpression, e);
+            throw new WanakuException("Invalid label expression: %s".formatted(labelExpression), e);
         } catch (Exception e) {
-            throw new WanakuException("Failed to execute label query: " + labelExpression, e);
+            throw new WanakuException("Failed to execute label query: %s".formatted(labelExpression), e);
         }
     }
 

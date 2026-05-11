@@ -56,7 +56,7 @@ public class LlmChatResource {
         JsonObject llmParams = json.getJsonObject("chatParams");
 
         if (!allowlist.contains(baseUrl)) {
-            throw new WebApplicationException("Base URL: " + baseUrl + " is not allowed", BAD_REQUEST);
+            throw new WebApplicationException("Base URL: %s is not allowed".formatted(baseUrl), BAD_REQUEST);
         }
         try (var client = HttpClient.newHttpClient()) {
             String url = baseUrl + "/v1/chat/completions";

@@ -20,6 +20,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundExcept
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * REST API resource for managing DataStore entries.
@@ -83,7 +84,7 @@ public class DataStoresResource {
             LOG.debugf("REST: Getting data stores by name: %s", name);
             List<DataStore> dataStores = dataStoresBean.findByName(name);
             if (dataStores == null || dataStores.isEmpty()) {
-                throw new DataStoreResourceNotFoundException("Data store not found with name: " + name);
+                throw new DataStoreResourceNotFoundException("Data store not found with name: %s".formatted(name));
             }
             return new WanakuResponse<>(dataStores);
         }
@@ -112,7 +113,7 @@ public class DataStoresResource {
         LOG.debugf("REST: Getting data store by ID: %s", id);
         DataStore dataStore = dataStoresBean.findById(id);
         if (dataStore == null) {
-            throw new DataStoreResourceNotFoundException("Data store not found with ID: " + id);
+            throw new DataStoreResourceNotFoundException("Data store not found with ID: %s".formatted(id));
         }
         return new WanakuResponse<>(dataStore);
     }
@@ -147,7 +148,7 @@ public class DataStoresResource {
      */
     @DELETE
     public Response removeByName(@QueryParam("name") String name) throws WanakuException {
-        if (name == null || name.isEmpty()) {
+        if (StringHelper.isEmpty(name)) {
             throw new WanakuException("The 'name' query parameter must be provided");
         }
 

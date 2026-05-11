@@ -32,6 +32,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.execution.CodeExecutionRequest;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.CodeExecutionReply;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * Bridge implementation for code execution services via gRPC.
@@ -310,7 +311,7 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
      * @throws IllegalArgumentException if the input is not valid base64
      */
     private String decodeBase64Code(String base64Code) {
-        if (base64Code == null || base64Code.isEmpty()) {
+        if (StringHelper.isEmpty(base64Code)) {
             return "";
         }
 

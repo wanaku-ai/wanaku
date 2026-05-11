@@ -131,7 +131,7 @@ public class InvokerBridge implements ToolsBridge {
                     serviceResolver.resolve(context.toolReference.getType(), SERVICE__TYPE_CODE_EXECUTION_ENGINE);
             if (context.serviceTarget == null) {
                 throw new ServiceNotFoundException(
-                        "There is no host registered for service " + context.toolReference.getType());
+                        "There is no host registered for service %s".formatted(context.toolReference.getType()));
             }
         }
         return context;

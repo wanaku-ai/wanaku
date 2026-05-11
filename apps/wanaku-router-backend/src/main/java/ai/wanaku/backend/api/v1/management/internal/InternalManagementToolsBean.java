@@ -30,6 +30,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.management.ServerInfo;
 import ai.wanaku.core.services.api.StaleCapabilityInfo;
+import ai.wanaku.core.util.StringHelper;
 import ai.wanaku.core.util.VersionHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -403,7 +404,7 @@ public class InternalManagementToolsBean {
         String id = toRequiredStringArg(args, "id");
         Namespace namespace = namespacesBean.getById(id);
         if (namespace == null) {
-            throw new IllegalArgumentException("Namespace not found: " + id);
+            throw new IllegalArgumentException("Namespace not found: %s".formatted(id));
         }
         return namespace;
     }
@@ -423,7 +424,7 @@ public class InternalManagementToolsBean {
             namespace.setId(id);
         }
         if (!namespacesBean.update(id, namespace)) {
-            throw new IllegalArgumentException("Namespace not found or update refused: " + id);
+            throw new IllegalArgumentException("Namespace not found or update refused: %s".formatted(id));
         }
         return namespacesBean.getById(id);
     }
@@ -454,7 +455,7 @@ public class InternalManagementToolsBean {
         String name = toRequiredStringArg(args, "name");
         ToolReference tool = toolsBean.getByName(name);
         if (tool == null) {
-            throw new IllegalArgumentException("Tool not found: " + name);
+            throw new IllegalArgumentException("Tool not found: %s".formatted(name));
         }
         return tool;
     }
@@ -488,7 +489,7 @@ public class InternalManagementToolsBean {
         String name = toRequiredStringArg(args, "name");
         ResourceReference resource = resourcesBean.getByName(name);
         if (resource == null) {
-            throw new IllegalArgumentException("Resource not found: " + name);
+            throw new IllegalArgumentException("Resource not found: %s".formatted(name));
         }
         return resource;
     }
@@ -573,8 +574,8 @@ public class InternalManagementToolsBean {
 
     private String toRequiredStringArg(Map<String, Object> args, String key) {
         String value = toStringArg(args.get(key));
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(key + " is required");
+        if (StringHelper.isBlank(value)) {
+            throw new IllegalArgumentException("%s is required".formatted(key));
         }
         return value;
     }

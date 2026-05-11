@@ -169,7 +169,7 @@ public class CodeExecutionResource {
             LOG.errorf(e, "Error submitting code execution: engine=%s, language=%s", engineType, language);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new CodeExecutionError(
-                            "INTERNAL_ERROR", "Failed to submit code execution: " + e.getMessage()))
+                            "INTERNAL_ERROR", "Failed to submit code execution: %s".formatted(e.getMessage())))
                     .build();
         }
     }

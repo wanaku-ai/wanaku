@@ -12,6 +12,7 @@ import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Readiness;
 import org.jboss.logging.Logger;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * OIDC readiness health check that verifies the OIDC provider is reachable.
@@ -45,7 +46,7 @@ public class OidcReadinessCheck implements HealthCheck {
             return disabledResponse();
         }
 
-        if (authServerUrl == null || authServerUrl.isBlank()) {
+        if (StringHelper.isBlank(authServerUrl)) {
             return configurationErrorResponse();
         }
 
@@ -165,7 +166,7 @@ public class OidcReadinessCheck implements HealthCheck {
                 connection.setRequestMethod("GET");
                 return connection;
             } catch (URISyntaxException e) {
-                throw new IOException("Invalid URL: " + urlString, e);
+                throw new IOException("Invalid URL: %s".formatted(urlString), e);
             }
         }
     }

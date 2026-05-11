@@ -24,6 +24,7 @@ import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * Business logic for service template operations.
@@ -67,7 +68,7 @@ public class ServiceTemplateBean {
         List<DataStore> all =
                 dataStoreRepository.findAllFilterByLabelExpression(LABEL_TYPE_KEY + "=" + LABEL_TYPE_VALUE);
 
-        if (search == null || search.isBlank()) {
+        if (StringHelper.isBlank(search)) {
             return all;
         }
 
@@ -110,10 +111,10 @@ public class ServiceTemplateBean {
     public DataStore deploy(DataStore dataStore) throws WanakuException {
         LOG.debugf("Deploying service template: %s", dataStore.getName());
 
-        if (dataStore.getName() == null || dataStore.getName().isBlank()) {
+        if (StringHelper.isBlank(dataStore.getName())) {
             throw new WanakuException("Template name is required");
         }
-        if (dataStore.getData() == null || dataStore.getData().isBlank()) {
+        if (StringHelper.isBlank(dataStore.getData())) {
             throw new WanakuException("Template data (Base64-encoded ZIP) is required");
         }
 
@@ -180,7 +181,7 @@ public class ServiceTemplateBean {
 
         DataStore template = get(name);
         if (template == null) {
-            throw new WanakuException("Service template not found: " + name);
+            throw new WanakuException("Service template not found: %s".formatted(name));
         }
 
         ServiceCatalogIndex index = parseIndex(template);
@@ -245,7 +246,7 @@ public class ServiceTemplateBean {
 
         DataStore template = get(templateName);
         if (template == null) {
-            throw new WanakuException("Service template not found: " + templateName);
+            throw new WanakuException("Service template not found: %s".formatted(templateName));
         }
 
         ServiceCatalogIndex index = parseIndex(template);
@@ -360,7 +361,7 @@ public class ServiceTemplateBean {
 
             return baos.toByteArray();
         } catch (IOException e) {
-            throw new WanakuException("Failed to build catalog ZIP: " + e.getMessage());
+            throw new WanakuException("Failed to build catalog ZIP: %s".formatted(e.getMessage()));
         }
     }
 
@@ -388,7 +389,7 @@ public class ServiceTemplateBean {
                 zis.closeEntry();
             }
         } catch (IOException e) {
-            throw new WanakuException("Failed to extract ZIP contents: " + e.getMessage());
+            throw new WanakuException("Failed to extract ZIP contents: %s".formatted(e.getMessage()));
         }
         return result;
     }

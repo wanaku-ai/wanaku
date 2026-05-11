@@ -58,7 +58,7 @@ public class PromptExpander {
 
         for (PromptReference.PromptArgument arg : prompt.getArguments()) {
             if (arg.isRequired() && !arguments.containsKey(arg.getName())) {
-                throw new IllegalArgumentException("Required argument '" + arg.getName() + "' is missing");
+                throw new IllegalArgumentException("Required argument '%s' is missing".formatted(arg.getName()));
             }
         }
     }

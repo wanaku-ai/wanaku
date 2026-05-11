@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import ai.wanaku.core.util.StringHelper;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
@@ -222,7 +223,7 @@ public class ToolCallEvent {
      * Redacts sensitive fields in the body.
      */
     private static String redactBody(String body) {
-        if (body == null || body.isEmpty()) {
+        if (StringHelper.isEmpty(body)) {
             return body;
         }
         // Simple redaction for JSON-like structures
@@ -239,7 +240,7 @@ public class ToolCallEvent {
      * Redacts secrets URI.
      */
     private static String redactSecretsURI(String secretsURI) {
-        if (secretsURI == null || secretsURI.isEmpty()) {
+        if (StringHelper.isEmpty(secretsURI)) {
             return secretsURI;
         }
         return REDACTED;

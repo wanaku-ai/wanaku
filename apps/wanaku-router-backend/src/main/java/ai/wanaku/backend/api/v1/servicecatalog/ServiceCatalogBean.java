@@ -14,6 +14,7 @@ import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * Business logic for service catalog operations.
@@ -53,7 +54,7 @@ public class ServiceCatalogBean {
         List<DataStore> all =
                 dataStoreRepository.findAllFilterByLabelExpression(LABEL_TYPE_KEY + "=" + LABEL_TYPE_VALUE);
 
-        if (search == null || search.isBlank()) {
+        if (StringHelper.isBlank(search)) {
             return all;
         }
 
@@ -96,10 +97,10 @@ public class ServiceCatalogBean {
     public DataStore deploy(DataStore dataStore) throws WanakuException {
         LOG.debugf("Deploying service catalog: %s", dataStore.getName());
 
-        if (dataStore.getName() == null || dataStore.getName().isBlank()) {
+        if (StringHelper.isBlank(dataStore.getName())) {
             throw new WanakuException("Catalog name is required");
         }
-        if (dataStore.getData() == null || dataStore.getData().isBlank()) {
+        if (StringHelper.isBlank(dataStore.getData())) {
             throw new WanakuException("Catalog data (Base64-encoded ZIP) is required");
         }
 

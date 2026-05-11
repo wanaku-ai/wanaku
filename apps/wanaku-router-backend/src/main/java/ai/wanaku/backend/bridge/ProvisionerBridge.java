@@ -41,7 +41,7 @@ public class ProvisionerBridge implements ProvisionBridge {
         LOG.debugf("Resolving service for type '%s' and service type '%s'", type, serviceType);
         ServiceTarget service = serviceResolver.resolve(type, serviceType);
         if (service == null) {
-            throw new ServiceNotFoundException("There is no host registered for service " + type);
+            throw new ServiceNotFoundException("There is no host registered for service %s".formatted(type));
         }
         LOG.debugf("Resolved service: %s", service.toAddress());
         return service;

@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.backend.core.persistence.api.NamespaceRepository;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.core.util.StringHelper;
 
 @Singleton
 public class NamespacesBean {
@@ -96,7 +97,7 @@ public class NamespacesBean {
             throw new IllegalArgumentException("Namespace cannot be null");
         }
 
-        if (namespace.getName() != null && namespace.getName().trim().isEmpty()) {
+        if (namespace.getName() != null && StringHelper.isBlank(namespace.getName())) {
             namespace.setName(null);
         }
 
@@ -114,7 +115,7 @@ public class NamespacesBean {
     }
 
     public List<Namespace> list(String labelFilter) {
-        if (labelFilter == null || labelFilter.trim().isEmpty()) {
+        if (StringHelper.isBlank(labelFilter)) {
             ensureDefaultNamespace();
             return namespaceRepository.listAll();
         }
@@ -175,7 +176,7 @@ public class NamespacesBean {
     }
 
     public boolean deleteById(String id) {
-        if (id == null || id.trim().isEmpty()) {
+        if (StringHelper.isBlank(id)) {
             return false;
         }
 
@@ -279,7 +280,7 @@ public class NamespacesBean {
     }
 
     private Instant parseEpochInstant(String value) {
-        if (value == null || value.trim().isEmpty()) {
+        if (StringHelper.isBlank(value)) {
             return null;
         }
         try {
