@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -30,7 +30,7 @@ public class ForwardsResource {
     ForwardsBean forwardsBean;
 
     @POST
-    public Response addForward(ForwardReference reference) throws WanakuException {
+    public Response addForward(ForwardReference reference) {
         forwardsBean.forward(reference);
         return Response.ok().build();
     }
@@ -45,7 +45,7 @@ public class ForwardsResource {
             return Response.ok().build();
         }
 
-        return Response.status(Response.Status.NOT_FOUND).build();
+        throw new ResourceNotFoundException(name);
     }
 
     @GET
@@ -63,12 +63,12 @@ public class ForwardsResource {
                 return new WanakuResponse<>(reference);
             }
         }
-        throw new NotFoundException("Forward not found with name: %s".formatted(name));
+        throw new ResourceNotFoundException("Forward not found with name: %s".formatted(name));
     }
 
     @Path("/{name}")
     @PUT
-    public Response update(@PathParam("name") String name, ForwardReference resource) throws WanakuException {
+    public Response update(@PathParam("name") String name, ForwardReference resource) {
         if (resource != null && StringHelper.isBlank(resource.getName())) {
             resource.setName(name);
         }
@@ -78,7 +78,7 @@ public class ForwardsResource {
 
     @Path("/{name}/refreshes")
     @POST
-    public Response refresh(@PathParam("name") String name) throws WanakuException {
+    public Response refresh(@PathParam("name") String name) {
         ForwardReference reference = new ForwardReference();
         reference.setName(name);
         forwardsBean.refresh(reference);

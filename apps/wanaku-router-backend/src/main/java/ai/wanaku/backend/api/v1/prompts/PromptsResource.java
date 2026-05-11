@@ -31,44 +31,44 @@ public class PromptsResource {
     PromptsBean promptsBean;
 
     @POST
-    public WanakuResponse<PromptReference> add(PromptReference resource) throws WanakuException {
+    public WanakuResponse<PromptReference> add(PromptReference resource) {
         var ret = promptsBean.add(resource);
         return new WanakuResponse<>(ret);
     }
 
     @Path("/payloads")
     @POST
-    public WanakuResponse<PromptReference> addWithPayload(PromptPayload resource) throws WanakuException {
+    public WanakuResponse<PromptReference> addWithPayload(PromptPayload resource) {
         PayloadValidator.validate(resource);
         var ret = promptsBean.add(resource);
         return new WanakuResponse<>(ret);
     }
 
     @GET
-    public WanakuResponse<List<PromptReference>> list() throws WanakuException {
+    public WanakuResponse<List<PromptReference>> list() {
         List<PromptReference> prompts = promptsBean.list();
         return new WanakuResponse<>(prompts);
     }
 
     @DELETE
-    public Response remove(@QueryParam("prompt") String prompt) throws WanakuException {
+    public Response remove(@QueryParam("prompt") String prompt) {
         int deleteCount = promptsBean.remove(prompt);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new PromptNotFoundException(prompt);
         }
     }
 
     @PUT
-    public Response update(PromptReference resource) throws WanakuException {
+    public Response update(PromptReference resource) {
         promptsBean.update(resource);
         return Response.ok().build();
     }
 
     @Path("/{name}")
     @GET
-    public WanakuResponse<PromptReference> getByName(@PathParam("name") String name) throws WanakuException {
+    public WanakuResponse<PromptReference> getByName(@PathParam("name") String name) {
         PromptReference prompt = promptsBean.getByName(name);
         if (prompt == null) {
             throw new PromptNotFoundException(name);

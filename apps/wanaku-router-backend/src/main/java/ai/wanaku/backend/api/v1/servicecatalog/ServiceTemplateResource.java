@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -95,7 +96,7 @@ public class ServiceTemplateResource {
      */
     @Path("/get")
     @GET
-    public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
+    public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) {
         LOG.debugf("REST: Getting service template: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -138,7 +139,7 @@ public class ServiceTemplateResource {
      */
     @Path("/download")
     @GET
-    public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
+    public WanakuResponse<DataStore> download(@QueryParam("name") String name) {
         LOG.debugf("REST: Downloading service template: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -162,7 +163,7 @@ public class ServiceTemplateResource {
      */
     @Path("/deploy")
     @POST
-    public WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException {
+    public WanakuResponse<DataStore> deploy(DataStore dataStore) {
         LOG.debugf("REST: Deploying service template: %s", dataStore.getName());
         DataStore result = serviceTemplateBean.deploy(dataStore);
         return new WanakuResponse<>(result);
@@ -177,7 +178,7 @@ public class ServiceTemplateResource {
      */
     @Path("/remove")
     @DELETE
-    public Response remove(@QueryParam("name") String name) throws WanakuException {
+    public Response remove(@QueryParam("name") String name) {
         LOG.debugf("REST: Removing service template: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -188,7 +189,7 @@ public class ServiceTemplateResource {
         if (removed > 0) {
             return Response.ok().build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new DataStoreResourceNotFoundException(name);
         }
     }
 
@@ -202,7 +203,7 @@ public class ServiceTemplateResource {
     @Path("/properties")
     @GET
     public WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name)
-            throws WanakuException {
+            {
         LOG.debugf("REST: Getting properties for template: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -223,7 +224,7 @@ public class ServiceTemplateResource {
     @Path("/instantiate")
     @POST
     public WanakuResponse<DataStore> instantiate(ServiceTemplateService.TemplateInstantiationRequest request)
-            throws WanakuException {
+            {
         LOG.debugf("REST: Instantiating template: %s", request.getTemplateName());
 
         if (StringHelper.isBlank(request.getTemplateName())) {

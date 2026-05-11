@@ -1312,16 +1312,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -1343,16 +1333,6 @@
             "content" : {
               "application/json" : {
                 "schema" : { }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
               }
             }
           }
@@ -1384,16 +1364,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "List Or Get By Name",
@@ -1417,16 +1387,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseDataStore"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -1458,16 +1418,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Remove If",
@@ -1492,16 +1442,6 @@
                 "schema" : { }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Remove By Id",
@@ -1523,16 +1463,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseDataStore"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -1586,16 +1516,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -1630,16 +1550,6 @@
             "content" : {
               "application/json" : {
                 "schema" : { }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
               }
             }
           },
@@ -1713,16 +1623,6 @@
             "content" : {
               "application/json" : {
                 "schema" : { }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
               }
             }
           }
@@ -2081,16 +1981,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -2114,16 +2004,6 @@
                 "schema" : { }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Remove",
@@ -2137,16 +2017,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseListPromptReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2173,16 +2043,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponsePromptReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2218,16 +2078,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -2256,16 +2106,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Get By Name",
@@ -2288,16 +2128,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseListResourceReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2324,16 +2154,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseResourceReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2365,16 +2185,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseResourceReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2416,16 +2226,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -2450,16 +2250,6 @@
                 "schema" : { }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Remove",
@@ -2481,16 +2271,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseResourceReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2523,16 +2303,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -2560,16 +2330,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Download",
@@ -2592,16 +2352,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseMapStringObject"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2636,16 +2386,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Get Deployment Instructions",
@@ -2671,16 +2411,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "List",
@@ -2702,16 +2432,6 @@
             "content" : {
               "application/json" : {
                 "schema" : { }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
               }
             }
           }
@@ -2743,16 +2463,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -2777,16 +2487,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseDataStore"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2815,16 +2515,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Get",
@@ -2850,16 +2540,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseDataStore"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -2916,16 +2596,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Get Properties",
@@ -2947,16 +2617,6 @@
             "content" : {
               "application/json" : {
                 "schema" : { }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
               }
             }
           }
@@ -2984,16 +2644,6 @@
                 }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Remove If",
@@ -3014,16 +2664,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseListToolReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -3050,16 +2690,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseToolReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -3091,16 +2721,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseToolReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -3142,16 +2762,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -3176,16 +2786,6 @@
                 "schema" : { }
               }
             }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
           }
         },
         "summary" : "Remove",
@@ -3207,16 +2807,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseToolReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -3268,16 +2858,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -3320,16 +2900,6 @@
               }
             }
           },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
-              }
-            }
-          },
           "400" : {
             "description" : "Bad Request"
           }
@@ -3352,16 +2922,6 @@
             "content" : {
               "application/json" : {
                 "schema" : { }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
-                }
               }
             }
           }
@@ -3387,16 +2947,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseMapStringObject"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }
@@ -3430,16 +2980,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/WanakuResponseListToolReference"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Wanaku error",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponse"
                 }
               }
             }

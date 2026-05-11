@@ -42,10 +42,9 @@ public class DataStoresResource {
      *
      * @param dataStore the data store to add
      * @return response with the created data store
-     * @throws WanakuException if addition fails
      */
     @POST
-    public WanakuResponse<DataStore> add(DataStore dataStore) throws WanakuException {
+    public WanakuResponse<DataStore> add(DataStore dataStore) {
         LOG.debugf("REST: Adding data store: %s", dataStore);
         DataStore result = dataStoresBean.add(dataStore);
         return new WanakuResponse<>(result);
@@ -57,10 +56,9 @@ public class DataStoresResource {
      *
      * @param dataStore the data store to update (must include ID)
      * @return HTTP 200 if updated successfully
-     * @throws WanakuException if update fails
      */
     @PUT
-    public Response update(DataStore dataStore) throws WanakuException {
+    public Response update(DataStore dataStore) {
         LOG.debugf("REST: Updating data store: %s", dataStore);
         dataStoresBean.update(dataStore);
         return Response.ok().build();
@@ -73,11 +71,10 @@ public class DataStoresResource {
      *
      * @param labelFilter optional label expression to filter data stores
      * @return response with list of data stores
-     * @throws WanakuException if listing or label expression parsing fails
      */
     @GET
     public WanakuResponse<List<DataStore>> listOrGetByName(
-            @QueryParam("labelFilter") String labelFilter, @QueryParam("name") String name) throws WanakuException {
+            @QueryParam("labelFilter") String labelFilter, @QueryParam("name") String name) {
         if (name != null && !name.isEmpty()) {
             LOG.debugf("REST: Getting data stores by name: %s", name);
             List<DataStore> dataStores = dataStoresBean.findByName(name);
@@ -102,11 +99,10 @@ public class DataStoresResource {
      *
      * @param id the ID of the data store
      * @return response with the requested data store
-     * @throws WanakuException if retrieval fails
      */
     @Path("/{id}")
     @GET
-    public WanakuResponse<DataStore> getById(@PathParam("id") String id) throws WanakuException {
+    public WanakuResponse<DataStore> getById(@PathParam("id") String id) {
         LOG.debugf("REST: Getting data store by ID: %s", id);
         DataStore dataStore = dataStoresBean.findById(id);
         if (dataStore == null) {
@@ -121,17 +117,16 @@ public class DataStoresResource {
      *
      * @param id the ID of the data store to remove
      * @return HTTP 200 if removed, 404 if not found
-     * @throws WanakuException if removal fails
      */
     @Path("/{id}")
     @DELETE
-    public Response removeById(@PathParam("id") String id) throws WanakuException {
+    public Response removeById(@PathParam("id") String id) {
         LOG.debugf("REST: Removing data store by ID: %s", id);
         int deleteCount = dataStoresBean.removeById(id);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new DataStoreResourceNotFoundException(id);
         }
     }
 
@@ -141,10 +136,9 @@ public class DataStoresResource {
      *
      * @param name the name of the data store(s) to remove
      * @return HTTP 200 if removed, 404 if not found
-     * @throws WanakuException if removal fails
      */
     @DELETE
-    public Response removeByName(@QueryParam("name") String name) throws WanakuException {
+    public Response removeByName(@QueryParam("name") String name) {
         if (StringHelper.isEmpty(name)) {
             throw new WanakuException("The 'name' query parameter must be provided");
         }
@@ -154,7 +148,7 @@ public class DataStoresResource {
         if (deleteCount > 0) {
             return Response.ok().build();
         }
-        return Response.status(Response.Status.NOT_FOUND).build();
+        throw new DataStoreResourceNotFoundException(name);
     }
 
     /**
@@ -163,12 +157,11 @@ public class DataStoresResource {
      *
      * @param labelExpression the label expression to match data stores for removal
      * @return response with count of removed data stores
-     * @throws WanakuException if label expression is invalid or removal fails
      */
     @Path("/labels")
     @DELETE
     public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
-            throws WanakuException {
+            {
         LOG.debugf("REST: Removing data stores by label expression: %s", labelExpression);
         int removed = dataStoresBean.removeIf(labelExpression);
         return new WanakuResponse<>(removed);

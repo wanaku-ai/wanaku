@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
+import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -51,7 +52,7 @@ public class ServiceCatalogResource {
      */
     @Path("/list")
     @GET
-    public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) throws WanakuException {
+    public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) {
         if (search != null && !search.isBlank()) {
             LOG.debugf("REST: Listing service catalogs with search: %s", search);
         } else {
@@ -88,7 +89,7 @@ public class ServiceCatalogResource {
      */
     @Path("/get")
     @GET
-    public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) throws WanakuException {
+    public WanakuResponse<Map<String, Object>> get(@QueryParam("name") String name) {
         LOG.debugf("REST: Getting service catalog: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -130,7 +131,7 @@ public class ServiceCatalogResource {
      */
     @Path("/download")
     @GET
-    public WanakuResponse<DataStore> download(@QueryParam("name") String name) throws WanakuException {
+    public WanakuResponse<DataStore> download(@QueryParam("name") String name) {
         LOG.debugf("REST: Downloading service catalog: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -154,7 +155,7 @@ public class ServiceCatalogResource {
      */
     @Path("/deploy")
     @POST
-    public WanakuResponse<DataStore> deploy(DataStore dataStore) throws WanakuException {
+    public WanakuResponse<DataStore> deploy(DataStore dataStore) {
         LOG.debugf("REST: Deploying service catalog: %s", dataStore.getName());
         DataStore result = serviceCatalogBean.deploy(dataStore);
         return new WanakuResponse<>(result);
@@ -169,7 +170,7 @@ public class ServiceCatalogResource {
      */
     @Path("/remove")
     @DELETE
-    public Response remove(@QueryParam("name") String name) throws WanakuException {
+    public Response remove(@QueryParam("name") String name) {
         LOG.debugf("REST: Removing service catalog: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -180,7 +181,7 @@ public class ServiceCatalogResource {
         if (removed > 0) {
             return Response.ok().build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new DataStoreResourceNotFoundException(name);
         }
     }
 
@@ -195,7 +196,7 @@ public class ServiceCatalogResource {
     @Path("/instructions")
     @GET
     public WanakuResponse<DeploymentInstructions> getDeploymentInstructions(
-            @QueryParam("name") String name, @QueryParam("model") String model) throws WanakuException {
+            @QueryParam("name") String name, @QueryParam("model") String model) {
         LOG.debugf("REST: Getting deployment instructions for catalog '%s' with model '%s'", name, model);
 
         if (StringHelper.isBlank(name)) {

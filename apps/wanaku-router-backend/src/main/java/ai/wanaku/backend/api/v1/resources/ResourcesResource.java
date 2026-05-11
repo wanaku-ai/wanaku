@@ -57,11 +57,10 @@ public class ResourcesResource {
      *
      * @param resource the resource payload containing the resource reference and provisioning data
      * @return a response containing the exposed resource reference
-     * @throws WanakuException if exposure fails or payload validation fails
      */
     @Path("/payloads")
     @POST
-    public WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resource) throws WanakuException {
+    public WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resource) {
         PayloadValidator.validate(resource);
         if (resource.getPayload() instanceof ResourceReference resourceReference
                 && StringHelper.isEmpty(resourceReference.getName())) {
@@ -76,10 +75,9 @@ public class ResourcesResource {
      *
      * @param resource the resource reference to expose
      * @return a response containing the exposed resource reference
-     * @throws WanakuException if exposure fails
      */
     @POST
-    public WanakuResponse<ResourceReference> expose(ResourceReference resource) throws WanakuException {
+    public WanakuResponse<ResourceReference> expose(ResourceReference resource) {
         ResourceReference ret = resourcesBean.expose(resource);
         return new WanakuResponse<>(ret);
     }
@@ -92,11 +90,10 @@ public class ResourcesResource {
      *
      * @param labelFilter optional label expression to filter resources by labels
      * @return a response containing a list of all resource references
-     * @throws WanakuException if listing fails
      */
     @GET
     public WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter)
-            throws WanakuException {
+            {
         List<ResourceReference> list = resourcesBean.list(labelFilter);
         List<ResourceReference> resourceReferences = forwardsBean.listAllResources();
 
@@ -111,11 +108,10 @@ public class ResourcesResource {
      * @param name the name of the resource to retrieve
      * @return a response containing the resource reference
      * @throws ResourceNotFoundException if the resource is not found
-     * @throws WanakuException if retrieval fails
      */
     @Path("/{name}")
     @GET
-    public WanakuResponse<ResourceReference> getByName(@PathParam("name") String name) throws WanakuException {
+    public WanakuResponse<ResourceReference> getByName(@PathParam("name") String name) {
         ResourceReference resource = resourcesBean.getByName(name);
         if (resource == null) {
             throw new ResourceNotFoundException(name);
@@ -128,16 +124,15 @@ public class ResourcesResource {
      *
      * @param name the name of the resource to remove
      * @return HTTP 200 OK if removed successfully, HTTP 404 NOT FOUND if the resource doesn't exist
-     * @throws WanakuException if removal fails
      */
     @Path("/{name}")
     @DELETE
-    public Response remove(@PathParam("name") String name) throws WanakuException {
+    public Response remove(@PathParam("name") String name) {
         int deleteCount = resourcesBean.remove(name);
         if (deleteCount > 0) {
             return Response.ok().build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new ResourceNotFoundException(name);
         }
     }
 
@@ -146,11 +141,10 @@ public class ResourcesResource {
      *
      * @param resource the updated resource reference
      * @return HTTP 200 OK if updated successfully
-     * @throws WanakuException if update fails
      */
     @Path("/{name}")
     @PUT
-    public Response update(@PathParam("name") String name, ResourceReference resource) throws WanakuException {
+    public Response update(@PathParam("name") String name, ResourceReference resource) {
         if (resource != null && StringHelper.isEmpty(resource.getName())) {
             resource.setName(name);
         }

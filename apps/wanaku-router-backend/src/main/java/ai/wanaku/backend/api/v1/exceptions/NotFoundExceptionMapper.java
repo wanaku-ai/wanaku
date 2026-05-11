@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.exceptions.ConfigurationNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NamespaceNotFoundException;
+import ai.wanaku.capabilities.sdk.api.exceptions.PromptNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ToolNotFoundException;
@@ -56,6 +57,9 @@ class AddrNotFoundExceptionMapper extends NotFoundExceptionMapper<NotFoundExcept
 
 @Provider
 class NamespaceNotFoundExceptionMapper extends NotFoundExceptionMapper<NamespaceNotFoundException> {}
+
+@Provider
+class PromptNotFoundExceptionMapper extends NotFoundExceptionMapper<PromptNotFoundException> {}
 
 @Provider
 class DataStoreResourceNotFoundExceptionMapper extends NotFoundExceptionMapper<DataStoreResourceNotFoundException> {}
