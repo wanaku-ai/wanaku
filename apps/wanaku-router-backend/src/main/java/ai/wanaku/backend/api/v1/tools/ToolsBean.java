@@ -11,6 +11,7 @@ import java.util.Map;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
+import ai.wanaku.backend.api.v1.common.ProvisioningHelper;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
@@ -25,7 +26,6 @@ import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.PropertySchema;
 import ai.wanaku.core.util.StringHelper;
@@ -73,23 +73,25 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
 
     private void provision(ToolPayload toolPayload) {
         ToolReference toolReference = toolPayload.getPayload();
-        ServiceTarget service =
-                provisionerBridge.resolveService(toolReference.getType(), ServiceType.TOOL_INVOKER.asValue());
-        final ProvisioningReference provisioningReference = provisionerBridge.provision(
-                toolReference.getName(), toolPayload.getConfigurationData(), toolPayload.getSecretsData(), service);
+
+        final ProvisioningReference provisioningReference = ProvisioningHelper.provision(
+                provisionerBridge,
+                toolPayload,
+                toolReference.getName(),
+                toolReference.getType(),
+                ServiceType.TOOL_INVOKER.asValue(),
+                (configURI, secretsURI) -> {
+                    toolReference.setConfigurationURI(configURI);
+                    toolReference.setSecretsURI(secretsURI);
+                });
 
         final Map<String, PropertySchema> serviceProperties = provisioningReference.properties();
-
         final Map<String, Property> clientProperties =
                 toolReference.getInputSchema().getProperties();
         for (var serviceProperty : serviceProperties.entrySet()) {
             clientProperties.computeIfAbsent(
                     serviceProperty.getKey(), v -> toProperty(serviceProperty, serviceProperties));
         }
-
-        toolReference.setConfigurationURI(
-                provisioningReference.configurationURI().toString());
-        toolReference.setSecretsURI(provisioningReference.secretsURI().toString());
     }
 
     private static Property toProperty(

@@ -10,6 +10,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkus.runtime.StartupEvent;
+import ai.wanaku.backend.api.v1.common.ProvisioningHelper;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceBridge;
@@ -17,12 +18,10 @@ import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
-import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
-import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.util.StringHelper;
 
@@ -60,17 +59,17 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
 
     public ResourceReference expose(ResourcePayload resourcePayload) {
         ResourceReference resourceReference = resourcePayload.getPayload();
-        ServiceTarget service =
-                provisionerBridge.resolveService(resourceReference.getType(), ServiceType.RESOURCE_PROVIDER.asValue());
-        final ProvisioningReference provisioningReference = provisionerBridge.provision(
-                resourceReference.getName(),
-                resourcePayload.getConfigurationData(),
-                resourcePayload.getSecretsData(),
-                service);
 
-        resourceReference.setConfigurationURI(
-                provisioningReference.configurationURI().toString());
-        resourceReference.setSecretsURI(provisioningReference.secretsURI().toString());
+        ProvisioningHelper.provision(
+                provisionerBridge,
+                resourcePayload,
+                resourceReference.getName(),
+                resourceReference.getType(),
+                ServiceType.RESOURCE_PROVIDER.asValue(),
+                (configURI, secretsURI) -> {
+                    resourceReference.setConfigurationURI(configURI);
+                    resourceReference.setSecretsURI(secretsURI);
+                });
 
         return expose(resourcePayload.getPayload());
     }

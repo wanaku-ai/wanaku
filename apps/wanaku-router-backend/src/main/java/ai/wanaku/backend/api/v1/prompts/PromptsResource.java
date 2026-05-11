@@ -15,12 +15,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import ai.wanaku.backend.api.v1.common.PayloadValidator;
 import ai.wanaku.capabilities.sdk.api.exceptions.PromptNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
-import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
 
 @ApplicationScoped
 @Path("/api/v1/prompts")
@@ -39,18 +39,9 @@ public class PromptsResource {
     @Path("/payloads")
     @POST
     public WanakuResponse<PromptReference> addWithPayload(PromptPayload resource) throws WanakuException {
-        validatePayload(resource);
+        PayloadValidator.validate(resource);
         var ret = promptsBean.add(resource);
         return new WanakuResponse<>(ret);
-    }
-
-    private void validatePayload(ProvisionAwarePayload<?> resource) throws WanakuException {
-        if (resource == null) {
-            throw new WanakuException("The request itself must not be null");
-        }
-        if (resource.getPayload() == null) {
-            throw new WanakuException("The 'payload' is required for this request");
-        }
     }
 
     @GET
