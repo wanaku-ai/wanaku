@@ -15,12 +15,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import ai.wanaku.backend.api.v1.common.PayloadValidator;
 import ai.wanaku.backend.api.v1.forwards.ForwardsBean;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
-import ai.wanaku.capabilities.sdk.api.types.io.ProvisionAwarePayload;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.core.util.CollectionsHelper;
 import ai.wanaku.core.util.StringHelper;
@@ -62,28 +62,13 @@ public class ResourcesResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ResourceReference> exposeWithPayload(ResourcePayload resource) throws WanakuException {
-        validatePayload(resource);
-        ResourceReference ret = resourcesBean.expose(resource);
-        return new WanakuResponse<>(ret);
-    }
-
-    /**
-     * Validates that a provision-aware payload is not null and contains a payload object.
-     *
-     * @param resource the payload to validate
-     * @throws WanakuException if the payload or its nested payload object is null
-     */
-    private void validatePayload(ProvisionAwarePayload<?> resource) throws WanakuException {
-        if (resource == null) {
-            throw new WanakuException("The request itself must not be null");
-        }
-        if (resource.getPayload() == null) {
-            throw new WanakuException("The 'payload' is required for this request");
-        }
+        PayloadValidator.validate(resource);
         if (resource.getPayload() instanceof ResourceReference resourceReference
                 && StringHelper.isEmpty(resourceReference.getName())) {
             throw new WanakuException("The 'payload.name' is required for this request");
         }
+        ResourceReference ret = resourcesBean.expose(resource);
+        return new WanakuResponse<>(ret);
     }
 
     /**
