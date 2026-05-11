@@ -126,7 +126,7 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
                 if ("camel-integration-capability".equals(capabilitiesSpec.getType())) {
                     desiredDeployment = makeDesiredCiCCapabilityDeployment(resource, context, capabilitiesSpec);
                 } else {
-                    LOG.error("Invalid capability type: " + capabilitiesSpec.getType());
+                    LOG.errorf("Invalid capability type: %s", capabilitiesSpec.getType());
                     throw new WanakuException("Invalid capability type: " + capabilitiesSpec.getType());
                 }
             }
