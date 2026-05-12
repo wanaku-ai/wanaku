@@ -1,0 +1,5 @@
+org.apache.camel:camel-jms:4.18.2
+io.kaoto.forage:forage-jms:1.3-SNAPSHOT
+io.kaoto.forage:forage-core-common:1.3-SNAPSHOT
+io.kaoto.forage:forage-jms-artemis:1.3-SNAPSHOT
+org.apache.activemq:artemis-commons:2.44.0

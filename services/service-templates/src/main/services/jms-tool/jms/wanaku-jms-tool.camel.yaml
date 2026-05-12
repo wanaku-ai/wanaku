@@ -6,11 +6,12 @@
       steps:
         - log: ${body}
         - to:
-            id: to-1198
-            uri: activemq6
+            id: to-2964
+            uri: jms
             parameters:
-              destinationName: "{{request.queue}}"
               destinationType: queue
+              destinationName: "{{request.queue}}"
               replyTo: "{{response.queue}}"
+              connectionFactory: "#connectionFactory"
       id: from-1655
     id: route-3543

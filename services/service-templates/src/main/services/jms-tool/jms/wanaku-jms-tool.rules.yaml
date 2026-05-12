@@ -1,0 +1,12 @@
+mcp:
+  tools:
+    # You can use a more appropriate name if you want
+    - send-message-using-jms:
+        route:
+          id: "route-3543"
+        description: "Send messages using JMS"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: Send messages using JMS
+            required: true

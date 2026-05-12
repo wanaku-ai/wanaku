@@ -1,7 +1,0 @@
-mcp:
-  tools:
-   # You can use a more appropriate name if you want
-    - send-message-to-activemq6:
-        route:
-          id: "route-3543"
-        description: "{{tool.description}}"
