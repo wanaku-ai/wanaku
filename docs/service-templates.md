@@ -233,6 +233,23 @@ A template for creating an ActiveMQ 6 (Artemis) tool service. This template incl
 
 This template is ideal for quickly connecting Wanaku to an ActiveMQ instance without manually writing routes or configuring properties.
 
+### `kafka-tool`
+
+A template for creating a Kafka-backed MCP tool with manual request/reply correlation. This template includes:
+
+- A request route that sends a message to the request topic
+- A response route that consumes the response topic and forwards replies into a shared reply queue
+- Parameterized brokers, request topic, response topic, reply timeout, and reply consumer group settings
+
+**Parameters:**
+- `kafka.brokers`: Kafka bootstrap servers, for example `localhost:9092`
+- `kafka.request.topic`: Topic used for outbound requests
+- `kafka.response.topic`: Topic used for correlated replies
+- `kafka.reply.timeout-ms`: How long to wait for a reply before failing, in milliseconds
+- `kafka.response.group-id`: Consumer group used for the reply listener
+
+The request route sets a `wanakuCorrelationId` header from the Camel exchange id, and the response route uses that same header to match the reply to the original request.
+
 ## Best Practices
 
 ### When to Use Templates
