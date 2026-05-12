@@ -56,11 +56,6 @@ distributions:
       - path: capabilities/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-{{projectVersion}}.zip
         platform: linux-x86_64
     type: JAVA_BINARY
-  service-tavily:
-    artifacts:
-      - path: service-catalogs/tavily/target/distributions/wanaku-service-catalog-tavily-{{projectVersion}}.zip
-        platform: linux-x86_64
-    type: JAVA_BINARY
   service-exec:
     artifacts:
       - path: capabilities/tools/wanaku-tool-service-exec/target/distributions/wanaku-tool-service-exec-{{projectVersion}}.zip
