@@ -246,6 +246,19 @@ components:
           type: string
         type:
           type: string
+    ProcessStatus:
+      type: object
+      properties:
+        running:
+          type: boolean
+        port:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+        exitCode:
+          type: integer
+          format: int32
     PromptArgument:
       type: object
       properties:
@@ -678,6 +691,13 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/Namespace"
+    WanakuResponseProcessStatus:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          $ref: "#/components/schemas/ProcessStatus"
     WanakuResponsePromptReference:
       type: object
       properties:
@@ -720,6 +740,11 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/ToolReference"
+  securitySchemes:
+    SecurityScheme:
+      type: openIdConnect
+      openIdConnectUrl: http://localhost:8543/realms/wanaku/.well-known/openid-configuration
+      description: Authentication
 paths:
   /api/v1/capabilities:
     get:
@@ -745,6 +770,131 @@ paths:
       summary: Fleet Status
       tags:
       - Capabilities Resource
+  /api/v1/capabilities/installations:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListDataStore"
+      summary: List
+      tags:
+      - Installations Resource
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataStore"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseDataStore"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Installations Resource
+  /api/v1/capabilities/installations/{id}:
+    put:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataStore"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Update
+      tags:
+      - Installations Resource
+    delete:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete
+      tags:
+      - Installations Resource
+  /api/v1/capabilities/installations/{id}/launch:
+    post:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseProcessStatus"
+      summary: Launch
+      tags:
+      - Installations Resource
+  /api/v1/capabilities/installations/{id}/status:
+    get:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseProcessStatus"
+      summary: Get Status
+      tags:
+      - Installations Resource
+  /api/v1/capabilities/installations/{id}/stop:
+    post:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Stop
+      tags:
+      - Installations Resource
   /api/v1/capabilities/notifications:
     get:
       responses:

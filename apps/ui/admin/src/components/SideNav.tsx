@@ -83,6 +83,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 </SideNavMenuItem>
                 <SideNavMenuItem
                     element={Link}
+                    to={Links.Installations}
+                    onClick={onClickSideNavExpand}
+                >
+                    Installations
+                </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
                     to="/namespaces"
                     onClick={onClickSideNavExpand}
                 >
