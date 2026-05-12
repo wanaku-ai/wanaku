@@ -100,7 +100,12 @@ public class InvokerBridge implements ToolsBridge {
                         .invokeTool(ctx.request, ctx.serviceTarget)
                         .invoke(response -> emitCompleted(ctx, response))
                         .onFailure()
-                        .invoke(failure -> emitFailed(ctx, failure)));
+                        .recoverWithItem(failure -> {
+                            emitFailed(ctx, failure);
+
+                            LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
+                            return ToolResponse.error(failure.getMessage());
+                        }));
     }
 
     private void emitCompleted(WanakuToolContext ctx, ToolResponse response) {

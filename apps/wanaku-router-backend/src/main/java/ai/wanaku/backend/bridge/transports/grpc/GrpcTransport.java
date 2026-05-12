@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -204,6 +205,10 @@ public class GrpcTransport implements WanakuBridgeTransport {
                                 () -> {
                                     try {
                                         em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                    } catch (StatusRuntimeException e) {
+                                        em.fail(mapStatusRuntimeException(e, service));
+                                    } catch (ExecutionException e) {
+                                        em.fail(mapStatusRuntimeException(e, service));
                                     } catch (Exception e) {
                                         em.fail(e);
                                     } finally {
@@ -258,6 +263,10 @@ public class GrpcTransport implements WanakuBridgeTransport {
                                 () -> {
                                     try {
                                         em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                    } catch (StatusRuntimeException e) {
+                                        em.fail(mapStatusRuntimeException(e, service));
+                                    } catch (ExecutionException e) {
+                                        em.fail(mapStatusRuntimeException(e, service));
                                     } catch (Exception e) {
                                         em.fail(e);
                                     } finally {
@@ -346,6 +355,13 @@ public class GrpcTransport implements WanakuBridgeTransport {
         } finally {
             channelManager.closeChannel(channel);
         }
+    }
+
+    private RuntimeException mapStatusRuntimeException(ExecutionException e, ServiceTarget service) {
+        LOG.errorf(e, "Service %s did not respond within a reasonable time frame", service.getServiceName());
+        return new ServiceUnavailableException(
+                String.format("Service %s did not respond within a reasonable time frame", service.getServiceName()),
+                e);
     }
 
     /**
