@@ -2,6 +2,7 @@ package ai.wanaku.core.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A utility class that provides a way to retrieve Wanaku current version
@@ -34,7 +35,7 @@ public final class VersionHelper {
                 throw new IllegalStateException("version.txt not found on classpath");
             }
             byte[] bytes = stream.readAllBytes();
-            return new String(bytes);
+            return new String(bytes, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
