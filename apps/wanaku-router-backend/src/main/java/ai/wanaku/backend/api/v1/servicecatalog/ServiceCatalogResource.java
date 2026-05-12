@@ -44,7 +44,7 @@ public class ServiceCatalogResource {
     /**
      * List all service catalog entries, optionally filtered by search term.
      * GET /api/v1/service-catalog/list
-     * GET /api/v1/service-catalog/list?search={term}
+     * {@code GET /api/v1/service-catalog/list?search={term}}
      *
      * @param search optional search term
      * @return response with list of catalog summaries
@@ -81,7 +81,7 @@ public class ServiceCatalogResource {
 
     /**
      * Get a specific service catalog by name with system details.
-     * GET /api/v1/service-catalog/get?name={name}
+     * {@code GET /api/v1/service-catalog/get?name={name}}
      *
      * @param name the catalog name
      * @return response with catalog detail including system information
@@ -123,7 +123,7 @@ public class ServiceCatalogResource {
 
     /**
      * Download a service catalog by name, returning the raw DataStore with Base64-encoded ZIP data.
-     * GET /api/v1/service-catalog/download?name={name}
+     * {@code GET /api/v1/service-catalog/download?name={name}}
      *
      * @param name the catalog name
      * @return response with the DataStore containing the Base64-encoded ZIP
@@ -162,7 +162,7 @@ public class ServiceCatalogResource {
 
     /**
      * Remove a service catalog by name.
-     * DELETE /api/v1/service-catalog/remove?name={name}
+     * {@code DELETE /api/v1/service-catalog/remove?name={name}}
      *
      * @param name the catalog name to remove
      * @return HTTP 200 if removed, 404 if not found
@@ -186,7 +186,7 @@ public class ServiceCatalogResource {
 
     /**
      * Get deployment instructions for a service catalog.
-     * GET /api/v1/service-catalog/instructions?name={name}&model={model}
+     * {@code GET /api/v1/service-catalog/instructions?name={name}&model={model}}
      *
      * @param name the catalog name
      * @param model the deployment model: local, docker, or kubernetes
