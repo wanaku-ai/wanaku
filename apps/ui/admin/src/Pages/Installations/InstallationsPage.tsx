@@ -1,166 +1,92 @@
 import { ToastNotification } from "@carbon/react";
 import { useEffect, useState } from "react";
+import { useServiceCatalog } from "../../hooks/api/use-service-catalog";
 import {
-  listInstallations,
-  createInstallation,
-  updateInstallation,
-  deleteInstallation,
-  launchInstallation,
-  stopInstallation,
-  getInstallationStatus
+  launchCapability,
+  stopCapability,
+  getAllLauncherStatuses
 } from "../../hooks/api/use-installations";
-import { InstallationModal } from "./InstallationModal.tsx";
-import { InstallationsTable } from "./InstallationsTable.tsx";
-import { ProcessStatus } from "./installation-types";
+import { InstallationsTable, ProcessStatus, CatalogSystem } from "./InstallationsTable";
 
 const InstallationsPage = () => {
-  const [installations, setInstallations] = useState<any[]>([]);
+  const [systems, setSystems] = useState<CatalogSystem[]>([]);
   const [statusMap, setStatusMap] = useState<Record<string, ProcessStatus>>({});
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [openedInstallation, setOpenedInstallation] = useState<any>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { listServiceCatalogs, getServiceCatalog } = useServiceCatalog();
 
-  async function fetchInstallations() {
+  async function fetchCatalogsAndSystems() {
     try {
-      const response = await listInstallations();
-      if (response.data?.data) {
-        const installs = response.data.data as any[];
-        setInstallations(installs);
-        await fetchStatuses(installs);
+      const response = await listServiceCatalogs() as any;
+      const catalogs = response.data?.data || [];
+      const allSystems: CatalogSystem[] = [];
+
+      for (const catalog of catalogs) {
+        try {
+          const detailResp = await getServiceCatalog(catalog.name) as any;
+          const detail = detailResp.data?.data;
+          if (detail?.systems) {
+            for (const sys of detail.systems) {
+              allSystems.push({ catalogName: catalog.name, systemName: sys.name || sys });
+            }
+          }
+        } catch {
+          allSystems.push({ catalogName: catalog.name, systemName: catalog.name });
+        }
       }
+
+      setSystems(allSystems);
+      await fetchStatuses();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to fetch installations");
+      setErrorMessage(error instanceof Error ? error.message : "Failed to fetch catalogs");
     }
   }
 
-  async function fetchStatuses(installs: any[]) {
-    const statuses: Record<string, ProcessStatus> = {};
-    for (const inst of installs) {
-      if (inst.id) {
-        try {
-          const response = await getInstallationStatus(inst.id);
-          if (response.data?.data) {
-            statuses[inst.id] = response.data.data as ProcessStatus;
-          }
-        } catch {
-          // Ignore status fetch errors
-        }
+  async function fetchStatuses() {
+    try {
+      const response = await getAllLauncherStatuses() as any;
+      if (response.data?.data) {
+        setStatusMap(response.data.data as Record<string, ProcessStatus>);
       }
+    } catch {
+      // Launcher may be disabled (NoopLauncher)
     }
-    setStatusMap(statuses);
   }
 
   useEffect(() => {
-    fetchInstallations();
+    fetchCatalogsAndSystems();
   }, []);
 
-  function refreshAfterSubmit() {
-    closeModal();
-    fetchInstallations();
-  }
-
-  function closeModal() {
-    setOpenedInstallation(undefined);
-    setModalOpen(false);
-  }
-
-  function handleAdd() {
-    setModalOpen(true);
-  }
-
-  function handleEdit(installation: any) {
-    setOpenedInstallation(installation);
-    setModalOpen(true);
-  }
-
-  function handleSubmit(installation: { id?: string; name: string; data: string; labels: Record<string, string> }) {
-    if (openedInstallation) {
-      handleUpdate(installation);
-    } else {
-      handleCreate(installation);
-    }
-  }
-
-  async function handleCreate(installation: { name: string; data: string; labels: Record<string, string> }) {
+  async function handleLaunch(catalogName: string, systemName: string) {
     try {
-      const response = await createInstallation(installation);
-      if (response.status !== 200) {
-        const errorData = response.data as { error?: { message?: string } } | null;
-        setErrorMessage(errorData?.error?.message || "Failed to create installation");
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      refreshAfterSubmit();
-    }
-  }
-
-  async function handleUpdate(installation: { id?: string; name: string; data: string; labels: Record<string, string> }) {
-    if (!installation.id) {
-      setErrorMessage("Installation ID is required for update");
-      return;
-    }
-    try {
-      const response = await updateInstallation(installation.id, {
-        name: installation.name,
-        data: installation.data,
-        labels: installation.labels
-      });
-      if (response.status !== 200) {
-        const errorData = response.data as { error?: { message?: string } } | null;
-        setErrorMessage(errorData?.error?.message || "Failed to update installation");
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      refreshAfterSubmit();
-    }
-  }
-
-  async function handleDelete(id: string) {
-    try {
-      const response = await deleteInstallation(id);
+      const response = await launchCapability(catalogName, systemName) as any;
       if (response.status === 200) {
-        fetchInstallations();
+        await fetchStatuses();
       } else {
-        setErrorMessage("Failed to delete installation");
+        setErrorMessage("Failed to launch capability");
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while deleting installation");
+      setErrorMessage(error instanceof Error ? error.message : "An error occurred while launching");
     }
   }
 
-  async function handleLaunch(id: string) {
+  async function handleStop(catalogName: string, systemName: string) {
     try {
-      const response = await launchInstallation(id);
+      const response = await stopCapability(catalogName, systemName) as any;
       if (response.status === 200) {
-        fetchInstallations();
+        await fetchStatuses();
       } else {
-        setErrorMessage("Failed to launch installation");
+        setErrorMessage("Failed to stop capability");
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while launching installation");
-    }
-  }
-
-  async function handleStop(id: string) {
-    try {
-      const response = await stopInstallation(id);
-      if (response.status === 200) {
-        fetchInstallations();
-      } else {
-        setErrorMessage("Failed to stop installation");
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while stopping installation");
+      setErrorMessage(error instanceof Error ? error.message : "An error occurred while stopping");
     }
   }
 
   return (
     <div>
-      <h1 className="title">Installations</h1>
+      <h1 className="title">Launcher</h1>
       <p className="description">
-        Configure and manage capability installations for local development.
+        Launch and manage capability processes for deployed service catalogs.
       </p>
       {errorMessage && (
         <ToastNotification
@@ -173,25 +99,13 @@ const InstallationsPage = () => {
         />
       )}
       <div id="page-content">
-        {installations && (
-          <InstallationsTable
-            installations={installations}
-            statusMap={statusMap}
-            onAdd={handleAdd}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onLaunch={handleLaunch}
-            onStop={handleStop}
-          />
-        )}
-      </div>
-      {isModalOpen && (
-        <InstallationModal
-          installation={openedInstallation}
-          onRequestClose={closeModal}
-          onSubmit={handleSubmit}
+        <InstallationsTable
+          systems={systems}
+          statusMap={statusMap}
+          onLaunch={handleLaunch}
+          onStop={handleStop}
         />
-      )}
+      </div>
     </div>
   );
 };

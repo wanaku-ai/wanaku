@@ -1005,6 +1005,20 @@
           }
         }
       },
+      "WanakuResponseMapStringProcessStatus" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ProcessStatus"
+            }
+          }
+        }
+      },
       "WanakuResponseMapStringString" : {
         "type" : "object",
         "properties" : {
@@ -1153,7 +1167,7 @@
         "tags" : [ "Capabilities Resource" ]
       }
     },
-    "/api/v1/capabilities/installations" : {
+    "/api/v1/capabilities/launcher/status" : {
       "get" : {
         "responses" : {
           "200" : {
@@ -1161,108 +1175,27 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListDataStore"
+                  "$ref" : "#/components/schemas/WanakuResponseMapStringProcessStatus"
                 }
               }
             }
           }
         },
-        "summary" : "List",
-        "tags" : [ "Installations Resource" ]
-      },
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DataStore"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseDataStore"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request"
-          }
-        },
-        "summary" : "Create",
+        "summary" : "Get All Statuses",
         "tags" : [ "Installations Resource" ]
       }
     },
-    "/api/v1/capabilities/installations/{id}" : {
-      "put" : {
+    "/api/v1/capabilities/launcher/{catalogName}/{systemName}/launch" : {
+      "post" : {
         "parameters" : [ {
-          "name" : "id",
+          "name" : "catalogName",
           "in" : "path",
           "required" : true,
           "schema" : {
             "type" : "string"
           }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DataStore"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : { }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad Request"
-          }
-        },
-        "summary" : "Update",
-        "tags" : [ "Installations Resource" ]
-      },
-      "delete" : {
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : { }
-              }
-            }
-          }
-        },
-        "summary" : "Delete",
-        "tags" : [ "Installations Resource" ]
-      }
-    },
-    "/api/v1/capabilities/installations/{id}/launch" : {
-      "post" : {
-        "parameters" : [ {
-          "name" : "id",
+        }, {
+          "name" : "systemName",
           "in" : "path",
           "required" : true,
           "schema" : {
@@ -1285,10 +1218,17 @@
         "tags" : [ "Installations Resource" ]
       }
     },
-    "/api/v1/capabilities/installations/{id}/status" : {
+    "/api/v1/capabilities/launcher/{catalogName}/{systemName}/status" : {
       "get" : {
         "parameters" : [ {
-          "name" : "id",
+          "name" : "catalogName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "systemName",
           "in" : "path",
           "required" : true,
           "schema" : {
@@ -1311,10 +1251,17 @@
         "tags" : [ "Installations Resource" ]
       }
     },
-    "/api/v1/capabilities/installations/{id}/stop" : {
+    "/api/v1/capabilities/launcher/{catalogName}/{systemName}/stop" : {
       "post" : {
         "parameters" : [ {
-          "name" : "id",
+          "name" : "catalogName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "systemName",
           "in" : "path",
           "required" : true,
           "schema" : {

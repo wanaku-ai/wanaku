@@ -3,140 +3,97 @@ package ai.wanaku.backend.api.v1.installations;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
-import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 /**
- * REST API resource for managing capability installations and their process lifecycle.
+ * REST API resource for the capability launcher.
  *
- * <p>Provides CRUD operations for installation entries (stored as labeled DataStore entities)
- * and process management endpoints (launch, stop, status) for running capabilities locally.
+ * <p>Provides endpoints to launch, stop, and query the status of capability
+ * processes. Executable paths are resolved from server-side configuration
+ * properties, not from HTTP input.
  *
- * <p>Base path: {@code /api/v1/capabilities/installations}
+ * <p>Base path: {@code /api/v1/capabilities/launcher}
  */
 @ApplicationScoped
-@Path("/api/v1/capabilities/installations")
+@Path("/api/v1/capabilities/launcher")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class InstallationsResource {
     private static final Logger LOG = Logger.getLogger(InstallationsResource.class);
 
     @Inject
-    InstallationsBean installationsBean;
+    Launcher launcher;
 
     /**
-     * Lists all capability installations.
-     * GET /api/v1/capabilities/installations
+     * Launches a capability process for the given catalog and system.
+     * POST /api/v1/capabilities/launcher/{catalogName}/{systemName}/launch
      *
-     * @return response containing the list of installations
-     */
-    @GET
-    public WanakuResponse<List<DataStore>> list() {
-        LOG.debug("REST: Listing all installations");
-        List<DataStore> installations = installationsBean.list();
-        return new WanakuResponse<>(installations);
-    }
-
-    /**
-     * Creates a new capability installation.
-     * POST /api/v1/capabilities/installations
-     *
-     * @param dataStore the installation data to create
-     * @return response containing the created installation with generated ID
-     */
-    @POST
-    public WanakuResponse<DataStore> create(DataStore dataStore) {
-        LOG.debugf("REST: Creating installation: %s", dataStore.getName());
-        DataStore result = installationsBean.create(dataStore);
-        return new WanakuResponse<>(result);
-    }
-
-    /**
-     * Updates an existing capability installation.
-     * PUT /api/v1/capabilities/installations/{id}
-     *
-     * @param id        the installation ID
-     * @param dataStore the updated installation data
-     * @return HTTP 200 if updated successfully
-     */
-    @PUT
-    @Path("/{id}")
-    public Response update(@PathParam("id") String id, DataStore dataStore) {
-        LOG.debugf("REST: Updating installation: %s", id);
-        dataStore.setId(id);
-        installationsBean.update(dataStore);
-        return Response.ok().build();
-    }
-
-    /**
-     * Deletes a capability installation. If the process is running, it is stopped first.
-     * DELETE /api/v1/capabilities/installations/{id}
-     *
-     * @param id the installation ID to delete
-     * @return HTTP 200 if deleted successfully
-     */
-    @DELETE
-    @Path("/{id}")
-    public Response delete(@PathParam("id") String id) {
-        LOG.debugf("REST: Deleting installation: %s", id);
-        installationsBean.delete(id);
-        return Response.ok().build();
-    }
-
-    /**
-     * Launches the capability process for an installation.
-     * POST /api/v1/capabilities/installations/{id}/launch
-     *
-     * @param id the installation ID to launch
+     * @param catalogName the service catalog name
+     * @param systemName  the system identifier within the catalog
      * @return response containing the process status after launch
      */
     @POST
-    @Path("/{id}/launch")
-    public WanakuResponse<ProcessStatus> launch(@PathParam("id") String id) {
-        LOG.infof("REST: Launching installation: %s", id);
-        ProcessStatus status = installationsBean.launch(id);
+    @Path("/{catalogName}/{systemName}/launch")
+    public WanakuResponse<ProcessStatus> launch(
+            @PathParam("catalogName") String catalogName, @PathParam("systemName") String systemName) {
+        LOG.infof("REST: Launching %s/%s", catalogName, systemName);
+        ProcessStatus status = launcher.launch(catalogName, systemName);
         return new WanakuResponse<>(status);
     }
 
     /**
-     * Stops the capability process for an installation.
-     * POST /api/v1/capabilities/installations/{id}/stop
+     * Stops a running capability process.
+     * POST /api/v1/capabilities/launcher/{catalogName}/{systemName}/stop
      *
-     * @param id the installation ID to stop
+     * @param catalogName the service catalog name
+     * @param systemName  the system identifier within the catalog
      * @return HTTP 200 if stopped successfully
      */
     @POST
-    @Path("/{id}/stop")
-    public Response stop(@PathParam("id") String id) {
-        LOG.infof("REST: Stopping installation: %s", id);
-        installationsBean.stop(id);
+    @Path("/{catalogName}/{systemName}/stop")
+    public Response stop(@PathParam("catalogName") String catalogName, @PathParam("systemName") String systemName) {
+        LOG.infof("REST: Stopping %s/%s", catalogName, systemName);
+        launcher.stop(catalogName, systemName);
         return Response.ok().build();
     }
 
     /**
-     * Returns the process status for an installation.
-     * GET /api/v1/capabilities/installations/{id}/status
+     * Returns the process status for a specific catalog and system.
+     * GET /api/v1/capabilities/launcher/{catalogName}/{systemName}/status
      *
-     * @param id the installation ID
+     * @param catalogName the service catalog name
+     * @param systemName  the system identifier within the catalog
      * @return response containing the current process status
      */
     @GET
-    @Path("/{id}/status")
-    public WanakuResponse<ProcessStatus> getStatus(@PathParam("id") String id) {
-        LOG.debugf("REST: Getting status for installation: %s", id);
-        ProcessStatus status = installationsBean.getStatus(id);
+    @Path("/{catalogName}/{systemName}/status")
+    public WanakuResponse<ProcessStatus> getStatus(
+            @PathParam("catalogName") String catalogName, @PathParam("systemName") String systemName) {
+        LOG.debugf("REST: Getting status for %s/%s", catalogName, systemName);
+        ProcessStatus status = launcher.getStatus(catalogName, systemName);
         return new WanakuResponse<>(status);
+    }
+
+    /**
+     * Returns the status of all managed capability processes.
+     * GET /api/v1/capabilities/launcher/status
+     *
+     * @return response containing a map of process keys to their statuses
+     */
+    @GET
+    @Path("/status")
+    public WanakuResponse<Map<String, ProcessStatus>> getAllStatuses() {
+        LOG.debug("REST: Getting all launcher statuses");
+        return new WanakuResponse<>(launcher.getAllStatuses());
     }
 }

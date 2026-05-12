@@ -164,3 +164,5 @@ export * from "./wanakuResponseServiceTarget";
 export * from "./wanakuResponseString";
 export * from "./wanakuResponseSystemStatistics";
 export * from "./wanakuResponseToolReference";
+export * from "./wanakuResponseMapStringProcessStatus";
+export * from "./wanakuResponseMapStringProcessStatusData";

@@ -9,56 +9,61 @@ import {
   TableHeader,
   TableRow,
   TableToolbar,
-  TableToolbarContent
-} from "@carbon/react";
-import { Add, Edit, TrashCan, Play, Stop } from "@carbon/icons-react";
-import React from "react";
-import { ProcessStatus } from "./installation-types";
+  TableToolbarContent,
+  Tag
+} from "@carbon/react"
+import { Play, Stop } from "@carbon/icons-react"
+import React from "react"
 
-interface InstallationsTableProps {
-  installations: Array<{ id?: string; name?: string; data?: string; labels?: Record<string, string> }>;
-  statusMap: Record<string, ProcessStatus>;
-  onAdd: () => void;
-  onEdit: (installation: any) => void;
-  onDelete: (id: string) => void;
-  onLaunch: (id: string) => void;
-  onStop: (id: string) => void;
+export interface ProcessStatus {
+  running: boolean;
+  port: number;
+  startedAt: string | null;
+  exitCode: number | null;
 }
 
-export const InstallationsTable: React.FC<InstallationsTableProps> = ({
-  installations,
+export interface CatalogSystem {
+  catalogName: string;
+  systemName: string;
+}
+
+interface LauncherTableProps {
+  systems: CatalogSystem[];
+  statusMap: Record<string, ProcessStatus>;
+  onLaunch: (catalogName: string, systemName: string) => void;
+  onStop: (catalogName: string, systemName: string) => void;
+}
+
+export const InstallationsTable: React.FC<LauncherTableProps> = ({
+  systems,
   statusMap,
-  onAdd,
-  onEdit,
-  onDelete,
   onLaunch,
   onStop
 }) => {
+
   const headers = [
-    { key: "name", header: "Name" },
-    { key: "type", header: "Type" },
+    { key: "catalog", header: "Catalog" },
+    { key: "system", header: "System" },
     { key: "status", header: "Status" },
     { key: "port", header: "Port" }
-  ];
+  ]
 
-  function installationsToRows() {
-    return installations
-      .filter((installation) => installation.id)
-      .map((installation) => {
-        const config = JSON.parse(installation.data || '{}');
-        const status = statusMap[installation.id!];
-        return {
-          id: installation.id!,
-          name: installation.name || '',
-          type: config.type || 'unknown',
-          status: status?.running ? 'Running' : 'Stopped',
-          port: status?.port ? String(status.port) : '-'
-        };
-      });
+  function systemsToRows() {
+    return systems.map((s, idx) => {
+      const key = `${s.catalogName}:${s.systemName}`
+      const status = statusMap[key]
+      return {
+        id: `${idx}-${key}`,
+        catalog: s.catalogName,
+        system: s.systemName,
+        status: status?.running ? "Running" : "Stopped",
+        port: status?.running ? String(status.port) : "-"
+      }
+    })
   }
 
   return (
-    <DataTable rows={installationsToRows()} headers={headers}>
+    <DataTable rows={systemsToRows()} headers={headers}>
       {({
         rows,
         headers,
@@ -69,11 +74,7 @@ export const InstallationsTable: React.FC<InstallationsTableProps> = ({
       }) => (
         <TableContainer>
           <TableToolbar {...getToolbarProps()}>
-            <TableToolbarContent>
-              <Button renderIcon={Add} onClick={onAdd}>
-                Add Installation
-              </Button>
-            </TableToolbarContent>
+            <TableToolbarContent />
           </TableToolbar>
           <Table {...getTableProps()}>
             <TableHead>
@@ -88,58 +89,51 @@ export const InstallationsTable: React.FC<InstallationsTableProps> = ({
             </TableHead>
             <TableBody>
               {rows.map((row) => {
-                const installation = installations.find(inst => inst.id === row.id);
-                const status = statusMap[row.id];
-                const isRunning = status?.running || false;
-
-                if (installation) {
-                  return (
-                    <TableRow {...getRowProps({ row })} key={row.id}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                      <TableCell>
-                        {isRunning ? (
-                          <Button
-                            kind="ghost"
-                            renderIcon={Stop}
-                            iconDescription="Stop"
-                            hasIconOnly
-                            onClick={() => onStop(row.id)}
-                          />
+                const sys = systems.find(
+                  (_s, idx) => row.id === `${idx}-${_s.catalogName}:${_s.systemName}`
+                )
+                if (!sys) return null
+                const key = `${sys.catalogName}:${sys.systemName}`
+                const isRunning = statusMap[key]?.running
+                return (
+                  <TableRow {...getRowProps({ row })} key={row.id}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>
+                        {cell.info.header === "status" ? (
+                          <Tag type={cell.value === "Running" ? "green" : "gray"} size="sm">
+                            {cell.value}
+                          </Tag>
                         ) : (
-                          <Button
-                            kind="ghost"
-                            renderIcon={Play}
-                            iconDescription="Launch"
-                            hasIconOnly
-                            onClick={() => onLaunch(row.id)}
-                          />
+                          cell.value
                         )}
-                        <Button
-                          kind="ghost"
-                          renderIcon={Edit}
-                          iconDescription="Edit"
-                          hasIconOnly
-                          onClick={() => onEdit(installation)}
-                        />
-                        <Button
-                          kind="ghost"
-                          renderIcon={TrashCan}
-                          iconDescription="Delete"
-                          hasIconOnly
-                          disabled={isRunning}
-                          onClick={() => onDelete(row.id)}
-                        />
                       </TableCell>
-                    </TableRow>
-                  );
-                }
+                    ))}
+                    <TableCell>
+                      {isRunning ? (
+                        <Button
+                          kind="danger--ghost"
+                          renderIcon={Stop}
+                          iconDescription="Stop"
+                          hasIconOnly
+                          onClick={() => onStop(sys.catalogName, sys.systemName)}
+                        />
+                      ) : (
+                        <Button
+                          kind="ghost"
+                          renderIcon={Play}
+                          iconDescription="Launch"
+                          hasIconOnly
+                          onClick={() => onLaunch(sys.catalogName, sys.systemName)}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
               })}
             </TableBody>
           </Table>
         </TableContainer>
       )}
     </DataTable>
-  );
-};
+  )
+}

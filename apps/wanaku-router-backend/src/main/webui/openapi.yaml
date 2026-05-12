@@ -675,6 +675,15 @@ components:
         data:
           type: object
           additionalProperties: {}
+    WanakuResponseMapStringProcessStatus:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ProcessStatus"
     WanakuResponseMapStringString:
       type: object
       properties:
@@ -770,7 +779,7 @@ paths:
       summary: Fleet Status
       tags:
       - Capabilities Resource
-  /api/v1/capabilities/installations:
+  /api/v1/capabilities/launcher/status:
     get:
       responses:
         "200":
@@ -778,74 +787,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponseListDataStore"
-      summary: List
+                $ref: "#/components/schemas/WanakuResponseMapStringProcessStatus"
+      summary: Get All Statuses
       tags:
       - Installations Resource
+  /api/v1/capabilities/launcher/{catalogName}/{systemName}/launch:
     post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DataStore"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseDataStore"
-        "400":
-          description: Bad Request
-      summary: Create
-      tags:
-      - Installations Resource
-  /api/v1/capabilities/installations/{id}:
-    put:
       parameters:
-      - name: id
+      - name: catalogName
         in: path
         required: true
         schema:
           type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DataStore"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-        "400":
-          description: Bad Request
-      summary: Update
-      tags:
-      - Installations Resource
-    delete:
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-      summary: Delete
-      tags:
-      - Installations Resource
-  /api/v1/capabilities/installations/{id}/launch:
-    post:
-      parameters:
-      - name: id
+      - name: systemName
         in: path
         required: true
         schema:
@@ -860,10 +814,15 @@ paths:
       summary: Launch
       tags:
       - Installations Resource
-  /api/v1/capabilities/installations/{id}/status:
+  /api/v1/capabilities/launcher/{catalogName}/{systemName}/status:
     get:
       parameters:
-      - name: id
+      - name: catalogName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: systemName
         in: path
         required: true
         schema:
@@ -878,10 +837,15 @@ paths:
       summary: Get Status
       tags:
       - Installations Resource
-  /api/v1/capabilities/installations/{id}/stop:
+  /api/v1/capabilities/launcher/{catalogName}/{systemName}/stop:
     post:
       parameters:
-      - name: id
+      - name: catalogName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: systemName
         in: path
         required: true
         schema:

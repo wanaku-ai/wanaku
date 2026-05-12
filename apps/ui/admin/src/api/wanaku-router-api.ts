@@ -64,6 +64,7 @@ import type {
   WanakuResponseMapStringListActivityRecord,
   WanakuResponseMapStringMapStringString,
   WanakuResponseMapStringObject,
+  WanakuResponseMapStringProcessStatus,
   WanakuResponseMapStringString,
   WanakuResponseNamespace,
   WanakuResponseProcessStatus,
@@ -138,29 +139,29 @@ export const getApiV1CapabilitiesFleetStatus = async (
 };
 
 /**
- * @summary List
+ * @summary Get All Statuses
  */
-export type getApiV1CapabilitiesInstallationsResponse200 = {
-  data: WanakuResponseListDataStore;
+export type getApiV1CapabilitiesLauncherStatusResponse200 = {
+  data: WanakuResponseMapStringProcessStatus;
   status: 200;
 };
 
-export type getApiV1CapabilitiesInstallationsResponseSuccess =
-  getApiV1CapabilitiesInstallationsResponse200 & {
+export type getApiV1CapabilitiesLauncherStatusResponseSuccess =
+  getApiV1CapabilitiesLauncherStatusResponse200 & {
     headers: Headers;
   };
-export type getApiV1CapabilitiesInstallationsResponse =
-  getApiV1CapabilitiesInstallationsResponseSuccess;
+export type getApiV1CapabilitiesLauncherStatusResponse =
+  getApiV1CapabilitiesLauncherStatusResponseSuccess;
 
-export const getGetApiV1CapabilitiesInstallationsUrl = () => {
-  return `/api/v1/capabilities/installations`;
+export const getGetApiV1CapabilitiesLauncherStatusUrl = () => {
+  return `/api/v1/capabilities/launcher/status`;
 };
 
-export const getApiV1CapabilitiesInstallations = async (
+export const getApiV1CapabilitiesLauncherStatus = async (
   options?: RequestInit,
-): Promise<getApiV1CapabilitiesInstallationsResponse> => {
-  return customFetch<getApiV1CapabilitiesInstallationsResponse>(
-    getGetApiV1CapabilitiesInstallationsUrl(),
+): Promise<getApiV1CapabilitiesLauncherStatusResponse> => {
+  return customFetch<getApiV1CapabilitiesLauncherStatusResponse>(
+    getGetApiV1CapabilitiesLauncherStatusUrl(),
     {
       ...options,
       method: "GET",
@@ -169,155 +170,38 @@ export const getApiV1CapabilitiesInstallations = async (
 };
 
 /**
- * @summary Create
- */
-export type postApiV1CapabilitiesInstallationsResponse200 = {
-  data: WanakuResponseDataStore;
-  status: 200;
-};
-
-export type postApiV1CapabilitiesInstallationsResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type postApiV1CapabilitiesInstallationsResponseSuccess =
-  postApiV1CapabilitiesInstallationsResponse200 & {
-    headers: Headers;
-  };
-export type postApiV1CapabilitiesInstallationsResponseError =
-  postApiV1CapabilitiesInstallationsResponse400 & {
-    headers: Headers;
-  };
-
-export type postApiV1CapabilitiesInstallationsResponse =
-  | postApiV1CapabilitiesInstallationsResponseSuccess
-  | postApiV1CapabilitiesInstallationsResponseError;
-
-export const getPostApiV1CapabilitiesInstallationsUrl = () => {
-  return `/api/v1/capabilities/installations`;
-};
-
-export const postApiV1CapabilitiesInstallations = async (
-  dataStore: DataStore,
-  options?: RequestInit,
-): Promise<postApiV1CapabilitiesInstallationsResponse> => {
-  return customFetch<postApiV1CapabilitiesInstallationsResponse>(
-    getPostApiV1CapabilitiesInstallationsUrl(),
-    {
-      ...options,
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(dataStore),
-    },
-  );
-};
-
-/**
- * @summary Update
- */
-export type putApiV1CapabilitiesInstallationsIdResponse200 = {
-  data: unknown;
-  status: 200;
-};
-
-export type putApiV1CapabilitiesInstallationsIdResponse400 = {
-  data: void;
-  status: 400;
-};
-
-export type putApiV1CapabilitiesInstallationsIdResponseSuccess =
-  putApiV1CapabilitiesInstallationsIdResponse200 & {
-    headers: Headers;
-  };
-export type putApiV1CapabilitiesInstallationsIdResponseError =
-  putApiV1CapabilitiesInstallationsIdResponse400 & {
-    headers: Headers;
-  };
-
-export type putApiV1CapabilitiesInstallationsIdResponse =
-  | putApiV1CapabilitiesInstallationsIdResponseSuccess
-  | putApiV1CapabilitiesInstallationsIdResponseError;
-
-export const getPutApiV1CapabilitiesInstallationsIdUrl = (id: string) => {
-  return `/api/v1/capabilities/installations/${id}`;
-};
-
-export const putApiV1CapabilitiesInstallationsId = async (
-  id: string,
-  dataStore: DataStore,
-  options?: RequestInit,
-): Promise<putApiV1CapabilitiesInstallationsIdResponse> => {
-  return customFetch<putApiV1CapabilitiesInstallationsIdResponse>(
-    getPutApiV1CapabilitiesInstallationsIdUrl(id),
-    {
-      ...options,
-      method: "PUT",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(dataStore),
-    },
-  );
-};
-
-/**
- * @summary Delete
- */
-export type deleteApiV1CapabilitiesInstallationsIdResponse200 = {
-  data: unknown;
-  status: 200;
-};
-
-export type deleteApiV1CapabilitiesInstallationsIdResponseSuccess =
-  deleteApiV1CapabilitiesInstallationsIdResponse200 & {
-    headers: Headers;
-  };
-export type deleteApiV1CapabilitiesInstallationsIdResponse =
-  deleteApiV1CapabilitiesInstallationsIdResponseSuccess;
-
-export const getDeleteApiV1CapabilitiesInstallationsIdUrl = (id: string) => {
-  return `/api/v1/capabilities/installations/${id}`;
-};
-
-export const deleteApiV1CapabilitiesInstallationsId = async (
-  id: string,
-  options?: RequestInit,
-): Promise<deleteApiV1CapabilitiesInstallationsIdResponse> => {
-  return customFetch<deleteApiV1CapabilitiesInstallationsIdResponse>(
-    getDeleteApiV1CapabilitiesInstallationsIdUrl(id),
-    {
-      ...options,
-      method: "DELETE",
-    },
-  );
-};
-
-/**
  * @summary Launch
  */
-export type postApiV1CapabilitiesInstallationsIdLaunchResponse200 = {
-  data: WanakuResponseProcessStatus;
-  status: 200;
-};
+export type postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponse200 =
+  {
+    data: WanakuResponseProcessStatus;
+    status: 200;
+  };
 
-export type postApiV1CapabilitiesInstallationsIdLaunchResponseSuccess =
-  postApiV1CapabilitiesInstallationsIdLaunchResponse200 & {
+export type postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponseSuccess =
+  postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponse200 & {
     headers: Headers;
   };
-export type postApiV1CapabilitiesInstallationsIdLaunchResponse =
-  postApiV1CapabilitiesInstallationsIdLaunchResponseSuccess;
+export type postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponse =
+  postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponseSuccess;
 
-export const getPostApiV1CapabilitiesInstallationsIdLaunchUrl = (
-  id: string,
+export const getPostApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchUrl = (
+  catalogName: string,
+  systemName: string,
 ) => {
-  return `/api/v1/capabilities/installations/${id}/launch`;
+  return `/api/v1/capabilities/launcher/${catalogName}/${systemName}/launch`;
 };
 
-export const postApiV1CapabilitiesInstallationsIdLaunch = async (
-  id: string,
+export const postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunch = async (
+  catalogName: string,
+  systemName: string,
   options?: RequestInit,
-): Promise<postApiV1CapabilitiesInstallationsIdLaunchResponse> => {
-  return customFetch<postApiV1CapabilitiesInstallationsIdLaunchResponse>(
-    getPostApiV1CapabilitiesInstallationsIdLaunchUrl(id),
+): Promise<postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponse> => {
+  return customFetch<postApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchResponse>(
+    getPostApiV1CapabilitiesLauncherCatalogNameSystemNameLaunchUrl(
+      catalogName,
+      systemName,
+    ),
     {
       ...options,
       method: "POST",
@@ -328,28 +212,36 @@ export const postApiV1CapabilitiesInstallationsIdLaunch = async (
 /**
  * @summary Get Status
  */
-export type getApiV1CapabilitiesInstallationsIdStatusResponse200 = {
-  data: WanakuResponseProcessStatus;
-  status: 200;
-};
+export type getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponse200 =
+  {
+    data: WanakuResponseProcessStatus;
+    status: 200;
+  };
 
-export type getApiV1CapabilitiesInstallationsIdStatusResponseSuccess =
-  getApiV1CapabilitiesInstallationsIdStatusResponse200 & {
+export type getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponseSuccess =
+  getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponse200 & {
     headers: Headers;
   };
-export type getApiV1CapabilitiesInstallationsIdStatusResponse =
-  getApiV1CapabilitiesInstallationsIdStatusResponseSuccess;
+export type getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponse =
+  getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponseSuccess;
 
-export const getGetApiV1CapabilitiesInstallationsIdStatusUrl = (id: string) => {
-  return `/api/v1/capabilities/installations/${id}/status`;
+export const getGetApiV1CapabilitiesLauncherCatalogNameSystemNameStatusUrl = (
+  catalogName: string,
+  systemName: string,
+) => {
+  return `/api/v1/capabilities/launcher/${catalogName}/${systemName}/status`;
 };
 
-export const getApiV1CapabilitiesInstallationsIdStatus = async (
-  id: string,
+export const getApiV1CapabilitiesLauncherCatalogNameSystemNameStatus = async (
+  catalogName: string,
+  systemName: string,
   options?: RequestInit,
-): Promise<getApiV1CapabilitiesInstallationsIdStatusResponse> => {
-  return customFetch<getApiV1CapabilitiesInstallationsIdStatusResponse>(
-    getGetApiV1CapabilitiesInstallationsIdStatusUrl(id),
+): Promise<getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponse> => {
+  return customFetch<getApiV1CapabilitiesLauncherCatalogNameSystemNameStatusResponse>(
+    getGetApiV1CapabilitiesLauncherCatalogNameSystemNameStatusUrl(
+      catalogName,
+      systemName,
+    ),
     {
       ...options,
       method: "GET",
@@ -360,28 +252,36 @@ export const getApiV1CapabilitiesInstallationsIdStatus = async (
 /**
  * @summary Stop
  */
-export type postApiV1CapabilitiesInstallationsIdStopResponse200 = {
-  data: unknown;
-  status: 200;
-};
+export type postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponse200 =
+  {
+    data: unknown;
+    status: 200;
+  };
 
-export type postApiV1CapabilitiesInstallationsIdStopResponseSuccess =
-  postApiV1CapabilitiesInstallationsIdStopResponse200 & {
+export type postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponseSuccess =
+  postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponse200 & {
     headers: Headers;
   };
-export type postApiV1CapabilitiesInstallationsIdStopResponse =
-  postApiV1CapabilitiesInstallationsIdStopResponseSuccess;
+export type postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponse =
+  postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponseSuccess;
 
-export const getPostApiV1CapabilitiesInstallationsIdStopUrl = (id: string) => {
-  return `/api/v1/capabilities/installations/${id}/stop`;
+export const getPostApiV1CapabilitiesLauncherCatalogNameSystemNameStopUrl = (
+  catalogName: string,
+  systemName: string,
+) => {
+  return `/api/v1/capabilities/launcher/${catalogName}/${systemName}/stop`;
 };
 
-export const postApiV1CapabilitiesInstallationsIdStop = async (
-  id: string,
+export const postApiV1CapabilitiesLauncherCatalogNameSystemNameStop = async (
+  catalogName: string,
+  systemName: string,
   options?: RequestInit,
-): Promise<postApiV1CapabilitiesInstallationsIdStopResponse> => {
-  return customFetch<postApiV1CapabilitiesInstallationsIdStopResponse>(
-    getPostApiV1CapabilitiesInstallationsIdStopUrl(id),
+): Promise<postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponse> => {
+  return customFetch<postApiV1CapabilitiesLauncherCatalogNameSystemNameStopResponse>(
+    getPostApiV1CapabilitiesLauncherCatalogNameSystemNameStopUrl(
+      catalogName,
+      systemName,
+    ),
     {
       ...options,
       method: "POST",
