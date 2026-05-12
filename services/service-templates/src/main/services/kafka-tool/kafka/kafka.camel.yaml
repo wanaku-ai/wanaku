@@ -1,0 +1,77 @@
+- route:
+    id: kafka-request-reply
+    description: Send a Kafka request and wait for the correlated reply
+    from:
+      uri: direct:wanaku
+      steps:
+        - setExchangePattern:
+            pattern: InOut
+        - setHeader:
+            name: wanakuCorrelationId
+            expression:
+              simple:
+                expression: "${exchangeId}"
+        - log:
+            message: "Sending Kafka request with correlation id ${header.wanakuCorrelationId}"
+        - to:
+            uri: kafka:{{kafka.request.topic}}
+            parameters:
+              brokers: "{{kafka.brokers}}"
+        - pollEnrich:
+            timeout: "{{kafka.reply.timeout-ms}}"
+            expression:
+              simple:
+                expression: "seda:kafka-replies"
+        - choice:
+            when:
+              - simple: "${header.wanakuKafkaReplyReceived} != 'true'"
+                steps:
+                  - log:
+                      message: "Kafka reply timed out after {{kafka.reply.timeout-ms}} ms for correlation id ${header.wanakuCorrelationId}"
+                  - throwException:
+                      exceptionType: java.util.concurrent.TimeoutException
+                      message: "Kafka reply timed out after {{kafka.reply.timeout-ms}} ms for correlation id ${header.wanakuCorrelationId}"
+              - simple: "${exchangeProperty.wanakuCorrelationId} != ${header.wanakuReplyCorrelationId}"
+                steps:
+                  - log:
+                      message: "Kafka reply correlation mismatch for ${exchangeProperty.wanakuCorrelationId}: received ${header.wanakuReplyCorrelationId}"
+                  - throwException:
+                      exceptionType: java.lang.IllegalStateException
+                      message: "Kafka reply correlation mismatch for ${exchangeProperty.wanakuCorrelationId}"
+            otherwise:
+              steps:
+                - log:
+                    message: "Received Kafka reply for ${header.wanakuCorrelationId}: ${body}"
+
+- route:
+    id: kafka-response-reply
+    description: Correlate Kafka replies back to the waiting request
+    from:
+      uri: kafka:{{kafka.response.topic}}
+      parameters:
+        brokers: "{{kafka.brokers}}"
+        groupId: "{{kafka.response.group-id}}"
+        autoOffsetReset: latest
+      steps:
+        - filter:
+            simple: "${header.wanakuCorrelationId} != null"
+            steps:
+              - log:
+                  message: "Routing Kafka reply for ${header.wanakuCorrelationId}"
+              - setHeader:
+                  name: wanakuReplyCorrelationId
+                  expression:
+                    simple:
+                      expression: "${header.wanakuCorrelationId}"
+              - setHeader:
+                  name: wanakuKafkaReplyReceived
+                  expression:
+                    simple:
+                      expression: "true"
+              - to:
+                  uri: seda:kafka-replies
+        - filter:
+            simple: "${header.wanakuCorrelationId} == null"
+            steps:
+              - log:
+                  message: "Dropping Kafka reply without correlation id: ${body}"

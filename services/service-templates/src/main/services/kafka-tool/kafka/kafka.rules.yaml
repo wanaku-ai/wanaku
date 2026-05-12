@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - send-message-to-kafka:
+        route:
+          id: "kafka-request-reply"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The message to send to Kafka
+            required: true
