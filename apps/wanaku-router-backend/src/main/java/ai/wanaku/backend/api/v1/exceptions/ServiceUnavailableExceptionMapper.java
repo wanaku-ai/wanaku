@@ -16,8 +16,8 @@ public class ServiceUnavailableExceptionMapper implements ExceptionMapper<Servic
     private static final Logger LOG = Logger.getLogger(ServiceUnavailableExceptionMapper.class);
 
     @APIResponse(
-            responseCode = "504",
-            description = "Service unavailable",
+            responseCode = "502",
+            description = "Bad Gateway — a downstream capability service is unreachable or returned an invalid response",
             content = @Content(schema = @Schema(implementation = WanakuResponse.class)))
     @Override
     public Response toResponse(ServiceUnavailableException e) {
