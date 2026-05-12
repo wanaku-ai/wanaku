@@ -69,7 +69,7 @@ public class DataStoresResource {
     /**
      * List all data stores, optionally filtered by label expression.
      * GET /api/v1/data-store
-     * GET /api/v1/data-store?labelFilter={expression}
+     * {@code GET /api/v1/data-store?labelFilter={expression}}
      *
      * @param labelFilter optional label expression to filter data stores
      * @return response with list of data stores
