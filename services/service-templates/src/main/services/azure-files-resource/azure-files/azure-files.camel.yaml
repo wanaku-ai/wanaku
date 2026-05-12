@@ -1,0 +1,17 @@
+- route:
+    id: azure-files-read
+    description: Read files from Azure Storage file shares
+    autoStartup: false
+    from:
+      uri: direct:wanaku
+      steps:
+      - setHeader:
+          name: CamelFileName
+          expression:
+            simple:
+              expression: "${header.wanaku_resource_uri}"
+      - to:
+          uri: azure-files:{{azure.files.account}}/{{azure.files.share}}
+          parameters:
+            credentialType: SHARED_ACCOUNT_KEY
+            sharedKey: "{{azure.files.sharedKey}}"

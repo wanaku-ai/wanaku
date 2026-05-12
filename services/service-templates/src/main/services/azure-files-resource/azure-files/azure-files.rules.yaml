@@ -1,0 +1,8 @@
+mcp:
+  resources:
+  - azure-files-read:
+      route:
+        id: "azure-files-read"
+        description: "{{resource.description}}"
+        uri: "wanaku://azure-files-read"
+        mimeType: "application/octet-stream"
