@@ -1,0 +1,20 @@
+- route:
+    id: s3-read-object
+    description: Read objects from an AWS S3 bucket
+    autoStartup: false
+    from:
+      uri: direct:wanaku
+      steps:
+        - setHeader:
+            name: CamelAwsS3BucketName
+            simple: "{{aws.s3.bucketName}}"
+        - setHeader:
+            name: CamelAwsS3Key
+            simple: "${header.wanaku_resource_uri}"
+        - to:
+            uri: aws2-s3:{{aws.s3.bucketName}}
+            parameters:
+              region: "{{aws.s3.region}}"
+              accessKey: "{{aws.s3.accessKey}}"
+              secretKey: "{{aws.s3.secretKey}}"
+              operation: getObject
