@@ -1,0 +1,8 @@
+mcp:
+  resources:
+    - s3-read-object:
+        route:
+          id: "s3-read-object"
+        description: "{{resource.description}}"
+        uri: "wanaku://s3-read-object"
+        mimeType: "application/octet-stream"
