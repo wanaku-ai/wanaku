@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -155,8 +156,7 @@ class ServiceCatalogResourceTest {
     @Test
     void testRemoveNotFound() throws Exception {
         when(serviceCatalogBean.remove("nonexistent")).thenReturn(0);
-        Response response = resource.remove("nonexistent");
-        assertEquals(404, response.getStatus());
+        assertThrows(DataStoreResourceNotFoundException.class, () -> resource.remove("nonexistent"));
     }
 
     @Test

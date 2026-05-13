@@ -89,8 +89,7 @@ public class ToolsResource {
      * @return a response containing a list of all tool references
      */
     @GET
-    public WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter)
-            {
+    public WanakuResponse<List<ToolReference>> list(@QueryParam("labelFilter") String labelFilter) {
         List<ToolReference> forwardTools = forwardsBean.listAllAsTools(labelFilter);
         List<ToolReference> tools = toolsBean.list(labelFilter);
         List<ToolReference> ret = CollectionsHelper.join(tools, forwardTools);
@@ -154,8 +153,7 @@ public class ToolsResource {
      * @return a {@link Response} indicating the number of the tools removed.
      */
     @DELETE
-    public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
-            {
+    public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) {
 
         int deleteCount = toolsBean.removeIf(labelExpression);
         return new WanakuResponse<>(deleteCount);

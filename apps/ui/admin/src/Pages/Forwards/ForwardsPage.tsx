@@ -57,7 +57,7 @@ const ForwardsPage = () => {
     try {
       const response = await addForward(newForward)
       if (response.status !== 200) {
-        const errorData = response.data as { error?: { message?: string } } | null
+        const errorData = response.data as unknown as { error?: { message?: string } } | null
         setErrorMessage(errorData?.error?.message || "Failed to add forward")
       }
     } catch (error) {
@@ -71,7 +71,7 @@ const ForwardsPage = () => {
     try {
       const response = await updateForward(forward)
       if (response.status !== 200) {
-        const errorData = response.data as { error?: { message?: string } } | null
+        const errorData = response.data as unknown as { error?: { message?: string } } | null
         setErrorMessage(errorData?.error?.message || "Failed to update forward")
       }
     } catch (error) {

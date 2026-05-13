@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
@@ -51,8 +50,7 @@ public class ToolsetReposResource {
 
     @Path("/{name}")
     @PUT
-    public WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo)
-            {
+    public WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo) {
         LOG.debugf("REST: Updating toolset repository: %s", name);
         Map<String, String> result = toolsetReposBean.update(
                 name, repo.get("url"), repo.get("description"), repo.get("icon"), repo.get("branch"));

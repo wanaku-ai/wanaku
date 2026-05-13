@@ -160,8 +160,7 @@ public class DataStoresResource {
      */
     @Path("/labels")
     @DELETE
-    public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression)
-            {
+    public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) {
         LOG.debugf("REST: Removing data stores by label expression: %s", labelExpression);
         int removed = dataStoresBean.removeIf(labelExpression);
         return new WanakuResponse<>(removed);
