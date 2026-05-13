@@ -149,7 +149,7 @@ public class ToolsResource {
      * Removes all tools from the system that match the label expression
      *
      * @param labelExpression the name of the tool to remove
-     * @return a {@link Response} indicating the number of the tools removed.
+     * @return a {@link WanakuResponse} indicating the number of the tools removed.
      */
     @DELETE
     public WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression) {
