@@ -1,0 +1,18 @@
+- route:
+    id: watson-nlu-analyze
+    description: Analyze text using IBM Watson Natural Language Understanding
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: ibm-watson-language:wanaku
+            parameters:
+              apiKey: "RAW({{watson.nlu.api.key}})"
+              serviceUrl: "{{watson.nlu.service.url}}"
+              operation: "{{watson.nlu.operation}}"
+              analyzeSentiment: "{{watson.nlu.analyze.sentiment}}"
+              analyzeEntities: "{{watson.nlu.analyze.entities}}"
+              analyzeKeywords: "{{watson.nlu.analyze.keywords}}"
+              analyzeEmotion: "{{watson.nlu.analyze.emotion}}"
+              analyzeConcepts: "{{watson.nlu.analyze.concepts}}"
+              analyzeCategories: "{{watson.nlu.analyze.categories}}"
