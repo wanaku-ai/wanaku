@@ -92,8 +92,7 @@ public class ResourcesResource {
      * @return a response containing a list of all resource references
      */
     @GET
-    public WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter)
-            {
+    public WanakuResponse<List<ResourceReference>> list(@QueryParam("labelFilter") String labelFilter) {
         List<ResourceReference> list = resourcesBean.list(labelFilter);
         List<ResourceReference> resourceReferences = forwardsBean.listAllResources();
 

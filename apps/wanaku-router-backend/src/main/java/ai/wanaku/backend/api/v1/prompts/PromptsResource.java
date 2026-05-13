@@ -17,7 +17,6 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import ai.wanaku.backend.api.v1.common.PayloadValidator;
 import ai.wanaku.capabilities.sdk.api.exceptions.PromptNotFoundException;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;

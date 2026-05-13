@@ -202,8 +202,7 @@ public class ServiceTemplateResource {
      */
     @Path("/properties")
     @GET
-    public WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name)
-            {
+    public WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name) {
         LOG.debugf("REST: Getting properties for template: %s", name);
 
         if (StringHelper.isBlank(name)) {
@@ -223,8 +222,7 @@ public class ServiceTemplateResource {
      */
     @Path("/instantiate")
     @POST
-    public WanakuResponse<DataStore> instantiate(ServiceTemplateService.TemplateInstantiationRequest request)
-            {
+    public WanakuResponse<DataStore> instantiate(ServiceTemplateService.TemplateInstantiationRequest request) {
         LOG.debugf("REST: Instantiating template: %s", request.getTemplateName());
 
         if (StringHelper.isBlank(request.getTemplateName())) {
