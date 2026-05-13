@@ -12,7 +12,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;

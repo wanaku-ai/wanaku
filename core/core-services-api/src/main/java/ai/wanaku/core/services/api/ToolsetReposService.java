@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 import java.util.Map;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
@@ -57,8 +56,7 @@ public interface ToolsetReposService {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo)
-           ;
+    WanakuResponse<Map<String, String>> update(@PathParam("name") String name, Map<String, String> repo);
 
     /**
      * Remove a toolset repository by name.

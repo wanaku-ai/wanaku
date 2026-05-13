@@ -11,7 +11,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 import java.util.Map;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
@@ -98,8 +97,7 @@ public interface ServiceTemplateService {
     @Path("/properties")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name)
-           ;
+    WanakuResponse<Map<String, Map<String, String>>> getProperties(@QueryParam("name") String name);
 
     /**
      * Instantiate a service template by filling in property values.
