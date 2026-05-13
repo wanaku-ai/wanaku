@@ -1,0 +1,11 @@
+mcp:
+  tools:
+  - google-vertexai-generate:
+      route:
+        id: "google-vertexai-generate"
+      description: "{{tool.description}}"
+      properties:
+      - name: wanaku_body
+        type: string
+        description: The prompt text to send to Google Vertex AI for content generation
+        required: true
