@@ -1,0 +1,15 @@
+- route:
+    id: google-vertexai-generate
+    description: Generate content using Google Vertex AI
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: "google-vertexai:{{google.vertexai.project.id}}:{{google.vertexai.location}}:{{google.vertexai.model.id}}"
+            parameters:
+              operation: "{{google.vertexai.operation}}"
+              temperature: "{{google.vertexai.temperature}}"
+              maxOutputTokens: "{{google.vertexai.max.output.tokens}}"
+              topP: "{{google.vertexai.top.p}}"
+              topK: "{{google.vertexai.top.k}}"
+              serviceAccountKey: "{{google.vertexai.service.account.key}}"

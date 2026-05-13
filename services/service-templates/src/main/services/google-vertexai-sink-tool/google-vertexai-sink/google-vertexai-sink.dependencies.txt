@@ -1,0 +1,1 @@
+org.apache.camel:camel-google-vertexai:4.18.2
