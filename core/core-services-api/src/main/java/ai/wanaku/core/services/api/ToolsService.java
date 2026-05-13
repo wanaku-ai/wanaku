@@ -12,7 +12,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
@@ -112,7 +111,7 @@ public interface ToolsService {
      * Removes a tool capability from the system.
      *
      * @param labelExpression the name of the tool to remove
-     * @return a {@link Response} indicating the result of the removal operation
+     * @return a {@link WanakuResponse} indicating the result of the removal operation
      */
     @DELETE
     WanakuResponse<Integer> removeIf(@QueryParam("labelExpression") String labelExpression);
