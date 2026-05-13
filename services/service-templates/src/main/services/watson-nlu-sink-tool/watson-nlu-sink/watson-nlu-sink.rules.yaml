@@ -1,0 +1,11 @@
+mcp:
+  tools:
+  - watson-nlu-analyze:
+      route:
+        id: "watson-nlu-analyze"
+      description: "{{tool.description}}"
+      properties:
+      - name: wanaku_body
+        type: string
+        description: The text to analyze for sentiment, entities, keywords, and other NLU features
+        required: true
