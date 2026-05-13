@@ -1,0 +1,48 @@
+- route:
+    id: sftp-read
+    description: Read files from SFTP servers
+    autoStartup: false
+    from:
+      uri: direct:wanaku
+      steps:
+        - choice:
+            when:
+              - simple: "${header.wanaku_resource_uri} != null"
+                steps:
+                  - setHeader:
+                      name: CamelFileName
+                      expression:
+                        simple:
+                          expression: "${header.wanaku_resource_uri}"
+            otherwise:
+              steps:
+                  - log: "No wanaku_resource_uri header provided; using body as filename"
+                  - setHeader:
+                      name: CamelFileName
+                      expression:
+                        simple:
+                          expression: "${body}"
+        - choice:
+            when:
+              - simple: "{{sftp.authMethod}} == 'key'"
+                steps:
+                  - to:
+                      uri: sftp:{{sftp.username}}@{{sftp.host}}:{{sftp.port}}/{{sftp.directory}}
+                      parameters:
+                        privateKeyFile: "{{sftp.privateKeyFile}}"
+                        knownHostsFile: "{{sftp.knownHostsFile}}"
+                        strictHostKeyChecking: "{{sftp.strictHostKeyChecking}}"
+                        disconnect: "{{sftp.disconnect}}"
+                        soTimeout: "{{sftp.soTimeout}}"
+                        timeout: "{{sftp.timeout}}"
+            otherwise:
+              steps:
+                  - to:
+                      uri: sftp:{{sftp.username}}@{{sftp.host}}:{{sftp.port}}/{{sftp.directory}}
+                      parameters:
+                        password: "{{sftp.password}}"
+                        knownHostsFile: "{{sftp.knownHostsFile}}"
+                        strictHostKeyChecking: "{{sftp.strictHostKeyChecking}}"
+                        disconnect: "{{sftp.disconnect}}"
+                        soTimeout: "{{sftp.soTimeout}}"
+                        timeout: "{{sftp.timeout}}"
