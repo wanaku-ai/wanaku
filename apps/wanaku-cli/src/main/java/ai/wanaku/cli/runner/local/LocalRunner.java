@@ -32,10 +32,10 @@ public class LocalRunner {
             return this;
         }
 
-    public LocalRunnerEnvironment withAuthMode(String authMode) {
-        servicesOptions.put("WANAKU_HTTP_AUTH", authMode);
-        return this;
-    }
+        public LocalRunnerEnvironment withAuthMode(String authMode) {
+            servicesOptions.put("WANAKU_HTTP_AUTH", authMode);
+            return this;
+        }
 
         public Map<String, String> serviceOptions() {
             return servicesOptions;
