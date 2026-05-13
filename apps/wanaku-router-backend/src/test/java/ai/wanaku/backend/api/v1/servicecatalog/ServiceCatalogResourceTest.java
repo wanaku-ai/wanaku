@@ -163,8 +163,7 @@ class ServiceCatalogResourceTest {
     @Test
     void testRemoveNullName() throws Exception {
         when(serviceCatalogBean.remove(null)).thenReturn(0);
-        Response response = resource.remove(null);
-        assertEquals(404, response.getStatus());
+        assertThrows(DataStoreResourceNotFoundException.class, () -> resource.remove(null));
     }
 
     // Helper
