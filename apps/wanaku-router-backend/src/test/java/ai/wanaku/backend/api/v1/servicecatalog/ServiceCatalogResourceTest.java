@@ -1,7 +1,5 @@
 package ai.wanaku.backend.api.v1.servicecatalog;
 
-import jakarta.ws.rs.core.Response;
-
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import java.util.Collections;
@@ -24,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -149,8 +148,10 @@ class ServiceCatalogResourceTest {
     @Test
     void testRemoveFound() throws Exception {
         when(serviceCatalogBean.remove("test.service.zip")).thenReturn(1);
-        Response response = resource.remove("test.service.zip");
-        assertEquals(200, response.getStatus());
+        WanakuResponse<Void> response = resource.remove("test.service.zip");
+        assertNotNull(response);
+        assertNull(response.data());
+        assertNull(response.error());
     }
 
     @Test
