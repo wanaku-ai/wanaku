@@ -1,0 +1,16 @@
+- route:
+    id: ftp-read
+    description: Read files from FTP servers
+    autoStartup: false
+    from:
+      uri: direct:wanaku
+      steps:
+      - setHeader:
+          name: CamelFileName
+          expression:
+            simple:
+              expression: "${header.wanaku_resource_uri}"
+      - to:
+          uri: ftp://{{ftp.username}}@{{ftp.host}}:{{ftp.port}}/{{ftp.directory}}
+          parameters:
+            password: "{{ftp.password}}"
