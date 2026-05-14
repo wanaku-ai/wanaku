@@ -1086,13 +1086,6 @@
           "data" : { }
         }
       }
-    },
-    "securitySchemes" : {
-      "SecurityScheme" : {
-        "type" : "openIdConnect",
-        "openIdConnectUrl" : "http://localhost:8543/realms/wanaku/.well-known/openid-configuration",
-        "description" : "Authentication"
-      }
     }
   },
   "paths" : {
