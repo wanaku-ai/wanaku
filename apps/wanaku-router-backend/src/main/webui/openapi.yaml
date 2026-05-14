@@ -720,6 +720,12 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/ToolReference"
+    WanakuResponseVoid:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data: {}
   securitySchemes:
     SecurityScheme:
       type: openIdConnect
@@ -876,13 +882,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Update
@@ -899,13 +900,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove By Name
       tags:
       - Data Stores Resource
@@ -926,12 +922,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseListDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: List Or Get By Name
       tags:
       - Data Stores Resource
@@ -949,12 +939,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add
@@ -974,12 +958,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseInteger"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Remove If
       tags:
       - Data Stores Resource
@@ -996,13 +974,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove By Id
       tags:
       - Data Stores Resource
@@ -1020,12 +993,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get By Id
       tags:
       - Data Stores Resource
@@ -1058,13 +1025,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Add Forward
@@ -1089,13 +1051,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Update
@@ -1113,7 +1070,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove Forward
       tags:
       - Forwards Resource
@@ -1147,13 +1105,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Refresh
       tags:
       - Forwards Resource
@@ -1189,7 +1142,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Deregister
       tags:
       - Discovery Resource
@@ -1207,7 +1161,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Ping
       tags:
       - Discovery Resource
@@ -1341,7 +1296,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Update
@@ -1376,7 +1332,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Delete
       tags:
       - Namespaces Resource
@@ -1393,13 +1350,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Update
@@ -1413,12 +1365,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseListPromptReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: List
       tags:
       - Prompts Resource
@@ -1436,12 +1382,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponsePromptReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add
@@ -1462,12 +1402,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponsePromptReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add With Payload
@@ -1486,13 +1420,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove
       tags:
       - Prompts Resource
@@ -1510,12 +1439,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponsePromptReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get By Name
       tags:
       - Prompts Resource
@@ -1533,12 +1456,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseListResourceReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: List
       tags:
       - Resources Resource
@@ -1556,12 +1473,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseResourceReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Expose
@@ -1582,12 +1493,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseResourceReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Expose With Payload
@@ -1612,13 +1517,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Update
@@ -1636,13 +1536,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove
       tags:
       - Resources Resource
@@ -1660,12 +1555,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseResourceReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get By Name
       tags:
       - Resources Resource
@@ -1683,12 +1572,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseListMapStringObject"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: List
       tags:
       - Service Catalog Resource
@@ -1706,12 +1589,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Deploy
@@ -1731,12 +1608,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Download
       tags:
       - Service Catalog Resource
@@ -1758,12 +1629,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDeploymentInstructions"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get Deployment Instructions
       tags:
       - Service Catalog Resource
@@ -1780,13 +1645,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove
       tags:
       - Service Catalog Resource
@@ -1804,12 +1664,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringObject"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get
       tags:
       - Service Catalog Resource
@@ -1828,12 +1682,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Deploy
@@ -1853,12 +1701,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Download
       tags:
       - Service Template Resource
@@ -1876,12 +1718,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringObject"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get
       tags:
       - Service Template Resource
@@ -1900,12 +1736,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseDataStore"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Instantiate
@@ -1942,12 +1772,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringMapStringString"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get Properties
       tags:
       - Service Template Resource
@@ -1963,13 +1787,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove
       tags:
       - Service Template Resource
@@ -1987,12 +1806,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseInteger"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Remove If
       tags:
       - Tools Resource
@@ -2009,12 +1822,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseListToolReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: List
       tags:
       - Tools Resource
@@ -2032,12 +1839,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseToolReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add
@@ -2058,12 +1859,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseToolReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add With Payload
@@ -2088,13 +1883,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
         "400":
           description: Bad Request
       summary: Update
@@ -2112,13 +1902,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove
       tags:
       - Tools Resource
@@ -2136,12 +1921,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseToolReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Get By Name
       tags:
       - Tools Resource
@@ -2173,12 +1952,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringString"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Add
@@ -2207,12 +1980,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringString"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
         "400":
           description: Bad Request
       summary: Update
@@ -2230,13 +1997,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
               schema:
-                $ref: "#/components/schemas/WanakuResponse"
+                $ref: "#/components/schemas/WanakuResponseVoid"
       summary: Remove
       tags:
       - Toolset Repos Resource
@@ -2255,12 +2017,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseMapStringObject"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Browse
       tags:
       - Toolset Repos Resource
@@ -2284,12 +2040,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WanakuResponseListToolReference"
-        "500":
-          description: Wanaku error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponse"
       summary: Fetch Toolset
       tags:
       - Toolset Repos Resource
