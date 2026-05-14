@@ -58,6 +58,7 @@ make install
 - Java: Follow standard Quarkus conventions, no Records or Lombok unless already present
 - TypeScript: ESLint enforced, Carbon Design System components
 - REST API responses use `WanakuResponse<T>` wrapper: `{"data": ..., "error": ...}`
+- Javadoc: URLs with query parameters must escape `&` (use `{@code ...}` wrapper or `&amp;`) — the Javadoc plugin treats bare `&` as HTML entity references and fails the build
 - Frontend `customFetch` wraps responses again, so actual data is at `result.data.data`
 
 ## Operator
