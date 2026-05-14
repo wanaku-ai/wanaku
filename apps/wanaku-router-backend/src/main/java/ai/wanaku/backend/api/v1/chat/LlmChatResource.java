@@ -9,6 +9,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -21,22 +23,22 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS;
 
 @ApplicationScoped
 @Path("/api/v1/chat")
 public class LlmChatResource {
+    private static final Logger LOG = Logger.getLogger(LlmChatResource.class);
 
-    /* Allowlist of chat URLs */
-    private final List<String> allowlist = List.of(
-            "http://localhost:11434",
-            "https://api.openai.com",
-            "https://api.mistral.ai",
-            "https://generativelanguage.googleapis.com/v1beta/openai/",
-            "https://api.anthropic.com");
+    @ConfigProperty(name = "wanaku.chat.allowlist")
+    List<String> allowlist;
 
     @GET
     @Path("/allowlist")
@@ -52,7 +54,7 @@ public class LlmChatResource {
     public String codeCompletions(String data) {
         JsonObject json = Json.createReader(new StringReader(data)).readObject();
         String baseUrl = json.getString("baseUrl");
-        String apiKey = json.getString("apiKey");
+        String apiKey = json.containsKey("apiKey") ? json.getString("apiKey") : null;
         JsonObject llmParams = json.getJsonObject("chatParams");
 
         if (!allowlist.contains(baseUrl)) {
@@ -60,19 +62,29 @@ public class LlmChatResource {
         }
         try (var client = HttpClient.newHttpClient()) {
             String url = baseUrl + "/v1/chat/completions";
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
                     .POST(BodyPublishers.ofString(llmParams.toString()))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .build();
-            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-            if (response.statusCode() == 429) {
-                throw new WebApplicationException(TOO_MANY_REQUESTS);
+                    .header("Content-Type", APPLICATION_JSON);
+
+
+
+            if (apiKey != null && !apiKey.isEmpty()) {
+                requestBuilder.header("Authorization", "Bearer " + apiKey);
             }
-            if (response.statusCode() != 200) {
+            HttpRequest request = requestBuilder.build();
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+
+            if (response.statusCode() != OK.getStatusCode()) {
+                LOG.errorf("HTTP Response Error: %s", response.body());
+
+                if (response.statusCode() == TOO_MANY_REQUESTS.getStatusCode()) {
+                    throw new WebApplicationException(TOO_MANY_REQUESTS);
+                }
+
                 throw new WebApplicationException(INTERNAL_SERVER_ERROR);
             }
+
             return response.body();
         } catch (URISyntaxException ex) {
             throw new WebApplicationException("Malformed base URL", ex, BAD_REQUEST);
