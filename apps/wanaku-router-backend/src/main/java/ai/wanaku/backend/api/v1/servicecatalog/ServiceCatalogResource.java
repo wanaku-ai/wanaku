@@ -2,7 +2,6 @@ package ai.wanaku.backend.api.v1.servicecatalog;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -174,7 +173,7 @@ public class ServiceCatalogResource {
 
     /**
      * Get deployment instructions for a service catalog.
-     * GET /api/v1/service-catalog/instructions?name={name}&model={model}
+     * {@code GET /api/v1/service-catalog/instructions?name={name}&model={model}}
      *
      * @param name the catalog name
      * @param model the deployment model: local, docker, or kubernetes
