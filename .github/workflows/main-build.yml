@@ -36,7 +36,8 @@ on:
 
 env:
   PROJECTS: ${{ github.workspace }}
-  CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io/wanaku' }}
+  CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io' }}
+  CONTAINER_GROUP: ${{ vars.CONTAINER_GROUP || 'wanaku' }}
 
 jobs:
   build:
@@ -79,6 +80,7 @@ jobs:
         mvn -B --no-transfer-progress clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
+          -Dquarkus.container-image.group=${{ env.CONTAINER_GROUP }} \
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/amd64 \
           -Pdist
@@ -88,6 +90,7 @@ jobs:
         mvn -B --no-transfer-progress clean package \
           -Dquarkus.container-image.build=true \
           -Dquarkus.container-image.push=true \
+          -Dquarkus.container-image.group=${{ env.CONTAINER_GROUP }} \
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/arm64/v8 \
           -Pdist
@@ -111,4 +114,4 @@ jobs:
       - name: Create and push multi-arch manifests
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
-          ./build-manifests.sh ${{ github.ref_name }} ${{ env.CONTAINER_REGISTRY }}
+          ./build-manifests.sh ${{ github.ref_name }} ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}
