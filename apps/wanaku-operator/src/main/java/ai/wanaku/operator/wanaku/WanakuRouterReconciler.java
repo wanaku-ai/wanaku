@@ -14,6 +14,7 @@ import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.javaoperatorsdk.operator.OperatorException;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
@@ -137,7 +138,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         try {
             existingExternalService =
                     context.getSecondaryResource(Service.class).orElse(null);
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | OperatorException e) {
             LOG.warnf(e, "There is no existing service");
             existingExternalService = null;
         }
@@ -174,7 +175,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         Deployment existingDeployment;
         try {
             existingDeployment = context.getSecondaryResource(Deployment.class).orElse(null);
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | OperatorException e) {
             LOG.warnf(e, "There is no existing deployment");
             existingDeployment = null;
         }
