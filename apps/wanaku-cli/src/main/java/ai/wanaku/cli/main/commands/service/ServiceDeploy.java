@@ -81,7 +81,7 @@ public class ServiceDeploy extends BaseCommand {
                 continue;
             }
 
-            String routesPath = props.getProperty("catalog.routes." + systemName);
+            String routesPath = props.getProperty("catalog.routes.%s".formatted(systemName));
             if (routesPath == null) {
                 printer.printErrorMessage(
                         String.format("Missing 'catalog.routes.%s' in index.properties%n", systemName));
