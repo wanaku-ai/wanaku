@@ -1,6 +1,6 @@
-quay.io/wanaku/wanaku-tool-service-exec:latest
-quay.io/wanaku/wanaku-tool-service-http:latest
-quay.io/wanaku/wanaku-tool-performance-noop:latest
-quay.io/wanaku/wanaku-provider-performance-static-file:latest
-quay.io/wanaku/wanaku-router-backend:latest
-quay.io/wanaku/wanaku-operator:latest
+wanaku-tool-service-exec:latest
+wanaku-tool-service-http:latest
+wanaku-tool-performance-noop:latest
+wanaku-provider-performance-static-file:latest
+wanaku-router-backend:latest
+wanaku-operator:latest

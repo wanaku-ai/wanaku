@@ -1,11 +1,13 @@
 #!/bin/bash
 
 branch=${1:-main}
-manifests=$(cat images.txt)
+registry=${2:-quay.io/wanaku}
+images=$(cat images.txt)
 
-for manifest in $manifests ; do
-  aarch64Image=$(echo "${manifest}" | sed "s/:[^:]*$/:${branch}-aarch64/")
-  x864Image=$(echo "${manifest}" | sed "s/:[^:]*$/:${branch}-x86_64/")
+for image in $images ; do
+  fullImage="${registry}/${image}"
+  aarch64Image=$(echo "${fullImage}" | sed "s/:[^:]*$/:${branch}-aarch64/")
+  x864Image=$(echo "${fullImage}" | sed "s/:[^:]*$/:${branch}-x86_64/")
 
   echo "Pulling ${aarch64Image}"
   podman pull ${aarch64Image}
@@ -14,13 +16,13 @@ for manifest in $manifests ; do
   podman pull ${x864Image}
 
   if [[ "${branch}" == "main" ]] ; then
-    echo "Creating the manifest ${manifest}"
-    podman rmi -f ${manifest} || true
-    podman manifest create ${manifest} ${aarch64Image} ${x864Image}
+    echo "Creating the manifest ${fullImage}"
+    podman rmi -f ${fullImage} || true
+    podman manifest create ${fullImage} ${aarch64Image} ${x864Image}
 
-    podman manifest push --all ${manifest}
+    podman manifest push --all ${fullImage}
   else
-    stableManifest=$(echo "${manifest}" | sed "s/:[^:]*$/:${branch}/")
+    stableManifest=$(echo "${fullImage}" | sed "s/:[^:]*$/:${branch}/")
 
     echo "Creating the manifest ${stableManifest}"
     podman rmi -f ${stableManifest} || true
