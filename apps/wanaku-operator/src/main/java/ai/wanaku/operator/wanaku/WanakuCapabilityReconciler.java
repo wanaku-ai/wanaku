@@ -128,7 +128,7 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
                     desiredDeployment = makeDesiredCiCCapabilityDeployment(resource, context, capabilitiesSpec);
                 } else {
                     LOG.errorf("Invalid capability type: %s", capabilitiesSpec.getType());
-                    throw new WanakuException("Invalid capability type: " + capabilitiesSpec.getType());
+                    throw new WanakuException("Invalid capability type: %s".formatted(capabilitiesSpec.getType()));
                 }
             }
 

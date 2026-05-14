@@ -177,7 +177,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
                             name, e.getResponse().getStatus(), e.getResponse().readEntity(String.class)),
                     e);
         } catch (Exception e) {
-            throw new WanakuException("Failed to deploy service catalog '" + name + "'", e);
+            throw new WanakuException("Failed to deploy service catalog '%s'".formatted(name), e);
         }
     }
 

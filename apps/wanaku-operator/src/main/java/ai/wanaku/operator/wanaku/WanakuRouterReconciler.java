@@ -100,6 +100,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
         })
 public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
     private static final Logger LOG = Logger.getLogger(WanakuRouterReconciler.class);
+    public static final String SCHEME = "http";
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -164,9 +165,9 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
             LOG.info("Kubernetes cluster detected, using Ingress for external access");
             host = createIngressAndGetHost(resource, namespace);
         }
-        wanakuStatus.setHost("http://" + host);
-        wanakuStatus.setSseEndpoint("http://" + host + "/mcp/sse");
-        wanakuStatus.setStreamableEndpoint("http://" + host + "/mcp");
+        wanakuStatus.setHost("%s://%s".formatted(SCHEME, host));
+        wanakuStatus.setSseEndpoint("%s://%s/mcp/sse".formatted(SCHEME, host));
+        wanakuStatus.setStreamableEndpoint("%s://%s/mcp/".formatted(SCHEME, host));
 
         // Create the router deployment
         final Deployment desiredDeployment = makeDesiredRouterBackendDeployment(resource, context, host);
