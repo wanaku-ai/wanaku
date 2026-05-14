@@ -6,12 +6,16 @@ import jakarta.inject.Inject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.jboss.logging.Logger;
@@ -27,8 +31,28 @@ public class ServiceTemplateInitializer {
     ServiceTemplateBean serviceTemplateBean;
 
     void loadBuiltInTemplates(@Observes StartupEvent ev) {
-        Path templatesDir = resolveTemplatesDir();
-        if (templatesDir == null || !Files.isDirectory(templatesDir)) {
+        URL resource = Thread.currentThread().getContextClassLoader().getResource(TEMPLATES_RESOURCE);
+        if (resource == null) {
+            LOG.debug("No built-in service templates directory found on classpath");
+            return;
+        }
+
+        try {
+            URI uri = resource.toURI();
+            if ("jar".equals(uri.getScheme())) {
+                try (FileSystem fs = FileSystems.newFileSystem(uri, Map.of())) {
+                    deployFromDir(fs.getPath(TEMPLATES_RESOURCE));
+                }
+            } else {
+                deployFromDir(Path.of(uri));
+            }
+        } catch (URISyntaxException | IOException e) {
+            LOG.errorf(e, "Failed to resolve service templates directory");
+        }
+    }
+
+    private void deployFromDir(Path templatesDir) {
+        if (!Files.isDirectory(templatesDir)) {
             LOG.debug("No built-in service templates directory found on classpath");
             return;
         }
@@ -61,19 +85,6 @@ public class ServiceTemplateInitializer {
 
         if (loaded > 0) {
             LOG.infof("Loaded %d built-in service template(s)", loaded);
-        }
-    }
-
-    private Path resolveTemplatesDir() {
-        URL resource = Thread.currentThread().getContextClassLoader().getResource(TEMPLATES_RESOURCE);
-        if (resource == null) {
-            return null;
-        }
-        try {
-            return Path.of(resource.toURI());
-        } catch (URISyntaxException e) {
-            LOG.errorf(e, "Failed to resolve service templates directory");
-            return null;
         }
     }
 
