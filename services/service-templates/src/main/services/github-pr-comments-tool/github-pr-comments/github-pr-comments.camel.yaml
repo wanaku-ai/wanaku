@@ -1,0 +1,28 @@
+- route:
+    id: github-pr-comments
+    description: Fetch comments from a GitHub Pull Request
+    from:
+      uri: direct:wanaku
+      steps:
+      - setHeader:
+          name: CamelHttpMethod
+          constant: GET
+      - setHeader:
+          name: CamelHttpUri
+          simple: "{{github.api.url}}/repos/{{github.repo.owner}}/{{github.repo.name}}/pulls/{{github.pr.number}}/comments"
+      - setHeader:
+          name: Authorization
+          simple: "Bearer {{github.auth.token}}"
+      - setHeader:
+          name: Accept
+          constant: "application/vnd.github+json"
+      - setHeader:
+          name: X-GitHub-Api-Version
+          constant: "2022-11-28"
+      - setHeader:
+          name: User-Agent
+          constant: "Wanaku-MCP-Router"
+      - to:
+          uri: http:github-api
+          parameters:
+            httpMethod: GET
