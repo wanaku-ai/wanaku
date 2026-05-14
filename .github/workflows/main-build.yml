@@ -36,6 +36,7 @@ on:
 
 env:
   PROJECTS: ${{ github.workspace }}
+  CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io/wanaku' }}
 
 jobs:
   build:
@@ -110,4 +111,4 @@ jobs:
       - name: Create and push multi-arch manifests
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
-          ./build-manifests.sh ${{ github.ref_name }}
+          ./build-manifests.sh ${{ github.ref_name }} ${{ env.CONTAINER_REGISTRY }}
