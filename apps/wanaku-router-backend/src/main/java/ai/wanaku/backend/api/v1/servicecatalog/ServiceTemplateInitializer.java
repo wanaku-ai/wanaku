@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,8 +41,21 @@ public class ServiceTemplateInitializer {
         try {
             URI uri = resource.toURI();
             if ("jar".equals(uri.getScheme())) {
-                try (FileSystem fs = FileSystems.newFileSystem(uri, Map.of())) {
+                FileSystem fs;
+                boolean owner;
+                try {
+                    fs = FileSystems.newFileSystem(uri, Map.of());
+                    owner = true;
+                } catch (FileSystemAlreadyExistsException e) {
+                    fs = FileSystems.getFileSystem(uri);
+                    owner = false;
+                }
+                try {
                     deployFromDir(fs.getPath(TEMPLATES_RESOURCE));
+                } finally {
+                    if (owner) {
+                        fs.close();
+                    }
                 }
             } else {
                 deployFromDir(Path.of(uri));
