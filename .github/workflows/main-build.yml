@@ -46,6 +46,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
     steps:
     - uses: actions/checkout@v6
     - name: Set up JDK 21
@@ -68,14 +71,14 @@ jobs:
       id: arch
       run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
     - name: Login to Container Registry
-      if: github.repository == 'wanaku-ai/wanaku'
+      if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
       uses: docker/login-action@v3
       with:
         registry: quay.io
         username: ${{ secrets.QUAY_USERNAME }}
         password: ${{ secrets.QUAY_PASSWORD }}
     - name: Build and Publish (x86)
-      if: matrix.os == 'ubuntu-latest' && github.repository == 'wanaku-ai/wanaku'
+      if: matrix.os == 'ubuntu-latest' && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
       run: |
         mvn -B --no-transfer-progress clean package \
           -Dquarkus.container-image.build=true \
@@ -85,7 +88,7 @@ jobs:
           -Dquarkus.jib.platforms=linux/amd64 \
           -Pdist
     - name: Build and Publish (arm)
-      if: matrix.os == 'ubuntu-24.04-arm' && github.repository == 'wanaku-ai/wanaku'
+      if: matrix.os == 'ubuntu-24.04-arm' && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
       run: |
         mvn -B --no-transfer-progress clean package \
           -Dquarkus.container-image.build=true \
