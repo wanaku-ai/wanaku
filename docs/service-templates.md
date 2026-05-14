@@ -250,6 +250,22 @@ A template for creating a Kafka-backed MCP tool with manual request/reply correl
 
 The request route sets a `wanakuCorrelationId` header from the Camel exchange id, and the response route uses that same header to match the reply to the original request.
 
+### `github-pullrequest-source-tool`
+
+A template for creating a GitHub Pull Request tool service. This template allows agents to fetch pull request information on demand from a specified repository.
+
+**Parameters:**
+- `github.owner`: The GitHub repository owner (e.g., `apache`)
+- `github.repo`: The GitHub repository name (e.g., `camel`)
+- `github.token`: A GitHub Personal Access Token (PAT) for authentication
+
+**Tool Parameters:**
+- `state`: Filter PRs by state (`open`, `closed`, `all`). Default: `open`
+- `head`: Filter by head user or head organization and branch (`user:branch`)
+- `base`: Filter by base branch name
+- `sort`: What to sort results by (`created`, `updated`, `popularity`, `long-running`). Default: `created`
+- `direction`: The direction of the sort (`asc`, `desc`)
+
 ## Best Practices
 
 ### When to Use Templates

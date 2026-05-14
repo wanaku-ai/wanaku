@@ -1,0 +1,30 @@
+- route:
+    id: github-pullrequest-source
+    from:
+      uri: direct:wanaku
+    steps:
+      - setHeader:
+          name: CamelHttpPath
+          simple: "/repos/{{github.owner}}/{{github.repo}}/pulls"
+      - setHeader:
+          name: CamelHttpMethod
+          constant: GET
+      - setHeader:
+          name: Authorization
+          simple: "Bearer {{github.token}}"
+      - setHeader:
+          name: Accept
+          constant: "application/vnd.github+json"
+      - setHeader:
+          name: User-Agent
+          constant: "Wanaku"
+      - setHeader:
+          name: X-GitHub-Api-Version
+          constant: "2022-11-28"
+      - setHeader:
+          name: CamelHttpQuery
+          simple: "state=${header.state}&head=${header.head}&base=${header.base}&sort=${header.sort}&direction=${header.direction}"
+      - to:
+          uri: "https://api.github.com"
+      - convertBodyTo:
+          type: "java.lang.String"

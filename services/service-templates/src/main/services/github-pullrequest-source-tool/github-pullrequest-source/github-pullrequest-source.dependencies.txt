@@ -1,0 +1,1 @@
+org.apache.camel:camel-http:4.18.2
