@@ -52,7 +52,7 @@ public class LlmChatResource {
     public String codeCompletions(String data) {
         JsonObject json = Json.createReader(new StringReader(data)).readObject();
         String baseUrl = json.getString("baseUrl");
-        String apiKey = json.getString("apiKey");
+        String apiKey = json.containsKey("apiKey") ? json.getString("apiKey") : null;
         JsonObject llmParams = json.getJsonObject("chatParams");
 
         if (!allowlist.contains(baseUrl)) {
@@ -60,12 +60,14 @@ public class LlmChatResource {
         }
         try (var client = HttpClient.newHttpClient()) {
             String url = baseUrl + "/v1/chat/completions";
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
                     .POST(BodyPublishers.ofString(llmParams.toString()))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .build();
+                    .header("Content-Type", "application/json");
+            if (apiKey != null && !apiKey.isEmpty()) {
+                requestBuilder.header("Authorization", "Bearer " + apiKey);
+            }
+            HttpRequest request = requestBuilder.build();
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
             if (response.statusCode() == 429) {
                 throw new WebApplicationException(TOO_MANY_REQUESTS);
