@@ -94,16 +94,20 @@ jobs:
 
   createManifests:
     needs: build
-    if: ${{ secrets.QUAY_USERNAME != '' && secrets.QUAY_PASSWORD != '' }}
     runs-on: ubuntu-latest
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
     steps:
       - uses: actions/checkout@v6
       - name: Login to Container Registry
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         uses: docker/login-action@v3
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
       - name: Create and push multi-arch manifests
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           ./build-manifests.sh ${{ github.ref_name }}
