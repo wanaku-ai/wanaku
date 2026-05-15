@@ -5,11 +5,17 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
@@ -32,6 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @ApplicationScoped
 public class ToolsetReposBean {
     private static final Logger LOG = Logger.getLogger(ToolsetReposBean.class);
+    private static final Pattern TOOLSET_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_-]+$");
+    private static final int MAX_REDIRECTS = 5;
 
     static final String LABEL_TYPE_KEY = "wanaku.type";
     static final String LABEL_TYPE_VALUE = "toolset-repo";
@@ -45,6 +53,9 @@ public class ToolsetReposBean {
 
     @Inject
     Instance<DataStoreRepository> dataStoreRepositoryInstance;
+
+    @Inject
+    UrlAllowlistConfig urlAllowlistConfig;
 
     private DataStoreRepository dataStoreRepository;
 
@@ -208,7 +219,8 @@ public class ToolsetReposBean {
         }
 
         String url = resolveBaseUrl(ds);
-        ToolsetRepoIndex index = ToolsetRepoIndex.fromUrl(url);
+        validateUrl(url);
+        ToolsetRepoIndex index = fetchToolsetRepoIndex(url);
 
         Map<String, Object> result = new HashMap<>();
         result.put("name", name);
@@ -243,10 +255,15 @@ public class ToolsetReposBean {
         }
 
         String baseUrl = resolveBaseUrl(ds);
+        validateUrl(baseUrl);
+        validateToolsetName(toolsetName);
         String toolsetUrl = ToolsetRepoIndex.toolsetUrl(baseUrl, toolsetName);
+        validateUrl(toolsetUrl);
 
         try {
-            return ToolsetIndexHelper.loadToolsIndex(URI.create(toolsetUrl).toURL());
+            return fetchToolsetIndex(toolsetUrl);
+        } catch (WanakuException e) {
+            throw e;
         } catch (Exception e) {
             throw new WanakuException(
                     "Failed to fetch toolset '%s' from %s: %s".formatted(toolsetName, toolsetUrl, e.getMessage()));
@@ -254,13 +271,20 @@ public class ToolsetReposBean {
     }
 
     /**
-     * Validates a URL to prevent SSRF attacks by blocking non-HTTP schemes
-     * and private/loopback network addresses.
+     * Validates a URL to prevent SSRF attacks by blocking non-HTTP schemes,
+     * private/loopback/reserved network addresses, and enforcing the configured
+     * host allowlist when present.
+     * <p>
+     * When an allowlist is configured via {@code wanaku.toolset-repos.url-allowlist},
+     * only URLs whose host matches an allowlisted pattern are accepted.
+     * The allowlist supports glob patterns such as {@code *.github.com} or
+     * {@code *.githubusercontent.com}.
+     * </p>
      *
      * @param url the URL to validate
      * @throws WanakuException if the URL is invalid or points to a restricted address
      */
-    static void validateUrl(String url) throws WanakuException {
+    void validateUrl(String url) throws WanakuException {
         try {
             java.net.URI uri = java.net.URI.create(url);
             String scheme = uri.getScheme();
@@ -271,18 +295,99 @@ public class ToolsetReposBean {
             if (host == null) {
                 throw new WanakuException("URL must have a valid host");
             }
-            if (host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1") || host.equals("0.0.0.0")) {
+
+            if (isLoopbackHost(host)) {
                 throw new WanakuException("URLs pointing to localhost are not allowed");
             }
-            if (host.startsWith("10.") || host.startsWith("192.168.") || isPrivate172(host)) {
-                throw new WanakuException("URLs pointing to private network ranges are not allowed");
+            if (isPrivateOrReservedHost(host)) {
+                throw new WanakuException("URLs pointing to private or reserved network ranges are not allowed");
+            }
+            if (urlAllowlistConfig.isAllowlistConfigured() && !urlAllowlistConfig.isHostAllowed(host)) {
+                throw new WanakuException("URL host '%s' is not in the allowlist. Allowed patterns: %s"
+                        .formatted(host, urlAllowlistConfig.getAllowlistPatterns()));
             }
         } catch (IllegalArgumentException e) {
             throw new WanakuException("Invalid URL: %s".formatted(e.getMessage()));
         }
     }
 
-    private static boolean isPrivate172(String host) {
+    static void validateToolsetName(String toolsetName) throws WanakuException {
+        if (StringHelper.isBlank(toolsetName)) {
+            throw new WanakuException("Toolset name is required");
+        }
+        if (!TOOLSET_NAME_PATTERN.matcher(toolsetName).matches()) {
+            throw new WanakuException("Toolset name contains invalid characters");
+        }
+    }
+
+    static boolean isLoopbackHost(String host) {
+        if (host.equalsIgnoreCase("localhost")) {
+            return true;
+        }
+        try {
+            InetAddress addr = InetAddress.getByName(host);
+            return addr.isLoopbackAddress();
+        } catch (UnknownHostException e) {
+            return false;
+        }
+    }
+
+    static boolean isPrivateOrReservedHost(String host) {
+        try {
+            InetAddress addr = InetAddress.getByName(host);
+            return addr.isLoopbackAddress()
+                    || addr.isSiteLocalAddress()
+                    || addr.isLinkLocalAddress()
+                    || addr.isAnyLocalAddress()
+                    || addr.isMulticastAddress()
+                    || isCarrierGradeNat(addr)
+                    || isReservedIpv6(addr);
+        } catch (UnknownHostException e) {
+            return isPrivateIpv4Pattern(host);
+        }
+    }
+
+    static boolean isCarrierGradeNat(InetAddress addr) {
+        if (!(addr instanceof java.net.Inet4Address)) {
+            return false;
+        }
+        byte[] bytes = addr.getAddress();
+        int first = bytes[0] & 0xFF;
+        int second = bytes[1] & 0xFF;
+        return first == 100 && second >= 64 && second <= 127;
+    }
+
+    static boolean isReservedIpv6(InetAddress addr) {
+        if (!(addr instanceof java.net.Inet6Address)) {
+            return false;
+        }
+        byte[] bytes = addr.getAddress();
+        return (bytes[0] & 0xFF) == 0x00 && (bytes[1] & 0xFF) == 0x00;
+    }
+
+    static boolean isPrivateIpv4Pattern(String host) {
+        if (host.equals("127.0.0.1") || host.equals("0.0.0.0")) {
+            return true;
+        }
+        if (host.startsWith("10.") || host.startsWith("192.168.") || isPrivate172(host)) {
+            return true;
+        }
+        if (host.startsWith("169.254.")) {
+            return true;
+        }
+        if (host.startsWith("100.")) {
+            try {
+                int second = Integer.parseInt(host.split("\\.")[1]);
+                if (second >= 64 && second <= 127) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
+    }
+
+    static boolean isPrivate172(String host) {
         if (!host.startsWith("172.")) {
             return false;
         }
@@ -324,6 +429,55 @@ public class ToolsetReposBean {
             return "https://raw.githubusercontent.com/" + cleaned + "/" + branch;
         }
         return url;
+    }
+
+    private ToolsetRepoIndex fetchToolsetRepoIndex(String baseUrl) throws WanakuException {
+        String indexUrl = baseUrl.endsWith("/") ? baseUrl + "index.properties" : baseUrl + "/index.properties";
+        try (InputStream inputStream = openValidatedStream(indexUrl, 0)) {
+            return ToolsetRepoIndex.fromProperties(inputStream);
+        } catch (IOException e) {
+            throw new WanakuException("Failed to fetch index.properties from " + indexUrl + ": " + e.getMessage());
+        }
+    }
+
+    private List<ToolReference> fetchToolsetIndex(String toolsetUrl) throws Exception {
+        try (InputStream inputStream = openValidatedStream(toolsetUrl, 0)) {
+            return ToolsetIndexHelper.loadToolsIndex(inputStream);
+        }
+    }
+
+    private InputStream openValidatedStream(String url, int redirectCount) throws IOException, WanakuException {
+        if (redirectCount > MAX_REDIRECTS) {
+            throw new IOException("Too many redirects");
+        }
+
+        validateUrl(url);
+
+        HttpURLConnection connection =
+                (HttpURLConnection) URI.create(url).toURL().openConnection();
+        connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(10_000);
+        connection.setReadTimeout(10_000);
+        connection.connect();
+
+        int status = connection.getResponseCode();
+        if (status >= 300 && status < 400) {
+            String location = connection.getHeaderField("Location");
+            connection.disconnect();
+            if (StringHelper.isBlank(location)) {
+                throw new IOException("Redirect response missing Location header");
+            }
+            String redirectedUrl = URI.create(url).resolve(location).toString();
+            return openValidatedStream(redirectedUrl, redirectCount + 1);
+        }
+
+        if (status >= 400) {
+            String message = connection.getResponseMessage();
+            connection.disconnect();
+            throw new IOException("HTTP " + status + (message != null ? " " + message : ""));
+        }
+
+        return connection.getInputStream();
     }
 
     @SuppressWarnings("unchecked")

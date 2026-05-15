@@ -183,6 +183,45 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 |-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | `wanaku.bridge.grpc.transport.deadline-seconds` | `10` - The deadline in seconds for gRPC transport calls to capability services. Requests that exceed this deadline will be cancelled. |
 
+### Toolset Repository URL Allowlist
+
+The toolset repository feature fetches content from remote URLs. To mitigate Server-Side Request Forgery (SSRF) risks, the router validates all repository URLs before making outbound requests.
+
+**Default behavior (no allowlist configured):** Only `http` and `https` URLs to public hosts are accepted. The following are blocked:
+
+- Loopback addresses (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`)
+- RFC 1918 private ranges (`10.x`, `172.16-31.x`, `192.168.x`)
+- Link-local addresses (`169.254.x`)
+- Carrier-grade NAT (`100.64-127.x`)
+- Multicast and reserved IPv6 addresses
+
+**When an allowlist is configured**, only URLs whose host matches an allowlisted pattern are accepted — all other hosts are rejected regardless of whether they are public or private.
+
+| Property | Description |
+|---|---|
+| `wanaku.toolset-repos.url-allowlist` | Comma-separated list of glob patterns for allowed hosts. Empty by default (uses private/IP blocklist instead). Supports `*` (single label), `**` (any depth), and `?` (single character). |
+
+The configured allowlist patterns can be inspected at runtime via `GET /api/v1/toolset-repos/allowlist`.
+
+**Example — restrict to GitHub only:**
+
+```properties
+wanaku.toolset-repos.url-allowlist=*.github.com,*.githubusercontent.com
+```
+
+**Example — allow multiple hosting providers:**
+
+```properties
+wanaku.toolset-repos.url-allowlist=*.github.com,*.githubusercontent.com,*.gitlab.com,**.example.com
+```
+
+| Pattern | Matches | Does not match |
+|---|---|---|
+| `*.github.com` | `api.github.com` | `github.com`, `a.b.github.com` |
+| `**.example.com` | `example.com`, `a.example.com`, `a.b.example.com` | `notexample.com` |
+| `host-?.example.com` | `host-1.example.com` | `host-12.example.com` |
+| `github.com` | `github.com` | `api.github.com` |
+
 ### Persistence (`core-persistence-infinispan`)
 
 | Property                                    | Description                                                                   |

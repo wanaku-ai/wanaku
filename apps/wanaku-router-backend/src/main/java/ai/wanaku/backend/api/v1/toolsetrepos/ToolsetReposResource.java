@@ -33,6 +33,9 @@ public class ToolsetReposResource {
     @Inject
     ToolsetReposBean toolsetReposBean;
 
+    @Inject
+    UrlAllowlistConfig urlAllowlistConfig;
+
     @GET
     public WanakuResponse<List<Map<String, String>>> list() {
         LOG.debug("REST: Listing toolset repositories");
@@ -80,5 +83,11 @@ public class ToolsetReposResource {
             @PathParam("name") String name, @PathParam("toolsetName") String toolsetName) {
         LOG.debugf("REST: Fetching toolset '%s' from repository: %s", toolsetName, name);
         return new WanakuResponse<>(toolsetReposBean.fetchToolset(name, toolsetName));
+    }
+
+    @Path("/allowlist")
+    @GET
+    public WanakuResponse<List<String>> getAllowlist() {
+        return new WanakuResponse<>(urlAllowlistConfig.getAllowlistPatterns());
     }
 }
