@@ -2,6 +2,7 @@ package ai.wanaku.core.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -40,6 +41,12 @@ public class ToolsetIndexHelper {
                 indexURL, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
+    private static <T> List<T> loadIndex(InputStream indexStream, Class<T> clazz) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(
+                indexStream, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
+    }
+
     private static <T> void saveIndex(File indexFile, List<T> resourceReferences) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -66,6 +73,17 @@ public class ToolsetIndexHelper {
      */
     public static List<ToolReference> loadToolsIndex(URL indexURL) throws Exception {
         return loadIndex(indexURL, ToolReference.class);
+    }
+
+    /**
+     * Load an index of tools from an input stream.
+     *
+     * @param indexStream the input stream to read the tool index from
+     * @return the list of tool references parsed from the stream
+     * @throws Exception if the stream cannot be read or parsed
+     */
+    public static List<ToolReference> loadToolsIndex(InputStream indexStream) throws Exception {
+        return loadIndex(indexStream, ToolReference.class);
     }
 
     /**

@@ -57,11 +57,20 @@ public class ToolsetRepoIndex {
 
     /**
      * Fetch and parse an index from a remote repository base URL.
+     * <p>
+     * <strong>Deprecated:</strong> this method opens a direct HTTP connection
+     * without any SSRF validation (scheme checks, private-IP blocking,
+     * allowlist enforcement, or DNS-rebinding protection). Use
+     * {@code ToolsetReposBean.fetchToolsetRepoIndex(String)} instead, which
+     * validates the URL and controls the connection via
+     * {@code openValidatedStream}.
      *
      * @param baseUrl the base URL of the toolset repository
      * @return the parsed index
      * @throws WanakuException if fetching or parsing fails
+     * @deprecated Use {@code ToolsetReposBean.fetchToolsetRepoIndex(String)} which provides SSRF protection
      */
+    @Deprecated(forRemoval = true)
     public static ToolsetRepoIndex fromUrl(String baseUrl) throws WanakuException {
         String indexUrl = normalizeBaseUrl(baseUrl) + INDEX_FILE;
         try (InputStream is = URI.create(indexUrl).toURL().openStream()) {

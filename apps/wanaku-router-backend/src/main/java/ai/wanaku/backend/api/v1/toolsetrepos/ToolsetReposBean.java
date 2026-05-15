@@ -5,11 +5,20 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
@@ -32,6 +41,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @ApplicationScoped
 public class ToolsetReposBean {
     private static final Logger LOG = Logger.getLogger(ToolsetReposBean.class);
+    private static final Pattern TOOLSET_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_-]+$");
+    private static final int MAX_REDIRECTS = 5;
 
     static final String LABEL_TYPE_KEY = "wanaku.type";
     static final String LABEL_TYPE_VALUE = "toolset-repo";
@@ -45,6 +56,9 @@ public class ToolsetReposBean {
 
     @Inject
     Instance<DataStoreRepository> dataStoreRepositoryInstance;
+
+    @Inject
+    UrlAllowlistConfig urlAllowlistConfig;
 
     private DataStoreRepository dataStoreRepository;
 
@@ -97,7 +111,7 @@ public class ToolsetReposBean {
             throw new WanakuException("Repository URL is required");
         }
 
-        validateUrl(url);
+        validateUrlFailFast(url);
 
         DataStore existing = findByName(name);
         if (existing != null) {
@@ -151,7 +165,7 @@ public class ToolsetReposBean {
         }
 
         if (url != null && !url.isBlank()) {
-            validateUrl(url);
+            validateUrlFailFast(url);
         }
 
         try {
@@ -208,7 +222,8 @@ public class ToolsetReposBean {
         }
 
         String url = resolveBaseUrl(ds);
-        ToolsetRepoIndex index = ToolsetRepoIndex.fromUrl(url);
+        validateUrlFailFast(url);
+        ToolsetRepoIndex index = fetchToolsetRepoIndex(url);
 
         Map<String, Object> result = new HashMap<>();
         result.put("name", name);
@@ -243,10 +258,16 @@ public class ToolsetReposBean {
         }
 
         String baseUrl = resolveBaseUrl(ds);
+        validateUrlFailFast(baseUrl);
+        validateToolsetName(toolsetName);
         String toolsetUrl = ToolsetRepoIndex.toolsetUrl(baseUrl, toolsetName);
+        validateUrlFailFast(toolsetUrl);
 
         try {
-            return ToolsetIndexHelper.loadToolsIndex(URI.create(toolsetUrl).toURL());
+            return fetchToolsetIndex(toolsetUrl);
+        } catch (WanakuException e) {
+            // Re-throw WanakuException without wrapping to preserve the original error message
+            throw e;
         } catch (Exception e) {
             throw new WanakuException(
                     "Failed to fetch toolset '%s' from %s: %s".formatted(toolsetName, toolsetUrl, e.getMessage()));
@@ -254,15 +275,33 @@ public class ToolsetReposBean {
     }
 
     /**
-     * Validates a URL to prevent SSRF attacks by blocking non-HTTP schemes
-     * and private/loopback network addresses.
+     * Validates a URL to prevent SSRF attacks by blocking non-HTTP schemes,
+     * private/loopback/reserved network addresses, and enforcing the configured
+     * host allowlist when present.
+     * <p>
+     * DNS is resolved and the resulting IP is checked against private/reserved
+     * ranges. The connection is made using the original hostname so that HTTPS
+     * TLS handshake (SNI and certificate verification) works correctly.
+     * <p>
+     * <strong>Note:</strong> DNS-rebinding TOCTOU attacks are not fully prevented
+     * by this approach — a malicious DNS server could return a public IP during
+     * validation and a private IP when the JVM resolver is queried again at
+     * connection time. For environments requiring full TOCTOU protection, a
+     * custom {@code SSLSocketFactory} with hostname-based SNI and IP-pinned
+     * connections would be needed.
+     * <p>
+     * When an allowlist is configured via {@code wanaku.toolset-repos.url-allowlist},
+     * only URLs whose host matches an allowlisted pattern are accepted. The
+     * allowlist supports glob patterns such as {@code *.github.com} or
+     * {@code *.githubusercontent.com}.
      *
      * @param url the URL to validate
+     * @return a {@link ResolvedUrl} containing the parsed URI and resolved address
      * @throws WanakuException if the URL is invalid or points to a restricted address
      */
-    static void validateUrl(String url) throws WanakuException {
+    ResolvedUrl validateUrl(String url) throws WanakuException {
         try {
-            java.net.URI uri = java.net.URI.create(url);
+            URI uri = URI.create(url);
             String scheme = uri.getScheme();
             if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) {
                 throw new WanakuException("Only http and https URLs are allowed");
@@ -271,28 +310,124 @@ public class ToolsetReposBean {
             if (host == null) {
                 throw new WanakuException("URL must have a valid host");
             }
-            if (host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1") || host.equals("0.0.0.0")) {
+
+            if (host.equalsIgnoreCase("localhost")) {
                 throw new WanakuException("URLs pointing to localhost are not allowed");
             }
-            if (host.startsWith("10.") || host.startsWith("192.168.") || isPrivate172(host)) {
-                throw new WanakuException("URLs pointing to private network ranges are not allowed");
+
+            InetAddress resolvedAddr;
+            try {
+                resolvedAddr = InetAddress.getByName(host);
+            } catch (UnknownHostException e) {
+                throw new WanakuException("Unable to resolve host '%s': %s".formatted(host, e.getMessage()));
             }
+
+            if (resolvedAddr.isLoopbackAddress() || resolvedAddr.isAnyLocalAddress()) {
+                throw new WanakuException("URLs pointing to localhost are not allowed");
+            }
+            if (isPrivateOrReservedAddress(resolvedAddr)) {
+                throw new WanakuException("URLs pointing to private or reserved network ranges are not allowed");
+            }
+            if (urlAllowlistConfig.isAllowlistConfigured() && !urlAllowlistConfig.isHostAllowed(host)) {
+                throw new WanakuException("URL host '%s' is not in the allowlist. Allowed patterns: %s"
+                        .formatted(host, urlAllowlistConfig.getAllowlistPatterns()));
+            }
+
+            return new ResolvedUrl(uri, host, resolvedAddr);
         } catch (IllegalArgumentException e) {
             throw new WanakuException("Invalid URL: %s".formatted(e.getMessage()));
         }
     }
 
-    private static boolean isPrivate172(String host) {
-        if (!host.startsWith("172.")) {
-            return false;
+    /**
+     * Fail-fast URL validation that discards the resolved address.
+     * <p>
+     * Use this when the actual connection will be made via
+     * {@link #openValidatedStream}, which performs its own validation.
+     * This method provides early feedback for invalid or restricted URLs
+     * before any I/O is attempted.
+     *
+     * @param url the URL to validate
+     * @throws WanakuException if the URL is invalid or points to a restricted address
+     */
+    void validateUrlFailFast(String url) throws WanakuException {
+        validateUrl(url);
+    }
+
+    static void validateToolsetName(String toolsetName) throws WanakuException {
+        if (StringHelper.isBlank(toolsetName)) {
+            throw new WanakuException("Toolset name is required");
         }
-        try {
-            int second = Integer.parseInt(host.split("\\.")[1]);
-            return second >= 16 && second <= 31;
-        } catch (Exception e) {
-            return false;
+        if (!TOOLSET_NAME_PATTERN.matcher(toolsetName).matches()) {
+            throw new WanakuException("Toolset name contains invalid characters");
         }
     }
+
+    static boolean isPrivateOrReservedAddress(InetAddress addr) {
+        return addr.isSiteLocalAddress()
+                || addr.isLinkLocalAddress()
+                || addr.isMulticastAddress()
+                || isCarrierGradeNat(addr)
+                || isReservedIpv6(addr);
+    }
+
+    static boolean isCarrierGradeNat(InetAddress addr) {
+        if (!(addr instanceof Inet4Address)) {
+            return false;
+        }
+        byte[] bytes = addr.getAddress();
+        int first = bytes[0] & 0xFF;
+        int second = bytes[1] & 0xFF;
+        return first == 100 && second >= 64 && second <= 127;
+    }
+
+    /**
+     * Checks whether an IPv6 address is reserved.
+     * <p>
+     * Note: IPv4-mapped IPv6 addresses (e.g., {@code ::ffff:127.0.0.1}) are
+     * typically resolved by the JVM as {@link Inet4Address} rather than
+     * {@link Inet6Address}, so they are caught by the standard IPv4 checks
+     * (loopback, site-local, link-local, CGNAT). This method handles the
+     * case where the JVM returns an {@link Inet6Address} for such addresses.
+     * </p>
+     */
+    static boolean isReservedIpv6(InetAddress addr) {
+        if (!(addr instanceof Inet6Address)) {
+            return false;
+        }
+        byte[] bytes = addr.getAddress();
+
+        if (isIpv4MappedIpv6(bytes)) {
+            byte[] v4Bytes = new byte[] {bytes[12], bytes[13], bytes[14], bytes[15]};
+            try {
+                InetAddress v4Addr = InetAddress.getByAddress(v4Bytes);
+                return v4Addr.isLoopbackAddress()
+                        || v4Addr.isSiteLocalAddress()
+                        || v4Addr.isLinkLocalAddress()
+                        || isCarrierGradeNat(v4Addr);
+            } catch (UnknownHostException e) {
+                return true;
+            }
+        }
+
+        int firstByte = bytes[0] & 0xFF;
+        if ((firstByte & 0xFE) == 0xFC) {
+            return true;
+        }
+
+        return (firstByte == 0x00) && ((bytes[1] & 0xFF) == 0x00);
+    }
+
+    static boolean isIpv4MappedIpv6(byte[] bytes) {
+        for (int i = 0; i < 10; i++) {
+            if (bytes[i] != 0x00) {
+                return false;
+            }
+        }
+        return (bytes[10] & 0xFF) == 0xFF && (bytes[11] & 0xFF) == 0xFF;
+    }
+
+    record ResolvedUrl(URI uri, String host, InetAddress address) {}
 
     private DataStore findByName(String name) {
         List<DataStore> repos =
@@ -324,6 +459,78 @@ public class ToolsetReposBean {
             return "https://raw.githubusercontent.com/" + cleaned + "/" + branch;
         }
         return url;
+    }
+
+    private ToolsetRepoIndex fetchToolsetRepoIndex(String baseUrl) throws WanakuException {
+        String indexUrl = baseUrl.endsWith("/") ? baseUrl + "index.properties" : baseUrl + "/index.properties";
+        try (InputStream inputStream = openValidatedStream(indexUrl, 0)) {
+            return ToolsetRepoIndex.fromProperties(inputStream);
+        } catch (IOException e) {
+            throw new WanakuException("Failed to fetch index.properties from " + indexUrl + ": " + e.getMessage());
+        }
+    }
+
+    private List<ToolReference> fetchToolsetIndex(String toolsetUrl) throws Exception {
+        try (InputStream inputStream = openValidatedStream(toolsetUrl, 0)) {
+            return ToolsetIndexHelper.loadToolsIndex(inputStream);
+        }
+    }
+
+    private InputStream openValidatedStream(String url, int redirectCount) throws IOException, WanakuException {
+        if (redirectCount > MAX_REDIRECTS) {
+            throw new IOException("Too many redirects");
+        }
+
+        validateUrl(url);
+
+        HttpURLConnection connection =
+                (HttpURLConnection) URI.create(url).toURL().openConnection();
+        connection.setRequestProperty("User-Agent", "Wanaku-Router/1.0");
+        connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(10_000);
+        connection.setReadTimeout(10_000);
+        connection.connect();
+
+        int status = connection.getResponseCode();
+        if (status >= 300 && status < 400) {
+            String location = connection.getHeaderField("Location");
+            connection.disconnect();
+            if (StringHelper.isBlank(location)) {
+                throw new IOException("Redirect response missing Location header");
+            }
+            String redirectedUrl = URI.create(url).resolve(location).toString();
+            return openValidatedStream(redirectedUrl, redirectCount + 1);
+        }
+
+        if (status >= 400) {
+            String message = connection.getResponseMessage();
+            connection.disconnect();
+            throw new IOException("HTTP " + status + (message != null ? " " + message : ""));
+        }
+
+        return new DisconnectOnCloseInputStream(connection.getInputStream(), connection);
+    }
+
+    private static class DisconnectOnCloseInputStream extends FilterInputStream {
+        private final HttpURLConnection connection;
+        private boolean closed = false;
+
+        DisconnectOnCloseInputStream(InputStream in, HttpURLConnection connection) {
+            super(in);
+            this.connection = connection;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (!closed) {
+                closed = true;
+                try {
+                    super.close();
+                } finally {
+                    connection.disconnect();
+                }
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

@@ -135,6 +135,7 @@ export * from "./wanakuResponseListPromptReference";
 export * from "./wanakuResponseListResourceReference";
 export * from "./wanakuResponseListServiceTarget";
 export * from "./wanakuResponseListStaleCapabilityInfo";
+export * from "./wanakuResponseListString";
 export * from "./wanakuResponseListToolReference";
 export * from "./wanakuResponseMapServiceTargetActivityRecord";
 export * from "./wanakuResponseMapServiceTargetActivityRecordData";

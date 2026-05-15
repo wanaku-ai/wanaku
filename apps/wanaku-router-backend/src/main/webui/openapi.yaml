@@ -623,6 +623,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StaleCapabilityInfo"
+    WanakuResponseListString:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/WanakuError"
+        data:
+          type: array
+          items:
+            type: string
     WanakuResponseListToolReference:
       type: object
       properties:
@@ -1950,6 +1959,18 @@ paths:
         "400":
           description: Bad Request
       summary: Add
+      tags:
+      - Toolset Repos Resource
+  /api/v1/toolset-repos/-/allowlist:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WanakuResponseListString"
+      summary: Get Allowlist
       tags:
       - Toolset Repos Resource
   /api/v1/toolset-repos/{name}:

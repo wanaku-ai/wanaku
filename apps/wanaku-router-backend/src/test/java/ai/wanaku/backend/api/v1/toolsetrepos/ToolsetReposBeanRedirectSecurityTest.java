@@ -1,0 +1,108 @@
+package ai.wanaku.backend.api.v1.toolsetrepos;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ToolsetReposBeanRedirectSecurityTest {
+
+    @Mock
+    DataStoreRepository dataStoreRepository;
+
+    @Mock
+    UrlAllowlistConfig urlAllowlistConfig;
+
+    @InjectMocks
+    ToolsetReposBean rawBean;
+
+    ToolsetReposBean bean;
+
+    @BeforeEach
+    void setUp() {
+        bean = spy(rawBean);
+        doAnswer(invocation -> {
+                    String url = invocation.getArgument(0);
+                    String host = URI.create(url).getHost();
+                    if ("127.0.0.1".equals(host)) {
+                        return null;
+                    }
+                    if ("169.254.169.254".equals(host)) {
+                        throw new WanakuException(
+                                "URLs pointing to private or reserved network ranges are not allowed");
+                    }
+                    throw new WanakuException("Unexpected host during redirect test: " + host);
+                })
+                .when(bean)
+                .validateUrl(anyString());
+    }
+
+    @Test
+    void browse_revalidatesRedirectTargetBeforeFollowingIt() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/repo/index.properties", this::redirectToMetadataIp);
+        server.start();
+
+        try {
+            int port = server.getAddress().getPort();
+            DataStore repo = new DataStore();
+            repo.setId("repo-1");
+            repo.setName("redirect-repo");
+            repo.setData("{\"url\":\"http://127.0.0.1:" + port + "/repo\",\"branch\":\"main\"}");
+            repo.setLabels(new HashMap<>(Map.of(ToolsetReposBean.LABEL_TYPE_KEY, ToolsetReposBean.LABEL_TYPE_VALUE)));
+
+            when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=toolset-repo"))
+                    .thenReturn(List.of(repo));
+
+            WanakuException ex = assertThrows(WanakuException.class, () -> bean.browse("redirect-repo"));
+            assertTrue(ex.getMessage().contains("private or reserved"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void fetchToolset_rejectsUnsafeToolsetNames() throws Exception {
+        DataStore repo = new DataStore();
+        repo.setId("repo-2");
+        repo.setName("safe-repo");
+        repo.setData("{\"url\":\"http://127.0.0.1:8080/repo\",\"branch\":\"main\"}");
+        repo.setLabels(new HashMap<>(Map.of(ToolsetReposBean.LABEL_TYPE_KEY, ToolsetReposBean.LABEL_TYPE_VALUE)));
+
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=toolset-repo"))
+                .thenReturn(List.of(repo));
+
+        WanakuException ex = assertThrows(WanakuException.class, () -> bean.fetchToolset("safe-repo", "../etc/passwd"));
+        assertTrue(ex.getMessage().contains("invalid characters"));
+    }
+
+    private void redirectToMetadataIp(HttpExchange exchange) throws IOException {
+        exchange.getResponseHeaders().add("Location", "http://169.254.169.254/latest/meta-data/");
+        exchange.sendResponseHeaders(302, -1);
+        exchange.close();
+    }
+}

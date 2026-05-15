@@ -56,6 +56,7 @@ import type {
   WanakuResponseListResourceReference,
   WanakuResponseListServiceTarget,
   WanakuResponseListStaleCapabilityInfo,
+  WanakuResponseListString,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
   WanakuResponseMapStringMapStringString,
@@ -2694,6 +2695,37 @@ export const postApiV1ToolsetRepos = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(postApiV1ToolsetReposBody),
+    },
+  );
+};
+
+/**
+ * @summary Get Allowlist
+ */
+export type getApiV1ToolsetReposAllowlistResponse200 = {
+  data: WanakuResponseListString;
+  status: 200;
+};
+
+export type getApiV1ToolsetReposAllowlistResponseSuccess =
+  getApiV1ToolsetReposAllowlistResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ToolsetReposAllowlistResponse =
+  getApiV1ToolsetReposAllowlistResponseSuccess;
+
+export const getGetApiV1ToolsetReposAllowlistUrl = () => {
+  return `/api/v1/toolset-repos/-/allowlist`;
+};
+
+export const getApiV1ToolsetReposAllowlist = async (
+  options?: RequestInit,
+): Promise<getApiV1ToolsetReposAllowlistResponse> => {
+  return customFetch<getApiV1ToolsetReposAllowlistResponse>(
+    getGetApiV1ToolsetReposAllowlistUrl(),
+    {
+      ...options,
+      method: "GET",
     },
   );
 };
