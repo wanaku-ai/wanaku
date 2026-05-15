@@ -1,0 +1,27 @@
+mcp:
+  tools:
+    - github-pullrequest-source:
+        route:
+          id: "github-pullrequest-source"
+        description: "Fetch pull request information from a GitHub repository"
+        properties:
+          - name: state
+            type: string
+            description: "Filter PRs by state (open, closed, all). Default: open"
+            required: false
+          - name: head
+            type: string
+            description: "Filter by head user or head organization and branch (user:branch)"
+            required: false
+          - name: base
+            type: string
+            description: "Filter by base branch name"
+            required: false
+          - name: sort
+            type: string
+            description: "What to sort results by (created, updated, popularity, long-running). Default: created"
+            required: false
+          - name: direction
+            type: string
+            description: "The direction of the sort (asc, desc)"
+            required: false
