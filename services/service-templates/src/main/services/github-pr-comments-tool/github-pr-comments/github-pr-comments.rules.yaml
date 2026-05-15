@@ -1,0 +1,6 @@
+mcp:
+  tools:
+  - github-pr-comments:
+      route:
+        id: "github-pr-comments"
+        description: "{{tool.description}}"
