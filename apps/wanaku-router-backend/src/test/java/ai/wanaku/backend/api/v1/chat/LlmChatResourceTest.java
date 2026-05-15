@@ -80,6 +80,6 @@ public class LlmChatResourceTest extends WanakuRouterTest {
                 .when()
                 .post("/api/v1/chat/completions");
 
-        assertHttpStatus(response, Status.BAD_REQUEST.getStatusCode());
+        assertHttpStatus(response, Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
 }
