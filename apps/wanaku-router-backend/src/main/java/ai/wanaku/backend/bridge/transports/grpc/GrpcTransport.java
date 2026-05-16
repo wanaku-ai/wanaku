@@ -129,50 +129,72 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @return a provisioning reference with URIs and properties
      */
     @Override
-    public ProvisioningReference provision(String name, String configData, String secretsData, ServiceTarget service) {
-
+    public Uni<ProvisioningReference> provisionAsync(
+            String name, String configData, String secretsData, ServiceTarget service) {
         LOG.debugf("Provisioning '%s' to service: %s", name, service.toAddress());
         String safeName = Objects.requireNonNullElse(name, "");
 
-        ManagedChannel channel = createChannel(service);
-        try {
-            Configuration cfg = Configuration.newBuilder()
-                    .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                    .setName(safeName)
-                    .setPayload(Objects.requireNonNullElse(configData, ""))
-                    .build();
+        Configuration cfg = Configuration.newBuilder()
+                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
+                .setName(safeName)
+                .setPayload(Objects.requireNonNullElse(configData, ""))
+                .build();
 
-            Secret secret = Secret.newBuilder()
-                    .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
-                    .setName(safeName)
-                    .setPayload(Objects.requireNonNullElse(secretsData, ""))
-                    .build();
+        Secret secret = Secret.newBuilder()
+                .setType(PayloadType.PAYLOAD_TYPE_BUILTIN)
+                .setName(safeName)
+                .setPayload(Objects.requireNonNullElse(secretsData, ""))
+                .build();
 
-            ProvisionRequest request = ProvisionRequest.newBuilder()
-                    .setConfiguration(cfg)
-                    .setSecret(secret)
-                    .build();
+        ProvisionRequest request = ProvisionRequest.newBuilder()
+                .setConfiguration(cfg)
+                .setSecret(secret)
+                .build();
 
-            ProvisionerGrpc.ProvisionerBlockingStub stub = ProvisionerGrpc.newBlockingStub(channel);
-            ProvisionReply reply = stub.withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                    .provision(request);
+        return Uni.createFrom()
+                .<ProvisionReply>emitter(em -> {
+                    ManagedChannel channel = createChannel(service);
+                    try {
+                        var future = ProvisionerGrpc.newFutureStub(channel)
+                                .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                                .provision(request);
 
-            LOG.debugf(
-                    "Successfully provisioned configuration '%s' (config URI: %s, secret URI: %s)",
-                    name, reply.getConfigurationUri(), reply.getSecretUri());
+                        future.addListener(
+                                () -> {
+                                    try {
+                                        em.complete(future.get());
+                                    } catch (StatusRuntimeException e) {
+                                        em.fail(mapStatusRuntimeException(e, service));
+                                    } catch (ExecutionException e) {
+                                        em.fail(mapStatusRuntimeException(e, service));
+                                    } catch (Exception e) {
+                                        em.fail(e);
+                                    } finally {
+                                        channelManager.closeChannel(channel);
+                                    }
+                                },
+                                Infrastructure.getDefaultExecutor());
+                    } catch (StatusRuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        em.fail(mapStatusRuntimeException(e, service));
+                    } catch (RuntimeException e) {
+                        channelManager.closeChannel(channel);
+                        LOG.errorf(
+                                e, "Failed to provision configuration '%s' to service: %s", name, service.toAddress());
+                        em.fail(new ServiceUnavailableException(
+                                "Service is not available at the address " + service.toAddress(), e));
+                    }
+                })
+                .map(reply -> {
+                    LOG.debugf(
+                            "Successfully provisioned configuration '%s' (config URI: %s, secret URI: %s)",
+                            name, reply.getConfigurationUri(), reply.getSecretUri());
 
-            return new ProvisioningReference(
-                    URI.create(reply.getConfigurationUri()),
-                    URI.create(reply.getSecretUri()),
-                    reply.getPropertiesMap());
-        } catch (StatusRuntimeException e) {
-            throw mapStatusRuntimeException(e, service);
-        } catch (RuntimeException e) {
-            LOG.errorf(e, "Failed to provision configuration '%s' to service: %s", name, service.toAddress());
-            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
-        } finally {
-            channelManager.closeChannel(channel);
-        }
+                    return new ProvisioningReference(
+                            URI.create(reply.getConfigurationUri()),
+                            URI.create(reply.getSecretUri()),
+                            reply.getPropertiesMap());
+                });
     }
 
     /**
@@ -204,7 +226,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
                         future.addListener(
                                 () -> {
                                     try {
-                                        em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                        em.complete(future.get());
                                     } catch (StatusRuntimeException e) {
                                         em.fail(mapStatusRuntimeException(e, service));
                                     } catch (ExecutionException e) {
@@ -262,7 +284,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
                         future.addListener(
                                 () -> {
                                     try {
-                                        em.complete(future.get(deadlineSeconds, TimeUnit.SECONDS));
+                                        em.complete(future.get());
                                     } catch (StatusRuntimeException e) {
                                         em.fail(mapStatusRuntimeException(e, service));
                                     } catch (ExecutionException e) {
@@ -338,26 +360,48 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service) {
+    public Uni<HealthProbeReply> probeHealthAsync(HealthProbeRequest request, ServiceTarget service) {
         LOG.debugf("Probing health of service: %s", service.toAddress());
 
-        ManagedChannel channel = createChannel(service);
-        try {
-            HealthProbeGrpc.HealthProbeBlockingStub blockingStub = HealthProbeGrpc.newBlockingStub(channel);
-            return blockingStub
-                    .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
-                    .getStatus(request);
-        } catch (StatusRuntimeException e) {
-            throw mapStatusRuntimeException(e, service);
-        } catch (RuntimeException e) {
-            LOG.errorf(e, "Failed to probe health of service: %s", service.toAddress());
-            throw new ServiceUnavailableException("Service is not available at the address " + service.toAddress(), e);
-        } finally {
-            channelManager.closeChannel(channel);
-        }
+        return Uni.createFrom().<HealthProbeReply>emitter(em -> {
+            ManagedChannel channel = createChannel(service);
+            try {
+                var future = HealthProbeGrpc.newFutureStub(channel)
+                        .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
+                        .getStatus(request);
+
+                future.addListener(
+                        () -> {
+                            try {
+                                em.complete(future.get());
+                            } catch (StatusRuntimeException e) {
+                                em.fail(mapStatusRuntimeException(e, service));
+                            } catch (ExecutionException e) {
+                                em.fail(mapStatusRuntimeException(e, service));
+                            } catch (Exception e) {
+                                em.fail(e);
+                            } finally {
+                                channelManager.closeChannel(channel);
+                            }
+                        },
+                        Infrastructure.getDefaultExecutor());
+            } catch (StatusRuntimeException e) {
+                channelManager.closeChannel(channel);
+                em.fail(mapStatusRuntimeException(e, service));
+            } catch (RuntimeException e) {
+                channelManager.closeChannel(channel);
+                LOG.errorf(e, "Failed to probe health of service: %s", service.toAddress());
+                em.fail(new ServiceUnavailableException(
+                        "Service is not available at the address " + service.toAddress(), e));
+            }
+        });
     }
 
     private RuntimeException mapStatusRuntimeException(ExecutionException e, ServiceTarget service) {
+        if (e.getCause() instanceof StatusRuntimeException statusRuntimeException) {
+            return mapStatusRuntimeException(statusRuntimeException, service);
+        }
+
         LOG.errorf(e, "Service %s did not respond within a reasonable time frame", service.getServiceName());
         return new ServiceUnavailableException(
                 String.format("Service %s did not respond within a reasonable time frame", service.getServiceName()),

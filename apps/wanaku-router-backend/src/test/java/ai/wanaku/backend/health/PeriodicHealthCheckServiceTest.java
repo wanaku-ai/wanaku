@@ -1,8 +1,11 @@
 package ai.wanaku.backend.health;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.context.ManagedExecutor;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.backend.common.ServiceTargetEvent;
 import ai.wanaku.backend.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
@@ -13,8 +16,10 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +36,8 @@ class PeriodicHealthCheckServiceTest {
     private HealthProbeClient probeClient;
     private ManagedExecutor managedExecutor;
     private MutinyEmitter<ServiceTargetEvent> eventEmitter;
+    private WanakuRouterConfig config;
+    private WanakuRouterConfig.HealthCheckConfig healthCheckConfig;
 
     @BeforeEach
     void setUp() {
@@ -39,8 +46,11 @@ class PeriodicHealthCheckServiceTest {
         probeClient = mock(HealthProbeClient.class);
         managedExecutor = mock(ManagedExecutor.class);
         eventEmitter = mock(MutinyEmitter.class);
+        config = mock(WanakuRouterConfig.class);
+        healthCheckConfig = mock(WanakuRouterConfig.HealthCheckConfig.class);
 
         // Inject mocks using reflection
+        injectField(healthCheckService, "config", config);
         injectField(healthCheckService, "serviceRegistry", serviceRegistry);
         injectField(healthCheckService, "probeClient", probeClient);
         injectField(healthCheckService, "managedExecutor", managedExecutor);
@@ -53,6 +63,9 @@ class PeriodicHealthCheckServiceTest {
         });
 
         when(eventEmitter.hasRequests()).thenReturn(false);
+        when(config.healthCheck()).thenReturn(healthCheckConfig);
+        when(healthCheckConfig.enabled()).thenReturn(true);
+        when(healthCheckConfig.maxConcurrent()).thenReturn(10);
     }
 
     @Test
@@ -69,7 +82,7 @@ class PeriodicHealthCheckServiceTest {
         healthCheckService.checkInstanceHealth(target);
 
         // Then: the probe should NOT be called
-        verify(probeClient, never()).probe(any());
+        verify(probeClient, never()).probeAsync(any());
         verify(serviceRegistry, never()).updateHealthStatus(any(), any());
     }
 
@@ -82,13 +95,13 @@ class PeriodicHealthCheckServiceTest {
         // And: the capability is active
         ActivityRecord activeRecord = createActiveRecord();
         when(serviceRegistry.getStates(SERVICE_ID)).thenReturn(activeRecord);
-        when(probeClient.probe(target)).thenReturn(HealthStatus.HEALTHY);
+        when(probeClient.probeAsync(target)).thenReturn(Uni.createFrom().item(HealthStatus.HEALTHY));
 
         // When: checkInstanceHealth is called
         healthCheckService.checkInstanceHealth(target);
 
         // Then: the probe should be called
-        verify(probeClient).probe(target);
+        verify(probeClient).probeAsync(target);
         verify(serviceRegistry).updateHealthStatus(SERVICE_ID, HealthStatus.HEALTHY);
     }
 
@@ -105,7 +118,7 @@ class PeriodicHealthCheckServiceTest {
         healthCheckService.checkInstanceHealth(target);
 
         // Then: the probe should NOT be called (no record = skip)
-        verify(probeClient, never()).probe(any());
+        verify(probeClient, never()).probeAsync(any());
         verify(serviceRegistry, never()).updateHealthStatus(any(), any());
     }
 
@@ -120,14 +133,37 @@ class PeriodicHealthCheckServiceTest {
         crashedRecord.setHealthStatus(HealthStatus.HEALTHY);
         crashedRecord.setLastSeen(java.time.Instant.now());
         when(serviceRegistry.getStates(SERVICE_ID)).thenReturn(crashedRecord);
-        when(probeClient.probe(target)).thenThrow(new RuntimeException("Connection refused"));
+        when(probeClient.probeAsync(target))
+                .thenReturn(Uni.createFrom().failure(new RuntimeException("Connection refused")));
 
         // When: checkInstanceHealth is called
         healthCheckService.checkInstanceHealth(target);
 
         // Then: the probe should be called and mark as DOWN
-        verify(probeClient).probe(target);
+        verify(probeClient).probeAsync(target);
         verify(serviceRegistry).updateHealthStatus(SERVICE_ID, HealthStatus.DOWN);
+    }
+
+    @Test
+    void sweep_capsScheduledChecksAtConfiguredMaximum() {
+        ServiceTarget first =
+                new ServiceTarget("first", SERVICE_NAME, "localhost", 8080, "tool-invoker", "mcp", null, null, null);
+        ServiceTarget second =
+                new ServiceTarget("second", SERVICE_NAME, "localhost", 8081, "tool-invoker", "mcp", null, null, null);
+        ServiceTarget third =
+                new ServiceTarget("third", SERVICE_NAME, "localhost", 8082, "tool-invoker", "mcp", null, null, null);
+
+        when(healthCheckConfig.maxConcurrent()).thenReturn(2);
+        when(serviceRegistry.getEntries()).thenReturn(List.of(first, second, third));
+        when(serviceRegistry.getStates(any())).thenReturn(createActiveRecord());
+        when(probeClient.probeAsync(any())).thenReturn(Uni.createFrom().item(HealthStatus.HEALTHY));
+
+        healthCheckService.sweep();
+
+        verify(managedExecutor, times(2)).submit(any(Runnable.class));
+        verify(probeClient).probeAsync(eq(first));
+        verify(probeClient).probeAsync(eq(second));
+        verify(probeClient, never()).probeAsync(eq(third));
     }
 
     private ActivityRecord createActiveRecord() {

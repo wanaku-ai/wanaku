@@ -1,11 +1,11 @@
 package ai.wanaku.backend.health;
 
 import org.jboss.logging.Logger;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
-import ai.wanaku.core.exchange.v1.HealthProbeReply;
 import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.RuntimeStatus;
 
@@ -28,24 +28,33 @@ class HealthProbeClient {
      * @return the health status based on the probe result
      */
     HealthStatus probe(ServiceTarget target) {
-        try {
-            HealthProbeRequest request =
-                    HealthProbeRequest.newBuilder().setId(target.getId()).build();
+        return probeAsync(target).await().indefinitely();
+    }
 
-            HealthProbeReply reply = transport.probeHealth(request, target);
-            return mapRuntimeStatus(reply.getStatus());
-        } catch (ServiceUnavailableException e) {
-            if (e.isTransientCondition()) {
-                LOG.warnf("Service is temporarily unavailable at %s: %s", target.toAddress(), e.getMessage());
-                return HealthStatus.PENDING;
-            }
+    Uni<HealthStatus> probeAsync(ServiceTarget target) {
+        HealthProbeRequest request =
+                HealthProbeRequest.newBuilder().setId(target.getId()).build();
 
-            LOG.warnf("Service is not available at %s: %s", target.toAddress(), e.getMessage());
-            return HealthStatus.DOWN;
-        } catch (Exception e) {
-            LOG.warnf(e, "Health probe failed for %s: %s", target.toAddress(), e.getMessage());
-            return HealthStatus.DOWN;
+        return transport
+                .probeHealthAsync(request, target)
+                .map(reply -> mapRuntimeStatus(reply.getStatus()))
+                .onFailure(ServiceUnavailableException.class)
+                .recoverWithItem(e -> handleServiceUnavailable(target, (ServiceUnavailableException) e))
+                .onFailure()
+                .recoverWithItem(e -> {
+                    LOG.warnf(e, "Health probe failed for %s: %s", target.toAddress(), e.getMessage());
+                    return HealthStatus.DOWN;
+                });
+    }
+
+    private HealthStatus handleServiceUnavailable(ServiceTarget target, ServiceUnavailableException e) {
+        if (e.isTransientCondition()) {
+            LOG.warnf("Service is temporarily unavailable at %s: %s", target.toAddress(), e.getMessage());
+            return HealthStatus.PENDING;
         }
+
+        LOG.warnf("Service is not available at %s: %s", target.toAddress(), e.getMessage());
+        return HealthStatus.DOWN;
     }
 
     private static HealthStatus mapRuntimeStatus(RuntimeStatus status) {
