@@ -1,5 +1,6 @@
 package ai.wanaku.backend.health;
 
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
@@ -26,13 +27,14 @@ class HealthProbeClientTest {
         HealthProbeReply reply = HealthProbeReply.newBuilder()
                 .setStatus(RuntimeStatus.RUNTIME_STATUS_STARTED)
                 .build();
-        when(transport.probeHealth(any(HealthProbeRequest.class), eq(TARGET))).thenReturn(reply);
+        when(transport.probeHealthAsync(any(HealthProbeRequest.class), eq(TARGET)))
+                .thenReturn(Uni.createFrom().item(reply));
 
         HealthProbeClient client = new HealthProbeClient(transport);
         HealthStatus status = client.probe(TARGET);
 
         assertEquals(HealthStatus.HEALTHY, status);
-        verify(transport).probeHealth(any(HealthProbeRequest.class), eq(TARGET));
+        verify(transport).probeHealthAsync(any(HealthProbeRequest.class), eq(TARGET));
     }
 
     @Test
@@ -41,7 +43,8 @@ class HealthProbeClientTest {
         HealthProbeReply reply = HealthProbeReply.newBuilder()
                 .setStatus(RuntimeStatus.RUNTIME_STATUS_STOPPED)
                 .build();
-        when(transport.probeHealth(any(HealthProbeRequest.class), eq(TARGET))).thenReturn(reply);
+        when(transport.probeHealthAsync(any(HealthProbeRequest.class), eq(TARGET)))
+                .thenReturn(Uni.createFrom().item(reply));
 
         HealthProbeClient client = new HealthProbeClient(transport);
         HealthStatus status = client.probe(TARGET);
@@ -52,8 +55,8 @@ class HealthProbeClientTest {
     @Test
     void probe_returnsDown_whenTransportThrowsException() {
         WanakuBridgeTransport transport = mock(WanakuBridgeTransport.class);
-        when(transport.probeHealth(any(HealthProbeRequest.class), eq(TARGET)))
-                .thenThrow(new RuntimeException("connection refused"));
+        when(transport.probeHealthAsync(any(HealthProbeRequest.class), eq(TARGET)))
+                .thenReturn(Uni.createFrom().failure(new RuntimeException("connection refused")));
 
         HealthProbeClient client = new HealthProbeClient(transport);
         HealthStatus status = client.probe(TARGET);

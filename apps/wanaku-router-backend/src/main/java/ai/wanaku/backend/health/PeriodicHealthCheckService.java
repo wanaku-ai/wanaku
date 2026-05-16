@@ -73,8 +73,14 @@ public class PeriodicHealthCheckService {
         List<ServiceTarget> entries = serviceRegistry.getEntries();
         LOG.debugf("Health check sweep: checking %d capabilities", entries.size());
 
+        int maxConcurrent = Math.max(0, config.healthCheck().maxConcurrent());
+        int scheduled = 0;
         for (ServiceTarget target : entries) {
+            if (scheduled >= maxConcurrent) {
+                break;
+            }
             managedExecutor.submit(() -> checkInstanceHealth(target));
+            scheduled++;
         }
     }
 
@@ -111,12 +117,26 @@ public class PeriodicHealthCheckService {
             return;
         }
 
+        probeClient
+                .probeAsync(target)
+                .subscribe()
+                .with(
+                        status -> completeHealthCheck(target, id, status),
+                        failure -> failHealthCheck(id, activityRecord, failure));
+    }
+
+    private void completeHealthCheck(ServiceTarget target, String id, HealthStatus status) {
         try {
-            HealthStatus status = probeClient.probe(target);
             LOG.debugf("Health probe result for %s (%s): %s", target.getServiceName(), id, status.asValue());
             serviceRegistry.updateHealthStatus(id, status);
             emitHealthStatusEvent(id, status);
-        } catch (Exception e) {
+        } finally {
+            inProgress.remove(id);
+        }
+    }
+
+    private void failHealthCheck(String id, ActivityRecord activityRecord, Throwable failure) {
+        try {
             if (activityRecord.getHealthStatus() == HealthStatus.PENDING) {
                 final Instant lastSeen = activityRecord.getLastSeen();
                 final Duration between = Duration.between(lastSeen, Instant.now());
@@ -124,18 +144,20 @@ public class PeriodicHealthCheckService {
                 if (between.toMinutes() < ActivityRecord.TIME_TO_LET_GO) {
                     LOG.infof("Recently registered capability %s is in pending health state. ", id);
                 } else {
-                    LOG.warnf(e, "Error during health check for %s", id);
-                    serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
-                    emitHealthStatusEvent(id, HealthStatus.DOWN);
+                    markDown(id, failure);
                 }
             } else {
-                LOG.warnf(e, "Error during health check for %s", id);
-                serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
-                emitHealthStatusEvent(id, HealthStatus.DOWN);
+                markDown(id, failure);
             }
         } finally {
             inProgress.remove(id);
         }
+    }
+
+    private void markDown(String id, Throwable failure) {
+        LOG.warnf(failure, "Error during health check for %s", id);
+        serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
+        emitHealthStatusEvent(id, HealthStatus.DOWN);
     }
 
     private void emitHealthStatusEvent(String id, HealthStatus status) {
@@ -156,11 +178,11 @@ public class PeriodicHealthCheckService {
 
     /**
      * Consumes health check events from the Vert.x EventBus.
-     * Runs on a worker thread since the health probe involves blocking gRPC calls.
+     * Dispatches the health probe asynchronously.
      *
      * @param target the service target to check
      */
-    @ConsumeEvent(value = HEALTH_CHECK_ADDRESS, blocking = true)
+    @ConsumeEvent(HEALTH_CHECK_ADDRESS)
     void onHealthCheckRequested(ServiceTarget target) {
         checkInstanceHealth(target);
     }
