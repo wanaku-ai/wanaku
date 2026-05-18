@@ -1,9 +1,8 @@
-import React, {useState} from "react"
+import React, {useRef, useState} from "react"
 import {
   Form,
   PasswordInput, Stack,
   TextArea,
-  TextInput,
   Toggle
 } from "@carbon/react"
 import {
@@ -13,6 +12,7 @@ import {
   STORE_IN_LOCAL_STORAGE
 } from "./config.ts"
 import {BaseUrlSelect} from "./BaseUrlSelect"
+import {LLMChangeHandle, LLMModelComboBox} from "./LLMModelComboBox"
 
 
 interface LLMSetupProps {
@@ -23,6 +23,7 @@ interface LLMSetupProps {
 export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
   
   const [isStoredInLocalStorage, setStoreInLocalStorage] = useState<boolean>(isConfigStoredInLocalStorage())
+  const llmModelComboBoxRef = useRef<LLMChangeHandle>({ llmBaseUrlChanged: () => {} })
   
   function applyConfigChange(config: LlmConfig) {
     if (isStoredInLocalStorage) {
@@ -56,15 +57,14 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
           value={config.baseUrl || ""}
           onChange={(baseUrl: string) => {
             applyConfigChange({ ...config, baseUrl })
+            llmModelComboBoxRef.current.llmBaseUrlChanged(baseUrl)
           }}
         />
-        <TextInput
-          id="llm-model"
+        <LLMModelComboBox
           labelText="LLM Model"
-          placeholder="Type LLM model here..."
           value={config.llmModel}
-          onChange={(event) => {
-            const llmModel = event.target.value
+          ref={llmModelComboBoxRef}
+          onChange={(llmModel) => {
             applyConfigChange({ ...config, llmModel })
           }}
         />
