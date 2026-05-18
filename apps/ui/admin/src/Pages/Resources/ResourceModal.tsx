@@ -25,6 +25,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
   const [params, setParams] = useState<Param[]>(openedResource?.params || [])
   const [configurationURI, setConfigurationURI] = useState(openedResource?.configurationURI)
   const [secretsURI, setSecretsURI] = useState(openedResource?.secretsURI)
+  const [submitDisable, setSubmitDisabled] = useState(false)
   const { listManagementResources } = useCapabilities()
 
   function handleSubmit() {
@@ -36,7 +37,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
       type,
       mimeType,
       namespace,
-      params: nonEmptyParameters(),
+      params,
       configurationURI,
       secretsURI
     })
@@ -53,27 +54,12 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
     }
   }
 
-  function newParameter() {
-    const temp = [...params]
-    temp.push({name: "", value: ""})
-    setParams(temp)
-  }
-
-  function removeParameter(i: number) {
-    const temp = [...params]
-    temp.splice(i, 1)
-    setParams(temp)
-  }
-
-  function nonEmptyParameters() {
-    return params.filter(parameter => parameter.name !== "")
-  }
-
   return (
     <Modal
       open={true}
       modalHeading={openedResource ? "Edit resource" : "Add a Resource"}
       primaryButtonText={openedResource ? "Save" : "Add"}
+      primaryButtonDisabled={submitDisable}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onCancel}
@@ -84,87 +70,88 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
           <Tab>Parameters</Tab>
           <Tab>External</Tab>
         </TabList>
-        <TabPanels>
-          <TabPanel>
-            <TextInput
-              id="resource-name"
-              labelText="Resource Name"
-              placeholder="e.g. example-resource"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-            <TextInput
-              id="resource-description"
-              labelText="Description"
-              placeholder="e.g. Description of the resource"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-            <TextInput
-              id="resource-location"
-              labelText="Location"
-              placeholder="e.g. /path/to/resource"
-              value={location}
-              onChange={(event) => {
-                const location = event.target.value
-                setLocation(location)
-                autoDetectMimeType(location)
-              }}
-            />
-            <TargetTypeSelect
-              value={type}
-              onChange={setType}
-              apiCall={listManagementResources}
-            />
-            <ComboBox
-              id="resource-mime-type"
-              titleText="MIME Type"
-              placeholder="Select or enter MIME type"
-              helperText="Content type of the resource (optional)"
-              items={commonMimeTypes}
-              selectedItem={mimeType}
-              onChange={(event) => {
-                let value = event.selectedItem
-                if (value === null) {
-                  value = undefined
-                }
-                setMimeType(value)
-              }}
-            />
-            <NamespaceSelect
-              id="resource-namespace"
-              labelText="Select a Namespace"
-              helperText="Choose a Namespace from the list"
-              value={namespace}
-              onChange={namespace => setNamespace(namespace.id)}
-            />
-          </TabPanel>
-          <TabPanel>
-            <ParametersTable
-              parameters={params}
-              onAdd={newParameter}
-              onSetName={(i, name) => params[i].name = name}
-              onSetValue={(i, value) => params[i].value = value}
-              onDelete={removeParameter}
-            />
-          </TabPanel>
-          <TabPanel>
-            <TextInput
-              id="resource-configuration-uri"
-              labelText="Configuration URI"
-              placeholder="e.g. file:///config/resource-config.json"
-              value={configurationURI}
-              onChange={(event) => setConfigurationURI(event.target.value)}
-            />
-            <TextInput
-              id="resource-secrets-uri"
-              labelText="Secrets URI"
-              placeholder="e.g. vault://secrets/db-credentials"
-              value={secretsURI}
-              onChange={(event) => setSecretsURI(event.target.value)}
-            />
-          </TabPanel>
-        </TabPanels>
+        <div id="resource-tab-panel-wrapper">
+          <TabPanels>
+            <TabPanel id="resource-tab-panel">
+              <TextInput
+                id="resource-name"
+                labelText="Resource Name"
+                placeholder="e.g. example-resource"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+              <TextInput
+                id="resource-description"
+                labelText="Description"
+                placeholder="e.g. Description of the resource"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+              <TextInput
+                id="resource-location"
+                labelText="Location"
+                placeholder="e.g. /path/to/resource"
+                value={location}
+                onChange={(event) => {
+                  const location = event.target.value
+                  setLocation(location)
+                  autoDetectMimeType(location)
+                }}
+              />
+              <TargetTypeSelect
+                value={type}
+                onChange={setType}
+                apiCall={listManagementResources}
+              />
+              <ComboBox
+                id="resource-mime-type"
+                titleText="MIME Type"
+                placeholder="Select or enter MIME type"
+                helperText="Content type of the resource (optional)"
+                items={commonMimeTypes}
+                selectedItem={mimeType}
+                onChange={(event) => {
+                  let value = event.selectedItem
+                  if (value === null) {
+                    value = undefined
+                  }
+                  setMimeType(value)
+                }}
+              />
+              <NamespaceSelect
+                id="resource-namespace"
+                labelText="Select a Namespace"
+                helperText="Choose a Namespace from the list"
+                value={namespace}
+                onChange={namespace => setNamespace(namespace.id)}
+              />
+            </TabPanel>
+            <TabPanel>
+              <ParametersTable
+                parameters={params}
+                onUpdate={(parameters: Param[]) => setParams(parameters)}
+                onInlineEditorOpen={() => setSubmitDisabled(true)}
+                onInlineEditorClose={() => setSubmitDisabled(false)}
+              />
+            </TabPanel>
+            <TabPanel>
+              <TextInput
+                id="resource-configuration-uri"
+                labelText="Configuration URI"
+                placeholder="e.g. file:///config/resource-config.json"
+                value={configurationURI}
+                onChange={(event) => setConfigurationURI(event.target.value)}
+              />
+              <TextInput
+                id="resource-secrets-uri"
+                labelText="Secrets URI"
+                placeholder="e.g. vault://secrets/db-credentials"
+                value={secretsURI}
+                onChange={(event) => setSecretsURI(event.target.value)}
+              />
+            </TabPanel>
+          </TabPanels>
+        </div>
       </Tabs>
     </Modal>
   )
