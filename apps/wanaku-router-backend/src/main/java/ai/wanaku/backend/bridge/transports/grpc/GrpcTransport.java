@@ -159,11 +159,6 @@ public class GrpcTransport implements WanakuBridgeTransport {
                                 .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
                                 .provision(request);
 
-                        em.onTermination(() -> {
-                            future.cancel(true);
-                            channelManager.closeChannel(channel);
-                        });
-
                         future.addListener(
                                 () -> {
                                     try {
@@ -374,11 +369,6 @@ public class GrpcTransport implements WanakuBridgeTransport {
                 var future = HealthProbeGrpc.newFutureStub(channel)
                         .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
                         .getStatus(request);
-
-                em.onTermination(() -> {
-                    future.cancel(true);
-                    channelManager.closeChannel(channel);
-                });
 
                 future.addListener(
                         () -> {
