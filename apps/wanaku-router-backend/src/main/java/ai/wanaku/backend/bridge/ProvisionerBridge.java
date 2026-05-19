@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge;
 
 import org.jboss.logging.Logger;
+import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
@@ -27,6 +28,11 @@ public class ProvisionerBridge implements ProvisionBridge {
     @Override
     public ProvisioningReference provision(String name, String configData, String secretsData, ServiceTarget service) {
         return transport.provision(name, configData, secretsData, service);
+    }
+
+    public Uni<ProvisioningReference> provisionAsync(
+            String name, String configData, String secretsData, ServiceTarget service) {
+        return transport.provisionAsync(name, configData, secretsData, service);
     }
 
     /**

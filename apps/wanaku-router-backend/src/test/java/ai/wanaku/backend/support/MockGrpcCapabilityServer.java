@@ -5,6 +5,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import ai.wanaku.core.exchange.v1.HealthProbeGrpc;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
@@ -29,9 +30,19 @@ public class MockGrpcCapabilityServer {
 
     private final List<String> responseContent;
     private Server server;
+    private volatile StatusRuntimeException provisionException;
+    private volatile StatusRuntimeException probeHealthException;
 
     public MockGrpcCapabilityServer(List<String> responseContent) {
         this.responseContent = responseContent;
+    }
+
+    public void setProvisionException(StatusRuntimeException e) {
+        this.provisionException = e;
+    }
+
+    public void setProbeHealthException(StatusRuntimeException e) {
+        this.probeHealthException = e;
     }
 
     /**
@@ -86,6 +97,10 @@ public class MockGrpcCapabilityServer {
     private class MockProvisioner extends ProvisionerGrpc.ProvisionerImplBase {
         @Override
         public void provision(ProvisionRequest request, StreamObserver<ProvisionReply> responseObserver) {
+            if (provisionException != null) {
+                responseObserver.onError(provisionException);
+                return;
+            }
             LOG.info("Mock provisioner called");
             ProvisionReply reply = ProvisionReply.newBuilder()
                     .setConfigurationUri("file:///tmp/mock-config")
@@ -99,6 +114,10 @@ public class MockGrpcCapabilityServer {
     private class MockHealthProbe extends HealthProbeGrpc.HealthProbeImplBase {
         @Override
         public void getStatus(HealthProbeRequest request, StreamObserver<HealthProbeReply> responseObserver) {
+            if (probeHealthException != null) {
+                responseObserver.onError(probeHealthException);
+                return;
+            }
             HealthProbeReply reply = HealthProbeReply.newBuilder()
                     .setStatus(RuntimeStatus.RUNTIME_STATUS_STARTED)
                     .build();

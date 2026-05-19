@@ -62,7 +62,21 @@ public interface WanakuBridgeTransport {
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
      *         if the service cannot be reached or returns an error
      */
-    ProvisioningReference provision(String name, String configData, String secretsData, ServiceTarget service);
+    default ProvisioningReference provision(String name, String configData, String secretsData, ServiceTarget service) {
+        return provisionAsync(name, configData, secretsData, service).await().indefinitely();
+    }
+
+    /**
+     * Provisions configuration and secrets to a remote service without blocking on the transport call.
+     *
+     * @param name the name identifier for the configuration and secrets
+     * @param configData the configuration data to provision (may be null or empty)
+     * @param secretsData the secrets data to provision (may be null or empty)
+     * @param service the target service to provision to
+     * @return a Uni that will emit the provisioning reference
+     */
+    Uni<ProvisioningReference> provisionAsync(
+            String name, String configData, String secretsData, ServiceTarget service);
 
     /**
      * Invokes a tool on a remote service.
@@ -135,5 +149,16 @@ public interface WanakuBridgeTransport {
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service);
+    default HealthProbeReply probeHealth(HealthProbeRequest request, ServiceTarget service) {
+        return probeHealthAsync(request, service).await().indefinitely();
+    }
+
+    /**
+     * Probes the health of a remote service without blocking on the transport call.
+     *
+     * @param request the health probe request containing the service identifier
+     * @param service the target service to probe
+     * @return a Uni that will emit the health probe reply
+     */
+    Uni<HealthProbeReply> probeHealthAsync(HealthProbeRequest request, ServiceTarget service);
 }
