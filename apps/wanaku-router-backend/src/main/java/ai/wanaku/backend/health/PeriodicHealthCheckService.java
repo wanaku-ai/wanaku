@@ -74,9 +74,17 @@ public class PeriodicHealthCheckService {
         LOG.debugf("Health check sweep: checking %d capabilities", entries.size());
 
         int maxConcurrent = Math.max(0, config.healthCheck().maxConcurrent());
+        int budget = maxConcurrent - inProgress.size();
+        if (budget <= 0) {
+            LOG.debugf(
+                    "Health check sweep: %d checks already in progress (max %d), skipping",
+                    inProgress.size(), maxConcurrent);
+            return;
+        }
+
         int scheduled = 0;
         for (ServiceTarget target : entries) {
-            if (scheduled >= maxConcurrent) {
+            if (scheduled >= budget) {
                 break;
             }
             managedExecutor.submit(() -> checkInstanceHealth(target));
