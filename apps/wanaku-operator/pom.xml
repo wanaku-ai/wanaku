@@ -31,6 +31,13 @@
         </dependency>
         <dependency>
             <groupId>ai.wanaku</groupId>
+            <artifactId>core-util</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ai.wanaku</groupId>
             <artifactId>core-services-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -87,6 +94,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-mockito</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

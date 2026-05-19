@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ""
+    component: "camel-code-execution-engine"
+  name: ""
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ""
+      component: "camel-code-execution-engine"
+  template:
+    metadata:
+      labels:
+        app: ""
+        component: "camel-code-execution-engine"
+    spec:
+      containers:
+        - name: camel-code-execution-engine
+          image: ""
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9190
+              name: grpc
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            tcpSocket:
+              port: 9190
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            tcpSocket:
+              port: 9190
