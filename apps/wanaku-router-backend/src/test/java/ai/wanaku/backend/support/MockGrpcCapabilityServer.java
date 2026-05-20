@@ -2,6 +2,7 @@ package ai.wanaku.backend.support;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.jboss.logging.Logger;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -32,6 +33,7 @@ public class MockGrpcCapabilityServer {
     private Server server;
     private volatile StatusRuntimeException provisionException;
     private volatile StatusRuntimeException probeHealthException;
+    private volatile CountDownLatch responseLatch;
 
     public MockGrpcCapabilityServer(List<String> responseContent) {
         this.responseContent = responseContent;
@@ -43,6 +45,10 @@ public class MockGrpcCapabilityServer {
 
     public void setProbeHealthException(StatusRuntimeException e) {
         this.probeHealthException = e;
+    }
+
+    public void setResponseLatch(CountDownLatch latch) {
+        this.responseLatch = latch;
     }
 
     /**
@@ -72,10 +78,22 @@ public class MockGrpcCapabilityServer {
         }
     }
 
+    private void awaitLatch() {
+        CountDownLatch latch = responseLatch;
+        if (latch != null) {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     private class MockToolInvoker extends ToolInvokerGrpc.ToolInvokerImplBase {
         @Override
         public void invokeTool(ToolInvokeRequest request, StreamObserver<ToolInvokeReply> responseObserver) {
             LOG.infof("Mock tool invoked with uri=%s", request.getUri());
+            awaitLatch();
             ToolInvokeReply reply =
                     ToolInvokeReply.newBuilder().addAllContent(responseContent).build();
             responseObserver.onNext(reply);
@@ -87,6 +105,7 @@ public class MockGrpcCapabilityServer {
         @Override
         public void resourceAcquire(ResourceRequest request, StreamObserver<ResourceReply> responseObserver) {
             LOG.infof("Mock resource acquired with location=%s, name=%s", request.getLocation(), request.getName());
+            awaitLatch();
             ResourceReply reply =
                     ResourceReply.newBuilder().addAllContent(responseContent).build();
             responseObserver.onNext(reply);
