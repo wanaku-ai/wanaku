@@ -1,8 +1,6 @@
 mcp:
   resources:
-  - ftp-read:
-      route:
-        id: "ftp-read"
-        description: "{{resource.description}}"
-        uri: "wanaku://ftp-read"
-        mimeType: "application/octet-stream"
+    - ftp-read:
+        route:
+          id: "ftp-read"
+        description: "Consume from FTP"

@@ -3,6 +3,4 @@ mcp:
     - sftp-read:
         route:
           id: "sftp-read"
-        description: "{{resource.description}}"
-        uri: "direct:wanaku"
-        mimeType: "application/octet-stream"
+        description: "Consume from sftp"
