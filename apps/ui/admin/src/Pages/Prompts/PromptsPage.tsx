@@ -1,9 +1,9 @@
-import {Modal, Stack, TextArea, TextInput, ToastNotification,} from "@carbon/react";
+import {ToastNotification,} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
 import {PromptReference} from "../../models";
 import {PromptsTable} from "./PromptsTable";
-import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
+import {PromptModal} from "./PromptsModal"
 
 export const PromptsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<PromptReference[]>([]);
@@ -94,110 +94,12 @@ export const PromptsPage: React.FC = () => {
           />
         )}
         {isAddModalOpen && (
-          <AddPromptModal
+          <PromptModal
             onRequestClose={() => setIsAddModalOpen(false)}
             onSubmit={handleAddPrompt}
           />
         )}
       </div>
     </div>
-  );
-};
-
-interface AddPromptModalProps {
-  onRequestClose: () => void;
-  onSubmit: (newPrompt: PromptReference) => void;
-}
-
-const AddPromptModal: React.FC<AddPromptModalProps> = ({
-  onRequestClose,
-  onSubmit,
-}) => {
-  const [promptName, setPromptName] = useState("");
-  const [description, setDescription] = useState("");
-  const [messagesJson, setMessagesJson] = useState("");
-  const [argumentsJson, setArgumentsJson] = useState("");
-  const [toolReferences, setToolReferences] = useState("");
-  const [selectedNamespace, setSelectedNamespace] = useState("");
-
-  const handleSubmit = () => {
-    try {
-      const messages = messagesJson ? JSON.parse(messagesJson) : [];
-      const args = argumentsJson ? JSON.parse(argumentsJson) : [];
-      const toolRefs = toolReferences ? toolReferences.split(',').map(t => t.trim()) : [];
-
-      onSubmit({
-        name: promptName,
-        description,
-        messages,
-        arguments: args,
-        toolReferences: toolRefs,
-        namespace: selectedNamespace,
-      });
-    } catch (error) {
-      console.error("Invalid JSON in prompt data:", error);
-    }
-  };
-
-  return (
-    <Modal
-      open={true}
-      modalHeading="Add a Prompt"
-      primaryButtonText="Add"
-      secondaryButtonText="Cancel"
-      onRequestClose={onRequestClose}
-      onRequestSubmit={handleSubmit}
-    >
-      <Stack gap={5}>
-        <TextInput
-          id="prompt-name"
-          labelText="Prompt Name"
-          placeholder="e.g. code-reviewer"
-          value={promptName}
-          onChange={(e) => setPromptName(e.target.value)}
-        />
-        <TextInput
-          id="prompt-description"
-          labelText="Description"
-          placeholder="e.g. A prompt for reviewing code"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <TextArea
-          id="messages-json"
-          labelText="Messages (JSON)"
-          placeholder='Examples:
-Text: {"role": "user", "content": {"type": "text", "text": "Review {{code}}"}}
-Image: {"role": "user", "content": {"type": "image", "data": "base64...", "mimeType": "image/png"}}
-Audio: {"role": "user", "content": {"type": "audio", "data": "base64...", "mimeType": "audio/wav"}}
-Resource: {"role": "user", "content": {"type": "resource", "resource": {"location": "file:///path", "description": "File content", "mimeType": "text/plain"}}}'
-          rows={6}
-          value={messagesJson}
-          onChange={(e) => setMessagesJson(e.target.value)}
-        />
-        <TextArea
-          id="arguments-json"
-          labelText="Arguments (JSON, optional)"
-          placeholder='e.g. [{"name": "code", "description": "The code to review", "required": true}]'
-          rows={3}
-          value={argumentsJson}
-          onChange={(e) => setArgumentsJson(e.target.value)}
-        />
-        <TextInput
-          id="tool-references"
-          labelText="Tool References (comma-separated, optional)"
-          placeholder="e.g. code-analyzer, linter"
-          value={toolReferences}
-          onChange={(e) => setToolReferences(e.target.value)}
-        />
-        <NamespaceSelect
-          id="namespace"
-          labelText="Select a Namespace"
-          helperText="Choose a Namespace from the list"
-          value={selectedNamespace}
-          onChange={namespace => setSelectedNamespace(namespace.id!)}
-        />
-      </Stack>
-    </Modal>
   );
 };
