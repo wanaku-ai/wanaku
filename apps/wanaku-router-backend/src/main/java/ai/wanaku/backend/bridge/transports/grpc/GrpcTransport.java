@@ -228,6 +228,11 @@ public class GrpcTransport implements WanakuBridgeTransport {
                                 .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
                                 .invokeTool(request);
 
+                        em.onTermination(() -> {
+                            future.cancel(true);
+                            channelManager.closeChannel(channel);
+                        });
+
                         future.addListener(
                                 () -> {
                                     try {
@@ -285,6 +290,11 @@ public class GrpcTransport implements WanakuBridgeTransport {
                         var future = ResourceAcquirerGrpc.newFutureStub(channel)
                                 .withDeadline(Deadline.after(deadlineSeconds, TimeUnit.SECONDS))
                                 .resourceAcquire(request);
+
+                        em.onTermination(() -> {
+                            future.cancel(true);
+                            channelManager.closeChannel(channel);
+                        });
 
                         future.addListener(
                                 () -> {
