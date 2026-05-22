@@ -2,24 +2,16 @@ package ai.wanaku.backend.service.support;
 
 import java.util.Collections;
 import java.util.List;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
 import ai.wanaku.backend.core.mcp.providers.ServiceRegistry;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
-import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import org.mockito.Mockito;
 
-@QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class FirstAvailableTest extends WanakuRouterTest {
+public class FirstAvailableTest {
     private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
 
     FirstAvailable firstAvailable;
