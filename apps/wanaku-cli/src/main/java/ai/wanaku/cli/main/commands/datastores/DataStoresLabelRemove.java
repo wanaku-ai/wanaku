@@ -15,6 +15,7 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
 import picocli.CommandLine;
 
+import static ai.wanaku.cli.main.commands.datastores.DataStoresLabelAdd.validateLabelExpression;
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 
 /**
@@ -77,14 +78,9 @@ public class DataStoresLabelRemove extends BaseCommand {
         }
 
         // Validate that either id or labelExpression is provided, but not both
-        if (id != null && labelExpression != null) {
-            printer.printErrorMessage("Cannot specify both --id and --label-expression. Use one or the other.");
-            return EXIT_ERROR;
-        }
-
-        if (id == null && labelExpression == null) {
-            printer.printErrorMessage("Must specify either --id or --label-expression.");
-            return EXIT_ERROR;
+        final Integer exitError = validateLabelExpression(printer, id, labelExpression);
+        if (exitError != null) {
+            return exitError;
         }
 
         // Handle removing labels by label expression

@@ -76,14 +76,9 @@ public class DataStoresLabelAdd extends BaseCommand {
         }
 
         // Validate that either id or labelExpression is provided, but not both
-        if (id != null && labelExpression != null) {
-            printer.printErrorMessage("Cannot specify both --id and --label-expression. Use one or the other.");
-            return EXIT_ERROR;
-        }
-
-        if (id == null && labelExpression == null) {
-            printer.printErrorMessage("Must specify either --id or --label-expression.");
-            return EXIT_ERROR;
+        final Integer exitError = validateLabelExpression(printer, id, labelExpression);
+        if (exitError != null) {
+            return exitError;
         }
 
         // Parse labels
@@ -99,6 +94,19 @@ public class DataStoresLabelAdd extends BaseCommand {
 
         // Handle adding labels by ID
         return addLabelsById(labelsToAdd, printer);
+    }
+
+    static Integer validateLabelExpression(WanakuPrinter printer, String id, String labelExpression) {
+        if (id != null && labelExpression != null) {
+            printer.printErrorMessage("Cannot specify both --id and --label-expression. Use one or the other.");
+            return EXIT_ERROR;
+        }
+
+        if (id == null && labelExpression == null) {
+            printer.printErrorMessage("Must specify either --id or --label-expression.");
+            return EXIT_ERROR;
+        }
+        return null;
     }
 
     /**
