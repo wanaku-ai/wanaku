@@ -48,10 +48,10 @@ class AbstractToolDelegateTest {
             protected List<String> coerceResponse(Object response)
                     throws InvalidResponseTypeException, NonConvertableResponseException {
                 if (coerceException instanceof InvalidResponseTypeException) {
-                    throw (InvalidResponseTypeException) coerceException;
+                    throw coerceException;
                 }
                 if (coerceException instanceof NonConvertableResponseException) {
-                    throw (NonConvertableResponseException) coerceException;
+                    throw coerceException;
                 }
                 return configuredResponse;
             }

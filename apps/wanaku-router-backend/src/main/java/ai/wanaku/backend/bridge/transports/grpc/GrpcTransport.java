@@ -378,7 +378,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
     public Uni<HealthProbeReply> probeHealthAsync(HealthProbeRequest request, ServiceTarget service) {
         LOG.debugf("Probing health of service: %s", service.toAddress());
 
-        return Uni.createFrom().<HealthProbeReply>emitter(em -> {
+        return Uni.createFrom().emitter(em -> {
             ManagedChannel channel = createChannel(service);
             try {
                 var future = HealthProbeGrpc.newFutureStub(channel)
