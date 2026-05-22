@@ -10,14 +10,18 @@
     "preview": "vite preview"
   },
   "resolutions": {
-    "jsonpath-plus": "^10.4.0"
+    "jsonpath-plus": "^10.4.0",
+    "fast-uri": "^3.1.2",
+    "hono": "^4.12.18",
+    "postcss": "^8.5.10",
+    "ip-address": "^10.1.1"
   },
   "dependencies": {
     "@carbon/icons-react": "^11.76.0",
     "@carbon/layout": "^11.49.0",
     "@carbon/react": "^1.103.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "axios": "^1.13.6",
+    "axios": "^1.15.2",
     "highlight.js": "^11.11.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
