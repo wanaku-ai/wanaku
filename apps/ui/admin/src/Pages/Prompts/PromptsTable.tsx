@@ -15,6 +15,7 @@ import {
 import {FunctionComponent} from "react";
 import {PromptReference} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
+import {TableEmptyState} from "../EmptyTableState"
 
 interface PromptsListProps {
   fetchedData: PromptReference[];
@@ -58,10 +59,11 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
       namespace: getNamespacePathById(prompt.namespace),
     }));
   }
-
+  
   return (
     <DataTable headers={headers} rows={promptsToRows()}>
-      {({headers, rows, getTableProps, getHeaderProps, getRowProps}) => (
+      {({headers, rows, getTableProps, getHeaderProps, getRowProps}) => {
+        return (
           <TableContainer>
             <TableToolbar>
               <TableToolbarContent>
@@ -111,10 +113,17 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
                     </TableRow>
                   );
                 })}
+                {fetchedData.length == 0 && (
+                  <TableEmptyState
+                    colSpan={headers.length}
+                    title="Start by adding prompts"
+                    body="Click Add Prompt to add your data"
+                  />
+                )}
               </TableBody>
             </Table>
           </TableContainer>
-      )}
+      )}}
     </DataTable>
   );
 };

@@ -15,6 +15,7 @@ import {Add, Edit, Renew, TrashCan} from "@carbon/icons-react"
 import {ForwardReference} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import React from "react"
+import {TableEmptyState} from "../EmptyTableState"
 
 interface ForwardsTableProps {
   forwards: ForwardReference[]
@@ -114,6 +115,13 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
                 )
               }
             })}
+            {forwards.length == 0 && (
+              <TableEmptyState
+                colSpan={headers.length + 1}
+                title="Start by adding forwards"
+                body="Click Add Forward to add your data"
+              />
+            )}
           </TableBody>
         </Table>
       </TableContainer>
