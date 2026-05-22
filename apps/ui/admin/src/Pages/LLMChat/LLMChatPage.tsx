@@ -16,7 +16,12 @@ export const LLMChatPage: React.FC = () => {
       <h1 className="title">LLM Chat for testing</h1>
       <Grid fullWidth>
         <Column lg={4}>
-          <LLMSetup config={config} onChange={setConfig} />
+          <LLMSetup
+            config={config}
+            onChange={(config: LlmConfig) => {
+              setConfig({ ...config })}
+            }
+          />
           <LLMTools
             selectedTools={config.tools}
             onSelectionChange={(tools) => {

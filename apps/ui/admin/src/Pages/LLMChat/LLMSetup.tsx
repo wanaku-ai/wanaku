@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react"
+import React, {useState} from "react"
 import {
   Form,
   PasswordInput, Stack,
@@ -12,7 +12,7 @@ import {
   STORE_IN_LOCAL_STORAGE
 } from "./config.ts"
 import {BaseUrlSelect} from "./BaseUrlSelect"
-import {LLMChangeHandle, LLMModelComboBox} from "./LLMModelComboBox"
+import {LLMModelComboBox} from "./LLMModelComboBox"
 
 
 interface LLMSetupProps {
@@ -23,7 +23,6 @@ interface LLMSetupProps {
 export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
   
   const [isStoredInLocalStorage, setStoreInLocalStorage] = useState<boolean>(isConfigStoredInLocalStorage())
-  const llmModelComboBoxRef = useRef<LLMChangeHandle>({ llmBaseUrlChanged: () => {} })
   
   function applyConfigChange(config: LlmConfig) {
     if (isStoredInLocalStorage) {
@@ -57,13 +56,11 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
           value={config.baseUrl || ""}
           onChange={(baseUrl: string) => {
             applyConfigChange({ ...config, baseUrl })
-            llmModelComboBoxRef.current.llmBaseUrlChanged(baseUrl)
           }}
         />
         <LLMModelComboBox
           labelText="LLM Model"
-          value={config.llmModel}
-          ref={llmModelComboBoxRef}
+          config={config}
           onChange={(llmModel) => {
             applyConfigChange({ ...config, llmModel })
           }}
