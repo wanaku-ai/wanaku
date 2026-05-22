@@ -1,6 +1,7 @@
 package ai.wanaku.backend.api.v1.chat;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
@@ -20,6 +21,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
+import ai.wanaku.backend.WanakuRouterConfig;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -30,19 +32,14 @@ import static jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS;
 @Path("/api/v1/chat")
 public class LlmChatResource {
 
-    /* Allowlist of chat URLs */
-    private final List<String> allowlist = List.of(
-            "http://localhost:11434",
-            "https://api.openai.com",
-            "https://api.mistral.ai",
-            "https://generativelanguage.googleapis.com/v1beta/openai/",
-            "https://api.anthropic.com");
+    @Inject
+    WanakuRouterConfig config;
 
     @GET
     @Path("/allowlist")
     @Produces(APPLICATION_JSON)
     public List<String> getBaseUrls() {
-        return allowlist;
+        return config.llm().allowlist();
     }
 
     @POST
@@ -55,7 +52,7 @@ public class LlmChatResource {
         String apiKey = json.getString("apiKey");
         JsonObject llmParams = json.getJsonObject("chatParams");
 
-        if (!allowlist.contains(baseUrl)) {
+        if (!config.llm().allowlist().contains(baseUrl)) {
             throw new WebApplicationException("Base URL: %s is not allowed".formatted(baseUrl), BAD_REQUEST);
         }
         try (var client = HttpClient.newHttpClient()) {

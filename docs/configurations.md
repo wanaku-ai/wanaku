@@ -177,6 +177,14 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 | `wanaku.router.health-check.interval-seconds` | `60` - The interval in seconds between health check sweeps.                |
 | `wanaku.router.health-check.max-concurrent`   | `10` - The maximum number of concurrent health check probes.               |
 
+### LLM
+
+Wanaku provides an allowlist for LLM APIs. Only URLs from this list are allowed in the LLM Chat.
+
+| Property                      | Description                                              |
+|-------------------------------|----------------------------------------------------------|
+| `wanaku.router.llm.allowlist` | A comma separated list of LLM API URLs that are allowed. |
+
 ### gRPC Transport
 
 | Property                                        | Description                                                                                                                           |

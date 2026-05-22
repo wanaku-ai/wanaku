@@ -1,5 +1,6 @@
 package ai.wanaku.backend;
 
+import java.util.List;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
@@ -21,6 +22,13 @@ public interface WanakuRouterConfig {
 
         @WithDefault("10")
         int maxConcurrent();
+    }
+
+    LlmConfig llm();
+
+    interface LlmConfig {
+
+        List<String> allowlist();
     }
 
     @WithDefault("100000000000")
