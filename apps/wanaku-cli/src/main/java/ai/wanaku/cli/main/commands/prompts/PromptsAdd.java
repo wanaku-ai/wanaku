@@ -105,19 +105,7 @@ public class PromptsAdd extends BaseCommand {
         promptReference.setMessages(promptMessages);
 
         // Parse arguments
-        List<PromptArgument> promptArguments = new ArrayList<>();
-        if (arguments != null) {
-            for (String argStr : arguments) {
-                String[] parts = argStr.split(":", 3);
-                if (parts.length >= 2) {
-                    PromptArgument argument = new PromptArgument();
-                    argument.setName(parts[0].trim());
-                    argument.setDescription(parts[1].trim());
-                    argument.setRequired(parts.length == 3 && Boolean.parseBoolean(parts[2].trim()));
-                    promptArguments.add(argument);
-                }
-            }
-        }
+        final List<PromptArgument> promptArguments = parsePromptArguments();
         promptReference.setArguments(promptArguments);
 
         // Set tool references
@@ -141,6 +129,27 @@ public class PromptsAdd extends BaseCommand {
             return EXIT_ERROR;
         }
         return EXIT_OK;
+    }
+
+    private List<PromptArgument> parsePromptArguments() {
+        List<PromptArgument> promptArguments = new ArrayList<>();
+        if (arguments != null) {
+            doParse(promptArguments, arguments);
+        }
+        return promptArguments;
+    }
+
+    static void doParse(List<PromptArgument> promptArguments, List<String> arguments) {
+        for (String argStr : arguments) {
+            String[] parts = argStr.split(":", 3);
+            if (parts.length >= 2) {
+                PromptArgument argument = new PromptArgument();
+                argument.setName(parts[0].trim());
+                argument.setDescription(parts[1].trim());
+                argument.setRequired(parts.length == 3 && Boolean.parseBoolean(parts[2].trim()));
+                promptArguments.add(argument);
+            }
+        }
     }
 
     /**
