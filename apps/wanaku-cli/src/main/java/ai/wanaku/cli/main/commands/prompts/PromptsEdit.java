@@ -119,17 +119,7 @@ public class PromptsEdit extends BaseCommand {
 
         // Parse and update arguments if provided
         if (arguments != null) {
-            List<PromptArgument> promptArguments = new ArrayList<>();
-            for (String argStr : arguments) {
-                String[] parts = argStr.split(":", 3);
-                if (parts.length >= 2) {
-                    PromptArgument argument = new PromptArgument();
-                    argument.setName(parts[0].trim());
-                    argument.setDescription(parts[1].trim());
-                    argument.setRequired(parts.length == 3 && Boolean.parseBoolean(parts[2].trim()));
-                    promptArguments.add(argument);
-                }
-            }
+            final List<PromptArgument> promptArguments = parsePromptArguments();
             existingPrompt.setArguments(promptArguments);
         }
 
@@ -149,6 +139,12 @@ public class PromptsEdit extends BaseCommand {
         }
 
         return EXIT_OK;
+    }
+
+    private List<PromptArgument> parsePromptArguments() {
+        List<PromptArgument> promptArguments = new ArrayList<>();
+        PromptsAdd.doParse(promptArguments, arguments);
+        return promptArguments;
     }
 
     /**
