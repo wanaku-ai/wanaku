@@ -38,7 +38,7 @@ import picocli.CommandLine;
         })
 public class Tools extends BaseCommand {
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         CommandLine.usage(this, System.out);
         return EXIT_OK;
     }

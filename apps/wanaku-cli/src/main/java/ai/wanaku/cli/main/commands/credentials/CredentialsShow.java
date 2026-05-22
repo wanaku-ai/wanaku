@@ -29,7 +29,7 @@ public class CredentialsShow extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         if (!showSecret) {
             printer.printWarningMessage(
                     "Use --show-secret to display the client secret (use with caution; may leak into logs or shell history)");

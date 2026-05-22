@@ -42,7 +42,7 @@ class ServiceCatalogResourceTest {
     private ServiceCatalogIndex testIndex;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         testCatalog = new DataStore();
         testCatalog.setId("test-id");
         testCatalog.setName("test.service.zip");
@@ -52,7 +52,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testListEmpty() throws Exception {
+    void testListEmpty() {
         when(serviceCatalogBean.list(null)).thenReturn(Collections.emptyList());
 
         WanakuResponse<List<Map<String, Object>>> response = resource.list(null);
@@ -62,7 +62,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testListPopulated() throws Exception {
+    void testListPopulated() {
         when(serviceCatalogBean.list(null)).thenReturn(List.of(testCatalog));
         when(serviceCatalogBean.parseIndex(testCatalog)).thenReturn(testIndex);
 
@@ -76,7 +76,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testListWithSearch() throws Exception {
+    void testListWithSearch() {
         when(serviceCatalogBean.list("test")).thenReturn(List.of(testCatalog));
         when(serviceCatalogBean.parseIndex(testCatalog)).thenReturn(testIndex);
 
@@ -87,7 +87,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testGetFound() throws Exception {
+    void testGetFound() {
         when(serviceCatalogBean.get("testservice")).thenReturn(testCatalog);
         when(serviceCatalogBean.parseIndex(testCatalog)).thenReturn(testIndex);
 
@@ -109,7 +109,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testDownloadFound() throws Exception {
+    void testDownloadFound() {
         when(serviceCatalogBean.get("testservice")).thenReturn(testCatalog);
 
         WanakuResponse<DataStore> response = resource.download("testservice");
@@ -132,7 +132,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testDeployValid() throws Exception {
+    void testDeployValid() {
         DataStore input = new DataStore();
         input.setName("test.service.zip");
         input.setData(createTestZipBase64("test", "desc", "sys1"));
@@ -146,7 +146,7 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testRemoveFound() throws Exception {
+    void testRemoveFound() {
         when(serviceCatalogBean.remove("test.service.zip")).thenReturn(1);
         WanakuResponse<Void> response = resource.remove("test.service.zip");
         assertNotNull(response);
@@ -155,13 +155,13 @@ class ServiceCatalogResourceTest {
     }
 
     @Test
-    void testRemoveNotFound() throws Exception {
+    void testRemoveNotFound() {
         when(serviceCatalogBean.remove("nonexistent")).thenReturn(0);
         assertThrows(DataStoreResourceNotFoundException.class, () -> resource.remove("nonexistent"));
     }
 
     @Test
-    void testRemoveNullName() throws Exception {
+    void testRemoveNullName() {
         when(serviceCatalogBean.remove(null)).thenReturn(0);
         assertThrows(DataStoreResourceNotFoundException.class, () -> resource.remove(null));
     }

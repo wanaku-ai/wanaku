@@ -96,8 +96,7 @@ public class ToolsShow extends BaseCommand {
         List<PropertyDisplay> properties = new ArrayList<>();
         List<String> required = inputSchema.getRequired() != null ? inputSchema.getRequired() : List.of();
 
-        for (Map.Entry<String, Property> entry :
-                inputSchema.getProperties().entrySet()) {
+        for (Map.Entry<String, Property> entry : inputSchema.getProperties().entrySet()) {
             Property prop = entry.getValue();
             properties.add(new PropertyDisplay(
                     entry.getKey(),

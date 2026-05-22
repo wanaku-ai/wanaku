@@ -21,7 +21,7 @@ import picocli.CommandLine;
         subcommands = {DataStoresLabelAdd.class, DataStoresLabelRemove.class})
 public class DataStoresLabel extends BaseCommand {
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         CommandLine.usage(this, System.out);
         return EXIT_OK;
     }

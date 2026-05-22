@@ -20,7 +20,7 @@ public class AuthLogout extends BaseCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
 
         if (!credentialStore.hasCredentials()) {
             printer.printInfoMessage("No authentication credentials found");

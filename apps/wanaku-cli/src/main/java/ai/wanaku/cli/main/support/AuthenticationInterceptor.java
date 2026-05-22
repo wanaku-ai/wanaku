@@ -4,7 +4,6 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -51,7 +50,7 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
     }
 
     @Override
-    public void filter(ClientRequestContext requestContext) throws IOException {
+    public void filter(ClientRequestContext requestContext) {
         String authMode = credentialStore.getAuthMode();
 
         if ("none".equals(authMode) || !credentialStore.hasCredentials()) {

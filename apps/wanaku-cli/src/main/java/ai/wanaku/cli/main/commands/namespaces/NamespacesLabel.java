@@ -21,7 +21,7 @@ import picocli.CommandLine;
         subcommands = {NamespacesLabelAdd.class, NamespacesLabelRemove.class})
 public class NamespacesLabel extends BaseCommand {
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         CommandLine.usage(this, System.out);
         return EXIT_OK;
     }

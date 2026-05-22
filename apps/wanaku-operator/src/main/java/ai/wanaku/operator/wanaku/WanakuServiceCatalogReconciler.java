@@ -50,7 +50,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
 
     @Override
     public UpdateControl<WanakuServiceCatalog> reconcile(
-            WanakuServiceCatalog resource, Context<WanakuServiceCatalog> context) throws Exception {
+            WanakuServiceCatalog resource, Context<WanakuServiceCatalog> context) {
         LOG.infof(
                 "Starting service catalog reconciliation for %s",
                 resource.getMetadata().getName());

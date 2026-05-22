@@ -2,7 +2,6 @@ package ai.wanaku.backend.api.v1.datastores;
 
 import jakarta.ws.rs.core.MediaType;
 
-import java.io.IOException;
 import java.util.List;
 import org.jboss.logging.Logger;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -45,7 +44,7 @@ public class DataStoresResourceTest extends WanakuRouterTest {
     private static KeycloakTestClient keycloakClient;
 
     @BeforeAll
-    static void setup() throws IOException {
+    static void setup() {
         keycloakClient = new KeycloakTestClient();
     }
 

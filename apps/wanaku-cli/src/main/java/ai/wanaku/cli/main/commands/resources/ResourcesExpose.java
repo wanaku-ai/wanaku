@@ -3,7 +3,6 @@ package ai.wanaku.cli.main.commands.resources;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,7 @@ public class ResourcesExpose extends BaseCommand {
     ResourcesService resourcesService;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         resourcesService = initService(ResourcesService.class, host);
         ResourceReference resource = new ResourceReference();
         resource.setLocation(location);

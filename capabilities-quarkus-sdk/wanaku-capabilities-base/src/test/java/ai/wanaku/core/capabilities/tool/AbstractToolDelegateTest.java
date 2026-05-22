@@ -62,7 +62,7 @@ class AbstractToolDelegateTest {
     }
 
     @Test
-    void invokeHappyPath() throws Exception {
+    void invokeHappyPath() {
         configuredResponse = List.of("result data");
         when(client.exchange(any(ToolInvokeRequest.class), any(ConfigResource.class)))
                 .thenReturn("raw");
@@ -78,7 +78,7 @@ class AbstractToolDelegateTest {
     }
 
     @Test
-    void invokeMultipleContentItems() throws Exception {
+    void invokeMultipleContentItems() {
         configuredResponse = List.of("item1", "item2", "item3");
         when(client.exchange(any(ToolInvokeRequest.class), any(ConfigResource.class)))
                 .thenReturn("raw");
@@ -95,7 +95,7 @@ class AbstractToolDelegateTest {
     }
 
     @Test
-    void invokeInvalidResponseType() throws Exception {
+    void invokeInvalidResponseType() {
         coerceException = new InvalidResponseTypeException("bad type");
         when(client.exchange(any(ToolInvokeRequest.class), any(ConfigResource.class)))
                 .thenReturn("raw");
@@ -109,7 +109,7 @@ class AbstractToolDelegateTest {
     }
 
     @Test
-    void invokeNonConvertableResponse() throws Exception {
+    void invokeNonConvertableResponse() {
         coerceException = new NonConvertableResponseException("cannot convert");
         when(client.exchange(any(ToolInvokeRequest.class), any(ConfigResource.class)))
                 .thenReturn("raw");
@@ -123,7 +123,7 @@ class AbstractToolDelegateTest {
     }
 
     @Test
-    void invokeClientThrowsException() throws Exception {
+    void invokeClientThrowsException() {
         when(client.exchange(any(ToolInvokeRequest.class), any(ConfigResource.class)))
                 .thenThrow(new RuntimeException("connection failed"));
 

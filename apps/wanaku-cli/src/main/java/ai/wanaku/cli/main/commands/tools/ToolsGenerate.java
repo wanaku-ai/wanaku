@@ -77,7 +77,7 @@ public class ToolsGenerate extends BaseCommand {
     private URL specLocation;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             // Load and resolve OpenAPI Spec
             OpenAPI openAPI = loadAndResolveOpenAPI(specLocation.toString());

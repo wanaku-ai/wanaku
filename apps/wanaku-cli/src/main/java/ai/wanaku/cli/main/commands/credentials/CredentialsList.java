@@ -28,7 +28,7 @@ public class CredentialsList extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             KeycloakAdminClient client = createAdminClient();
             List<Map<String, Object>> clients = client.listClients(realm);

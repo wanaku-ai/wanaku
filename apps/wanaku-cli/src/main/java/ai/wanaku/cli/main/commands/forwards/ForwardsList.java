@@ -3,7 +3,6 @@ package ai.wanaku.cli.main.commands.forwards;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
 import java.util.List;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
@@ -34,7 +33,7 @@ public class ForwardsList extends BaseCommand {
     protected String host;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
         ForwardsService forwardsService = initService(ForwardsService.class, host);
 

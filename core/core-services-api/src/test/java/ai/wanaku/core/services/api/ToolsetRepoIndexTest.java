@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ToolsetRepoIndexTest {
 
     @Test
-    void testValidIndex() throws Exception {
+    void testValidIndex() {
         Properties props = new Properties();
         props.setProperty("wanaku.toolsets", "weather,finance");
         props.setProperty("wanaku.description.weather", "Weather tools");
@@ -62,7 +62,7 @@ class ToolsetRepoIndexTest {
     }
 
     @Test
-    void testOptionalDescription() throws Exception {
+    void testOptionalDescription() {
         Properties props = new Properties();
         props.setProperty("wanaku.toolsets", "tools");
 
@@ -72,7 +72,7 @@ class ToolsetRepoIndexTest {
     }
 
     @Test
-    void testOptionalIcons() throws Exception {
+    void testOptionalIcons() {
         Properties props = new Properties();
         props.setProperty("wanaku.toolsets", "tools");
         props.setProperty("wanaku.description.tools", "Some tools");
@@ -99,7 +99,7 @@ class ToolsetRepoIndexTest {
     }
 
     @Test
-    void testWhitespaceTrimming() throws Exception {
+    void testWhitespaceTrimming() {
         Properties props = new Properties();
         props.setProperty("wanaku.toolsets", " weather , finance ");
         props.setProperty("wanaku.description.weather", "Weather tools");
@@ -112,7 +112,7 @@ class ToolsetRepoIndexTest {
     }
 
     @Test
-    void testSingleToolset() throws Exception {
+    void testSingleToolset() {
         Properties props = new Properties();
         props.setProperty("wanaku.toolsets", "search");
         props.setProperty("wanaku.description.search", "Search tools for web");

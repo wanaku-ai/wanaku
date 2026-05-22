@@ -64,7 +64,7 @@ public class ToolSetAdd extends BaseCommand {
     private List<String> required;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
 
         ToolReference toolReference = new ToolReference();
         toolReference.setName(name);

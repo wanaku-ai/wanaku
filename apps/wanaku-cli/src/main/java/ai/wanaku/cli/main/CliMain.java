@@ -67,7 +67,7 @@ public class CliMain implements Callable<Integer>, QuarkusApplication {
     private boolean verbose = false;
 
     @Override
-    public int run(String... args) throws Exception {
+    public int run(String... args) {
         CommandLine commandLine = new CommandLine(this, factory);
         commandLine.setExecutionExceptionHandler(new WanakuExceptionHandler());
         return commandLine.execute(args);

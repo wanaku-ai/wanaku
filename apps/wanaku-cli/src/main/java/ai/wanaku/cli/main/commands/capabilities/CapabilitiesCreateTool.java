@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.commands.capabilities;
 
 import jakarta.inject.Inject;
 
-import java.io.IOException;
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
@@ -18,7 +17,7 @@ public class CapabilitiesCreateTool extends CapabilitiesBase {
     WanakuCliConfig config;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         String baseCmd = config.tool().createCmd();
         createProject(baseCmd, "ai.wanaku.tool", "wanaku-tool-service");
         return EXIT_OK;

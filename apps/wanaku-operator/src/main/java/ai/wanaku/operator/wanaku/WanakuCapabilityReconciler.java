@@ -65,8 +65,7 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
     KubernetesClient kubernetesClient;
 
     @Override
-    public UpdateControl<WanakuCapability> reconcile(WanakuCapability resource, Context<WanakuCapability> context)
-            throws Exception {
+    public UpdateControl<WanakuCapability> reconcile(WanakuCapability resource, Context<WanakuCapability> context) {
         LOG.infof(
                 "Starting capability reconciliation for %s",
                 resource.getMetadata().getName());

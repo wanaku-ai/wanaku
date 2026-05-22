@@ -124,9 +124,8 @@ public class CapabilitiesShow extends BaseCommand {
      *
      * @param printer the printer instance for formatted output
      * @return {@link #EXIT_ERROR} to indicate no capabilities were found
-     * @throws IOException if an error occurs while printing the warning message
      */
-    private Integer handleNoCapabilities(WanakuPrinter printer) throws IOException {
+    private Integer handleNoCapabilities(WanakuPrinter printer) {
         printer.printWarningMessage("No capabilities found for service: " + service);
         return EXIT_ERROR;
     }
@@ -157,11 +156,9 @@ public class CapabilitiesShow extends BaseCommand {
      * @param printer the printer instance for formatted output
      * @param capabilities the list of capabilities to choose from
      * @return {@link #EXIT_OK} on successful selection and display, {@link #EXIT_ERROR} on failure
-     * @throws Exception if an error occurs during user interaction or capability display
      */
     private Integer handleMultipleCapabilities(
-            Terminal terminal, WanakuPrinter printer, List<CapabilitiesHelper.PrintableCapability> capabilities)
-            throws Exception {
+            Terminal terminal, WanakuPrinter printer, List<CapabilitiesHelper.PrintableCapability> capabilities) {
 
         printer.printWarningMessage("Multiple capabilities found for the " + service + " service. Please choose one.");
 
@@ -219,10 +216,8 @@ public class CapabilitiesShow extends BaseCommand {
      *
      * @param printer the printer instance for formatted output
      * @param capability the capability whose details should be printed
-     * @throws Exception if an error occurs while printing the capability details or configurations
      */
-    private void printCapabilityDetails(WanakuPrinter printer, CapabilitiesHelper.PrintableCapability capability)
-            throws Exception {
+    private void printCapabilityDetails(WanakuPrinter printer, CapabilitiesHelper.PrintableCapability capability) {
         printer.printInfoMessage("Capability Details:");
         printCapability(capability, printer);
 

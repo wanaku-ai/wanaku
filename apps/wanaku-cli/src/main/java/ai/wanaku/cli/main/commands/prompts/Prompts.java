@@ -11,7 +11,7 @@ import picocli.CommandLine;
         subcommands = {PromptsAdd.class, PromptsEdit.class, PromptsRemove.class, PromptsList.class})
 public class Prompts extends BaseCommand {
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         CommandLine.usage(this, System.out);
         return EXIT_OK;
     }

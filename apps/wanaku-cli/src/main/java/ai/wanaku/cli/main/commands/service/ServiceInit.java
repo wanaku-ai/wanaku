@@ -32,7 +32,7 @@ public class ServiceInit extends BaseCommand {
     private boolean template;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         String[] systems = services.split(",");
 
         // Create root directory

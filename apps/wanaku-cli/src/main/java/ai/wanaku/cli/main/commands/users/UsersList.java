@@ -24,7 +24,7 @@ public class UsersList extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             KeycloakAdminClient client = createAdminClient();
             List<Map<String, Object>> users = client.listUsers(realm);

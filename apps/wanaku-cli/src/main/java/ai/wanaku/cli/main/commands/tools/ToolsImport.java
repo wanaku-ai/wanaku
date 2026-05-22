@@ -40,7 +40,7 @@ public class ToolsImport extends BaseCommand {
     ToolsService toolsService;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             List<ToolReference> toolReferences = ToolsetIndexHelper.loadToolsIndex(location);
 

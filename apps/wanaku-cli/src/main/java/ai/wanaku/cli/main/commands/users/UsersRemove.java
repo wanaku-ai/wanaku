@@ -24,7 +24,7 @@ public class UsersRemove extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             KeycloakAdminClient client = createAdminClient();
             client.deleteUser(realm, username);

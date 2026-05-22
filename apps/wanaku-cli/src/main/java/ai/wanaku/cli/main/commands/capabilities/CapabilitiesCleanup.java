@@ -168,7 +168,7 @@ public class CapabilitiesCleanup extends BaseCommand {
         printSimpleTable(tableData, printer);
     }
 
-    private void printSimpleTable(String[][] data, WanakuPrinter printer) throws IOException {
+    private void printSimpleTable(String[][] data, WanakuPrinter printer) {
         if (data.length == 0) return;
 
         // Calculate column widths

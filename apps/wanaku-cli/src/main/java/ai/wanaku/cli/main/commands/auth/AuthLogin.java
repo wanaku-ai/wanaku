@@ -51,7 +51,7 @@ public class AuthLogin extends BaseCommand {
     private String clientId;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         AuthCredentialStore credentialStore = new AuthCredentialStore();
 
         // Handle direct API token authentication
