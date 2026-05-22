@@ -10,11 +10,11 @@
     "preview": "vite preview"
   },
   "resolutions": {
-    "jsonpath-plus": "^10.4.0",
-    "fast-uri": "^3.1.2",
-    "hono": "^4.12.18",
-    "postcss": "^8.5.10",
-    "ip-address": "^10.1.1"
+    "jsonpath-plus": "10.4.0",
+    "fast-uri": "3.1.2",
+    "hono": "4.12.22",
+    "postcss": "8.5.15",
+    "ip-address": "10.2.0"
   },
   "dependencies": {
     "@carbon/icons-react": "^11.76.0",
