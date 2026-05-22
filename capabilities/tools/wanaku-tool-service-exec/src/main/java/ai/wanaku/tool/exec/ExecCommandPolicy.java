@@ -125,7 +125,7 @@ final class ExecCommandPolicy {
             }
 
             if (!inSingleQuotes && !inDoubleQuotes && Character.isWhitespace(currentChar)) {
-                if (current.length() > 0) {
+                if (!current.isEmpty()) {
                     tokens.add(current.toString());
                     current.setLength(0);
                 }
@@ -139,7 +139,7 @@ final class ExecCommandPolicy {
             throw new SecurityException("Command execution is denied because the URI contains unbalanced quotes");
         }
 
-        if (current.length() > 0) {
+        if (!current.isEmpty()) {
             tokens.add(current.toString());
         }
 

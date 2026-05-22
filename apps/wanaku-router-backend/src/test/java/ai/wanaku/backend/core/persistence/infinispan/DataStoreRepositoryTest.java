@@ -88,7 +88,6 @@ public class DataStoreRepositoryTest {
 
         assertNotNull(all, "Result list should not be null");
         assertFalse(all.isEmpty(), "Should have at least one data store");
-        assertTrue(all.size() >= 1, "Should have at least one entry");
     }
 
     @Order(5)

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -218,7 +219,7 @@ public class LabelFilteringIntegrationTest {
                 toolReferenceRepository.findAllFilterByLabelExpression("environment!=production");
 
         // Should find the development tool and all tools without environment label
-        assertTrue(nonProdTools.size() >= 1, "Should find at least the development tool");
+        assertFalse(nonProdTools.isEmpty(), "Should find at least the development tool");
 
         // Verify none of them have environment=production
         assertTrue(nonProdTools.stream()
