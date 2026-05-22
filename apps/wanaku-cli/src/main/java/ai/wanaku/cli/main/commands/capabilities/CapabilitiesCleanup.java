@@ -84,11 +84,9 @@ public class CapabilitiesCleanup extends BaseCommand {
             description = "Automatically answer yes for all questions")
     private boolean assumeYes;
 
-    private CapabilitiesService capabilitiesService;
-
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
 
         long maxAgeSeconds = maxAgeDays * SECONDS_PER_DAY;
 
