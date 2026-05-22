@@ -5,7 +5,6 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Liveness;
 import io.quarkus.grpc.runtime.GrpcServer;
 
@@ -18,19 +17,6 @@ public class CapabilityLivenessCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        HealthCheckResponseBuilder builder = HealthCheckResponse.builder().name("capability-grpc-liveness");
-
-        try {
-            int port = grpcServer.getPort();
-            if (port > 0) {
-                builder.up().withData("grpcPort", port);
-            } else {
-                builder.down().withData("grpcPort", "not available");
-            }
-        } catch (Exception e) {
-            builder.down().withData("grpcPort", "not available");
-        }
-
-        return builder.build();
+        return CapabilityChecks.grpcPortCheck(grpcServer, "capability-grpc-liveness");
     }
 }
