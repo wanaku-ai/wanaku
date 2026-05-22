@@ -10,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class URIHelperTest {
@@ -104,7 +105,7 @@ class URIHelperTest {
         Map<String, String> params = generateLargeMap(50);
         String uri = URIHelper.buildUri("http://example.com", params);
         for (int i = 0; i < 50; i++) {
-            assertEquals(true, uri.contains("p" + i + "=v" + i));
+            assertTrue(uri.contains("p%d=v%d".formatted(i, i)));
         }
     }
 
