@@ -1,21 +1,20 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.NamespacesService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 /**
  * CLI command for removing labels from existing namespaces.
@@ -75,36 +74,20 @@ public class NamespacesLabelRemove extends BaseCommand {
             namespacesService = initService(NamespacesService.class, host);
         }
 
-        // Validate that either id or labelExpression is provided, but not both
-        if (id != null && labelExpression != null) {
-            printer.printErrorMessage("Cannot specify both --id and --label-expression. Use one or the other.");
-            return EXIT_ERROR;
+        int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
+        if (validationResult != EXIT_OK) {
+            return validationResult;
         }
 
-        if (id == null && labelExpression == null) {
-            printer.printErrorMessage("Must specify either --id or --label-expression.");
-            return EXIT_ERROR;
-        }
-
-        // Handle removing labels by label expression
         if (labelExpression != null) {
             return removeLabelsByExpression(printer);
         }
 
-        // Handle removing labels by id
         return removeLabelsById(printer);
     }
 
-    /**
-     * Removes labels from a single namespace by id.
-     *
-     * @param printer the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer removeLabelsById(WanakuPrinter printer) throws IOException {
         try {
-            // Get the existing namespace
             WanakuResponse<Namespace> response = namespacesService.getById(id);
             Namespace namespace = response.data();
 
@@ -113,103 +96,26 @@ public class NamespacesLabelRemove extends BaseCommand {
                 return EXIT_ERROR;
             }
 
-            // Remove labels
-            Map<String, String> existingLabels = namespace.getLabels();
-            if (existingLabels == null) {
-                existingLabels = new HashMap<>();
-            }
-
-            int removedCount = 0;
-            int notFoundCount = 0;
-
-            for (String labelKey : labels) {
-                if (existingLabels.containsKey(labelKey)) {
-                    existingLabels.remove(labelKey);
-                    printer.printInfoMessage(String.format("Removing label '%s'", labelKey));
-                    removedCount++;
-                } else {
-                    notFoundCount++;
-                }
-            }
-
-            namespace.setLabels(existingLabels);
-
-            // Update the namespace
-            namespacesService.update(id, namespace);
-
-            printer.printSuccessMessage(String.format(
-                    "Labels updated for namespace with ID '%s' (%d removed, %d not found)",
-                    id, removedCount, notFoundCount));
-            return EXIT_OK;
-
+            return LabelHelper.removeLabelsFromEntity(
+                    namespace, labels, printer, n -> namespacesService.update(id, n), "namespace with ID", id);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printErrorMessage(String.format("Namespace with ID '%s' not found", id));
-            } else {
-                commonResponseErrorHandler(response);
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Namespace", id, printer);
         }
     }
 
-    /**
-     * Removes labels from multiple namespaces matching a label expression.
-     *
-     * @param printer the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer removeLabelsByExpression(WanakuPrinter printer) throws IOException {
         try {
-            // Get all namespaces matching the label expression
             WanakuResponse<List<Namespace>> response = namespacesService.list(labelExpression);
-            List<Namespace> matchingNamespaces = response.data();
-
-            if (matchingNamespaces == null || matchingNamespaces.isEmpty()) {
-                printer.printWarningMessage("No namespaces found matching label expression: " + labelExpression);
-                return EXIT_OK;
-            }
-
-            printer.printInfoMessage(String.format(
-                    "Found %d namespace(s) matching label expression '%s'",
-                    matchingNamespaces.size(), labelExpression));
-
-            int successCount = 0;
-            int failureCount = 0;
-
-            for (Namespace namespace : matchingNamespaces) {
-                try {
-                    // Remove labels
-                    Map<String, String> existingLabels = namespace.getLabels();
-                    if (existingLabels == null) {
-                        existingLabels = new HashMap<>();
-                    }
-
-                    for (String labelKey : labels) {
-                        existingLabels.remove(labelKey);
-                    }
-
-                    namespace.setLabels(existingLabels);
-
-                    // Update the namespace
-                    namespacesService.update(namespace.getId(), namespace);
-
-                    printer.printSuccessMessage("  Updated: " + namespace.getId());
-                    successCount++;
-                } catch (WebApplicationException ex) {
-                    printer.printErrorMessage("  Failed to update: " + namespace.getId());
-                    failureCount++;
-                }
-            }
-
-            printer.printInfoMessage(
-                    String.format("Label update complete: %d succeeded, %d failed", successCount, failureCount));
-
-            return failureCount > 0 ? EXIT_ERROR : EXIT_OK;
+            return LabelHelper.removeLabelsByExpression(
+                    response,
+                    labels,
+                    printer,
+                    n -> namespacesService.update(n.getId(), n),
+                    Namespace::getId,
+                    "namespace(s)",
+                    labelExpression);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;
         }
     }

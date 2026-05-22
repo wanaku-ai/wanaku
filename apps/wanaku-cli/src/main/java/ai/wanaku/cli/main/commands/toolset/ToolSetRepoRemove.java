@@ -1,18 +1,17 @@
 package ai.wanaku.cli.main.commands.toolset;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
-import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsetReposService;
 import picocli.CommandLine;
 
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
+
 @CommandLine.Command(name = "remove", description = "Remove a toolset repository")
 public class ToolSetRepoRemove extends BaseCommand {
-    private static final Logger LOG = Logger.getLogger(ToolSetRepoRemove.class);
 
     @CommandLine.Option(
             names = {"--host"},
@@ -25,19 +24,14 @@ public class ToolSetRepoRemove extends BaseCommand {
     private String name;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         try {
             service.remove(name);
             printer.printSuccessMessage(String.format("Toolset repository '%s' removed", name));
         } catch (WebApplicationException ex) {
-            if (ex.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printErrorMessage(String.format("Toolset repository '%s' not found", name));
-            } else {
-                printer.printErrorMessage(String.format("Failed to remove toolset repository: %s", ex.getMessage()));
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Toolset repository", name, printer);
         } catch (Exception e) {
             printer.printErrorMessage(String.format("Failed to remove toolset repository: %s", e.getMessage()));
             return EXIT_ERROR;

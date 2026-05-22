@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -9,11 +8,8 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.NamespacesService;
 import picocli.CommandLine;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
-/**
- * CLI command for deleting namespaces by id.
- */
 @CommandLine.Command(name = "delete", description = "Delete a namespace by id")
 public class NamespacesDelete extends BaseCommand {
 
@@ -38,13 +34,7 @@ public class NamespacesDelete extends BaseCommand {
             printer.printSuccessMessage("Namespace deleted: " + id);
             return EXIT_OK;
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printWarningMessage("Namespace not found: " + id);
-                return EXIT_ERROR;
-            }
-            commonResponseErrorHandler(response);
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Namespace", id, printer);
         }
     }
 }

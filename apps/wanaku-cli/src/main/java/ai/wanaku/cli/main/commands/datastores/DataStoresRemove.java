@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.commands.datastores;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
@@ -10,7 +9,7 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
 import picocli.CommandLine;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 /**
  * Remove subcommand for data stores.
@@ -56,32 +55,25 @@ public class DataStoresRemove extends BaseCommand {
         dataStoresService = initService(DataStoresService.class, host);
 
         try {
-            String identifier;
-
             // Prefer ID over name if both provided
             if (id != null && !id.trim().isEmpty()) {
                 dataStoresService.remove(id.trim());
-                identifier = "ID '" + id.trim() + "'";
             } else {
                 dataStoresService.removeByName(name.trim());
-                identifier = "name '" + name.trim() + "'";
             }
 
-            printer.printSuccessMessage(String.format("Successfully removed data store(s) with %s%n", identifier));
-            LOG.debugf("Removed data store(s) with %s", identifier);
+            printer.printSuccessMessage(String.format("Successfully removed data store '%s'", identifier()));
+
+            LOG.debugf("Removed data store(s) with %s", identifier());
 
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                String identifier =
-                        (id != null && !id.trim().isEmpty()) ? "ID '" + id.trim() + "'" : "name '" + name.trim() + "'";
-                printer.printWarningMessage(String.format("No data store found with %s%n", identifier));
-            } else {
-                commonResponseErrorHandler(response);
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Data store", identifier(), printer);
         }
 
         return EXIT_OK;
+    }
+
+    private String identifier() {
+        return (id != null && !id.trim().isEmpty()) ? id.trim() : name.trim();
     }
 }

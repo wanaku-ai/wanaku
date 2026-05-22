@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.commands.prompts;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jline.terminal.Terminal;
@@ -10,7 +9,7 @@ import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.PromptsService;
 import picocli.CommandLine;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 @CommandLine.Command(name = "remove", description = "Remove prompts")
 public class PromptsRemove extends BaseCommand {
@@ -38,16 +37,7 @@ public class PromptsRemove extends BaseCommand {
             promptsService.remove(name);
             printer.printSuccessMessage("Successfully removed prompt reference '" + name + "'");
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                String warningMessage = String.format(
-                        "Prompt not found (%s): %s%n",
-                        name, response.getStatusInfo().getReasonPhrase());
-                printer.printWarningMessage(warningMessage);
-            } else {
-                commonResponseErrorHandler(response);
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Prompt", name, printer);
         }
         return EXIT_OK;
     }

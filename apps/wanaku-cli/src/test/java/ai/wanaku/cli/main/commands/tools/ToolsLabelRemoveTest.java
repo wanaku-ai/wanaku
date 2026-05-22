@@ -121,7 +121,7 @@ public class ToolsLabelRemoveTest {
             // Assert
             assertEquals(0, result); // Success even though label didn't exist
             assertSuccessResponse(getResponse);
-            verify(toolsService, never()).update(anyString(), any()); // No update needed
+            verify(toolsService, never()).update(anyString(), any());
         }
 
         @Test

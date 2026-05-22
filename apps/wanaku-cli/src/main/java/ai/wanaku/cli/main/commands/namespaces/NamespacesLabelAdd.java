@@ -1,21 +1,21 @@
 package ai.wanaku.cli.main.commands.namespaces;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.NamespacesService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 /**
  * CLI command for adding labels to existing namespaces.
@@ -75,64 +75,25 @@ public class NamespacesLabelAdd extends BaseCommand {
             namespacesService = initService(NamespacesService.class, host);
         }
 
-        // Validate that either id or labelExpression is provided, but not both
-        if (id != null && labelExpression != null) {
-            printer.printErrorMessage("Cannot specify both --id and --label-expression. Use one or the other.");
-            return EXIT_ERROR;
+        int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
+        if (validationResult != EXIT_OK) {
+            return validationResult;
         }
 
-        if (id == null && labelExpression == null) {
-            printer.printErrorMessage("Must specify either --id or --label-expression.");
-            return EXIT_ERROR;
-        }
-
-        // Parse labels
-        Map<String, String> labelsToAdd = parseLabels(printer);
+        Map<String, String> labelsToAdd = LabelHelper.parseLabels(labels, printer);
         if (labelsToAdd == null) {
             return EXIT_ERROR;
         }
 
-        // Handle adding labels by label expression
         if (labelExpression != null) {
             return addLabelsByExpression(labelsToAdd, printer);
         }
 
-        // Handle adding labels by id
         return addLabelsById(labelsToAdd, printer);
     }
 
-    /**
-     * Parses label strings into a map.
-     *
-     * @param printer the printer for error messages
-     * @return map of labels or null if parsing failed
-     */
-    private Map<String, String> parseLabels(WanakuPrinter printer) {
-        Map<String, String> labelMap = new HashMap<>();
-        for (String label : labels) {
-            String[] parts = label.split("=", 2);
-            if (parts.length == 2) {
-                labelMap.put(parts[0].trim(), parts[1].trim());
-            } else {
-                printer.printErrorMessage(
-                        String.format("Invalid label format: '%s'. Expected format: 'key=value'", label));
-                return null;
-            }
-        }
-        return labelMap;
-    }
-
-    /**
-     * Adds labels to a single namespace by id.
-     *
-     * @param labelsToAdd the labels to add
-     * @param printer     the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer addLabelsById(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            // Get the existing namespace
             WanakuResponse<Namespace> response = namespacesService.getById(id);
             Namespace namespace = response.data();
 
@@ -141,105 +102,26 @@ public class NamespacesLabelAdd extends BaseCommand {
                 return EXIT_ERROR;
             }
 
-            // Add new labels (this will override existing labels with same key)
-            Map<String, String> existingLabels = namespace.getLabels();
-            if (existingLabels == null) {
-                existingLabels = new HashMap<>();
-            }
-
-            int addedCount = 0;
-            int updatedCount = 0;
-
-            for (Map.Entry<String, String> entry : labelsToAdd.entrySet()) {
-                if (existingLabels.containsKey(entry.getKey())) {
-                    String oldValue = existingLabels.get(entry.getKey());
-                    if (!oldValue.equals(entry.getValue())) {
-                        printer.printInfoMessage(String.format(
-                                "Updating label '%s': '%s' -> '%s'", entry.getKey(), oldValue, entry.getValue()));
-                        updatedCount++;
-                    }
-                } else {
-                    printer.printInfoMessage(
-                            String.format("Adding label '%s' = '%s'", entry.getKey(), entry.getValue()));
-                    addedCount++;
-                }
-                existingLabels.put(entry.getKey(), entry.getValue());
-            }
-
-            namespace.setLabels(existingLabels);
-
-            // Update the namespace
-            namespacesService.update(id, namespace);
-
-            printer.printSuccessMessage(String.format(
-                    "Labels updated for namespace with ID '%s' (%d added, %d updated)", id, addedCount, updatedCount));
-            return EXIT_OK;
-
+            return LabelHelper.addLabelsToEntity(
+                    namespace, labelsToAdd, printer, n -> namespacesService.update(id, n), "namespace with ID", id);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printErrorMessage(String.format("Namespace with ID '%s' not found", id));
-            } else {
-                commonResponseErrorHandler(response);
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Namespace", id, printer);
         }
     }
 
-    /**
-     * Adds labels to multiple namespaces matching a label expression.
-     *
-     * @param labelsToAdd the labels to add
-     * @param printer     the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer addLabelsByExpression(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            // Get all namespaces matching the label expression
             WanakuResponse<List<Namespace>> response = namespacesService.list(labelExpression);
-            List<Namespace> matchingNamespaces = response.data();
-
-            if (matchingNamespaces == null || matchingNamespaces.isEmpty()) {
-                printer.printWarningMessage("No namespaces found matching label expression: " + labelExpression);
-                return EXIT_OK;
-            }
-
-            printer.printInfoMessage(String.format(
-                    "Found %d namespace(s) matching label expression '%s'",
-                    matchingNamespaces.size(), labelExpression));
-
-            int successCount = 0;
-            int failureCount = 0;
-
-            for (Namespace namespace : matchingNamespaces) {
-                try {
-                    // Add new labels
-                    Map<String, String> existingLabels = namespace.getLabels();
-                    if (existingLabels == null) {
-                        existingLabels = new HashMap<>();
-                    }
-                    existingLabels.putAll(labelsToAdd);
-                    namespace.setLabels(existingLabels);
-
-                    // Update the namespace
-                    namespacesService.update(namespace.getId(), namespace);
-
-                    printer.printSuccessMessage("  Updated: " + namespace.getId());
-                    successCount++;
-                } catch (WebApplicationException ex) {
-                    printer.printErrorMessage("  Failed to update: " + namespace.getId());
-                    failureCount++;
-                }
-            }
-
-            printer.printInfoMessage(
-                    String.format("Label update complete: %d succeeded, %d failed", successCount, failureCount));
-
-            return failureCount > 0 ? EXIT_ERROR : EXIT_OK;
+            return LabelHelper.addLabelsByExpression(
+                    response,
+                    labelsToAdd,
+                    printer,
+                    n -> namespacesService.update(n.getId(), n),
+                    Namespace::getId,
+                    "namespace(s)",
+                    labelExpression);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;
         }
     }

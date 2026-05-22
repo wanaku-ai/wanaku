@@ -1,22 +1,20 @@
 package ai.wanaku.cli.main.commands.datastores;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
 import picocli.CommandLine;
 
-import static ai.wanaku.cli.main.commands.datastores.DataStoresLabelAdd.validateLabelExpression;
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 /**
  * CLI command for removing labels from existing data stores.
@@ -77,31 +75,20 @@ public class DataStoresLabelRemove extends BaseCommand {
             dataStoresService = initService(DataStoresService.class, host);
         }
 
-        // Validate that either id or labelExpression is provided, but not both
-        final Integer exitError = validateLabelExpression(printer, id, labelExpression);
-        if (exitError != null) {
-            return exitError;
+        int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
+        if (validationResult != EXIT_OK) {
+            return validationResult;
         }
 
-        // Handle removing labels by label expression
         if (labelExpression != null) {
             return removeLabelsByExpression(printer);
         }
 
-        // Handle removing labels by ID
         return removeLabelsById(printer);
     }
 
-    /**
-     * Removes labels from a single data store by ID.
-     *
-     * @param printer the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer removeLabelsById(WanakuPrinter printer) throws IOException {
         try {
-            // Get the existing data store
             WanakuResponse<DataStore> response = dataStoresService.getById(id);
             DataStore dataStore = response.data();
 
@@ -110,116 +97,26 @@ public class DataStoresLabelRemove extends BaseCommand {
                 return EXIT_ERROR;
             }
 
-            // Remove labels
-            Map<String, String> existingLabels = dataStore.getLabels();
-            if (existingLabels == null) {
-                existingLabels = new HashMap<>();
-            }
-
-            int removedCount = 0;
-            int notFoundCount = 0;
-
-            for (String labelKey : labelKeys) {
-                if (existingLabels.containsKey(labelKey)) {
-                    String removedValue = existingLabels.remove(labelKey);
-                    printer.printInfoMessage(String.format("Removed label '%s' (was: '%s')", labelKey, removedValue));
-                    removedCount++;
-                } else {
-                    printer.printWarningMessage(String.format("Label '%s' not found, skipping", labelKey));
-                    notFoundCount++;
-                }
-            }
-
-            if (removedCount > 0) {
-                dataStore.setLabels(existingLabels);
-
-                // Update the data store
-                dataStoresService.update(dataStore);
-
-                printer.printSuccessMessage(String.format(
-                        "Labels updated for data store '%s' (%d removed, %d not found)",
-                        id, removedCount, notFoundCount));
-            } else {
-                printer.printWarningMessage("No labels were removed");
-            }
-
-            return EXIT_OK;
-
+            return LabelHelper.removeLabelsFromEntity(
+                    dataStore, labelKeys, printer, dataStoresService::update, "data store", id);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printErrorMessage(String.format("Data store with ID '%s' not found", id));
-            } else {
-                commonResponseErrorHandler(response);
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Data store", id, printer);
         }
     }
 
-    /**
-     * Removes labels from multiple data stores matching a label expression.
-     *
-     * @param printer the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer removeLabelsByExpression(WanakuPrinter printer) throws IOException {
         try {
-            // Get all data stores matching the label expression
             WanakuResponse<List<DataStore>> response = dataStoresService.list(labelExpression);
-            List<DataStore> matchingDataStores = response.data();
-
-            if (matchingDataStores == null || matchingDataStores.isEmpty()) {
-                printer.printWarningMessage("No data stores found matching label expression: " + labelExpression);
-                return EXIT_OK;
-            }
-
-            printer.printInfoMessage(String.format(
-                    "Found %d data store(s) matching label expression '%s'",
-                    matchingDataStores.size(), labelExpression));
-
-            int successCount = 0;
-            int failureCount = 0;
-
-            for (DataStore dataStore : matchingDataStores) {
-                try {
-                    // Remove labels
-                    Map<String, String> existingLabels = dataStore.getLabels();
-                    if (existingLabels == null) {
-                        existingLabels = new HashMap<>();
-                    }
-
-                    boolean modified = false;
-                    for (String labelKey : labelKeys) {
-                        if (existingLabels.remove(labelKey) != null) {
-                            modified = true;
-                        }
-                    }
-
-                    if (modified) {
-                        dataStore.setLabels(existingLabels);
-
-                        // Update the data store
-                        dataStoresService.update(dataStore);
-
-                        printer.printSuccessMessage("  Updated: " + dataStore.getId());
-                        successCount++;
-                    } else {
-                        printer.printInfoMessage("  No changes: " + dataStore.getId());
-                    }
-                } catch (WebApplicationException ex) {
-                    printer.printErrorMessage("  Failed to update: " + dataStore.getId());
-                    failureCount++;
-                }
-            }
-
-            printer.printInfoMessage(
-                    String.format("Label removal complete: %d succeeded, %d failed", successCount, failureCount));
-
-            return failureCount > 0 ? EXIT_ERROR : EXIT_OK;
+            return LabelHelper.removeLabelsByExpression(
+                    response,
+                    labelKeys,
+                    printer,
+                    dataStoresService::update,
+                    DataStore::getId,
+                    "data store(s)",
+                    labelExpression);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;
         }
     }

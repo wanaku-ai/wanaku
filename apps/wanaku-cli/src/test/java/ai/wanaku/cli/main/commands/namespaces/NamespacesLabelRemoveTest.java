@@ -19,8 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -109,7 +107,6 @@ public class NamespacesLabelRemoveTest {
             WanakuResponse<Namespace> getResponse = new WanakuResponse<>(existingNamespace);
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.id = "my-id";
             command.labels = List.of("nonexistent");
@@ -119,11 +116,7 @@ public class NamespacesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success even though label didn't exist
-            ArgumentCaptor<Namespace> captor = ArgumentCaptor.forClass(Namespace.class);
-            verify(namespacesService).update(anyString(), captor.capture());
-            // Verify the existing label is still there and nonexistent was not added
-            assertEquals(1, captor.getValue().getLabels().size());
-            assertEquals("dev", captor.getValue().getLabels().get("env"));
+            verify(namespacesService, never()).update(anyString(), any());
         }
 
         @Test
@@ -134,7 +127,6 @@ public class NamespacesLabelRemoveTest {
             WanakuResponse<Namespace> getResponse = new WanakuResponse<>(existingNamespace);
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
-            when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
             command.id = "my-id";
             command.labels = List.of("env");
@@ -144,11 +136,7 @@ public class NamespacesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result);
-            ArgumentCaptor<Namespace> captor = ArgumentCaptor.forClass(Namespace.class);
-            verify(namespacesService).update(anyString(), captor.capture());
-            // Verify empty map was created
-            assertNotNull(captor.getValue().getLabels());
-            assertTrue(captor.getValue().getLabels().isEmpty());
+            verify(namespacesService, never()).update(anyString(), any());
         }
 
         @Test

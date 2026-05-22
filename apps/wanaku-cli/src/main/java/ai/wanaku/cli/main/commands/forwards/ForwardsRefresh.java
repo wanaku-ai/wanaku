@@ -1,14 +1,13 @@
 package ai.wanaku.cli.main.commands.forwards;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;
 
-import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -36,16 +35,7 @@ public class ForwardsRefresh extends BaseCommand {
             forwardsService.refreshForward(name);
             printer.printSuccessMessage("Successfully refreshed forward reference '" + name + "'");
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                String warningMessage = String.format(
-                        "Forward not found (%s): %s%n",
-                        name, response.getStatusInfo().getReasonPhrase());
-                printer.printWarningMessage(warningMessage);
-                return EXIT_ERROR;
-            }
-            commonResponseErrorHandler(response);
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Forward", name, printer);
         }
         return EXIT_OK;
     }
