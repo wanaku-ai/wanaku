@@ -76,6 +76,6 @@ The CLI stores configuration in `~/.wanaku/`:
 
 ## Related Documentation
 
-- [Usage Guide](../docs/usage.md) - Complete CLI reference
+- [Usage Guide](../../docs/usage.md) - Complete CLI reference
 - [Label Expressions Guide](src/main/resources/docs/LABEL_EXPRESSIONS.md) - Advanced filtering
-- [Architecture](../docs/architecture.md)
+- [Architecture](../../docs/architecture.md)
