@@ -1,21 +1,21 @@
 package ai.wanaku.cli.main.commands.tools;
 
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 /**
  * CLI command for adding labels to existing tools.
@@ -75,64 +75,25 @@ public class ToolsLabelAdd extends BaseCommand {
             toolsService = initService(ToolsService.class, host);
         }
 
-        // Validate that either name or labelExpression is provided, but not both
-        if (name != null && labelExpression != null) {
-            printer.printErrorMessage("Cannot specify both --name and --label-expression. Use one or the other.");
-            return EXIT_ERROR;
+        int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);
+        if (validationResult != EXIT_OK) {
+            return validationResult;
         }
 
-        if (name == null && labelExpression == null) {
-            printer.printErrorMessage("Must specify either --name or --label-expression.");
-            return EXIT_ERROR;
-        }
-
-        // Parse labels
-        Map<String, String> labelsToAdd = parseLabels(printer);
+        Map<String, String> labelsToAdd = LabelHelper.parseLabels(labels, printer);
         if (labelsToAdd == null) {
             return EXIT_ERROR;
         }
 
-        // Handle adding labels by label expression
         if (labelExpression != null) {
             return addLabelsByExpression(labelsToAdd, printer);
         }
 
-        // Handle adding labels by name
         return addLabelsByName(labelsToAdd, printer);
     }
 
-    /**
-     * Parses label strings into a map.
-     *
-     * @param printer the printer for error messages
-     * @return map of labels or null if parsing failed
-     */
-    private Map<String, String> parseLabels(WanakuPrinter printer) {
-        Map<String, String> labelMap = new HashMap<>();
-        for (String label : labels) {
-            String[] parts = label.split("=", 2);
-            if (parts.length == 2) {
-                labelMap.put(parts[0].trim(), parts[1].trim());
-            } else {
-                printer.printErrorMessage(
-                        String.format("Invalid label format: '%s'. Expected format: 'key=value'", label));
-                return null;
-            }
-        }
-        return labelMap;
-    }
-
-    /**
-     * Adds labels to a single tool by name.
-     *
-     * @param labelsToAdd the labels to add
-     * @param printer     the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer addLabelsByName(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            // Get the existing tool
             WanakuResponse<ToolReference> response = toolsService.getByName(name);
             ToolReference tool = response.data();
 
@@ -141,104 +102,26 @@ public class ToolsLabelAdd extends BaseCommand {
                 return EXIT_ERROR;
             }
 
-            // Add new labels (this will override existing labels with same key)
-            Map<String, String> existingLabels = tool.getLabels();
-            if (existingLabels == null) {
-                existingLabels = new HashMap<>();
-            }
-
-            int addedCount = 0;
-            int updatedCount = 0;
-
-            for (Map.Entry<String, String> entry : labelsToAdd.entrySet()) {
-                if (existingLabels.containsKey(entry.getKey())) {
-                    String oldValue = existingLabels.get(entry.getKey());
-                    if (!oldValue.equals(entry.getValue())) {
-                        printer.printInfoMessage(String.format(
-                                "Updating label '%s': '%s' -> '%s'", entry.getKey(), oldValue, entry.getValue()));
-                        updatedCount++;
-                    }
-                } else {
-                    printer.printInfoMessage(
-                            String.format("Adding label '%s' = '%s'", entry.getKey(), entry.getValue()));
-                    addedCount++;
-                }
-                existingLabels.put(entry.getKey(), entry.getValue());
-            }
-
-            tool.setLabels(existingLabels);
-
-            // Update the tool
-            toolsService.update(tool.getName(), tool);
-
-            printer.printSuccessMessage(String.format(
-                    "Labels updated for tool '%s' (%d added, %d updated)", name, addedCount, updatedCount));
-            return EXIT_OK;
-
+            return LabelHelper.addLabelsToEntity(
+                    tool, labelsToAdd, printer, t -> toolsService.update(t.getName(), t), "tool", name);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                printer.printErrorMessage(String.format("Tool '%s' not found", name));
-            } else {
-                commonResponseErrorHandler(response);
-            }
-            return EXIT_ERROR;
+            return handleNotFound(ex, "Tool", name, printer);
         }
     }
 
-    /**
-     * Adds labels to multiple tools matching a label expression.
-     *
-     * @param labelsToAdd the labels to add
-     * @param printer     the printer for displaying messages
-     * @return exit code
-     * @throws IOException if an I/O error occurs
-     */
     private Integer addLabelsByExpression(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            // Get all tools matching the label expression
             WanakuResponse<List<ToolReference>> response = toolsService.list(labelExpression);
-            List<ToolReference> matchingTools = response.data();
-
-            if (matchingTools == null || matchingTools.isEmpty()) {
-                printer.printWarningMessage("No tools found matching label expression: " + labelExpression);
-                return EXIT_OK;
-            }
-
-            printer.printInfoMessage(String.format(
-                    "Found %d tool(s) matching label expression '%s'", matchingTools.size(), labelExpression));
-
-            int successCount = 0;
-            int failureCount = 0;
-
-            for (ToolReference tool : matchingTools) {
-                try {
-                    // Add new labels
-                    Map<String, String> existingLabels = tool.getLabels();
-                    if (existingLabels == null) {
-                        existingLabels = new HashMap<>();
-                    }
-                    existingLabels.putAll(labelsToAdd);
-                    tool.setLabels(existingLabels);
-
-                    // Update the tool
-                    toolsService.update(tool.getName(), tool);
-
-                    printer.printSuccessMessage("  Updated: " + tool.getName());
-                    successCount++;
-                } catch (WebApplicationException ex) {
-                    printer.printErrorMessage("  Failed to update: " + tool.getName());
-                    failureCount++;
-                }
-            }
-
-            printer.printInfoMessage(
-                    String.format("Label update complete: %d succeeded, %d failed", successCount, failureCount));
-
-            return failureCount > 0 ? EXIT_ERROR : EXIT_OK;
+            return LabelHelper.addLabelsByExpression(
+                    response,
+                    labelsToAdd,
+                    printer,
+                    t -> toolsService.update(t.getName(), t),
+                    ToolReference::getName,
+                    "tool(s)",
+                    labelExpression);
         } catch (WebApplicationException ex) {
-            Response response = ex.getResponse();
-            commonResponseErrorHandler(response);
+            commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;
         }
     }

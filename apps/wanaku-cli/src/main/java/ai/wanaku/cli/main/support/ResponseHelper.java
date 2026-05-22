@@ -1,12 +1,28 @@
 package ai.wanaku.cli.main.support;
 
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.commands.BaseCommand;
 
 public final class ResponseHelper {
     private ResponseHelper() {}
+
+    public static int handleNotFound(
+            WebApplicationException ex, String entityType, String identifier, WanakuPrinter printer)
+            throws IOException {
+        Response response = ex.getResponse();
+        if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+            printer.printWarningMessage(String.format(
+                    "%s '%s' not found: %s",
+                    entityType, identifier, response.getStatusInfo().getReasonPhrase()));
+            return BaseCommand.EXIT_ERROR;
+        }
+        commonResponseErrorHandler(response);
+        return BaseCommand.EXIT_ERROR;
+    }
 
     public static void commonResponseErrorHandler(Response response) throws IOException {
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {

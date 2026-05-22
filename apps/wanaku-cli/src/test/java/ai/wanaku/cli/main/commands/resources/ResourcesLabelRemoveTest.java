@@ -116,7 +116,7 @@ public class ResourcesLabelRemoveTest {
 
             // Assert
             assertEquals(0, result); // Success even though label didn't exist
-            verify(resourcesService, never()).update(anyString(), any()); // No update needed
+            verify(resourcesService, never()).update(anyString(), any());
         }
 
         @Test

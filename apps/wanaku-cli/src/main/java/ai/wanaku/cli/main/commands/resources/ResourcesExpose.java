@@ -23,12 +23,12 @@ import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandl
  * This command registers a resource with specified configuration including:
  * </p>
  * <ul>
- *   <li>Resource metadata (name, namespace, description, location, type)</li>
- *   <li>MIME type for content identification</li>
- *   <li>Parameters for resource-specific configuration</li>
- *   <li>Configuration data from external files</li>
- *   <li>Secrets data for secure credential storage</li>
- *   <li>Labels for organization and filtering</li>
+ * <li>Resource metadata (name, namespace, description, location, type)</li>
+ * <li>MIME type for content identification</li>
+ * <li>Parameters for resource-specific configuration</li>
+ * <li>Configuration data from external files</li>
+ * <li>Secrets data for secure credential storage</li>
+ * <li>Labels for organization and filtering</li>
  * </ul>
  * <p>
  * Resources represent data sources, APIs, or other external systems that
