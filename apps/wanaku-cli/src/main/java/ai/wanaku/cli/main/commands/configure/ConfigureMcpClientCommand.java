@@ -77,19 +77,15 @@ public abstract class ConfigureMcpClientCommand extends BaseCommand {
 
     protected final URI resolveWanakuEndpoint() {
         String normalizedTransport = transport == null ? "" : transport.trim().toLowerCase();
-        String path;
-        switch (normalizedTransport) {
-            case "sse":
-                path = "/mcp/sse/";
-                break;
-            case "http":
-                path = "/mcp";
-                break;
-            default:
-                throw new IllegalArgumentException(
-                        "Unsupported transport '" + transport + "'. Supported transports: sse, http");
-        }
-        return URI.create("http://" + host + ":" + port + path);
+        String path =
+                switch (normalizedTransport) {
+                    case "sse" -> "/mcp/sse/";
+                    case "http" -> "/mcp";
+                    default ->
+                        throw new IllegalArgumentException(
+                                "Unsupported transport '%s'. Supported transports: sse, http".formatted(transport));
+                };
+        return URI.create("http://%s:%d%s".formatted(host, port, path));
     }
 
     protected abstract String clientDisplayName();

@@ -194,7 +194,7 @@ public class CapabilitiesCleanup extends BaseCommand {
         StringBuilder separator = new StringBuilder();
         for (int i = 0; i < widths.length; i++) {
             if (i > 0) separator.append("-+-");
-            separator.append("-".repeat(widths[i]));
+            separator.repeat("-", widths[i]);
         }
         System.out.println(separator);
 

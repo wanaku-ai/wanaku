@@ -517,7 +517,7 @@ public class WanakuPrinter extends DefaultPrinter {
         }
 
         try {
-            return objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {});
+            return objectMapper.convertValue(obj, new TypeReference<>() {});
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to convert object to map: " + e.getMessage(), e);
         }
