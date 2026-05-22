@@ -194,7 +194,7 @@ public class CodeExecutionBean {
         codeExecutionEvent.setTimestamp(timestamp);
 
         // Send output content
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         OutputType outputType = reply.getOutputType();
         for (String content : reply.getContentList()) {
             if (outputType == OutputType.OUTPUT_TYPE_STDERR) {

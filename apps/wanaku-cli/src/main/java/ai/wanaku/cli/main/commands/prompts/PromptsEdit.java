@@ -52,13 +52,15 @@ public class PromptsEdit extends BaseCommand {
 
     @CommandLine.Option(
             names = {"-m", "--message"},
-            description = "Message in one of these formats:\n"
-                    + "  Text: 'role:text:Your message here'\n"
-                    + "  Image: 'role:image:base64data:mimeType' (e.g., 'user:image:iVBORw0KG...:image/png')\n"
-                    + "  Audio: 'role:audio:base64data:mimeType' (e.g., 'user:audio:UklGRiQAA...:audio/wav')\n"
-                    + "  Resource: 'role:resource:location:description:mimeType' (e.g., 'user:resource:file:///path:File content:text/plain')\n"
-                    + "  Note: For backward compatibility, 'role:content' defaults to text type\n"
-                    + "  If specified, replaces all existing messages")
+            description =
+                    """
+                    Message in one of these formats:
+                      Text: 'role:text:Your message here'
+                      Image: 'role:image:base64data:mimeType' (e.g., 'user:image:iVBORw0KG...:image/png')
+                      Audio: 'role:audio:base64data:mimeType' (e.g., 'user:audio:UklGRiQAA...:audio/wav')
+                      Resource: 'role:resource:location:description:mimeType' (e.g., 'user:resource:file:///path:File content:text/plain')
+                      Note: For backward compatibility, 'role:content' defaults to text type
+                      If specified, replaces all existing messages""")
     private List<String> messages;
 
     @CommandLine.Option(

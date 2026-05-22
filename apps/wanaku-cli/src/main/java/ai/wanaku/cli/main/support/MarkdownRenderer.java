@@ -121,16 +121,12 @@ public class MarkdownRenderer {
         @Override
         public void visit(CustomNode customNode) {
             // Handle GFM table extension nodes - TableHead, TableBody, TableRow, TableCell extend CustomNode
-            if (customNode instanceof TableHead) {
-                visit((TableHead) customNode);
-            } else if (customNode instanceof TableBody) {
-                visit((TableBody) customNode);
-            } else if (customNode instanceof TableRow) {
-                visit((TableRow) customNode);
-            } else if (customNode instanceof TableCell) {
-                visit((TableCell) customNode);
-            } else {
-                super.visit(customNode);
+            switch (customNode) {
+                case TableHead tableHead -> visit(tableHead);
+                case TableBody tableBody -> visit(tableBody);
+                case TableRow tableRow -> visit(tableRow);
+                case TableCell tableCell -> visit(tableCell);
+                case null, default -> super.visit(customNode);
             }
         }
 

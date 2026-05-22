@@ -189,12 +189,9 @@ public final class InvokerToolExecutor {
 
         // If there is a body defined, then get it from the arguments from the LLM
         String body = (String) toolArguments.args().get(BODY);
-        if (body == null) {
-            // If the LLM does not provide a body, then return an empty string
-            return EMPTY_BODY;
-        }
+        // If the LLM does not provide a body, then return an empty string
+        return Objects.requireNonNullElse(body, EMPTY_BODY);
 
         // Use the body provided by the LLM
-        return body;
     }
 }

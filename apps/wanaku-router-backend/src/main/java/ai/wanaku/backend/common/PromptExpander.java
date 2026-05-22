@@ -85,7 +85,7 @@ public class PromptExpander {
         }
 
         Matcher matcher = VARIABLE_PATTERN.matcher(text);
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
 
         while (matcher.find()) {
             String varName = matcher.group(1);

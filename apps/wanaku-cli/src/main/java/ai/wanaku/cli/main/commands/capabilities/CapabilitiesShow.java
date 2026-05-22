@@ -99,10 +99,6 @@ public class CapabilitiesShow extends BaseCommand {
      */
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
-        /**
-         * Service instance for interacting with the targets API.
-         * Initialized during command execution with the specified host configuration.
-         */
         CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
 
         // Fetch and filter capabilities by service name
