@@ -32,7 +32,7 @@ class ExecClientSecurityTest {
         ExecClient client = new ExecClient(new ExecCommandPolicy(List.of(allowlistedExecutable.toString())), executor);
 
         ToolInvokeRequest request = ToolInvokeRequest.newBuilder()
-                .setUri(createScript(tempDir, "denied").toString() + " --version")
+                .setUri(createScript(tempDir, "denied") + " --version")
                 .build();
         ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
@@ -48,7 +48,7 @@ class ExecClientSecurityTest {
         ExecClient client = new ExecClient(new ExecCommandPolicy(List.of(allowlistedExecutable.toString())), executor);
 
         ToolInvokeRequest request = ToolInvokeRequest.newBuilder()
-                .setUri(allowlistedExecutable.toString() + " --version")
+                .setUri(allowlistedExecutable + " --version")
                 .build();
         ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
