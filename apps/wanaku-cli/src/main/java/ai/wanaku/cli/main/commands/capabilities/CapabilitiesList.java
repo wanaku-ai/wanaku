@@ -1,7 +1,6 @@
 // CapabilitiesList.java
 package ai.wanaku.cli.main.commands.capabilities;
 
-import java.io.IOException;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
@@ -98,16 +97,9 @@ Note: If omitted, all capabilities are listed. Label matching is case-sensitive.
      * and includes timeout handling for API operations.</p>
      *
      * @return {@link BaseCommand#EXIT_OK} if the command executes successfully
-     * @throws Exception if there's an error during execution, including:
-     *                  <ul>
-     *                    <li>API communication failures</li>
-     *                    <li>Terminal creation issues</li>
-     *                    <li>Data processing errors</li>
-     *                    <li>Timeout while waiting for API responses</li>
-     *                  </ul>
      */
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
 
         CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
         var capabilities = fetchAndMergeCapabilities(capabilitiesService, labelExpression)

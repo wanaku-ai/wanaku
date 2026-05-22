@@ -1,6 +1,5 @@
 package ai.wanaku.cli.main.commands.forwards;
 
-import java.io.IOException;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
@@ -29,7 +28,7 @@ import static picocli.CommandLine.usage;
         subcommands = {ForwardsAdd.class, ForwardsRemove.class, ForwardsList.class, ForwardsRefresh.class})
 public class Forwards extends BaseCommand {
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         usage(this, System.out);
         return EXIT_ERROR;
     }

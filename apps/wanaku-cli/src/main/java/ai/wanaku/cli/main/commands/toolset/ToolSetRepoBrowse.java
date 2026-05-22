@@ -26,7 +26,7 @@ public class ToolSetRepoBrowse extends BaseCommand {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         try {

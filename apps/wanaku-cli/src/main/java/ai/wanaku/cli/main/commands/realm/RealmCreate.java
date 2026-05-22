@@ -34,7 +34,7 @@ public class RealmCreate extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             String realmJson = Files.readString(Path.of(config));
             KeycloakAdminClient client = createAdminClient();

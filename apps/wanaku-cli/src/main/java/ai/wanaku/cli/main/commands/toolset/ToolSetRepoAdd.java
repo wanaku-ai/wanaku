@@ -48,7 +48,7 @@ public class ToolSetRepoAdd extends BaseCommand {
     private String branch;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         Map<String, String> repo = new java.util.HashMap<>();

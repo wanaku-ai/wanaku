@@ -107,8 +107,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
     KubernetesClient kubernetesClient;
 
     @Override
-    public UpdateControl<WanakuRouter> reconcile(WanakuRouter resource, Context<WanakuRouter> context)
-            throws Exception {
+    public UpdateControl<WanakuRouter> reconcile(WanakuRouter resource, Context<WanakuRouter> context) {
         LOG.infof(
                 "Starting router reconciliation for %s", resource.getMetadata().getName());
 

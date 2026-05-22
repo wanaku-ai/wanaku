@@ -54,7 +54,7 @@ public class CapabilitiesStatus extends BaseCommand {
     private String filter;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
 
         List<PrintableCapability> capabilities =

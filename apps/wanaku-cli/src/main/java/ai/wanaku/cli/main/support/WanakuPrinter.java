@@ -453,7 +453,7 @@ public class WanakuPrinter extends DefaultPrinter {
             }
 
             @Override
-            public ByteArrayInputStream read() throws IOException {
+            public ByteArrayInputStream read() {
                 return new ByteArrayInputStream(styledContent.getBytes(StandardCharsets.UTF_8));
             }
 

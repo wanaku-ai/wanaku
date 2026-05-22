@@ -34,7 +34,7 @@ public class CredentialsAdd extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             KeycloakAdminClient client = createAdminClient();
             client.createClient(realm, clientId, description);

@@ -22,7 +22,7 @@ public class ToolSetRepoList extends BaseCommand {
     protected String host;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         try {

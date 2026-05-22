@@ -57,7 +57,7 @@ public abstract class ConfigureMcpClientCommand extends BaseCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             Path configPath = resolveConfigPath();
             URI endpoint = resolveWanakuEndpoint();

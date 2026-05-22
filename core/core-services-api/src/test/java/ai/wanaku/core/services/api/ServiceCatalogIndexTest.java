@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ServiceCatalogIndexTest {
 
     @Test
-    void testValidIndex() throws Exception {
+    void testValidIndex() {
         byte[] zip = createTestZip("testservice", "A test service", "sys1");
         ServiceCatalogIndex index = ServiceCatalogIndex.fromZipBytes(zip);
 
@@ -31,7 +31,7 @@ class ServiceCatalogIndexTest {
     }
 
     @Test
-    void testValidIndexWithIcon() throws Exception {
+    void testValidIndexWithIcon() {
         byte[] zip = createTestZipWithIcon("testservice", "icon-test", "A test service", "sys1");
         ServiceCatalogIndex index = ServiceCatalogIndex.fromZipBytes(zip);
 
@@ -70,7 +70,7 @@ class ServiceCatalogIndexTest {
     }
 
     @Test
-    void testMultiSystemCatalog() throws Exception {
+    void testMultiSystemCatalog() {
         byte[] zip = createTestZip("finance", "Finance service", "finance-new", "finance-legacy");
         ServiceCatalogIndex index = ServiceCatalogIndex.fromZipBytes(zip);
 
@@ -83,7 +83,7 @@ class ServiceCatalogIndexTest {
     }
 
     @Test
-    void testFromBase64() throws Exception {
+    void testFromBase64() {
         byte[] zip = createTestZip("b64test", "Base64 test", "sys1");
         String base64 = Base64.getEncoder().encodeToString(zip);
         ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(base64);

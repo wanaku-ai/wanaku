@@ -64,7 +64,7 @@ public class StartLocal extends StartBase {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         if (exclusive != null && exclusive.exclusiveNonStart != null) {
             if (exclusive.exclusiveNonStart.listServices) {
                 Map<String, String> components = config.components();

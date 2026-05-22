@@ -59,7 +59,7 @@ public class ToolsEdit extends BaseCommand {
      * @throws Exception if an error occurs during the operation.
      */
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         toolsService = initService(ToolsService.class, host);
 
         List<ToolReference> list = toolsService.list().data();

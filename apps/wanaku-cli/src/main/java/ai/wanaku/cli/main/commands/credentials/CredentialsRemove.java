@@ -24,7 +24,7 @@ public class CredentialsRemove extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             KeycloakAdminClient client = createAdminClient();
             client.deleteClient(realm, clientId);

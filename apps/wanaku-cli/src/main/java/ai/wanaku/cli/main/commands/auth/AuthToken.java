@@ -25,7 +25,7 @@ public class AuthToken extends BaseCommand {
     private boolean clearToken;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         AuthCredentialStore credentialStore = new AuthCredentialStore();
 
         if (setToken != null) {

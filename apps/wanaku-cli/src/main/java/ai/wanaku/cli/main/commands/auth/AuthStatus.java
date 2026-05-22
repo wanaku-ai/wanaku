@@ -20,7 +20,7 @@ public class AuthStatus extends BaseCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
 
         printer.printInfoMessage("Authentication Status:");
         printer.printInfoMessage("=====================");

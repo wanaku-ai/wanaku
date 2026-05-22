@@ -25,7 +25,7 @@ public class ToolSetRepoRemove extends BaseCommand {
     private String name;
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         try {

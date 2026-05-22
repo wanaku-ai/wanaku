@@ -75,7 +75,7 @@ class AbstractResourceDelegateTest {
     }
 
     @Test
-    void acquireHappyPath() throws Exception {
+    void acquireHappyPath() {
         configuredResponse = List.of("resource content");
         when(consumer.consume(any(String.class), any(ResourceRequest.class))).thenReturn("raw");
 
@@ -90,7 +90,7 @@ class AbstractResourceDelegateTest {
     }
 
     @Test
-    void acquireVerifiesUriForwarding() throws Exception {
+    void acquireVerifiesUriForwarding() {
         configuredUri = "custom://my-endpoint";
         configuredResponse = List.of("data");
         when(consumer.consume(any(String.class), any(ResourceRequest.class))).thenReturn("raw");
@@ -104,7 +104,7 @@ class AbstractResourceDelegateTest {
     }
 
     @Test
-    void acquireMultipleContentItems() throws Exception {
+    void acquireMultipleContentItems() {
         configuredResponse = List.of("item1", "item2", "item3");
         when(consumer.consume(any(String.class), any(ResourceRequest.class))).thenReturn("raw");
 
@@ -120,7 +120,7 @@ class AbstractResourceDelegateTest {
     }
 
     @Test
-    void acquireInvalidResponseType() throws Exception {
+    void acquireInvalidResponseType() {
         coerceException = new InvalidResponseTypeException("bad type");
         when(consumer.consume(any(String.class), any(ResourceRequest.class))).thenReturn("raw");
 
@@ -133,7 +133,7 @@ class AbstractResourceDelegateTest {
     }
 
     @Test
-    void acquireNonConvertableResponse() throws Exception {
+    void acquireNonConvertableResponse() {
         coerceException = new NonConvertableResponseException("cannot convert");
         when(consumer.consume(any(String.class), any(ResourceRequest.class))).thenReturn("raw");
 
@@ -146,7 +146,7 @@ class AbstractResourceDelegateTest {
     }
 
     @Test
-    void acquireConsumerThrowsException() throws Exception {
+    void acquireConsumerThrowsException() {
         when(consumer.consume(any(String.class), any(ResourceRequest.class)))
                 .thenThrow(new RuntimeException("connection failed"));
 

@@ -54,7 +54,7 @@ public class UsersAdd extends BaseAdminCommand {
     }
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             KeycloakAdminClient client = createAdminClient();
             client.createUser(realm, username, password, email, firstName, lastName, verified);

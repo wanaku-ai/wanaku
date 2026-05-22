@@ -21,7 +21,7 @@ import static picocli.CommandLine.usage;
 public class Completion extends BaseCommand {
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         usage(this, System.out);
         return EXIT_ERROR;
     }

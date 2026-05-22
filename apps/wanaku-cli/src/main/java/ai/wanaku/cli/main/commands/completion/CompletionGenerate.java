@@ -65,7 +65,7 @@ public class CompletionGenerate extends BaseCommand {
     private String commandName = "wanaku";
 
     @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
             // Create a CommandLine instance for the main CLI command
             CommandLine commandLine = new CommandLine(CliMain.class);
