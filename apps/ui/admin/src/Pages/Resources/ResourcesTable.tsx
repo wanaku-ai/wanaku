@@ -19,6 +19,7 @@ import {Add, Edit, TrashCan} from "@carbon/icons-react"
 import {Param, ResourceReference} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {useResources} from "../../hooks/api/use-resources"
+import {TableEmptyState} from "../EmptyTableState"
 
 
 export interface RefreshHandle {
@@ -200,6 +201,13 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, o
                     )
                   }
                 })}
+                {resources.length == 0 && (
+                  <TableEmptyState
+                    colSpan={headers.length + 1}
+                    title="Start by adding resources"
+                    body="Click Add Resource to add your data"
+                  />
+                )}
               </TableBody>
             </Table>
           </TableContainer>

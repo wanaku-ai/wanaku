@@ -19,6 +19,7 @@ import React, {FunctionComponent, useState} from "react";
 import {ToolReference} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {InputSchemaModal} from "./InputSchemaModal";
+import {TableEmptyState} from "../EmptyTableState"
 
 interface ToolListProps {
   fetchedData: ToolReference[];
@@ -180,6 +181,13 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                       )
                     }
                   })}
+                  {fetchedData.length == 0 && (
+                    <TableEmptyState
+                      colSpan={headers.length + 1}
+                      title="Start by adding tools"
+                      body="Click Add Tool to add your data, or import the toolset from a remote server"
+                    />
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>

@@ -1,6 +1,7 @@
 import {DataTable, Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow,} from "@carbon/react";
 import React from "react";
 import {ServiceTargetState} from "./ServiceTargetState";
+import {TableEmptyState} from "../EmptyTableState"
 
 interface TargetsTableProps {
   targets: ServiceTargetState[];
@@ -58,6 +59,13 @@ export const TargetsTable: React.FC<TargetsTableProps> = ({
                   </TableRow>
                 );
               })}
+              {targets.length == 0 && (
+                <TableEmptyState
+                  colSpan={headers.length}
+                  title=""
+                  body=""
+                />
+              )}
             </TableBody>
           </Table>
         </TableContainer>
