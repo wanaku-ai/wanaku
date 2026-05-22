@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import org.jboss.logging.Logger;
@@ -30,7 +31,7 @@ public class Downloader {
             return localFile;
         }
 
-        URL remoteFile = new URL(url);
+        URL remoteFile = URI.create(url).toURL();
 
         try (InputStream in = remoteFile.openStream()) {
             File parentDir = localFile.getParentFile();
