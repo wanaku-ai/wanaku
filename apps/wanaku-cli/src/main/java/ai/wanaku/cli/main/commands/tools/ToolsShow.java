@@ -80,18 +80,7 @@ public class ToolsShow extends BaseCommand {
                     && inputSchema.getProperties() != null
                     && !inputSchema.getProperties().isEmpty()) {
                 printer.printInfoMessage("\nInput Schema Properties:");
-                List<PropertyDisplay> properties = new ArrayList<>();
-                List<String> required = inputSchema.getRequired() != null ? inputSchema.getRequired() : List.of();
-
-                for (Map.Entry<String, Property> entry :
-                        inputSchema.getProperties().entrySet()) {
-                    Property prop = entry.getValue();
-                    properties.add(new PropertyDisplay(
-                            entry.getKey(),
-                            prop.getType(),
-                            prop.getDescription(),
-                            required.contains(entry.getKey()) ? "yes" : "no"));
-                }
+                final List<PropertyDisplay> properties = toPropertyDisplays(inputSchema);
                 printer.printTable(properties, "name", "type", "description", "required");
             }
 
@@ -101,6 +90,22 @@ public class ToolsShow extends BaseCommand {
             commonResponseErrorHandler(response);
             return EXIT_ERROR;
         }
+    }
+
+    private static List<PropertyDisplay> toPropertyDisplays(InputSchema inputSchema) {
+        List<PropertyDisplay> properties = new ArrayList<>();
+        List<String> required = inputSchema.getRequired() != null ? inputSchema.getRequired() : List.of();
+
+        for (Map.Entry<String, Property> entry :
+                inputSchema.getProperties().entrySet()) {
+            Property prop = entry.getValue();
+            properties.add(new PropertyDisplay(
+                    entry.getKey(),
+                    prop.getType(),
+                    prop.getDescription(),
+                    required.contains(entry.getKey()) ? "yes" : "no"));
+        }
+        return properties;
     }
 
     /**
