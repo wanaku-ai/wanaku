@@ -5,7 +5,7 @@ import io.quarkus.grpc.runtime.GrpcServer;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -22,7 +22,7 @@ class CapabilityReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("capability-grpc-readiness", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertEquals(9190, ((Long) response.getData().get().get("grpcPort")).intValue());
     }
 
@@ -37,7 +37,7 @@ class CapabilityReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("capability-grpc-readiness", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("not available", response.getData().get().get("grpcPort"));
     }
 
@@ -52,7 +52,7 @@ class CapabilityReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("capability-grpc-readiness", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("not available", response.getData().get().get("grpcPort"));
     }
 
@@ -67,7 +67,7 @@ class CapabilityReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("capability-grpc-readiness", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("not available", response.getData().get().get("grpcPort"));
     }
 }

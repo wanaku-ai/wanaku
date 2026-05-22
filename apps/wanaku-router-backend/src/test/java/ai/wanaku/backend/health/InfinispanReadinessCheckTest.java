@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,7 +34,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertTrue(response.getData().isPresent());
         assertEquals("myCache", getDataValue(response, "cacheNames"));
         assertEquals("HEALTHY", getDataValue(response, "clusterHealth"));
@@ -52,7 +53,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
     }
 
     @Test
@@ -68,7 +69,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertEquals("degradedCache", getDataValue(response, "degradedCaches"));
     }
 
@@ -85,7 +86,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("failedCache", getDataValue(response, "failedCaches"));
     }
 
@@ -102,7 +103,7 @@ class InfinispanReadinessCheckTest {
 
         HealthCheckResponse response = check.call();
 
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         String degradedCaches = getDataValue(response, "failedCaches");
         assertNotNull(degradedCaches);
         // Cache A is degraded and should not appear as failed
@@ -121,7 +122,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("Infinispan not available", getDataValue(response, "error"));
     }
 
@@ -137,7 +138,7 @@ class InfinispanReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("infinispan", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertEquals("", getDataValue(response, "cacheNames"));
     }
 
@@ -154,7 +155,7 @@ class InfinispanReadinessCheckTest {
 
         HealthCheckResponse response = check.call();
 
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
     }
 
     @Test
@@ -170,7 +171,7 @@ class InfinispanReadinessCheckTest {
 
         HealthCheckResponse response = check.call();
 
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertFalse(response.getData().get().containsKey("cacheNames"));
         assertEquals("degradedCache", getDataValue(response, "degradedCaches"));
     }
@@ -188,7 +189,7 @@ class InfinispanReadinessCheckTest {
 
         HealthCheckResponse response = check.call();
 
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         String cacheNames = getDataValue(response, "cacheNames");
         assertTrue(cacheNames.contains("cache1"));
         assertTrue(cacheNames.contains("cache2"));

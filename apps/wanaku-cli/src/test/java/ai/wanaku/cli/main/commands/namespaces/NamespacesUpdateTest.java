@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -85,7 +86,7 @@ public class NamespacesUpdateTest {
         ArgumentCaptor<Namespace> captor = ArgumentCaptor.forClass(Namespace.class);
         verify(namespacesService).update(anyString(), captor.capture());
         Namespace updated = captor.getValue();
-        assertEquals(null, updated.getName());
+        assertNull(updated.getName());
     }
 
     @Test

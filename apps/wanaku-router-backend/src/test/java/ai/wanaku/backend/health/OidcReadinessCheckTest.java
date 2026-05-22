@@ -8,6 +8,7 @@ import ai.wanaku.backend.health.OidcReadinessCheck.HttpConnectionProvider;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,7 +28,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertTrue(response.getData().isPresent());
         assertEquals("disabled", getDataValue(response, "status"));
     }
@@ -41,7 +42,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
         assertTrue(response.getData().isPresent());
         assertEquals("disabled", getDataValue(response, "status"));
     }
@@ -64,7 +65,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(response.getStatus(), HealthCheckResponse.Status.UP);
         assertEquals("enabled", getDataValue(response, "status"));
         assertFalse(response.getData().get().containsKey("authServerUrl"));
     }
@@ -87,7 +88,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("unreachable", getDataValue(response, "status"));
         assertEquals("503", getDataValue(response, "httpStatus"));
         assertFalse(response.getData().get().containsKey("authServerUrl"));
@@ -112,7 +113,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("unreachable", getDataValue(response, "status"));
         assertFalse(response.getData().get().containsKey("authServerUrl"));
     }
@@ -134,7 +135,7 @@ class OidcReadinessCheckTest {
 
         HealthCheckResponse response = check.call();
 
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertFalse(response.getData().get().containsKey("authServerUrl"));
     }
 
@@ -149,7 +150,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("error", getDataValue(response, "status"));
     }
 
@@ -164,7 +165,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.DOWN);
+        assertSame(HealthCheckResponse.Status.DOWN, response.getStatus());
         assertEquals("error", getDataValue(response, "status"));
     }
 
@@ -186,7 +187,7 @@ class OidcReadinessCheckTest {
         HealthCheckResponse response = check.call();
 
         assertEquals("oidc", response.getName());
-        assertTrue(response.getStatus() == HealthCheckResponse.Status.UP);
+        assertSame(HealthCheckResponse.Status.UP, response.getStatus());
     }
 
     private String getDataValue(HealthCheckResponse response, String key) {
