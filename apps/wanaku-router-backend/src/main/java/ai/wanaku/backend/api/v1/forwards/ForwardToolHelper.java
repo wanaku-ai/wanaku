@@ -32,7 +32,7 @@ final class ForwardToolHelper {
         }
 
         // Should be unreachable
-        throw new IllegalStateException("" + remoteToolName);
+        throw new IllegalStateException(remoteToolName);
     }
 
     /**
