@@ -29,19 +29,19 @@ wanaku tools list -l "environment!=production"
 
 ### Comparison Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `=` | Equals | `category=weather` |
-| `!=` | Not equals | `status!=deprecated` |
+| Operator | Description | Example              |
+|----------|-------------|----------------------|
+| `=`      | Equals      | `category=weather`   |
+| `!=`     | Not equals  | `status!=deprecated` |
 
 ### Logical Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `&` | Logical AND | `category=weather & version=2.0` |
-| `\|` | Logical OR | `category=weather \| category=news` |
-| `!` | Logical NOT | `!deprecated=true` |
-| `( )` | Grouping | `(a=1 \| b=2) & c=3` |
+| Operator | Description | Example                             |
+|----------|-------------|-------------------------------------|
+| `&`      | Logical AND | `category=weather & version=2.0`    |
+| `\|`     | Logical OR  | `category=weather \| category=news` |
+| `!`      | Logical NOT | `!deprecated=true`                  |
+| `( )`    | Grouping    | `(a=1 \| b=2) & c=3`                |
 
 ### Operator Precedence
 
