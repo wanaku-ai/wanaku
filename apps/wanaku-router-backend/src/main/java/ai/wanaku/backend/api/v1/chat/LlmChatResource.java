@@ -9,8 +9,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -22,7 +20,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -54,7 +51,7 @@ public class LlmChatResource {
     public String codeCompletions(String data) {
         JsonObject json = Json.createReader(new StringReader(data)).readObject();
         String baseUrl = json.getString("baseUrl");
-        String apiKey = json.containsKey("apiKey") ? json.getString("apiKey") : null;
+        String apiKey = json.getString("apiKey", null);
         JsonObject llmParams = json.getJsonObject("chatParams");
 
         if (!allowlist.contains(baseUrl)) {
@@ -66,8 +63,6 @@ public class LlmChatResource {
                     .uri(new URI(url))
                     .POST(BodyPublishers.ofString(llmParams.toString()))
                     .header("Content-Type", APPLICATION_JSON);
-
-
 
             if (apiKey != null && !apiKey.isEmpty()) {
                 requestBuilder.header("Authorization", "Bearer " + apiKey);
