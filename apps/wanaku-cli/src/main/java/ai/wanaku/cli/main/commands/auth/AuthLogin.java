@@ -91,7 +91,6 @@ public class AuthLogin extends BaseCommand {
                 printer.printSuccessMessage("Successfully authenticated and stored credentials");
                 return EXIT_OK;
             } catch (Exception e) {
-                e.printStackTrace();
                 printer.printErrorMessage("Authentication failed: " + e.getMessage());
                 return EXIT_ERROR;
             }
