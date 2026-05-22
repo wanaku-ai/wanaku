@@ -1,21 +1,15 @@
-import React, {RefObject, useImperativeHandle, useState} from "react"
+import React from "react"
 import {ComboBox} from "@carbon/react"
+import {LlmConfig} from "./config"
 
-
-export interface LLMChangeHandle {
-  llmBaseUrlChanged: (baseUrl: string) => void
-}
 
 interface LLMModelComboBoxProps {
-  value?: string
+  config?: LlmConfig
   labelText?: string
   onChange: (llmModel: string) => void
-  ref?: RefObject<LLMChangeHandle>
 }
 
-export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ value, onChange, labelText, ref }) => {
-  
-  const [modelSuggestions, setModelSuggestions] = useState<string[]>([])
+export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ config, onChange, labelText }) => {
   
   const llmModelSuggestions = {
     "https://api.openai.com": ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1", "o1-mini"],
@@ -24,29 +18,24 @@ export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ value, onCha
     "https://api.anthropic.com": ["claude-4.7-opus", "claude-4.6-opus"]
   }
   
-  useImperativeHandle(ref, (): LLMChangeHandle => ({
-    llmBaseUrlChanged(baseUrl: string) {
-      setModelSuggestions(createItems(baseUrl))
-    }
-  }), [])
-
-  function createItems(baseUrl: string) {
-    return llmModelSuggestions[baseUrl] || []
+  function createItems(): string[] {
+    const baseUrl = config?.baseUrl || undefined
+    return (baseUrl && llmModelSuggestions[baseUrl]) ? llmModelSuggestions[baseUrl] : []
   }
   
   return (
     <ComboBox
       id="llm-model"
       titleText={labelText}
-      items={modelSuggestions}
+      items={createItems()}
       allowCustomValue
-      value={value}
+      selectedItem={config?.llmModel}
       onChange={(event) => {
-        const llmModel = event.selectedItem || event.inputValue || ""
-        onChange(llmModel)
+        setTimeout(() => {
+          const llmModel = event.selectedItem || event.inputValue || ""
+          onChange(llmModel)
+        }, 0)
       }}
     />
-    
   )
-
 }
