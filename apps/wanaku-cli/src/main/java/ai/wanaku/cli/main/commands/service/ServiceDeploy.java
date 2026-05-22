@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -16,6 +17,7 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.ServiceCatalogIndex;
 import ai.wanaku.core.services.api.ServiceCatalogService;
 import ai.wanaku.core.services.api.ServiceTemplateService;
 import picocli.CommandLine;
@@ -44,6 +46,12 @@ public class ServiceDeploy extends BaseCommand {
             description = "Deploy as a service template instead of a catalog",
             defaultValue = "false")
     private boolean template;
+
+    @CommandLine.Option(
+            names = {"--resolve-versions"},
+            description = "Resolve ${placeholder} versions in dependency files before deploying",
+            defaultValue = "true")
+    private boolean resolveVersions;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
@@ -113,6 +121,27 @@ public class ServiceDeploy extends BaseCommand {
         } catch (IOException e) {
             printer.printErrorMessage(String.format("Failed to create ZIP archive: %s%n", e.getMessage()));
             return EXIT_ERROR;
+        }
+
+        // Resolve version placeholders in-memory, never on disk.
+        if (resolveVersions) {
+            String versionsPath = props.getProperty("catalog.versions");
+            if (versionsPath != null) {
+                File versionsFile = new File(baseDir, versionsPath);
+                if (versionsFile.exists()) {
+                    try {
+                        ServiceCatalogIndex index = ServiceCatalogIndex.fromZipBytes(zipBytes);
+                        byte[] resolvedZip = index.resolvePlaceholders(zipBytes);
+                        if (!Arrays.equals(resolvedZip, zipBytes)) {
+                            zipBytes = resolvedZip;
+                        }
+                    } catch (Exception e) {
+                        printer.printErrorMessage(
+                                String.format("Failed to resolve version placeholders: %s%n", e.getMessage()));
+                        return EXIT_ERROR;
+                    }
+                }
+            }
         }
 
         // Base64-encode the ZIP

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -12,6 +13,7 @@ import java.util.zip.ZipOutputStream;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.ServiceCatalogIndex;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "package", description = "Package a service catalog into a Base64-encoded ZIP")
@@ -29,6 +31,12 @@ public class ServicePackage extends BaseCommand {
             description = "Output file path (defaults to <catalog-name>.b64)",
             arity = "0..1")
     private String output;
+
+    @CommandLine.Option(
+            names = {"--resolve-versions"},
+            description = "Resolve ${placeholder} versions in dependency files before packaging",
+            defaultValue = "true")
+    private boolean resolveVersions;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
@@ -95,6 +103,28 @@ public class ServicePackage extends BaseCommand {
         } catch (IOException e) {
             printer.printErrorMessage(String.format("Failed to create ZIP archive: %s%n", e.getMessage()));
             return EXIT_ERROR;
+        }
+
+        if (resolveVersions) {
+            String versionsPath = props.getProperty("catalog.versions");
+            if (versionsPath != null) {
+                File versionsFile = new File(baseDir, versionsPath);
+                if (versionsFile.exists()) {
+                    try {
+                        ServiceCatalogIndex index = ServiceCatalogIndex.fromZipBytes(zipBytes);
+                        byte[] resolvedZip = index.resolvePlaceholders(zipBytes);
+                        if (!Arrays.equals(resolvedZip, zipBytes)) {
+                            zipBytes = resolvedZip;
+                            printer.printInfoMessage(
+                                    String.format("Resolved version placeholders using '%s'%n", versionsPath));
+                        }
+                    } catch (Exception e) {
+                        printer.printErrorMessage(
+                                String.format("Failed to resolve version placeholders: %s%n", e.getMessage()));
+                        return EXIT_ERROR;
+                    }
+                }
+            }
         }
 
         String base64Data = Base64.getEncoder().encodeToString(zipBytes);

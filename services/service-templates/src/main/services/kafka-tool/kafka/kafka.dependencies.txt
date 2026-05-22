@@ -1,1 +1,1 @@
-org.apache.camel:camel-kafka:4.18.2
+org.apache.camel:camel-kafka:${camel.version}

@@ -3,16 +3,20 @@ package ai.wanaku.core.services.api;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.core.util.PlaceholderResolver;
+import ai.wanaku.core.util.ZipPlaceholderResolver;
 
 /**
  * Parses and validates a service catalog index from a ZIP archive.
@@ -30,7 +34,15 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
  * <ul>
  *   <li>{@code catalog.icon} - display icon</li>
  *   <li>{@code catalog.dependencies.<system>} - relative path to dependencies file</li>
+ *   <li>{@code catalog.versions} - relative path to a version properties file for
+ *      placeholder resolution in dependency files</li>
  * </ul>
+ * <p>
+ * Dependency files may contain placeholders in the form {@code ${name}}
+ * (e.g. {@code ${camel.version}}). These are resolved at deploy time using
+ * the bindings declared in the version properties file referenced by
+ * {@code catalog.versions}. Placeholders without a matching binding are
+ * left unchanged, so hard-coded versions continue to work.
  */
 public class ServiceCatalogIndex {
 
@@ -43,6 +55,7 @@ public class ServiceCatalogIndex {
     private static final String PROP_RULES_PREFIX = "catalog.rules.";
     private static final String PROP_DEPENDENCIES_PREFIX = "catalog.dependencies.";
     private static final String PROP_PROPERTIES_PREFIX = "catalog.properties.";
+    private static final String PROP_VERSIONS = "catalog.versions";
 
     private final String name;
     private final String icon;
@@ -190,6 +203,15 @@ public class ServiceCatalogIndex {
             }
         }
 
+        // Validate optional catalog.versions file if declared
+        String versionsPath = props.getProperty(PROP_VERSIONS);
+        if (versionsPath != null) {
+            validateZipEntryPath(versionsPath);
+            if (zipEntries != null && !zipEntries.contains(versionsPath)) {
+                throw new WanakuException("Referenced versions file '" + versionsPath + "' not found in ZIP archive");
+            }
+        }
+
         return new ServiceCatalogIndex(name, icon, description, serviceNames, props);
     }
 
@@ -264,6 +286,22 @@ public class ServiceCatalogIndex {
     }
 
     /**
+     * Get the versions properties file path, or null if not set.
+     */
+    public String getVersionsFile() {
+        return properties.getProperty(PROP_VERSIONS);
+    }
+
+    /**
+     * Check if this catalog declares a versions properties file.
+     *
+     * @return true if the catalog.versions property is set
+     */
+    public boolean hasVersionsFile() {
+        return properties.getProperty(PROP_VERSIONS) != null;
+    }
+
+    /**
      * Check if this catalog has any service.properties files declared.
      *
      * @return true if at least one system has a properties file
@@ -275,5 +313,55 @@ public class ServiceCatalogIndex {
             }
         }
         return false;
+    }
+
+    /**
+     * Resolve version placeholders in the content of a ZIP archive.
+     * <p>
+     * If the ZIP contains a versions file (as declared by {@code catalog.versions}
+     * in the index), all dependency files will have their {@code ${name}}
+     * placeholders replaced with the corresponding values from the versions file.
+     * The versions file itself is left unchanged so it can serve as documentation.
+     * </p>
+     *
+     * @param zipBytes the raw ZIP archive bytes
+     * @return a new byte array containing the ZIP with resolved placeholders,
+     *         or the original bytes if no versions file is present
+     * @throws WanakuException if the ZIP cannot be read or parsed
+     */
+    public byte[] resolvePlaceholders(byte[] zipBytes) throws WanakuException {
+        if (!hasVersionsFile()) {
+            return zipBytes;
+        }
+
+        String versionsPath = getVersionsFile();
+        Map<String, String> bindings = null;
+
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (versionsPath.equals(entry.getName())) {
+                    bindings = PlaceholderResolver.loadBindings(new String(zis.readAllBytes(), StandardCharsets.UTF_8));
+                }
+                zis.closeEntry();
+            }
+        } catch (IOException e) {
+            throw new WanakuException("Failed to read ZIP archive: " + e.getMessage());
+        }
+
+        if (bindings == null || bindings.isEmpty()) {
+            return zipBytes;
+        }
+
+        List<String> dependencyFiles = new ArrayList<>();
+        for (String system : serviceNames) {
+            String depsPath = getDependenciesFile(system);
+            if (depsPath != null) {
+                dependencyFiles.add(depsPath);
+            }
+        }
+
+        return ZipPlaceholderResolver.resolveEntries(zipBytes, dependencyFiles, bindings)
+                .getZipBytes();
     }
 }

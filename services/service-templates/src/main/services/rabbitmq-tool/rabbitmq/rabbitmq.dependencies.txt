@@ -1,3 +1,3 @@
-org.apache.camel:camel-spring-rabbitmq:4.18.2
-io.kaoto.forage:forage-core-common:1.3-SNAPSHOT
-io.kaoto.forage:forage-spring-rabbitmq:1.3-SNAPSHOT
+org.apache.camel:camel-spring-rabbitmq:${camel.version}
+io.kaoto.forage:forage-core-common:${forage.version}
+io.kaoto.forage:forage-spring-rabbitmq:${forage.version}

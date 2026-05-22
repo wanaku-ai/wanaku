@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.commands.service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
 
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,6 +53,7 @@ class ServiceInitTest {
         assertTrue(new File(rootDir, "sys1/sys1.camel.yaml").exists(), "Route file should exist");
         assertTrue(new File(rootDir, "sys1/sys1.wanaku-rules.yaml").exists(), "Rules file should exist");
         assertTrue(new File(rootDir, "sys1/sys1.dependencies.txt").exists(), "Dependencies file should exist");
+        assertTrue(new File(rootDir, "versions.properties").exists(), "versions.properties should exist");
 
         // Verify index.properties content
         Properties props = new Properties();
@@ -61,6 +64,12 @@ class ServiceInitTest {
         assertNotNull(props.getProperty("catalog.services"));
         assertNotNull(props.getProperty("catalog.routes.sys1"));
         assertNotNull(props.getProperty("catalog.rules.sys1"));
+
+        String versionsContent = new String(
+                java.nio.file.Files.readAllBytes(new File(rootDir, "versions.properties").toPath()),
+                StandardCharsets.UTF_8);
+        assertTrue(versionsContent.contains("# camel.version=4.18.2"));
+        assertFalse(versionsContent.contains("\ncamel.version=4.18.2"));
     }
 
     @Test

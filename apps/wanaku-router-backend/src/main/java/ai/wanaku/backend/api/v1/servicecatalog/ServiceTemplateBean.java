@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Base64;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
+import ai.wanaku.core.util.PlaceholderResolver;
 import ai.wanaku.core.util.StringHelper;
 
 /**
@@ -120,6 +122,15 @@ public class ServiceTemplateBean {
 
         // Validate ZIP structure by parsing the index
         ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(dataStore.getData());
+
+        // Resolve version placeholders in dependency files if a versions file is present
+        if (index.hasVersionsFile()) {
+            byte[] zipBytes = Base64.getDecoder().decode(dataStore.getData());
+            byte[] resolvedZip = index.resolvePlaceholders(zipBytes);
+            if (!Arrays.equals(resolvedZip, zipBytes)) {
+                dataStore.setData(Base64.getEncoder().encodeToString(resolvedZip));
+            }
+        }
 
         // Set template label
         Map<String, String> labels = dataStore.getLabels();
@@ -345,6 +356,24 @@ public class ServiceTemplateBean {
                     StringWriter propsWriter = new StringWriter();
                     props.store(propsWriter, null);
                     entries.put(propertiesPath, propsWriter.toString().getBytes());
+                }
+            }
+
+            // Resolve version placeholders in dependency files
+            String versionsPath = index.getVersionsFile();
+            if (versionsPath != null && entries.containsKey(versionsPath)) {
+                Map<String, String> bindings = PlaceholderResolver.loadBindings(new String(entries.get(versionsPath)));
+                if (!bindings.isEmpty()) {
+                    for (String system : index.getServiceNames()) {
+                        String depsPath = index.getDependenciesFile(system);
+                        if (depsPath != null && entries.containsKey(depsPath)) {
+                            String content = new String(entries.get(depsPath));
+                            String resolved = PlaceholderResolver.resolve(content, bindings);
+                            if (!resolved.equals(content)) {
+                                entries.put(depsPath, resolved.getBytes());
+                            }
+                        }
+                    }
                 }
             }
 

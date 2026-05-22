@@ -89,6 +89,7 @@ public class ServiceInit extends BaseCommand {
         props.setProperty("catalog.name", name);
         props.setProperty("catalog.description", "Service catalog for " + name);
         props.setProperty("catalog.services", services);
+        props.setProperty("catalog.versions", "versions.properties");
 
         for (String system : systems) {
             String systemName = system.trim();
@@ -100,7 +101,6 @@ public class ServiceInit extends BaseCommand {
             props.setProperty(
                     "catalog.dependencies." + systemName, systemName + "/" + systemName + ".dependencies.txt");
 
-            // If --template flag is set, add catalog.properties entry
             if (template) {
                 props.setProperty("catalog.properties." + systemName, systemName + "/service.properties");
             }
@@ -109,6 +109,16 @@ public class ServiceInit extends BaseCommand {
         File indexFile = new File(rootDir, "index.properties");
         try (FileWriter writer = new FileWriter(indexFile)) {
             props.store(writer, "Service Catalog Index - " + name);
+        }
+
+        // Create versions.properties skeleton
+        File versionsFile = new File(rootDir, "versions.properties");
+        try (PrintWriter pw = new PrintWriter(new FileWriter(versionsFile))) {
+            pw.println("# Version placeholders for dependency files");
+            pw.println("# Reference these in *.dependencies.txt as ${name}");
+            pw.println("# Example: camel.version=4.18.2");
+            pw.println("# Add the versions you need here, for example:");
+            pw.println("# camel.version=4.18.2");
         }
     }
 
@@ -146,6 +156,7 @@ public class ServiceInit extends BaseCommand {
         try (PrintWriter pw = new PrintWriter(new FileWriter(depsFile))) {
             pw.println("# Maven dependencies for " + systemName);
             pw.println("# One dependency per line in format: groupId:artifactId:version");
+            pw.println("# Use ${camel.version} to reference versions from versions.properties");
         }
 
         // If --template flag is set, create service.properties skeleton

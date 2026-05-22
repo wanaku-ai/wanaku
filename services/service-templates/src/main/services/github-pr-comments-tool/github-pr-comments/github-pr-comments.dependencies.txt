@@ -1,2 +1,2 @@
-org.apache.camel:camel-http:4.18.2
-org.apache.camel:camel-jackson:4.18.2
+org.apache.camel:camel-http:${camel.version}
+org.apache.camel:camel-jackson:${camel.version}

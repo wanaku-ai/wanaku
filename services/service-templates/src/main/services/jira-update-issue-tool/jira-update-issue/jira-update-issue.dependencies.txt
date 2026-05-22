@@ -1,1 +1,1 @@
-org.apache.camel:camel-jira:4.18.2
+org.apache.camel:camel-jira:${camel.version}

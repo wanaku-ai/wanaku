@@ -5,6 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import java.util.Base64;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +107,16 @@ public class ServiceCatalogBean {
         }
 
         // Validate ZIP structure by parsing the index
-        ServiceCatalogIndex.fromBase64(dataStore.getData());
+        ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(dataStore.getData());
+
+        // Resolve version placeholders in dependency files if a versions file is present
+        if (index.hasVersionsFile()) {
+            byte[] zipBytes = Base64.getDecoder().decode(dataStore.getData());
+            byte[] resolvedZip = index.resolvePlaceholders(zipBytes);
+            if (!Arrays.equals(resolvedZip, zipBytes)) {
+                dataStore.setData(Base64.getEncoder().encodeToString(resolvedZip));
+            }
+        }
 
         // Set catalog label
         Map<String, String> labels = dataStore.getLabels();
