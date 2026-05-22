@@ -81,12 +81,6 @@ public class CapabilitiesShow extends BaseCommand {
     private String service;
 
     /**
-     * Service instance for interacting with the targets API.
-     * Initialized during command execution with the specified host configuration.
-     */
-    private CapabilitiesService capabilitiesService;
-
-    /**
      * Executes the capabilities show command.
      *
      * <p>This method orchestrates the entire capability retrieval and display process:</p>
@@ -105,7 +99,11 @@ public class CapabilitiesShow extends BaseCommand {
      */
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
-        capabilitiesService = initService(CapabilitiesService.class, host);
+        /**
+         * Service instance for interacting with the targets API.
+         * Initialized during command execution with the specified host configuration.
+         */
+        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
 
         // Fetch and filter capabilities by service name
         List<CapabilitiesHelper.PrintableCapability> capabilities =

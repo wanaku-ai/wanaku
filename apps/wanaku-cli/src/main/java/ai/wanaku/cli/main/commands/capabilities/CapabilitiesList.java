@@ -84,12 +84,6 @@ Note: If omitted, all capabilities are listed. Label matching is case-sensitive.
     private String labelExpression;
 
     /**
-     * REST client for communicating with the targets service API.
-     * Initialized during command execution.
-     */
-    private CapabilitiesService capabilitiesService;
-
-    /**
      * Executes the capabilities listing command.
      *
      * <p>This method orchestrates the entire process of:</p>
@@ -115,7 +109,7 @@ Note: If omitted, all capabilities are listed. Label matching is case-sensitive.
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
 
-        capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
         var capabilities = fetchAndMergeCapabilities(capabilitiesService, labelExpression)
                 .await()
                 .atMost(API_TIMEOUT);

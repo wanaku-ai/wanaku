@@ -53,11 +53,9 @@ public class CapabilitiesStatus extends BaseCommand {
             description = "Filter by health status: healthy, unhealthy, down, or pending (default: show all)")
     private String filter;
 
-    private CapabilitiesService capabilitiesService;
-
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
 
         List<PrintableCapability> capabilities =
                 fetchAndMergeCapabilities(capabilitiesService).await().atMost(API_TIMEOUT);
