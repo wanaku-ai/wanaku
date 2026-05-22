@@ -45,7 +45,7 @@ public class NamespacesBean {
     public synchronized void preload() {
         // Preload data
         if (namespaceRepository.size() < maxNamespaces) {
-            for (int i = 0; i < maxNamespaces; i++) {
+            for (int i = 1; i <= maxNamespaces; i++) {
                 final String namespacePath = String.format("ns-%d", i);
                 Namespace namespace = new Namespace();
                 namespace.setPath(namespacePath);
