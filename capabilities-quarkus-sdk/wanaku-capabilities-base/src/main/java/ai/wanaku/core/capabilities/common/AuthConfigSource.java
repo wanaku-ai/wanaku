@@ -65,9 +65,7 @@ public class AuthConfigSource implements ConfigSource {
 
     private Map<String, String> getNoauthProperties() {
         if (noauthProperties == null) {
-            Map<String, String> props = new HashMap<>();
-            props.put("quarkus.oidc-client.enabled", "false");
-            noauthProperties = Collections.unmodifiableMap(props);
+            noauthProperties = Map.of("quarkus.oidc-client.enabled", "false");
         }
         return noauthProperties;
     }
