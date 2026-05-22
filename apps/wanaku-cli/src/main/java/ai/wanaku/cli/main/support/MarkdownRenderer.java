@@ -1,7 +1,6 @@
 package ai.wanaku.cli.main.support;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.commonmark.ext.gfm.tables.TableBlock;
 import org.commonmark.ext.gfm.tables.TableBody;
@@ -87,9 +86,8 @@ public class MarkdownRenderer {
         }
 
         // Build parser with GFM tables extension
-        Parser parser = Parser.builder()
-                .extensions(Arrays.asList(TablesExtension.create()))
-                .build();
+        Parser parser =
+                Parser.builder().extensions(List.of(TablesExtension.create())).build();
         Node document = parser.parse(markdown);
 
         MarkdownVisitor visitor = new MarkdownVisitor();
