@@ -103,10 +103,10 @@ public class WanakuPrinter extends DefaultPrinter {
      * Default options for table printing.
      * Configures structured table display with row highlighting and single-row table support.
      */
-    private static final Map<String, Object> DEFAULT_TABLE_OPTIONS = Collections.unmodifiableMap(Map.of(
+    private static final Map<String, Object> DEFAULT_TABLE_OPTIONS = Map.of(
             STRUCT_ON_TABLE, TRUE,
             ROW_HIGHLIGHT, EVEN,
-            ONE_ROW_TABLE, TRUE));
+            ONE_ROW_TABLE, TRUE);
 
     /**
      * Default options for map printing.
