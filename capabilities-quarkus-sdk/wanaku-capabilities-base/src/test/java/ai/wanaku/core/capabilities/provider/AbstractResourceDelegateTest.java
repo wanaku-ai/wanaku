@@ -58,13 +58,13 @@ class AbstractResourceDelegateTest {
             protected List<String> coerceResponse(Object response)
                     throws InvalidResponseTypeException, NonConvertableResponseException, ResourceNotFoundException {
                 if (coerceException instanceof InvalidResponseTypeException) {
-                    throw (InvalidResponseTypeException) coerceException;
+                    throw coerceException;
                 }
                 if (coerceException instanceof NonConvertableResponseException) {
-                    throw (NonConvertableResponseException) coerceException;
+                    throw coerceException;
                 }
                 if (coerceException instanceof ResourceNotFoundException) {
-                    throw (ResourceNotFoundException) coerceException;
+                    throw coerceException;
                 }
                 return configuredResponse;
             }
