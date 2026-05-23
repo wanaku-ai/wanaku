@@ -7,10 +7,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.jboss.logging.Logger;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.backend.support.TestIndexHelper;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 
@@ -23,13 +23,13 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class NamespacesResourceTest extends WanakuRouterTest {
+@TestProfile(NoOidcTestProfile.class)
+public class NamespacesResourceTest extends AbstractNamespacesResourceTest {}
+
+abstract class AbstractNamespacesResourceTest extends WanakuRouterTest {
     private static final Logger LOG = Logger.getLogger(NamespacesResourceTest.class);
     private static final String TEST_LABEL_KEY = "testsuite";
     private static final String TEST_LABEL_VALUE = "namespaces";
@@ -44,6 +44,10 @@ public class NamespacesResourceTest extends WanakuRouterTest {
         TestIndexHelper.clearAllCaches();
     }
 
+    protected java.util.Map<String, String> getHeaders() {
+        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
+    }
+
     @Order(1)
     @Test
     public void testCreateNamespace() {
@@ -54,10 +58,8 @@ public class NamespacesResourceTest extends WanakuRouterTest {
         labels.put(TEST_LABEL_KEY, TEST_LABEL_VALUE);
         namespace.setLabels(labels);
 
-        final io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(namespace)
-                .when()
-                .post("/api/v1/namespaces");
+        final io.restassured.response.Response response =
+                given().headers(getHeaders()).body(namespace).when().post("/api/v1/namespaces");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -73,7 +75,8 @@ public class NamespacesResourceTest extends WanakuRouterTest {
     @Order(2)
     @Test
     public void testListNamespacesByLabel() {
-        given().queryParam("labelFilter", TEST_LABEL_KEY + "=" + TEST_LABEL_VALUE)
+        given().headers(getHeaders())
+                .queryParam("labelFilter", TEST_LABEL_KEY + "=" + TEST_LABEL_VALUE)
                 .when()
                 .get("/api/v1/namespaces")
                 .then()
@@ -84,7 +87,8 @@ public class NamespacesResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     public void testGetNamespaceById() {
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/namespaces/" + createdId)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -104,14 +108,15 @@ public class NamespacesResourceTest extends WanakuRouterTest {
         labels.put("wanaku.io/preallocated", "true");
         namespace.setLabels(labels);
 
-        given().header("Content-Type", MediaType.APPLICATION_JSON)
+        given().headers(getHeaders())
                 .body(namespace)
                 .when()
                 .put("/api/v1/namespaces/" + createdId)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/namespaces/" + createdId)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -121,9 +126,14 @@ public class NamespacesResourceTest extends WanakuRouterTest {
     @Order(5)
     @Test
     public void testDeleteNamespace() {
-        given().when().delete("/api/v1/namespaces/" + createdId).then().statusCode(Response.Status.OK.getStatusCode());
+        given().headers(getHeaders())
+                .when()
+                .delete("/api/v1/namespaces/" + createdId)
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode());
 
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/namespaces/" + createdId)
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -132,7 +142,8 @@ public class NamespacesResourceTest extends WanakuRouterTest {
                 .body("data.name", nullValue())
                 .body("data.labels.'wanaku.io/preallocated'", is("true"));
 
-        given().queryParam("labelFilter", TEST_LABEL_KEY + "=" + TEST_LABEL_VALUE)
+        given().headers(getHeaders())
+                .queryParam("labelFilter", TEST_LABEL_KEY + "=" + TEST_LABEL_VALUE)
                 .when()
                 .get("/api/v1/namespaces")
                 .then()
@@ -151,31 +162,32 @@ public class NamespacesResourceTest extends WanakuRouterTest {
         labels.put("wanaku.io/expires-at", String.valueOf(Instant.now().getEpochSecond() - 10));
         namespace.setLabels(labels);
 
-        final io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(namespace)
-                .when()
-                .post("/api/v1/namespaces");
+        final io.restassured.response.Response response =
+                given().headers(getHeaders()).body(namespace).when().post("/api/v1/namespaces");
 
         staleId = response.then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .extract()
                 .path("data.id");
 
-        given().queryParam("maxAgeSeconds", 604800)
+        given().headers(getHeaders())
+                .queryParam("maxAgeSeconds", 604800)
                 .when()
                 .get("/api/v1/namespaces/stale")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(String.format("data.find { it.id == '%s' }.path", staleId), is(stalePath));
 
-        given().queryParam("maxAgeSeconds", 0)
+        given().headers(getHeaders())
+                .queryParam("maxAgeSeconds", 0)
                 .when()
                 .delete("/api/v1/namespaces/stale")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data", is(1));
 
-        given().queryParam("maxAgeSeconds", 604800)
+        given().headers(getHeaders())
+                .queryParam("maxAgeSeconds", 604800)
                 .when()
                 .get("/api/v1/namespaces/stale")
                 .then()

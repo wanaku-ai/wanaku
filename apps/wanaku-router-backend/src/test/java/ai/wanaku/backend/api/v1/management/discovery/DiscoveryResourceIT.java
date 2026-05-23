@@ -1,4 +1,4 @@
-package ai.wanaku.backend.api.v1.capabilities;
+package ai.wanaku.backend.api.v1.management.discovery;
 
 import jakarta.ws.rs.core.MediaType;
 
@@ -6,6 +6,7 @@ import java.util.Map;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 
 import org.junit.jupiter.api.Assertions;
@@ -18,29 +19,25 @@ import org.junit.jupiter.api.condition.DisabledIf;
 @QuarkusIntegrationTest
 @QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class CapabilitiesResourceIT extends AbstractCapabilitiesResourceTest {
+public class DiscoveryResourceIT extends AbstractDiscoveryResourceTest {
 
     private static KeycloakTestClient keycloakClient;
 
+    private String getAccessToken() {
+        return keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
+    }
+
     @BeforeAll
     static void setup() {
+        TestIndexHelper.clearAllCaches();
+
         keycloakClient = new KeycloakTestClient();
     }
 
     @Override
-    protected String getAccessToken() {
-        final String accessToken = keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
-        Assertions.assertNotNull(accessToken);
-        return accessToken;
-    }
-
-    @Override
     protected Map<String, String> getHeaders() {
-        return Map.of("Content-Type", MediaType.APPLICATION_JSON, "Authorization", "Bearer " + getAccessToken());
-    }
-
-    @Override
-    protected boolean isAuthEnabled() {
-        return true;
+        final String accessToken = getAccessToken();
+        Assertions.assertNotNull(accessToken);
+        return Map.of("Content-Type", MediaType.APPLICATION_JSON, "Authorization", "Bearer " + accessToken);
     }
 }

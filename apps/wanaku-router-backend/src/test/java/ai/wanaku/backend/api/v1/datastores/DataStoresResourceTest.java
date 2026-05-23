@@ -4,11 +4,10 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 import org.jboss.logging.Logger;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
@@ -20,36 +19,28 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 /**
  * Test class for DataStoresResource REST API.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class DataStoresResourceTest extends WanakuRouterTest {
+@TestProfile(NoOidcTestProfile.class)
+public class DataStoresResourceTest extends AbstractDataStoresResourceTest {}
+
+abstract class AbstractDataStoresResourceTest extends WanakuRouterTest {
     private static final Logger LOG = Logger.getLogger(DataStoresResourceTest.class);
 
     private static String testId;
     private static final String TEST_NAME = "test-datastore";
     private static final String TEST_DATA = "Sample test data for REST API";
 
-    private static KeycloakTestClient keycloakClient;
-
-    @BeforeAll
-    static void setup() {
-        keycloakClient = new KeycloakTestClient();
-    }
-
-    private String getAccessToken() {
-        return keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
+    protected String getAccessToken() {
+        return "test-token";
     }
 
     @Order(1)

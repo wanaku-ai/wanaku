@@ -5,11 +5,11 @@ import jakarta.ws.rs.core.Response.Status;
 
 import java.util.Collections;
 import org.jboss.logging.Logger;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.backend.support.TestIndexHelper;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -24,13 +24,13 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class ToolsResourceTest extends WanakuRouterTest {
+@TestProfile(NoOidcTestProfile.class)
+public class ToolsResourceTest extends AbstractToolsResourceTest {}
+
+abstract class AbstractToolsResourceTest extends WanakuRouterTest {
     private static final Logger LOG = Logger.getLogger(ToolsResourceTest.class);
 
     private static String createdName;
@@ -38,6 +38,10 @@ public class ToolsResourceTest extends WanakuRouterTest {
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
+    }
+
+    protected java.util.Map<String, String> getHeaders() {
+        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
     }
 
     @Order(1)
@@ -52,10 +56,8 @@ public class ToolsResourceTest extends WanakuRouterTest {
                 "https://example.com/test/tool-1",
                 inputSchema1);
 
-        final Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(toolReference1)
-                .when()
-                .post("/api/v1/tools");
+        final Response response =
+                given().headers(getHeaders()).body(toolReference1).when().post("/api/v1/tools");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -66,7 +68,7 @@ public class ToolsResourceTest extends WanakuRouterTest {
     @Order(2)
     @Test
     void testList() {
-        Response response = given().when().get("/api/v1/tools");
+        Response response = given().headers(getHeaders()).when().get("/api/v1/tools");
         assertHttpStatus(response, Status.OK.getStatusCode());
         response.then()
                 .body(
@@ -83,10 +85,10 @@ public class ToolsResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testRemove() {
-        Response deleteResponse = given().when().delete("/api/v1/tools/" + createdName);
+        Response deleteResponse = given().headers(getHeaders()).when().delete("/api/v1/tools/" + createdName);
         assertHttpStatus(deleteResponse, Status.OK.getStatusCode());
 
-        Response listResponse = given().when().get("/api/v1/tools");
+        Response listResponse = given().headers(getHeaders()).when().get("/api/v1/tools");
         assertHttpStatus(listResponse, Status.OK.getStatusCode());
         listResponse.then().body("data.size()", is(0));
     }
@@ -103,13 +105,11 @@ public class ToolsResourceTest extends WanakuRouterTest {
                 "https://example.com/test/tool-3",
                 inputSchema3);
 
-        Response createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(toolReference3)
-                .when()
-                .post("/api/v1/tools");
+        Response createResponse =
+                given().headers(getHeaders()).body(toolReference3).when().post("/api/v1/tools");
         assertHttpStatus(createResponse, Status.OK.getStatusCode());
 
-        Response listResponse = given().when().get("/api/v1/tools");
+        Response listResponse = given().headers(getHeaders()).when().get("/api/v1/tools");
         assertHttpStatus(listResponse, Status.OK.getStatusCode());
         listResponse.then().body("data.size()", is(1), "data[0].name", is("test-tool-3"), "data[0].type", is("http"));
     }

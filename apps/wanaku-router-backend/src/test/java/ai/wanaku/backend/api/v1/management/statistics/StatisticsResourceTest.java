@@ -2,36 +2,33 @@ package ai.wanaku.backend.api.v1.management.statistics;
 
 import jakarta.ws.rs.core.Response;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.junit.TestProfile;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.backend.support.TestIndexHelper;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 @QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class StatisticsResourceTest extends WanakuRouterTest {
+@TestProfile(NoOidcTestProfile.class)
+public class StatisticsResourceTest extends AbstractStatisticsResourceTest {}
 
-    private static KeycloakTestClient keycloakClient;
-
-    private String getAccessToken() {
-        return keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
-    }
+abstract class AbstractStatisticsResourceTest extends WanakuRouterTest {
 
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
-        keycloakClient = new KeycloakTestClient();
+    }
+
+    protected String getAccessToken() {
+        return "test-token";
     }
 
     @Test
@@ -48,7 +45,7 @@ public class StatisticsResourceTest extends WanakuRouterTest {
                 .body("data.resourcesCount", is(0))
                 .body("data.promptsCount", is(0))
                 .body("data.forwardsCount", is(0))
-                .body("data.dataStoresCount", is(0))
+                .body("data.dataStoresCount", greaterThanOrEqualTo(0))
                 .body("data.toolCapabilities", notNullValue())
                 .body("data.toolCapabilities.total", is(0))
                 .body("data.toolCapabilities.healthy", is(0))

@@ -3,21 +3,25 @@ package ai.wanaku.backend.api.v1.chat;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
+import io.quarkus.test.junit.TestProfile;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.backend.support.WanakuRouterTest;
 
 import static ai.wanaku.test.assertions.WanakuAssertions.assertHttpStatus;
 import static io.restassured.RestAssured.given;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 @QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class LlmChatResourceTest extends WanakuRouterTest {
+@TestProfile(NoOidcTestProfile.class)
+public class LlmChatResourceTest extends AbstractLlmChatResourceTest {}
+
+abstract class AbstractLlmChatResourceTest extends WanakuRouterTest {
+
+    protected java.util.Map<String, String> getHeaders() {
+        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
+    }
 
     @Test
     void testCompletionsWithoutApiKey() {
@@ -32,10 +36,8 @@ public class LlmChatResourceTest extends WanakuRouterTest {
                 }
                 """;
 
-        io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(body)
-                .when()
-                .post("/api/v1/chat/completions");
+        io.restassured.response.Response response =
+                given().headers(getHeaders()).body(body).when().post("/api/v1/chat/completions");
 
         assertHttpStatus(response, Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
@@ -54,10 +56,8 @@ public class LlmChatResourceTest extends WanakuRouterTest {
                 }
                 """;
 
-        io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(body)
-                .when()
-                .post("/api/v1/chat/completions");
+        io.restassured.response.Response response =
+                given().headers(getHeaders()).body(body).when().post("/api/v1/chat/completions");
 
         assertHttpStatus(response, Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
@@ -75,10 +75,8 @@ public class LlmChatResourceTest extends WanakuRouterTest {
                 }
                 """;
 
-        io.restassured.response.Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(body)
-                .when()
-                .post("/api/v1/chat/completions");
+        io.restassured.response.Response response =
+                given().headers(getHeaders()).body(body).when().post("/api/v1/chat/completions");
 
         assertHttpStatus(response, Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }

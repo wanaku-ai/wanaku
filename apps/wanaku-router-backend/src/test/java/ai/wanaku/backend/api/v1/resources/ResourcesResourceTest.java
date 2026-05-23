@@ -4,11 +4,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.logging.Logger;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import ai.wanaku.backend.support.TestIndexHelper;
-import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
@@ -23,13 +23,13 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
-@QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
-@DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class ResourcesResourceTest extends WanakuRouterTest {
+@TestProfile(NoOidcTestProfile.class)
+public class ResourcesResourceTest extends AbstractResourcesResourceTest {}
+
+abstract class AbstractResourcesResourceTest extends WanakuRouterTest {
     private static final Logger LOG = Logger.getLogger(ResourcesResourceTest.class);
 
     private static String createdName;
@@ -39,15 +39,17 @@ public class ResourcesResourceTest extends WanakuRouterTest {
         TestIndexHelper.clearAllCaches();
     }
 
+    protected java.util.Map<String, String> getHeaders() {
+        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
+    }
+
     @Order(1)
     @Test
     public void testExposeResourceSuccessfully() {
         ResourceReference resource = createResource("/tmp/resource3.jpg", "image/jpeg", "resource3.jpg");
 
-        final Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(resource)
-                .when()
-                .post("/api/v1/resources");
+        final Response response =
+                given().headers(getHeaders()).body(resource).when().post("/api/v1/resources");
 
         LOG.infof("Response: %s", response.getBody().asString());
 
@@ -60,7 +62,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Order(2)
     @Test
     public void testListResourcesSuccessfully() {
-        Response response = given().when().get("/api/v1/resources");
+        Response response = given().headers(getHeaders()).when().get("/api/v1/resources");
         assertHttpStatus(response, Status.OK.getStatusCode());
         response.then()
                 .body(
@@ -77,10 +79,10 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Order(3)
     @Test
     void testRemove() {
-        Response deleteResponse = given().when().delete("/api/v1/resources/" + createdName);
+        Response deleteResponse = given().headers(getHeaders()).when().delete("/api/v1/resources/" + createdName);
         assertHttpStatus(deleteResponse, Status.OK.getStatusCode());
 
-        Response listResponse = given().when().get("/api/v1/resources");
+        Response listResponse = given().headers(getHeaders()).when().get("/api/v1/resources");
         assertHttpStatus(listResponse, Status.OK.getStatusCode());
         listResponse.then().body("data.size()", is(0));
     }
@@ -90,13 +92,11 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     void testAddAfterRemove() {
         ResourceReference resource = createResource("/tmp/resource1.jpg", "image/jpeg", "resource1.jpg");
 
-        Response createResponse = given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(resource)
-                .when()
-                .post("/api/v1/resources");
+        Response createResponse =
+                given().headers(getHeaders()).body(resource).when().post("/api/v1/resources");
         assertHttpStatus(createResponse, Status.OK.getStatusCode());
 
-        Response listResponse = given().when().get("/api/v1/resources");
+        Response listResponse = given().headers(getHeaders()).when().get("/api/v1/resources");
         assertHttpStatus(listResponse, Status.OK.getStatusCode());
         listResponse
                 .then()
@@ -114,7 +114,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Order(5)
     @Test
     void testExposeWithPayloadRejectsMissingPayload() {
-        Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response response = given().headers(getHeaders())
                 .body("{\"configurationData\":\"token=123\"}")
                 .when()
                 .post("/api/v1/resources/payloads");
@@ -125,7 +125,7 @@ public class ResourcesResourceTest extends WanakuRouterTest {
     @Order(6)
     @Test
     void testExposeWithPayloadRejectsMissingPayloadName() {
-        Response response = given().header("Content-Type", MediaType.APPLICATION_JSON)
+        Response response = given().headers(getHeaders())
                 .body("{\"payload\":{\"location\":\"/tmp/nameless.txt\",\"type\":\"text/plain\"}}")
                 .when()
                 .post("/api/v1/resources/payloads");
