@@ -5,13 +5,11 @@ import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import ai.wanaku.backend.support.E2ETestProfile;
@@ -19,11 +17,9 @@ import ai.wanaku.backend.support.MockGrpcCapabilityServer;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 import ai.wanaku.backend.support.WanakuRouterTest;
-import ai.wanaku.capabilities.sdk.api.types.InputSchema;
-import ai.wanaku.capabilities.sdk.api.types.ToolReference;
+import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
-import ai.wanaku.core.util.support.ToolsHelper;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -38,20 +34,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.DisabledIf;
 
 /**
- * End-to-end test for MCP tool capability dispatch.
+ * End-to-end test for MCP resource capability dispatch.
  * Verifies the full chain: McpAssured -> MCP SSE -> router resolver -> gRPC transport -> mock capability.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@QuarkusTest
+@QuarkusIntegrationTest
 @TestProfile(E2ETestProfile.class)
 @QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class ToolCapabilityE2ETest extends WanakuRouterTest {
-    private static final Logger LOG = Logger.getLogger(ToolCapabilityE2ETest.class);
+public class ResourceCapabilityE2EIT extends WanakuRouterTest {
+    private static final Logger LOG = Logger.getLogger(ResourceCapabilityE2EIT.class);
 
-    private static final String EXPECTED_CONTENT = "test-tool-result-from-mock-capability";
-    private static final String SERVICE_NAME = "test-tool";
-    private static final String TOOL_NAME = "test-tool-operation";
+    private static final String EXPECTED_CONTENT = "test-resource-content-from-mock-capability";
+    private static final String SERVICE_NAME = "test-resource";
+    private static final String RESOURCE_NAME = "sample-resource.test";
 
     private static MockGrpcCapabilityServer mockServer;
     private static int mockPort;
@@ -69,7 +65,7 @@ public class ToolCapabilityE2ETest extends WanakuRouterTest {
 
         mockServer = new MockGrpcCapabilityServer(List.of(EXPECTED_CONTENT));
         mockPort = mockServer.start();
-        LOG.infof("Mock tool capability server started on port %d", mockPort);
+        LOG.infof("Mock resource capability server started on port %d", mockPort);
     }
 
     @AfterAll
@@ -88,7 +84,15 @@ public class ToolCapabilityE2ETest extends WanakuRouterTest {
         String accessToken = getAccessToken();
 
         ServiceTarget serviceTarget = new ServiceTarget(
-                null, SERVICE_NAME, "localhost", mockPort, ServiceType.TOOL_INVOKER.asValue(), "mcp", null, null, null);
+                null,
+                SERVICE_NAME,
+                "localhost",
+                mockPort,
+                ServiceType.RESOURCE_PROVIDER.asValue(),
+                "mcp",
+                null,
+                null,
+                null);
 
         given().header("Content-Type", MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + accessToken)
@@ -99,43 +103,43 @@ public class ToolCapabilityE2ETest extends WanakuRouterTest {
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body("data.id", notNullValue());
 
-        LOG.info("Mock tool capability registered with router");
+        LOG.info("Mock resource capability registered with router");
     }
 
     @Order(2)
     @Test
-    void testAddTool() {
-        InputSchema inputSchema = ToolsHelper.createInputSchema(
-                SERVICE_NAME,
-                Collections.singletonMap("input", ToolsHelper.createProperty("string", "An input parameter.")));
+    void testExposeResource() {
+        String accessToken = getAccessToken();
 
-        ToolReference toolReference = new ToolReference();
-        toolReference.setName(TOOL_NAME);
-        toolReference.setDescription("A test tool for e2e testing");
-        toolReference.setUri("test-tool://operation");
-        toolReference.setType(SERVICE_NAME);
-        toolReference.setNamespace("public");
-        toolReference.setInputSchema(inputSchema);
+        ResourceReference resource = new ResourceReference();
+        resource.setLocation("test-resource://sample-resource.test");
+        resource.setType(SERVICE_NAME);
+        resource.setName(RESOURCE_NAME);
+        resource.setDescription("A test resource for e2e testing");
+        resource.setMimeType("text/plain");
+        resource.setNamespace("public");
 
         given().header("Content-Type", MediaType.APPLICATION_JSON)
-                .body(toolReference)
+                .header("Authorization", "Bearer " + accessToken)
+                .body(resource)
                 .when()
-                .post("/api/v1/tools")
+                .post("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
-        given().when()
-                .get("/api/v1/tools")
+        given().header("Authorization", "Bearer " + accessToken)
+                .when()
+                .get("/api/v1/resources")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
-                .body("data.size()", is(1), "data[0].name", is(TOOL_NAME), "data[0].type", is(SERVICE_NAME));
+                .body("data.size()", is(1), "data[0].name", is(RESOURCE_NAME), "data[0].type", is(SERVICE_NAME));
 
-        LOG.info("Tool added successfully");
+        LOG.info("Resource exposed successfully");
     }
 
     @Order(3)
     @Test
-    void testCallToolViaMcp() throws Exception {
+    void testReadResourceViaMcp() throws Exception {
         int port = io.restassured.RestAssured.port;
         mcpClient = McpAssured.newSseClient()
                 .setBaseUri(new URI("http://localhost:" + port + "/"))
@@ -145,17 +149,15 @@ public class ToolCapabilityE2ETest extends WanakuRouterTest {
 
         mcpClient
                 .when()
-                .toolsCall(TOOL_NAME, Map.of("input", "test-value"), toolResponse -> {
+                .resourcesRead("test-resource://sample-resource.test", response -> {
                     org.junit.jupiter.api.Assertions.assertFalse(
-                            toolResponse.isError(), "Tool response should not be an error");
-                    org.junit.jupiter.api.Assertions.assertFalse(
-                            toolResponse.content().isEmpty(), "Tool response content should not be empty");
+                            response.contents().isEmpty(), "Resource contents should not be empty");
                     org.junit.jupiter.api.Assertions.assertEquals(
                             EXPECTED_CONTENT,
-                            toolResponse.content().get(0).asText().text());
+                            response.contents().get(0).asText().text());
                 })
                 .thenAssertResults();
 
-        LOG.info("Tool called via MCP successfully - content matches expected value");
+        LOG.info("Resource read via MCP successfully - content matches expected value");
     }
 }

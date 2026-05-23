@@ -1,4 +1,4 @@
-package ai.wanaku.backend.api.v1.capabilities;
+package ai.wanaku.backend.api.v1.chat;
 
 import jakarta.ws.rs.core.MediaType;
 
@@ -10,15 +10,12 @@ import ai.wanaku.backend.support.WanakuKeycloakTestResource;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.DisabledIf;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusIntegrationTest
 @QuarkusTestResource(value = WanakuKeycloakTestResource.class, restrictToAnnotatedClass = true)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
-public class CapabilitiesResourceIT extends AbstractCapabilitiesResourceTest {
+public class LlmChatResourceIT extends AbstractLlmChatResourceTest {
 
     private static KeycloakTestClient keycloakClient;
 
@@ -28,19 +25,9 @@ public class CapabilitiesResourceIT extends AbstractCapabilitiesResourceTest {
     }
 
     @Override
-    protected String getAccessToken() {
+    protected Map<String, String> getHeaders() {
         final String accessToken = keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
         Assertions.assertNotNull(accessToken);
-        return accessToken;
-    }
-
-    @Override
-    protected Map<String, String> getHeaders() {
-        return Map.of("Content-Type", MediaType.APPLICATION_JSON, "Authorization", "Bearer " + getAccessToken());
-    }
-
-    @Override
-    protected boolean isAuthEnabled() {
-        return true;
+        return Map.of("Content-Type", MediaType.APPLICATION_JSON, "Authorization", "Bearer " + accessToken);
     }
 }
