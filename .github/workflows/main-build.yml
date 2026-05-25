@@ -99,13 +99,13 @@ jobs:
           -Pdist
     - name: Generate Test Reports
       if: always()
-      run: mvn -B --no-transfer-progress surefire-report:report-only surefire-report:failsafe-report-only
+      run: mvn -B --no-transfer-progress surefire-report:report-only surefire-report:failsafe-report-only -Daggregate=true
     - name: Upload Test Reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-reports-${{ matrix.os }}
-        path: '**/target/reports/'
+        path: 'target/reports/'
         retention-days: 14
         if-no-files-found: ignore
 
