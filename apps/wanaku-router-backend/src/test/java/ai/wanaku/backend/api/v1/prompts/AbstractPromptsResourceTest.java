@@ -1,6 +1,5 @@
 package ai.wanaku.backend.api.v1.prompts;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import java.util.List;
@@ -31,10 +30,6 @@ public abstract class AbstractPromptsResourceTest extends WanakuRouterTest {
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
-    }
-
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
     }
 
     @Order(1)

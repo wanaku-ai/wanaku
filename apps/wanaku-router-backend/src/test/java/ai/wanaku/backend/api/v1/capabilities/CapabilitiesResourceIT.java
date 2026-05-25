@@ -27,8 +27,7 @@ public class CapabilitiesResourceIT extends AbstractCapabilitiesResourceTest {
         keycloakClient = new KeycloakTestClient();
     }
 
-    @Override
-    protected String getAccessToken() {
+    private String getAccessToken() {
         final String accessToken = keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
         Assertions.assertNotNull(accessToken);
         return accessToken;

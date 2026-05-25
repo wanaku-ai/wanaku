@@ -1,7 +1,5 @@
 package ai.wanaku.backend.api.v1.datastores;
 
-import jakarta.ws.rs.core.MediaType;
-
 import java.util.List;
 import org.jboss.logging.Logger;
 import io.restassured.response.Response;
@@ -27,14 +25,6 @@ public abstract class AbstractDataStoresResourceTest extends WanakuRouterTest {
     private static String testId;
     private static final String TEST_NAME = "test-datastore";
     private static final String TEST_DATA = "Sample test data for REST API";
-
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
-    }
-
-    protected String getAccessToken() {
-        return "test-token";
-    }
 
     @Order(1)
     @Test

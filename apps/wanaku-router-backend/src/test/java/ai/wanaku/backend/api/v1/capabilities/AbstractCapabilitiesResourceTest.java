@@ -25,14 +25,6 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
         TestIndexHelper.clearAllCaches();
     }
 
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
-    }
-
-    protected String getAccessToken() {
-        return "test-token";
-    }
-
     protected boolean isAuthEnabled() {
         return false;
     }

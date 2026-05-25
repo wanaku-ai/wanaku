@@ -1,6 +1,5 @@
 package ai.wanaku.backend.api.v1.management.statistics;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import ai.wanaku.backend.support.TestIndexHelper;
@@ -19,14 +18,6 @@ public abstract class AbstractStatisticsResourceTest extends WanakuRouterTest {
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
-    }
-
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
-    }
-
-    protected String getAccessToken() {
-        return "test-token";
     }
 
     @Test

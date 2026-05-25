@@ -1,6 +1,5 @@
 package ai.wanaku.backend.api.v1.namespaces;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
@@ -35,10 +34,6 @@ public abstract class AbstractNamespacesResourceTest extends WanakuRouterTest {
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
-    }
-
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
     }
 
     @Order(1)

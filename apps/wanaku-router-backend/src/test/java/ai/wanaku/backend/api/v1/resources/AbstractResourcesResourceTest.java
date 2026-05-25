@@ -1,6 +1,5 @@
 package ai.wanaku.backend.api.v1.resources;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.logging.Logger;
@@ -30,10 +29,6 @@ public abstract class AbstractResourcesResourceTest extends WanakuRouterTest {
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
-    }
-
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
     }
 
     @Order(1)

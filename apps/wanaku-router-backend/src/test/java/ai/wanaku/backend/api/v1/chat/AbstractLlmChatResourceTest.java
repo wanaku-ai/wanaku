@@ -1,6 +1,5 @@
 package ai.wanaku.backend.api.v1.chat;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import ai.wanaku.backend.support.WanakuRouterTest;
@@ -11,10 +10,6 @@ import static io.restassured.RestAssured.given;
 import org.junit.jupiter.api.Test;
 
 public abstract class AbstractLlmChatResourceTest extends WanakuRouterTest {
-
-    protected java.util.Map<String, String> getHeaders() {
-        return java.util.Map.of("Content-Type", MediaType.APPLICATION_JSON);
-    }
 
     @Test
     void testCompletionsWithoutApiKey() {

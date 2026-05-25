@@ -1,9 +1,7 @@
 package ai.wanaku.backend.api.v1.management.discovery;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.Map;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.support.TestIndexHelper;
 import ai.wanaku.backend.support.WanakuRouterTest;
@@ -29,10 +27,6 @@ public abstract class AbstractDiscoveryResourceTest extends WanakuRouterTest {
     @BeforeAll
     static void setup() {
         TestIndexHelper.clearAllCaches();
-    }
-
-    protected Map<String, String> getHeaders() {
-        return Map.of("Content-Type", MediaType.APPLICATION_JSON);
     }
 
     @Order(1)
