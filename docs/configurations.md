@@ -217,6 +217,39 @@ These settings apply regardless of whether you use the shared HTTP listener or a
 | `quarkus.oidc-client.client-id` | `wanaku-service` - The shared OIDC client ID for all capabilities. |
 | `quarkus.oidc-client.credentials.secret` | The OIDC client secret for the capability. **Must be replaced with a real secret.** |
 
+#### Exec Tool Security
+
+The `wanaku.service.exec.allowed-executables` property controls which programs the Exec tool can run. This is a critical security control because the Exec tool allows AI agents to invoke shell commands.
+
+**Security enforcement (`ExecCommandPolicy`):**
+
+1. **Absolute paths required** — The allowlist must use absolute paths like `/usr/bin/python3`, never relative names like `python3`. This prevents PATH hijacking attacks where a malicious binary shadows a legitimate one.
+
+2. **Shell metacharacters blocked** — Characters that enable command injection (`;`, `|`, `&`, `<`, `>`, `` ` ``, `$`) are rejected. This prevents chaining multiple commands or redirecting input/output.
+
+3. **Newlines blocked** — Prevents header injection and multi-command injection via embedded newlines.
+
+4. **Empty allowlist = deny all** — If `allowed-executables` is empty or unset, all execution requests are denied.
+
+5. **Path normalization** — Both the allowlist and requested executable paths are resolved to absolute, normalized paths to prevent traversal tricks (e.g., `/usr/bin/../../../tmp/malicious`).
+
+> [!WARNING]
+> Only allowlist the specific executables your deployment requires. Avoid broad allowlists like `/usr/bin/*` — explicitly name each trusted binary.
+
+**Secure configuration example:**
+
+```properties
+# Allow only specific, vetted executables
+wanaku.service.exec.allowed-executables=/usr/bin/python3,/usr/local/bin/jq,/opt/myapp/scripts/data-export.sh
+```
+
+**Insecure configuration (do not use):**
+
+```properties
+# DANGEROUS: Uses relative paths and broad allowlist
+wanaku.service.exec.allowed-executables=python3,bash,sh
+```
+
 #### Shared HTTP Listener (Recommended)
 
 By default, capabilities are configured to share the HTTP listener with gRPC, avoiding the need for a separate gRPC server port. This simplifies deployment and configuration.
