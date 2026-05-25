@@ -315,257 +315,71 @@ wanaku start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
 The Wanaku Operator simplifies the deployment and management of Wanaku instances on Kubernetes and OpenShift clusters.
 It automates the creation and configuration of all necessary resources, making it the recommended approach for production deployments.
 
-#### Prerequisites
+> [!NOTE]
+> For comprehensive operator documentation including CRD field reference, deployment patterns, lifecycle management, Helm configuration, and troubleshooting, see the **[Kubernetes Operator Guide](operator.md)**.
 
-Before deploying the Wanaku Operator, ensure you have:
-- Access to a Kubernetes or OpenShift cluster
-- `kubectl` or `oc` CLI tools installed and configured
-- `helm` CLI tool installed (version 3.x or later)
-- A running Keycloak instance (see [Keycloak Setup for Wanaku](#keycloak-setup-for-wanaku))
-- Sufficient permissions to create namespaces, deployments, and custom resources
+#### Quick Start
 
-#### Installing the Wanaku Operator with Helm
+**Prerequisites:**
+- Kubernetes 1.27+ or OpenShift 4.12+
+- `kubectl` or `oc` CLI, `helm` 3.x
+- Keycloak instance (see [Keycloak Setup](#keycloak-setup-for-wanaku)) or plan to use `wanaku.http.auth=none` for development
 
-The Wanaku Operator can be deployed using Helm charts. First, ensure you're in the correct namespace or create a new one:
+**Install the operator:**
 
 ```shell
 kubectl create namespace wanaku
-```
-
-Then, install the operator using the [Helm chart](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator/deploy/helm) from the repository:
-
-```shell
 helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
   --namespace wanaku \
   --set operatorNamespace=wanaku
 ```
 
-By default, the operator will be deployed in the namespace specified by the `operatorNamespace` value. 
-
-You can customize this during installation:
-
-```shell
-helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
-  --namespace my-custom-namespace \
-  --set operatorNamespace=my-custom-namespace
-```
-
-To verify the operator is running:
-
-```shell
-kubectl get pods -n wanaku
-```
-
-You should see the operator pod in a Running state.
-
-#### Defining Wanaku Instances
-
-Once the operator is installed, you can create Wanaku instances by defining two custom resources: a `WanakuRouter` for the router component and a `WanakuCapability` for the capabilities.
-The operator watches for these custom resources and automatically creates all necessary Kubernetes objects.
-
-##### Deploying the Router
-
-Create a file named `wanaku-router.yaml` with the following content:
+**Deploy a router:**
 
 ```yaml
+# wanaku-router.yaml
 apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuRouter
 metadata:
   name: wanaku-dev
 spec:
   auth:
-    # This is the address of the authorization server (in the format: http://address)
     authServer: http://keycloak:8080
-    # Address of the proxy (in the format: http://address).
-    # It could be the same as the auth server (default) or "auto"
-    # (for using Wanaku as the proxy via OIDC proxy)
-    # authProxy: ""
   secrets:
-    # This is the OIDC credentials secret for the services
-    oidcCredentialsSecret: your-keycloak-client-secret
-
-  # Router settings are optional
-  router:
-    # You can set a custom image for the router
-    # image: quay.io/wanaku/wanaku-router-backend:latest
-    env:
-      # It is possible to set environment variables for the router
-      # - name: ENVIRONMENT_VARIABLE_1
-      #   value: value1
-      # - name: ENVIRONMENT_VARIABLE_2
-      #   value: value2
+    oidcCredentialsSecret: wanaku-oidc-secret
 ```
 
-Apply the custom resource to create your Wanaku router:
-
 ```shell
-kubectl apply -f wanaku-router.yaml
+kubectl apply -f wanaku-router.yaml -n wanaku
 kubectl wait wanakurouter/wanaku-dev --for=condition=Ready --timeout=120s
 ```
 
-The operator will automatically create:
-- Deployment for the Wanaku router
-- Services to expose the router
-- ConfigMaps for configuration
-- Secrets for sensitive data
-- Routes/Ingress (if configured)
-- ServiceAccounts and RBAC resources
-
-##### Deploying the Capabilities
-
-Create a file named `wanaku-capabilities.yaml` with the following content:
+**Deploy capabilities:**
 
 ```yaml
+# wanaku-capabilities.yaml
 apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuCapability
 metadata:
   name: wanaku-capabilities
 spec:
   auth:
-    # This is the address of the authorization server (in the format: http://address)
     authServer: http://keycloak:8080
   secrets:
-    # This is the OIDC credentials secret for the services
-    oidcCredentialsSecret: your-keycloak-client-secret
-  # Reference to the WanakuRouter CR name (required for service discovery)
+    oidcCredentialsSecret: wanaku-oidc-secret
   routerRef: wanaku-dev
-  # Define the capabilities you want to enable
   capabilities:
-    # HTTP capability for HTTP-based tools
     - name: wanaku-http
       image: quay.io/wanaku/wanaku-tool-service-http:latest
-
-    # Camel Integration Capability example
-    - name: employee-system
-      type: camel-integration-capability
-      image: quay.io/wanaku/camel-integration-capability:latest
-      env:
-        # The path to the routes file, should be within /data
-        - name: ROUTES_PATH
-          value: "/data/employee-routes.camel.yaml"
-        # The path to the rules file, should be within /data
-        - name: ROUTES_RULES
-          value: "/data/employee-rules.yaml"
 ```
 
-Apply the custom resource to deploy the capabilities:
-
 ```shell
-kubectl apply -f wanaku-capabilities.yaml
+kubectl apply -f wanaku-capabilities.yaml -n wanaku
 kubectl wait wanakucapability/wanaku-capabilities --for=condition=Ready --timeout=120s
 ```
 
-The operator will automatically create:
-- Deployments for each enabled capability
-- Services to expose the capabilities
-- ConfigMaps for configuration
-- Secrets for sensitive data
-
-> [!NOTE]
-> The `routerRef` field in the `WanakuCapability` CR must match the name of an existing `WanakuRouter` CR. This links the capabilities to the router for service discovery.
-
-> [!NOTE]
-> When using the Camel Integration Capability, you can copy your route and rules files to the capability pods using:
-> ```shell
-> kubectl cp your-routes.camel.yaml <pod-name>:/data/employee-routes.camel.yaml
-> ```
-
 > [!TIP]
-> You can find more complete examples in the [apps/wanaku-operator/samples](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator/samples) directory.
-
-##### Deploying Service Catalogs
-
-You can also deploy service catalogs declaratively using the `WanakuServiceCatalog` custom resource.
-Service catalogs are ZIP packages containing Camel routes and Wanaku rules that are deployed to the router
-via its REST API.
-
-See [Deploying Service Catalogs with the Operator](#deploying-service-catalogs-with-the-operator) for detailed instructions.
-
-#### Checking the Deployment Status
-
-To check the status of your Wanaku router:
-
-```shell
-kubectl get wanakurouter -n wanaku
-```
-
-To check the status of your capabilities:
-
-```shell
-kubectl get wanakucapability -n wanaku
-```
-
-To check the status of your service catalogs:
-
-```shell
-kubectl get wanakuservicecatalog -n wanaku
-```
-
-To view detailed information:
-
-```shell
-kubectl describe wanakurouter wanaku-dev -n wanaku
-kubectl describe wanakucapability wanaku-capabilities -n wanaku
-kubectl describe wanakuservicecatalog my-service-catalogs -n wanaku
-```
-
-To access the logs:
-
-```shell
-kubectl logs -n wanaku deployment/wanaku-dev
-```
-
-#### Accessing the Wanaku Router
-
-Once deployed, you can access the Wanaku router through its service. To get the service details:
-
-```shell
-kubectl get svc -n wanaku
-```
-
-To get the route URL:
-
-```shell
-oc get route my-wanaku-router -n wanaku -o jsonpath='{.spec.host}'
-```
-
-#### Updating the Wanaku Instance
-
-To update your Wanaku instance, simply edit the custom resources and apply the changes:
-
-```shell
-kubectl edit wanakurouter wanaku-dev -n wanaku
-kubectl edit wanakucapability wanaku-capabilities -n wanaku
-```
-
-Or update your YAML files and reapply:
-
-```shell
-kubectl apply -f wanaku-router.yaml
-kubectl apply -f wanaku-capabilities.yaml
-```
-
-The operator will automatically handle the update and roll out the changes.
-
-#### Removing the Wanaku Instance
-
-To remove a Wanaku instance, delete the custom resources:
-
-```shell
-kubectl delete wanakuservicecatalog my-service-catalogs -n wanaku
-kubectl delete wanakucapability wanaku-capabilities -n wanaku
-kubectl delete wanakurouter wanaku-dev -n wanaku
-```
-
-To uninstall the operator:
-
-```shell
-helm uninstall wanaku-operator -n wanaku
-```
-
-> [!NOTE]
-> The operator manages the entire lifecycle of Wanaku instances. Manual modifications to operator-managed resources
-> may be overwritten by the operator's reconciliation process.
+> Complete sample CRs are in [apps/wanaku-operator/samples](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator/samples). For service catalog deployment via the operator, see the [Operator Guide](operator.md).
 
 ### Installing and Running Wanaku on OpenShift or Kubernetes (Manually)
 
@@ -2294,7 +2108,7 @@ This creates a `<catalog-name>.b64` file in the current directory. You can speci
 wanaku service package --path=my-service -o /tmp/my-service.b64
 ```
 
-The packaged file is useful for deploying via the Kubernetes operator (see [Deploying Service Catalogs with the Operator](#deploying-service-catalogs-via-the-operator)).
+The packaged file is useful for deploying via the Kubernetes operator (see the [Operator Guide](operator.md) for details).
 
 ### Deploying a Service Catalog
 
@@ -2316,79 +2130,34 @@ can view details, search, and remove catalogs.
 ### Deploying Service Catalogs with the Operator
 
 When running Wanaku on Kubernetes or OpenShift with the Wanaku Operator, you can deploy service catalogs
-declaratively using the `WanakuServiceCatalog` custom resource.
+declaratively using the `WanakuServiceCatalog` custom resource. For complete documentation on deploying service
+catalogs via the operator, including ConfigMap creation, catalog verification, and troubleshooting, see the
+**[Kubernetes Operator Guide](operator.md)**.
 
-#### Step 1: Prepare the Catalog Data
-
-First, create your service catalog locally and package it:
-
-```shell
-# Initialize and configure the catalog
-wanaku service init --name=finance --services=invoices
-# Edit routes, then expose
-wanaku service expose --path=finance
-
-# Package into a Base64-encoded ZIP
-wanaku service package --path=finance
-```
-
-#### Step 2: Create a ConfigMap
-
-Store the Base64-encoded ZIP in a Kubernetes ConfigMap under the key `catalog.zip`:
+**Quick example:**
 
 ```shell
+# Package your catalog
+wanaku service package --path=finance-catalog
+
+# Create ConfigMap
 kubectl create configmap finance-catalog-data \
   --from-file=catalog.zip=finance-catalog.b64 \
   -n wanaku
-```
 
-#### Step 3: Create the WanakuServiceCatalog Resource
-
-Create a file named `wanaku-service-catalog.yaml`:
-
-```yaml
+# Create WanakuServiceCatalog CR
+cat <<EOF | kubectl apply -f - -n wanaku
 apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuServiceCatalog
 metadata:
   name: my-service-catalogs
 spec:
-  # Reference to the WanakuRouter CR name
   routerRef: wanaku-dev
-  # List of catalogs to deploy
   catalogs:
     - name: finance-catalog
       configMapRef: finance-catalog-data
+EOF
 ```
-
-Apply it:
-
-```shell
-kubectl apply -f wanaku-service-catalog.yaml -n wanaku
-```
-
-The operator reads the ConfigMap data and deploys the catalog to the router automatically.
-
-#### Step 4: Verify the Deployment
-
-```shell
-kubectl get wanakuservicecatalog -n wanaku
-kubectl describe wanakuservicecatalog my-service-catalogs -n wanaku
-```
-
-The status section shows the list of successfully deployed catalogs and the `Ready` condition.
-
-#### Removing Service Catalogs
-
-When you delete the `WanakuServiceCatalog` resource, the operator automatically removes the deployed catalogs
-from the router:
-
-```shell
-kubectl delete wanakuservicecatalog my-service-catalogs -n wanaku
-```
-
-> [!NOTE]
-> The `routerRef` field must match the name of an existing `WanakuRouter` CR in the same namespace.
-> The operator connects to the router's internal service to deploy and remove catalogs.
 
 ### Complete CLI Workflow Example
 
