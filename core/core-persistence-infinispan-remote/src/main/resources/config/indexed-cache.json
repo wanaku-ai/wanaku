@@ -1,0 +1,15 @@
+{
+  "distributed-cache": {
+    "mode": "SYNC",
+    "statistics": true,
+    "encoding": {
+      "media-type": "application/x-protostream"
+    },
+    "indexing": {
+      "enabled": true,
+      "storage": "local-heap",
+      "startup-mode": "auto",
+      "indexed-entities": []
+    }
+  }
+}

@@ -1,0 +1,9 @@
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.ContentSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.DataStoreSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.ForwardReferenceSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.InputSchemaSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.NamespaceSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.PromptReferenceSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.PropertySchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.ResourceReferenceSchema
+ai.wanaku.core.persistence.infinispan.remote.protostream.schema.ToolReferenceSchema
