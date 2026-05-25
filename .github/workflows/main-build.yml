@@ -97,6 +97,17 @@ jobs:
           -Dquarkus.container-image.tag=${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
           -Dquarkus.jib.platforms=linux/arm64/v8 \
           -Pdist
+    - name: Generate Test Reports
+      if: always()
+      run: mvn -B --no-transfer-progress surefire-report:report-only surefire-report:failsafe-report-only
+    - name: Upload Test Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-${{ matrix.os }}
+        path: '**/target/reports/'
+        retention-days: 14
+        if-no-files-found: ignore
 
 
   createManifests:
