@@ -9,11 +9,14 @@ import java.util.Properties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "https://github.com/wanaku-ai/wanaku/issues/1193")
 class ServiceInitTest {
 
     @TempDir
