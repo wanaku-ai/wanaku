@@ -59,7 +59,7 @@
         <docker-java.version>3.7.1</docker-java.version>
         <commons-pool2.version>2.13.1</commons-pool2.version>
         <jsonassert.version>1.5.3</jsonassert.version>
-        <swagger-core.version>2.2.45</swagger-core.version>
+        <swagger-core.version>2.2.50</swagger-core.version>
         <jline.version>3.30.6</jline.version>
         <swagger-parser.version>2.1.41</swagger-parser.version>
         <quarkus-infinispan-embedded.version>2.0.1</quarkus-infinispan-embedded.version>
