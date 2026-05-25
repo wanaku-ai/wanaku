@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ai.wanaku.capabilities.sdk.api.types;
+
+/**
+ * Protocol buffer definition for DataStore entity.
+ */
+/** @Indexed */
+
+/** @Keyword */
+
+/** @Keyword */
+
+/** @Text */
+
+  map<string, string> labels = 4;
+}

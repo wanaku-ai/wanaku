@@ -24,6 +24,10 @@
 
         <!-- router core -->
         <module>core-mcp-client</module>
+
+        <!-- persistence -->
+        <module>core-persistence-api</module>
+        <module>core-persistence-infinispan-remote</module>
     </modules>
 
 

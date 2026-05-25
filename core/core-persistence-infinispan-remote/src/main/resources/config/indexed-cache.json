@@ -1,0 +1,22 @@
+{
+  "distributed-cache": {
+    "mode": "SYNC",
+    "statistics": true,
+    "encoding": {
+      "media-type": "application/x-protostream"
+    },
+    "indexing": {
+      "enabled": true,
+      "storage": "local-heap",
+      "startup-mode": "auto",
+      "indexed-entities": [
+        "ai.wanaku.capabilities.sdk.api.types.ToolReference",
+        "ai.wanaku.capabilities.sdk.api.types.ResourceReference",
+        "ai.wanaku.capabilities.sdk.api.types.PromptReference",
+        "ai.wanaku.capabilities.sdk.api.types.Namespace",
+        "ai.wanaku.capabilities.sdk.api.types.DataStore",
+        "ai.wanaku.capabilities.sdk.api.types.ForwardReference"
+      ]
+    }
+  }
+}
