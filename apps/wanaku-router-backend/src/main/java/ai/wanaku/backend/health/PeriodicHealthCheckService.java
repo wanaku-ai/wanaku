@@ -120,6 +120,13 @@ public class PeriodicHealthCheckService {
             return;
         }
 
+        int port = target.getPort();
+        if (port < 1 || port > 65535) {
+            LOG.warnf("Invalid port %d for capability %s (%s), marking as DOWN", port, target.getServiceName(), id);
+            serviceRegistry.updateHealthStatus(id, HealthStatus.DOWN);
+            return;
+        }
+
         if (inProgress.putIfAbsent(id, Boolean.TRUE) != null) {
             LOG.tracef("Health check already in progress for %s, skipping", id);
             return;
