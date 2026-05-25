@@ -5,9 +5,9 @@
 Start by setting the versions. 
 
 ```shell
-export PREVIOUS_VERSION=0.0.9
-export CURRENT_DEVELOPMENT_VERSION=0.1.0
-export NEXT_DEVELOPMENT_VERSION=0.1.1
+export PREVIOUS_VERSION=0.1.0
+export CURRENT_DEVELOPMENT_VERSION=0.1.1
+export NEXT_DEVELOPMENT_VERSION=0.2.0
 ```
 
 Trigger a release build: 
@@ -66,9 +66,9 @@ gpg --list-public-keys --keyid-format LONG
 Repeat this for every machine to be used for the release.
 
 ```shell
-export PREVIOUS_VERSION=0.0.9
-export CURRENT_DEVELOPMENT_VERSION=0.1.0
-export NEXT_DEVELOPMENT_VERSION=0.1.1
+export PREVIOUS_VERSION=0.1.0
+export CURRENT_DEVELOPMENT_VERSION=0.1.1
+export NEXT_DEVELOPMENT_VERSION=0.2.0
 ```
 
 > [!NOTE]

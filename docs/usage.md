@@ -3264,8 +3264,8 @@ open http://localhost:8080
  
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-mcp-servers-archetype \ 
-  -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.mcp.servers.s3 -DartifactId=wanaku-mcp-servers-s3 \
-  -Dname=S3 -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
+  -DarchetypeVersion=0.1.1 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.mcp.servers.s3 -DartifactId=wanaku-mcp-servers-s3 \
+  -Dname=S3 -Dwanaku-version=0.1.1 -Dwanaku-capability-type=camel
 ```
 
 > [!IMPORTANT]
