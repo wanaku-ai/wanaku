@@ -1,5 +1,8 @@
 package ai.wanaku.backend.api.v1.management.statistics;
 
+import jakarta.ws.rs.core.MediaType;
+
+import java.util.Map;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -28,5 +31,10 @@ public class StatisticsResourceIT extends AbstractStatisticsResourceTest {
         final String accessToken = keycloakClient.getRealmClientAccessToken("wanaku", "wanaku-service", "secret");
         Assertions.assertNotNull(accessToken);
         return accessToken;
+    }
+
+    @Override
+    protected Map<String, String> getHeaders() {
+        return Map.of("Content-Type", MediaType.APPLICATION_JSON, "Authorization", "Bearer " + getAccessToken());
     }
 }
