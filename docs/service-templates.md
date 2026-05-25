@@ -2,6 +2,9 @@
 
 This document explains what service templates are, how they work, and how to use them to create parameterized service catalogs in Wanaku.
 
+> [!NOTE]
+> Service templates are parameterized blueprints that produce **service catalogs** when instantiated with user-provided values. For comprehensive documentation on service catalogs themselves — their structure, deployment, and management — see the [Service Catalogs Guide](service-catalogs.md).
+
 ## What Are Service Templates?
 
 Service templates are parameterized service catalogs. They allow you to create reusable catalog packages with placeholder values that users can fill in when creating actual service catalogs.
