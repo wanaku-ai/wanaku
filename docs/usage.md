@@ -2004,164 +2004,11 @@ wanaku data-store remove --name employee-routes
 
 ## Managing Service Catalogs
 
-Service catalogs provide a way to package, distribute, and deploy complete integration services to the Wanaku router.
-A service catalog bundles Camel routes, Wanaku rules, and optional dependencies into a single ZIP package that can be deployed as a unit.
+Service catalogs provide a way to package, distribute, and deploy complete integration services to the Wanaku router. A service catalog bundles Camel routes, Wanaku rules, and optional dependencies into a single ZIP package that can be deployed as a unit. This is especially useful for teams that want to share pre-built integrations or automate the deployment of complex multi-route services.
 
-This is especially useful for teams that want to share pre-built integrations or automate the deployment of
-complex multi-route services.
+For comprehensive documentation on service catalogs — including structure, CLI workflow, Kubernetes deployment, and REST API reference — see the [Service Catalogs Guide](service-catalogs.md).
 
-> [!NOTE]
-> Service catalogs are independent of any specific capability or underlying service implementation.
-> Apache Camel is natively supported as the integration runtime, but the service catalog format is open —
-> other integration runtimes or custom implementations can be added to support additional technologies.
-
-### Service Catalog Structure
-
-A service catalog is a directory with the following structure:
-
-```
-my-service/
-├── index.properties              # Manifest describing the catalog
-├── system-a/
-│   ├── system-a.camel.yaml       # Camel routes for system-a
-│   ├── system-a.wanaku-rules.yaml  # Wanaku rules (auto-generated)
-│   └── system-a.dependencies.txt   # Optional Maven dependencies
-└── system-b/
-    ├── system-b.camel.yaml
-    ├── system-b.wanaku-rules.yaml
-    └── system-b.dependencies.txt
-```
-
-The `index.properties` file is the manifest that describes the catalog:
-
-```properties
-catalog.name=my-service
-catalog.description=Service catalog for my-service
-catalog.services=system-a,system-b
-catalog.routes.system-a=system-a/system-a.camel.yaml
-catalog.rules.system-a=system-a/system-a.wanaku-rules.yaml
-catalog.dependencies.system-a=system-a/system-a.dependencies.txt
-catalog.routes.system-b=system-b/system-b.camel.yaml
-catalog.rules.system-b=system-b/system-b.wanaku-rules.yaml
-catalog.dependencies.system-b=system-b/system-b.dependencies.txt
-```
-
-### Creating a Service Catalog
-
-Use `wanaku service init` to scaffold a new service catalog:
-
-```shell
-wanaku service init --name=my-service --services=system-a,system-b
-```
-
-This creates:
-- A root directory with `index.properties`
-- A subdirectory for each system with skeleton Camel route, rules, and dependency files
-
-After scaffolding, edit the Camel route files (`*.camel.yaml`) with your integration routes. For example:
-
-```yaml
-- route:
-    id: get-employee-information
-    description: Retrieve employee basic information
-    from:
-      uri: direct:employee-information
-      steps:
-        - setHeader:
-            constant: GET
-        - to:
-            uri: "http://employee-service/api/employees"
-```
-
-### Generating Rules from Routes
-
-Once your Camel routes are defined, use `wanaku service expose` to auto-generate Wanaku rules that expose each route as an MCP tool:
-
-```shell
-wanaku service expose --path=my-service
-```
-
-This scans each system's Camel route file for route IDs (the `id` field directly under `- route:`) and generates a
-rules file that exposes each route as an MCP tool.
-
-You can optionally assign a namespace to all generated rules:
-
-```shell
-wanaku service expose --path=my-service --namespace=production
-```
-
-> [!NOTE]
-> The `expose` command only extracts route-level IDs. IDs on individual steps (such as `setHeader` or `bean`) within a
-> route are ignored.
-
-### Packaging a Service Catalog
-
-Package the service catalog into a Base64-encoded ZIP file using `wanaku service package`:
-
-```shell
-wanaku service package --path=my-service
-```
-
-This creates a `<catalog-name>.b64` file in the current directory. You can specify a custom output path:
-
-```shell
-wanaku service package --path=my-service -o /tmp/my-service.b64
-```
-
-The packaged file is useful for deploying via the Kubernetes operator (see the [Operator Guide](operator.md) for details).
-
-### Deploying a Service Catalog
-
-Deploy the service catalog directly to the Wanaku router using `wanaku service deploy`:
-
-```shell
-wanaku service deploy --path=my-service --host=http://localhost:8080
-```
-
-This command:
-1. Validates the catalog structure and `index.properties`
-2. Packages the entire directory into a ZIP archive
-3. Base64-encodes the ZIP
-4. Uploads it to the router via the `/api/v1/service-catalog/deploy` endpoint
-
-Once deployed, the service catalog appears in the Wanaku admin UI under the **Service Catalog** page, where you
-can view details, search, and remove catalogs.
-
-### Deploying Service Catalogs with the Operator
-
-When running Wanaku on Kubernetes or OpenShift with the Wanaku Operator, you can deploy service catalogs
-declaratively using the `WanakuServiceCatalog` custom resource. For complete documentation on deploying service
-catalogs via the operator, including ConfigMap creation, catalog verification, and troubleshooting, see the
-**[Kubernetes Operator Guide](operator.md)**.
-
-**Quick example:**
-
-```shell
-# Package your catalog
-wanaku service package --path=finance-catalog
-
-# Create ConfigMap
-kubectl create configmap finance-catalog-data \
-  --from-file=catalog.zip=finance-catalog.b64 \
-  -n wanaku
-
-# Create WanakuServiceCatalog CR
-cat <<EOF | kubectl apply -f - -n wanaku
-apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuServiceCatalog
-metadata:
-  name: my-service-catalogs
-spec:
-  routerRef: wanaku-dev
-  catalogs:
-    - name: finance-catalog
-      configMapRef: finance-catalog-data
-EOF
-```
-
-### Complete CLI Workflow Example
-
-Here is a complete end-to-end example of creating and deploying a service catalog:
+### Quick Start
 
 ```shell
 # 1. Initialize the catalog structure
@@ -2178,7 +2025,7 @@ wanaku service expose --path=hr-system
 wanaku service deploy --path=hr-system --host=http://localhost:8080
 ```
 
-The deployed service catalog is now visible in the admin UI and its routes are exposed as MCP tools.
+See [Service Catalogs Guide](service-catalogs.md) for details on structure, packaging, operator deployment, and REST API usage.
 
 > [!TIP]
 > If you need parameterized, reusable service catalogs, see [Service Templates](service-templates.md) for details on creating and instantiating templates.
