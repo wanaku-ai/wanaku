@@ -166,6 +166,7 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
      * @throws IllegalArgumentException if fieldName is null/blank or fieldValue is null
      * @throws WanakuException if the query execution fails
      */
+    @Override
     public int removeByField(String fieldName, Object fieldValue) {
         return removeByFields(Map.of(fieldName, fieldValue));
     }
@@ -179,6 +180,7 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
      * @throws IllegalArgumentException if fields map is null or empty
      * @throws WanakuException if the query execution fails
      */
+    @Override
     public int removeByFields(Map<String, Object> fields) {
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException("Fields map cannot be null or empty");
@@ -212,6 +214,7 @@ public abstract class AbstractInfinispanRepository<A extends WanakuEntity<K>, K>
         return sizeBefore - cache.size();
     }
 
+    @Override
     public boolean exists(K key) {
         return findById(key) != null;
     }

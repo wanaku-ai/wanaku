@@ -19,6 +19,7 @@ public abstract class AbstractLabelAwareInfinispanRepository<A extends LabelsAwa
         super(cacheManager, configuration);
     }
 
+    @Override
     public List<A> findAllFilterByLabelExpression(String labelExpression) {
         // If no label expression provided, return all entities
         if (StringHelper.isBlank(labelExpression)) {
@@ -39,6 +40,7 @@ public abstract class AbstractLabelAwareInfinispanRepository<A extends LabelsAwa
         }
     }
 
+    @Override
     public int removeIf(String labelExpression) throws LabelExpressionParseException {
         int size;
         Cache<K, A> cache = cacheManager.getCache(entityName());
