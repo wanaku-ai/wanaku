@@ -17,4 +17,5 @@ globs:
 
 ignores:
   - ".oss-ai-helper-rules/**"
+  - "CLAUDE.md"
   - "target/**"
