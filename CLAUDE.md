@@ -1,6 +1,12 @@
-# wanaku Development Guidelines
+# Wanaku Development Guidelines
 
-Last updated: 2026-04-30
+Last updated: 2026-05-26
+
+## Core Guidelines
+
+- Think before you write
+- Don't create abstractions unnecessarily.
+- Simplicity is important: focus on the minimum code required to achieve the result.
 
 ## Active Technologies
 
@@ -76,5 +82,8 @@ make install
 - `wanaku service deploy` packages and deploys directly to router REST API
 - Route ID extraction uses indentation-aware parsing (route-level only, ignores step-level IDs)
 
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+## Acceptance Criteria
+
+- Major features should have tests
+- Major features should have documentation
+- Tests should be meaningful
