@@ -32,7 +32,7 @@ It's important to understand the relationship between these two concepts:
 
 **Workflow:**
 
-```
+```text
 Service Template (with {{placeholders}})
     ↓  (user provides values via instantiate)
 Service Catalog (ready to deploy)
@@ -49,7 +49,7 @@ When you instantiate a service template with user-provided parameters, the resul
 
 A service catalog is a directory with the following structure:
 
-```
+```text
 my-service/
 ├── index.properties              # Manifest describing the catalog
 ├── system-a/
@@ -134,7 +134,7 @@ rules:
 
 Dependencies files (`*.dependencies.txt`) list Maven coordinates for libraries required by the routes. One dependency per line:
 
-```
+```text
 org.apache.camel:camel-http:4.4.0
 org.apache.camel:camel-jackson:4.4.0
 ```
@@ -152,6 +152,7 @@ wanaku service init --name=my-service --services=system-a,system-b
 ```
 
 This creates:
+
 - A root directory `my-service/` with `index.properties`
 - A subdirectory for each service with skeleton files
 
@@ -225,6 +226,7 @@ wanaku service deploy --path=my-service --host=http://localhost:8080
 ```
 
 This command:
+
 1. Validates the catalog structure and `index.properties`
 2. Packages the entire directory into a ZIP archive
 3. Base64-encodes the ZIP
@@ -247,7 +249,7 @@ wanaku service init --name=hr-system --services=employees,payroll
 
 This creates:
 
-```
+```text
 hr-system/
 ├── index.properties
 ├── employees/
