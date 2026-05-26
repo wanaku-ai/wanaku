@@ -6,7 +6,7 @@ This document describes the Wanaku persistence layer architecture, designed as a
 
 The persistence layer follows a layered architecture:
 
-```
+```text
 ┌─────────────────────────────────────┐
 │         Service Layer               │
 ├─────────────────────────────────────┤
@@ -23,6 +23,7 @@ The persistence layer follows a layered architecture:
 ```
 
 **Key characteristics:**
+
 - Repository pattern with generics
 - Infinispan embedded cache with file-based persistence
 - Protocol Buffers (proto3) for serialization
@@ -94,6 +95,7 @@ public interface WanakuRepository<A extends WanakuEntity, C> {
 ```
 
 **Key operations:**
+
 - `persist()` - Generates ID if null, stores entity
 - `removeByField()/removeByFields()` - Bulk deletion using Ickle queries
 - `update()` - Lock-protected entity modification
@@ -110,6 +112,7 @@ public interface LabelAwareInfinispanRepository<A extends LabelsAwareEntity<K>, 
 ```
 
 **Label expression examples:**
+
 - `category=weather` - Exact match
 - `category=weather & !action=forecast` - AND with negation
 - `(category=weather | category=news) & environment=production` - Complex boolean
@@ -266,6 +269,7 @@ message DataStore {
 ```
 
 **Field type mappings:**
+
 - Strings → `string`
 - Labels → `map<string, string>`
 - Nested objects → `message`
@@ -383,6 +387,7 @@ public class InfinispanConfigurationProvider {
 ```
 
 **Configuration options:**
+
 - `CacheMode.LOCAL` - Single-node caching
 - `SingleFileStore` - File-based persistence
 - `passivation(false)` - All entries persisted to disk
@@ -468,7 +473,7 @@ int count = repository.removeByFields(fields);
 
 ## Directory Structure
 
-```
+```text
 core/core-persistence/
 ├── core-persistence-api/
 │   └── src/main/java/ai/wanaku/core/persistence/api/

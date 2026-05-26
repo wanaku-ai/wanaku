@@ -28,6 +28,7 @@ Yes, Wanaku is open source and licensed under Apache 2.0. You can find the sourc
 ### Why does Wanaku use a router architecture instead of hosting tools directly?
 
 The router architecture provides several advantages:
+
 - **Isolation**: Each capability service runs independently, improving security and reliability
 - **Scalability**: Services can be scaled independently based on demand
 - **Flexibility**: Easy to add, remove, or update capabilities without affecting the router
@@ -36,6 +37,7 @@ The router architecture provides several advantages:
 ### What is a "capability" in Wanaku?
 
 A capability is a service that provides specific functionality to the Wanaku router. Capabilities can be:
+
 - **Tool services**: Provide executable tools (HTTP client, exec, Tavily search, etc.)
 - **Resource providers**: Provide read access to resources (files, S3, FTP, etc.)
 - **MCP servers**: Bridge to other MCP servers via HTTP
@@ -47,6 +49,7 @@ Wanaku uses gRPC for communication between the router backend and capability ser
 ### What is the role of Keycloak in Wanaku?
 
 Keycloak provides authentication and authorization for:
+
 - Router management API and web UI access
 - Service-to-service authentication between the router and capabilities
 - Future support for fine-grained access control to tools and resources
@@ -56,11 +59,13 @@ Keycloak provides authentication and authorization for:
 ### What are the prerequisites for running Wanaku?
 
 **For development:**
+
 - Java 17 or later
 - Maven 3.x
 - Keycloak instance (optional — can run via Podman/Docker, or set `wanaku.http.auth=none`)
 
 **For production deployment:**
+
 - OpenShift or Kubernetes cluster (optional but recommended)
 - Keycloak instance (recommended for production; optional with `wanaku.http.auth=none`)
 - Container runtime (Podman/Docker)
@@ -68,6 +73,7 @@ Keycloak provides authentication and authorization for:
 ### Do I need to install Keycloak separately?
 
 Keycloak is required only if you want to run Wanaku with authentication enabled. You can:
+
 - Run Keycloak locally using Podman/Docker (for development)
 - Deploy Keycloak to OpenShift/Kubernetes (for production)
 - Use an existing Keycloak instance
@@ -78,6 +84,7 @@ and skip the Keycloak setup entirely. See [Running Without Authentication](usage
 ### Can I run Wanaku without Kubernetes?
 
 Yes, Wanaku can run standalone on any machine with Java. You can:
+
 - Download pre-built binaries from the releases page
 - Build from source
 - Run locally for development and testing
@@ -89,6 +96,7 @@ Kubernetes/OpenShift deployment is recommended for production but not required.
 There are two main options:
 
 **Via JBang (recommended):**
+
 ```shell
 jbang app install wanaku@wanaku-ai/wanaku
 ```
@@ -123,6 +131,7 @@ wanaku resources add --uri <resource-uri> --service <service-name>
 ### What are namespaces and when should I use them?
 
 Namespaces allow you to organize tools and resources into isolated groups. Use cases include:
+
 - Separating tools by environment (dev, staging, prod)
 - Organizing by team or project
 - Isolating tools by security level
@@ -133,17 +142,20 @@ Wanaku provides 10 namespaces (ns-1 through ns-10) plus a default namespace and 
 ### How do I connect an MCP client to Wanaku?
 
 **For SSE transport:**
-```
+
+```text
 http://localhost:8080/mcp/sse
 ```
 
 **For Streamable HTTP:**
-```
+
+```text
 http://localhost:8080/mcp/
 ```
 
 **For a specific namespace:**
-```
+
+```text
 http://localhost:8080/ns-1/mcp/sse
 ```
 
@@ -160,11 +172,13 @@ Yes, Wanaku works with Claude Desktop and other MCP-compatible clients. See the 
 Use the Wanaku CLI to generate a project template:
 
 **For a tool service:**
+
 ```shell
 wanaku services create tool --name my-tool
 ```
 
 **For a resource provider:**
+
 ```shell
 wanaku services create provider --name my-provider
 ```
@@ -174,11 +188,13 @@ See the [Contributing Guide](contributing.md) for detailed instructions.
 ### Should I use Camel or plain Quarkus for my capability?
 
 **Use the Camel Integration Capability** (recommended for most cases):
+
 - When you need to integrate with external systems
 - To leverage 300+ Apache Camel components
 - For rapid development of common integration patterns
 
 **Use plain Quarkus** when:
+
 - You need very specific custom logic
 - You want minimal dependencies
 - Performance is critical and you want full control
@@ -196,6 +212,7 @@ Custom capabilities should generally go in the [Wanaku Examples](https://github.
 ### Is Wanaku secure for production use?
 
 Wanaku provides security features including:
+
 - OIDC-based authentication via Keycloak
 - Service-to-service authentication
 - TLS support for external endpoints
@@ -206,6 +223,7 @@ However, you must properly configure these features. See the [Security Guide](..
 ### How do I secure API keys and secrets used by tools?
 
 Use the provisioning system to securely provide secrets to capability services:
+
 - Store secrets in Kubernetes Secrets
 - Configure tools to reference secrets via environment variables
 - Never commit secrets to version control
@@ -223,6 +241,7 @@ While not recommended for production, you can set `wanaku.http.auth=none` to dis
 ### Why aren't my capability services showing up?
 
 Common causes:
+
 1. Service registration is not enabled or misconfigured
 2. Network connectivity issues between service and router
 3. Incorrect OIDC credentials
@@ -233,6 +252,7 @@ See the [Troubleshooting Guide](usage.md#troubleshooting) for detailed solutions
 ### Why can't my MCP client connect to Wanaku?
 
 Check:
+
 1. Router is running and accessible
 2. Correct endpoint URL (include `/sse` for SSE transport)
 3. Firewall rules allow traffic
@@ -241,6 +261,7 @@ Check:
 ### How do I enable debug logging?
 
 Add to `application.properties`:
+
 ```properties
 quarkus.log.level=DEBUG
 quarkus.log.category."ai.wanaku".level=DEBUG
@@ -259,11 +280,13 @@ quarkus.mcp.server.traffic-logging.enabled=true
 ### What are the resource requirements for Wanaku?
 
 **Minimum for development:**
+
 - Router backend: 512MB RAM, 1 CPU
 - Each capability service: 256MB RAM, 0.5 CPU
 - Keycloak: 512MB RAM, 1 CPU
 
 **Recommended for production:**
+
 - Router backend: 1-2GB RAM, 2 CPU
 - Capability services: 512MB-1GB RAM per service
 - Adequate resources for Keycloak
@@ -271,6 +294,7 @@ quarkus.mcp.server.traffic-logging.enabled=true
 ### Can Wanaku handle multiple concurrent requests?
 
 Yes, Wanaku is built on Quarkus and designed for concurrent request handling. Performance depends on:
+
 - Available system resources
 - Number and type of capability services
 - Network latency between components
@@ -283,9 +307,10 @@ The router backend can be scaled horizontally in Kubernetes. Capability services
 
 ### Which MCP clients are supported?
 
-Any MCP client compliant with the MCP protocol is supported. 
+Any MCP client compliant with the MCP protocol is supported.
 
 Wanaku was tested with different agents frameworks and MCP clients that include:
+
 - Claude Desktop
 - Langflow
 - LangChain4j MCP client
@@ -310,6 +335,7 @@ Yes! Wanaku includes an MCP-to-MCP bridge feature that allows it to forward requ
 ### What's the difference between Wanaku and running MCP servers directly?
 
 Benefits of using Wanaku:
+
 - Centralized management and governance
 - Unified authentication and authorization
 - Tool and resource organization via namespaces
@@ -328,6 +354,7 @@ Check the [releases page](https://github.com/wanaku-ai/wanaku/releases) for the 
 ### How can I contribute to Wanaku?
 
 See the [Contributing Guide](../CONTRIBUTING.md) for information on:
+
 - Setting up your development environment
 - Creating new capabilities
 - Submitting pull requests

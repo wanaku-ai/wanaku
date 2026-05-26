@@ -16,7 +16,7 @@ Ensure `k6` is on your `PATH` or set `K6_BIN` to its location.
 
 There are two test paths, each targeting a different bridge type:
 
-```
+```text
                           ┌─────────────────────────────────┐
                           │         Wanaku Router            │
   k6 ──SSE──►  /public/mcp/sse  ──┬── gRPC bridge ──► capability (tool-noop / static-file)
@@ -33,7 +33,7 @@ There are two test paths, each targeting a different bridge type:
 
 ### File Layout
 
-```
+```text
 tests/load/
 ├── run-perf-test.sh          # Single-run test runner (any bridge)
 ├── run-perf-evaluation.sh    # Full baseline-vs-patched evaluation (gRPC bridge, CI-based)
@@ -217,7 +217,7 @@ python3 tests/load/generate-perf-report.py --eval-dir $EVAL_DIR --test-scope all
 
 ### Expected Directory Structure
 
-```
+```text
 $EVAL_DIR/
 ├── baseline/
 │   ├── tools-invoke-sse/
@@ -244,6 +244,7 @@ python3 tests/load/generate-perf-report.py \
 ```
 
 Options:
+
 - `--eval-dir` (required): directory containing `baseline/` and `patched/` subdirectories
 - `--test-scope`: `all` (default), `tools`, or `resources`
 - `--output`: output file path (defaults to `$EVAL_DIR/perf-report.md`)

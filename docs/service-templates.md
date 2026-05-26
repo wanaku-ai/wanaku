@@ -19,7 +19,7 @@ The lifecycle of a service template follows this pattern:
 2. **User Fills Parameters**: When instantiating the template, the user provides values for the placeholders.
 3. **Service Catalog Creation**: The template is transformed into a deployable service catalog with the user's values substituted in.
 
-```
+```text
 Service Template (with {{placeholders}})
     ↓  (user provides values)
 Service Catalog (ready to deploy)
@@ -141,7 +141,7 @@ You can create your own service templates by following the directory structure a
 
 A service template ZIP package has this structure:
 
-```
+```text
 my-template/
 ├── index.properties                # Catalog metadata
 └── my-service/                     # Service directory (one or more)
@@ -229,6 +229,7 @@ A template for creating an ActiveMQ 6 (Artemis) tool service. This template incl
 - Queue/topic name placeholders
 
 **Parameters:**
+
 - `broker.url`: ActiveMQ broker URL (e.g., `tcp://localhost:61616`)
 - `broker.username`: Broker username
 - `broker.password`: Broker password
@@ -245,6 +246,7 @@ A template for creating a Kafka-backed MCP tool with manual request/reply correl
 - Parameterized brokers, request topic, response topic, reply timeout, and reply consumer group settings
 
 **Parameters:**
+
 - `kafka.brokers`: Kafka bootstrap servers, for example `localhost:9092`
 - `kafka.request.topic`: Topic used for outbound requests
 - `kafka.response.topic`: Topic used for correlated replies
@@ -258,11 +260,13 @@ The request route sets a `wanakuCorrelationId` header from the Camel exchange id
 A template for creating a GitHub Pull Request tool service. This template allows agents to fetch pull request information on demand from a specified repository.
 
 **Parameters:**
+
 - `github.owner`: The GitHub repository owner (e.g., `apache`)
 - `github.repo`: The GitHub repository name (e.g., `camel`)
 - `github.token`: A GitHub Personal Access Token (PAT) for authentication
 
 **Tool Parameters:**
+
 - `state`: Filter PRs by state (`open`, `closed`, `all`). Default: `open`
 - `head`: Filter by head user or head organization and branch (`user:branch`)
 - `base`: Filter by base branch name

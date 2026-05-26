@@ -100,22 +100,22 @@ classDiagram
 
 The bridge architecture is organized into specialized interfaces and uses composition over inheritance:
 
-* **[`Bridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/Bridge.java)** - Base marker interface for all bridge implementations
-* **[`ResourceBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ResourceBridge.java)** - Extended interface for asynchronous resource reading
-* **[`ToolsBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ToolsBridge.java)** - Extended interface for asynchronous tool execution
-* **[`ProvisionBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ProvisionBridge.java)** - Interface for provisioning configuration and secrets to remote services
-* **[`McpBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/McpBridge.java)** - Interface for interacting with remote MCP servers (forwarding)
-* **[`WanakuBridgeTransport`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/WanakuBridgeTransport.java)** - Transport abstraction interface that decouples protocol from business logic, with async-first operations and built-in response transformation
+- **[`Bridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/Bridge.java)** - Base marker interface for all bridge implementations
+- **[`ResourceBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ResourceBridge.java)** - Extended interface for asynchronous resource reading
+- **[`ToolsBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ToolsBridge.java)** - Extended interface for asynchronous tool execution
+- **[`ProvisionBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/ProvisionBridge.java)** - Interface for provisioning configuration and secrets to remote services
+- **[`McpBridge`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/McpBridge.java)** - Interface for interacting with remote MCP servers (forwarding)
+- **[`WanakuBridgeTransport`](https://github.com/wanaku-ai/wanaku/blob/main/wanaku-router-backend/src/main/java/ai/wanaku/backend/bridge/WanakuBridgeTransport.java)** - Transport abstraction interface that decouples protocol from business logic, with async-first operations and built-in response transformation
 
 ### Transport Abstraction
 
 The bridge architecture uses **composition over inheritance** to separate transport concerns from business logic:
 
-* **`ResourceAcquirerBridge`** and **`InvokerBridge`** delegate all transport operations to a `WanakuBridgeTransport` implementation
-* **`GrpcTransport`** implements `WanakuBridgeTransport` and handles all gRPC-specific communication
-* **`ProvisionerBridge`** consolidates shared provisioning logic and service resolution, eliminating duplication between bridges
-* **Response transformers** (`ToolResponseTransformer`, `ResourceResponseTransformer`) convert transport-specific types (e.g., gRPC protobuf replies) into MCP domain types within the transport layer, keeping bridge implementations protocol-agnostic
-* This design enables:
+- **`ResourceAcquirerBridge`** and **`InvokerBridge`** delegate all transport operations to a `WanakuBridgeTransport` implementation
+- **`GrpcTransport`** implements `WanakuBridgeTransport` and handles all gRPC-specific communication
+- **`ProvisionerBridge`** consolidates shared provisioning logic and service resolution, eliminating duplication between bridges
+- **Response transformers** (`ToolResponseTransformer`, `ResourceResponseTransformer`) convert transport-specific types (e.g., gRPC protobuf replies) into MCP domain types within the transport layer, keeping bridge implementations protocol-agnostic
+- This design enables:
   - Easy testing with mock transports
   - Support for alternative transport protocols (HTTP, WebSocket, etc.)
   - Clear separation between routing logic and communication details
@@ -124,15 +124,15 @@ The bridge architecture uses **composition over inheritance** to separate transp
 All bridge operations follow an **async-first** design using Mutiny `Uni` types. The transport layer returns already-transformed domain objects, so bridges never handle transport-specific types directly.
 
 Leveraging these specialized interfaces, we have the concrete classes `ResourceAcquirerBridge` and `InvokerBridge` that use [gRPC](https://grpc.io/) via the transport abstraction to exchange data with capability services providing access to resources and tools. Additionally, `DefaultMcpBridge` provides forwarding to remote MCP servers using the langchain4j MCP client.
- 
-## Resources 
 
-A resource is, essentially, anything that can be read by using the MCP protocol. For instance: 
+## Resources
 
-* Files
-* Read-only JMS Queues 
-* Topics
-* Static resources (i.e.: a web page)
+A resource is, essentially, anything that can be read by using the MCP protocol. For instance:
+
+- Files
+- Read-only JMS Queues
+- Topics
+- Static resources (i.e.: a web page)
 
 Among other things, resources can be subscribed to, so that changes to its data and state are notified
 to the subscribers.
@@ -163,18 +163,18 @@ graph TB
     style FileProvider fill:#DDA0DD
 ```
 
-Ideally, providers should leverage [Apache Camel](https://camel.apache.org/) whenever possible. 
+Ideally, providers should leverage [Apache Camel](https://camel.apache.org/) whenever possible.
 
 ## Tools
 
-A tool is anything that can be invoked by an LLM in a request/response fashion and used to provide data to it. 
+A tool is anything that can be invoked by an LLM in a request/response fashion and used to provide data to it.
 
-Examples: 
+Examples:
 
-* Request/reply over JMS
-* Calling REST APIs 
-* Executing subprocesses that provide an output
-* Executing an RPC invocation and waiting for its response
+- Request/reply over JMS
+- Calling REST APIs
+- Executing subprocesses that provide an output
+- Executing an RPC invocation and waiting for its response
 
 In Wanaku, every tool invocation is remote and handled by the `InvokerBridge` class which uses the gRPC protocol via the transport abstraction to
 communicate with the service that provides the tool.
@@ -231,9 +231,9 @@ sequenceDiagram
 
 The provisioning system allows runtime configuration of services through gRPC-based provisioning requests that establish:
 
-* **Configuration URIs**: Service-specific settings (endpoints, options, parameters)
-* **Secret URIs**: Sensitive credentials (API keys, passwords, tokens)
-* **Property Schemas**: Expected configuration structure and validation rules
+- **Configuration URIs**: Service-specific settings (endpoints, options, parameters)
+- **Secret URIs**: Sensitive credentials (API keys, passwords, tokens)
+- **Property Schemas**: Expected configuration structure and validation rules
 
 ### Benefits
 
@@ -313,6 +313,7 @@ sequenceDiagram
 ### Bridge Pattern
 
 The router uses the Bridge pattern to:
+
 - Separate abstraction (business logic) from implementation (transport)
 - Provide a unified interface for MCP operations
 - Enable composition over inheritance for flexibility
@@ -322,6 +323,7 @@ The router uses the Bridge pattern to:
 ### Composition Over Inheritance
 
 The architecture favors composition:
+
 - Bridges **have-a** transport instead of **being-a** transport
 - `InvokerBridge` and `ResourceAcquirerBridge` delegate to `WanakuBridgeTransport`
 - `GrpcTransport` implements transport-specific logic
@@ -330,6 +332,7 @@ The architecture favors composition:
 ### Factory Pattern
 
 Service creation uses factories to:
+
 - Instantiate appropriate proxy implementations based on URI schemes
 - Manage gRPC client lifecycle
 - Handle service registration and deregistration
@@ -337,6 +340,7 @@ Service creation uses factories to:
 ### Strategy Pattern
 
 Different capability types use strategy pattern to:
+
 - Implement specific tool invocation logic
 - Handle different resource types and protocols
 - Apply different authentication mechanisms

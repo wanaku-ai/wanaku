@@ -1,8 +1,8 @@
 # Wanaku Configuration
 
-This document provides a comprehensive overview of the configuration options for all components of the Wanaku project. 
+This document provides a comprehensive overview of the configuration options for all components of the Wanaku project.
 
-Described here are both Wanaku-specific configurations, prefixed with `wanaku`, and relevant [Quarkus-specific](https://quarkus.io/guides/all-config) 
+Described here are both Wanaku-specific configurations, prefixed with `wanaku`, and relevant [Quarkus-specific](https://quarkus.io/guides/all-config)
 configurations, prefixed with `quarkus`.
 
 > [!NOTE]
@@ -54,7 +54,7 @@ running Wanaku:
 Place an `application.properties` file in a `config/` directory next to the Wanaku binary. Quarkus automatically reads
 it and any properties defined there override the built-in defaults:
 
-```
+```text
 my-deployment/
 ├── wanaku-router-backend-runner.jar
 └── config/
@@ -149,6 +149,8 @@ java -Dwanaku.http.auth=none -jar quarkus-run.jar
 > [!IMPORTANT]
 > `wanaku.http.auth` is a **Wanaku-native** property. Users do not need to know that Wanaku is
 > built on Quarkus to configure authentication — the Quarkus implementation details stay hidden.
+
+<!-- -->
 
 > [!NOTE]
 > **How it works internally (`AuthConfigSource`):** When `wanaku.http.auth=none`, a custom
@@ -346,9 +348,9 @@ Properties primarily used when running tests.
 
 Quarkus uses profiles to manage environment-specific configurations. You will see properties prefixed with `%dev`, `%test`, or other custom profiles. These properties are only active when that profile is enabled.
 
--   **`%dev`**: Used when running in development mode (`quarkus dev`).
--   **`%test`**: Used when running automated tests.
--   **`%prod`**: Used for production deployments (default when no profile is specified).
+- **`%dev`**: Used when running in development mode (`quarkus dev`).
+- **`%test`**: Used when running automated tests.
+- **`%prod`**: Used for production deployments (default when no profile is specified).
 
 ### Environment Variables
 

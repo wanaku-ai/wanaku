@@ -6,7 +6,7 @@ This document describes the capability registration workflow for the Wanaku serv
 
 The service registration system uses a layered design:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    REST API Layer                       │
 │              (DiscoveryResource.java)                   │
@@ -26,6 +26,7 @@ The service registration system uses a layered design:
 ```
 
 Key characteristics:
+
 - Service targets represent downstream capability endpoints
 - Reactive messaging distributes events to subscribers
 - gRPC transport for service-to-service communication
@@ -54,6 +55,7 @@ Service endpoint descriptor stored in the registry.
 | `languageSubType` | `String` | jvm, cpython, etc. |
 
 **Key Methods:**
+
 ```java
 String toAddress()                    // Returns "host:port"
 static ServiceTarget newEmptyTarget(String serviceName, String host,
@@ -86,6 +88,7 @@ Point-in-time health snapshot.
 | `reason` | `String` | Message (used when unhealthy) |
 
 **Factory Methods:**
+
 ```java
 static ServiceState newHealthy()                    // Healthy with "HEALTHY" message
 static ServiceState newUnhealthy(String reason)     // Unhealthy with reason
@@ -193,6 +196,7 @@ public interface ServiceRegistry {
 **Package:** `ai.wanaku.core.persistence.infinispan.discovery`
 
 Implementation using dual-repository pattern:
+
 - `InfinispanCapabilitiesRepository` - stores `ServiceTarget` entities
 - `InfinispanServiceRecordRepository` - stores `ActivityRecord` entities
 
@@ -258,6 +262,7 @@ public interface RegistrationManager {
 Quarkus CDI implementation with retry logic and persistent identity.
 
 **Key Features:**
+
 - Restores service ID from persistent storage on startup
 - Uses `ReentrantLock` for thread-safe registration
 - Retry logic with configurable wait time
@@ -265,7 +270,7 @@ Quarkus CDI implementation with retry logic and persistent identity.
 
 **Registration Flow:**
 
-```
+```text
 ┌──────────────────┐
 │ register() called│
 └────────┬─────────┘
@@ -314,6 +319,7 @@ public interface DiscoveryCallback {
 ```
 
 **Usage:**
+
 ```java
 registrationManager.addCallBack(new DiscoveryCallback() {
     @Override
@@ -448,6 +454,7 @@ Event object emitted when service registration state changes.
 | `serviceState` | `ServiceState` | Health state (update events) |
 
 **Factory Methods:**
+
 ```java
 static ServiceTargetEvent register(ServiceTarget serviceTarget)
 static ServiceTargetEvent deregister(ServiceTarget serviceTarget)

@@ -1,0 +1,20 @@
+config:
+  MD004:
+    style: "dash"
+  MD013: false
+  MD024:
+    siblings_only: true
+  MD025: false
+  MD033: false
+  MD036: false
+  MD060: false
+
+globs:
+  - "docs/**/*.md"
+  - "*.md"
+  - "core/README.md"
+  - "capabilities/README.md"
+
+ignores:
+  - ".oss-ai-helper-rules/**"
+  - "target/**"
