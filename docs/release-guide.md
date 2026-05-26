@@ -183,7 +183,7 @@ If you are not running this on the machine where you cut the release, then fetch
 git fetch --all --tags && git checkout wanaku-${CURRENT_DEVELOPMENT_VERSION}
 ```
 
-Now, build the native artifacts for macOS (aarch64):
+Now, build the native artifacts for Linux (x86 64):
 
 ```shell
 mvn -Pdist -Dnative clean package
