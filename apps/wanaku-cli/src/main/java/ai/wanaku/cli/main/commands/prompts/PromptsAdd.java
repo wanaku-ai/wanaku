@@ -184,12 +184,7 @@ public class PromptsAdd extends BaseCommand {
 
         switch (contentType) {
             case "text":
-                if (parts.length >= 3) {
-                    message.setContent(new TextContent(parts[2].trim()));
-                } else {
-                    LOG.warnf("Text message requires content: %s", messageStr);
-                    return null;
-                }
+                message.setContent(new TextContent(parts[2].trim()));
                 break;
 
             case "image":
