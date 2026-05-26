@@ -63,9 +63,12 @@ class AuthConfigSourceTest {
         Map<String, String> props = configSource.getProperties();
         assertNotNull(props);
         assertEquals("false", props.get("quarkus.oidc.enabled"));
+        assertEquals("false", props.get("quarkus.oidc.tenant-enabled"));
         assertEquals("false", props.get("quarkus.oidc.discovery-enabled"));
+        assertEquals("false", props.get("quarkus.oidc.mcp.tenant-enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.discovery-enabled"));
         for (int i = 1; i <= 10; i++) {
+            assertEquals("false", props.get("quarkus.oidc.ns-" + i + ".tenant-enabled"));
             assertEquals("false", props.get("quarkus.oidc.ns-" + i + ".discovery-enabled"));
         }
         assertEquals("false", props.get("quarkus.oidc-proxy.enabled"));
@@ -83,9 +86,13 @@ class AuthConfigSourceTest {
     void getValue_returnsNoAuthValue_whenAuthSetToNone() {
         System.setProperty(AUTH_PROPERTY, "none");
         assertEquals("false", configSource.getValue("quarkus.oidc.enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc.tenant-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.discovery-enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc.mcp.tenant-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.discovery-enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc.ns-1.tenant-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.ns-1.discovery-enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc.ns-10.tenant-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.ns-10.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc-proxy.enabled"));
         assertEquals("permit", configSource.getValue("quarkus.http.auth.permission.authenticated.policy"));
