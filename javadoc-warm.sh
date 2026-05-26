@@ -1,6 +1,6 @@
 #!/bin/bash
 # Warms up javadoc.io caches for all publishable modules in this project.
-# Usage: ./docs/javadoc-warm.sh <version>
+# Usage: ./javadoc-warm.sh <version>
 
 set -euo pipefail
 
