@@ -61,4 +61,4 @@ jobs:
 
       - name: Warm javadoc.io caches
         continue-on-error: true
-        run: bash docs/javadoc-warm.sh ${{ github.event.inputs.currentDevelopmentVersion }}
+        run: bash javadoc-warm.sh ${{ github.event.inputs.currentDevelopmentVersion }}
