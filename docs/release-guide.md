@@ -180,7 +180,7 @@ jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION
 If you are not running this on the machine where you cut the release, then fetch the tags
 
 ```shell
-git fetch --all --tags && git checkout git checkout wanaku-${CURRENT_DEVELOPMENT_VERSION}
+git fetch --all --tags && git checkout wanaku-${CURRENT_DEVELOPMENT_VERSION}
 ```
 
 Now, build the native artifacts for macOS (aarch64):
