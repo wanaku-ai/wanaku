@@ -28,7 +28,9 @@ public class LocalRunner {
         public LocalRunnerEnvironment() {}
 
         public LocalRunnerEnvironment withServiceOption(String key, String value) {
-            servicesOptions.put(key, value);
+            if (value != null) {
+                servicesOptions.put(key, value);
+            }
             return this;
         }
 
