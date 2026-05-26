@@ -331,25 +331,11 @@ Navigate to `http://localhost:8080` and open the **Service Catalog** page. You s
 When running Wanaku on Kubernetes or OpenShift with the Wanaku Operator, you can deploy service catalogs declaratively using the `WanakuServiceCatalog` custom resource.
 
 > [!NOTE]
-> For complete operator documentation, see the Operator section in the [Usage Guide](usage.md#deploying-service-catalogs-via-the-operator).
+> For complete operator documentation, see the [Kubernetes Operator Guide](operator.md).
 
-### Step 1: Package the Catalog
+Before proceeding, create and package your service catalog using the [CLI workflow](#cli-workflow) above (steps 1 through 4). You should have a `.b64` file ready.
 
-First, create and package your service catalog:
-
-```shell
-# Initialize and configure the catalog
-wanaku service init --name=finance --services=invoices
-# Edit routes, then expose
-wanaku service expose --path=finance
-
-# Package into a Base64-encoded ZIP
-wanaku service package --path=finance
-```
-
-This creates `finance.b64` in the current directory.
-
-### Step 2: Create a ConfigMap
+### Step 1: Create a ConfigMap
 
 Store the Base64-encoded ZIP in a Kubernetes ConfigMap under the key `catalog.zip`:
 
@@ -359,7 +345,7 @@ kubectl create configmap finance-catalog-data \
   -n wanaku
 ```
 
-### Step 3: Create the WanakuServiceCatalog Resource
+### Step 2: Create the WanakuServiceCatalog Resource
 
 Create a file named `wanaku-service-catalog.yaml`:
 
@@ -385,7 +371,7 @@ kubectl apply -f wanaku-service-catalog.yaml -n wanaku
 
 The operator reads the ConfigMap data and deploys the catalog to the router automatically.
 
-### Step 4: Verify the Deployment
+### Step 3: Verify the Deployment
 
 ```shell
 kubectl get wanakuservicecatalog -n wanaku
