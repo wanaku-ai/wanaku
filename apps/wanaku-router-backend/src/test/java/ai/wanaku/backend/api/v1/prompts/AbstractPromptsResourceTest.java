@@ -23,7 +23,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class AbstractPromptsResourceTest extends WanakuRouterTest {
-    private static final Logger LOG = Logger.getLogger(PromptsResourceTest.class);
+    private static final Logger LOG = Logger.getLogger(AbstractPromptsResourceTest.class);
 
     private static String createdName;
 

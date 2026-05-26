@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class AbstractDataStoresResourceTest extends WanakuRouterTest {
-    private static final Logger LOG = Logger.getLogger(DataStoresResourceTest.class);
+    private static final Logger LOG = Logger.getLogger(AbstractDataStoresResourceTest.class);
 
     private static String testId;
     private static final String TEST_NAME = "test-datastore";
