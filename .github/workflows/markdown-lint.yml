@@ -5,7 +5,7 @@ on:
     branches:
       - "main"
     paths:
-      - "docs/**"
+      - "docs/**/*.md"
       - "*.md"
       - "core/README.md"
       - "capabilities/README.md"

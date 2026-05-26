@@ -2651,7 +2651,7 @@ In cases where the service cannot predetermine the actual tool addresses, users 
 Building the URIs is not always as simple as defining their address. Sometimes, optional parameters need to be filtered out or
 query parameters need to be built. To help with that, Wanaku comes with a couple of expressions to build them.
 
-To access the values, ou can use the expression `{parameter.value('name')}`. For instance, to get the value of the parameter `id`
+To access the values, you can use the expression `{parameter.value('name')}`. For instance, to get the value of the parameter `id`
 you would use the expression `{parameter.value('id')}`. You can also provide default values if none are provided, such as
 `http://my-host/{parameter.valueOrElse('id', 1)}/data` (this would provide the value `1` if the parameter `id` is not set).
 
