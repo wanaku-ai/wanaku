@@ -486,6 +486,34 @@
       ],
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "id": "c8f9e2a1-3b4d-4c5e-8f7a-9d6e5b4c3a2b",
+      "username": "wuser",
+      "firstName": "Wanaku",
+      "lastName": "User",
+      "email": "wuser@localhost.local",
+      "emailVerified": true,
+      "enabled": true,
+      "createdTimestamp": 1748188800000,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "wpasswd",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-wanaku"
+      ],
+      "clientRoles": {
+        "wanaku-mcp-router": []
+      },
+      "notBefore": 0,
+      "groups": []
     }
   ],
   "scopeMappings": [

@@ -10,6 +10,7 @@ services:
     ports:
       - "8543:8080"
     volumes:
+    # there is sample wuser/wpasswd
       - ../auth/wanaku-config.json:/opt/keycloak/data/import/realm-export.json:ro,Z
     healthcheck:
       test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/8080' || exit 1"]

@@ -71,7 +71,7 @@ wanaku services create tool --name kafka
 Alternatively, if you don't have the CLI installed locally, you can obtain it using Maven:
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype \ 
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype \
   -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool.kafka -DartifactId=wanaku-tool-service-kafka \
   -Dname=Kafka -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
 ```
@@ -184,8 +184,8 @@ For custom containers, please make sure you set the following properties
 You can do that in the `pom.xml` file:
 
 ```xml
-<project> 
-    <!-- lots of stuff --> 
+<project>
+    <!-- lots of stuff -->
     <properties>
         <quarkus.container-image.registry>quay.io</quarkus.container-image.registry>
         <quarkus.container-image.group>my-group</quarkus.container-image.group>
@@ -274,6 +274,8 @@ export WANAKU_KEYCLOAK_HOST=localhost:8543
 cd deploy/auth
 ./configure-auth.sh
 ```
+
+In `wanaku-config.json` there is a sample user wuser/wpasswd.
 
 Then, take note of the newly generated client secret and use that for the capabilities services.
 
