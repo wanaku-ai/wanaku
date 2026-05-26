@@ -11,7 +11,7 @@ We release patches for security vulnerabilities in the following versions:
 
 ## Reporting a Vulnerability
 
-We take the security of Wanaku seriously. If you believe you have found a security vulnerability, please report it to us responsibly (via contact@wanaku.ai).
+We take the security of Wanaku seriously. If you believe you have found a security vulnerability, please report it to us responsibly (via <contact@wanaku.ai>).
 
 ### How to Report
 

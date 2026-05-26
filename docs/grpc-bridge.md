@@ -6,7 +6,7 @@ This document describes the gRPC bridge component that mediates communication be
 
 The gRPC bridge implements a transport-agnostic architecture using composition:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Bridge Interfaces                          │
 │   ┌─────────────┐  ┌──────────────┐  ┌───────────────────┐     │
@@ -47,6 +47,7 @@ The gRPC bridge implements a transport-agnostic architecture using composition:
 ```
 
 Key characteristics:
+
 - Protocol independence via transport abstraction
 - Async-first operations using Mutiny `Uni` types
 - Response transformation at the transport layer (bridges never see transport-specific types)
@@ -118,6 +119,7 @@ public interface WanakuBridgeTransport {
 The async methods (`invokeTool`, `acquireResource`) return already-transformed domain types (e.g., `ToolResponse`, `List<ResourceContents>`) rather than transport-specific protobuf types. This keeps bridges protocol-agnostic.
 
 This abstraction enables:
+
 - Protocol independence (supports gRPC, HTTP, WebSocket)
 - Testability (easy mocking)
 - Separation of concerns
@@ -213,6 +215,7 @@ class GrpcChannelManager {
 ```
 
 **Characteristics:**
+
 - Caches and reuses gRPC channels per service target (reduces connection overhead)
 - Creates plaintext gRPC channels
 - No-op `closeChannel()` since channels are reused
@@ -856,7 +859,7 @@ enum ExecutionStatus {
 
 ### Tool Invocation Flow (Async)
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. Client Request                                               │
 └────────────────────────────┬────────────────────────────────────┘
@@ -892,7 +895,7 @@ enum ExecutionStatus {
 
 ### Resource Acquisition Flow (Async)
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. ResourceAcquirerBridge.read(ResourceArguments, Ref)          │
 └────────────────────────────┬────────────────────────────────────┘
@@ -924,7 +927,7 @@ enum ExecutionStatus {
 
 ### Code Execution Flow (Streaming)
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. CodeExecutionBridge.executeCode(engineType, language, req)   │
 └────────────────────────────┬────────────────────────────────────┘
@@ -973,7 +976,7 @@ enum ExecutionStatus {
 
 ### Provisioning Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. ProvisionerBridge.provision(name, configData, secretsData,   │
 │                                service)                         │

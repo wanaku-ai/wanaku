@@ -7,25 +7,32 @@ Core library modules providing fundamental functionality for the Wanaku MCP Rout
 ## Purpose
 
 This directory contains essential libraries and infrastructure used throughout Wanaku:
+
 - MCP protocol implementation
 - gRPC communication protocols
 - Data persistence abstractions
 - Service discovery mechanisms
+
 ## Sub-Modules
 
 ### core-mcp
+
 MCP protocol client and server implementations using the Quarkus MCP extension.
 
 ### core-exchange
+
 gRPC protocol definitions and message exchange contracts for communication between router and capability services.
 
 ### core-persistence
+
 Data persistence abstractions with Infinispan implementation for storing tools, resources, and router state.
 
 ### core-service-discovery
+
 Service registration, discovery, and health monitoring mechanisms.
 
 ### core-util
+
 Common utilities, constants, and helper classes used across modules.
 
 ## Usage

@@ -1,0 +1,19 @@
+name: Markdown Lint
+
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "docs/**"
+      - "*.md"
+      - "core/README.md"
+      - "capabilities/README.md"
+      - ".markdownlint-cli2.yaml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DavidAnson/markdownlint-cli2-action@v19

@@ -68,6 +68,7 @@ graph TB
 #### Router Backend (`wanaku-router-backend`)
 
 The main MCP server engine that:
+
 - Receives MCP protocol requests from AI clients (SSE and HTTP transports)
 - Routes tool invocations to appropriate tool services via gRPC
 - Routes resource read requests to appropriate providers via gRPC
@@ -80,6 +81,7 @@ The main MCP server engine that:
 #### CLI (`cli`)
 
 Command-line interface for router configuration and management:
+
 - Tool and resource management
 - Namespace configuration
 - Capability service monitoring
@@ -89,6 +91,7 @@ Command-line interface for router configuration and management:
 #### Web UI (`ui`)
 
 React-based administration interface:
+
 - Visual tool and resource management
 - Capability service status monitoring
 - Configuration management
@@ -110,7 +113,7 @@ Tool services provide LLM-callable capabilities through the MCP protocol:
 
 #### Resource Providers
 
-Resource providers enable access to different data sources and storage systems. 
+Resource providers enable access to different data sources and storage systems.
 
 Wanaku does not come with any resource provider out of the box,
 but you can find some in the [Wanaku Examples repository](https://github.com/wanaku-ai/wanaku-examples).
@@ -387,6 +390,7 @@ graph LR
 ```
 
 **Steps:**
+
 1. Use `wanaku services create tool --name my-tool` to generate project
 2. Implement tool logic using Java/Camel or other gRPC-capable language
 3. Configure service registration and OIDC credentials
@@ -416,6 +420,7 @@ Wanaku can aggregate external MCP servers, presenting them as unified capabiliti
 #### 4. Apache Camel Integration
 
 Leverage 300+ Camel components for rapid integration:
+
 - Kafka, RabbitMQ, ActiveMQ
 - AWS, Azure, Google Cloud services
 - Databases (SQL, MongoDB, etc.)
@@ -477,6 +482,7 @@ graph TB
 ```
 
 **Characteristics:**
+
 - All components run on localhost
 - Simple podman/docker setup for Keycloak
 - Easy debugging and development
@@ -518,6 +524,7 @@ graph TB
 ```
 
 **Characteristics:**
+
 - Production-grade deployment
 - Service discovery via Kubernetes DNS
 - Horizontal pod autoscaling

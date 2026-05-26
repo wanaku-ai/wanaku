@@ -2,7 +2,7 @@
 
 ## Automated Release Process
 
-Start by setting the versions. 
+Start by setting the versions.
 
 ```shell
 export PREVIOUS_VERSION=0.1.0
@@ -10,7 +10,7 @@ export CURRENT_DEVELOPMENT_VERSION=0.1.1
 export NEXT_DEVELOPMENT_VERSION=0.2.0
 ```
 
-Trigger a release build: 
+Trigger a release build:
 
 ```shell
 gh workflow run release -f previousDevelopmentVersion=${PREVIOUS_VERSION} -f currentDevelopmentVersion=${CURRENT_DEVELOPMENT_VERSION} -f nextDevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}
@@ -18,15 +18,15 @@ gh workflow run release -f previousDevelopmentVersion=${PREVIOUS_VERSION} -f cur
 
 The release build can take up to 30 minutes to complete. This will:
 
-1. Validate the artifacts 
+1. Validate the artifacts
 2. Publish the files to the Maven Central.
 
 > [!IMPORTANT]
 > It is **absolutely mandatory** for the artifacts to be validated for the release to proceed.
 
-The publication to Maven Central should take another 30 minutes. 
+The publication to Maven Central should take another 30 minutes.
 
-In the meantime, you can release the artifacts. This will build the zip files and tarballs with each 
+In the meantime, you can release the artifacts. This will build the zip files and tarballs with each
 component, the native executables and also will publish the containers to Quay.
 
 ```shell
@@ -45,12 +45,12 @@ gh workflow run early-access -f currentDevelopmentVersion=$(cat core/core-util/t
 
 ## Manual Release Process
 
-### Prepare the environment 
+### Prepare the environment
 
-* Tools required: GraalVM, jreleaser, gpg (with your keys installed and available) and Apache Maven.
-* Hardware: Linux (x86 64) and macOS (aarch64)
+- Tools required: GraalVM, jreleaser, gpg (with your keys installed and available) and Apache Maven.
+- Hardware: Linux (x86 64) and macOS (aarch64)
 
-#### Keys 
+#### Keys
 
 Make sure you have your GPG keys installed. You can check with the following command:
 
@@ -59,9 +59,9 @@ gpg --list-public-keys --keyid-format LONG
 ```
 
 > [!NOTE]
-> Make sure the configuration file is stored securely and not accessible by others. 
+> Make sure the configuration file is stored securely and not accessible by others.
 
-## Before start 
+## Before start
 
 Repeat this for every machine to be used for the release.
 
@@ -74,7 +74,7 @@ export NEXT_DEVELOPMENT_VERSION=0.2.0
 > [!NOTE]
 > There is no need to add `-SNAPSHOT` to the versions.
 
-### Pre-Release Checks / Dry Run 
+### Pre-Release Checks / Dry Run
 
 > [!NOTE]
 > The steps assume you are primarily building on macOS, with a secondary step on a x86-64 Linux machine.
@@ -85,7 +85,7 @@ Build the project
 mvn -Pdist -Dnative clean package
 ```
 
-Then, check if the build can be released. 
+Then, check if the build can be released.
 
 **NOTE**: make sure to replace the version with the actual version you are building.
 
@@ -108,7 +108,7 @@ mvn release:clean
 mvn --batch-mode -Dtag=wanaku-${CURRENT_DEVELOPMENT_VERSION} release:prepare -DreleaseVersion=${CURRENT_DEVELOPMENT_VERSION} -DdevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}-SNAPSHOT
 ```
 
-Adjust the Jbang catalog file: 
+Adjust the Jbang catalog file:
 
 ```shell
 sed -i -e "s/$PREVIOUS_VERSION/$CURRENT_DEVELOPMENT_VERSION/g" jbang-catalog.json
@@ -162,6 +162,7 @@ mvn -Pdist -Dnative clean package
 ```
 
 Perform a dry-run to check if everything is OK:
+
 ```shell
 jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION} --select-platform=osx-aarch_64 --dry-run
 ```
@@ -174,7 +175,7 @@ jreleaser full-release -Djreleaser.project.version=${CURRENT_DEVELOPMENT_VERSION
 
 #### Publish the native artifacts for Linux (x86 64)
 
-**NOTE**: this guide assumes the main build was performed on a macOS. 
+**NOTE**: this guide assumes the main build was performed on a macOS.
 
 If you are not running this on the machine where you cut the release, then fetch the tags
 

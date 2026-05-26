@@ -21,9 +21,9 @@ Furthermore, Wanaku features an MCP-to-MCP bridge, which allows it to act as a c
 that use HTTP as the transport mechanism. This capability enables Wanaku to aggregate and effectively "hide" multiple external MCP
 servers, simplifying management and increasing the overall functionality of a Wanaku instance. Wanaku is an open-source project and is licensed under Apache 2.0.
 
-### Meet Wanaku 
+### Meet Wanaku
 
-If you haven't seen it already, we recommend watching the Getting Started with Wanaku video that introduces the project, 
+If you haven't seen it already, we recommend watching the Getting Started with Wanaku video that introduces the project,
 and introduces how it works.
 
 [![Getting Started With Wanaku](https://img.youtube.com/vi/-fuNAo2j4SA/0.jpg)](https://www.youtube.com/watch?v=-fuNAo2j4SA)
@@ -36,25 +36,25 @@ and introduces how it works.
 Using Wanaku MCP Router involves three key actions:
 
 1. Adding tools or resources to the MCP router
-2. Forwarding other MCP servers via the MCP forwarder 
+2. Forwarding other MCP servers via the MCP forwarder
 3. Adding new capabilities via downstream services
 
 ### Adding tools or resources that use those capabilities
 
-Adding tools and resources to the Wanaku MCP Router expands the functionality available to agents using Wanaku. 
+Adding tools and resources to the Wanaku MCP Router expands the functionality available to agents using Wanaku.
 
-* MCP tools equip an agent with capabilities not inherently present in its native models. 
-* MCP resources, on the other hand, allow an AI agent to consume data—such as files or records—and inject additional information into its context.
+- MCP tools equip an agent with capabilities not inherently present in its native models.
+- MCP resources, on the other hand, allow an AI agent to consume data—such as files or records—and inject additional information into its context.
 
-Both tools and resources depend on capabilities that can be dynamically added to or removed from the Wanaku MCP Router. 
-Once these capabilities are integrated, either through downstream services or by connecting to other MCP servers, users can then 
-incorporate new tools and resources into Wanaku. 
+Both tools and resources depend on capabilities that can be dynamically added to or removed from the Wanaku MCP Router.
+Once these capabilities are integrated, either through downstream services or by connecting to other MCP servers, users can then
+incorporate new tools and resources into Wanaku.
 These additions can then leverage the newly integrated capabilities to interact with enterprise systems and cloud services.
 
 ### Forwarding other MCP servers via the MCP forwarder
 
 Wanaku can act as a central gateway or proxy to other MCP servers that use HTTP as the transport mechanism.
-This feature allows for a centralized endpoint to aggregate tools and resources provided by other MCP servers, making them 
+This feature allows for a centralized endpoint to aggregate tools and resources provided by other MCP servers, making them
 accessible as if they were local to the Wanaku instance.
 
 ### Adding new capabilities via downstream services
@@ -69,10 +69,10 @@ These services can be implemented in any language that supports gRPC for communi
 > It is also possible to create and run services in Java and other languages, such as Go or Python, although the process is not
 > entirely documented at the moment.
 
-# Preparing the System for Running Wanaku 
+# Preparing the System for Running Wanaku
 
 Security in Wanaku involves controlling access to the management APIs and web interface while ensuring that only authorized
-users can modify tools, resources, and configurations. Wanaku also ensures secure access to the MCP tools and resources. 
+users can modify tools, resources, and configurations. Wanaku also ensures secure access to the MCP tools and resources.
 
 Wanaku uses [Keycloak](https://keycloak.org) for authentication and authorization. A Keycloak instance is required when running
 Wanaku with authentication enabled. This section covers the basics of getting Keycloak ready for Wanaku for development and
@@ -87,8 +87,8 @@ production purposes.
 
 Choose the setup that matches your environment.
 
-* **Local Development:** Use Podman for a quick, local instance.
-* **OpenShift Deployment:** Follow these steps for a cluster environment.
+- **Local Development:** Use Podman for a quick, local instance.
+- **OpenShift Deployment:** Follow these steps for a cluster environment.
 
 ### Option 1: Local Setup with Podman
 
@@ -108,9 +108,9 @@ podman run -d \
   quay.io/keycloak/keycloak:26.6.1 start-dev
 ```
 
-* `-p 127.0.0.1:8543:8080`: Maps port `8543` on your local machine to the container's port `8080`. By default, Wanaku expects Keycloak on port `8543`.
-* `-e ...`: Sets the default **admin** username and password. Change the password for any non-trivial use case.
-* `-v keycloak-dev...`: Creates a persistent volume named `keycloak-dev` to store Keycloak data.
+- `-p 127.0.0.1:8543:8080`: Maps port `8543` on your local machine to the container's port `8080`. By default, Wanaku expects Keycloak on port `8543`.
+- `-e ...`: Sets the default **admin** username and password. Change the password for any non-trivial use case.
+- `-v keycloak-dev...`: Creates a persistent volume named `keycloak-dev` to store Keycloak data.
 
 ### Option 2: Deploying to OpenShift or Kubernetes
 
@@ -148,24 +148,24 @@ Alternatively, Wanaku comes with a [script that simplifies importing](https://gi
 the realm configuration into keycloak.
 
 To run that script:
+
 - set the `WANAKU_KEYCLOAK_PASS` variable to the admin password of your Keycloak instance
 - set `WANAKU_KEYCLOAK_HOST` to the address of your Keycloak instance (i.e.; `localhost` if using Podman or the result of `oc get routes keycloak -o json  | jq -r .spec.host` if using OpenShift)
 
-
 ### Importing the Wanaku Realm Configuration (via Keycloak UI)
 
-Alternatively, you may also import the configuration using Keycloak's UI, and then proceed to regenerate the capabilities' client secret. 
+Alternatively, you may also import the configuration using Keycloak's UI, and then proceed to regenerate the capabilities' client secret.
 
 #### Regenerating the Capabilities' Client Secret
 
 Finally, for security, you must regenerate the client secret for the `wanaku-service` client.
 
-1.  Navigate to the Keycloak Admin Console at `http://localhost:8543`.
-2.  Log in with your admin credentials (**admin**/**admin**).
-3.  Select the **wanaku** realm from the dropdown in the top-left corner.
-4.  Go to **Clients** in the side menu and click on **wanaku-service**.
-5.  Go to the **Credentials** tab.
-6.  Click the **Regenerate secret** button and confirm. Copy the new secret to use in your application's configuration.
+1. Navigate to the Keycloak Admin Console at `http://localhost:8543`.
+2. Log in with your admin credentials (**admin**/**admin**).
+3. Select the **wanaku** realm from the dropdown in the top-left corner.
+4. Go to **Clients** in the side menu and click on **wanaku-service**.
+5. Go to the **Credentials** tab.
+6. Click the **Regenerate secret** button and confirm. Copy the new secret to use in your application's configuration.
 
 ![Screenshot of Keycloak admin console showing the wanaku-service client credentials tab with the Regenerate secret button](imgs/keycloak-service.png)
 
@@ -176,6 +176,7 @@ environment variable). This disables OIDC and permits access to all API endpoint
 without requiring a Bearer token or a Keycloak instance.
 
 This is useful for:
+
 - **Local development and testing** — no need to set up Keycloak
 - **Air-gapped environments** — where an external identity provider is not available
 - **Quick prototyping** — get started with Wanaku immediately
@@ -237,7 +238,7 @@ java -version
 Although the router comes with a UI, the CLI is the primary method used to manage the router.
 As such, it's recommended to have it installed.
 
-#### Installing the CLI by downloading binary
+### Installing the CLI by downloading binary
 
 The most recommended method for installing the Wanaku CLI is to download the latest version directly from the
 [release](https://github.com/wanaku-ai/wanaku/releases) page on GitHub
@@ -263,6 +264,7 @@ Next, to access the Wanaku CLI, install it using JBang with the following comman
 ```shell
 jbang app install wanaku@wanaku-ai/wanaku
 ```
+
 This will install Wanaku CLI as the `wanaku` command within JBang, meaning that you can run Wanaku from the command line by just
 executing `wanaku`.
 
@@ -272,7 +274,7 @@ executing `wanaku`.
 
 ## Installing and Running the Router
 
-There are three ways to run the router. They work similarly, with the distinction that some of them may come with more 
+There are three ways to run the router. They work similarly, with the distinction that some of them may come with more
 capabilities by default — continue reading the documentation below for details.
 
 > [!IMPORTANT]
@@ -294,7 +296,7 @@ wanaku start local
 The local runner disables authentication by default, so **Keycloak is not required**. The router and all
 capability services will start without authentication.
 
-If that is successful, open your browser at http://localhost:8080, and you should have access to the UI.
+If that is successful, open your browser at <http://localhost:8080>, and you should have access to the UI.
 
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details.
@@ -321,6 +323,7 @@ It automates the creation and configuration of all necessary resources, making i
 #### Quick Start
 
 **Prerequisites:**
+
 - Kubernetes 1.27+ or OpenShift 4.12+
 - `kubectl` or `oc` CLI, `helm` 3.x
 - Keycloak instance (see [Keycloak Setup](#keycloak-setup-for-wanaku)) or plan to use `wanaku.http.auth=none` for development
@@ -387,9 +390,11 @@ It is also possible to manually run Wanaku on Kubernetes distributions, such as 
 without the operator. You can use the Helm chart directly:
 
 1. Install the operator Helm chart:
+
    ```shell
    helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
    ```
+
 2. Create and apply a `WanakuRouter` custom resource for your environment (see [`deploy/openshift/wanaku-router.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/wanaku-router.yaml) for an example)
 3. Create and apply a `WanakuCapability` custom resource for your capabilities (see [`deploy/openshift/wanaku-capabilities.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/wanaku-capabilities.yaml) for an example)
 
@@ -416,16 +421,16 @@ java -jar wanaku-router-backend-runner.jar
 For the full list of available properties and more details on configuration precedence, see the
 [Configuration Guide](configurations.md).
 
-### Accessing the Administration Web User Interface 
+### Accessing the Administration Web User Interface
 
 Wanaku also comes with a web user interface that you can access to manage the router. By default it runs on port 8080 of
-the host running the router. 
+the host running the router.
 
 > [!NOTE]
 > At this moment, some features are only available on the CLI.
 
 When accessing the Web UI for the first time, you will be redirected to the Keycloak instance for login. Create a user
-and define a password. 
+and define a password.
 
 > [!IMPORTANT]
 > Wanaku does not yet support fine-grained control over its exposed resources. All users have admin access to the
@@ -433,7 +438,7 @@ and define a password.
 
 ## Installing and Running Capabilities
 
-Capabilities are standalone services that connect to the Wanaku router to provide new functionalities. 
+Capabilities are standalone services that connect to the Wanaku router to provide new functionalities.
 They can be downloaded from the [release page](https://github.com/wanaku-ai/wanaku/releases),
 deployed to OpenShift using the [operator](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator) and [containers](https://quay.io/organization/wanaku)
 or built from source.
@@ -449,17 +454,20 @@ You can configure capabilities using environment variables, system properties on
 
 Here are the key properties you need to set:
 
-1.  Router URI: Each capability needs to know where the Wanaku router is located to register itself.
+1. Router URI: Each capability needs to know where the Wanaku router is located to register itself.
+
     ```properties
     wanaku.service.registration.uri=http://localhost:8080
     ```
 
-2.  OIDC Client Credentials: Capabilities authenticate with the router using OIDC. You must provide the client secret that you previously regenerated in Keycloak.
+2. OIDC Client Credentials: Capabilities authenticate with the router using OIDC. You must provide the client secret that you previously regenerated in Keycloak.
+
     ```properties
     quarkus.oidc-client.credentials.secret=your-client-secret-from-keycloak
     ```
 
-3.  Announce Address (Optional): If the capability is running in an environment where its address is not directly accessible by the router (e.g., behind a NAT or in a container), you need to specify the address that the router should use to communicate back to it.
+3. Announce Address (Optional): If the capability is running in an environment where its address is not directly accessible by the router (e.g., behind a NAT or in a container), you need to specify the address that the router should use to communicate back to it.
+
     ```properties
     wanaku.service.registration.announce-address=your-public-address
     ```
@@ -486,6 +494,7 @@ java -Dwanaku.service.registration.uri=http://<wanaku-router-host>:8080 \
 #### Prerequisites
 
 Before deploying Wanaku on OpenShift, ensure you have:
+
 - Access to an OpenShift or Kubernetes cluster
 - `oc` or `kubectl` CLI tools configured
 - Sufficient permissions to create deployments, services, and routes
@@ -518,7 +527,7 @@ sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
 
 #### Environment Configuration
 
-When running Wanaku on OpenShift or Kubernetes, capabilities cannot automatically discover the router address. 
+When running Wanaku on OpenShift or Kubernetes, capabilities cannot automatically discover the router address.
 You must configure the router location using environment variables in your deployment:
 
 - Set `WANAKU_SERVICE_REGISTRATION_URI` to point to the actual location of the router
@@ -553,8 +562,8 @@ Wanaku's security model focuses on:
 
 Currently, Wanaku supports:
 
-* OAuth authentication with code grant
-* Automatic client registration
+- OAuth authentication with code grant
+- Automatic client registration
 
 > [!IMPORTANT]
 > When using the Automatic client registration, the access is granted per-namespace. As such, applications need to request a new
@@ -584,10 +593,9 @@ with a valid authentication token.
 > If using automatic client registration, the registered client will use these same defaults. Applications only need
 > to request a new client ID and grant when changing the namespace in use.
 
-
 ## Configuring Wanaku Components for Secure Access
 
-Each Wanaku component requires a specific set of configurations for secure access. You can find the full set of 
+Each Wanaku component requires a specific set of configurations for secure access. You can find the full set of
 configuration options in the [Configuration Guide](configurations.md).
 
 The configuration varies depending on the component's role in the system.
@@ -615,9 +623,9 @@ quarkus.oidc.resource-metadata.force-https-scheme=false
 
 As a reference for understanding what is going on under the hood, the following guides may be helpful:
 
-* [Secure MPC OIDC Proxy](https://quarkus.io/blog/secure-mcp-oidc-proxy/)
-* [Secure MCP Server OAuth 2](https://quarkus.io/blog/secure-mcp-server-oauth2/)
-* [Secure MCP SSE Server](https://quarkus.io/blog/secure-mcp-sse-server/)
+- [Secure MPC OIDC Proxy](https://quarkus.io/blog/secure-mcp-oidc-proxy/)
+- [Secure MCP Server OAuth 2](https://quarkus.io/blog/secure-mcp-server-oauth2/)
+- [Secure MCP SSE Server](https://quarkus.io/blog/secure-mcp-sse-server/)
 
 ### Capability Services Security Configurations
 
@@ -641,6 +649,7 @@ quarkus.oidc-client.credentials.secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
 ```
 
 > [!IMPORTANT]
+>
 > - Capability services use the OIDC *client* component (`quarkus.oidc-client.*`), which differs from the main router configuration
 > - The client secret values shown here are examples from the default configuration - replace them with your actual Keycloak client secrets
 > - Ensure the auth-server-url points to your actual Keycloak instance
@@ -658,9 +667,12 @@ export WANAKU_SECRETS_ENCRYPTION_SALT="unique-salt-value"
 ```
 
 > [!IMPORTANT]
+>
 > - Both password and salt must be set for encryption to work
 > - All services that handle secrets must use the same password and salt values
 > - Store credentials securely (e.g., Kubernetes Secrets, HashiCorp Vault)
+
+<!-- -->
 
 > [!WARNING]
 > If the encryption password or salt is lost, encrypted secrets cannot be recovered. Ensure these values are backed up securely.
@@ -669,12 +681,12 @@ For more details, see the [Configuration Guide](configurations.md#secret-encrypt
 
 # Using the Wanaku MCP Router
 
-## Protocol Support 
+## Protocol Support
 
-Wanaku supports MCP via SSE (deprecated) or via Streamable HTTP. 
+Wanaku supports MCP via SSE (deprecated) or via Streamable HTTP.
 
 the MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
-locally, that would mean `http://localhost:8080/mcp/sse`). 
+locally, that would mean `http://localhost:8080/mcp/sse`).
 
 The Streamable HTTP endpoint can be accessed on the path `/mcp/`.
 
@@ -704,16 +716,19 @@ wanaku auth login --api-token <your-api-token>
 ```
 
 **Options:**
+
 - `--api-token <token>`: API token for authentication (required)
 - `--auth-server <url>`: Authentication server URL (optional)
 - `--mode <mode>`: Authentication mode - `token` or `oauth2` (default: `token`)
 
 **Example:**
+
 ```shell
 wanaku auth login --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 With custom authentication server:
+
 ```shell
 wanaku auth login \
   --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... \
@@ -730,6 +745,7 @@ wanaku auth status
 ```
 
 This command displays:
+
 - Current authentication mode
 - Masked API token (showing first and last 4 characters)
 - Authentication server URL (if configured)
@@ -738,7 +754,8 @@ This command displays:
 - Whether credentials are currently stored
 
 **Example output:**
-```
+
+```text
 Authentication Status:
 =====================
 Mode: token
@@ -791,11 +808,13 @@ wanaku tools list --no-auth
 ### Credential Storage
 
 Authentication credentials are stored in:
-```
+
+```text
 ~/.wanaku/credentials
 ```
 
 This file is a Java properties file containing:
+
 - `api.token`: The API bearer token
 - `refresh.token`: OAuth2 refresh token (when applicable)
 - `auth.mode`: The authentication mode (token, oauth2, etc.)
@@ -822,6 +841,7 @@ The CLI authentication process works as follows:
 If you receive authentication errors:
 
 1. Check token validity:
+
    ```shell
    wanaku auth status
    ```
@@ -985,29 +1005,29 @@ wanaku admin realm create --keycloak-url http://keycloak:8080 \
 
 ## Understanding Capabilities
 
-Wanaku itself does not have any builtin MCP tool, resource or functionality itself. The router itself is just a blank MCP server. 
+Wanaku itself does not have any builtin MCP tool, resource or functionality itself. The router itself is just a blank MCP server.
 
-To actually perform its work, Wanaku relies on specialized services that offer the connectivity bridge that enables Wanaku 
+To actually perform its work, Wanaku relies on specialized services that offer the connectivity bridge that enables Wanaku
 to talk to any kind of service. At its core, Wanaku is powered by [Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org), which provide the ability to connect
-to more than [300 different types of systems and services](https://camel.apache.org/components/latest/). 
+to more than [300 different types of systems and services](https://camel.apache.org/components/latest/).
 
-The power of Wanaku relies on its ability to plug in different types of systems, regardless of them being new 
-microservices or legacy enterprise systems. 
-For instance, consider the scenario of an enterprise organization, which is running hundreds of systems. With Wanaku, 
-it is possible to create a specific capability for each of them (i.e.: a capability for the finance systems, another 
-for human resources, another for billing, and so on). 
+The power of Wanaku relies on its ability to plug in different types of systems, regardless of them being new
+microservices or legacy enterprise systems.
+For instance, consider the scenario of an enterprise organization, which is running hundreds of systems. With Wanaku,
+it is possible to create a specific capability for each of them (i.e.: a capability for the finance systems, another
+for human resources, another for billing, and so on).
 
-The granularity on which these capabilities can operate is a decision left to the administrator of the system. For some 
-organizations, having a "Kafka" capability to Wanaku capable of talking to any of its systems may be enough. Others, may 
+The granularity on which these capabilities can operate is a decision left to the administrator of the system. For some
+organizations, having a "Kafka" capability to Wanaku capable of talking to any of its systems may be enough. Others, may
 want to have system-specific ones (i.e.: a billing capability, an employee system capability, etc).
 
-The recommended way to create those capabilities is to use the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/). This is a 
+The recommended way to create those capabilities is to use the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/). This is a
 subcomponent of Wanaku that leverages Apache Camel to exchange data with any system that Camel is capable of talking to.
 
 ![Diagram showing available Wanaku capability types including tool services, resource providers, and MCP server bridges](imgs/wanaku-capabilities.jpg)
 
 > [!NOTE]
-> Capabilities were, at some point, also called "Downstream services" or "targets". You may still see that terminology 
+> Capabilities were, at some point, also called "Downstream services" or "targets". You may still see that terminology
 > used in some places, especially in older documentation.
 
 You should see a list of capabilities available in the UI, in the Capabilities page. Something similar to this:
@@ -1023,21 +1043,21 @@ http    tool-invoker 127.0.0.1 9000 active Sat, Oct 18, 2025 at 18:47:23
 tavily  tool-invoker 127.0.0.1 9006 active Sat, Oct 18, 2025 at 18:47:23
 ```
 
-Capabilities determine what type of tools you may add to the router. As such, in the output from the CLI above, it means that 
-this server can add tools of the following types: `exec`, `tavily`, and `http`. 
+Capabilities determine what type of tools you may add to the router. As such, in the output from the CLI above, it means that
+this server can add tools of the following types: `exec`, `tavily`, and `http`.
 
 Wanaku accepts the following capability service types:
 
-* `tool-invoker`: these capabilities can be used to create MCP tools. 
-* `resource-provider`: these capabilities can be used to create MCP resources.
-* `multi-capability`: these capabilities can be used to create either MCP tools or MCP resources.
+- `tool-invoker`: these capabilities can be used to create MCP tools.
+- `resource-provider`: these capabilities can be used to create MCP resources.
+- `multi-capability`: these capabilities can be used to create either MCP tools or MCP resources.
 
 ## Managing MCP Tools
 
 An MCP (Model Context Protocol) tool enables Large Language Models (LLMs) to execute tasks beyond their inherent capabilities by
 using external functions.
-Each tool is uniquely identified by a name and defined with an input schema that outlines the expected parameters. 
-Essentially, MCP tools act as a standardized interface through which an AI agent can request information or execute specific 
+Each tool is uniquely identified by a name and defined with an input schema that outlines the expected parameters.
+Essentially, MCP tools act as a standardized interface through which an AI agent can request information or execute specific
 tasks from external systems, like APIs or databases.
 
 When adding a tool to Wanaku, there are two key considerations:
@@ -1049,7 +1069,7 @@ A capability service is required to be available at the moment when a new tool i
 
 ### Adding Tools Using the CLI
 
-To add a new tool to a Wanaku MCP Router Backend instance running locally on http://localhost:8080, use the following command:
+To add a new tool to a Wanaku MCP Router Backend instance running locally on <http://localhost:8080>, use the following command:
 
 ```shell
 wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}" --type http --property "count:int,The count of facts to retrieve" --required count
@@ -1057,12 +1077,12 @@ wanaku tools add -n "meow-facts" --description "Retrieve random facts about cats
 
 The command `wanaku tools add` is used to register a new tool with the Wanaku MCP Router. Let's break down each part of the command:
 
-* `-n "meow-facts"`: This flag sets the name of the tool to "meow-facts". This is a unique, human-readable identifier for the tool.
-* `--description "Retrieve random facts about cats"`: This provides a description of what the tool does, making it clear for users and LLMs.
-* `--uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}"`: This specifies the URI (Uniform Resource Identifier) that the tool will interact with. In this case, it's an HTTP endpoint that provides cat facts. The {parameter.valueOrElse('count', 1)} part indicates that the count parameter from the tool's input will be used in the URI. If count is not provided, it will default to 1. This demonstrates how Wanaku can dynamically build URIs with parameters.
-* `--type http`:  This defines the type of the tool's underlying service, which in this case is `http`. This tells Wanaku that it should use its HTTP service handling capabilities for this tool.
-* `--property "count:int,The count of facts to retrieve"`: This defines an input property for the tool named count. It specifies that count is an integer (int) and provides a description of what it represents: `"The count of facts to retrieve"`.
-* `--required count`: This flag indicates that the count property is a required input for this tool.
+- `-n "meow-facts"`: This flag sets the name of the tool to "meow-facts". This is a unique, human-readable identifier for the tool.
+- `--description "Retrieve random facts about cats"`: This provides a description of what the tool does, making it clear for users and LLMs.
+- `--uri "https://meowfacts.herokuapp.com?count={parameter.valueOrElse('count', 1)}"`: This specifies the URI (Uniform Resource Identifier) that the tool will interact with. In this case, it's an HTTP endpoint that provides cat facts. The {parameter.valueOrElse('count', 1)} part indicates that the count parameter from the tool's input will be used in the URI. If count is not provided, it will default to 1. This demonstrates how Wanaku can dynamically build URIs with parameters.
+- `--type http`:  This defines the type of the tool's underlying service, which in this case is `http`. This tells Wanaku that it should use its HTTP service handling capabilities for this tool.
+- `--property "count:int,The count of facts to retrieve"`: This defines an input property for the tool named count. It specifies that count is an integer (int) and provides a description of what it represents: `"The count of facts to retrieve"`.
+- `--required count`: This flag indicates that the count property is a required input for this tool.
 
 #### Adding Labels to Tools
 
@@ -1073,6 +1093,7 @@ wanaku tools add -n "weather-api" --description "Get weather forecast" --uri "ht
 ```
 
 Labels can be used for:
+
 - **Categorization**: Group tools by function (e.g., `category=weather`, `category=finance`)
 - **Environment tracking**: Identify deployment environments (e.g., `environment=production`, `environment=staging`)
 - **Access control**: Tag tools by team or department (e.g., `team=engineering`, `team=sales`)
@@ -1085,6 +1106,7 @@ You can add multiple labels by repeating the `--label` flag, using the format `-
 After creating tools, you can add or remove labels without modifying the tool definition:
 
 **Adding labels to an existing tool:**
+
 ```shell
 # Add labels to a specific tool
 wanaku tools label add --name "weather-api" --label priority=high --label reviewed=true
@@ -1094,6 +1116,7 @@ wanaku tools label add -e 'category=weather' --label migrated=true
 ```
 
 **Removing labels from an existing tool:**
+
 ```shell
 # Remove labels from a specific tool
 wanaku tools label remove --name "weather-api" --label temporary --label draft
@@ -1107,6 +1130,8 @@ wanaku tools label remove -e 'status=deprecated' --label legacy
 > [!NOTE]
 > For remote instances, you can use the parameter `--host` to point to the location of the instance.
 
+<!-- -->
+
 > [!IMPORTANT]
 > The meaning of the `uri` and how to actually compose it, depends on the type of capability being used. Each capability describes
 > exactly the meaning of the URI, so make sure to check the capability service for details. Additionally, this is covered in more
@@ -1114,10 +1139,10 @@ wanaku tools label remove -e 'status=deprecated' --label legacy
 
 #### Configuring the Capabilities
 
-Sometimes, specific configurations are required for the downstream services (capabilities) that a tool uses. 
+Sometimes, specific configurations are required for the downstream services (capabilities) that a tool uses.
 This might include setting timeouts for operations or providing credentials to access a particular resource.
 
-In such scenarios, you can associate configuration and secret files directly with a tool. 
+In such scenarios, you can associate configuration and secret files directly with a tool.
 These files will be automatically used by the underlying capabilities each time the tool is invoked.
 
 Here's an example of how to add a tool and link it to configuration and secret files:
@@ -1128,12 +1153,12 @@ wanaku tools add --host http://localhost:8080 -n "meow-facts" --description "Ret
 
 In this command:
 
-* `--configuration-from-file capabilities.properties`: This flag specifies a file named `capabilities.properties` that contains configuration settings to be passed to the underlying capability whenever the `"meow-facts"` tool is used. 
-* `--secrets-from-file secret.properties`: This flag points to a file named `secret.properties` that holds sensitive information (like API keys or passwords) needed by the capability to access resources, ensuring secure handling of credentials.
+- `--configuration-from-file capabilities.properties`: This flag specifies a file named `capabilities.properties` that contains configuration settings to be passed to the underlying capability whenever the `"meow-facts"` tool is used.
+- `--secrets-from-file secret.properties`: This flag points to a file named `secret.properties` that holds sensitive information (like API keys or passwords) needed by the capability to access resources, ensuring secure handling of credentials.
 
-Some capabilities within Wanaku are designed to interpret these configuration settings to dynamically adjust how they interact 
-with external systems. 
-For instance, Camel-based capabilities leverage these settings, particularly those prefixed with `query.`, to modify the Camel 
+Some capabilities within Wanaku are designed to interpret these configuration settings to dynamically adjust how they interact
+with external systems.
+For instance, Camel-based capabilities leverage these settings, particularly those prefixed with `query.`, to modify the Camel
 URI used for the endpoint.
 
 Consider the following example in a configuration file:
@@ -1143,7 +1168,7 @@ key=value
 query.addKey=addedValue
 ```
 
-In this scenario, a Camel-based capability would automatically append `addKey=addValue` to the URI passed to the underlying 
+In this scenario, a Camel-based capability would automatically append `addKey=addValue` to the URI passed to the underlying
 Camel producer.
 This allows for flexible and dynamic adjustment of endpoint parameters based on the provided configuration.
 
@@ -1155,15 +1180,13 @@ It is also possible to add new tools using the UI, by accessing the Tools page a
 
 ![Wanaku Console](https://github.com/user-attachments/assets/4da352f8-719c-4ffb-b3d5-d831a295672f)
 
-
 ### Importing a ToolSet
 
-Wanaku ToolSets are collections of tools that can be easily shared and imported into your Wanaku router. 
+Wanaku ToolSets are collections of tools that can be easily shared and imported into your Wanaku router.
 This feature allows for convenient distribution of pre-configured tools among users.
 
-Wanaku provides a [selection of ready-to-use ToolSets](https://github.com/wanaku-ai/wanaku-toolsets) that you can import to 
+Wanaku provides a [selection of ready-to-use ToolSets](https://github.com/wanaku-ai/wanaku-toolsets) that you can import to
 quickly get started and explore its functionalities.
-
 
 To import a ToolSet directly into your router from a URL, use the following command:
 
@@ -1179,7 +1202,7 @@ wanaku tools import /path/to/the/toolsets/currency.json
 
 ### Viewing Tools
 
-You can check what tools are available in a Wanaku MCP Router instance by running: 
+You can check what tools are available in a Wanaku MCP Router instance by running:
 
 ```shell
 wanaku tools list
@@ -1187,8 +1210,8 @@ wanaku tools list
 
 ### Editing Tools
 
-The `wanaku tools edit` command enables you to modify the existing definition of a tool that is registered with your Wanaku MCP 
-Router. 
+The `wanaku tools edit` command enables you to modify the existing definition of a tool that is registered with your Wanaku MCP
+Router.
 This command provides a convenient way to update a tool's JSON definition directly within your terminal using the `nano` text editor.
 
 ```shell
@@ -1197,12 +1220,11 @@ wanaku tools edit [options] [toolName]
 
 In this command:
 
-* `toolName` : (Optional) Specifies the exact name of the tool you wish to modify. If this argument is omitted,
+- `toolName` : (Optional) Specifies the exact name of the tool you wish to modify. If this argument is omitted,
   the command will present you with an interactive, scrollable list of all currently registered tools,
   allowing for easy selection.
 
-
-If you know the precise name of the tool you want to edit, you can specify it directly. 
+If you know the precise name of the tool you want to edit, you can specify it directly.
 
 For example, to edit a tool named "my-custom-tool":
 
@@ -1210,13 +1232,12 @@ For example, to edit a tool named "my-custom-tool":
 wanaku tools edit my-custom-tool
 ```
 
-Upon executing this command, Wanaku will fetch the JSON definition of `"my-custom-tool"` and open it in the nano editor within 
+Upon executing this command, Wanaku will fetch the JSON definition of `"my-custom-tool"` and open it in the nano editor within
 your terminal.
-After making your desired changes, save them (usually by pressing `Ctrl+S`) and then exit nano (`Ctrl+X`). 
+After making your desired changes, save them (usually by pressing `Ctrl+S`) and then exit nano (`Ctrl+X`).
 Wanaku will then ask for your confirmation before applying the updates to the tool's definition.
 
 When you're unsure of the exact tool name or want to browse available tools, run the edit command without specifying a toolName:
-
 
 ```shell
 wanaku tools edit
@@ -1266,7 +1287,7 @@ wanaku tools show meow-facts
 
 **Sample Output:**
 
-```
+```text
 Tool Details:
 name        meow-facts
 namespace   default
@@ -1281,6 +1302,7 @@ count  int    The count of facts to retrieve yes
 ```
 
 **Options:**
+
 - `--host <url>`: The API host URL (default: `http://localhost:8080`)
 
 **Example with remote host:**
@@ -1310,6 +1332,7 @@ wanaku tools remove -e 'category=weather'
 ```
 
 This command will:
+
 1. Find all tools with the label `category=weather`
 2. Display a preview table showing which tools will be removed
 3. Prompt for confirmation before removal
@@ -1318,26 +1341,31 @@ This command will:
 **Advanced Label Expression Examples:**
 
 Remove all non-production tools:
+
 ```shell
 wanaku tools remove -e 'environment!=production'
 ```
 
 Remove deprecated weather tools:
+
 ```shell
 wanaku tools remove -e 'category=weather & status=deprecated'
 ```
 
 Remove tools from either development or staging environments:
+
 ```shell
 wanaku tools remove -e 'environment=development | environment=staging'
 ```
 
 Remove deprecated tools in multiple categories:
+
 ```shell
 wanaku tools remove -e '(category=weather | category=news) & status=deprecated'
 ```
 
 **Label Expression Syntax:**
+
 - `key=value` - Equals
 - `key!=value` - Not equals
 - `expr1 & expr2` - Logical AND
@@ -1357,6 +1385,7 @@ wanaku tools remove -e 'status=deprecated' -y
 > Batch removal operations cannot be undone. Always review the preview table carefully before confirming removal.
 
 For detailed information about label expression syntax, see:
+
 ```shell
 wanaku man label-expression
 ```
@@ -1377,12 +1406,12 @@ description, URI template, and input schema.
 
 The command handles server variable substitution, proper formatting of path parameters according to the tool reference specification.
 
-By default, the command uses the first server defined in the OpenAPI specification, but you can override this behavior by 
+By default, the command uses the first server defined in the OpenAPI specification, but you can override this behavior by
 specifying a different server URL or selecting a different server from the specification by index.
 
 The generated output can be directed to standard output or saved to a file.
 
-If the process completes successfully, the command returns exit code `0`. It returns exit code `3` if no paths are found in the 
+If the process completes successfully, the command returns exit code `0`. It returns exit code `3` if no paths are found in the
 specification and exit code `2` if an error occurs during processing.
 
 > [!NOTE]
@@ -1445,7 +1474,7 @@ OpenAPI specifications can define multiple server URLs:
 }
 ```
 
-The `--server-index` (or `-i`) option allows you to specify which server definition from the OpenAPI specification should be 
+The `--server-index` (or `-i`) option allows you to specify which server definition from the OpenAPI specification should be
 used as the base URL for tool references.
 
 ```shell
@@ -1511,15 +1540,14 @@ to running the generate command followed by the import command.
 
 ## Managing MCP Resources
 
-
 ### Exposing Resource
 
-The wanaku resources expose command allows you to make an existing resource available via your Wanaku MCP Router instance. 
+The wanaku resources expose command allows you to make an existing resource available via your Wanaku MCP Router instance.
 
-Just like tools, it also requires a capability that can access the system storing and providing access to the resource (i.e.: FTP, 
+Just like tools, it also requires a capability that can access the system storing and providing access to the resource (i.e.: FTP,
 AWS S3, NFS, etc.).
 
-For example, suppose you have a file named `test-mcp-2.txt` on your home directory on host that has the `file` capability running, 
+For example, suppose you have a file named `test-mcp-2.txt` on your home directory on host that has the `file` capability running,
 and you want to expose it.
 
 This is how you can do it:
@@ -1530,11 +1558,11 @@ wanaku resources expose --location=$HOME/test-mcp-2.txt --mimeType=text/plain --
 
 In this example:
 
-* `--location=$HOME/test-mcp-2.txt`: Specifies the local path to the resource you want to expose.
-* `--mimeType=text/plain`: Defines the MIME type of the resource, indicating its content format.
-* `--description="Sample resource added via CLI"`: Provides a descriptive text for the resource.
-* `--name="test mcp via CLI"`: Assigns a human-readable name to the exposed resource.
-* `--type=file`: Indicates that the exposed resource is a file.
+- `--location=$HOME/test-mcp-2.txt`: Specifies the local path to the resource you want to expose.
+- `--mimeType=text/plain`: Defines the MIME type of the resource, indicating its content format.
+- `--description="Sample resource added via CLI"`: Provides a descriptive text for the resource.
+- `--name="test mcp via CLI"`: Assigns a human-readable name to the exposed resource.
+- `--type=file`: Indicates that the exposed resource is a file.
 
 #### Adding Labels to Resources
 
@@ -1545,6 +1573,7 @@ wanaku resources expose --location=$HOME/documents/report.pdf --mimeType=applica
 ```
 
 Labels help you:
+
 - Organize resources by category, department, or project
 - Track resource lifecycles and versions
 - Filter and manage resources more effectively
@@ -1553,8 +1582,9 @@ Labels help you:
 > [!IMPORTANT]
 > It's important to note that this location refers to a location that the capability (downstream service) is able to access.
 > The exact meaning of "location" depends on the type of the capability. For example:
-> * For a `file` type, it means the capability needs direct access to the file, implying it's likely running on a host with direct physical access to the file.
-> * For an `ftp` type, it means the capability needs access to the FTP server storing the file.
+>
+> - For a `file` type, it means the capability needs direct access to the file, implying it's likely running on a host with direct physical access to the file.
+> - For an `ftp` type, it means the capability needs access to the FTP server storing the file.
 >
 > Always check the documentation for the capability provider that you are using for additional details about the location specifier.
 
@@ -1563,6 +1593,7 @@ Labels help you:
 After creating resources, you can add or remove labels without modifying the resource definition:
 
 **Adding labels to an existing resource:**
+
 ```shell
 # Add labels to a specific resource
 wanaku resources label add --name "q4-report" --label archived=true --label reviewed=yes
@@ -1572,6 +1603,7 @@ wanaku resources label add -e 'category=finance' --label migrated=true
 ```
 
 **Removing labels from an existing resource:**
+
 ```shell
 # Remove labels from a specific resource
 wanaku resources label remove --name "q4-report" --label temporary --label draft
@@ -1610,7 +1642,7 @@ wanaku resources show q4-report
 
 **Sample Output:**
 
-```
+```text
 Resource Details:
 name        q4-report
 type        file
@@ -1627,6 +1659,7 @@ key2   value2
 ```
 
 **Options:**
+
 - `--host <url>`: The API host URL (default: `http://localhost:8080`)
 
 **Example with remote host:**
@@ -1639,11 +1672,11 @@ wanaku resources show --host http://api.example.com:8080 q4-report
 
 Prompts are reusable templates that can leverage multiple tools and provide example interactions for LLMs. They are part of the MCP (Model Context Protocol) specification and enable:
 
-* Creating standardized message templates with variable substitution
-* Defining argument schemas for dynamic prompt generation
-* Referencing tools that the prompt can utilize
-* Supporting multiple content types (text, images, audio, embedded resources)
-* Providing example interactions to guide LLM behavior
+- Creating standardized message templates with variable substitution
+- Defining argument schemas for dynamic prompt generation
+- Referencing tools that the prompt can utilize
+- Supporting multiple content types (text, images, audio, embedded resources)
+- Providing example interactions to guide LLM behavior
 
 ### Adding Prompts Using CLI
 
@@ -1661,32 +1694,37 @@ wanaku prompts add \
 ```
 
 In this example:
-* `--name "code-review"`: Assigns a unique identifier for the prompt
-* `--description`: Provides a human-readable description
-* `--message`: Defines messages in the prompt (can be specified multiple times)
-* `--argument`: Defines template arguments (format: `name:description:required`)
+
+- `--name "code-review"`: Assigns a unique identifier for the prompt
+- `--description`: Provides a human-readable description
+- `--message`: Defines messages in the prompt (can be specified multiple times)
+- `--argument`: Defines template arguments (format: `name:description:required`)
 
 #### Message Format
 
 The `--message` option supports multiple content types:
 
 **Text Messages** (default):
+
 ```shell
 --message "user:text:Your message here"
 --message "user:Your message here"  # Backward compatible shorthand
 ```
 
 **Image Messages**:
+
 ```shell
 --message "user:image:iVBORw0KGgoAAAANSUhEUgAAAAUA...:image/png"
 ```
 
 **Audio Messages**:
+
 ```shell
 --message "user:audio:UklGRiQAAABXQVZFZm10IBAAAA...:audio/wav"
 ```
 
 **Embedded Resource Messages**:
+
 ```shell
 --message "user:resource:file:///path/to/file.txt:File content:text/plain"
 ```
@@ -1751,6 +1789,7 @@ You can also manage prompts through the Wanaku Web UI:
 Example message JSON formats:
 
 **Text Message**:
+
 ```json
 {
   "role": "user",
@@ -1762,6 +1801,7 @@ Example message JSON formats:
 ```
 
 **Image Message**:
+
 ```json
 {
   "role": "user",
@@ -1774,6 +1814,7 @@ Example message JSON formats:
 ```
 
 **Audio Message**:
+
 ```json
 {
   "role": "user",
@@ -1786,6 +1827,7 @@ Example message JSON formats:
 ```
 
 **Embedded Resource Message**:
+
 ```json
 {
   "role": "user",
@@ -1824,6 +1866,7 @@ wanaku prompts edit \
 ```
 
 All options except `--name` are optional:
+
 - If `--description` is provided, it replaces the existing description
 - If `--message` is provided, it replaces **all** existing messages
 - If `--argument` is provided, it replaces **all** existing arguments
@@ -1831,11 +1874,13 @@ All options except `--name` are optional:
 - If `--namespace` is provided, it replaces the existing namespace
 
 Example of updating only the description:
+
 ```shell
 wanaku prompts edit --name "code-review" --description "New description"
 ```
 
 Example of updating messages:
+
 ```shell
 wanaku prompts edit \
   --name "code-review" \
@@ -1872,6 +1917,7 @@ wanaku resources remove -e 'year=2023'
 ```
 
 This command will:
+
 1. Find all resources with the label `year=2023`
 2. Display a preview table showing which resources will be removed
 3. Prompt for confirmation before removal
@@ -1880,21 +1926,25 @@ This command will:
 **Examples:**
 
 Remove all draft documents:
+
 ```shell
 wanaku resources remove -e 'status=draft'
 ```
 
 Remove archived resources from a specific department:
+
 ```shell
 wanaku resources remove -e 'department=sales & status=archived'
 ```
 
 Remove resources that are not marked as important:
+
 ```shell
 wanaku resources remove -e '!priority=high'
 ```
 
 For automated scripts, skip the confirmation prompt:
+
 ```shell
 wanaku resources remove -e 'year=2022' -y
 ```
@@ -1904,21 +1954,21 @@ wanaku resources remove -e 'year=2022' -y
 
 ## Managing Shared Data
 
-Wanaku provides a data store feature that allows you to share static data between Wanaku and its capabilities. 
+Wanaku provides a data store feature that allows you to share static data between Wanaku and its capabilities.
 
 This is particularly useful for storing configuration files, route definitions, and other static resources that capabilities need to access at runtime.
 
-A primary use case for the data store is storing Apache Camel routes and associated files for the Camel Integration Capability. 
+A primary use case for the data store is storing Apache Camel routes and associated files for the Camel Integration Capability.
 
 By storing route definitions in the data store, you can dynamically configure integrations without rebuilding or redeploying capabilities.
 
 > [!IMPORTANT]
-> Authentication is required to access the data store API. 
+> Authentication is required to access the data store API.
 > Make sure you're logged in using `wanaku auth login` before using data store commands.
 
 ### Adding Data to the Data Store
 
-The `wanaku data-store add` command allows you to upload files to the data store. 
+The `wanaku data-store add` command allows you to upload files to the data store.
 Files are automatically Base64 encoded when stored.
 
 ```shell
@@ -1932,8 +1982,9 @@ wanaku data-store add --read-from-file /path/to/employee-routes.camel.yaml --nam
 ```
 
 In this example:
-* `--read-from-file`: Specifies the local file path to upload
-* `--name`: (Optional) Assigns a custom name to the stored data
+
+- `--read-from-file`: Specifies the local file path to upload
+- `--name`: (Optional) Assigns a custom name to the stored data
 
 The file contents are automatically Base64 encoded before being sent to the server, ensuring binary-safe storage.
 
@@ -1946,6 +1997,7 @@ wanaku data-store list
 ```
 
 This displays a table showing:
+
 - **ID**: Unique identifier for each stored item
 - **Name**: The name of the stored data
 - **Data**: A preview of the stored content (truncated to 50 characters)
@@ -2039,26 +2091,25 @@ Configurations in Wanaku have two distinct scopes:
 
 ### Capability Service Configurations
 
-These configurations are essential for setting up the capability provider itself. 
+These configurations are essential for setting up the capability provider itself.
 
-This includes details required for the transport mechanism used to access the capability, such as usernames and passwords for 
+This includes details required for the transport mechanism used to access the capability, such as usernames and passwords for
 authenticating with the underlying system that provides the capability.
 
-Each capability service may have its own specific set of configurations. As such, check the capability service documentation 
+Each capability service may have its own specific set of configurations. As such, check the capability service documentation
 for details.
 
-### Tool Definition Configurations 
+### Tool Definition Configurations
 
 These configurations are specific to individual tools that leverage a particular capability. They include:
 
-* Names and identifiers that differentiate tools using the same capability, like specific Kafka topics or the names of database tables.
-* Operational properties that dictate how the tool behaves, such as the type of HTTP method (`GET`, `POST`, `PUT`), or operational settings like timeout configurations and idempotence flags.
+- Names and identifiers that differentiate tools using the same capability, like specific Kafka topics or the names of database tables.
+- Operational properties that dictate how the tool behaves, such as the type of HTTP method (`GET`, `POST`, `PUT`), or operational settings like timeout configurations and idempotence flags.
 
 These configurations are handled when adding a new tool to Wanaku MCP Router.
 
-> [!NOTE] 
+> [!NOTE]
 > Check the "Configuring the Capabilities" section for additional details about this.
-
 
 ### Listing Capabilities
 
@@ -2068,7 +2119,6 @@ activity information.
 
 The command combines data from multiple API endpoints to present a unified view of the system's capabilities in an
 easy-to-read table format.
-
 
 The command displays the results in a table with the following columns:
 
@@ -2084,26 +2134,25 @@ The command displays the results in a table with the following columns:
 For instance, running the command, should present you with an output similar to this:
 
 #### Sample Output
+
 ![Terminal output showing the result of running 'wanaku capabilities list' command displaying registered capability services](imgs/cli-capabilities-list.png)
 
 ### Displaying Service Capability Details
 
-The `wanaku capabilities show` command lets you view detailed information for a specific service capability within the 
+The `wanaku capabilities show` command lets you view detailed information for a specific service capability within the
 Wanaku MCP Router.
 
 This includes its configuration parameters, current status, and connection information.
-
 
 ```bash
 wanaku capabilities show <service> [--host <url>]
 ```
 
-* `<service>`: The service name to show details for (e.g., http, sqs, file)
-* `--host <url>`: The API host URL (default: http://localhost:8080)
+- `<service>`: The service name to show details for (e.g., http, sqs, file)
+- `--host <url>`: The API host URL (default: <http://localhost:8080>)
 
-
-When you execute the command, Wanaku displays comprehensive details about the chosen service type. 
-If multiple instances of the same service exist, an interactive menu will appear, allowing you to select the specific instance 
+When you execute the command, Wanaku displays comprehensive details about the chosen service type.
+If multiple instances of the same service exist, an interactive menu will appear, allowing you to select the specific instance
 you wish to view.
 
 For example, to show the details for the HTTP service:
@@ -2121,21 +2170,23 @@ wanaku capabilities show sqs --host http://api.example.com:8080
 The command displays two main sections:
 
 1. **Capability Summary**: Basic service information in table format:
+
 - Service name and type
 - Host and port
 - Current status
 - Last seen timestamp
 
-2. **Configurations**: Detailed configuration parameters:
+1. **Configurations**: Detailed configuration parameters:
+
 - Parameter names
 - Parameter descriptions
 
 ![Terminal output showing detailed information for a specific capability service including status, URI, and available operations](imgs/capabilities-show.png)
 
-
 #### Interactive Selection
 
 When multiple instances of the same service are found, you'll see:
+
 - A warning message indicating multiple matches
 - An interactive selection prompt with service details
 - Choose your desired instance using arrow keys and Enter
@@ -2144,6 +2195,7 @@ When multiple instances of the same service are found, you'll see:
 
 > [!NOTE]
 > The Wanaku CLI provides clear exit codes to indicate the outcome of a command:
+>
 > - `0`: The command executed successfully.
 > - `1`: An error occurred (e.g., no capabilities were found, or there were issues connecting to the API).
 
@@ -2173,8 +2225,8 @@ To add an external MCP server to the Wanaku instance, use the `wanaku forwards a
 wanaku forwards add --service="http://your-mcp-server.com:8080/mcp/sse" --name my-mcp-server
 ```
 
-* `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
-* `--name`: A unique human-readable name for the forward, used for identification and management purposes.
+- `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
+- `--name`: A unique human-readable name for the forward, used for identification and management purposes.
 
 Once a forward is added, all tools and resources provided by the external MCP server will be mapped in the Wanaku instance.
 
@@ -2188,10 +2240,12 @@ To remove a specific external MCP server from the Wanaku instance, use the `wana
 wanaku forwards remove --name my-mcp-server
 ```
 
-* `--name`: The human-readable name for the forward to be removed.
+- `--name`: The human-readable name for the forward to be removed.
 
 > [!WARNING]
 > Forward removal operations cannot be undone. Once removed, the tools and resources from those MCP servers will no longer be accessible.
+
+<!-- -->
 
 > [!NOTE]
 > Attempting to remove a non-existent forward will result in an error message.
@@ -2202,19 +2256,19 @@ Suppose you have two MCP servers: `http://mcp-server1.com:8080/mcp/sse` and `htt
 
 To integrate these external MCP servers into your Wanaku instance, follow these steps:
 
-1.  Add the first forward using the `wanaku forwards add` command:
+1. Add the first forward using the `wanaku forwards add` command:
 
 ```shell
 wanaku forwards add --service="http://mcp-server1.com:8080/mcp/sse" --name mcp-server-1
 ```
 
-2.  Use the `wanaku forwards list` command to confirm that the forward has been successfully added:
+1. Use the `wanaku forwards list` command to confirm that the forward has been successfully added:
 
 ```bash
 wanaku forwards list
-``` 
+```
 
-3. Verify that all tools and resources from `mcp-server1` are now accessible within your Wanaku instance using `wanaku tools list`
+1. Verify that all tools and resources from `mcp-server1` are now accessible within your Wanaku instance using `wanaku tools list`
 
 ```shell
 Name               Type               URI
@@ -2226,13 +2280,15 @@ tavily-search   => mcp-remote-tool => <remote>
 laptop-order    => mcp-remote-tool => <remote>
 ```
 
-4.  Add the second forward using the same command:
+1. Add the second forward using the same command:
+
 ```bash
 wanaku forwards add --service="http://mcp-server2.com:8080/mcp/sse" --name mcp-server-2
 ```
 
-5. Confirm that tools and resources from both external MCP servers are now integrated into your Wanaku instance (use `wanaku tools list`)
-6. Use the `wanaku forwards list` command to view the updated list of forwards:
+1. Confirm that tools and resources from both external MCP servers are now integrated into your Wanaku instance (use `wanaku tools list`)
+2. Use the `wanaku forwards list` command to view the updated list of forwards:
+
 ```bash
 wanaku forwards list
 ```
@@ -2242,19 +2298,19 @@ external MCP servers, simplifying management and increasing the overall function
 
 ## Managing Namespaces
 
-Wanaku introduces the concept of namespaces to help users organize and isolate tools and resources, effectively managing the 
+Wanaku introduces the concept of namespaces to help users organize and isolate tools and resources, effectively managing the
 Large Language Model (LLM) context. This prevents context bloat and improves the efficiency of your Wanaku deployments.
 
 ### What Are Namespaces
 
-Namespaces provide a mechanism to group related tools and resources. 
+Namespaces provide a mechanism to group related tools and resources.
 
-Each namespace acts as a separate logical container, ensuring that the LLM context for tools within one namespace does not 
+Each namespace acts as a separate logical container, ensuring that the LLM context for tools within one namespace does not
 interfere with tools in another.
 This is particularly useful when you have a large number of tools or when different sets of tools are used for distinct purposes.
 
-Wanaku provides a fixed set of 10 available slots for namespaces, named from `ns-0` to `ns-9`. 
-It also provides a `default` namespace, 
+Wanaku provides a fixed set of 10 available slots for namespaces, named from `ns-0` to `ns-9`.
+It also provides a `default` namespace,
 which is used if none is specified and a special `public` namespace that can be accessed without any authentication.
 
 ### Using Namespaces
@@ -2265,9 +2321,9 @@ To associate a tool or resource with a specific namespace, use the `--namespace`
 wanaku tools add -n "meow-facts-3" --description "Retrieve random facts about cats" --uri "https://meowfacts.herokuapp.com?count={count or 1}" --type http --property "count:int,The count of facts to retrieve" --namespace test --required count
 ```
 
-In the example above, the _`meow-facts-3`_ tool will be associated with the first freely available namespace. 
+In the example above, the *`meow-facts-3`* tool will be associated with the first freely available namespace.
 
-When you provide a namespace name like _`test`_, Wanaku automatically associates it with an available numerical slot from ns-0 
+When you provide a namespace name like *`test`*, Wanaku automatically associates it with an available numerical slot from ns-0
 to ns-9.
 
 ### Checking Namespace Assignments
@@ -2394,6 +2450,7 @@ wanaku completion generate --output ~/.wanaku_completion
 ```
 
 The generated script includes completion support for:
+
 - All parent commands (namespaces, tools, resources, forwards, capabilities, etc.)
 - All subcommands (namespaces label add, tools list, etc.)
 - All command options (--help, --verbose, --plain, command-specific options)
@@ -2414,6 +2471,7 @@ eval "$(wanaku completion generate)"
 This generates and immediately sources the completion script in your current shell. Completion will be active until you close the terminal, without creating any files or modifying your shell configuration files.
 
 This is useful for:
+
 - Testing completion before permanent installation
 - Temporary/one-time use
 - Environments where you don't want to modify shell configuration
@@ -2423,21 +2481,25 @@ This is useful for:
 #### For Bash
 
 1. Generate the completion script to a standard location:
+
 ```shell
 wanaku completion generate --output /etc/bash_completion.d/wanaku_completion
 ```
 
-2. Add the following line to your `~/.bashrc`:
+1. Add the following line to your `~/.bashrc`:
+
 ```shell
 source /etc/bash_completion.d/wanaku_completion
 ```
 
-3. Reload your shell:
+1. Reload your shell:
+
 ```shell
 source ~/.bashrc
 ```
 
 Alternatively, for user-specific installation:
+
 ```shell
 wanaku completion generate --output ~/.wanaku_completion
 echo "source ~/.wanaku_completion" >> ~/.bashrc
@@ -2447,18 +2509,21 @@ source ~/.bashrc
 #### For Zsh
 
 1. Generate the completion script:
+
 ```shell
 mkdir -p ~/.zsh/completions
 wanaku completion generate --output ~/.zsh/completions/_wanaku
 ```
 
-2. Add the following lines to your `~/.zshrc`:
+1. Add the following lines to your `~/.zshrc`:
+
 ```shell
 autoload -U +X bashcompinit && bashcompinit
 source ~/.zsh/completions/_wanaku
 ```
 
-3. Reload your shell:
+1. Reload your shell:
+
 ```shell
 source ~/.zshrc
 ```
@@ -2468,18 +2533,21 @@ source ~/.zshrc
 #### For Zsh (Default on macOS Catalina and later)
 
 1. Generate the completion script:
+
 ```shell
 mkdir -p ~/.zsh/completions
 wanaku completion generate --output ~/.zsh/completions/_wanaku
 ```
 
-2. Add the following lines to your `~/.zshrc`:
+1. Add the following lines to your `~/.zshrc`:
+
 ```shell
 autoload -U +X bashcompinit && bashcompinit
 source ~/.zsh/completions/_wanaku
 ```
 
-3. Reload your shell:
+1. Reload your shell:
+
 ```shell
 source ~/.zshrc
 ```
@@ -2487,16 +2555,19 @@ source ~/.zshrc
 #### For Bash (If using bash on macOS)
 
 1. Generate the completion script:
+
 ```shell
 wanaku completion generate --output /usr/local/etc/bash_completion.d/wanaku
 ```
 
-2. Add the following line to your `~/.bash_profile`:
+1. Add the following line to your `~/.bash_profile`:
+
 ```shell
 source /usr/local/etc/bash_completion.d/wanaku
 ```
 
-3. Reload your shell:
+1. Reload your shell:
+
 ```shell
 source ~/.bash_profile
 ```
@@ -2530,17 +2601,20 @@ If completion doesn't work after installation:
 1. **Verify the script was sourced:** Check that your shell configuration file (`.bashrc`, `.zshrc`, or `.bash_profile`) contains the source command and was reloaded.
 
 2. **Check shell detection:** The completion script automatically detects whether you're using bash or zsh. Verify you're using a supported shell:
+
    ```shell
    echo $BASH_VERSION  # For bash
    echo $ZSH_VERSION   # For zsh
    ```
 
 3. **Manually source the script:** Try sourcing the completion script directly:
+
    ```shell
    source ~/.wanaku_completion
    ```
 
 4. **Regenerate the script:** If you've updated Wanaku and new commands aren't appearing, regenerate the completion script:
+
    ```shell
    wanaku completion generate --output ~/.wanaku_completion
    source ~/.wanaku_completion
@@ -2566,9 +2640,9 @@ Some services may require a more flexible definition of input data.
 
 For instance, consider HTTP endpoints with dynamic parameters:
 
-* `http://my-host/api/{someId}`
-* `http://my-host/api/{someId}/create`
-* `http://my-host/api/{someId}/link/to/{anotherId}`
+- `http://my-host/api/{someId}`
+- `http://my-host/api/{someId}/create`
+- `http://my-host/api/{someId}/link/to/{anotherId}`
 
 In cases where the service cannot predetermine the actual tool addresses, users must define them when creating the tool.
 
@@ -2577,23 +2651,23 @@ In cases where the service cannot predetermine the actual tool addresses, users 
 Building the URIs is not always as simple as defining their address. Sometimes, optional parameters need to be filtered out or
 query parameters need to be built. To help with that, Wanaku comes with a couple of expressions to build them.
 
-To access the values, ou can use the expression `{parameter.value('name')}`. For instance, to get the value of the parameter `id` 
-you would use the expression `{parameter.value('id')}`. You can also provide default values if none are provided, such as 
+To access the values, ou can use the expression `{parameter.value('name')}`. For instance, to get the value of the parameter `id`
+you would use the expression `{parameter.value('id')}`. You can also provide default values if none are provided, such as
 `http://my-host/{parameter.valueOrElse('id', 1)}/data` (this would provide the value `1` if the parameter `id` is not set).
 
 It is also possible to build the query part of URIs with the `query` method. For instance, to create a URI such as `http://my-host/data?id=456`
 you could use `http://my-host/data{parameter.query('id')}`. If the `id` parameter is not provided, this would generate a URI such as
-`http://my-host/data`. This can take multiple parameters, so it is possible to pass extra variables such as 
-`{parameter.query('id', 'name', 'location', ...)}`. 
+`http://my-host/data`. This can take multiple parameters, so it is possible to pass extra variables such as
+`{parameter.query('id', 'name', 'location', ...)}`.
 
 > [!IMPORTANT]
 > Do not provide the `?` character.
-> It is added automatically the parsing code if necessary. 
+> It is added automatically the parsing code if necessary.
 
-Building the query part of URIs can be quite complex if there are too many. To avoid that, you can use `{parameter.query}` to build 
+Building the query part of URIs can be quite complex if there are too many. To avoid that, you can use `{parameter.query}` to build
 a query composed of all query parameters.
 
-The values for the queries will be automatically encoded, so a URI defined as `http://my-host/{parameter.query('id', 'name')}` 
+The values for the queries will be automatically encoded, so a URI defined as `http://my-host/{parameter.query('id', 'name')}`
 would generate `http://my-host/?id=456&name=My+Name+With+Spaces` if provided with a name value of `"My Name With Spaces"`.
 
 ### Dealing with Request Bodies
@@ -2611,6 +2685,7 @@ The `wanaku_meta_` prefix is a special argument prefix that allows AI services t
 without requiring changes to the tool's configuration or route definition.
 
 Arguments with this prefix are:
+
 1. Extracted from the regular arguments (they are not passed to the tool as arguments)
 2. Stripped of the `wanaku_meta_` prefix
 3. Forwarded as headers in the gRPC tool invocation request
@@ -2653,6 +2728,7 @@ The `wanaku_auth_` prefix is a special argument prefix that allows MCP clients t
 credentials to downstream capabilities without exposing them to LLMs.
 
 Arguments with this prefix are:
+
 1. Extracted from the regular arguments (they are never passed to LLMs or to the tool as arguments)
 2. Stripped of the `wanaku_auth_` prefix
 3. Forwarded as headers in the gRPC tool invocation request
@@ -2668,16 +2744,16 @@ when calling protected third-party APIs.
 
 Unlike `wanaku_meta_`, authentication arguments have stricter security handling:
 
-* **Never exposed to LLMs** — filtered from tool arguments before any processing
-* **Never appear in events** — filtered from observability event arguments
-* **Always redacted in headers** — sensitive header names (e.g., `Authorization`) are redacted in event headers
-* **Highest merge priority** — auth headers override both metadata and tool-defined headers on conflict
+- **Never exposed to LLMs** — filtered from tool arguments before any processing
+- **Never appear in events** — filtered from observability event arguments
+- **Always redacted in headers** — sensitive header names (e.g., `Authorization`) are redacted in event headers
+- **Highest merge priority** — auth headers override both metadata and tool-defined headers on conflict
 
 #### Example: HTTP Capability with Protected API
 
 To call a protected third-party API (e.g., GitHub), the MCP client passes the access token via `wanaku_auth_`:
 
-```
+```text
 Arguments from MCP client:
   wanaku_auth_Authorization = "Bearer ghp_xxxxxxxxxxxx"
   owner = "octocat"
@@ -2691,7 +2767,7 @@ request, while `owner` and `repo` are passed as regular tool arguments.
 
 Multiple auth tokens can be propagated simultaneously:
 
-```
+```text
 Arguments from MCP client:
   wanaku_auth_Authorization = "Bearer internal-token"
   wanaku_auth_X-Third-Party-Token = "external-token"
@@ -2703,25 +2779,25 @@ Both are extracted and forwarded as separate headers to the downstream capabilit
 
 Currently special arguments:
 
-* `wanaku_body` - Indicates the argument should be included in the request body
-* `wanaku_meta_` - Prefix for arguments that are converted to headers (e.g., `wanaku_meta_contextId`)
-* `wanaku_auth_` - Prefix for sensitive authentication arguments that are converted to headers with redaction (e.g., `wanaku_auth_Authorization`)
+- `wanaku_body` - Indicates the argument should be included in the request body
+- `wanaku_meta_` - Prefix for arguments that are converted to headers (e.g., `wanaku_meta_contextId`)
+- `wanaku_auth_` - Prefix for sensitive authentication arguments that are converted to headers with redaction (e.g., `wanaku_auth_Authorization`)
 
 ## Extending Wanaku: Adding Your Own Capabilities
 
-Wanaku leverages [Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org) to provide connectivity to a vast 
-range of services and platforms. 
+Wanaku leverages [Quarkus](https://quarkus.io/) and [Apache Camel](https://camel.apache.org) to provide connectivity to a vast
+range of services and platforms.
 
 Although we aim to provide a few of them out-of-the box, not all of them will fit all the use cases. For most cases, users
 should rely on the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/). That capability
-service leverages Apache Camel which offers more than 300 components capable of talking to any type of system. Users can design 
-their integrations using tools such as [Kaoto](https://kaoto.io/) or Karavan and expose the routes as tools or resources using 
+service leverages Apache Camel which offers more than 300 components capable of talking to any type of system. Users can design
+their integrations using tools such as [Kaoto](https://kaoto.io/) or Karavan and expose the routes as tools or resources using
 that capability service.
 
 ### Adding a New Resource Provider Capability
 
 For cases where the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/) is
-not sufficient, users can create their own capability services. 
+not sufficient, users can create their own capability services.
 
 Why try to make it simple for users to create custom services that solve their particular need.
 
@@ -2777,6 +2853,7 @@ Then, launch it using:
 ```shell
 java -Dwanaku.service.registration.uri=http://localhost:8080 -Dquarkus.grpc.server.port=9900 ... -jar target/quarkus-app/quarkus-run.jar
 ```
+
 You can check if the service was registered correctly using `wanaku capabilities list`.
 
 > [!IMPORTANT]
@@ -2786,7 +2863,7 @@ To customize your service, adjust the delegate and client classes.
 
 #### Adjusting Your Tool Invoker Capability
 
-After created, then most of the work is to adjust the auto-generated `Delegate` and `Client` classes to invoke the service and 
+After created, then most of the work is to adjust the auto-generated `Delegate` and `Client` classes to invoke the service and
 provide the returned response.
 
 In those cases, then you also need to write a class that leverages [Apache Camel's](http://camel.apache.org) `ProducerTemplate`
@@ -2834,6 +2911,8 @@ For those cases, leverage the `.proto` files in the `core-exchange` module for c
 > [!CAUTION]
 > At this time, Wanaku is being intensively developed, therefore, we cannot guarantee backwards compatibility of the protocol.
 
+<!-- -->
+
 > [!NOTE]
 > For plain Java, you can still generate the project using the archetype, but in this case, you must implement your own
 > delegate from scratch and adjust the dependencies.
@@ -2842,22 +2921,22 @@ For those cases, leverage the `.proto` files in the `core-exchange` module for c
 
 You can adjust the address used to announce to the MCP Router using either (depending on whether using a tool or a resource provider):
 
-* `wanaku.service.registration.announce-address=my-host`
+- `wanaku.service.registration.announce-address=my-host`
 
-This is particularly helpful when running a capability service in the cloud, behind a proxy or firewall. 
+This is particularly helpful when running a capability service in the cloud, behind a proxy or firewall.
 
 ### Adjusting the authentication parameters
 
-* `quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/${auth.realm}` (realm defaults to `wanaku`; configure via `AUTH_REALM`)
-* `quarkus.oidc-client.client-id=wanaku-service`
-* `quarkus.oidc-client.refresh-token-time-skew=1m`
-* `quarkus.oidc-client.credentials.secret=<insert key here>`
+- `quarkus.oidc-client.auth-server-url=http://localhost:8543/realms/${auth.realm}` (realm defaults to `wanaku`; configure via `AUTH_REALM`)
+- `quarkus.oidc-client.client-id=wanaku-service`
+- `quarkus.oidc-client.refresh-token-time-skew=1m`
+- `quarkus.oidc-client.credentials.secret=<insert key here>`
 
-## Supported/Tested Clients 
+## Supported/Tested Clients
 
-Wanaku implements the MCP protocol and, by definition, should support any client that is compliant to the protocol. 
+Wanaku implements the MCP protocol and, by definition, should support any client that is compliant to the protocol.
 
-The details below describe how Wanaku MCP router can be used with some prominent MCP clients: 
+The details below describe how Wanaku MCP router can be used with some prominent MCP clients:
 
 ### Embedded LLMChat for testing
 
@@ -2877,7 +2956,7 @@ open http://localhost:8080
 3. Enter prompt and send
 
 ### Creating New MCP Server Using Maven
- 
+
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-mcp-servers-archetype \ 
   -DarchetypeVersion=0.1.1 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.mcp.servers.s3 -DartifactId=wanaku-mcp-servers-s3 \
@@ -2890,7 +2969,7 @@ mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wan
 
 ### Adjusting the MCP Server
 
-After creating the mcp server, open the `pom.xml` file to add the dependencies for your project. 
+After creating the mcp server, open the `pom.xml` file to add the dependencies for your project.
 Using the example above, we would include the following dependencies:
 
 ```xml
@@ -2903,7 +2982,7 @@ Using the example above, we would include the following dependencies:
 Adjust the gPRC port in the `application.properties` file by adjusting the `quarkus.grpc.server.port` property.
 
 > [!NOTE]
-> You can also provide the port when launching 
+> You can also provide the port when launching
 > (i.e., `java -Dquarkus.grpc.server.port=9190 -jar target/quarkus-app/quarkus-run.jar`)
 
 Then, build the project:
@@ -2912,7 +2991,7 @@ Then, build the project:
 mvn clean package
 ```
 
-And run it: 
+And run it:
 
 ```shell
 java -jar target/quarkus-app/quarkus-run.jar
@@ -2955,8 +3034,7 @@ wanaku configure cursor --transport http --port 8080
 
 Cursor stores its global MCP config in `~/.cursor/mcp.json` and the command will merge the `wanaku` entry without removing existing servers.
 
-
-### HyperChat 
+### HyperChat
 
 Wanaku works with [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat). To do so,
 you can configure Wanaku as an MCP server using the MCP configuration as shown below:
@@ -2964,11 +3042,11 @@ you can configure Wanaku as an MCP server using the MCP configuration as shown b
 ![Screenshot of HyperChat configuration panel showing MCP server connection settings with Wanaku router URL](imgs/hyperchat-configuration.png)
 
 > [!IMPORTANT]
-> Make sure to have Wanaku up and running before configuring HyperChat. You may also need to 
+> Make sure to have Wanaku up and running before configuring HyperChat. You may also need to
 > close and reopen HyperChat.
 
 After configuring HyperChat, you may need to go the Main Window and edit any existing agent if you have any.
-Then, in the agent configuration Window, in the `allowMCPs` option, make sure you mark Wanaku as an allowed MCP server. If in 
+Then, in the agent configuration Window, in the `allowMCPs` option, make sure you mark Wanaku as an allowed MCP server. If in
 doubt, check the HyperChat project documentation.
 
 > [!NOTE]
@@ -2976,12 +3054,11 @@ doubt, check the HyperChat project documentation.
 > [improvement ticket](https://github.com/BigSweetPotatoStudio/HyperChat/issues/30). This is not necessary
 > for newer versions.
 
-
 ### LibreChat
 
 For [LibreChat](https://www.librechat.ai/docs) search for `mcpServers` on the `librechat.yml` file and include something similar to this:
-   
-```
+
+```yaml
 mcpServers:
     everything:
         url: http://host.docker.internal:8080/mcp/sse
@@ -2996,7 +3073,6 @@ In LibreChat, you can access Wanaku MCP tools using [Agents](https://www.librech
 
 We also have tested Wanaku with [Witsy - AI Desktop Assistant](https://github.com/nbonamy/witsy/).
 
-
 ### Using an STDIO gateway
 
 Wanaku does not support stdio.
@@ -3004,11 +3080,11 @@ Therefore, to use Wanaku with to use it with tools that don't support SSE, it is
 necessary to use an stdio-to-SSE gateway.
 The application [super gateway](https://github.com/supercorp-ai/supergateway) can be used for this.
 
-```
+```shell
 npx -y supergateway --sse http://localhost:8080/mcp/sse
 ```
 
-## Available Resources Capabilities 
+## Available Resources Capabilities
 
 Visit [this page](../capabilities/providers/README.md) to check all the providers that come built-in with Wanaku.
 
@@ -3037,12 +3113,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Cannot authenticate with the router
 
 **Symptoms:**
+
 - CLI commands fail with authentication errors
 - Web UI redirects to Keycloak but login fails
 
 **Solutions:**
 
 1. Verify Keycloak is running and accessible:
+
    ```shell
    curl http://localhost:8543/health
    ```
@@ -3053,6 +3131,7 @@ This section provides solutions to common issues you may encounter while using W
    - Confirm user accounts have been created
 
 3. Clear stored credentials and re-authenticate:
+
    ```shell
    rm ~/.wanaku/credentials
    wanaku auth login --url http://localhost:8080
@@ -3065,12 +3144,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Token expired errors
 
 **Symptoms:**
+
 - Commands work initially but fail after some time
 - Error messages about expired tokens
 
 **Solutions:**
 
 1. Re-authenticate with the router:
+
    ```shell
    wanaku auth login --url http://localhost:8080
    ```
@@ -3082,12 +3163,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Capability services not appearing in the router
 
 **Symptoms:**
+
 - Services start successfully but don't show up in `wanaku capabilities list`
 - Tools or resources from a service are not available
 
 **Solutions:**
 
 1. Verify the service registration configuration:
+
    ```shell
    # In the capability service application.properties
    wanaku.service.registration.enabled=true
@@ -3095,12 +3178,14 @@ This section provides solutions to common issues you may encounter while using W
    ```
 
 2. Check service logs for registration errors:
+
    ```shell
    # Look for registration-related errors
    grep -i "registration" /path/to/service.log
    ```
 
 3. Verify network connectivity between the service and router:
+
    ```shell
    # From the service host
    curl http://localhost:8080/q/health
@@ -3115,18 +3200,21 @@ This section provides solutions to common issues you may encounter while using W
 #### Service shows as "offline" or "unhealthy"
 
 **Symptoms:**
+
 - Service appears in `wanaku capabilities list` but marked as offline
 - Intermittent availability
 
 **Solutions:**
 
 1. Verify the service is running:
+
    ```shell
    # Check if the gRPC port is listening
    netstat -an | grep 9009
    ```
 
 2. Check the registration interval and ensure heartbeats are being sent:
+
    ```shell
    # In application.properties
    wanaku.service.registration.interval=10s
@@ -3139,12 +3227,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Cannot connect to the router from MCP clients
 
 **Symptoms:**
+
 - MCP clients fail to connect
 - Timeout errors when connecting
 
 **Solutions:**
 
 1. Verify the router is running and accessible:
+
    ```shell
    curl http://localhost:8080/q/health
    ```
@@ -3154,6 +3244,7 @@ This section provides solutions to common issues you may encounter while using W
    - Streamable HTTP: `http://localhost:8080/mcp/`
 
 3. For namespace-specific connections, ensure the correct path:
+
    ```shell
    # For namespace ns-1
    http://localhost:8080/ns-1/mcp/sse
@@ -3162,6 +3253,7 @@ This section provides solutions to common issues you may encounter while using W
 4. Verify firewall rules allow traffic on port 8080
 
 5. Check CORS settings if connecting from a web application:
+
    ```shell
    quarkus.http.cors.enabled=true
    quarkus.http.cors.origins=http://localhost:3000
@@ -3172,12 +3264,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Tools or resources not appearing in MCP clients
 
 **Symptoms:**
+
 - `wanaku tools list` shows tools, but they don't appear in the MCP client
 - Resources are registered but not accessible
 
 **Solutions:**
 
 1. Verify the tool/resource is in the correct namespace:
+
    ```shell
    wanaku tools list
    wanaku namespaces list
@@ -3188,6 +3282,7 @@ This section provides solutions to common issues you may encounter while using W
 3. Refresh the MCP client connection
 
 4. Verify the capability service providing the tool is online:
+
    ```shell
    wanaku capabilities list
    ```
@@ -3195,12 +3290,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Tool invocation fails
 
 **Symptoms:**
+
 - Tool appears in client but execution fails
 - Error messages when calling a tool
 
 **Solutions:**
 
 1. Check the tool URI is correct:
+
    ```shell
    wanaku tools list
    ```
@@ -3210,6 +3307,7 @@ This section provides solutions to common issues you may encounter while using W
 3. Review capability service logs for errors during tool execution
 
 4. Ensure required configuration or secrets are properly set:
+
    ```shell
    wanaku tools list
    ```
@@ -3219,12 +3317,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Resource read fails
 
 **Symptoms:**
+
 - Resource appears but cannot be read
 - Empty or error responses when accessing resources
 
 **Solutions:**
 
 1. Verify the resource URI and that the target exists:
+
    ```shell
    wanaku resources list
    ```
@@ -3240,17 +3340,20 @@ This section provides solutions to common issues you may encounter while using W
 #### Build fails with missing dependencies
 
 **Symptoms:**
+
 - Maven build errors
 - Missing artifact errors
 
 **Solutions:**
 
 1. Ensure you're using the correct Maven version:
+
    ```shell
    mvn --version  # Should be 3.x
    ```
 
 2. Clear Maven cache and rebuild:
+
    ```shell
    rm -rf ~/.m2/repository/ai/wanaku
    mvn clean install
@@ -3261,12 +3364,14 @@ This section provides solutions to common issues you may encounter while using W
 #### Native build fails
 
 **Symptoms:**
+
 - Native compilation errors
 - GraalVM-related failures
 
 **Solutions:**
 
 1. Verify GraalVM is properly installed:
+
    ```shell
    java -version  # Should show GraalVM
    native-image --version
@@ -3275,6 +3380,7 @@ This section provides solutions to common issues you may encounter while using W
 2. Check the [Quarkus native build guide](https://quarkus.io/guides/building-native-image) for system requirements
 
 3. Try building without native mode first to isolate the issue:
+
    ```shell
    mvn clean package
    ```
@@ -3282,23 +3388,27 @@ This section provides solutions to common issues you may encounter while using W
 #### Container deployment fails
 
 **Symptoms:**
+
 - Pods in CrashLoopBackOff state
 - ImagePullBackOff errors
 
 **Solutions:**
 
 1. Verify the container image exists and is accessible:
+
    ```shell
    podman pull quay.io/wanaku/wanaku-router-backend:latest
    ```
 
 2. Check pod logs for startup errors:
+
    ```shell
    oc logs <pod-name>
    kubectl logs <pod-name>
    ```
 
 3. Verify ConfigMaps and Secrets are properly mounted:
+
    ```shell
    oc describe pod <pod-name>
    ```
@@ -3306,6 +3416,7 @@ This section provides solutions to common issues you may encounter while using W
 4. Check resource limits and ensure sufficient memory/CPU
 
 5. Verify Keycloak is accessible from the pods:
+
    ```shell
    oc exec <pod-name> -- curl http://keycloak:8080/health
    ```
@@ -3315,6 +3426,7 @@ This section provides solutions to common issues you may encounter while using W
 #### Slow response times
 
 **Symptoms:**
+
 - Tools take a long time to execute
 - Resource reads are slow
 - MCP clients experience timeouts
@@ -3322,6 +3434,7 @@ This section provides solutions to common issues you may encounter while using W
 **Solutions:**
 
 1. Check router and service resource usage:
+
    ```shell
    top
    htop
@@ -3330,16 +3443,19 @@ This section provides solutions to common issues you may encounter while using W
 2. Review logs for errors or warnings
 
 3. Verify network latency between components:
+
    ```shell
    ping <service-host>
    ```
 
 4. Check Infinispan cache performance and consider adjusting:
+
    ```shell
    wanaku.infinispan.max-state-count=10
    ```
 
 5. For Kubernetes deployments, ensure adequate resource limits:
+
    ```yaml
    resources:
      requests:
@@ -3357,6 +3473,7 @@ This section provides solutions to common issues you may encounter while using W
 To get more detailed logs for troubleshooting:
 
 **Router backend:**
+
 ```properties
 quarkus.log.level=DEBUG
 quarkus.log.category."ai.wanaku".level=DEBUG
@@ -3364,17 +3481,20 @@ quarkus.mcp.server.traffic-logging.enabled=true
 ```
 
 **Capability services:**
+
 ```properties
 quarkus.log.level=DEBUG
 quarkus.log.category."ai.wanaku".level=DEBUG
 ```
 
 **CLI:**
+
 ```shell
 wanaku --verbose tools list
 ```
 
 To produce clean, parsable output without ANSI colors or escape sequences (useful for scripting and piping):
+
 ```shell
 wanaku tools list --plain
 ```

@@ -11,6 +11,7 @@ The Wanaku Operator manages three custom resource definitions (CRDs):
 - **WanakuServiceCatalog** — deploys packaged service catalogs (Camel routes + Wanaku rules) to a router
 
 When you create these custom resources, the operator automatically provisions:
+
 - Deployments with health probes
 - Services for internal and external access
 - ConfigMaps for configuration
@@ -297,6 +298,7 @@ kubectl describe wanakuservicecatalog my-catalogs -n wanaku
 ```
 
 The status section shows:
+
 - `Ready` condition (true/false)
 - Deployed capabilities or catalogs
 - Error messages (if reconciliation failed)
@@ -358,6 +360,7 @@ helm uninstall wanaku-operator -n wanaku
 
 > [!WARNING]
 > Uninstalling the operator does **not** delete the CRDs or existing custom resources. To fully clean up:
+>
 > ```shell
 > kubectl delete wanakurouter --all -n wanaku
 > kubectl delete wanakucapability --all -n wanaku
@@ -382,6 +385,7 @@ spec:
 ```
 
 With this setting:
+
 - You don't need a Keycloak instance
 - Leave `spec.auth.authServer` and `spec.secrets.oidcCredentialsSecret` empty
 - Capabilities don't require OIDC credentials either (the router accepts unauthenticated registration)
@@ -425,6 +429,7 @@ kubectl describe pod -n wanaku -l app=wanaku-operator
 ```
 
 Common causes:
+
 - **Image pull errors**: verify the operator image exists and is accessible
 - **RBAC issues**: ensure the ServiceAccount has correct ClusterRole bindings (check Helm chart RBAC templates)
 - **Resource limits**: the pod may be pending due to insufficient cluster resources
@@ -455,11 +460,13 @@ Look at the `Status.Conditions` section for error messages.
    - Verify OIDC secret exists: `kubectl get secret wanaku-oidc-secret -n wanaku`
 
 2. **Capability deployment stuck**: check if `routerRef` matches an existing `WanakuRouter`
+
    ```shell
    kubectl get wanakurouter -n wanaku
    ```
 
 3. **Service catalog deployment failed**: verify the ConfigMap exists and has key `catalog.zip`
+
    ```shell
    kubectl get configmap finance-catalog-data -n wanaku -o yaml
    ```
@@ -481,6 +488,7 @@ kubectl logs -n wanaku deployment/wanaku-http
 ```
 
 Look for errors like:
+
 - `Connection refused` — router service not reachable
 - `401 Unauthorized` — OIDC credentials mismatch
 - `503 Service Unavailable` — router not ready
@@ -518,6 +526,7 @@ kubectl logs -n wanaku <pod-name>
 ```
 
 Common causes:
+
 - **Configuration errors**: invalid environment variables or missing secrets
 - **Startup probe failures**: pod not becoming healthy in time (increase `initialDelaySeconds` if needed)
 - **Java heap issues**: increase memory limits in the CR (capabilities and router use JVM-based containers)
