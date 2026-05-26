@@ -68,7 +68,7 @@ wanaku services create tool --name kafka
 
 ### Creating New Tools Using Maven
 
-Alternatively, if you don't have the CLI instanced, you can do so using Maven:
+Alternatively, if you don't have the CLI installed locally, you can obtain it using Maven:
 
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype \ 
@@ -127,7 +127,7 @@ wanaku services create resource --name s3
 
 ### Creating New Resource Providers Using Maven
 
-Alternatively, if you don't have the CLI instanced, you can do so using Maven:
+Alternatively, if you don't have the CLI installed locally, you can obtain it using Maven:
 
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype \
@@ -179,7 +179,7 @@ mvn -Pdist -Dquarkus.container-image.build=true -Dquarkus.container-image.push=t
 For custom containers, please make sure you set the following properties
 
 - `quarkus.container-image.registry`: to set the registry name
-- `quarkus.container-image.group`: to set the grop
+- `quarkus.container-image.group`: to set the group
 
 You can do that in the `pom.xml` file:
 
@@ -207,8 +207,8 @@ Wanaku supports acting as a router/gateway for two types of services:
 - Downstream services using gRPC. These services can either be plain Quarkus or Camel Extension for Quarkus.
 - Other HTTP-based MCP servers (SSE). This allows integrating any MCP server with Wanaku.
 
-The type of service you create will depend on the type of problem you want to solve. Downstream services ofter
-greater integration with Wanaku (i.e.; including better discovery and configuration). On the other hand, plain MCP
+The type of service you create will depend on the type of problem you want to solve. Downstream services offer
+greater integration with Wanaku (i.e., including better discovery and configuration). On the other hand, plain MCP
 services are simpler to create and develop.
 
 ### Capabilities Services Tips
