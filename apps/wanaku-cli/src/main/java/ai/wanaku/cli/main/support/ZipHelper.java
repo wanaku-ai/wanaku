@@ -62,7 +62,7 @@ public class ZipHelper {
             }
         }
 
-        LOG.infof("ZIP file contents extracted successfully to: %s", destination.getAbsolutePath());
+        LOG.debugf("ZIP file contents extracted successfully to: %s", destination.getAbsolutePath());
     }
 
     /**

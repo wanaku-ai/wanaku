@@ -83,7 +83,7 @@ public class LocalRunner {
     }
 
     private void reaugment(List<String> services, Map<String, String> components) {
-        LOG.info("Re-augmenting components for local (no-auth) mode");
+        LOG.info("Preparing components for local mode");
 
         reaugmentComponent(
                 RuntimeConstants.WANAKU_ROUTER_BACKEND,
@@ -103,11 +103,12 @@ public class LocalRunner {
         List<String> command = new ArrayList<>();
         command.add("java");
         command.add("-Dquarkus.launch.rebuild=true");
+        command.add("-Dquarkus.log.level=WARNING");
         command.addAll(List.of(buildTimeProperties));
         command.add("-jar");
         command.add("quarkus-run.jar");
 
-        LOG.infof("Re-augmenting %s", componentName);
+        LOG.debugf("Re-augmenting %s", componentName);
         ProcessRunner.run(componentDir, command.toArray(new String[0]));
     }
 
@@ -117,8 +118,9 @@ public class LocalRunner {
         CountDownLatch countDownLatch = new CountDownLatch(activeServices + 1);
         int grpcPort = config.initialGrpcPort();
 
+        LOG.debug("Starting Wanaku Router Backend");
         startRouter(RuntimeConstants.WANAKU_ROUTER_BACKEND, executorService, countDownLatch, environment);
-        LOG.infof("Waiting %d seconds for the Wanaku Router Backend to start", config.routerStartWaitSecs());
+        LOG.infof("Waiting %d seconds for the router to start", config.routerStartWaitSecs());
         try {
             Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
         } catch (InterruptedException e) {
@@ -150,7 +152,13 @@ public class LocalRunner {
 
         executorService.submit(() -> {
             try {
-                ProcessRunner.run(componentDir, environment.serviceOptions(), "java", "-jar", "quarkus-run.jar");
+                ProcessRunner.run(
+                        componentDir,
+                        environment.serviceOptions(),
+                        "java",
+                        "-Dquarkus.profile=local",
+                        "-jar",
+                        "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Router Service: %s", e.getMessage(), e);
             } finally {
@@ -173,7 +181,13 @@ public class LocalRunner {
         executorService.submit(() -> {
             try {
                 ProcessRunner.run(
-                        componentDir, environment.serviceOptions(), "java", grpcPortOpt, "-jar", "quarkus-run.jar");
+                        componentDir,
+                        environment.serviceOptions(),
+                        "java",
+                        "-Dquarkus.profile=local",
+                        grpcPortOpt,
+                        "-jar",
+                        "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Service %s", component.getKey(), e);
             } finally {
@@ -199,18 +213,18 @@ public class LocalRunner {
 
         File zipFile;
         if (localMatch != null) {
-            LOG.infof("Using local distribution %s for %s", localMatch, componentName);
+            LOG.debugf("Using local distribution %s for %s", localMatch, componentName);
             zipFile = localMatch;
         } else {
             String downloadUrl = getDownloadURL(urlFormat);
             File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
 
-            LOG.infof("Downloading %s at %s", componentName, downloadUrl);
+            LOG.infof("Downloading %s", componentName);
             zipFile = Downloader.downloadFile(downloadUrl, destinationDir);
         }
 
         String extractDir = componentName + File.separator + QUARKUS_APP;
-        LOG.infof("Unpacking %s", componentName);
+        LOG.infof("Deploying %s", componentName);
         ZipHelper.unzip(zipFile, RuntimeConstants.WANAKU_LOCAL_DIR, extractDir);
     }
 
