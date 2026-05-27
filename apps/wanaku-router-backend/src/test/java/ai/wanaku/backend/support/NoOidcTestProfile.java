@@ -7,6 +7,9 @@ public class NoOidcTestProfile implements QuarkusTestProfile {
 
     @Override
     public Map<String, String> getConfigOverrides() {
-        return Map.of("wanaku.http.auth", "none");
+        return Map.of(
+                "wanaku.http.auth", "none",
+                "quarkus.oidc.enabled", "false",
+                "quarkus.oidc-proxy.enabled", "false");
     }
 }

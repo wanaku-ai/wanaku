@@ -3,6 +3,7 @@ package ai.wanaku.cli.runner.local;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,22 +20,30 @@ import ai.wanaku.core.util.VersionHelper;
 
 public class LocalRunner {
     private static final Logger LOG = Logger.getLogger(LocalRunner.class);
+    private static final String QUARKUS_APP = "quarkus-app";
     private final WanakuCliConfig config;
     private int activeServices = 0;
 
     public static class LocalRunnerEnvironment {
         private final Map<String, String> servicesOptions = new HashMap<>();
+        private final List<File> localDists = new ArrayList<>();
 
-        public LocalRunnerEnvironment() {}
+        public LocalRunnerEnvironment() {
+            withAuthMode("none");
+        }
 
-        public LocalRunnerEnvironment withServiceOption(String key, String value) {
-            servicesOptions.put(key, value);
+        private LocalRunnerEnvironment withAuthMode(String authMode) {
+            servicesOptions.put("WANAKU_HTTP_AUTH", authMode);
             return this;
         }
 
-        public LocalRunnerEnvironment withAuthMode(String authMode) {
-            servicesOptions.put("WANAKU_HTTP_AUTH", authMode);
+        public LocalRunnerEnvironment withLocalDist(File localDist) {
+            this.localDists.add(localDist);
             return this;
+        }
+
+        public List<File> localDists() {
+            return localDists;
         }
 
         public Map<String, String> serviceOptions() {
@@ -68,13 +77,44 @@ public class LocalRunner {
         Map<String, String> components = config.components();
         deploy(services, components);
 
+        reaugment(services, components);
+
         run(services, components);
+    }
+
+    private void reaugment(List<String> services, Map<String, String> components) {
+        LOG.info("Re-augmenting components for local (no-auth) mode");
+
+        reaugmentComponent(
+                RuntimeConstants.WANAKU_ROUTER_BACKEND,
+                "-Dquarkus.oidc.enabled=false",
+                "-Dquarkus.oidc-proxy.enabled=false");
+
+        for (Map.Entry<String, String> component : components.entrySet()) {
+            if (isEnabled(services, component)) {
+                reaugmentComponent(component.getKey(), "-Dquarkus.oidc-client.enabled=false");
+            }
+        }
+    }
+
+    private static void reaugmentComponent(String componentName, String... buildTimeProperties) {
+        File componentDir = quarkusAppDir(componentName);
+
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-Dquarkus.launch.rebuild=true");
+        command.addAll(List.of(buildTimeProperties));
+        command.add("-jar");
+        command.add("quarkus-run.jar");
+
+        LOG.infof("Re-augmenting %s", componentName);
+        ProcessRunner.run(componentDir, command.toArray(new String[0]));
     }
 
     private void run(List<String> services, Map<String, String> components) {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
-        CountDownLatch countDownLatch = new CountDownLatch(activeServices);
+        CountDownLatch countDownLatch = new CountDownLatch(activeServices + 1);
         int grpcPort = config.initialGrpcPort();
 
         startRouter(RuntimeConstants.WANAKU_ROUTER_BACKEND, executorService, countDownLatch, environment);
@@ -106,7 +146,7 @@ public class LocalRunner {
             ExecutorService executorService,
             CountDownLatch countDownLatch,
             LocalRunnerEnvironment environment) {
-        File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component);
+        File componentDir = quarkusAppDir(component);
 
         executorService.submit(() -> {
             try {
@@ -126,7 +166,7 @@ public class LocalRunner {
             CountDownLatch countDownLatch,
             LocalRunnerEnvironment environment) {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
-        File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, component.getKey());
+        File componentDir = quarkusAppDir(component.getKey());
 
         String grpcPortOpt = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
 
@@ -154,15 +194,42 @@ public class LocalRunner {
     }
 
     private void downloadService(String componentName, String urlFormat) throws IOException {
-        String downloadUrl = getDownloadURL(urlFormat);
+        String baseName = extractArtifactBaseName(urlFormat);
+        File localMatch = findLocalDist(baseName);
 
-        File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
+        File zipFile;
+        if (localMatch != null) {
+            LOG.infof("Using local distribution %s for %s", localMatch, componentName);
+            zipFile = localMatch;
+        } else {
+            String downloadUrl = getDownloadURL(urlFormat);
+            File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
 
-        LOG.infof("Downloading %s at %s", componentName, downloadUrl);
-        File downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir);
+            LOG.infof("Downloading %s at %s", componentName, downloadUrl);
+            zipFile = Downloader.downloadFile(downloadUrl, destinationDir);
+        }
 
-        LOG.infof("Unpacking %s at %s", componentName, destinationDir);
-        ZipHelper.unzip(downloadedFile, RuntimeConstants.WANAKU_LOCAL_DIR, componentName);
+        String extractDir = componentName + File.separator + QUARKUS_APP;
+        LOG.infof("Unpacking %s", componentName);
+        ZipHelper.unzip(zipFile, RuntimeConstants.WANAKU_LOCAL_DIR, extractDir);
+    }
+
+    static String extractArtifactBaseName(String urlFormat) {
+        String filename = urlFormat.substring(urlFormat.lastIndexOf('/') + 1);
+        int placeholder = filename.indexOf("-%s");
+        if (placeholder > 0) {
+            return filename.substring(0, placeholder);
+        }
+        return filename.replace(".zip", "");
+    }
+
+    private File findLocalDist(String baseName) {
+        for (File file : environment.localDists()) {
+            if (file.getName().startsWith(baseName)) {
+                return file;
+            }
+        }
+        return null;
     }
 
     private String getDownloadURL(String urlFormat) {
@@ -174,6 +241,10 @@ public class LocalRunner {
         }
 
         return String.format(urlFormat, tag, VersionHelper.VERSION);
+    }
+
+    private static File quarkusAppDir(String componentName) {
+        return new File(new File(RuntimeConstants.WANAKU_LOCAL_DIR, componentName), QUARKUS_APP);
     }
 
     private static boolean isEnabled(List<String> services, Map.Entry<String, String> component) {

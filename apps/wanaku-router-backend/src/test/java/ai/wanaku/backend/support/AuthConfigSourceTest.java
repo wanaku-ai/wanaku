@@ -63,12 +63,12 @@ class AuthConfigSourceTest {
         Map<String, String> props = configSource.getProperties();
         assertNotNull(props);
         assertEquals("false", props.get("quarkus.oidc.enabled"));
+        assertEquals("false", props.get("quarkus.oidc-proxy.enabled"));
         assertEquals("false", props.get("quarkus.oidc.discovery-enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.discovery-enabled"));
         for (int i = 1; i <= 10; i++) {
             assertEquals("false", props.get("quarkus.oidc.ns-" + i + ".discovery-enabled"));
         }
-        assertEquals("false", props.get("quarkus.oidc-proxy.enabled"));
         assertEquals("permit", props.get("quarkus.http.auth.permission.authenticated.policy"));
         assertEquals("permit", props.get("quarkus.http.auth.permission.mcp-authenticated.policy"));
         assertEquals("permit", props.get("quarkus.http.auth.permission.web.policy"));
@@ -76,18 +76,18 @@ class AuthConfigSourceTest {
 
     @Test
     void getValue_returnsNull_whenAuthNotConfigured() {
-        assertNull(configSource.getValue("quarkus.oidc.discovery-enabled"));
+        assertNull(configSource.getValue("quarkus.http.auth.permission.authenticated.policy"));
     }
 
     @Test
     void getValue_returnsNoAuthValue_whenAuthSetToNone() {
         System.setProperty(AUTH_PROPERTY, "none");
         assertEquals("false", configSource.getValue("quarkus.oidc.enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc-proxy.enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.ns-1.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.ns-10.discovery-enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc-proxy.enabled"));
         assertEquals("permit", configSource.getValue("quarkus.http.auth.permission.authenticated.policy"));
     }
 
@@ -111,11 +111,11 @@ class AuthConfigSourceTest {
     @Test
     void isNoAuth_isCaseInsensitive() {
         System.setProperty(AUTH_PROPERTY, "NONE");
-        assertEquals("false", configSource.getValue("quarkus.oidc.discovery-enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc.enabled"));
 
         clearAuthProperties();
         System.setProperty(AUTH_PROPERTY, "None");
-        assertEquals("false", configSource.getValue("quarkus.oidc.discovery-enabled"));
+        assertEquals("false", configSource.getValue("quarkus.oidc.enabled"));
     }
 
     @Test
