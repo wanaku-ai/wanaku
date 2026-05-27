@@ -6,6 +6,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +28,7 @@ import ai.wanaku.core.util.VersionHelper;
 public class LocalRunner {
     private static final Logger LOG = Logger.getLogger(LocalRunner.class);
     private static final String QUARKUS_APP = "quarkus-app";
+    private static final String STANDALONE_JAR = "app.jar";
     private static final URI DEFAULT_ROUTER_READINESS_URI = URI.create("http://localhost:8080/q/health/ready");
     private static final Duration ROUTER_READINESS_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration ROUTER_READINESS_REQUEST_TIMEOUT = Duration.ofSeconds(2);
@@ -36,6 +40,8 @@ public class LocalRunner {
     public static class LocalRunnerEnvironment {
         private final Map<String, String> servicesOptions = new HashMap<>();
         private final List<File> localDists = new ArrayList<>();
+        private String camelRoutes;
+        private String camelRules;
 
         public LocalRunnerEnvironment() {
             withAuthMode("none");
@@ -49,6 +55,24 @@ public class LocalRunner {
         public LocalRunnerEnvironment withLocalDist(File localDist) {
             this.localDists.add(localDist);
             return this;
+        }
+
+        public LocalRunnerEnvironment withCamelRoutes(String camelRoutes) {
+            this.camelRoutes = camelRoutes;
+            return this;
+        }
+
+        public LocalRunnerEnvironment withCamelRules(String camelRules) {
+            this.camelRules = camelRules;
+            return this;
+        }
+
+        public String camelRoutes() {
+            return camelRoutes;
+        }
+
+        public String camelRules() {
+            return camelRules;
         }
 
         public List<File> localDists() {
@@ -108,6 +132,10 @@ public class LocalRunner {
 
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {
+                if (!isQuarkusComponent(component.getKey())) {
+                    LOG.infof("Skipping re-augmentation for non-Quarkus component %s", component.getKey());
+                    continue;
+                }
                 reaugmentComponent(component.getKey(), "-Dquarkus.oidc-client.enabled=false");
             }
         }
@@ -222,7 +250,7 @@ public class LocalRunner {
         });
     }
 
-    private static void startService(
+    private void startService(
             Map.Entry<String, String> component,
             int grpcPort,
             String profileOpt,
@@ -230,8 +258,22 @@ public class LocalRunner {
             CountDownLatch countDownLatch,
             LocalRunnerEnvironment environment) {
         LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
-        File componentDir = quarkusAppDir(component.getKey());
 
+        if (isQuarkusComponent(component.getKey())) {
+            startQuarkusService(component.getKey(), grpcPort, profileOpt, executorService, countDownLatch, environment);
+        } else {
+            startStandaloneService(component.getKey(), grpcPort, executorService, countDownLatch, environment);
+        }
+    }
+
+    private static void startQuarkusService(
+            String componentName,
+            int grpcPort,
+            String profileOpt,
+            ExecutorService executorService,
+            CountDownLatch countDownLatch,
+            LocalRunnerEnvironment environment) {
+        File componentDir = quarkusAppDir(componentName);
         String grpcPortOpt = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
 
         executorService.submit(() -> {
@@ -245,7 +287,49 @@ public class LocalRunner {
                         "-jar",
                         "quarkus-run.jar");
             } catch (Exception e) {
-                LOG.errorf("Failed to start Wanaku Service %s", component.getKey(), e);
+                LOG.errorf("Failed to start Wanaku Service %s", componentName, e);
+            } finally {
+                countDownLatch.countDown();
+            }
+        });
+    }
+
+    private static void startStandaloneService(
+            String componentName,
+            int grpcPort,
+            ExecutorService executorService,
+            CountDownLatch countDownLatch,
+            LocalRunnerEnvironment environment) {
+        File componentDir = new File(RuntimeConstants.WANAKU_LOCAL_DIR, componentName);
+
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-jar");
+        command.add(STANDALONE_JAR);
+        command.add("--registration-url");
+        command.add("http://localhost:8080");
+        command.add("--registration-announce-address");
+        command.add("localhost");
+        command.add("--grpc-port");
+        command.add(String.valueOf(grpcPort));
+        command.add("--name");
+        command.add(componentName);
+
+        if (environment.camelRoutes() != null) {
+            command.add("--routes-ref");
+            command.add(environment.camelRoutes());
+        }
+
+        if (environment.camelRules() != null) {
+            command.add("--rules-ref");
+            command.add(environment.camelRules());
+        }
+
+        executorService.submit(() -> {
+            try {
+                ProcessRunner.run(componentDir, environment.serviceOptions(), command.toArray(new String[0]));
+            } catch (Exception e) {
+                LOG.errorf("Failed to start Wanaku Service %s", componentName, e);
             } finally {
                 countDownLatch.countDown();
             }
@@ -267,22 +351,30 @@ public class LocalRunner {
         String baseName = extractArtifactBaseName(urlFormat);
         File localMatch = findLocalDist(baseName);
 
-        File zipFile;
+        File downloadedFile;
         if (localMatch != null) {
             LOG.debugf("Using local distribution %s for %s", localMatch, componentName);
-            zipFile = localMatch;
+            downloadedFile = localMatch;
         } else {
-            String downloadUrl = getDownloadURL(urlFormat);
+            String downloadUrl = getDownloadURL(componentName, urlFormat);
             File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
 
             LOG.infof("Downloading %s", componentName);
             LOG.debugf("Download URL: %s", downloadUrl);
-            zipFile = Downloader.downloadFile(downloadUrl, destinationDir);
+            downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir);
         }
 
-        String extractDir = componentName + File.separator + QUARKUS_APP;
-        LOG.infof("Deploying %s", componentName);
-        ZipHelper.unzip(zipFile, RuntimeConstants.WANAKU_LOCAL_DIR, extractDir);
+        if (isJarArtifact(urlFormat)) {
+            Path componentDir = Path.of(RuntimeConstants.WANAKU_LOCAL_DIR, componentName);
+            Files.createDirectories(componentDir);
+            Files.copy(
+                    downloadedFile.toPath(), componentDir.resolve(STANDALONE_JAR), StandardCopyOption.REPLACE_EXISTING);
+            LOG.infof("Installed %s as standalone JAR", componentName);
+        } else {
+            String extractDir = componentName + File.separator + QUARKUS_APP;
+            LOG.infof("Deploying %s", componentName);
+            ZipHelper.unzip(downloadedFile, RuntimeConstants.WANAKU_LOCAL_DIR, extractDir);
+        }
     }
 
     static String extractArtifactBaseName(String urlFormat) {
@@ -303,15 +395,25 @@ public class LocalRunner {
         return null;
     }
 
-    private String getDownloadURL(String urlFormat) {
+    private String getDownloadURL(String componentName, String urlFormat) {
+        String version = config.componentVersions().getOrDefault(componentName, VersionHelper.VERSION);
         String tag;
-        if (VersionHelper.VERSION.contains("SNAPSHOT")) {
+        if (version.contains("SNAPSHOT")) {
             tag = config.earlyAccessTag();
         } else {
-            tag = String.format("v%s", VersionHelper.VERSION);
+            tag = String.format("v%s", version);
         }
 
-        return String.format(urlFormat, tag, VersionHelper.VERSION);
+        return String.format(urlFormat, tag, version);
+    }
+
+    private static boolean isJarArtifact(String urlFormat) {
+        return urlFormat.endsWith(".jar");
+    }
+
+    private static boolean isQuarkusComponent(String componentName) {
+        File quarkusRunJar = new File(quarkusAppDir(componentName), "quarkus-run.jar");
+        return quarkusRunJar.exists();
     }
 
     private static File quarkusAppDir(String componentName) {
