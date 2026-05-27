@@ -60,6 +60,10 @@ public interface WanakuCliConfig extends WanakuConfig {
     @WithDefault("9000")
     int initialGrpcPort();
 
+    /**
+     * Maximum number of seconds to wait for the local router readiness
+     * endpoint before starting capability services.
+     */
     @WithDefault("5")
     int routerStartWaitSecs();
 

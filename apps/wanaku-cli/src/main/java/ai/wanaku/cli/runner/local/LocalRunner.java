@@ -2,6 +2,10 @@ package ai.wanaku.cli.runner.local;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +25,12 @@ import ai.wanaku.core.util.VersionHelper;
 public class LocalRunner {
     private static final Logger LOG = Logger.getLogger(LocalRunner.class);
     private static final String QUARKUS_APP = "quarkus-app";
+    private static final URI DEFAULT_ROUTER_READINESS_URI = URI.create("http://localhost:8080/q/health/ready");
+    private static final Duration ROUTER_READINESS_POLL_INTERVAL = Duration.ofMillis(500);
+    private static final Duration ROUTER_READINESS_REQUEST_TIMEOUT = Duration.ofSeconds(2);
     private final WanakuCliConfig config;
+    private final HttpClient httpClient;
+    private final URI routerReadinessUri;
     private int activeServices = 0;
 
     public static class LocalRunnerEnvironment {
@@ -69,8 +78,15 @@ public class LocalRunner {
     private final LocalRunnerEnvironment environment;
 
     public LocalRunner(WanakuCliConfig config, LocalRunnerEnvironment environment) {
+        this(config, environment, HttpClient.newHttpClient(), DEFAULT_ROUTER_READINESS_URI);
+    }
+
+    LocalRunner(
+            WanakuCliConfig config, LocalRunnerEnvironment environment, HttpClient httpClient, URI routerReadinessUri) {
         this.config = config;
         this.environment = environment;
+        this.httpClient = httpClient;
+        this.routerReadinessUri = routerReadinessUri;
     }
 
     public void start(List<String> services) throws IOException {
@@ -112,7 +128,7 @@ public class LocalRunner {
         ProcessRunner.run(componentDir, command.toArray(new String[0]));
     }
 
-    private void run(List<String> services, Map<String, String> components) {
+    private void run(List<String> services, Map<String, String> components) throws IOException {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
         CountDownLatch countDownLatch = new CountDownLatch(activeServices + 1);
@@ -122,9 +138,10 @@ public class LocalRunner {
 
         LOG.debug("Starting Wanaku Router Backend");
         startRouter(RuntimeConstants.WANAKU_ROUTER_BACKEND, profileOpt, executorService, countDownLatch, environment);
-        LOG.infof("Waiting %d seconds for the router to start", config.routerStartWaitSecs());
+        LOG.infof(
+                "Waiting up to %d seconds for the Wanaku Router Backend to become ready", config.routerStartWaitSecs());
         try {
-            Thread.sleep(Duration.ofSeconds(config.routerStartWaitSecs()).toMillis());
+            waitForRouterReadiness(Duration.ofSeconds(config.routerStartWaitSecs()), ROUTER_READINESS_POLL_INTERVAL);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LOG.warn("Interrupted while waiting for Wanaku Router Backend to start ... Aborting");
@@ -143,6 +160,46 @@ public class LocalRunner {
         } catch (InterruptedException e) {
             LOG.infof("Interrupted while waiting for services to run");
         }
+    }
+
+    void waitForRouterReadiness(Duration timeout, Duration pollInterval) throws IOException, InterruptedException {
+        long deadline = System.nanoTime() + timeout.toNanos();
+
+        while (System.nanoTime() <= deadline) {
+            long remainingNanos = deadline - System.nanoTime();
+            if (remainingNanos <= 0) {
+                break;
+            }
+
+            Duration remaining = Duration.ofNanos(remainingNanos);
+            if (routerIsReady(minDuration(remaining, ROUTER_READINESS_REQUEST_TIMEOUT))) {
+                LOG.info("Wanaku Router Backend is ready");
+                return;
+            }
+
+            Thread.sleep(Math.min(pollInterval.toMillis(), remaining.toMillis()));
+        }
+
+        throw new IOException("Wanaku Router Backend did not become ready within %d seconds at %s"
+                .formatted(timeout.toSeconds(), routerReadinessUri));
+    }
+
+    private boolean routerIsReady(Duration timeout) throws InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(routerReadinessUri)
+                .timeout(timeout)
+                .GET()
+                .build();
+        try {
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+            return response.statusCode() >= 200 && response.statusCode() < 300;
+        } catch (IOException e) {
+            LOG.debugf("Wanaku Router Backend readiness check failed: %s", e.getMessage());
+            return false;
+        }
+    }
+
+    private static Duration minDuration(Duration first, Duration second) {
+        return first.compareTo(second) <= 0 ? first : second;
     }
 
     private static void startRouter(
