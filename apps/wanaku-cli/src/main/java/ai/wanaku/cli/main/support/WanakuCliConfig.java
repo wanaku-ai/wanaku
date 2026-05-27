@@ -69,4 +69,6 @@ public interface WanakuCliConfig extends WanakuConfig {
 
     @WithDefault("local")
     String localProfile();
+
+    Map<String, String> componentVersions();
 }

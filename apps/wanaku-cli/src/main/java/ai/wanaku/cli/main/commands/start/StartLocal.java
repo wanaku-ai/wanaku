@@ -31,6 +31,18 @@ public class StartLocal extends StartBase {
             arity = "1")
     protected List<File> localDists;
 
+    @CommandLine.Option(
+            names = {"--camel-routes"},
+            description =
+                    "Path to Apache Camel routes YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/routes.camel.yaml)")
+    protected String camelRoutes;
+
+    @CommandLine.Option(
+            names = {"--camel-rules"},
+            description =
+                    "Path to route exposure rules YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/rules.yaml)")
+    protected String camelRules;
+
     @Override
     protected void startWanaku() {
         List<String> services;
@@ -46,6 +58,14 @@ public class StartLocal extends StartBase {
             for (File dist : localDists) {
                 environment.withLocalDist(dist);
             }
+        }
+
+        if (camelRoutes != null) {
+            environment.withCamelRoutes(camelRoutes);
+        }
+
+        if (camelRules != null) {
+            environment.withCamelRules(camelRules);
         }
 
         LocalRunner localRunner = new LocalRunner(config, environment);
