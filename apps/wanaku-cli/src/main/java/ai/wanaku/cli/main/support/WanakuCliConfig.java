@@ -62,4 +62,7 @@ public interface WanakuCliConfig extends WanakuConfig {
 
     @WithDefault("5")
     int routerStartWaitSecs();
+
+    @WithDefault("local")
+    String localProfile();
 }
