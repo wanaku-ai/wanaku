@@ -11,7 +11,7 @@ public class ToolReferenceSchema extends AbstractWanakuSerializationContextIniti
     private static final Logger logger = LoggerFactory.getLogger(ToolReferenceSchema.class);
 
     public ToolReferenceSchema() {
-        logger.info("ToolReferenceSchema instantiated!");
+        logger.trace("ToolReferenceSchema instantiated!");
     }
 
     private final InputSchemaSchema inputSchema = new InputSchemaSchema();

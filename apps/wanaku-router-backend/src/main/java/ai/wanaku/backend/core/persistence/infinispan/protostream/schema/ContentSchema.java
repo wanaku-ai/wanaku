@@ -14,7 +14,7 @@ public class ContentSchema extends AbstractWanakuSerializationContextInitializer
     private static final Logger logger = LoggerFactory.getLogger(ContentSchema.class);
 
     public ContentSchema() {
-        logger.info("ContentSchema instantiated!");
+        logger.trace("ContentSchema instantiated!");
     }
 
     private final ResourceReferenceSchema resourceReferenceSchema = new ResourceReferenceSchema();

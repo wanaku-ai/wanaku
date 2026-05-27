@@ -13,7 +13,7 @@ public class PromptReferenceSchema extends AbstractWanakuSerializationContextIni
     private static final Logger logger = LoggerFactory.getLogger(PromptReferenceSchema.class);
 
     public PromptReferenceSchema() {
-        logger.info("PromptReferenceSchema instantiated!");
+        logger.trace("PromptReferenceSchema instantiated!");
     }
 
     private final ContentSchema contentSchema = new ContentSchema();
