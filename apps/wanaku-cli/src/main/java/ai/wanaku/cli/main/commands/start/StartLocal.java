@@ -24,6 +24,13 @@ public class StartLocal extends StartBase {
     @Inject
     WanakuCliConfig config;
 
+    @CommandLine.Option(
+            names = {"--local-dist"},
+            description =
+                    "Path to a locally built ZIP distribution (repeatable, overrides download for matching components)",
+            arity = "1")
+    protected List<File> localDists;
+
     @Override
     protected void startWanaku() {
         List<String> services;
@@ -34,9 +41,12 @@ public class StartLocal extends StartBase {
             services = config.defaultServices();
         }
 
-        LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment()
-                .withAuthMode(config.auth().mode())
-                .withServiceOption("QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET", capabilitiesClientSecret);
+        LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment();
+        if (localDists != null) {
+            for (File dist : localDists) {
+                environment.withLocalDist(dist);
+            }
+        }
 
         LocalRunner localRunner = new LocalRunner(config, environment);
         try {

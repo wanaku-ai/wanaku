@@ -3,7 +3,6 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 out
-apps/wanaku-router-backend/.quinoa/
 apps/wanaku-router-backend/application.dev.properties
 
 ### IntelliJ IDEA ###
