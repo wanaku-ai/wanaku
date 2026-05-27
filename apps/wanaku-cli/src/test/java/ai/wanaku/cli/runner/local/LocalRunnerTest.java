@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
 import com.sun.net.httpserver.HttpServer;
 
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 class LocalRunnerTest {
@@ -66,5 +68,31 @@ class LocalRunnerTest {
 
         assertThrows(
                 IOException.class, () -> runner.waitForRouterReadiness(Duration.ofMillis(50), Duration.ofMillis(10)));
+    }
+
+    @Test
+    void shouldUseRemainingTimeoutForReadinessRequests() throws Exception {
+        server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        server.createContext("/q/health/ready", exchange -> {
+            LockSupport.parkNanos(Duration.ofMillis(500).toNanos());
+            exchange.sendResponseHeaders(200, -1);
+            exchange.close();
+        });
+        server.start();
+        URI readinessUri = URI.create("http://localhost:%d/q/health/ready"
+                .formatted(server.getAddress().getPort()));
+
+        LocalRunner runner = new LocalRunner(
+                mock(WanakuCliConfig.class),
+                new LocalRunner.LocalRunnerEnvironment(),
+                HttpClient.newHttpClient(),
+                readinessUri);
+
+        long startedAt = System.nanoTime();
+        assertThrows(
+                IOException.class, () -> runner.waitForRouterReadiness(Duration.ofMillis(100), Duration.ofMillis(10)));
+        Duration elapsed = Duration.ofNanos(System.nanoTime() - startedAt);
+
+        assertTrue(elapsed.compareTo(Duration.ofSeconds(1)) < 0);
     }
 }
