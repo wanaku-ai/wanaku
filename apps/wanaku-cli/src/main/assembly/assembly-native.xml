@@ -24,5 +24,14 @@
                 <include>LICENSE</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/scripts</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>wanaku</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <filtered>false</filtered>
+        </fileSet>
     </fileSets>
 </assembly>
