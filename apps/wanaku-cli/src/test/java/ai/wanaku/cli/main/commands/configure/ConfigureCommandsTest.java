@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class ConfigureCommandsTest {
@@ -131,5 +132,41 @@ class ConfigureCommandsTest {
         assertEquals(EXIT_ERROR, result);
         assertFalse(Files.exists(configPath));
         verify(printer).printErrorMessage("Unsupported transport 'stdio'. Supported transports: sse, http");
+    }
+
+    @Test
+    void claudeCodeConfigureShouldPrintAddCommandWithDefaultHost() throws Exception {
+        ConfigureClaudeCode cmd = new ConfigureClaudeCode();
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        verify(printer).printInfoMessage("Run this command to register Wanaku with Claude Code:");
+        verify(printer)
+                .printInfoMessage("claude mcp add wanaku --transport sse http://localhost:8080/mcp/sse");
+    }
+
+    @Test
+    void claudeCodeConfigureShouldPrintAddCommandWithCustomHost() throws Exception {
+        ConfigureClaudeCode cmd = new ConfigureClaudeCode();
+        cmd.host = "https://wanaku.example.com/";
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        verify(printer)
+                .printInfoMessage("claude mcp add wanaku --transport sse https://wanaku.example.com/mcp/sse");
+    }
+
+    @Test
+    void claudeCodeConfigureShouldRejectHostWithoutScheme() throws Exception {
+        ConfigureClaudeCode cmd = new ConfigureClaudeCode();
+        cmd.host = "wanaku.example.com";
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_ERROR, result);
+        verify(printer).printErrorMessage("Wanaku host URL must include a scheme and host");
+        verify(printer, never()).printInfoMessage("claude mcp add wanaku --transport sse http://wanaku.example.com/mcp/sse");
     }
 }
