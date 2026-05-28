@@ -31,6 +31,7 @@
         <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
         <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
+        <frontend-maven-plugin.version>1.15.4</frontend-maven-plugin.version>
         <executable-suffix/>
         <distribution.directory>${project.build.directory}/distributions</distribution.directory>
 
@@ -81,6 +82,9 @@
         <oauth2-oidc-sdk.version>11.37.1</oauth2-oidc-sdk.version>
         <operator-framework.version>5.3.4</operator-framework.version>
         <palantir-format.version>2.71.0</palantir-format.version>
+
+        <nodejs.version>v22.18.0</nodejs.version>
+        <yarn.version>v1.22.22</yarn.version>
 
         <assembly.descriptor>src/main/assembly/assembly.xml</assembly.descriptor>
         <dist.final.name>${project.artifactId}-${project.version}</dist.final.name>
