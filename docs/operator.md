@@ -81,7 +81,6 @@ Defines a Wanaku router instance.
 | `spec.auth.authServer` | string | No | `""` | Keycloak server address (format: `http://address`). Leave empty if running without auth. |
 | `spec.auth.authProxy` | string | No | `""` | OIDC proxy address. Use `"auto"` to enable Wanaku's built-in OIDC proxy, or set to Keycloak's address. Empty defaults to Keycloak's address. |
 | `spec.auth.authRealm` | string | No | `"wanaku"` | Keycloak realm name. |
-| `spec.secrets.oidcCredentialsSecret` | string | No | `""` | Name of the Kubernetes secret containing OIDC client credentials (key: `client-secret`). Required if using Keycloak. |
 | `spec.imagePullPolicy` | string | No | `"IfNotPresent"` | Global image pull policy for all operator-managed deployments (`Always`, `IfNotPresent`, `Never`). |
 | `spec.ingress.host` | string | No | `""` | Ingress hostname for Kubernetes clusters. OpenShift auto-generates Routes; set this only on vanilla Kubernetes. |
 | `spec.router.image` | string | No | `quay.io/wanaku/wanaku-router-backend:latest` | Router container image. |
@@ -98,9 +97,10 @@ metadata:
 spec:
   auth:
     authServer: http://keycloak:8080
-  secrets:
-    oidcCredentialsSecret: wanaku-oidc-secret
 ```
+
+> [!NOTE]
+> `WanakuRouter` does not define `spec.secrets`. OIDC client secrets are configured on `WanakuCapability` resources only.
 
 **Example (unauthenticated, development only):**
 
@@ -125,7 +125,7 @@ Defines capability services that register with a router.
 | `spec.auth.authServer` | string | No | `""` | Keycloak server address (same as WanakuRouter). |
 | `spec.auth.authProxy` | string | No | `""` | OIDC proxy address (same as WanakuRouter). |
 | `spec.auth.authRealm` | string | No | `"wanaku"` | Keycloak realm name. |
-| `spec.secrets.oidcCredentialsSecret` | string | No | `""` | OIDC client secret (same as WanakuRouter). |
+| `spec.secrets.oidcCredentialsSecret` | string | No | `""` | OIDC client secret. Required if using Keycloak. |
 | `spec.imagePullPolicy` | string | No | `"IfNotPresent"` | Global image pull policy for all capabilities. |
 | `spec.routerRef` | string | **Yes** | — | Name of the `WanakuRouter` CR this capability registers with. Must exist in the same namespace. |
 | `spec.capabilities[].name` | string | **Yes** | — | Unique capability service name. Used as deployment/service name. |
@@ -219,8 +219,6 @@ metadata:
 spec:
   auth:
     authServer: http://keycloak:8080
-  secrets:
-    oidcCredentialsSecret: wanaku-oidc-secret
 ---
 # capabilities.yaml
 apiVersion: "wanaku.ai/v1alpha1"
@@ -387,7 +385,7 @@ spec:
 With this setting:
 
 - You don't need a Keycloak instance
-- Leave `spec.auth.authServer` and `spec.secrets.oidcCredentialsSecret` empty
+- Leave `spec.auth.authServer` empty
 - Capabilities don't require OIDC credentials either (the router accepts unauthenticated registration)
 
 > [!IMPORTANT]
@@ -503,7 +501,7 @@ The operator creates a service named `internal-{routerRef}` for capabilities to 
 
 **Verify OIDC credentials match:**
 
-The router and all capabilities must use the same `oidcCredentialsSecret`. Check the secret value:
+All capabilities must use the same `oidcCredentialsSecret`. Check the secret value:
 
 ```shell
 kubectl get secret wanaku-oidc-secret -n wanaku -o jsonpath='{.data.client-secret}' | base64 -d

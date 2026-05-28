@@ -11,9 +11,6 @@ spec:
 # Address of the proxy (in the format: http://address). It could be the same as the auth server - default) or "auto" (for using
 # Wanaku as the proxy via OIDC proxy.
 #    authProxy: ""
-  secrets:
-# This is the OIDC credentials secret for the services
-    oidcCredentialsSecret: ""
 # Global image pull policy for all deployments
 # Valid values: Always, IfNotPresent, Never
 # Default: IfNotPresent

@@ -348,8 +348,6 @@ metadata:
 spec:
   auth:
     authServer: http://keycloak:8080
-  secrets:
-    oidcCredentialsSecret: wanaku-oidc-secret
 ```
 
 ```shell
@@ -517,12 +515,11 @@ Then install the operator and apply the custom resources with your OIDC configur
 helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
 
 sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
-    -e "s/replace-me-with-the-client-credentials-secret/<your-client-secret>/g" \
-    deploy/openshift/wanaku-router.yaml | oc apply -f -
+     deploy/openshift/wanaku-router.yaml | oc apply -f -
 
 sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
     -e "s/replace-me-with-the-client-credentials-secret/<your-client-secret>/g" \
-    deploy/openshift/wanaku-capabilities.yaml | oc apply -f -
+     deploy/openshift/wanaku-capabilities.yaml | oc apply -f -
 ```
 
 #### Environment Configuration
