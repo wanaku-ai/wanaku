@@ -8,7 +8,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "configure",
         description = "Configure popular MCP clients to connect to Wanaku",
-        subcommands = {ConfigureClaude.class, ConfigureCursor.class})
+        subcommands = {ConfigureClaude.class, ConfigureClaudeCode.class, ConfigureCursor.class})
 public class Configure extends BaseCommand {
 
     @Override
