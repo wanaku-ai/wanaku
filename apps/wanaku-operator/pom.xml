@@ -5,7 +5,7 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>apps</artifactId>
-        <version>0.1.1-SNAPSHOT</version>
+        <version>0.1.1</version>
     </parent>
 
     <artifactId>wanaku-operator</artifactId>
@@ -122,25 +122,12 @@
                         </goals>
                         <configuration>
                             <target>
-                                <property name="helm.templates"
-                                          value="${project.build.directory}/helm/kubernetes/wanaku-operator/templates"/>
+                                <property name="helm.templates" value="${project.build.directory}/helm/kubernetes/wanaku-operator/templates" />
                                 <!-- Prefix roleRef names to match namespace-prefixed ClusterRoles -->
-                                <replace dir="${helm.templates}"
-                                         includes="*-crd-role-binding.yaml"
-                                         token="name: wanaku-capability-cluster-role"
-                                         value="name: {{ $.Release.Namespace }}-wanaku-capability-cluster-role"/>
-                                <replace dir="${helm.templates}"
-                                         includes="*-crd-role-binding.yaml"
-                                         token="name: wanaku-router-cluster-role"
-                                         value="name: {{ $.Release.Namespace }}-wanaku-router-cluster-role"/>
-                                <replace dir="${helm.templates}"
-                                         includes="*-crd-role-binding.yaml"
-                                         token="name: wanaku-service-catalog-cluster-role"
-                                         value="name: {{ $.Release.Namespace }}-wanaku-service-catalog-cluster-role"/>
-                                <replace dir="${helm.templates}"
-                                         includes="validating-clusterrolebinding.yaml"
-                                         token="name: josdk-crd-validating-cluster-role"
-                                         value="name: {{ $.Release.Namespace }}-josdk-crd-validating-cluster-role"/>
+                                <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-capability-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-capability-cluster-role" />
+                                <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-router-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-router-cluster-role" />
+                                <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-service-catalog-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-service-catalog-cluster-role" />
+                                <replace dir="${helm.templates}" includes="validating-clusterrolebinding.yaml" token="name: josdk-crd-validating-cluster-role" value="name: {{ $.Release.Namespace }}-josdk-crd-validating-cluster-role" />
                                 <!-- Remove duplicate RoleBindings from rolebinding.yaml;
                                      the *-crd-role-binding.yaml files handle these conditionally -->
                                 <echo file="${helm.templates}/rolebinding.yaml"><![CDATA[---
