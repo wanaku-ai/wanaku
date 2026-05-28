@@ -3005,21 +3005,15 @@ You can let the CLI generate the Claude Desktop configuration for you:
 wanaku configure claude
 ```
 
-This updates the `claude_desktop_config.json` file and configures Claude Desktop to proxy Wanaku through `uvx mcp-proxy`.
+This updates the `claude_desktop_config.json` file and configures Claude Desktop to connect directly to Wanaku via HTTP.
 If your Wanaku server is exposing streamable HTTP instead of SSE, use `--transport http`.
-
-Claude Desktop does not currently support connecting to SSE-based endpoints, so you will have to configure wanaku using a stdio-to-sse wrapper.   Note that you will have to install ![uv](https://github.com/astral-sh/uv) for this purpose, and specify the SSE URL for your Wanaku instance in the arguments.
 
 ```claude_desktop_config.json
 {
   "mcpServers": {
     "wanaku": {
-        "command": "uvx",
-        "args": [
-            "mcp-proxy",
-            "http://localhost:8080/mcp/sse/"
-        ]
-      }
+      "url": "http://localhost:8080/mcp/sse"
+    }
   }
 }
 ```
