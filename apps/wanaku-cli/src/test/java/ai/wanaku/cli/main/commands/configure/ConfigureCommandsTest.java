@@ -54,11 +54,7 @@ class ConfigureCommandsTest {
 
         JsonNode root = MAPPER.readTree(Files.readString(configPath));
         JsonNode wanaku = root.path("mcpServers").path("wanaku");
-        assertEquals("uvx", wanaku.path("command").asText());
-        assertEquals("mcp-proxy", wanaku.path("args").get(0).asText());
-        assertEquals(
-                "http://localhost:8080/mcp/sse/", wanaku.path("args").get(1).asText());
-        assertTrue(wanaku.path("env").isObject());
+        assertEquals("http://localhost:8080/mcp/sse/", wanaku.path("url").asText());
 
         verify(printer).printSuccessMessage(anyString());
     }
@@ -77,10 +73,7 @@ class ConfigureCommandsTest {
 
         JsonNode root = MAPPER.readTree(Files.readString(configPath));
         JsonNode wanaku = root.path("mcpServers").path("wanaku");
-        assertEquals("uvx", wanaku.path("command").asText());
-        assertEquals("mcp-proxy", wanaku.path("args").get(0).asText());
-        assertEquals("--transport=streamablehttp", wanaku.path("args").get(1).asText());
-        assertEquals("http://localhost:8080/mcp", wanaku.path("args").get(2).asText());
+        assertEquals("http://localhost:8080/mcp", wanaku.path("url").asText());
     }
 
     @Test
