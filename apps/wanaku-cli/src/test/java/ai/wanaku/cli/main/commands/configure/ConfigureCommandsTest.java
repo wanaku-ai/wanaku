@@ -167,6 +167,6 @@ class ConfigureCommandsTest {
 
         assertEquals(EXIT_ERROR, result);
         verify(printer).printErrorMessage("Wanaku host URL must include a scheme and host");
-        verify(printer, never()).printInfoMessage("claude mcp add wanaku --transport sse http://wanaku.example.com/mcp/sse");
+        verify(printer, never()).printInfoMessage(anyString());
     }
 }

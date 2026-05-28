@@ -15,13 +15,14 @@ public class ConfigureClaudeCode extends BaseCommand {
             names = {"--host"},
             description = "Wanaku host URL",
             defaultValue = DEFAULT_HOST)
-    String host = DEFAULT_HOST;
+    String host;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         try {
+            String endpoint = sseEndpoint();
             printer.printInfoMessage("Run this command to register Wanaku with Claude Code:");
-            printer.printInfoMessage("claude mcp add wanaku --transport sse " + sseEndpoint());
+            printer.printInfoMessage("claude mcp add wanaku --transport sse " + endpoint);
             return EXIT_OK;
         } catch (IllegalArgumentException e) {
             printer.printErrorMessage(e.getMessage());
