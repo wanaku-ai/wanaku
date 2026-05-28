@@ -215,7 +215,7 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.15.1</version>
+                <version>1.15.4</version>
                 <configuration>
                     <workingDirectory>${project.basedir}/../ui/admin</workingDirectory>
                     <installDirectory>${project.build.directory}/frontend</installDirectory>
