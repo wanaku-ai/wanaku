@@ -47,11 +47,6 @@ spec:
                   imagePullPolicy:
                     type: "string"
                 type: "object"
-              secrets:
-                properties:
-                  oidcCredentialsSecret:
-                    type: "string"
-                type: "object"
             type: "object"
           status:
             properties:

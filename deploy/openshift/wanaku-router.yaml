@@ -10,5 +10,3 @@ spec:
   router:
     image: quay.io/wanaku/wanaku-router-backend:latest
     imagePullPolicy: Always
-  secrets:
-    oidcCredentialsSecret: replace-me-with-the-client-credentials-secret

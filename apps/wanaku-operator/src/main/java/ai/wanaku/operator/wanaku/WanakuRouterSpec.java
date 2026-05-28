@@ -4,7 +4,6 @@ import java.util.List;
 
 public class WanakuRouterSpec {
     private WanakuTypes.AuthSpec auth;
-    private WanakuTypes.SecretsSpec secrets;
     private String imagePullPolicy;
     private WanakuTypes.IngressSpec ingress;
     private RouterSpec router;
@@ -15,14 +14,6 @@ public class WanakuRouterSpec {
 
     public void setAuth(WanakuTypes.AuthSpec auth) {
         this.auth = auth;
-    }
-
-    public WanakuTypes.SecretsSpec getSecrets() {
-        return secrets;
-    }
-
-    public void setSecrets(WanakuTypes.SecretsSpec secrets) {
-        this.secrets = secrets;
     }
 
     public String getImagePullPolicy() {
