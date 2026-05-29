@@ -3,8 +3,14 @@ package ai.wanaku.cli.main.commands.service;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
@@ -31,9 +37,21 @@ public class ServiceTemplateInstantiate extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--properties"},
-            description = "Comma-separated key=value pairs (e.g., endpoint.url=http://example.com,api.key=secret)",
+            description = "Comma-separated key=value pairs (e.g., endpoint.url=http://example.com,api.key=secret). Deprecated: prefer --property or --properties-from",
             arity = "0..1")
     private String properties;
+
+    @CommandLine.Option(
+            names = {"--property"},
+            description = "A single key=value property; may be repeated (e.g., --property kafka.brokers=localhost:9092 --property kafka.topic=ai.requests)",
+            arity = "1")
+    private List<String> property = new ArrayList<>();
+
+    @CommandLine.Option(
+            names = {"--properties-from"},
+            description = "Load properties from a Java .properties file",
+            arity = "0..1")
+    private File propertiesFrom;
 
     @CommandLine.Option(
             names = {"--service-name"},
@@ -47,23 +65,52 @@ public class ServiceTemplateInstantiate extends BaseCommand {
             arity = "0..1")
     private String serviceSystem;
 
-    @Override
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        ServiceTemplateService service = initService(ServiceTemplateService.class, host);
-
-        // Parse properties
+    private Map<String, String> resolveProperties(WanakuPrinter printer) throws IOException {
         Map<String, String> propsMap = new HashMap<>();
+
+        // 1. Legacy --properties (comma-separated), lowest precedence
         if (properties != null && !properties.isBlank()) {
-            String[] pairs = properties.split(",");
-            for (String pair : pairs) {
+            for (String pair : properties.split(",")) {
                 String[] kv = pair.split("=", 2);
                 if (kv.length == 2) {
                     propsMap.put(kv[0].trim(), kv[1].trim());
                 } else {
                     printer.printErrorMessage(String.format("Invalid property format: '%s'%n", pair));
-                    return EXIT_ERROR;
+                    return null;
                 }
             }
+        }
+
+        // 2. --properties-from <file>, overrides --properties
+        if (propertiesFrom != null) {
+            Properties p = new Properties();
+            try (FileInputStream fis = new FileInputStream(propertiesFrom)) {
+                p.load(fis);
+            }
+            p.forEach((k, v) -> propsMap.put((String) k, (String) v));
+        }
+
+        // 3. --property key=value (repeatable), highest precedence
+        for (String pair : property) {
+            String[] kv = pair.split("=", 2);
+            if (kv.length == 2) {
+                propsMap.put(kv[0].trim(), kv[1].trim());
+            } else {
+                printer.printErrorMessage(String.format("Invalid property format: '%s'%n", pair));
+                return null;
+            }
+        }
+
+        return propsMap;
+    }
+
+    @Override
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+        ServiceTemplateService service = initService(ServiceTemplateService.class, host);
+
+        Map<String, String> propsMap = resolveProperties(printer);
+        if (propsMap == null) {
+            return EXIT_ERROR;
         }
 
         printer.printInfoMessage(
