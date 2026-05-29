@@ -48,6 +48,7 @@ class ServiceExposeTest {
         assertTrue(rulesFile.exists());
         String content = Files.readString(rulesFile.toPath());
         assertTrue(content.contains("my-route-1"));
+        assertTrue(content.contains("wanaku_body"), "Tools should include wanaku_body property by default");
     }
 
     @Test
@@ -137,6 +138,7 @@ class ServiceExposeTest {
         assertTrue(content.contains("s3-read"), "Should contain route ID");
         assertTrue(content.contains("uri: \"wanaku://s3-read\""), "Should contain default URI");
         assertTrue(content.contains("mimeType: \"application/octet-stream\""), "Should contain default MIME type");
+        assertFalse(content.contains("wanaku_body"), "Resources should not include wanaku_body property");
     }
 
     @Test
