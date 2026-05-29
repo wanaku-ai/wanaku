@@ -23,7 +23,13 @@ public final class ResponseHelper {
                 // Ignore if we can't read the body
             }
 
-            if (response.getStatus() == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                message = String.format(
+                        "The requested resource was not found: %s%s%n",
+                        response.getStatusInfo().getReasonPhrase(),
+                        responseBody.isEmpty() ? "" : "\nDetails: " + responseBody);
+                printer.printErrorMessage(message);
+            } else if (response.getStatus() == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
                 message = String.format(
                         "The server was unable to handle the request: %s%s%n",
                         response.getStatusInfo().getReasonPhrase(),
