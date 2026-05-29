@@ -20,6 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.jboss.logging.Logger;
+import ai.wanaku.backend.api.v1.exceptions.ServiceTemplateNotFoundException;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
@@ -181,7 +182,7 @@ public class ServiceTemplateBean {
 
         DataStore template = get(name);
         if (template == null) {
-            throw new WanakuException("Service template not found: %s".formatted(name));
+            throw new ServiceTemplateNotFoundException("Service template not found: %s".formatted(name));
         }
 
         ServiceCatalogIndex index = parseIndex(template);
@@ -246,7 +247,7 @@ public class ServiceTemplateBean {
 
         DataStore template = get(templateName);
         if (template == null) {
-            throw new WanakuException("Service template not found: %s".formatted(templateName));
+            throw new ServiceTemplateNotFoundException("Service template not found: %s".formatted(templateName));
         }
 
         ServiceCatalogIndex index = parseIndex(template);

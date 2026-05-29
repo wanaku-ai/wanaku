@@ -50,7 +50,8 @@ public class WanakuExceptionMapper implements ExceptionMapper<WanakuException> {
                 || e instanceof ServiceNotFoundException
                 || e instanceof ConfigurationNotFoundException
                 || e instanceof NamespaceNotFoundException
-                || e instanceof DataStoreResourceNotFoundException) {
+                || e instanceof DataStoreResourceNotFoundException
+                || e instanceof ServiceTemplateNotFoundException) {
             status = 404;
         } else if (e instanceof EntityAlreadyExistsException) {
             status = 409;
