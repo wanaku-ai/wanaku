@@ -132,10 +132,20 @@ public class ServiceTemplateInstantiate extends BaseCommand {
                     String.format("Service catalog created successfully from template '%s'%n", name));
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                handleNotFoundTemplate(printer, name);
+                return EXIT_ERROR;
+            }
             commonResponseErrorHandler(response);
             return EXIT_ERROR;
         }
 
         return EXIT_OK;
+    }
+
+    private void handleNotFoundTemplate(WanakuPrinter printer, String templateName) {
+        printer.printErrorMessage(String.format(
+                "Error: template '%s' does not exist. Use 'wanaku service template list' to see available templates.%n",
+                templateName));
     }
 }

@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
+import ai.wanaku.backend.api.v1.exceptions.ServiceTemplateNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.DataStoreResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
@@ -104,7 +105,7 @@ public class ServiceTemplateResource {
 
         DataStore template = serviceTemplateBean.get(name);
         if (template == null) {
-            throw new WanakuException("Service template not found: %s".formatted(name));
+            throw new ServiceTemplateNotFoundException("Service template not found: %s".formatted(name));
         }
 
         ServiceCatalogIndex index = serviceTemplateBean.parseIndex(template);
@@ -147,7 +148,7 @@ public class ServiceTemplateResource {
 
         DataStore template = serviceTemplateBean.get(name);
         if (template == null) {
-            throw new WanakuException("Service template not found: %s".formatted(name));
+            throw new ServiceTemplateNotFoundException("Service template not found: %s".formatted(name));
         }
 
         return new WanakuResponse<>(template);

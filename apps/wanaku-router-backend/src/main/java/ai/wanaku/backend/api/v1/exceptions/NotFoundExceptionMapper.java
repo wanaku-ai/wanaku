@@ -63,3 +63,6 @@ class PromptNotFoundExceptionMapper extends NotFoundExceptionMapper<PromptNotFou
 
 @Provider
 class DataStoreResourceNotFoundExceptionMapper extends NotFoundExceptionMapper<DataStoreResourceNotFoundException> {}
+
+@Provider
+class ServiceTemplateNotFoundExceptionMapper extends NotFoundExceptionMapper<ServiceTemplateNotFoundException> {}
