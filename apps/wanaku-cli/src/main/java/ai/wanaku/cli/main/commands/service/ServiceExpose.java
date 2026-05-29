@@ -195,6 +195,11 @@ public class ServiceExpose extends BaseCommand {
                 if (namespace != null && !namespace.isBlank()) {
                     pw.println("        namespace: \"" + namespace + "\"");
                 }
+                pw.println("        properties:");
+                pw.println("          - name: wanaku_body");
+                pw.println("            type: string");
+                pw.println("            description: The input data for route " + routeId);
+                pw.println("            required: true");
             }
         }
     }
