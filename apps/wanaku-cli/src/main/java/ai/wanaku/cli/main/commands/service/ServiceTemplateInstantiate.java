@@ -71,6 +71,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
         // 1. Legacy --properties (comma-separated), lowest precedence
         if (properties != null && !properties.isBlank()) {
             for (String pair : properties.split(",")) {
+                pair = pair.trim();
                 String[] kv = pair.split("=", 2);
                 if (kv.length == 2) {
                     propsMap.put(kv[0].trim(), kv[1].trim());
@@ -92,6 +93,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
 
         // 3. --property key=value (repeatable), highest precedence
         for (String pair : property) {
+            pair = pair.trim()
             String[] kv = pair.split("=", 2);
             if (kv.length == 2) {
                 propsMap.put(kv[0].trim(), kv[1].trim());
