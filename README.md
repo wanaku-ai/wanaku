@@ -23,7 +23,7 @@ South America.
 
 ## Quick Start
 
-Getting started is a single command. Download the CLI from [releases page](https://github.com/wanaku-ai/wanaku/releases), unpack, 
+Getting started is a single command. Download the CLI from **[releases page](https://github.com/wanaku-ai/wanaku/releases)**, unpack, 
 and then just run:
 
 ```shell
@@ -36,11 +36,11 @@ Access <http://localhost:8080> to enter the dashboard:
 
 ### Learn Wanaku
 
-The easiest way to learn Wanaku is by following the [guided tutorial](https://wanaku.ai/docs/demos/).
+The easiest way to learn Wanaku is by following the **[guided tutorial](https://wanaku.ai/docs/demos/)**.
 
 ### Basic Usage
 
-The reference documentation, including the complete installation and configuration instructions, is available on the [Usage Guide](https://wanaku.ai/docs/version/).
+The reference documentation, including the complete installation and configuration instructions, is available on the [usage guide](https://wanaku.ai/docs/version/).
 
 ## Documentation
 
@@ -57,12 +57,11 @@ the [Java SDK](https://github.com/wanaku-ai/wanaku-capabilities-java-sdk/), etc.
 
 Contributors working on the project may want to refer to the [development version of the documentation](/docs) including 
 
-- **[Pre-release Usage Guide](docs/usage.md)** - Pre-release usage guide
-- **[Architecture](docs/architecture.md)** - System architecture and components
-- **[Building](docs/building.md)** - Build and package the project
-- **[Contributing](CONTRIBUTING.md)** - Contribution guidelines
-- **[Security](SECURITY.md)** - Security policy and best practices
-
+- [Pre-release Usage Guide](docs/usage.md) - Pre-release usage guide
+- [Architecture](docs/architecture.md) - System architecture and components
+- [Building](docs/building.md) - Build and package the project
+- [Contributing](CONTRIBUTING.md) - Contribution guidelines
+- [Security](SECURITY.md) - Security policy and best practices
 
 ## License
 
