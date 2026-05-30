@@ -31,7 +31,8 @@ public class ConfigureClaudeCode extends BaseCommand {
     }
 
     private String sseEndpoint() {
-        String normalizedHost = normalizeHost(host);
+        String configuredHost = host == null ? DEFAULT_HOST : host;
+        String normalizedHost = normalizeHost(configuredHost);
         return normalizedHost + "/mcp/sse";
     }
 
