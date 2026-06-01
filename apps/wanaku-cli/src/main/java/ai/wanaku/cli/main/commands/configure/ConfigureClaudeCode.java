@@ -25,6 +25,10 @@ public class ConfigureClaudeCode extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+        if (host.contains("://") || host.contains(":")) {
+            printer.printErrorMessage("--host expects a bare hostname (e.g., localhost), not a URL or host:port");
+            return EXIT_ERROR;
+        }
         String endpoint = "http://%s:%d/mcp/sse/".formatted(host, port);
         printer.printInfoMessage("Run this command to register Wanaku with Claude Code:");
         printer.printInfoMessage("claude mcp add wanaku --transport sse " + endpoint);
