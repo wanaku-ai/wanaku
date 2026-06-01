@@ -17,9 +17,8 @@ public class ConfigureIbmBob extends ConfigureMcpClientCommand {
     @CommandLine.Option(
             names = {"--always-allow"},
             description = "Tool names to add to alwaysAllow list",
-            split = ",",
-            defaultValue = "")
-    protected List<String> alwaysAllow = List.of();
+            split = ",")
+    protected List<String> alwaysAllow;
 
     public ConfigureIbmBob() {
         super();
@@ -50,10 +49,10 @@ public class ConfigureIbmBob extends ConfigureMcpClientCommand {
         }
 
         if (alwaysAllow != null && !alwaysAllow.isEmpty()) {
-            entry.set("alwaysAllow", newArrayNode());
+            var arr = entry.putArray("alwaysAllow");
             for (String tool : alwaysAllow) {
                 if (!tool.isBlank()) {
-                    entry.withArray("alwaysAllow").add(tool);
+                    arr.add(tool);
                 }
             }
         }

@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -120,7 +119,7 @@ class ConfigureCommandsTest {
     void ibmBobConfigureShouldCreateConfigWithDefaults() throws Exception {
         Path configPath = tempDir.resolve(".bob/mcp_settings.json");
         ConfigureIbmBob cmd = new ConfigureIbmBob(configPath);
-        cmd.transport = "http";
+        cmd.transport = "sse";
         cmd.host = "localhost";
         cmd.port = 8080;
 
@@ -131,8 +130,8 @@ class ConfigureCommandsTest {
 
         JsonNode root = MAPPER.readTree(Files.readString(configPath));
         JsonNode wanaku = root.path("mcpServers").path("wanaku");
-        assertEquals("http://localhost:8080/mcp", wanaku.path("url").asText());
-        assertNull(wanaku.path("headers").get("Authorization"));
+        assertEquals("http://localhost:8080/mcp/sse/", wanaku.path("url").asText());
+        assertTrue(wanaku.path("headers").isMissingNode());
         assertTrue(wanaku.path("alwaysAllow").isMissingNode()
                 || wanaku.path("alwaysAllow").isEmpty());
 
@@ -194,6 +193,10 @@ class ConfigureCommandsTest {
         JsonNode root = MAPPER.readTree(Files.readString(configPath));
         JsonNode existing = root.path("mcpServers").path("remote-server");
         assertEquals("https://old-server.com/mcp", existing.path("url").asText());
+        assertEquals(
+                "Bearer old-token",
+                existing.path("headers").path("Authorization").asText());
+        assertEquals("tool1", existing.path("alwaysAllow").get(0).asText());
         JsonNode wanaku = root.path("mcpServers").path("wanaku");
         assertEquals("http://localhost:8080/mcp/sse/", wanaku.path("url").asText());
     }
