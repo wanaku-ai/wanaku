@@ -2,6 +2,7 @@ package ai.wanaku.cli.main.commands.configure;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -112,6 +114,88 @@ class ConfigureCommandsTest {
                 "http://localhost:8080/mcp",
                 root.path("mcpServers").path("wanaku").path("url").asText());
         verify(printer).printSuccessMessage(anyString());
+    }
+
+    @Test
+    void ibmBobConfigureShouldCreateConfigWithDefaults() throws Exception {
+        Path configPath = tempDir.resolve(".bob/mcp_settings.json");
+        ConfigureIbmBob cmd = new ConfigureIbmBob(configPath);
+        cmd.transport = "http";
+        cmd.host = "localhost";
+        cmd.port = 8080;
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        assertTrue(Files.exists(configPath));
+
+        JsonNode root = MAPPER.readTree(Files.readString(configPath));
+        JsonNode wanaku = root.path("mcpServers").path("wanaku");
+        assertEquals("http://localhost:8080/mcp", wanaku.path("url").asText());
+        assertNull(wanaku.path("headers").get("Authorization"));
+        assertTrue(wanaku.path("alwaysAllow").isMissingNode()
+                || wanaku.path("alwaysAllow").isEmpty());
+
+        verify(printer).printSuccessMessage(anyString());
+    }
+
+    @Test
+    void ibmBobConfigureShouldUseCustomHostAndToken() throws Exception {
+        Path configPath = tempDir.resolve(".bob/mcp_settings.json");
+        ConfigureIbmBob cmd = new ConfigureIbmBob(configPath);
+        cmd.transport = "sse";
+        cmd.host = "wanaku.example.com";
+        cmd.port = 9090;
+        cmd.bearerToken = "my-secret-token";
+        cmd.alwaysAllow = List.of("tool1", "tool2");
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+
+        JsonNode root = MAPPER.readTree(Files.readString(configPath));
+        JsonNode wanaku = root.path("mcpServers").path("wanaku");
+        assertEquals(
+                "http://wanaku.example.com:9090/mcp/sse/", wanaku.path("url").asText());
+        assertEquals(
+                "Bearer my-secret-token",
+                wanaku.path("headers").path("Authorization").asText());
+        assertEquals("tool1", wanaku.path("alwaysAllow").get(0).asText());
+        assertEquals("tool2", wanaku.path("alwaysAllow").get(1).asText());
+    }
+
+    @Test
+    void ibmBobConfigureShouldMergeExistingConfig() throws Exception {
+        Path configPath = tempDir.resolve(".bob/mcp_settings.json");
+        Files.createDirectories(configPath.getParent());
+        Files.writeString(
+                configPath,
+                """
+                {
+                  "mcpServers": {
+                    "remote-server": {
+                      "url": "https://old-server.com/mcp",
+                      "headers": { "Authorization": "Bearer old-token" },
+                      "alwaysAllow": ["tool1"]
+                    }
+                  }
+                }
+                """);
+
+        ConfigureIbmBob cmd = new ConfigureIbmBob(configPath);
+        cmd.transport = "sse";
+        cmd.host = "localhost";
+        cmd.port = 8080;
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+
+        JsonNode root = MAPPER.readTree(Files.readString(configPath));
+        JsonNode existing = root.path("mcpServers").path("remote-server");
+        assertEquals("https://old-server.com/mcp", existing.path("url").asText());
+        JsonNode wanaku = root.path("mcpServers").path("wanaku");
+        assertEquals("http://localhost:8080/mcp/sse/", wanaku.path("url").asText());
     }
 
     @Test
