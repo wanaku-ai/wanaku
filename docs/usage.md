@@ -3012,7 +3012,7 @@ If your Wanaku server is exposing streamable HTTP instead of SSE, use `--transpo
 {
   "mcpServers": {
     "wanaku": {
-      "url": "http://localhost:8080/mcp/sse"
+      "url": "http://localhost:8080/mcp/sse/"
     }
   }
 }
