@@ -135,8 +135,7 @@ class ConfigureCommandsTest {
 
         assertEquals(EXIT_OK, result);
         verify(printer).printInfoMessage("Run this command to register Wanaku with Claude Code:");
-        verify(printer)
-                .printInfoMessage("claude mcp add wanaku --transport sse http://localhost:8080/mcp/sse");
+        verify(printer).printInfoMessage("claude mcp add wanaku --transport sse http://localhost:8080/mcp/sse");
     }
 
     @Test
@@ -147,8 +146,7 @@ class ConfigureCommandsTest {
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
-        verify(printer)
-                .printInfoMessage("claude mcp add wanaku --transport sse https://wanaku.example.com/mcp/sse");
+        verify(printer).printInfoMessage("claude mcp add wanaku --transport sse https://wanaku.example.com/mcp/sse");
     }
 
     @Test
