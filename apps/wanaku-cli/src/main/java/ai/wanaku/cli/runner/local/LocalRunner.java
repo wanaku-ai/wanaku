@@ -407,7 +407,7 @@ public class LocalRunner {
             downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir);
         }
 
-        if (isJarArtifact(urlFormat)) {
+        if (isJarArtifact(downloadedFile.getName())) {
             Path componentDir = Path.of(RuntimeConstants.WANAKU_LOCAL_DIR, componentName);
             Files.createDirectories(componentDir);
             Files.copy(
@@ -449,8 +449,8 @@ public class LocalRunner {
         return String.format(urlFormat, tag, VersionHelper.VERSION);
     }
 
-    private static boolean isJarArtifact(String urlFormat) {
-        return urlFormat.endsWith(".jar");
+    private static boolean isJarArtifact(String fileName) {
+        return fileName.endsWith(".jar");
     }
 
     private static boolean isQuarkusComponent(String componentName) {
