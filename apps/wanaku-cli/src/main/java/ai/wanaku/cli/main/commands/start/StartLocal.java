@@ -47,9 +47,6 @@ public class StartLocal extends StartBase {
         String camelRules;
     }
 
-    @CommandLine.ArgGroup(exclusive = false)
-    protected CamelRoutesConfig camelRoutesConfig;
-
     static class ServiceCatalogConfig {
         @CommandLine.Option(
                 names = {"--service-catalog"},
@@ -64,8 +61,16 @@ public class StartLocal extends StartBase {
         String serviceCatalogSystem;
     }
 
-    @CommandLine.ArgGroup(exclusive = false)
-    protected ServiceCatalogConfig serviceCatalogConfig;
+    static class CicSourceConfig {
+        @CommandLine.ArgGroup(exclusive = false)
+        CamelRoutesConfig camelRoutesConfig;
+
+        @CommandLine.ArgGroup(exclusive = false)
+        ServiceCatalogConfig serviceCatalogConfig;
+    }
+
+    @CommandLine.ArgGroup(exclusive = true)
+    protected CicSourceConfig cicSourceConfig;
 
     @CommandLine.Option(
             names = {"--fail-fast"},
@@ -90,14 +95,16 @@ public class StartLocal extends StartBase {
             }
         }
 
-        if (camelRoutesConfig != null) {
-            environment.withCamelRoutes(camelRoutesConfig.camelRoutes);
-            environment.withCamelRules(camelRoutesConfig.camelRules);
-        }
+        if (cicSourceConfig != null) {
+            if (cicSourceConfig.camelRoutesConfig != null) {
+                environment.withCamelRoutes(cicSourceConfig.camelRoutesConfig.camelRoutes);
+                environment.withCamelRules(cicSourceConfig.camelRoutesConfig.camelRules);
+            }
 
-        if (serviceCatalogConfig != null) {
-            environment.withServiceCatalog(serviceCatalogConfig.serviceCatalog);
-            environment.withServiceCatalogSystem(serviceCatalogConfig.serviceCatalogSystem);
+            if (cicSourceConfig.serviceCatalogConfig != null) {
+                environment.withServiceCatalog(cicSourceConfig.serviceCatalogConfig.serviceCatalog);
+                environment.withServiceCatalogSystem(cicSourceConfig.serviceCatalogConfig.serviceCatalogSystem);
+            }
         }
 
         environment.withFailFast(failFast);
