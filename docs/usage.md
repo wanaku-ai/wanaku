@@ -301,6 +301,40 @@ If that is successful, open your browser at <http://localhost:8080>, and you sho
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details.
 
+#### Running with the Camel Integration Capability
+
+The [Camel Integration Capability](https://github.com/wanaku-ai/camel-integration-capability) (CIC) lets you
+expose Apache Camel routes as MCP tools. You can supply routes in two ways: from local YAML files or from a
+service catalog.
+
+**Using Camel route files:**
+
+```shell
+wanaku start local \
+  --camel-routes file:///path/to/routes.camel.yaml \
+  --camel-rules file:///path/to/rules.yaml
+```
+
+`--camel-routes` and `--camel-rules` must both be provided when using route files.
+
+**Using a service catalog:**
+
+```shell
+wanaku start local \
+  --service-catalog my-catalog \
+  --service-catalog-system ftp
+```
+
+`--service-catalog` and `--service-catalog-system` must both be provided when using service catalogs.
+
+> [!NOTE]
+> The two modes are mutually exclusive — you can use route files **or** a service catalog, but not both at the same time.
+
+The `--fail-fast` flag (enabled by default) causes the CIC to fail immediately if route loading encounters an
+error. Disable it with `--fail-fast=false` if you want the service to start regardless.
+
+When any CIC option is provided, the `camel-integration` service is automatically added to the launch list.
+
 ### Installing and Running Wanaku on OpenShift or Kubernetes Using the Wanaku Operator
 
 The Wanaku Operator simplifies the deployment and management of Wanaku instances on Kubernetes and OpenShift clusters.
