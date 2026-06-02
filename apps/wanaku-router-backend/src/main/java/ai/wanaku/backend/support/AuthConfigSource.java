@@ -71,7 +71,7 @@ public class AuthConfigSource implements ConfigSource {
             props.put("quarkus.oidc.enabled", "false");
             props.put("quarkus.oidc.discovery-enabled", "false");
             props.put("quarkus.oidc.mcp.discovery-enabled", "false");
-            for (int i = 1; i <= MAX_NAMESPACES; i++) {
+            for (int i = 0; i < MAX_NAMESPACES; i++) {
                 props.put("quarkus.oidc.ns-%d.discovery-enabled".formatted(i), "false");
             }
             props.put("quarkus.oidc-proxy.enabled", "false");
