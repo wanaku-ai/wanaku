@@ -399,7 +399,7 @@ public class LocalRunner {
             LOG.debugf("Using local distribution %s for %s", localMatch, componentName);
             downloadedFile = localMatch;
         } else {
-            String downloadUrl = getDownloadURL(componentName, urlFormat);
+            String downloadUrl = getDownloadURL(urlFormat);
             File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
 
             LOG.infof("Downloading %s", componentName);
@@ -438,16 +438,15 @@ public class LocalRunner {
         return null;
     }
 
-    private String getDownloadURL(String componentName, String urlFormat) {
-        String version = config.componentVersions().getOrDefault(componentName, VersionHelper.VERSION);
+    private String getDownloadURL(String urlFormat) {
         String tag;
-        if (version.contains("SNAPSHOT")) {
+        if (VersionHelper.VERSION.contains("SNAPSHOT")) {
             tag = config.earlyAccessTag();
         } else {
-            tag = String.format("v%s", version);
+            tag = String.format("v%s", VersionHelper.VERSION);
         }
 
-        return String.format(urlFormat, tag, version);
+        return String.format(urlFormat, tag, VersionHelper.VERSION);
     }
 
     private static boolean isJarArtifact(String urlFormat) {
