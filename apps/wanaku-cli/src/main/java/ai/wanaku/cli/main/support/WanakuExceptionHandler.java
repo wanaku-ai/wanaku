@@ -129,7 +129,8 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
     }
 
     private void handleGenericException(Exception ex, WanakuPrinter printer) {
-        String message = "An error occurred: " + ex.getMessage() + "\n\nRun with --verbose flag for more details";
+        String detail = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getName();
+        String message = "An error occurred: " + detail + "\n\nRun with --verbose flag for more details";
         printer.printErrorMessage(message);
     }
 

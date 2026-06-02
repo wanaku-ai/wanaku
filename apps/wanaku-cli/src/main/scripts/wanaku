@@ -1,5 +1,9 @@
 #!/bin/sh
 
-localDir="$(dirname "$0")"
+installDir="$(dirname "$0")"
 
-exec "${localDir}/wanaku-cli" "$@"
+if [ -x "${installDir}/wanaku-cli" ]; then
+  exec "${installDir}/wanaku-cli" "$@"
+else
+  exec java -jar "${installDir}/quarkus-run.jar" "$@"
+fi

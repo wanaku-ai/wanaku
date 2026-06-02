@@ -38,6 +38,11 @@ public class ServiceTemplateList extends BaseCommand {
 
         try {
             WanakuResponse<List<DataStore>> response = service.list(search);
+            if (response == null) {
+                printer.printWarningMessage("No response received from the service%n");
+                return EXIT_ERROR;
+            }
+
             List<DataStore> templates = response.data();
 
             if (templates == null || templates.isEmpty()) {

@@ -1,9 +1,13 @@
 @echo off
 
-set SDM_HOME=%~dp0\..
+setlocal
 
-@REM Set
-if %OS%=="Windows_NT" @setlocal
-if %OS%=="WINNT" @setlocal
+set INSTALL_DIR=%~dp0
 
-@java -jar quarkus-run.jar %*
+if exist "%INSTALL_DIR%wanaku-cli.exe" (
+  "%INSTALL_DIR%wanaku-cli.exe" %*
+) else if exist "%INSTALL_DIR%wanaku-cli" (
+  "%INSTALL_DIR%wanaku-cli" %*
+) else (
+  java -jar "%INSTALL_DIR%quarkus-run.jar" %*
+)

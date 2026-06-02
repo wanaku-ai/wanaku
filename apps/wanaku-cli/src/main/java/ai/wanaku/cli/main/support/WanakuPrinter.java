@@ -532,12 +532,13 @@ public class WanakuPrinter extends DefaultPrinter {
      * @param style the styling to apply to the message
      */
     private void printStyledMessage(String message, AttributedStyle style) {
+        String resolved = message.replace("%n", System.lineSeparator());
         if (plainMode) {
-            terminal.writer().println(message);
+            terminal.writer().print(resolved);
         } else {
             AttributedString styledMessage =
-                    new AttributedStringBuilder().style(style).append(message).toAttributedString();
-            terminal.writer().println(styledMessage.toAnsi(terminal));
+                new AttributedStringBuilder().style(style).append(resolved).toAttributedString();
+            terminal.writer().print(styledMessage.toAnsi(terminal));
         }
         terminal.flush();
     }
