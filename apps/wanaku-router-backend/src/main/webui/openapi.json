@@ -576,6 +576,32 @@
           }
         }
       },
+      "ServiceTemplateSummary" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "icon" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "services" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "hasProperties" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "StaleCapabilityInfo" : {
         "type" : "object",
         "properties" : {
@@ -908,6 +934,20 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/ServiceTarget"
+            }
+          }
+        }
+      },
+      "WanakuResponseListServiceTemplateSummary" : {
+        "type" : "object",
+        "properties" : {
+          "error" : {
+            "$ref" : "#/components/schemas/WanakuError"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ServiceTemplateSummary"
             }
           }
         }
@@ -2600,7 +2640,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/WanakuResponseListMapStringObject"
+                  "$ref" : "#/components/schemas/WanakuResponseListServiceTemplateSummary"
                 }
               }
             }

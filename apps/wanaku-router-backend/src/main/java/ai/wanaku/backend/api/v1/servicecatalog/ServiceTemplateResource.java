@@ -23,6 +23,7 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
 import ai.wanaku.core.services.api.ServiceTemplateService;
+import ai.wanaku.core.services.api.ServiceTemplateSummary;
 import ai.wanaku.core.util.StringHelper;
 
 /**
@@ -49,7 +50,7 @@ public class ServiceTemplateResource {
      */
     @Path("/list")
     @GET
-    public WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search) {
+    public WanakuResponse<List<ServiceTemplateSummary>> list(@QueryParam("search") String search) {
         if (search != null && !search.isBlank()) {
             LOG.debugf("REST: Listing service templates with search: %s", search);
         } else {
@@ -57,17 +58,11 @@ public class ServiceTemplateResource {
         }
 
         List<DataStore> templates = serviceTemplateBean.list(search);
-        List<Map<String, Object>> summaries = new ArrayList<>();
+        List<ServiceTemplateSummary> summaries = new ArrayList<>();
 
         for (DataStore ds : templates) {
             try {
                 ServiceCatalogIndex index = serviceTemplateBean.parseIndex(ds);
-                Map<String, Object> summary = new HashMap<>();
-                summary.put("id", ds.getId());
-                summary.put("name", index.getName());
-                summary.put("icon", index.getIcon());
-                summary.put("description", index.getDescription());
-                summary.put("services", index.getServiceNames());
                 boolean hasProps = index.hasServiceProperties();
                 if (!hasProps) {
                     try {
@@ -77,14 +72,19 @@ public class ServiceTemplateResource {
                     } catch (WanakuException ignored) {
                     }
                 }
-                summary.put("hasProperties", hasProps);
-                summaries.add(summary);
+                summaries.add(new ServiceTemplateSummary(
+                        ds.getId(),
+                        index.getName(),
+                        index.getIcon(),
+                        index.getDescription(),
+                        index.getServiceNames(),
+                        hasProps));
             } catch (WanakuException e) {
                 LOG.warnf("Failed to parse template index for '%s': %s", ds.getName(), e.getMessage());
             }
         }
 
-        return new WanakuResponse(summaries);
+        return new WanakuResponse<>(summaries);
     }
 
     /**

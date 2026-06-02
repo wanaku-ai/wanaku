@@ -55,6 +55,7 @@ import type {
   WanakuResponseListPromptReference,
   WanakuResponseListResourceReference,
   WanakuResponseListServiceTarget,
+  WanakuResponseListServiceTemplateSummary,
   WanakuResponseListStaleCapabilityInfo,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
@@ -2227,7 +2228,7 @@ export const postApiV1ServiceTemplateInstantiate = async (
  * @summary List
  */
 export type getApiV1ServiceTemplateListResponse200 = {
-  data: WanakuResponseListMapStringObject;
+  data: WanakuResponseListServiceTemplateSummary;
   status: 200;
 };
 

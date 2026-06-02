@@ -5,13 +5,11 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import org.jline.terminal.Terminal;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
-import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.core.services.api.ServiceCatalogIndex;
 import ai.wanaku.core.services.api.ServiceTemplateService;
+import ai.wanaku.core.services.api.ServiceTemplateSummary;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -37,13 +35,13 @@ public class ServiceTemplateList extends BaseCommand {
         ServiceTemplateService service = initService(ServiceTemplateService.class, host);
 
         try {
-            WanakuResponse<List<DataStore>> response = service.list(search);
+            WanakuResponse<List<ServiceTemplateSummary>> response = service.list(search);
             if (response == null) {
                 printer.printWarningMessage("No response received from the service%n");
                 return EXIT_ERROR;
             }
 
-            List<DataStore> templates = response.data();
+            List<ServiceTemplateSummary> templates = response.data();
 
             if (templates == null || templates.isEmpty()) {
                 printer.printInfoMessage("No service templates found%n");
@@ -51,14 +49,10 @@ public class ServiceTemplateList extends BaseCommand {
             }
 
             printer.printInfoMessage("Available service templates:%n");
-            for (DataStore ds : templates) {
-                try {
-                    ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(ds.getData());
-                    printer.printInfoMessage(String.format("  - %s: %s%n", index.getName(), index.getDescription()));
-                } catch (WanakuException e) {
-                    printer.printWarningMessage(
-                            String.format("  - %s: (failed to parse template details)%n", ds.getName()));
-                }
+            for (ServiceTemplateSummary summary : templates) {
+                String name = summary.name() != null ? summary.name() : "unknown";
+                String description = summary.description() != null ? summary.description() : "";
+                printer.printInfoMessage(String.format(" - %s: %s%n", name, description));
             }
 
         } catch (WebApplicationException ex) {
