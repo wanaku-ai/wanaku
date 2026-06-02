@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,14 +79,15 @@ public class StartLocal extends StartBase {
             defaultValue = "true")
     protected boolean failFast;
 
+    private static final String CAMEL_INTEGRATION = "camel-integration";
+
     @Override
     protected void startWanaku() {
         List<String> services;
         if (exclusive != null && exclusive.services != null) {
-            services = exclusive.services;
-
+            services = new ArrayList<>(exclusive.services);
         } else {
-            services = config.defaultServices();
+            services = new ArrayList<>(config.defaultServices());
         }
 
         LocalRunner.LocalRunnerEnvironment environment = new LocalRunner.LocalRunnerEnvironment();
@@ -96,6 +98,9 @@ public class StartLocal extends StartBase {
         }
 
         if (cicSourceConfig != null) {
+            if (!services.contains(CAMEL_INTEGRATION)) {
+                services.add(CAMEL_INTEGRATION);
+            }
             if (cicSourceConfig.camelRoutesConfig != null) {
                 environment.withCamelRoutes(cicSourceConfig.camelRoutesConfig.camelRoutes);
                 environment.withCamelRules(cicSourceConfig.camelRoutesConfig.camelRules);
