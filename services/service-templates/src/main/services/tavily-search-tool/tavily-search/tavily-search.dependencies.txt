@@ -1,5 +1,5 @@
 # Maven dependencies for tavily-search
-# One dependency per line in format: groupId:artifactId or groupId:artifactId:version
+# One dependency per line in the format: groupId:artifactId or groupId:artifactId:version
 org.apache.camel:camel-langchain4j-web-search
 io.kaoto.forage:forage-core-common
 io.kaoto.forage:forage-core-ai
