@@ -31,33 +31,46 @@ public class StartLocal extends StartBase {
             arity = "1")
     protected List<File> localDists;
 
-    @CommandLine.Option(
-            names = {"--camel-routes"},
-            description =
-                    "Path to Apache Camel routes YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/routes.camel.yaml)")
-    protected String camelRoutes;
+    static class CamelRoutesConfig {
+        @CommandLine.Option(
+                names = {"--camel-routes"},
+                required = true,
+                description =
+                        "Path to Apache Camel routes YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/routes.camel.yaml)")
+        String camelRoutes;
 
-    @CommandLine.Option(
-            names = {"--camel-rules"},
-            description =
-                    "Path to route exposure rules YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/rules.yaml)")
-    protected String camelRules;
+        @CommandLine.Option(
+                names = {"--camel-rules"},
+                required = true,
+                description =
+                        "Path to route exposure rules YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/rules.yaml)")
+        String camelRules;
+    }
 
-    @CommandLine.Option(
-            names = {"--service-catalog"},
-            description =
-                    "Name of the service catalog to use for the Camel Integration Capability. Mutually exclusive with --camel-routes and --camel-rules.")
-    protected String serviceCatalog;
+    @CommandLine.ArgGroup(exclusive = false)
+    protected CamelRoutesConfig camelRoutesConfig;
 
-    @CommandLine.Option(
-            names = {"--service-catalog-system"},
-            description = "The system name within the service catalog to use (e.g., ftp)")
-    protected String serviceCatalogSystem;
+    static class ServiceCatalogConfig {
+        @CommandLine.Option(
+                names = {"--service-catalog"},
+                required = true,
+                description = "Name of the service catalog to use for the Camel Integration Capability")
+        String serviceCatalog;
+
+        @CommandLine.Option(
+                names = {"--service-catalog-system"},
+                required = true,
+                description = "The system name within the service catalog to use (e.g., ftp)")
+        String serviceCatalogSystem;
+    }
+
+    @CommandLine.ArgGroup(exclusive = false)
+    protected ServiceCatalogConfig serviceCatalogConfig;
 
     @CommandLine.Option(
             names = {"--fail-fast"},
             description = "Fail fast if route loading fails in the Camel Integration Capability",
-            defaultValue = "false")
+            defaultValue = "true")
     protected boolean failFast;
 
     @Override
@@ -77,20 +90,14 @@ public class StartLocal extends StartBase {
             }
         }
 
-        if (camelRoutes != null) {
-            environment.withCamelRoutes(camelRoutes);
+        if (camelRoutesConfig != null) {
+            environment.withCamelRoutes(camelRoutesConfig.camelRoutes);
+            environment.withCamelRules(camelRoutesConfig.camelRules);
         }
 
-        if (camelRules != null) {
-            environment.withCamelRules(camelRules);
-        }
-
-        if (serviceCatalog != null) {
-            environment.withServiceCatalog(serviceCatalog);
-        }
-
-        if (serviceCatalogSystem != null) {
-            environment.withServiceCatalogSystem(serviceCatalogSystem);
+        if (serviceCatalogConfig != null) {
+            environment.withServiceCatalog(serviceCatalogConfig.serviceCatalog);
+            environment.withServiceCatalogSystem(serviceCatalogConfig.serviceCatalogSystem);
         }
 
         environment.withFailFast(failFast);
