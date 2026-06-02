@@ -208,7 +208,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                         localReference,
                         toolManager,
                         ns,
-                        (args, ignored) -> mcpBridge.executeTool(forwardClient, args, reference));
+                        (args, ignored) -> mcpBridge.executeTool(forwardClient.address(), args, reference));
 
                 reservedNames.add(localName);
                 locallyRegisteredTools.add(localReference);

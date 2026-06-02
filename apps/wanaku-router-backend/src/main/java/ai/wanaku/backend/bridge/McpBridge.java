@@ -22,7 +22,7 @@ public interface McpBridge {
     List<RemoteToolReference> listTools(ForwardClient forwardClient) throws ServiceUnavailableException;
 
     Uni<ToolResponse> executeTool(
-            ForwardClient forwardClient, ToolManager.ToolArguments toolArguments, CallableReference toolReference);
+            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference);
 
     List<ResourceReference> listResources(ForwardClient forwardClient) throws ServiceUnavailableException;
 

@@ -2,7 +2,7 @@ import {ToolReference} from "../../models"
 
 
 export interface LlmConfig {
-  baseUrl?: string | null
+  llm?: string | null
   llmModel?: string
   apiKey?: string
   extraLlmParams?: string
@@ -11,7 +11,7 @@ export interface LlmConfig {
 
 export function defaultLlmConfig(): LlmConfig {
   return {
-    baseUrl: "https://api.mistral.ai",
+    llm: "Mistral",
     llmModel: "mistral-small-latest",
     extraLlmParams: '{"max_tokens": 400, "temperature": 0.7, "tool_choice": "auto"}',
     tools: []

@@ -26,6 +26,7 @@ import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpReadResourceResult;
@@ -66,19 +67,19 @@ public class DefaultMcpBridge implements McpBridge {
 
     @Override
     public Uni<ToolResponse> executeTool(
-            ForwardClient forwardClient, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         return Uni.createFrom()
-                .item(() -> doExecuteTool(forwardClient, toolArguments, toolReference))
+                .item(() -> doExecuteTool(address, toolArguments, toolReference))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor());
     }
 
     private ToolResponse doExecuteTool(
-            ForwardClient forwardClient, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
         LOG.infof(
                 "Calling tool on behalf of connection %s",
                 toolArguments.connection().id());
 
-        ReentrantLock lock = locks.computeIfAbsent(forwardClient.address(), k -> new ReentrantLock());
+        ReentrantLock lock = locks.computeIfAbsent(address, k -> new ReentrantLock());
         try {
             lock.lock();
             ToolExecutionRequest request = ToolExecutionRequest.builder()
@@ -86,12 +87,14 @@ public class DefaultMcpBridge implements McpBridge {
                     .arguments(serializeArguments(toolArguments.args()))
                     .build();
 
-            ToolExecutionResult result = forwardClient.client().executeTool(request);
-            if (result.isError()) {
-                return ToolResponse.error(result.resultText());
-            }
+            try (var mcpClient = ClientUtil.createClient(address)) {
+                ToolExecutionResult result = mcpClient.executeTool(request);
+                if (result.isError()) {
+                    return ToolResponse.error(result.resultText());
+                }
 
-            return ToolResponse.success(result.resultText());
+                return ToolResponse.success(result.resultText());
+            }
         } catch (Exception e) {
             LOG.errorf(
                     e,

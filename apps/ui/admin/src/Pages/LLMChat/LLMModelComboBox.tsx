@@ -1,26 +1,40 @@
-import React from "react"
+import React, {useEffect, useState} from "react"
 import {ComboBox} from "@carbon/react"
-import {LlmConfig} from "./config"
+import {getUrl} from "../../custom-fetch"
 
 
 interface LLMModelComboBoxProps {
-  config?: LlmConfig
+  llm?: string
+  value?: string
   labelText?: string
   onChange: (llmModel: string) => void
 }
 
-export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ config, onChange, labelText }) => {
+export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, onChange, labelText }) => {
   
-  const llmModelSuggestions = {
-    "https://api.openai.com": ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1", "o1-mini"],
-    "https://api.mistral.ai": ["mistral-small-latest"],
-    "https://generativelanguage.googleapis.com/v1beta/openai/": ["gemini-3.1-pro", "gemini-2.5-pro"],
-    "https://api.anthropic.com": ["claude-4.7-opus", "claude-4.6-opus"]
-  }
+  const [modelCatalog, setModelCatalog] = useState({})
+  
+  
+  useEffect(() => {
+    (async () => {
+      const response = await fetch(getUrl("/api/v1/chat/llms"))
+      if (response.ok) {
+        const llms: string[] = await response.json()
+        const modelCatalog = {}
+        for (const llm of llms) {
+          const response = await fetch(getUrl(`/api/v1/chat/${llm}/models`))
+          if (response.ok) {
+            const models: string[] = await response.json()
+            modelCatalog[llm] = models
+          }
+        }
+        setModelCatalog(modelCatalog)
+      }
+    })()
+  }, [setModelCatalog])
   
   function createItems(): string[] {
-    const baseUrl = config?.baseUrl || undefined
-    return (baseUrl && llmModelSuggestions[baseUrl]) ? llmModelSuggestions[baseUrl] : []
+    return (llm && modelCatalog[llm]) ? modelCatalog[llm] : []
   }
   
   return (
@@ -29,7 +43,7 @@ export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ config, onCh
       titleText={labelText}
       items={createItems()}
       allowCustomValue
-      selectedItem={config?.llmModel}
+      selectedItem={value}
       onChange={(event) => {
         setTimeout(() => {
           const llmModel = event.selectedItem || event.inputValue || ""
