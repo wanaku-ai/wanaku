@@ -336,8 +336,6 @@ public class LocalRunner {
         command.add("java");
         command.add("-jar");
         command.add(STANDALONE_JAR);
-        command.add("--registration-url");
-        command.add("http://localhost:8080");
         command.add("--registration-announce-address");
         command.add("localhost");
         command.add("--grpc-port");
