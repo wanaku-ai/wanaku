@@ -42,6 +42,9 @@ public class LocalRunner {
         private final List<File> localDists = new ArrayList<>();
         private String camelRoutes;
         private String camelRules;
+        private String serviceCatalog;
+        private String serviceCatalogSystem;
+        private boolean failFast;
 
         public LocalRunnerEnvironment() {
             withAuthMode("none");
@@ -73,6 +76,33 @@ public class LocalRunner {
 
         public String camelRules() {
             return camelRules;
+        }
+
+        public LocalRunnerEnvironment withServiceCatalog(String serviceCatalog) {
+            this.serviceCatalog = serviceCatalog;
+            return this;
+        }
+
+        public LocalRunnerEnvironment withServiceCatalogSystem(String serviceCatalogSystem) {
+            this.serviceCatalogSystem = serviceCatalogSystem;
+            return this;
+        }
+
+        public LocalRunnerEnvironment withFailFast(boolean failFast) {
+            this.failFast = failFast;
+            return this;
+        }
+
+        public String serviceCatalog() {
+            return serviceCatalog;
+        }
+
+        public String serviceCatalogSystem() {
+            return serviceCatalogSystem;
+        }
+
+        public boolean failFast() {
+            return failFast;
         }
 
         public List<File> localDists() {
@@ -315,14 +345,27 @@ public class LocalRunner {
         command.add("--name");
         command.add(componentName);
 
-        if (environment.camelRoutes() != null) {
-            command.add("--routes-ref");
-            command.add(environment.camelRoutes());
+        if (environment.serviceCatalog() != null) {
+            command.add("--service-catalog");
+            command.add(environment.serviceCatalog());
+            if (environment.serviceCatalogSystem() != null) {
+                command.add("--service-catalog-system");
+                command.add(environment.serviceCatalogSystem());
+            }
+        } else {
+            if (environment.camelRoutes() != null) {
+                command.add("--routes-ref");
+                command.add(environment.camelRoutes());
+            }
+
+            if (environment.camelRules() != null) {
+                command.add("--rules-ref");
+                command.add(environment.camelRules());
+            }
         }
 
-        if (environment.camelRules() != null) {
-            command.add("--rules-ref");
-            command.add(environment.camelRules());
+        if (environment.failFast()) {
+            command.add("--fail-fast");
         }
 
         executorService.submit(() -> {
