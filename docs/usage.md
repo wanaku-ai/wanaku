@@ -301,17 +301,6 @@ If that is successful, open your browser at <http://localhost:8080>, and you sho
 > [!NOTE]
 > You can use the command line to enable more services by using the `--services` option. Use the `--help` to see the details.
 
-#### Running with Authentication
-
-If you need authentication for your local instance, first set up Keycloak by following
-[Option 1: Local Setup with Podman](#option-1-local-setup-with-podman) in the
-[Keycloak Setup For Wanaku](#keycloak-setup-for-wanaku) section. Then pass the client secret so that the capabilities
-can authenticate with the router:
-
-```shell
-wanaku start local --capabilities-client-secret=aBqsU3EzUPCHumf9sTK5sanxXkB0yFtv
-```
-
 ### Installing and Running Wanaku on OpenShift or Kubernetes Using the Wanaku Operator
 
 The Wanaku Operator simplifies the deployment and management of Wanaku instances on Kubernetes and OpenShift clusters.
