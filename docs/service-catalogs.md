@@ -135,9 +135,13 @@ rules:
 Dependencies files (`*.dependencies.txt`) list Maven coordinates for libraries required by the routes. One dependency per line:
 
 ```text
-org.apache.camel:camel-http:4.4.0
-org.apache.camel:camel-jackson:4.4.0
+org.apache.camel:camel-http
+org.apache.camel:camel-jackson
 ```
+
+> [!NOTE]
+> Apache Camel and Forage dependencies do not require a version — they are resolved automatically.
+> All other dependencies must include the version (e.g., `org.apache.activemq:artemis-commons:2.44.0`).
 
 ## CLI Workflow
 
