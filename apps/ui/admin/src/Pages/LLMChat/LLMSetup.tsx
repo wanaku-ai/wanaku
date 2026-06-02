@@ -11,7 +11,7 @@ import {
   LlmConfig,
   STORE_IN_LOCAL_STORAGE
 } from "./config.ts"
-import {BaseUrlSelect} from "./BaseUrlSelect"
+import {LLMSelect} from "./LLMSelect"
 import {LLMModelComboBox} from "./LLMModelComboBox"
 
 
@@ -23,6 +23,7 @@ interface LLMSetupProps {
 export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
   
   const [isStoredInLocalStorage, setStoreInLocalStorage] = useState<boolean>(isConfigStoredInLocalStorage())
+  const [selectedLlm, setSelectedLlm] = useState(config.llm || "")
   
   function applyConfigChange(config: LlmConfig) {
     if (isStoredInLocalStorage) {
@@ -50,17 +51,19 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
           }}
           id="enabledLocalStorage"
         />
-        <BaseUrlSelect
+        <LLMSelect
           id="base-url"
-          labelText="LLM API Base URL"
-          value={config.baseUrl || ""}
-          onChange={(baseUrl: string) => {
-            applyConfigChange({ ...config, baseUrl })
+          labelText="LLM API"
+          value={selectedLlm}
+          onChange={(llm: string) => {
+            setSelectedLlm(llm)
+            applyConfigChange({ ...config, llm })
           }}
         />
         <LLMModelComboBox
           labelText="LLM Model"
-          config={config}
+          llm={selectedLlm}
+          value={config.llmModel}
           onChange={(llmModel) => {
             applyConfigChange({ ...config, llmModel })
           }}
