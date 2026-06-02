@@ -43,6 +43,23 @@ public class StartLocal extends StartBase {
                     "Path to route exposure rules YAML file for the Camel Integration Capability. Supports file:// scheme (e.g., file:///path/to/rules.yaml)")
     protected String camelRules;
 
+    @CommandLine.Option(
+            names = {"--service-catalog"},
+            description =
+                    "Name of the service catalog to use for the Camel Integration Capability. Mutually exclusive with --camel-routes and --camel-rules.")
+    protected String serviceCatalog;
+
+    @CommandLine.Option(
+            names = {"--service-catalog-system"},
+            description = "The system name within the service catalog to use (e.g., ftp)")
+    protected String serviceCatalogSystem;
+
+    @CommandLine.Option(
+            names = {"--fail-fast"},
+            description = "Fail fast if route loading fails in the Camel Integration Capability",
+            defaultValue = "false")
+    protected boolean failFast;
+
     @Override
     protected void startWanaku() {
         List<String> services;
@@ -67,6 +84,16 @@ public class StartLocal extends StartBase {
         if (camelRules != null) {
             environment.withCamelRules(camelRules);
         }
+
+        if (serviceCatalog != null) {
+            environment.withServiceCatalog(serviceCatalog);
+        }
+
+        if (serviceCatalogSystem != null) {
+            environment.withServiceCatalogSystem(serviceCatalogSystem);
+        }
+
+        environment.withFailFast(failFast);
 
         LocalRunner localRunner = new LocalRunner(config, environment);
         try {
