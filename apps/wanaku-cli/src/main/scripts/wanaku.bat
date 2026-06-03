@@ -8,5 +8,4 @@ if exist "%~dp0wanaku-cli.exe" (
     exit /b %ERRORLEVEL%
 )
 
-set SDM_HOME=%~dp0\..
-@java -jar quarkus-run.jar %*
+@java -jar "%~dp0..\quarkus-run.jar" %*
