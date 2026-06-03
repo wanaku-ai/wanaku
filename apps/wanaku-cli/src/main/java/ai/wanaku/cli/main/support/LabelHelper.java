@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.support;
 
 import jakarta.ws.rs.WebApplicationException;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +58,6 @@ public final class LabelHelper {
             String identifier) {
 
         Map<String, String> existingLabels = entity.getLabels();
-        if (existingLabels == null) {
-            existingLabels = new HashMap<>();
-        }
 
         int addedCount = 0;
         int updatedCount = 0;
@@ -98,9 +94,6 @@ public final class LabelHelper {
             String identifier) {
 
         Map<String, String> existingLabels = entity.getLabels();
-        if (existingLabels == null) {
-            existingLabels = new HashMap<>();
-        }
 
         int removedCount = 0;
         int notFoundCount = 0;
@@ -136,8 +129,7 @@ public final class LabelHelper {
             Consumer<T> updater,
             java.util.function.Function<T, String> identifierExtractor,
             String entityTypePlural,
-            String labelExpression)
-            throws IOException {
+            String labelExpression) {
 
         List<T> matchingEntities = listResponse.data();
 
@@ -157,9 +149,6 @@ public final class LabelHelper {
         for (T entity : matchingEntities) {
             try {
                 Map<String, String> existingLabels = entity.getLabels();
-                if (existingLabels == null) {
-                    existingLabels = new HashMap<>();
-                }
                 existingLabels.putAll(labelsToAdd);
                 entity.setLabels(existingLabels);
                 updater.accept(entity);
@@ -184,8 +173,7 @@ public final class LabelHelper {
             Consumer<T> updater,
             java.util.function.Function<T, String> identifierExtractor,
             String entityTypePlural,
-            String labelExpression)
-            throws IOException {
+            String labelExpression) {
 
         List<T> matchingEntities = listResponse.data();
 
@@ -205,9 +193,6 @@ public final class LabelHelper {
         for (T entity : matchingEntities) {
             try {
                 Map<String, String> existingLabels = entity.getLabels();
-                if (existingLabels == null) {
-                    existingLabels = new HashMap<>();
-                }
 
                 boolean modified = false;
                 for (String labelKey : labelKeys) {
