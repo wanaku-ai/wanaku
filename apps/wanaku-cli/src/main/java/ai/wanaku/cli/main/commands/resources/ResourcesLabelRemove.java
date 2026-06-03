@@ -116,7 +116,6 @@ public class ResourcesLabelRemove extends BaseCommand {
                     "resource(s)",
                     labelExpression);
         } catch (WebApplicationException ex) {
-
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;
         }
