@@ -31,14 +31,14 @@ public interface ServiceTemplateService {
     @Path("/list")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<DataStore>> list(@QueryParam("search") String search);
+    WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search);
 
     /**
      * List all service template entries without filtering.
      *
      * @return response with list of all template summaries
      */
-    default WanakuResponse<List<DataStore>> list() {
+    default WanakuResponse<List<Map<String, Object>>> list() {
         return list(null);
     }
 
