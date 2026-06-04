@@ -6,9 +6,9 @@ The CLI is used to manage and interact with the Wanaku MCP Router.
 
 | Platform | File |
 |---|---|
-| **Linux (x86_64)** | [cli-{{projectVersion}}-linux-x86_64.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/cli-{{projectVersion}}-linux-x86_64.zip) |
-| **macOS (Apple Silicon)** | [cli-{{projectVersion}}-osx-aarch_64.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/cli-{{projectVersion}}-osx-aarch_64.zip) |
-| **Java (all platforms)** | [cli-{{projectVersion}}.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/cli-{{projectVersion}}.zip) |
+| **Linux (x86_64)** | [wanaku-cli-{{projectVersion}}-linux-x86_64.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-cli-{{projectVersion}}-linux-x86_64.zip) |
+| **macOS (Apple Silicon)** | [wanaku-cli-{{projectVersion}}-osx-aarch_64.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-cli-{{projectVersion}}-osx-aarch_64.zip) |
+| **Java (all platforms)** | [wanaku-cli-{{projectVersion}}.zip](https://github.com/wanaku-ai/wanaku/releases/download/v{{projectVersion}}/wanaku-cli-{{projectVersion}}.zip) |
 
 > **Tip:** You can also install via JBang: `jbang app install wanaku@wanaku-ai/wanaku`
 
