@@ -216,7 +216,7 @@ public class LocalRunner {
             zipFile = localMatch;
         } else {
             String downloadUrl = getDownloadURL(urlFormat);
-            File destinationDir = new File(RuntimeConstants.WANAKU_CACHE_DIR);
+            File destinationDir = new File(RuntimeConstants.wanakuCacheDir());
 
             LOG.infof("Downloading %s", componentName);
             LOG.debugf("Download URL: %s", downloadUrl);
@@ -225,7 +225,7 @@ public class LocalRunner {
 
         String extractDir = componentName + File.separator + QUARKUS_APP;
         LOG.infof("Deploying %s", componentName);
-        ZipHelper.unzip(zipFile, RuntimeConstants.WANAKU_LOCAL_DIR, extractDir);
+        ZipHelper.unzip(zipFile, RuntimeConstants.wanakuLocalDir(), extractDir);
     }
 
     static String extractArtifactBaseName(String urlFormat) {
@@ -258,7 +258,7 @@ public class LocalRunner {
     }
 
     private static File quarkusAppDir(String componentName) {
-        return new File(new File(RuntimeConstants.WANAKU_LOCAL_DIR, componentName), QUARKUS_APP);
+        return new File(new File(RuntimeConstants.wanakuLocalDir(), componentName), QUARKUS_APP);
     }
 
     private static boolean isEnabled(List<String> services, Map.Entry<String, String> component) {
