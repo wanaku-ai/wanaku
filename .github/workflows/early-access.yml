@@ -14,12 +14,21 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout Wanaku Capabilities SDK Main Project
+      - name: Determine SDK ref
+        id: sdk-ref
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          if git ls-remote --heads https://github.com/wanaku-ai/wanaku-capabilities-java-sdk.git "$BRANCH" | grep -q .; then
+            echo "ref=$BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "ref=main" >> $GITHUB_OUTPUT
+          fi
+      - name: Checkout Wanaku Capabilities SDK
         uses: actions/checkout@v6
         with:
           repository: wanaku-ai/wanaku-capabilities-java-sdk
           persist-credentials: false
-          ref: main
+          ref: ${{ steps.sdk-ref.outputs.ref }}
           path: wanaku-capabilities-java-sdk
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -27,7 +36,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      - name: Build Wanaku Capabilities SDK Main Project
+      - name: Build Wanaku Capabilities SDK
         run: mvn --no-transfer-progress -DskipTests clean install
         working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
       - name: Checkout

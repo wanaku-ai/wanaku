@@ -2,19 +2,34 @@
 
 ## Automated Release Process
 
-Start by setting the versions.
+Releases are cut from release branches following the `X.Y.x` naming convention (e.g., `0.1.x`, `0.2.x`).
+
+### Create the release branch (first release of a minor version only)
 
 ```shell
+git checkout main
+git checkout -b 0.2.x
+git push origin 0.2.x
+```
+
+### Set the versions
+
+```shell
+export RELEASE_BRANCH=0.2.x
 export PREVIOUS_VERSION=0.1.0
-export CURRENT_DEVELOPMENT_VERSION=0.1.1
-export NEXT_DEVELOPMENT_VERSION=0.2.0
+export CURRENT_DEVELOPMENT_VERSION=0.2.0
+export NEXT_DEVELOPMENT_VERSION=0.2.1
 ```
 
-Trigger a release build:
+### Trigger the release
 
 ```shell
-gh workflow run release -f previousDevelopmentVersion=${PREVIOUS_VERSION} -f currentDevelopmentVersion=${CURRENT_DEVELOPMENT_VERSION} -f nextDevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}
+gh workflow run release -r ${RELEASE_BRANCH} -f releaseBranch=${RELEASE_BRANCH} -f previousDevelopmentVersion=${PREVIOUS_VERSION} -f currentDevelopmentVersion=${CURRENT_DEVELOPMENT_VERSION} -f nextDevelopmentVersion=${NEXT_DEVELOPMENT_VERSION}
 ```
+
+> [!NOTE]
+> The `-r` flag tells GitHub to run the workflow from the release branch. The `releaseBranch` input tells the
+> workflow which branch to check out and push version bump commits to.
 
 The release build can take up to 30 minutes to complete. This will:
 
@@ -63,12 +78,14 @@ gpg --list-public-keys --keyid-format LONG
 
 ## Before start
 
-Repeat this for every machine to be used for the release.
+Repeat this for every machine to be used for the release. Make sure you are on the release branch.
 
 ```shell
+export RELEASE_BRANCH=0.2.x
+git checkout ${RELEASE_BRANCH}
 export PREVIOUS_VERSION=0.1.0
-export CURRENT_DEVELOPMENT_VERSION=0.1.1
-export NEXT_DEVELOPMENT_VERSION=0.2.0
+export CURRENT_DEVELOPMENT_VERSION=0.2.0
+export NEXT_DEVELOPMENT_VERSION=0.2.1
 ```
 
 > [!NOTE]
@@ -135,10 +152,10 @@ Recreate the release tag by marking tagging at exactly two commits before HEAD (
 git tag wanaku-${CURRENT_DEVELOPMENT_VERSION} HEAD~2
 ```
 
-Push the code to the repository:
+Push the version bump commits to the release branch and the tag:
 
 ```shell
-git push upstream wanaku-${CURRENT_DEVELOPMENT_VERSION}
+git push upstream HEAD:${RELEASE_BRANCH} wanaku-${CURRENT_DEVELOPMENT_VERSION}
 ```
 
 Now continue with the release:
