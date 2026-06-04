@@ -9,7 +9,7 @@ metadata:
     app.quarkus.io/build-timestamp: 2026-06-04 - 07:13:13 +0000
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: 0.1.2
+    app.kubernetes.io/version: 0.1.3
     app.kubernetes.io/managed-by: quarkus
   name: wanaku-operator
 spec:
@@ -17,7 +17,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: wanaku-operator
-      app.kubernetes.io/version: 0.1.2
+      app.kubernetes.io/version: 0.1.3
   template:
     metadata:
       annotations:
@@ -28,7 +28,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: quarkus
         app.kubernetes.io/name: wanaku-operator
-        app.kubernetes.io/version: 0.1.2
+        app.kubernetes.io/version: 0.1.3
     spec:
       containers:
         - env:
