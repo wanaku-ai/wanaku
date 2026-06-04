@@ -43,9 +43,15 @@ detect_platform() {
 
 fetch_latest_version() {
     info "Fetching latest release version..."
-    VERSION="$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest" \
-        | grep '"tag_name"' \
-        | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
+    local response
+    response="$(curl -fsL "https://api.github.com/repos/${REPO}/releases/latest")" \
+        || error "Could not fetch release info. Check your internet connection or GitHub API rate limits."
+
+    if command -v jq >/dev/null 2>&1; then
+        VERSION="$(echo "$response" | jq -r '.tag_name')"
+    else
+        VERSION="$(echo "$response" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
+    fi
 
     if [ -z "$VERSION" ]; then
         error "Could not determine latest version. Check your internet connection or GitHub API rate limits."
@@ -73,18 +79,20 @@ download_and_verify() {
     trap 'rm -rf "$TMPDIR"' EXIT
 
     info "Downloading $ARTIFACT..."
-    curl -sL -o "${TMPDIR}/${ARTIFACT}" "$DOWNLOAD_URL"
+    curl -fsL -o "${TMPDIR}/${ARTIFACT}" "$DOWNLOAD_URL" \
+        || error "Failed to download $ARTIFACT"
 
     info "Downloading checksums..."
-    curl -sL -o "${TMPDIR}/checksums_sha256.txt" "$CHECKSUMS_URL"
+    curl -fsL -o "${TMPDIR}/checksums_sha256.txt" "$CHECKSUMS_URL" \
+        || error "Failed to download checksums"
 
-    if grep -q "$ARTIFACT" "${TMPDIR}/checksums_sha256.txt" 2>/dev/null; then
+    if grep -Fq "  $ARTIFACT" "${TMPDIR}/checksums_sha256.txt" 2>/dev/null; then
         info "Verifying SHA-256 checksum..."
         cd "$TMPDIR"
         if command -v sha256sum >/dev/null 2>&1; then
-            grep "$ARTIFACT" checksums_sha256.txt | sha256sum -c --quiet -
+            grep -F "  $ARTIFACT" checksums_sha256.txt | sha256sum -c --quiet -
         elif command -v shasum >/dev/null 2>&1; then
-            grep "$ARTIFACT" checksums_sha256.txt | shasum -a 256 -c --quiet -
+            grep -F "  $ARTIFACT" checksums_sha256.txt | shasum -a 256 -c --quiet -
         else
             warn "No sha256sum or shasum found — skipping checksum verification"
         fi
@@ -113,7 +121,7 @@ install_wanaku() {
         fi
     done
 
-    if ! echo "$PATH" | tr ':' '\n' | grep -qx "$INSTALL_DIR"; then
+    if ! echo "$PATH" | tr ':' '\n' | grep -Fxq "$INSTALL_DIR"; then
         warn "$INSTALL_DIR is not in your PATH. Add it with:"
         warn "  export PATH=\"${INSTALL_DIR}:\$PATH\""
     fi
