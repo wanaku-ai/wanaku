@@ -154,10 +154,10 @@ public class StartLocal extends StartBase {
 
             if (exclusive.exclusiveNonStart.clean) {
                 printer.printWarningMessage("Removing Wanaku cache directory");
-                deleteDirectory(printer, new File(RuntimeConstants.WANAKU_CACHE_DIR));
+                deleteDirectory(printer, new File(RuntimeConstants.wanakuCacheDir()));
 
                 printer.printWarningMessage("Removing Wanaku local instance directory");
-                deleteDirectory(printer, new File(RuntimeConstants.WANAKU_LOCAL_DIR));
+                deleteDirectory(printer, new File(RuntimeConstants.wanakuLocalDir()));
 
                 return EXIT_OK;
             }
