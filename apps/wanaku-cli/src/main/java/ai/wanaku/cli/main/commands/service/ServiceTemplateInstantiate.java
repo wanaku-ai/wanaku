@@ -37,13 +37,15 @@ public class ServiceTemplateInstantiate extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--properties"},
-            description = "Comma-separated key=value pairs (e.g., endpoint.url=http://example.com,api.key=secret). Deprecated: prefer --property or --properties-from",
+            description =
+                    "Comma-separated key=value pairs (e.g., endpoint.url=http://example.com,api.key=secret). Deprecated: prefer --property or --properties-from",
             arity = "0..1")
     private String properties;
 
     @CommandLine.Option(
             names = {"--property"},
-            description = "A single key=value property; may be repeated (e.g., --property kafka.brokers=localhost:9092 --property kafka.topic=ai.requests)",
+            description =
+                    "A single key=value property; may be repeated (e.g., --property kafka.brokers=localhost:9092 --property kafka.topic=ai.requests)",
             arity = "1")
     private List<String> property = new ArrayList<>();
 
