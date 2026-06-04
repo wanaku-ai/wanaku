@@ -39,6 +39,7 @@ release:
       enabled: true
     skipTag: true
     changelog:
+      formatted: ALWAYS
       contentTemplate: src/jreleaser/changelog.tpl
 
 distributions:
