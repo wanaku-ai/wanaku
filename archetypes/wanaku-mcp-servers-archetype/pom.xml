@@ -4,7 +4,7 @@
     <parent>
         <groupId>ai.wanaku</groupId>
         <artifactId>archetypes</artifactId>
-        <version>0.1.3</version>
+        <version>0.1.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>wanaku-mcp-servers-archetype</artifactId>
