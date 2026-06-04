@@ -5,7 +5,7 @@ a specific order due to dependency chains.
 
 ## Release Order
 
-```
+```text
 1. wanaku-capabilities-java-sdk    (no upstream deps)
 2. wanaku                          (depends on SDK)
 3. camel-integration-capability    (depends on SDK + Wanaku)
@@ -95,9 +95,11 @@ Maven coordinates in their `*.dependencies.txt` files, so they do not require ve
 updates for a Wanaku release. However:
 
 - [ ] Verify no `*.dependencies.txt` file has a hardcoded SNAPSHOT version:
+
   ```shell
   grep -r "SNAPSHOT" services/service-templates/src/main/services/
   ```
+
 - [ ] Confirm the service-templates ZIP is included in the JReleaser distributions
   (defined in `jreleaser.yml` under `service-templates`)
 
@@ -114,6 +116,7 @@ gh workflow run release \
 ```
 
 This workflow will:
+
 1. Run `mvn release:prepare` (updates all pom.xml versions, commits auto-generated files)
 2. Update `jbang-catalog.json` version reference
 3. Recreate the git tag at the correct commit (`HEAD~2`)
@@ -123,6 +126,7 @@ This workflow will:
 ### Auto-Committed Files
 
 The `commitFiles` profile auto-commits these version-sensitive files during release:
+
 - `apps/ui/admin/**/*.ts` (generated TypeScript API types)
 - `apps/wanaku-router-backend/src/main/webui/openapi.json`
 - `apps/wanaku-router-backend/src/main/webui/openapi.yaml`
@@ -144,6 +148,7 @@ gh workflow run release-artifacts -f currentDevelopmentVersion=${CURRENT_VERSION
 ```
 
 This workflow will:
+
 1. Build native executables (Linux x86_64, Linux aarch64, macOS aarch64)
 2. Build and push container images to `quay.io/wanaku/` with platform-specific tags
 3. Run JReleaser to create GitHub Release with native binaries and ZIP distributions
@@ -228,9 +233,11 @@ These are **not** auto-updated -- they must be changed manually.
   - `2.02-service-catalogs/README.md`
 - [ ] Update the version table in the root `README.md`
 - [ ] Verify no SNAPSHOT versions remain:
+
   ```shell
   grep -r "SNAPSHOT" --include="*.md" --include="*.xml" .
   ```
+
   (demo pom.xml files intentionally use `1.0-SNAPSHOT` for the demo project itself -- only
   check that **wanaku dependency versions** are not SNAPSHOT)
 
@@ -267,6 +274,7 @@ version branches. The versions are **hardcoded in the Makefile** and must be upd
 ### Trigger
 
 - [ ] Push changes to `main` (auto-triggers deploy workflow), or:
+
   ```shell
   gh workflow run deploy -R wanaku-ai/wanaku-docs
   ```
@@ -274,7 +282,7 @@ version branches. The versions are **hardcoded in the Makefile** and must be upd
 ### Verify
 
 - [ ] Docs build completed successfully
-- [ ] https://wanaku.ai/docs reflects the new version
+- [ ] <https://wanaku.ai/docs> reflects the new version
 - [ ] Version-specific pages are accessible (e.g., `/version/wanaku-${CURRENT_VERSION}/`)
 - [ ] Download links on the homepage point to the correct release artifacts
 
