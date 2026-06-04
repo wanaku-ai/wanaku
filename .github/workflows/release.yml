@@ -12,6 +12,9 @@ on:
       nextDevelopmentVersion:
         description: 'The next development version'
         required: true
+      releaseBranch:
+        description: 'The release branch (e.g., 0.1.x)'
+        required: true
 
 jobs:
   perform-release:
@@ -24,6 +27,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.inputs.releaseBranch }}
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -54,7 +58,7 @@ jobs:
           mvn --no-transfer-progress -PcommitFiles scm:checkin
           git tag -d wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
           git tag wanaku-${{ github.event.inputs.currentDevelopmentVersion }} HEAD~2
-          git push origin wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
+          git push origin HEAD:${{ github.event.inputs.releaseBranch }} wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
           mvn --no-transfer-progress -Pdist release:perform
 
       # Warm up javadoc.io caches
