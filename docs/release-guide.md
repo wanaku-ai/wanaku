@@ -15,10 +15,10 @@ git push origin 0.2.x
 ### Set the versions
 
 ```shell
-export RELEASE_BRANCH=0.2.x
-export PREVIOUS_VERSION=0.1.0
-export CURRENT_DEVELOPMENT_VERSION=0.2.0
-export NEXT_DEVELOPMENT_VERSION=0.2.1
+export RELEASE_BRANCH=0.1.x
+export PREVIOUS_VERSION=0.1.2
+export CURRENT_DEVELOPMENT_VERSION=0.1.3
+export NEXT_DEVELOPMENT_VERSION=0.1.4
 ```
 
 ### Trigger the release
