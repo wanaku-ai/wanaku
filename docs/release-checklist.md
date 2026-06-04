@@ -9,7 +9,8 @@ a specific order due to dependency chains.
 1. wanaku-capabilities-java-sdk    (no upstream deps)
 2. wanaku                          (depends on SDK)
 3. camel-integration-capability    (depends on SDK + Wanaku)
-4. wanaku-docs                     (depends on all of the above)
+4. wanaku-demos                    (depends on SDK + Wanaku; docs reference specific versions)
+5. wanaku-docs                     (depends on all of the above)
 ```
 
 ---
@@ -22,6 +23,7 @@ a specific order due to dependency chains.
   - [ ] `wanaku-capabilities-java-sdk`: ______
   - [ ] `wanaku`: ______
   - [ ] `camel-integration-capability`: ______
+  - [ ] `wanaku-demos`: ______
 - [ ] Determine the next development (SNAPSHOT) version for each repository
 - [ ] Confirm all CI builds are green on `main` for every repository
 
@@ -207,7 +209,49 @@ gh workflow run release-artifacts -R wanaku-ai/camel-integration-capability \
 
 ---
 
-## Phase 4: Release `wanaku-docs`
+## Phase 4: Release `wanaku-demos`
+
+### Pre-Release Version Updates
+
+The demos reference specific versions of the SDK and CLI in documentation and pom.xml files.
+These are **not** auto-updated -- they must be changed manually.
+
+- [ ] Update SDK version in demo pom.xml files:
+  - `4.02-exposing-existing-routes/sample-routes/camel-core-examples/cat-facts-example/pom.xml`
+    (`capabilities-runtime-camel-plugin` version)
+- [ ] Update SDK archetype version references in READMEs:
+  - `4.01-plain-java-capability/README.md` (`-DarchetypeVersion=` and `-Dwanaku-sdk-version=`)
+  - `4.02-exposing-existing-routes/.../cat-facts-jbang-example/README.md`
+    (`capabilities-runtime-camel-plugin:X.Y.Z`)
+- [ ] Update Wanaku CLI download links in READMEs:
+  - `2.01-introduction-to-capabilities/README.md`
+  - `2.02-service-catalogs/README.md`
+- [ ] Update the version table in the root `README.md`
+- [ ] Verify no SNAPSHOT versions remain:
+  ```shell
+  grep -r "SNAPSHOT" --include="*.md" --include="*.xml" .
+  ```
+  (demo pom.xml files intentionally use `1.0-SNAPSHOT` for the demo project itself -- only
+  check that **wanaku dependency versions** are not SNAPSHOT)
+
+### Trigger
+
+The release workflow only creates a git tag (no Maven publish or artifact build):
+
+```shell
+export DEMOS_VERSION=<version>
+gh workflow run release -R wanaku-ai/wanaku-demos \
+  -f currentDevelopmentVersion=${DEMOS_VERSION}
+```
+
+### Verify
+
+- [ ] Tag `wanaku-demos-${DEMOS_VERSION}` exists
+- [ ] Demo instructions work against the released Wanaku version
+
+---
+
+## Phase 5: Release `wanaku-docs`
 
 ### Update Versions in Makefile
 
@@ -236,7 +280,7 @@ version branches. The versions are **hardcoded in the Makefile** and must be upd
 
 ---
 
-## Phase 5: Announcements & Cleanup
+## Phase 6: Announcements & Cleanup
 
 - [ ] Verify all GitHub Releases have proper changelogs
 - [ ] Announce the release (blog post, social media, community channels)
@@ -259,4 +303,6 @@ version branches. The versions are **hardcoded in the Makefile** and must be upd
 | OpenAPI spec version mismatch | `openapi.json` in webui not regenerated | Run `mvn verify` before release to regenerate |
 | Helm templates have SNAPSHOT in `app.kubernetes.io/version` | 14 hardcoded version labels across 6 template files, not managed by Maven | `grep -r SNAPSHOT apps/wanaku-operator/deploy/helm/` before release |
 | Service template ships with SNAPSHOT dep | A `*.dependencies.txt` may have a pinned SNAPSHOT version | `grep -r SNAPSHOT services/service-templates/src/main/services/` before release |
+| Demos reference old SDK version | pom.xml and README files have hardcoded SDK versions | Update all version refs in `wanaku-demos` before tagging |
+| Demos CLI download links stale | README files link to a specific CLI release tag | Update download URLs in `2.01-*` and `2.02-*` READMEs |
 | `version.txt` stale in Makefile | Reads from `target/` which requires a build | Run `mvn install` before using Makefile targets |
