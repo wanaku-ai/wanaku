@@ -8,5 +8,5 @@ spec:
     # Address of the proxy (could be the same as the auth server - default) or "auto" (for using Wanaku as the proxy via OIDC proxy)
     authProxy: "auto"
   router:
-    image: quay.io/wanaku/wanaku-router-backend:latest
+    image: wanaku-image-replace
     imagePullPolicy: Always

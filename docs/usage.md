@@ -127,7 +127,23 @@ This will create all the necessary resources for Keycloak to run.
 > Before applying, review the files and be sure to change the default admin password for security.
 
 ```shell
-oc apply -f deploy/auth
+kubectl apply -f deploy/auth/keycloak.yaml
+```
+
+Expose the Keycloak service outside the cluster.
+
+Note that the service is exposed with a self-signed certificate, for development purposes only.
+
+* Minikube
+
+```shell
+cat deploy/auth/keycloak-ingress.yaml | sed "s/KEYCLOAK_HOST/keycloak.$(minikube ip).nip.io/"| kubectl create -f -
+```
+
+* OpenShift
+
+```shell
+kubectl apply -f deploy/auth/keycloak-router.yaml
 ```
 
 ### Importing the Wanaku Realm Configuration (via Wanaku CLI)
@@ -141,16 +157,22 @@ wanaku admin realm create
 ```
 
 This imports the default realm configuration from `deploy/auth/wanaku-config.json`. You can specify a custom configuration file with `--config /path/to/realm.json` and a custom Keycloak URL with `--keycloak-url`.
+Also, in case the keycloak server is in https with a self-signed certificate, then you have to import the realm config file with the Keycloak UI or execute the `deploy/auth/configure-auth.sh` script.
+
+To get the keycloak server:
+* Minikube : `echo "https://"$(kubectl get ingress keycloak -o jsonpath='{.spec.rules[0].host}')`
+* OpenShift: `echo "https://"$(kubectl get route keycloak -o jsonpath='{.spec.host}')`
 
 ### Importing the Wanaku Realm Configuration (via Shell Script)
 
 Alternatively, Wanaku comes with a [script that simplifies importing](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/configure-auth.sh)
 the realm configuration into keycloak.
 
-To run that script:
+The script takes care to discover the Keycloak server address.
+You can optionally customize the keycloak URL, user and password with the following environment variables:
 
 - set the `WANAKU_KEYCLOAK_PASS` variable to the admin password of your Keycloak instance
-- set `WANAKU_KEYCLOAK_HOST` to the address of your Keycloak instance (i.e.; `localhost` if using Podman or the result of `oc get routes keycloak -o json  | jq -r .spec.host` if using OpenShift)
+- set `WANAKU_KEYCLOAK_HOST` to the address of your Keycloak instance (i.e.; `localhost` if using Podman). If in OpenShift or minikube, it already takes care to discover it.
 
 ### Importing the Wanaku Realm Configuration (via Keycloak UI)
 
@@ -378,6 +400,15 @@ It automates the creation and configuration of all necessary resources, making i
 - Kubernetes 1.27+ or OpenShift 4.12+
 - `kubectl` or `oc` CLI, `helm` 3.x
 - Keycloak instance (see [Keycloak Setup](#keycloak-setup-for-wanaku)) or plan to use `wanaku.http.auth=none` for development
+- Wanaku container image (optional)
+
+**Build the container image:**
+
+You can build the container image and push it to a container registry, or use a pre-built image.
+
+There is a pre-built image in `quay.io/wanaku/wanaku-router-backend:latest`
+
+
 
 **Install the operator:**
 
@@ -557,7 +588,7 @@ You can deploy Wanaku on OpenShift or Kubernetes using the operator Helm chart.
 After having deployed Keycloak, then run the following command to get its route:
 
 ```shell
-oc get route keycloak -o jsonpath='{.spec.host}'
+kubectl get route keycloak -o jsonpath='{.spec.host}'
 ```
 
 Then install the operator and apply the custom resources with your OIDC configuration:
@@ -566,11 +597,11 @@ Then install the operator and apply the custom resources with your OIDC configur
 helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
 
 sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
-     deploy/openshift/wanaku-router.yaml | oc apply -f -
+     deploy/openshift/wanaku-router.yaml | kubectl apply -f -
 
 sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
     -e "s/replace-me-with-the-client-credentials-secret/<your-client-secret>/g" \
-     deploy/openshift/wanaku-capabilities.yaml | oc apply -f -
+     deploy/openshift/wanaku-capabilities.yaml | kubectl apply -f -
 ```
 
 #### Environment Configuration
@@ -657,7 +688,7 @@ Some of the configurations you may need to change are:
 ```properties
 # Address of the Keycloak authentication server - adjust to your Keycloak instance
 auth.server=http://localhost:8543
-# Address used by the OIDC proxy - 
+# Address used by the OIDC proxy -
 auth.proxy=http://localhost:${quarkus.http.port}
 
 # Client identifier configured in Keycloak for the backend service
@@ -1556,7 +1587,7 @@ servers:
       environment:
         default: dev
       version:
-        default: v1            
+        default: v1
 ```
 
 You could select this server and override its variables:
@@ -3006,7 +3037,7 @@ open http://localhost:8080
 ### Creating New MCP Server Using Maven
 
 ```shell
-mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-mcp-servers-archetype \ 
+mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-mcp-servers-archetype \
   -DarchetypeVersion=0.1.1 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.mcp.servers.s3 -DartifactId=wanaku-mcp-servers-s3 \
   -Dname=S3 -Dwanaku-version=0.1.1 -Dwanaku-capability-type=camel
 ```
@@ -3445,14 +3476,14 @@ This section provides solutions to common issues you may encounter while using W
 2. Check pod logs for startup errors:
 
    ```shell
-   oc logs <pod-name>
+   kubectl logs <pod-name>
    kubectl logs <pod-name>
    ```
 
 3. Verify ConfigMaps and Secrets are properly mounted:
 
    ```shell
-   oc describe pod <pod-name>
+   kubectl describe pod <pod-name>
    ```
 
 4. Check resource limits and ensure sufficient memory/CPU
@@ -3460,7 +3491,7 @@ This section provides solutions to common issues you may encounter while using W
 5. Verify Keycloak is accessible from the pods:
 
    ```shell
-   oc exec <pod-name> -- curl http://keycloak:8080/health
+   kubectl exec <pod-name> -- curl http://keycloak:8080/health
    ```
 
 ### Performance Issues
@@ -3547,7 +3578,7 @@ Check logs in these locations:
 
 - **Router backend:** Look for `wanaku-router-backend.log` or check container logs
 - **Capability services:** Check individual service log files
-- **Kubernetes:** `oc logs <pod-name>` or `kubectl logs <pod-name>`
+- **Kubernetes:** `kubectl logs <pod-name>` or `kubectl logs <pod-name>`
 
 ### Getting Help
 

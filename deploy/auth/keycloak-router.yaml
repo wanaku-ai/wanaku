@@ -1,0 +1,18 @@
+# WARN: This is for development purposes only. Do not use in production.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+spec:
+  port:
+    targetPort: 8080-tcp
+  to:
+    kind: Service
+    name: keycloak
+    weight: 100
+  wildcardPolicy: None
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
