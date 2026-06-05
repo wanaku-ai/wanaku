@@ -28,6 +28,8 @@ on:
       - jreleaser.yml
       - glama.json
       - SECURITY.md
+      - get-wanaku.sh
+      - javadoc-warm.sh
       - .*
 
 env:
