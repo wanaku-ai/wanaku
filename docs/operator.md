@@ -546,8 +546,8 @@ spec:
 **OpenShift (Routes):**
 
 ```shell
-oc get route -n wanaku
-oc describe route wanaku-dev -n wanaku
+kubectl get route -n wanaku
+kubectl describe route wanaku-dev -n wanaku
 ```
 
 Routes are auto-generated. If missing, check if the WanakuRouter has `spec.ingress.host` set (it should be empty on OpenShift).

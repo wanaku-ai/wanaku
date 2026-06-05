@@ -1,3 +1,4 @@
+# WARN: This is for development purposes only. Do not use in production.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,6 +27,12 @@ spec:
               value: "admin"
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               value: "admin"
+            - name: KC_PROXY_HEADERS
+              value: "xforwarded"
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
           args:
             - "start-dev"
           volumeMounts:
@@ -65,18 +72,3 @@ spec:
     app: keycloak
   sessionAffinity: None
   type: ClusterIP
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  labels:
-    app: keycloak
-  name: keycloak
-spec:
-  port:
-    targetPort: 8080-tcp
-  to:
-    kind: Service
-    name: keycloak
-    weight: 100
-  wildcardPolicy: None

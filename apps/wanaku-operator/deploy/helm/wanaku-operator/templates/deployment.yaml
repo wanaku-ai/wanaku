@@ -42,6 +42,8 @@ spec:
               value: {{ .Values.app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES | quote }}
             - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES
               value: {{ .Values.app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES | quote }}
+            - name: AUTH_SERVER
+              value: {{ .Values.app.envs.AUTH_SERVER | quote }}
           image: {{ .Values.app.image }}
           imagePullPolicy: {{ .Values.app.imagePullPolicy }}
           livenessProbe:
