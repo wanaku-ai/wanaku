@@ -108,6 +108,19 @@ install_wanaku() {
 
     unzip -qo "${TMPDIR}/${ARTIFACT}" -d "$TMPDIR"
 
+    if [ "$PLATFORM" = "java" ]; then
+        install_java
+    else
+        install_native
+    fi
+
+    if ! echo "$PATH" | tr ':' '\n' | grep -Fxq "$INSTALL_DIR"; then
+        warn "$INSTALL_DIR is not in your PATH. Add it with:"
+        warn "  export PATH=\"${INSTALL_DIR}:\$PATH\""
+    fi
+}
+
+install_native() {
     local bin_dir
     bin_dir="$(find "$TMPDIR" -type d -name bin | head -1)"
 
@@ -120,11 +133,33 @@ install_wanaku() {
             install -m 750 "${bin_dir}/${f}" "${INSTALL_DIR}/${f}"
         fi
     done
+}
 
-    if ! echo "$PATH" | tr ':' '\n' | grep -Fxq "$INSTALL_DIR"; then
-        warn "$INSTALL_DIR is not in your PATH. Add it with:"
-        warn "  export PATH=\"${INSTALL_DIR}:\$PATH\""
+install_java() {
+    local extract_dir
+    extract_dir="$(find "$TMPDIR" -maxdepth 1 -type d -name "wanaku-cli-*" | head -1)"
+
+    if [ -z "$extract_dir" ] || [ ! -f "${extract_dir}/quarkus-run.jar" ]; then
+        error "Unexpected Java archive layout — quarkus-run.jar not found"
     fi
+
+    local java_home="${INSTALL_DIR}/wanaku-java"
+    rm -rf "$java_home"
+    cp -R "$extract_dir" "$java_home"
+
+    cat > "${INSTALL_DIR}/wanaku" <<'WRAPPER'
+#!/bin/sh
+installDir="$(dirname "$0")/wanaku-java"
+exec java -jar "${installDir}/quarkus-run.jar" "$@"
+WRAPPER
+    chmod 750 "${INSTALL_DIR}/wanaku"
+
+    cat > "${INSTALL_DIR}/wanaku-cli" <<'WRAPPER'
+#!/bin/sh
+installDir="$(dirname "$0")/wanaku-java"
+exec java -jar "${installDir}/quarkus-run.jar" "$@"
+WRAPPER
+    chmod 750 "${INSTALL_DIR}/wanaku-cli"
 }
 
 main() {
