@@ -5,8 +5,5 @@ docker run -d \
   -e SERVICE_NAME={{systemName}} \
   -e SERVICE_CATALOG={{catalogName}} \
   -e SERVICE_CATALOG_SYSTEM={{systemName}} \
-  -e TOKEN_ENDPOINT=<token-endpoint> \
-  -e CLIENT_ID=wanaku-service \
-  -e CLIENT_SECRET=<client-secret> \
-  -p 9190:9190 \
+  {{authOptions}}-p 9190:9190 \
   quay.io/wanaku/camel-integration-capability:latest

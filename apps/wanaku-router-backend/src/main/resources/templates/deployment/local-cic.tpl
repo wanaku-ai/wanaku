@@ -5,5 +5,4 @@ java -jar camel-integration-capability-main-*-jar-with-dependencies.jar \
   --name {{systemName}} \
   --service-catalog {{catalogName}} \
   --service-catalog-system {{systemName}} \
-  --client-id wanaku-service \
-  --fail-fast
+  {{authOptions}}--fail-fast
