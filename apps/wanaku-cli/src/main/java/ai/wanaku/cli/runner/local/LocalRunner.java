@@ -131,6 +131,8 @@ public class LocalRunner {
             return;
         }
 
+        LOG.infof("Open the Wanaku dashboard available at %s", "http://localhost:8080/admin");
+
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {
                 startService(component, grpcPort, profileOpt, executorService, countDownLatch, environment);
@@ -172,7 +174,7 @@ public class LocalRunner {
             ExecutorService executorService,
             CountDownLatch countDownLatch,
             LocalRunnerEnvironment environment) {
-        LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
+        LOG.infof("Starting Wanaku Service %s (gRPC port %d)", component.getKey(), grpcPort);
         File componentDir = quarkusAppDir(component.getKey());
 
         String grpcPortOpt = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
