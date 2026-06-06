@@ -132,6 +132,7 @@ Configuration for the main Wanaku Router Backend (`wanaku-router-backend`), whic
 | `quarkus.oidc-proxy.enabled` | `true` - Enables the OIDC proxy feature, which simplifies OIDC integration. |
 | `quarkus.http.auth.permission.*.paths` | Defines path patterns for different security policies (`permit`, `authenticated`). |
 | `quarkus.http.auth.permission.*.policy` | Assigns a security policy to the corresponding path pattern. |
+| `quarkus.keycloak.policy-enforcer.enabled` | `false` - Disables Keycloak Authorization Services policy enforcement. Set to `true` to enable policy enforcement so that MCP endpoints (e.g., `/mcp`, `/mcp/sse`) can be protected as Authorization Resources in Keycloak, linked to permissions and policies so that JWT access tokens are only issued to users who meet the associated policy. |
 
 #### Running Without Authentication
 
