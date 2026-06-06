@@ -11,6 +11,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
@@ -28,14 +29,14 @@ public interface ServiceCatalogService {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<DataStore>> list(@QueryParam("search") String search);
+    WanakuResponse<List<Map<String, Object>>> list(@QueryParam("search") String search);
 
     /**
      * List all service catalog entries without filtering.
      *
      * @return response with list of all catalog summaries
      */
-    default WanakuResponse<List<DataStore>> list() {
+    default WanakuResponse<List<Map<String, Object>>> list() {
         return list(null);
     }
 
