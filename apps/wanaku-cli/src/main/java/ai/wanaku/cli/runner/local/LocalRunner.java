@@ -232,6 +232,8 @@ public class LocalRunner {
             Duration remaining = Duration.ofNanos(remainingNanos);
             if (routerIsReady(minDuration(remaining, ROUTER_READINESS_REQUEST_TIMEOUT))) {
                 LOG.info("Wanaku Router Backend is ready");
+                var dashboardUri = routerReadinessUri.resolve("/admin");
+                LOG.infof("Open the Wanaku dashboard available at %s", dashboardUri);
                 return;
             }
 
@@ -287,7 +289,7 @@ public class LocalRunner {
             ExecutorService executorService,
             CountDownLatch countDownLatch,
             LocalRunnerEnvironment environment) {
-        LOG.infof("Starting Wanaku Service %s on port %d", component.getKey(), grpcPort);
+        LOG.infof("Starting Wanaku Service %s (gRPC port %d)", component.getKey(), grpcPort);
 
         if (isQuarkusComponent(component.getKey())) {
             startQuarkusService(component.getKey(), grpcPort, profileOpt, executorService, countDownLatch, environment);
