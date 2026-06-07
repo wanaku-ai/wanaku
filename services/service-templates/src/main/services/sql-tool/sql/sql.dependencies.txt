@@ -1,0 +1,3 @@
+# Maven dependencies for sql-tool
+  # One dependency per line in the format: groupId:artifactId or groupId:artifactId:version
+    org.apache.camel:camel-sql
