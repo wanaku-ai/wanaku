@@ -1108,3 +1108,202 @@ try (CloseableCodeExecutionIterator iter = bridge.executeCode(...)) {
 | toolrequest.proto | `core/core-exchange/src/main/proto/` |
 | resourcerequest.proto | `core/core-exchange/src/main/proto/` |
 | codeexecution.proto | `core/core-exchange/src/main/proto/` |
+
+## Resource Provider Protocol
+
+This section describes the gRPC protocol used by resource provider capabilities.
+
+### Overview
+
+Resource providers implement the `ResourceAcquirerBridge` interface. The router calls the provider to retrieve resource contents given a URI.
+
+### Request Schema
+
+The router sends a `ResourceRequest` message:
+
+```proto
+message ResourceRequest {
+  string uri = 1;           // The resource URI to retrieve
+  map<string, string> params = 2; // Optional query parameters
+}
+```
+
+- `uri` — the resource URI as registered with Wanaku (e.g., `file:///data/report.txt`)
+- - `params` — optional key-value parameters passed by the MCP client
+ 
+  - ### Response Schema
+ 
+  - The provider returns a `ResourceResponse` message:
+ 
+  - ```proto
+    message ResourceResponse {
+      repeated ResourceContent contents = 1;
+      ResourceError error = 2; // Present only on failure
+    }
+
+    message ResourceContent {
+      string uri = 1;
+      string mime_type = 2;
+      oneof content {
+        string text = 3;
+        bytes blob = 4;
+      }
+    }
+
+    message ResourceError {
+      int32 code = 1;
+      string message = 2;
+    }
+    ```
+
+    - `contents` — one or more content items returned by the provider
+    - - `error` — present only when the provider encountered an error
+     
+      - ### Example Java Resource Provider
+     
+      - ```java
+        @ApplicationScoped
+        public class FileResourceProvider implements ResourceAcquirerBridge {
+
+            @Override
+            public ResourceResponse acquire(ResourceRequest request) {
+                try {
+                    Path path = Path.of(URI.create(request.getUri()));
+                    String content = Files.readString(path);
+                    return ResourceResponse.newBuilder()
+                        .addContents(ResourceContent.newBuilder()
+                            .setUri(request.getUri())
+                            .setMimeType("text/plain")
+                            .setText(content)
+                            .build())
+                        .build();
+                } catch (IOException e) {
+                    return ResourceResponse.newBuilder()
+                        .setError(ResourceError.newBuilder()
+                            .setCode(404)
+                            .setMessage("Resource not found: " + e.getMessage())
+                            .build())
+                        .build();
+                }
+            }
+        }
+        ```
+
+        ## Error Handling Patterns
+
+        ### Tool Invoker Error Handling
+
+        Tool invokers should handle errors at two levels:
+
+        **Transport errors** (gRPC connection failures):
+
+        ```java
+        try {
+            ToolResponse response = stub.invoke(request);
+            // handle response
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+                // Capability service is down — return a friendly error
+                log.error("Capability unavailable: {}", e.getMessage());
+                return ToolResponse.error("Capability service is temporarily unavailable");
+            }
+            throw e;
+        }
+        ```
+
+        **Application errors** (errors returned in the response):
+
+        ```java
+        ToolResponse response = stub.invoke(request);
+        if (response.hasError()) {
+            log.warn("Tool invocation error: {} (code={})",
+                response.getError().getMessage(),
+                response.getError().getCode());
+            // Map error codes to MCP error types
+            return mapErrorToMcpResponse(response.getError());
+        }
+        ```
+
+        ### Resource Provider Error Handling
+
+        Resource providers should return structured errors rather than throwing exceptions:
+
+        ```java
+        // GOOD: Return a structured error response
+        return ResourceResponse.newBuilder()
+            .setError(ResourceError.newBuilder()
+                .setCode(404)
+                .setMessage("Resource not found: " + uri)
+                .build())
+            .build();
+
+        // BAD: Throwing an exception causes an unstructured gRPC error
+        throw new RuntimeException("Resource not found");
+        ```
+
+        **Common error codes:**
+
+        | Code | Meaning | When to use |
+        |------|---------|-------------|
+        | `400` | Bad request | URI is malformed or parameters are invalid |
+        | `404` | Not found | Resource URI does not exist |
+        | `403` | Forbidden | Access to the resource is not permitted |
+        | `500` | Internal error | Unexpected provider failure |
+        | `503` | Service unavailable | Transient failure; client should retry |
+
+        ### Retry and Timeout Configuration
+
+        Configure retry and timeout behavior for gRPC calls:
+
+        ```yaml
+        wanaku:
+          bridge:
+            grpc:
+              timeout-ms: 5000       # Per-call timeout in milliseconds
+              max-retries: 3         # Retry attempts on UNAVAILABLE errors
+              retry-delay-ms: 100    # Initial retry delay
+        ```
+
+        ## Testing gRPC Locally
+
+        ### Using grpcurl
+
+        Test tool and resource providers with `grpcurl`:
+
+        ```bash
+        # List available services
+        grpcurl -plaintext localhost:50051 list
+
+        # Call a tool provider
+        grpcurl -plaintext -d '{"name":"my-tool","arguments":{"input":"test"}}' \
+          localhost:50051 wanaku.ToolInvoker/Invoke
+
+        # Call a resource provider
+        grpcurl -plaintext -d '{"uri":"file:///data/test.txt"}' \
+          localhost:50051 wanaku.ResourceAcquirer/Acquire
+        ```
+
+        ### Using a Mock Server
+
+        For unit testing, implement a mock gRPC server:
+
+        ```java
+        @QuarkusTest
+        class MyToolProviderTest {
+
+            @GrpcClient("test-server")
+            ToolInvokerGrpc.ToolInvokerBlockingStub stub;
+
+            @Test
+            void testToolInvocation() {
+                ToolResponse response = stub.invoke(
+                    ToolRequest.newBuilder()
+                        .setName("my-tool")
+                        .putArguments("input", "hello")
+                        .build()
+                );
+                assertThat(response.hasError()).isFalse();
+                assertThat(response.getContents(0).getText()).contains("expected");
+            }
+        }
+        ```
