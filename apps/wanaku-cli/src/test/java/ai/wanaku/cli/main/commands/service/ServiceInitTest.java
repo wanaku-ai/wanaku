@@ -5,44 +5,37 @@ import java.io.FileInputStream;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Properties;
+import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisabledOnOs(value = OS.WINDOWS, disabledReason = "https://github.com/wanaku-ai/wanaku/issues/1193")
+@ExtendWith(MockitoExtension.class)
 class ServiceInitTest {
 
     @TempDir
     Path tempDir;
 
-    private Path originalDir;
+    @Mock
+    private Terminal terminal;
 
-    @BeforeEach
-    void setUp() {
-        originalDir = Path.of(System.getProperty("user.dir"));
-        // Change working directory for the test (since ServiceInit creates relative dirs)
-        System.setProperty("user.dir", tempDir.toString());
-    }
-
-    @AfterEach
-    void tearDown() {
-        System.setProperty("user.dir", originalDir.toString());
-    }
+    @Mock
+    private WanakuPrinter printer;
 
     @Test
     void testInitCreatesSingleSystem() throws Exception {
         ServiceInit cmd = new ServiceInit();
-        setField(cmd, "name", tempDir.resolve("testservice").toString());
+        setField(cmd, "name", tempDir.resolve("testservice").toAbsolutePath().toString());
         setField(cmd, "services", "sys1");
 
-        Integer result = cmd.call();
+        Integer result = cmd.doCall(terminal, printer);
         assertEquals(0, result);
 
         File rootDir = tempDir.resolve("testservice").toFile();
@@ -52,7 +45,6 @@ class ServiceInitTest {
         assertTrue(new File(rootDir, "sys1/sys1.wanaku-rules.yaml").exists(), "Rules file should exist");
         assertTrue(new File(rootDir, "sys1/sys1.dependencies.txt").exists(), "Dependencies file should exist");
 
-        // Verify index.properties content
         Properties props = new Properties();
         try (FileInputStream fis = new FileInputStream(new File(rootDir, "index.properties"))) {
             props.load(fis);
@@ -66,10 +58,10 @@ class ServiceInitTest {
     @Test
     void testInitCreatesMultipleSystems() throws Exception {
         ServiceInit cmd = new ServiceInit();
-        setField(cmd, "name", tempDir.resolve("multiservice").toString());
+        setField(cmd, "name", tempDir.resolve("multiservice").toAbsolutePath().toString());
         setField(cmd, "services", "sys1,sys2,sys3");
 
-        Integer result = cmd.call();
+        Integer result = cmd.doCall(terminal, printer);
         assertEquals(0, result);
 
         File rootDir = tempDir.resolve("multiservice").toFile();
@@ -87,7 +79,6 @@ class ServiceInitTest {
 
     @Test
     void testInitFailsWhenDirectoryExists() throws Exception {
-        // Pre-create the directory
         File existing = tempDir.resolve("existing").toFile();
         existing.mkdirs();
 
@@ -95,17 +86,17 @@ class ServiceInitTest {
         setField(cmd, "name", existing.getAbsolutePath());
         setField(cmd, "services", "sys1");
 
-        Integer result = cmd.call();
+        Integer result = cmd.doCall(terminal, printer);
         assertEquals(1, result);
     }
 
     @Test
     void testInitIndexPropertiesHasCorrectServicesList() throws Exception {
         ServiceInit cmd = new ServiceInit();
-        setField(cmd, "name", tempDir.resolve("proptest").toString());
+        setField(cmd, "name", tempDir.resolve("proptest").toAbsolutePath().toString());
         setField(cmd, "services", "alpha,beta");
 
-        cmd.call();
+        cmd.doCall(terminal, printer);
 
         Properties props = new Properties();
         try (FileInputStream fis =

@@ -3,30 +3,40 @@ package ai.wanaku.cli.main.commands.service;
 import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
+import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.support.WanakuPrinter;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@DisabledOnOs(value = OS.WINDOWS, disabledReason = "https://github.com/wanaku-ai/wanaku/issues/1193")
+@ExtendWith(MockitoExtension.class)
 class ServiceDeployTest {
 
     @TempDir
     Path tempDir;
+
+    @Mock
+    private Terminal terminal;
+
+    @Mock
+    private WanakuPrinter printer;
 
     @Test
     void testDeployFailsWithMissingIndex() throws Exception {
         tempDir.resolve("empty").toFile().mkdirs();
 
         ServiceDeploy cmd = new ServiceDeploy();
-        setField(cmd, "path", tempDir.resolve("empty").toString());
+        setField(cmd, "path", tempDir.resolve("empty").toAbsolutePath().toString());
         setField(cmd, "host", "http://localhost:8080");
 
-        Integer result = cmd.call();
+        Integer result = cmd.doCall(terminal, printer);
         assertEquals(1, result);
     }
 
@@ -36,12 +46,11 @@ class ServiceDeployTest {
         rootDir.mkdirs();
 
         Properties props = new Properties();
-        // Missing catalog.name
         props.setProperty("catalog.description", "test");
         props.setProperty("catalog.services", "sys1");
 
         File indexFile = new File(rootDir, "index.properties");
-        try (FileWriter fw = new FileWriter(indexFile)) {
+        try (FileWriter fw = new FileWriter(indexFile, StandardCharsets.UTF_8)) {
             props.store(fw, null);
         }
 
@@ -49,7 +58,7 @@ class ServiceDeployTest {
         setField(cmd, "path", rootDir.getAbsolutePath());
         setField(cmd, "host", "http://localhost:8080");
 
-        Integer result = cmd.call();
+        Integer result = cmd.doCall(terminal, printer);
         assertEquals(1, result);
     }
 
@@ -66,17 +75,15 @@ class ServiceDeployTest {
         props.setProperty("catalog.rules.sys1", "sys1/sys1.wanaku-rules.yaml");
 
         File indexFile = new File(rootDir, "index.properties");
-        try (FileWriter fw = new FileWriter(indexFile)) {
+        try (FileWriter fw = new FileWriter(indexFile, StandardCharsets.UTF_8)) {
             props.store(fw, null);
         }
-
-        // Do NOT create the route file
 
         ServiceDeploy cmd = new ServiceDeploy();
         setField(cmd, "path", rootDir.getAbsolutePath());
         setField(cmd, "host", "http://localhost:8080");
 
-        Integer result = cmd.call();
+        Integer result = cmd.doCall(terminal, printer);
         assertEquals(1, result);
     }
 
