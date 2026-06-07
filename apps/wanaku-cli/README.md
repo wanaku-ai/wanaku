@@ -37,25 +37,10 @@ jbang app install wanaku@wanaku-ai/wanaku
 ### Via Binary Download
 
 Download the latest release from [GitHub releases](https://github.com/wanaku-ai/wanaku/releases) and extract to your PATH.
-
 ### PATH Configuration
 
-If you installed the Wanaku CLI using `get-wanaku.sh`, it is placed in `~/bin` (`$HOME/bin`). Many systems do not include `$HOME/bin` in the default `PATH`, so you may need to add it manually to avoid a "command not found" error when running `wanaku`.
+If you installed via `get-wanaku.sh`, the CLI is placed in `$HOME/bin` which may not be on your default `PATH`. See [PATH Configuration](../../docs/usage.md#path-configuration) in the usage guide for setup instructions.
 
-To add `$HOME/bin` to your `PATH` for the current session:
-
-```shell
-export PATH="$HOME/bin:$PATH"
-```
-
-To persist this across sessions, add the line above to your shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.):
-
-```shell
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-> **Note:** If you are using `zsh`, replace `~/.bashrc` with `~/.zshrc`.
 >
 > 
 ## Basic Usage

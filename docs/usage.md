@@ -272,6 +272,34 @@ executing `wanaku`.
 > It requires access to the internet, in case of using a proxy, please ensure that the proxy is configured for your system.
 > If Wanaku JBang is not working with your current configuration, please look to [Proxy configuration in JBang documentation](https://www.jbang.dev/documentation/jbang/latest/configuration.html#proxy-configuration).
 
+### PATH Configuration
+
+If you installed the Wanaku CLI using `get-wanaku.sh` or the native build (`make install`), it is placed in `$HOME/bin`. Many systems do not include `$HOME/bin` in the default `PATH`, so you may need to add it manually to avoid a "command not found" error when running `wanaku`.
+
+To add `$HOME/bin` to your `PATH` for the current session:
+
+```shell
+export PATH="$HOME/bin:$PATH"
+```
+
+To persist this across sessions, add the line above to your shell configuration file:
+
+```shell
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+> **Note:** If you are using `zsh`, replace `~/.bashrc` with `~/.zshrc`.
+
+> [!TIP]
+> The `get-wanaku.sh` script auto-detects your OS and architecture, downloads the latest release, verifies the checksum, and installs to `$HOME/bin`. You can override the install directory with `WANAKU_INSTALL_DIR=/usr/local/bin`.
+
+Verify the installation:
+
+```shell
+wanaku --version
+```
+
 ## Installing and Running the Router
 
 There are three ways to run the router. They work similarly, with the distinction that some of them may come with more

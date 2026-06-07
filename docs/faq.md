@@ -93,16 +93,7 @@ Kubernetes/OpenShift deployment is recommended for production but not required.
 
 ### How do I install the Wanaku CLI?
 
-There are two main options:
-
-**Via JBang (recommended):**
-
-```shell
-jbang app install wanaku@wanaku-ai/wanaku
-```
-
-**Via binary download:**
-Download the latest release from [GitHub releases](https://github.com/wanaku-ai/wanaku/releases) and extract to your PATH.
+See the [Installing the CLI](usage.md#installing-the-command-line-interface-cli) section in the usage guide for all installation methods and PATH configuration.
 
 ## Usage and Configuration
 
