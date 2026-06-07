@@ -600,3 +600,117 @@ kubectl get configmap wanaku-http-config -n wanaku
 - **Use service templates**: see [Service Templates](service-templates.md)
 - **Configure advanced settings**: see [Configuration Guide](configurations.md)
 - **Browse sample CRs**: check [apps/wanaku-operator/samples](https://github.com/wanaku-ai/wanaku/tree/main/apps/wanaku-operator/samples)
+
+
+## CRD Field Reference
+
+This section provides a field-by-field reference for each Wanaku CRD.
+
+### WanakuRouter
+
+`WanakuRouter` deploys and configures the MCP router gateway.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `spec.image` | string | No | Container image to use. Defaults to the current release image. |
+| `spec.replicas` | integer | No | Number of router replicas. Defaults to `1`. |
+| `spec.resources.requests.cpu` | string | No | CPU request for the router pod (e.g., `250m`). |
+| `spec.resources.requests.memory` | string | No | Memory request for the router pod (e.g., `256Mi`). |
+| `spec.resources.limits.cpu` | string | No | CPU limit for the router pod (e.g., `1000m`). |
+| `spec.resources.limits.memory` | string | No | Memory limit for the router pod (e.g., `512Mi`). |
+| `spec.auth.enabled` | boolean | No | Enable OIDC authentication. Defaults to `false`. |
+| `spec.auth.issuerUrl` | string | Cond. | OIDC issuer URL. Required when `auth.enabled` is `true`. |
+| `spec.auth.clientId` | string | Cond. | OIDC client ID. Required when `auth.enabled` is `true`. |
+| `spec.ingress.enabled` | boolean | No | Create an Ingress resource. Defaults to `false`. |
+| `spec.ingress.host` | string | Cond. | Hostname for the Ingress. Required when `ingress.enabled` is `true`. |
+| `spec.ingress.tls.enabled` | boolean | No | Enable TLS on the Ingress. Defaults to `false`. |
+| `spec.ingress.tls.secretName` | string | Cond. | TLS secret name. Required when `ingress.tls.enabled` is `true`. |
+
+**Example WanakuRouter CR:**
+
+```yaml
+apiVersion: wanaku.ai/v1alpha1
+kind: WanakuRouter
+metadata:
+  name: wanaku-prod
+  namespace: wanaku
+spec:
+  replicas: 2
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "1Gi"
+  auth:
+    enabled: true
+    issuerUrl: https://keycloak.example.com/realms/wanaku
+    clientId: wanaku-router
+  ingress:
+    enabled: true
+    host: mcp.example.com
+    tls:
+      enabled: true
+      secretName: mcp-tls
+```
+
+### WanakuCapability
+
+`WanakuCapability` deploys a capability service and connects it to a router.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `spec.image` | string | No | Container image for the capability provider. |
+| `spec.routerRef.name` | string | Yes | Name of the `WanakuRouter` this capability connects to. |
+| `spec.routerRef.namespace` | string | No | Namespace of the router. Defaults to same namespace. |
+| `spec.capabilities` | list | No | List of capability definitions to register. |
+| `spec.capabilities[].name` | string | Yes | Unique name for the capability (used as tool/resource name). |
+| `spec.capabilities[].type` | string | Yes | Capability type: `tool` or `resource`. |
+| `spec.capabilities[].route` | string | Yes | Camel route URI that handles this capability. |
+| `spec.resources.requests.cpu` | string | No | CPU request. |
+| `spec.resources.requests.memory` | string | No | Memory request. |
+| `spec.resources.limits.cpu` | string | No | CPU limit. |
+| `spec.resources.limits.memory` | string | No | Memory limit. |
+
+**Example WanakuCapability CR:**
+
+```yaml
+apiVersion: wanaku.ai/v1alpha1
+kind: WanakuCapability
+metadata:
+  name: wanaku-http-tools
+  namespace: wanaku
+spec:
+  routerRef:
+    name: wanaku-prod
+  capabilities:
+    - name: http-get
+      type: tool
+      route: direct:http-get
+    - name: http-post
+      type: tool
+      route: direct:http-post
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+```
+
+### Troubleshooting CRD Validation Errors
+
+Common CRD validation errors and how to resolve them:
+
+- **`routerRef.name is required`** — Add a `spec.routerRef.name` pointing to your `WanakuRouter` name.
+- - **`auth.issuerUrl is required when auth.enabled=true`** — Provide `spec.auth.issuerUrl` when enabling auth.
+  - - **`Unknown field "spec.xyz"`** — Check the CRD version; newer fields may not be available in older operator versions.
+    - - **`invalid resource quantity`** — Resource values like `cpu` and `memory` must use valid Kubernetes quantity notation (e.g., `250m`, `256Mi`).
+     
+      - To validate a CR before applying:
+     
+      - ```bash
+        kubectl apply --dry-run=client -f my-wanaku-router.yaml
+        ```
