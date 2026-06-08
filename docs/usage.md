@@ -3477,7 +3477,6 @@ This section provides solutions to common issues you may encounter while using W
 
    ```shell
    kubectl logs <pod-name>
-   kubectl logs <pod-name>
    ```
 
 3. Verify ConfigMaps and Secrets are properly mounted:
@@ -3578,7 +3577,7 @@ Check logs in these locations:
 
 - **Router backend:** Look for `wanaku-router-backend.log` or check container logs
 - **Capability services:** Check individual service log files
-- **Kubernetes:** `kubectl logs <pod-name>` or `kubectl logs <pod-name>`
+- **Kubernetes:** `kubectl logs <pod-name>`
 
 ### Getting Help
 
