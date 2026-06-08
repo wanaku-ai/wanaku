@@ -233,7 +233,7 @@ public class LocalRunner {
             if (routerIsReady(minDuration(remaining, ROUTER_READINESS_REQUEST_TIMEOUT))) {
                 LOG.info("Wanaku Router Backend is ready");
                 var dashboardUri = routerReadinessUri.resolve("/admin");
-                LOG.infof("Open the Wanaku dashboard available at %s", dashboardUri);
+                LOG.infof("Open the Wanaku dashboard available at %s/", dashboardUri);
                 return;
             }
 
