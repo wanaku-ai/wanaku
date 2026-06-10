@@ -8,6 +8,22 @@
 # import and the capability services below; it defaults to "mypasswd" for local development only.
 # =============================================================================
 services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.127.0
+    command: [ "--config=/etc/otelcol/config.yaml" ]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  jaeger:
+    image: jaegertracing/jaeger:2.6
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.1
     command: [ "start-dev", "--import-realm" ]
@@ -35,7 +51,8 @@ services:
       WANAKU_SERVICE_REGISTRATION_URI: http://localhost:8080/
       AUTH_SERVER: http://localhost:8543
       # Must match the wanaku-service client secret in the realm (WANAKU_SERVICE_SECRET).
-      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: ${WANAKU_SERVICE_SECRET:-mypasswd}
+      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: ${WANAKU_SERVICE_SECRET:-mypasswd}      
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     network_mode: host
     depends_on:
       wanaku-router:
@@ -52,6 +69,7 @@ services:
       QUARKUS_HTTP_HOST: 0.0.0.0
       AUTH_SERVER: http://localhost:8543
       AUTH_PROXY: http://localhost:8080
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     depends_on:
       keycloak:
         condition: service_healthy

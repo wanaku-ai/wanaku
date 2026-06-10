@@ -1,5 +1,7 @@
 package ai.wanaku.core.capabilities.provider;
 
+import jakarta.inject.Inject;
+
 import java.lang.reflect.Field;
 import java.util.List;
 import io.grpc.Status;
@@ -10,6 +12,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
+import ai.wanaku.core.capabilities.common.RequestContext;
 import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
 
@@ -27,6 +30,9 @@ import static org.mockito.Mockito.when;
 
 @QuarkusTest
 class AbstractResourceDelegateTest {
+
+    @Inject
+    RequestContext requestContext;
 
     @Mock
     private ResourceConsumer consumer;
@@ -72,6 +78,7 @@ class AbstractResourceDelegateTest {
 
         setField(delegate, "consumer", consumer);
         setField(delegate, "registrationManager", registrationManager);
+        setField(delegate, "requestContext", requestContext);
     }
 
     @Test

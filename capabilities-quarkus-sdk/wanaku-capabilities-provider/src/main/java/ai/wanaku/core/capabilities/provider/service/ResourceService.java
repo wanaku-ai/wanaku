@@ -14,18 +14,15 @@ import io.smallrye.mutiny.Uni;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.exchange.HealthProbeDelegate;
 import ai.wanaku.core.exchange.ResourceAcquirerDelegate;
-import ai.wanaku.core.exchange.v1.HealthProbe;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
 import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.ProvisionReply;
 import ai.wanaku.core.exchange.v1.ProvisionRequest;
-import ai.wanaku.core.exchange.v1.Provisioner;
-import ai.wanaku.core.exchange.v1.ResourceAcquirer;
 import ai.wanaku.core.exchange.v1.ResourceReply;
 import ai.wanaku.core.exchange.v1.ResourceRequest;
 
 @GrpcService
-public class ResourceService implements ResourceAcquirer, Provisioner, HealthProbe {
+public class ResourceService {
     private static final Logger LOG = Logger.getLogger(ResourceService.class);
 
     @Inject
@@ -40,18 +37,15 @@ public class ResourceService implements ResourceAcquirer, Provisioner, HealthPro
     @Inject
     ManagedExecutor executor;
 
-    @Override
     public Uni<ResourceReply> resourceAcquire(ResourceRequest request) {
         return Uni.createFrom().item(() -> delegate.acquire(request)).runSubscriptionOn(executor);
     }
 
     @Blocking
-    @Override
     public Uni<ProvisionReply> provision(ProvisionRequest request) {
         return Uni.createFrom().item(() -> delegate.provision(request)).runSubscriptionOn(executor);
     }
 
-    @Override
     public Uni<HealthProbeReply> getStatus(HealthProbeRequest request) {
         return Uni.createFrom()
                 .item(HealthProbeReply.newBuilder()

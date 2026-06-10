@@ -1,10 +1,27 @@
 services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.127.0
+    command: [ "--config=/etc/otelcol/config.yaml" ]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  jaeger:
+    image: jaegertracing/jaeger:2.6
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
   wanaku-router:
     image: quay.io/wanaku/wanaku-router-backend:latest
     environment:
       WANAKU_HTTP_AUTH: none
       QUARKUS_MCP_SERVER_TRAFFIC_LOGGING_ENABLED: "true"
       QUARKUS_HTTP_HOST: 0.0.0.0
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     network_mode: host
     volumes:
       - wanaku-router:/home/jboss/.wanaku/router

@@ -108,7 +108,7 @@ public class CodeExecutionBean {
 
         // Dispatch the task for execution
         final Iterator<CodeExecutionReply> codeExecutionReplyIterator =
-                codeExecutionBridge.executeCode(engineType, language, request);
+                codeExecutionBridge.executeCode(engineType, language, request, "");
 
         managedExecutor.runAsync(() -> consumeEvents(codeExecutionReplyIterator, taskId));
 

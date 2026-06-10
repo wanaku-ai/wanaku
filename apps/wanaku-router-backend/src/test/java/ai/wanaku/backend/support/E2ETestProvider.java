@@ -8,6 +8,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
+import io.vertx.core.Vertx;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
@@ -40,7 +41,7 @@ public class E2ETestProvider {
         LOG.info("Creating real ToolsBridge for e2e tests");
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
         WanakuBridgeTransport transport = new GrpcTransport();
-        return new InvokerBridge(resolver, transport);
+        return new InvokerBridge(resolver, transport, null, Vertx.vertx());
     }
 
     @Produces
