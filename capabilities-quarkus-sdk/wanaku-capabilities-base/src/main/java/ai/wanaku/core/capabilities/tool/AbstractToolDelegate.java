@@ -18,6 +18,7 @@ import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
 import ai.wanaku.capabilities.sdk.config.provider.api.ProvisionedConfig;
 import ai.wanaku.core.capabilities.common.ConfigProvisionerLoader;
 import ai.wanaku.core.capabilities.common.ConfigResourceLoader;
+import ai.wanaku.core.capabilities.common.RequestContext;
 import ai.wanaku.core.capabilities.common.ServicesHelper;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.exchange.InvocationDelegate;
@@ -50,6 +51,9 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
     @Inject
     Instance<Tokens> tokensInstance;
+
+    @Inject
+    RequestContext requestContext;
 
     private RegistrationManager registrationManager;
 
@@ -84,6 +88,8 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
 
     @Override
     public ToolInvokeReply invoke(ToolInvokeRequest request) {
+        String requestId = request.getRequestId();
+        requestContext.setRequestId(requestId);
         try {
             ConfigResource configResource = ConfigResourceLoader.loadFromRequest(request);
 
@@ -110,6 +116,8 @@ public abstract class AbstractToolDelegate implements InvocationDelegate {
             LOG.error(stateMsg, e);
             throw new StatusRuntimeException(
                     Status.INTERNAL.withDescription(stateMsg).withCause(e));
+        } finally {
+            requestContext.clear();
         }
     }
 

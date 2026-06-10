@@ -60,36 +60,46 @@ public class ResourceAcquirerBridge implements ResourceBridge {
 
     @Override
     public Uni<ResourceResponse> read(ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+        String requestId = arguments.requestId().asString();
+        String connectionId = arguments.connection().id();
+
         return Uni.createFrom()
                 .item(() -> WanakuResourceContext.create(arguments, mcpResource))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
+                .invoke(ctx -> RequestIdContext.setContext(requestId, connectionId))
+                .invoke(ctx -> RequestIdContext.setResourceName(mcpResource.getName()))
                 .invoke(this::resolveService)
                 .chain(ctx -> transport
                         .acquireResource(ctx.request, ctx.serviceTarget, arguments, mcpResource)
-                        .map(ResourceResponse::new));
+                        .map(ResourceResponse::new))
+                .onItemOrFailure()
+                .invoke((item, failure) -> RequestIdContext.clear());
     }
 
     /**
      * Builds a resource request from the resource reference.
      *
      * @param mcpResource the resource reference
+     * @param requestId the MCP request ID for traceability
      * @return the resource request
      */
-    private ResourceRequest buildResourceRequest(ResourceReference mcpResource) {
+    private ResourceRequest buildResourceRequest(ResourceReference mcpResource, String requestId) {
         return ResourceRequest.newBuilder()
                 .setLocation(mcpResource.getLocation())
                 .setType(mcpResource.getType())
                 .setName(mcpResource.getName())
                 .setConfigurationUri(Objects.requireNonNullElse(mcpResource.getConfigurationURI(), EMPTY_ARGUMENT))
                 .setSecretsUri(Objects.requireNonNullElse(mcpResource.getSecretsURI(), EMPTY_ARGUMENT))
+                .setRequestId(Objects.requireNonNullElse(requestId, EMPTY_ARGUMENT))
                 .build();
     }
 
     private WanakuResourceContext resolveService(WanakuResourceContext context) {
+        String requestId = context.arguments.requestId().asString();
 
         context.serviceTarget =
                 provisioner.resolveService(context.mcpResource.getType(), SERVICE_TYPE_RESOURCE_PROVIDER);
-        context.request = buildResourceRequest(context.mcpResource);
+        context.request = buildResourceRequest(context.mcpResource, requestId);
 
         return context;
     }

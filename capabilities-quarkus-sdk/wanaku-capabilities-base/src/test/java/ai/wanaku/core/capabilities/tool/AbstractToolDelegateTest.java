@@ -1,5 +1,7 @@
 package ai.wanaku.core.capabilities.tool;
 
+import jakarta.inject.Inject;
+
 import java.lang.reflect.Field;
 import java.util.List;
 import io.grpc.Status;
@@ -9,6 +11,7 @@ import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.InvalidResponseTypeException;
 import ai.wanaku.capabilities.sdk.api.exceptions.NonConvertableResponseException;
 import ai.wanaku.capabilities.sdk.config.provider.api.ConfigResource;
+import ai.wanaku.core.capabilities.common.RequestContext;
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
@@ -24,6 +27,9 @@ import static org.mockito.Mockito.when;
 
 @QuarkusTest
 class AbstractToolDelegateTest {
+
+    @Inject
+    RequestContext requestContext;
 
     @Mock
     private Client client;
@@ -59,6 +65,7 @@ class AbstractToolDelegateTest {
 
         setField(delegate, "client", client);
         setField(delegate, "registrationManager", registrationManager);
+        setField(delegate, "requestContext", requestContext);
     }
 
     @Test

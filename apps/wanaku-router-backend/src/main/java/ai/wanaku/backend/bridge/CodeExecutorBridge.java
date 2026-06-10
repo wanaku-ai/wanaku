@@ -42,5 +42,6 @@ public interface CodeExecutorBridge extends Bridge {
      * @param request the code execution request containing the code and parameters
      * @return an iterator over the streaming code execution replies
      */
-    Iterator<CodeExecutionReply> executeCode(String engineType, String language, CodeExecutionRequest request);
+    Iterator<CodeExecutionReply> executeCode(
+            String engineType, String language, CodeExecutionRequest request, String requestId);
 }

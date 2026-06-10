@@ -1,5 +1,7 @@
 package ai.wanaku.backend.bridge;
 
+import jakarta.inject.Inject;
+
 import java.time.Duration;
 import java.time.Instant;
 import org.jboss.logging.Logger;
@@ -7,6 +9,7 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.vertx.core.Vertx;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
@@ -32,6 +35,7 @@ public class InvokerBridge implements ToolsBridge {
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
     private final EventNotifier eventNotifier;
+    private final Vertx vertx;
 
     static class WanakuToolContext {
         ToolManager.ToolArguments arguments;
@@ -49,28 +53,16 @@ public class InvokerBridge implements ToolsBridge {
         }
     }
 
-    /**
-     * Creates a new InvokerBridge with the specified service resolver and transport.
-     *
-     * @param serviceResolver the resolver for locating tool services
-     * @param transport the gRPC transport for communication
-     */
-    public InvokerBridge(ServiceResolver serviceResolver, WanakuBridgeTransport transport) {
-        this(serviceResolver, transport, null);
-    }
-
-    /**
-     * Creates a new InvokerBridge with the specified service resolver, transport, and event notifier.
-     *
-     * @param serviceResolver the resolver for locating tool services
-     * @param transport the gRPC transport for communication
-     * @param eventNotifier the notifier for tool call events (nullable)
-     */
+    @Inject
     public InvokerBridge(
-            ServiceResolver serviceResolver, WanakuBridgeTransport transport, EventNotifier eventNotifier) {
+            ServiceResolver serviceResolver,
+            WanakuBridgeTransport transport,
+            EventNotifier eventNotifier,
+            Vertx vertx) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
         this.eventNotifier = eventNotifier;
+        this.vertx = vertx;
     }
 
     @Override
@@ -84,12 +76,23 @@ public class InvokerBridge implements ToolsBridge {
                             "Only local tool call references should be invoked by this executor"));
         }
 
+        String requestId = toolArguments.requestId().asString();
+        String connectionId = toolArguments.connection().id();
+
         return Uni.createFrom()
                 .item(() -> WanakuToolContext.create(toolArguments, ref))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
+                .invoke(ctx -> {
+                    if (vertx != null) {
+                        vertx.runOnContext(v -> RequestIdContext.setContext(requestId, connectionId));
+                    } else {
+                        RequestIdContext.setContext(requestId, connectionId);
+                    }
+                })
+                .invoke(ctx -> RequestIdContext.setToolName(ref.getName()))
                 .invoke(this::resolveService)
                 .invoke(ctx -> {
-                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments);
+                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments, requestId);
                     ctx.startTime = Instant.now();
                     if (eventNotifier != null) {
                         ctx.startedEvent =
@@ -105,7 +108,15 @@ public class InvokerBridge implements ToolsBridge {
 
                             LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
                             return ToolResponse.error(failure.getMessage());
-                        }));
+                        }))
+                .onItemOrFailure()
+                .invoke((item, failure) -> {
+                    if (vertx != null) {
+                        vertx.runOnContext(v -> RequestIdContext.clear());
+                    } else {
+                        RequestIdContext.clear();
+                    }
+                });
     }
 
     private void emitCompleted(WanakuToolContext ctx, ToolResponse response) {

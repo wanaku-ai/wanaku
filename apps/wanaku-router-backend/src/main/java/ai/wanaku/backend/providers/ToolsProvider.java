@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
 import ai.wanaku.backend.bridge.EventNotifier;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
@@ -33,6 +34,9 @@ public class ToolsProvider {
     @Inject
     EventNotifier eventNotifier;
 
+    @Inject
+    Vertx vertx;
+
     @Produces
     ToolsBridge getToolsBridge() {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
@@ -40,6 +44,6 @@ public class ToolsProvider {
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        return new InvokerBridge(serviceResolver, transport, eventNotifier);
+        return new InvokerBridge(serviceResolver, transport, eventNotifier, vertx);
     }
 }

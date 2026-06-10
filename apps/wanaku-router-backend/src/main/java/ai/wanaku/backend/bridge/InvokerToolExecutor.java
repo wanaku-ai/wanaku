@@ -34,6 +34,7 @@ public final class InvokerToolExecutor {
     private static final Logger LOG = Logger.getLogger(InvokerToolExecutor.class);
     private static final String EMPTY_BODY = "";
     private static final String EMPTY_ARGUMENT = "";
+    private static final String EMPTY_REQUEST_ID = "";
 
     private InvokerToolExecutor() {}
 
@@ -45,7 +46,7 @@ public final class InvokerToolExecutor {
      * @return a fully constructed ToolInvokeRequest
      */
     static ToolInvokeRequest buildToolInvokeRequest(
-            ToolReference toolReference, ToolManager.ToolArguments toolArguments) {
+            ToolReference toolReference, ToolManager.ToolArguments toolArguments, String requestId) {
 
         // Filter out metadata and auth args before converting to string map
         Map<String, Object> filteredArgs = filterOutReservedArgs(toolArguments.args());
@@ -74,6 +75,7 @@ public final class InvokerToolExecutor {
                 .setSecretsUri(Objects.requireNonNullElse(toolReference.getSecretsURI(), EMPTY_ARGUMENT))
                 .putAllHeaders(headers)
                 .putAllArguments(argumentsMap)
+                .setRequestId(Objects.requireNonNullElse(requestId, EMPTY_REQUEST_ID))
                 .build();
     }
 
