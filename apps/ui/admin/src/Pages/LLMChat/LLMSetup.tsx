@@ -23,7 +23,6 @@ interface LLMSetupProps {
 export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
   
   const [isStoredInLocalStorage, setStoreInLocalStorage] = useState<boolean>(isConfigStoredInLocalStorage())
-  const [selectedLlm, setSelectedLlm] = useState(config.llm || "")
   
   function applyConfigChange(config: LlmConfig) {
     if (isStoredInLocalStorage) {
@@ -54,15 +53,14 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
         <LLMSelect
           id="base-url"
           labelText="LLM API"
-          value={selectedLlm}
+          value={config.llm || ""}
           onChange={(llm: string) => {
-            setSelectedLlm(llm)
             applyConfigChange({ ...config, llm })
           }}
         />
         <LLMModelComboBox
           labelText="LLM Model"
-          llm={selectedLlm}
+          llm={config.llm || ""}
           value={config.llmModel}
           onChange={(llmModel) => {
             applyConfigChange({ ...config, llmModel })
