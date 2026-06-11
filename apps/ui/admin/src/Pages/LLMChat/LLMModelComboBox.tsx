@@ -12,7 +12,7 @@ interface LLMModelComboBoxProps {
 
 export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, onChange, labelText }) => {
   
-  const [modelCatalog, setModelCatalog] = useState({})
+  const [modelCatalog, setModelCatalog] = useState<{ [llm: string]: string[] }>({})
   
   
   useEffect(() => {

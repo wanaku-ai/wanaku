@@ -7,23 +7,14 @@ import {
   TextArea,
   Tile
 } from "@carbon/react"
-import {Send} from "@carbon/icons-react"
+import {Send, Stop} from "@carbon/icons-react"
 import {LlmConfig} from "./config"
 import {LLMChatMessage} from "./LLMChatMessage"
 import {getUrl} from "../../custom-fetch"
 
 
 interface ChatMessage {
-  id?: string
-  role: string
-  content?: string
-  name?: string
-  tool_calls?: []
-  tool_call_id?: string
-}
-
-interface DisplayMessage {
-  role: string
+  role: "user" | "assistant" | "error"
   content: string
 }
 
@@ -35,29 +26,27 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
   
   const [systemPrompt, setSystemPrompt] = useState("You are an assistant that can use tools.")
   const [userPrompt, setUserPrompt] = useState("")
-  const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([])
+  const [displayedMessages, setDisplayedMessages] = useState<ChatMessage[]>([])
+  const [isRunning, setIsRunning] = useState(false)
   
-  const chatMessages = useRef<ChatMessage[]>([])
+  const chatHistory = useRef<ChatMessage[]>([])
+  const abortController = useRef(new AbortController())
   
   function clear() {
-    chatMessages.current = []
-    setDisplayMessages([])
+    chatHistory.current = []
+    setDisplayedMessages([])
   }
   
-  async function runPrompt() {
-    
-    const messages: DisplayMessage[] = [...displayMessages]
-    
-    function isFirstMessage() {
-      return chatMessages.current.length === 0
-    }
-    
-    function displayMessage(message: DisplayMessage) {
-      messages.push(message)
-      setDisplayMessages([...messages])
-    }
-    
+  function filteredChatHistory() {
+    return chatHistory.current.filter(message => message.role === "user" || message.role === "assistant")
+  }
+  
+  async function runPrompt(signal: AbortSignal) {
     try {
+      const userMessage = { role: "user", content: userPrompt } as const
+      setDisplayedMessages([...chatHistory.current, userMessage])
+      setIsRunning(true)
+      
       const response = await fetch(getUrl("/api/v1/chat/completions"), {
         method: "POST",
         headers: {
@@ -67,23 +56,32 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
           llm: config.llm,
           model: config.llmModel,
           apiKey: config.apiKey,
-          systemPrompt: isFirstMessage() ? systemPrompt : null,
+          systemPrompt: systemPrompt,
           userPrompt: userPrompt,
-          chatHistory: chatMessages.current,
+          chatHistory: filteredChatHistory(),
           selectedTools: config.tools.map(tool => tool.name),
-          chatParams: config.extraLlmParams ? JSON.parse(config.extraLlmParams) : {}
+          extraLlmParams: config.extraLlmParams ? JSON.parse(config.extraLlmParams) : {}
         })
       })
+      if (signal.aborted) {
+        // The chat has been aborted, do not display any response and end immediately
+        return
+      }
       if (response.ok) {
         const responseText = await response.text()
-        chatMessages.current.push({ role: "user", content: userPrompt })
-        chatMessages.current.push({ role: "assistant", content: responseText })
-        displayMessage({ role: "assistant", content: responseText })
+        const aiMessage = { role: "assistant", content: responseText } as const
+        chatHistory.current.push(userMessage)
+        chatHistory.current.push(aiMessage)
+        setDisplayedMessages(chatHistory.current)
       } else {
-        displayMessage({ role: "error", content: "Error: " + response.status })
+        const errorMessage = { role: "error", content: `Error: ${response.status} ${response.statusText}` } as const
+        chatHistory.current.push(errorMessage)
+        setDisplayedMessages(chatHistory.current)
       }
     } catch (error) {
       console.error("Error during conversation:", error)
+    } finally {
+      setIsRunning(false)
     }
   }
   
@@ -96,14 +94,30 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
             size="lg"
             renderIcon={Send}
             iconDescription="Send"
-            onClick={runPrompt}>
+            disabled={isRunning}
+            onClick={() => {
+              runPrompt(abortController.current.signal)
+            }}>
             Send
           </Button>
           <Button
             kind="ghost"
             size="lg"
+            renderIcon={Stop}
+            iconDescription="Stop"
+            disabled={!isRunning}
+            onClick={() => {
+              abortController.current.abort()
+              abortController.current = new AbortController()
+              setIsRunning(false)
+            }}>
+            Stop
+          </Button>
+          <Button
+            kind="ghost"
+            size="lg"
             iconDescription="Clear chat"
-            disabled={displayMessages.length == 0}
+            disabled={displayedMessages.length == 0}
             onClick={clear}>
             Clear
           </Button>
@@ -131,7 +145,7 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
           />
         </Stack>
         <Stack>
-          {displayMessages.map((message, index) => (
+          {displayedMessages.map((message, index) => (
             <LLMChatMessage
               key={index}
               message={message}

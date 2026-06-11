@@ -107,7 +107,7 @@ public class LlmChatResource {
                 .map(JsonString::getString)
                 .toList();
         List<JsonObject> chatHistory = json.getJsonArray("chatHistory").getValuesAs(JsonObject.class);
-        JsonObject customLlmParameters = json.getJsonObject("chatParams");
+        JsonObject customLlmParameters = json.getJsonObject("extraLlmParams");
 
         if (!allowlist.contains(llm)) {
             throw new WebApplicationException("%s is not allowed".formatted(llm), BAD_REQUEST);
