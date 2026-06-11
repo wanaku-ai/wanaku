@@ -1,22 +1,24 @@
 package ai.wanaku.core.persistence.infinispan.remote;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.UUID;
-import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.commons.api.query.Query;
+import org.infinispan.client.hotrod.RemoteCache;
+import io.quarkus.infinispan.client.Remote;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.persistence.api.DataStoreRepository;
 
+@Singleton
 public class InfinispanRemoteDataStoreRepository extends AbstractLabelAwareRemoteInfinispanRepository<DataStore, String>
         implements DataStoreRepository {
 
-    public InfinispanRemoteDataStoreRepository(RemoteCacheManager cacheManager) {
-        super(cacheManager);
-    }
-
-    @Override
-    protected String entityName() {
-        return "datastore";
+    @Inject
+    public InfinispanRemoteDataStoreRepository(
+            @Remote("datastore") RemoteCache<Object, DataStore> cache,
+            InfinispanRemotePersistenceConfiguration config) {
+        super(cache);
     }
 
     @Override
@@ -31,10 +33,6 @@ public class InfinispanRemoteDataStoreRepository extends AbstractLabelAwareRemot
 
     @Override
     public List<DataStore> findByName(String name) {
-        Query<DataStore> query = cacheManager
-                .getCache(entityName())
-                .query("from ai.wanaku.capabilities.sdk.api.types.DataStore d where d.name = :name");
-        query.setParameter("name", name);
-        return query.execute().list();
+        return cache.values().stream().filter(ds -> name.equals(ds.getName())).toList();
     }
 }

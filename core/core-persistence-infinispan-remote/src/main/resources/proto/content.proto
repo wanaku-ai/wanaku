@@ -26,3 +26,14 @@ message AudioContent {
 message EmbeddedResource {
   ResourceReference resource = 1;
 }
+
+// Represents content in a prompt message.
+// This is a polymorphic type that can be one of several content types.
+message PromptContent {
+  oneof content {
+    TextContent text_content = 1;
+    ImageContent image_content = 2;
+    AudioContent audio_content = 3;
+    EmbeddedResource embedded_resource = 4;
+  }
+}

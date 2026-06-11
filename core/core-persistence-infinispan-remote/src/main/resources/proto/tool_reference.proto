@@ -5,14 +5,14 @@ package ai.wanaku.capabilities.sdk.api.types;
 import "input_schema.proto";
 
 // This message represents a reference to a tool with various attributes.
-/** @Indexed */
 message ToolReference {
-  /** @Keyword */
+/** @Indexed */
   string id = 1;
   /** @Keyword */
   string name = 2;
-  /** @Text */
+  /** @Keyword */
   string description = 3;
+  /** @Text */
   string uri = 4;
   string type = 5;
   InputSchema input_schema = 6;

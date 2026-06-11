@@ -1,23 +1,25 @@
 package ai.wanaku.core.persistence.infinispan.remote;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.UUID;
-import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.commons.api.query.Query;
+import org.infinispan.client.hotrod.RemoteCache;
+import io.quarkus.infinispan.client.Remote;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
 
+@Singleton
 public class InfinispanRemoteResourceReferenceRepository
         extends AbstractLabelAwareRemoteInfinispanRepository<ResourceReference, String>
         implements ResourceReferenceRepository {
 
-    public InfinispanRemoteResourceReferenceRepository(RemoteCacheManager cacheManager) {
-        super(cacheManager);
-    }
-
-    @Override
-    protected String entityName() {
-        return "resource";
+    @Inject
+    public InfinispanRemoteResourceReferenceRepository(
+            @Remote("resource") RemoteCache<Object, ResourceReference> cache,
+            InfinispanRemotePersistenceConfiguration config) {
+        super(cache);
     }
 
     @Override
@@ -32,10 +34,6 @@ public class InfinispanRemoteResourceReferenceRepository
 
     @Override
     public List<ResourceReference> findByName(String name) {
-        Query<ResourceReference> query = cacheManager
-                .getCache(entityName())
-                .query("from ai.wanaku.capabilities.sdk.api.types.ResourceReference t where t.name = :name");
-        query.setParameter("name", name);
-        return query.execute().list();
+        return cache.values().stream().filter(rr -> name.equals(rr.getName())).toList();
     }
 }

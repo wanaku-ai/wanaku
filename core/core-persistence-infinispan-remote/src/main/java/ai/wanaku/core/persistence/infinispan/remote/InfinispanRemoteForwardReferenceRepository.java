@@ -1,22 +1,22 @@
 package ai.wanaku.core.persistence.infinispan.remote;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.UUID;
-import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.commons.api.query.Query;
+import org.infinispan.client.hotrod.RemoteCache;
+import io.quarkus.infinispan.client.Remote;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
 
+@Singleton
 public class InfinispanRemoteForwardReferenceRepository
         extends AbstractRemoteInfinispanRepository<ForwardReference, String> implements ForwardReferenceRepository {
 
-    public InfinispanRemoteForwardReferenceRepository(RemoteCacheManager cacheManager) {
-        super(cacheManager);
-    }
-
-    @Override
-    protected String entityName() {
-        return "forward";
+    @Inject
+    public InfinispanRemoteForwardReferenceRepository(@Remote("forward") RemoteCache<Object, ForwardReference> cache) {
+        super(cache);
     }
 
     @Override
@@ -31,10 +31,6 @@ public class InfinispanRemoteForwardReferenceRepository
 
     @Override
     public List<ForwardReference> findByName(String name) {
-        Query<ForwardReference> query = cacheManager
-                .getCache(entityName())
-                .query("from ai.wanaku.capabilities.sdk.api.types.ForwardReference t where t.name = :name");
-        query.setParameter("name", name);
-        return query.execute().list();
+        return cache.values().stream().filter(fr -> name.equals(fr.getName())).toList();
     }
 }

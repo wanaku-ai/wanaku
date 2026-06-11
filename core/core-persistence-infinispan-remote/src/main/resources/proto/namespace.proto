@@ -2,15 +2,15 @@ syntax = "proto3";
 
 package ai.wanaku.capabilities.sdk.api.types;
 
-// This message represents a namespace
+// This message represents a namespace message
+message Namespace {
 /** @Indexed */
-
-/** @Keyword */
-
-/** @Keyword */
-
-/** @Text */
-
+  string id = 1;
+  /** @Keyword */
+  string name = 2;
+  /** @Keyword */
+  string path = 3;
+  /** @Keyword */
   map<string, string> labels = 4;
   int32 tool_count = 5;
   int32 resource_count = 6;

@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.RemoteCacheManager;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.WanakuEntity;
 import ai.wanaku.core.persistence.api.WanakuRepository;
@@ -16,13 +15,13 @@ import ai.wanaku.core.persistence.api.WanakuRepository;
 public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<K>, K>
         implements WanakuRepository<A, K, K> {
 
-    protected final RemoteCacheManager cacheManager;
+    protected final RemoteCache<Object, A> cache;
     protected final ReentrantLock lock = new ReentrantLock();
 
     private static final String DEFAULT_DELETE_TEMPLATE = "DELETE FROM %s r WHERE %s";
 
-    protected AbstractRemoteInfinispanRepository(RemoteCacheManager cacheManager) {
-        this.cacheManager = cacheManager;
+    protected AbstractRemoteInfinispanRepository(RemoteCache<Object, A> cache) {
+        this.cache = cache;
     }
 
     @Override
@@ -32,7 +31,6 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
             if (entity.getId() == null) {
                 entity.setId(newId());
             }
-            final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
             cache.put(entity.getId(), entity);
         } finally {
             lock.unlock();
@@ -42,13 +40,11 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
 
     @Override
     public List<A> listAll() {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         return cache.values().stream().toList();
     }
 
     @Override
     public boolean deleteById(K id) {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         if (id == null) {
             return false;
         }
@@ -57,13 +53,11 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
 
     @Override
     public A findById(K id) {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         return (A) cache.get(id);
     }
 
     @Override
     public boolean update(K id, A entity) {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         try {
             lock.lock();
             if (cache.put(id, entity) != null) {
@@ -76,7 +70,6 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
     }
 
     public boolean update(K id, Consumer<A> consumer) {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         try {
             lock.lock();
             A entity = findById(id);
@@ -96,8 +89,6 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
 
     protected abstract Class<A> entityType();
 
-    protected abstract String entityName();
-
     protected abstract K newId();
 
     protected A newEntity() {
@@ -114,7 +105,6 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
     @Override
     @Deprecated
     public boolean remove(Predicate<A> matching) {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         try {
             lock.lock();
             return cache.values().removeIf(matching);
@@ -133,7 +123,6 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException("Fields map cannot be null or empty");
         }
-        var cache = cacheManager.getCache(entityName());
         var whereClause = fields.keySet().stream()
                 .map(field -> "r.%s = :%s".formatted(field, field))
                 .collect(Collectors.joining(" AND "));
@@ -145,13 +134,11 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
 
     @Override
     public int size() {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         return cache.size();
     }
 
     @Override
     public int removeAll() {
-        final RemoteCache<Object, A> cache = cacheManager.getCache(entityName());
         int sizeBefore = cache.size();
         cache.clear();
         return sizeBefore - cache.size();

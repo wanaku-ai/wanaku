@@ -7,6 +7,9 @@ import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
 
+/**
+ * Protostream marshaller for PromptReference.
+ */
 public class PromptReferenceMarshaller implements MessageMarshaller<PromptReference> {
 
     @Override

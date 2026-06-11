@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -23,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
-@TestProfile(RemoteInfinispanTestProfile.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows in GitHub Actions")

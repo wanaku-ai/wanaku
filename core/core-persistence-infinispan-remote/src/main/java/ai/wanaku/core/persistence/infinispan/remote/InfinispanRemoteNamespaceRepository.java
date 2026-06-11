@@ -1,28 +1,29 @@
 package ai.wanaku.core.persistence.infinispan.remote;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.UUID;
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.commons.api.query.Query;
+import io.quarkus.infinispan.client.Remote;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.persistence.api.NamespaceRepository;
 
+@Singleton
 public class InfinispanRemoteNamespaceRepository extends AbstractLabelAwareRemoteInfinispanRepository<Namespace, String>
         implements NamespaceRepository {
 
-    public InfinispanRemoteNamespaceRepository(RemoteCacheManager cacheManager) {
-        super(cacheManager);
+    @Inject
+    public InfinispanRemoteNamespaceRepository(
+            @Remote("namespace") RemoteCache<Object, Namespace> cache,
+            InfinispanRemotePersistenceConfiguration config) {
+        super(cache);
     }
 
     @Override
     protected Class<Namespace> entityType() {
         return Namespace.class;
-    }
-
-    @Override
-    protected String entityName() {
-        return "namespace";
     }
 
     @Override
@@ -32,19 +33,17 @@ public class InfinispanRemoteNamespaceRepository extends AbstractLabelAwareRemot
 
     @Override
     public List<Namespace> findByName(String name) {
-        Query<Namespace> query = cacheManager
-                .getCache(entityName())
-                .query("from ai.wanaku.capabilities.sdk.api.types.Namespace t where t.name = :name");
-        query.setParameter("name", name);
-        return query.execute().list();
+        return cache.values().stream().filter(ns -> name.equals(ns.getName())).toList();
     }
 
     @Override
     public List<Namespace> findFirstAvailable(String name) {
-        final RemoteCache<Object, Namespace> cache = cacheManager.getCache(entityName());
-        Query<Namespace> query = cache.query(
-                "from ai.wanaku.capabilities.sdk.api.types.Namespace t where t.name = :name OR (t.path != '' AND t.name is NULL)");
-        query.setParameter("name", name);
-        return query.maxResults(1).execute().list();
+        return cache.values().stream()
+                .filter(ns -> ns.getName() == null
+                        && ns.getPath() != null
+                        && !ns.getPath().isEmpty())
+                .findFirst()
+                .map(List::of)
+                .orElse(List.of());
     }
 }

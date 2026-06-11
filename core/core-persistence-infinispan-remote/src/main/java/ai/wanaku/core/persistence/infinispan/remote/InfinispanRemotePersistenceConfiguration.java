@@ -1,22 +1,29 @@
 package ai.wanaku.core.persistence.infinispan.remote;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
-import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.commons.internal.InternalCacheNames;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.SerializationContext;
-import ai.wanaku.core.persistence.api.DataStoreRepository;
-import ai.wanaku.core.persistence.api.ForwardReferenceRepository;
-import ai.wanaku.core.persistence.api.NamespaceRepository;
-import ai.wanaku.core.persistence.api.PromptReferenceRepository;
-import ai.wanaku.core.persistence.api.ResourceReferenceRepository;
-import ai.wanaku.core.persistence.api.ToolReferenceRepository;
-import ai.wanaku.core.persistence.infinispan.remote.protostream.schema.AbstractWanakuSerializationContextInitializer;
+import io.quarkus.runtime.StartupEvent;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.AudioContentMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.DataStoreMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.EmbeddedResourceMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.ForwardReferenceMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.ImageContentMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.InputSchemaMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.NamespaceMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.ParamMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.PromptArgumentMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.PromptContentMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.PromptMessageMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.PromptReferenceMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.PropertyMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.ResourceReferenceMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.TextContentMarshaller;
+import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.ToolReferenceMarshaller;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.schema.ContentSchema;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.schema.DataStoreSchema;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.schema.ForwardReferenceSchema;
@@ -33,94 +40,52 @@ public class InfinispanRemotePersistenceConfiguration {
     @Inject
     RemoteCacheManager cacheManager;
 
-    @PostConstruct
-    void init() {
+    public void onStart(@Observes StartupEvent event) {
+        System.out.println(">>> onStart: registering marshallers");
         ProtoStreamMarshaller protoMarshaller = (ProtoStreamMarshaller) cacheManager.getMarshaller();
         SerializationContext serCtx = protoMarshaller.getSerializationContext();
 
-        PropertySchema propertySchema = new PropertySchema();
-        propertySchema.registerSchema(serCtx);
-        propertySchema.registerMarshallers(serCtx);
+        // Register schemas first
+        new PropertySchema().registerSchema(serCtx);
+        new InputSchemaSchema().registerSchema(serCtx);
+        new ResourceReferenceSchema().registerSchema(serCtx);
+        new ContentSchema().registerSchema(serCtx);
+        new ToolReferenceSchema().registerSchema(serCtx);
+        new NamespaceSchema().registerSchema(serCtx);
+        new DataStoreSchema().registerSchema(serCtx);
+        new ForwardReferenceSchema().registerSchema(serCtx);
+        new PromptReferenceSchema().registerSchema(serCtx);
 
-        InputSchemaSchema inputSchemaSchema = new InputSchemaSchema();
-        inputSchemaSchema.registerSchema(serCtx);
-        inputSchemaSchema.registerMarshallers(serCtx);
+        // Register marshallers
+        serCtx.registerMarshaller(new PropertyMarshaller());
+        serCtx.registerMarshaller(new InputSchemaMarshaller());
+        serCtx.registerMarshaller(new ResourceReferenceMarshaller());
+        serCtx.registerMarshaller(new TextContentMarshaller());
+        serCtx.registerMarshaller(new ImageContentMarshaller());
+        serCtx.registerMarshaller(new AudioContentMarshaller());
+        serCtx.registerMarshaller(new EmbeddedResourceMarshaller());
+        serCtx.registerMarshaller(new ToolReferenceMarshaller());
+        serCtx.registerMarshaller(new PromptArgumentMarshaller());
+        serCtx.registerMarshaller(new PromptMessageMarshaller());
+        serCtx.registerMarshaller(new PromptReferenceMarshaller());
+        serCtx.registerMarshaller(new NamespaceMarshaller());
+        serCtx.registerMarshaller(new DataStoreMarshaller());
+        serCtx.registerMarshaller(new ForwardReferenceMarshaller());
+        serCtx.registerMarshaller(new PromptContentMarshaller());
+        serCtx.registerMarshaller(new ParamMarshaller());
 
-        ResourceReferenceSchema resourceReferenceSchema = new ResourceReferenceSchema();
-        resourceReferenceSchema.registerSchema(serCtx);
-        resourceReferenceSchema.registerMarshallers(serCtx);
+        // Upload proto files
+        var protoCache = cacheManager.getCache("___protobuf_metadata");
+        protoCache.put("property.proto", new PropertySchema().getContent());
+        protoCache.put("input_schema.proto", new InputSchemaSchema().getContent());
+        protoCache.put("resource_reference.proto", new ResourceReferenceSchema().getContent());
+        protoCache.put("content.proto", new ContentSchema().getContent());
+        protoCache.put("tool_reference.proto", new ToolReferenceSchema().getContent());
+        protoCache.put("namespace.proto", new NamespaceSchema().getContent());
+        protoCache.put("data_store.proto", new DataStoreSchema().getContent());
+        protoCache.put("forward_reference.proto", new ForwardReferenceSchema().getContent());
+        protoCache.put("prompt_reference.proto", new PromptReferenceSchema().getContent());
 
-        ContentSchema contentSchema = new ContentSchema();
-        contentSchema.registerSchema(serCtx);
-        contentSchema.registerMarshallers(serCtx);
-
-        ToolReferenceSchema toolReferenceSchema = new ToolReferenceSchema();
-        toolReferenceSchema.registerSchema(serCtx);
-        toolReferenceSchema.registerMarshallers(serCtx);
-
-        PromptReferenceSchema promptReferenceSchema = new PromptReferenceSchema();
-        promptReferenceSchema.registerSchema(serCtx);
-        promptReferenceSchema.registerMarshallers(serCtx);
-
-        NamespaceSchema namespaceSchema = new NamespaceSchema();
-        namespaceSchema.registerSchema(serCtx);
-        namespaceSchema.registerMarshallers(serCtx);
-
-        DataStoreSchema dataStoreSchema = new DataStoreSchema();
-        dataStoreSchema.registerSchema(serCtx);
-        dataStoreSchema.registerMarshallers(serCtx);
-
-        ForwardReferenceSchema forwardReferenceSchema = new ForwardReferenceSchema();
-        forwardReferenceSchema.registerSchema(serCtx);
-        forwardReferenceSchema.registerMarshallers(serCtx);
-
-        registerSchemasOnServer(
-                propertySchema,
-                inputSchemaSchema,
-                resourceReferenceSchema,
-                contentSchema,
-                toolReferenceSchema,
-                promptReferenceSchema,
-                namespaceSchema,
-                dataStoreSchema,
-                forwardReferenceSchema);
-    }
-
-    private void registerSchemasOnServer(AbstractWanakuSerializationContextInitializer... schemas) {
-        RemoteCache<String, String> protobufMetadataCache =
-                cacheManager.getCache(InternalCacheNames.PROTOBUF_METADATA_CACHE_NAME);
-        for (var schema : schemas) {
-            protobufMetadataCache.put(schema.getName(), schema.getContent());
-        }
-    }
-
-    @Produces
-    ResourceReferenceRepository resourceReferenceRepository() {
-        return new InfinispanRemoteResourceReferenceRepository(cacheManager);
-    }
-
-    @Produces
-    ToolReferenceRepository toolReferenceRepository() {
-        return new InfinispanRemoteToolReferenceRepository(cacheManager);
-    }
-
-    @Produces
-    ForwardReferenceRepository forwardReferenceRepository() {
-        return new InfinispanRemoteForwardReferenceRepository(cacheManager);
-    }
-
-    @Produces
-    NamespaceRepository namespaceRepository() {
-        return new InfinispanRemoteNamespaceRepository(cacheManager);
-    }
-
-    @Produces
-    PromptReferenceRepository promptReferenceRepository() {
-        return new InfinispanRemotePromptReferenceRepository(cacheManager);
-    }
-
-    @Produces
-    DataStoreRepository dataStoreRepository() {
-        return new InfinispanRemoteDataStoreRepository(cacheManager);
+        System.out.println(">>> Marshallers and schemas registered successfully");
     }
 }

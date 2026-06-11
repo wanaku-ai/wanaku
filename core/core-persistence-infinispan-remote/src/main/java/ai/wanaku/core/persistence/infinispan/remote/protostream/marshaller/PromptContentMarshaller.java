@@ -22,63 +22,52 @@ public class PromptContentMarshaller implements MessageMarshaller<PromptContent>
 
     @Override
     public PromptContent readFrom(ProtoStreamReader reader) throws IOException {
-        String type = reader.readString("type");
+        try {
+            TextContent text = reader.readObject("text_content", TextContent.class);
+            if (text != null) return text;
+        } catch (Exception e) {
+            /* ignore */
+        }
 
-        return switch (type) {
-            case "text" -> {
-                TextContent text = new TextContent();
-                text.setText(reader.readString("text"));
-                yield text;
-            }
-            case "image" -> {
-                ImageContent image = new ImageContent();
-                image.setData(reader.readString("data"));
-                image.setMimeType(reader.readString("mime_type"));
-                yield image;
-            }
-            case "audio" -> {
-                AudioContent audio = new AudioContent();
-                audio.setData(reader.readString("data"));
-                audio.setMimeType(reader.readString("mime_type"));
-                yield audio;
-            }
-            case "resource" -> {
-                EmbeddedResource embedded = new EmbeddedResource();
-                embedded.setResource(
-                        reader.readObject("resource", ai.wanaku.capabilities.sdk.api.types.ResourceReference.class));
-                yield embedded;
-            }
-            default -> null;
-        };
+        try {
+            ImageContent image = reader.readObject("image_content", ImageContent.class);
+            if (image != null) return image;
+        } catch (Exception e) {
+            /* ignore */
+        }
+
+        try {
+            AudioContent audio = reader.readObject("audio_content", AudioContent.class);
+            if (audio != null) return audio;
+        } catch (Exception e) {
+            /* ignore */
+        }
+
+        try {
+            EmbeddedResource resource = reader.readObject("embedded_resource", EmbeddedResource.class);
+            return resource;
+        } catch (Exception e) {
+            /* ignore */
+        }
+
+        return null;
     }
 
     @Override
     public void writeTo(ProtoStreamWriter writer, PromptContent content) throws IOException {
-        String type = content.getType();
-        writer.writeString("type", type);
+        if (content == null) return;
 
-        switch (type) {
-            case "text" -> {
-                TextContent text = (TextContent) content;
-                writer.writeString("text", text.getText());
-            }
-            case "image" -> {
-                ImageContent image = (ImageContent) content;
-                writer.writeString("data", image.getData());
-                writer.writeString("mime_type", image.getMimeType());
-            }
-            case "audio" -> {
-                AudioContent audio = (AudioContent) content;
-                writer.writeString("data", audio.getData());
-                writer.writeString("mime_type", audio.getMimeType());
-            }
-            case "resource" -> {
-                EmbeddedResource embedded = (EmbeddedResource) content;
-                writer.writeObject(
-                        "resource",
-                        embedded.getResource(),
-                        ai.wanaku.capabilities.sdk.api.types.ResourceReference.class);
-            }
+        if (content instanceof TextContent) {
+            writer.writeObject("text_content", content, TextContent.class);
+        } else if (content instanceof ImageContent) {
+            writer.writeObject("image_content", content, ImageContent.class);
+        } else if (content instanceof AudioContent) {
+            writer.writeObject("audio_content", content, AudioContent.class);
+        } else if (content instanceof EmbeddedResource) {
+            writer.writeObject("embedded_resource", content, EmbeddedResource.class);
+        } else {
+            throw new IOException(
+                    "Unknown PromptContent subtype: " + content.getClass().getName());
         }
     }
 }

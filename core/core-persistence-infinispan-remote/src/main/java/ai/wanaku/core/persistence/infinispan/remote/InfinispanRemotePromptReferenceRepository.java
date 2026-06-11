@@ -1,22 +1,24 @@
 package ai.wanaku.core.persistence.infinispan.remote;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import java.util.List;
 import java.util.UUID;
-import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.commons.api.query.Query;
+import org.infinispan.client.hotrod.RemoteCache;
+import io.quarkus.infinispan.client.Remote;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.core.persistence.api.PromptReferenceRepository;
 
+@Singleton
 public class InfinispanRemotePromptReferenceRepository
         extends AbstractRemoteInfinispanRepository<PromptReference, String> implements PromptReferenceRepository {
 
-    public InfinispanRemotePromptReferenceRepository(RemoteCacheManager cacheManager) {
-        super(cacheManager);
-    }
-
-    @Override
-    protected String entityName() {
-        return "prompt";
+    @Inject
+    public InfinispanRemotePromptReferenceRepository(
+            @Remote("prompt") RemoteCache<Object, PromptReference> cache,
+            InfinispanRemotePersistenceConfiguration config) {
+        super(cache);
     }
 
     @Override
@@ -31,21 +33,13 @@ public class InfinispanRemotePromptReferenceRepository
 
     @Override
     public List<PromptReference> findByName(String name) {
-        Query<PromptReference> query = cacheManager
-                .getCache(entityName())
-                .query("from ai.wanaku.capabilities.sdk.api.types.PromptReference p where p.name = :name");
-        query.setParameter("name", name);
-        return query.execute().list();
+        return cache.values().stream().filter(pr -> name.equals(pr.getName())).toList();
     }
 
     @Override
     public List<PromptReference> findByNameAndNamespace(String name, String namespace) {
-        Query<PromptReference> query = cacheManager
-                .getCache(entityName())
-                .query(
-                        "from ai.wanaku.capabilities.sdk.api.types.PromptReference p where p.name = :name and p.namespace = :namespace");
-        query.setParameter("name", name);
-        query.setParameter("namespace", namespace);
-        return query.execute().list();
+        return cache.values().stream()
+                .filter(pr -> name.equals(pr.getName()) && namespace.equals(pr.getNamespace()))
+                .toList();
     }
 }

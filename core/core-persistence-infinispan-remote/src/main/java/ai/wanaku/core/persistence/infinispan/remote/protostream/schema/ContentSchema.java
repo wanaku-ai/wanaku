@@ -6,7 +6,6 @@ import org.infinispan.protostream.SerializationContextInitializer;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.AudioContentMarshaller;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.EmbeddedResourceMarshaller;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.ImageContentMarshaller;
-import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.PromptContentMarshaller;
 import ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller.TextContentMarshaller;
 
 public class ContentSchema extends AbstractWanakuSerializationContextInitializer
@@ -32,6 +31,5 @@ public class ContentSchema extends AbstractWanakuSerializationContextInitializer
         serCtx.registerMarshaller(new ImageContentMarshaller());
         serCtx.registerMarshaller(new AudioContentMarshaller());
         serCtx.registerMarshaller(new EmbeddedResourceMarshaller());
-        serCtx.registerMarshaller(new PromptContentMarshaller());
     }
 }

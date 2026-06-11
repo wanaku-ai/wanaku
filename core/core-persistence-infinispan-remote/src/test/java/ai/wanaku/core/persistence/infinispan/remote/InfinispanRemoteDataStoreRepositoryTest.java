@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.persistence.api.DataStoreRepository;
 
@@ -24,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestProfile(RemoteInfinispanTestProfile.class)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows in GitHub Actions")
 public class InfinispanRemoteDataStoreRepositoryTest extends InfinispanRemoteTestBase {
 
