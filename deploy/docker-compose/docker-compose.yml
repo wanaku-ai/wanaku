@@ -1,3 +1,12 @@
+# =============================================================================
+# WARNING: development / evaluation use only — DO NOT use this file in production.
+# It ships well-known, insecure default credentials:
+#   - Keycloak admin:    admin / admin
+#   - OIDC client secret for "wanaku-service": mypasswd (see ../auth/wanaku-config.json)
+# Before any non-local deployment you MUST rotate the Keycloak admin password and
+# regenerate the wanaku-service client secret (e.g. inject it via an environment
+# variable / secret manager instead of hardcoding it here and in wanaku-config.json).
+# =============================================================================
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.1
