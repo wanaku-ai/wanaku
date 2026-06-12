@@ -1,7 +1,12 @@
 package ai.wanaku.cli.main.support;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -156,5 +161,32 @@ class AuthCredentialStoreTest {
     @Test
     void shouldReturnNullWhenClientIdNotSet() {
         assertNull(credentialStore.getClientId());
+    }
+
+    @Test
+    void shouldCreateCredentialsFileWithOwnerOnlyPermissions() throws Exception {
+        credentialStore.storeApiToken("secret-token");
+
+        Path credentialsFile = Paths.get(credentialStore.getCredentialsFile());
+        Set<PosixFilePermission> perms = Files.getPosixFilePermissions(credentialsFile);
+
+        assertEquals(
+                PosixFilePermissions.fromString("rw-------"),
+                perms,
+                "Credentials file must not be readable by group or others");
+    }
+
+    @Test
+    void shouldCreateCredentialsDirectoryWithOwnerOnlyPermissions() throws Exception {
+        Path nestedCredentials = tempDir.resolve("nested").resolve(".wanaku").resolve("credentials");
+        AuthCredentialStore store = new AuthCredentialStore(nestedCredentials.toUri());
+        store.storeApiToken("secret-token");
+
+        Set<PosixFilePermission> dirPerms = Files.getPosixFilePermissions(nestedCredentials.getParent());
+
+        assertEquals(
+                PosixFilePermissions.fromString("rwx------"),
+                dirPerms,
+                "Credentials directory must not be accessible by group or others");
     }
 }

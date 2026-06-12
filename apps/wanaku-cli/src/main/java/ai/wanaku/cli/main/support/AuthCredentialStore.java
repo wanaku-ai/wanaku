@@ -1,10 +1,13 @@
 package ai.wanaku.cli.main.support;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Properties;
 
 /**
@@ -203,7 +206,13 @@ public class AuthCredentialStore {
             Properties props = loadProperties();
 
             props.setProperty(key, value);
-            props.store(Files.newOutputStream(credentialsPath), "Wanaku CLI Authentication Credentials");
+
+            // Make sure the file exists with owner-only permissions BEFORE writing secrets to it,
+            // so access and refresh tokens are never momentarily world-readable.
+            ensureSecureFile(credentialsPath);
+            try (OutputStream out = Files.newOutputStream(credentialsPath)) {
+                props.store(out, "Wanaku CLI Authentication Credentials");
+            }
         } catch (IOException e) {
             throw new RuntimeException("Failed to store credential: " + key, e);
         }
@@ -215,9 +224,56 @@ public class AuthCredentialStore {
             Path parentDir = credentialsPath.getParent();
             if (parentDir != null && !Files.exists(parentDir)) {
                 Files.createDirectories(parentDir);
+                restrictPermissions(parentDir, "rwx------");
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to create credentials directory", e);
+        }
+    }
+
+    /**
+     * Ensures the credentials file exists with owner-only ({@code 0600}) permissions. On a POSIX
+     * filesystem the file is created atomically with the restricted permissions; on a non-POSIX
+     * filesystem it falls back to a best-effort restriction via the {@link File} API.
+     *
+     * @param path the credentials file path
+     * @throws IOException if the file cannot be created
+     */
+    private static void ensureSecureFile(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            try {
+                Files.createFile(
+                        path, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+                return;
+            } catch (UnsupportedOperationException e) {
+                // Non-POSIX filesystem (e.g. Windows): create then restrict best-effort below.
+                Files.createFile(path);
+            }
+        }
+        restrictPermissions(path, "rw-------");
+    }
+
+    /**
+     * Best-effort restriction of a path to owner-only permissions, tolerating non-POSIX
+     * filesystems where POSIX permissions are unavailable.
+     *
+     * @param path the file or directory to restrict
+     * @param posixPermissions the desired POSIX permission string (e.g. {@code rw-------})
+     */
+    private static void restrictPermissions(Path path, String posixPermissions) {
+        try {
+            Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(posixPermissions));
+        } catch (UnsupportedOperationException | IOException e) {
+            // Non-POSIX filesystem (e.g. Windows): best-effort owner-only via java.io.File.
+            File file = path.toFile();
+            file.setReadable(false, false);
+            file.setReadable(true, true);
+            file.setWritable(false, false);
+            file.setWritable(true, true);
+            if (posixPermissions.charAt(2) == 'x') {
+                file.setExecutable(false, false);
+                file.setExecutable(true, true);
+            }
         }
     }
 
