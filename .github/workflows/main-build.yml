@@ -37,6 +37,11 @@ on:
       - javadoc-warm.sh
       - .*
 
+# Least-privilege default for the automatically-provided GITHUB_TOKEN. Jobs that need more
+# (e.g. publishing) should opt in with a narrower job-level permissions block.
+permissions:
+  contents: read
+
 env:
   PROJECTS: ${{ github.workspace }}
   CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io' }}
