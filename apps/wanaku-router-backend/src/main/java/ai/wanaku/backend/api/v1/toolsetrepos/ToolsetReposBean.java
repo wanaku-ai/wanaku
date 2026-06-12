@@ -5,7 +5,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -208,6 +210,7 @@ public class ToolsetReposBean {
         }
 
         String url = resolveBaseUrl(ds);
+        validateFetchTarget(url);
         ToolsetRepoIndex index = ToolsetRepoIndex.fromUrl(url);
 
         Map<String, Object> result = new HashMap<>();
@@ -242,8 +245,10 @@ public class ToolsetReposBean {
             throw new WanakuException("Toolset repository not found: %s".formatted(name));
         }
 
+        validateToolsetName(toolsetName);
         String baseUrl = resolveBaseUrl(ds);
         String toolsetUrl = ToolsetRepoIndex.toolsetUrl(baseUrl, toolsetName);
+        validateFetchTarget(toolsetUrl);
 
         try {
             return ToolsetIndexHelper.loadToolsIndex(URI.create(toolsetUrl).toURL());
@@ -274,7 +279,10 @@ public class ToolsetReposBean {
             if (host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1") || host.equals("0.0.0.0")) {
                 throw new WanakuException("URLs pointing to localhost are not allowed");
             }
-            if (host.startsWith("10.") || host.startsWith("192.168.") || isPrivate172(host)) {
+            if (host.startsWith("10.")
+                    || host.startsWith("192.168.")
+                    || isPrivate172(host)
+                    || host.startsWith("169.254.")) {
                 throw new WanakuException("URLs pointing to private network ranges are not allowed");
             }
         } catch (IllegalArgumentException e) {
@@ -291,6 +299,95 @@ public class ToolsetReposBean {
             return second >= 16 && second <= 31;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Validates that a URL is safe for the server to fetch, guarding against SSRF.
+     * <p>
+     * Unlike {@link #validateUrl(String)}, which performs lightweight textual checks at
+     * registration time, this method resolves the host to its actual IP address(es) and rejects
+     * any that fall in loopback, link-local (including the cloud-metadata range
+     * {@code 169.254.0.0/16}), private, multicast, or IPv6 unique-local ranges. It is intended to
+     * be called immediately before each outbound request so that stored URLs — which may have
+     * been crafted to bypass the textual check, or repointed via DNS after registration — are
+     * re-validated against where they actually resolve.
+     *
+     * @param url the fully resolved URL the server is about to fetch
+     * @throws WanakuException if the URL is not safe to fetch
+     */
+    static void validateFetchTarget(String url) throws WanakuException {
+        final URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (IllegalArgumentException e) {
+            throw new WanakuException("Invalid URL: %s".formatted(e.getMessage()));
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+            throw new WanakuException("Only http and https URLs are allowed");
+        }
+
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            throw new WanakuException("URL must have a valid host");
+        }
+        // URI#getHost keeps the brackets around IPv6 literals; strip them before resolving.
+        if (host.startsWith("[") && host.endsWith("]")) {
+            host = host.substring(1, host.length() - 1);
+        }
+
+        final InetAddress[] addresses;
+        try {
+            addresses = InetAddress.getAllByName(host);
+        } catch (UnknownHostException e) {
+            throw new WanakuException("Unable to resolve host: %s".formatted(host));
+        }
+
+        for (InetAddress address : addresses) {
+            if (isBlockedAddress(address)) {
+                throw new WanakuException(
+                        "URLs resolving to loopback, link-local, or private addresses are not allowed");
+            }
+        }
+    }
+
+    /**
+     * Returns {@code true} if the address falls in a range that must never be reachable through a
+     * user-supplied URL (SSRF protection).
+     */
+    static boolean isBlockedAddress(InetAddress address) {
+        if (address.isAnyLocalAddress() // 0.0.0.0, ::
+                || address.isLoopbackAddress() // 127.0.0.0/8, ::1
+                || address.isLinkLocalAddress() // 169.254.0.0/16 (cloud metadata), fe80::/10
+                || address.isSiteLocalAddress() // 10/8, 172.16/12, 192.168/16
+                || address.isMulticastAddress()) {
+            return true;
+        }
+
+        byte[] bytes = address.getAddress();
+        // IPv6 unique-local addresses fc00::/7 are not covered by isSiteLocalAddress().
+        if (bytes.length == 16 && (bytes[0] & 0xfe) == 0xfc) {
+            return true;
+        }
+        // IPv4 carrier-grade NAT 100.64.0.0/10 is used by some cloud metadata services.
+        return bytes.length == 4 && (bytes[0] & 0xff) == 100 && (bytes[1] & 0xc0) == 64;
+    }
+
+    /**
+     * Validates a toolset name that is used to build an outbound URL path segment, rejecting any
+     * value that could alter the request path (path traversal / SSRF).
+     *
+     * @param toolsetName the caller-supplied toolset name
+     * @throws WanakuException if the name contains anything other than {@code [A-Za-z0-9._-]}
+     */
+    static void validateToolsetName(String toolsetName) throws WanakuException {
+        if (toolsetName == null
+                || toolsetName.isBlank()
+                || !toolsetName.matches("[A-Za-z0-9._-]+")
+                || toolsetName.contains("..")) {
+            throw new WanakuException("Invalid toolset name: %s".formatted(toolsetName));
         }
     }
 
