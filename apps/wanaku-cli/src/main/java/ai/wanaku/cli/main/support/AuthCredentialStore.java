@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Properties;
+import org.jboss.logging.Logger;
 
 /**
  * A credential store specifically designed for CLI authentication.
@@ -16,6 +19,8 @@ import java.util.Properties;
  * such as API tokens, refresh tokens, and authentication configuration.
  */
 public class AuthCredentialStore {
+
+    private static final Logger LOG = Logger.getLogger(AuthCredentialStore.class);
 
     private static final String DEFAULT_CREDENTIALS_FILE = "~/.wanaku/credentials";
     private static final String API_TOKEN_KEY = "api.token";
@@ -222,8 +227,12 @@ public class AuthCredentialStore {
         try {
             Path credentialsPath = Paths.get(credentialsUri);
             Path parentDir = credentialsPath.getParent();
-            if (parentDir != null && !Files.exists(parentDir)) {
-                Files.createDirectories(parentDir);
+            if (parentDir != null) {
+                if (!Files.exists(parentDir)) {
+                    Files.createDirectories(parentDir);
+                }
+                // Enforce owner-only access even if the directory already existed with broader
+                // permissions.
                 restrictPermissions(parentDir, "rwx------");
             }
         } catch (IOException e) {
@@ -240,13 +249,15 @@ public class AuthCredentialStore {
      * @throws IOException if the file cannot be created
      */
     private static void ensureSecureFile(Path path) throws IOException {
-        if (!Files.exists(path)) {
-            try {
-                Files.createFile(
-                        path, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
-                return;
-            } catch (UnsupportedOperationException e) {
-                // Non-POSIX filesystem (e.g. Windows): create then restrict best-effort below.
+        try {
+            // Create atomically with owner-only permissions: no exists()-then-create() race.
+            Files.createFile(path, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+            return;
+        } catch (FileAlreadyExistsException e) {
+            // Already present: fall through and re-assert the restricted permissions below.
+        } catch (UnsupportedOperationException e) {
+            // Non-POSIX filesystem (e.g. Windows): create if needed, then restrict best-effort below.
+            if (!Files.exists(path)) {
                 Files.createFile(path);
             }
         }
@@ -263,16 +274,24 @@ public class AuthCredentialStore {
     private static void restrictPermissions(Path path, String posixPermissions) {
         try {
             Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(posixPermissions));
+            return;
         } catch (UnsupportedOperationException | IOException e) {
-            // Non-POSIX filesystem (e.g. Windows): best-effort owner-only via java.io.File.
+            // Non-POSIX filesystem (e.g. Windows): best-effort owner-only via java.io.File. These
+            // calls can legitimately return false on such platforms (e.g. Windows cannot revoke
+            // read for "everyone"), so we surface a warning rather than failing the command.
+            boolean ownerExecutable =
+                    PosixFilePermissions.fromString(posixPermissions).contains(PosixFilePermission.OWNER_EXECUTE);
             File file = path.toFile();
-            file.setReadable(false, false);
-            file.setReadable(true, true);
-            file.setWritable(false, false);
-            file.setWritable(true, true);
-            if (posixPermissions.charAt(2) == 'x') {
-                file.setExecutable(false, false);
-                file.setExecutable(true, true);
+            boolean restricted = file.setReadable(false, false)
+                    & file.setReadable(true, true)
+                    & file.setWritable(false, false)
+                    & file.setWritable(true, true)
+                    & (!ownerExecutable || (file.setExecutable(false, false) & file.setExecutable(true, true)));
+            if (!restricted) {
+                LOG.warnf(
+                        "Could not fully restrict permissions on %s; it may be accessible to other users "
+                                + "on this filesystem",
+                        path);
             }
         }
     }
