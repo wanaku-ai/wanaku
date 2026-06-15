@@ -10,6 +10,7 @@ import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.NamespaceRepository;
 import ai.wanaku.backend.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.ResourceReferenceRepository;
+import ai.wanaku.backend.core.persistence.api.ToolCallRecordRepository;
 import ai.wanaku.backend.core.persistence.api.ToolReferenceRepository;
 
 public class InfinispanPersistenceConfiguration {
@@ -48,5 +49,10 @@ public class InfinispanPersistenceConfiguration {
     @Produces
     DataStoreRepository dataStoreRepository() {
         return new InfinispanDataStoreRepository(cacheManager, configuration);
+    }
+
+    @Produces
+    ToolCallRecordRepository toolCallRecordRepository() {
+        return new InfinispanToolCallRecordRepository(cacheManager, configuration);
     }
 }

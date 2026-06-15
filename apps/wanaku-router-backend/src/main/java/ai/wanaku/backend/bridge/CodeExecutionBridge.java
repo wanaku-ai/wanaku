@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
@@ -53,7 +52,7 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
 
     private final ServiceResolver serviceResolver;
     private final WanakuBridgeTransport transport;
-    private final MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
+    private final EventNotifier eventNotifier;
 
     /**
      * Creates a new CodeExecutionBridge with the specified service resolver and transport.
@@ -69,19 +68,17 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
     }
 
     /**
-     * Creates a new CodeExecutionBridge with the specified service resolver, transport, and event emitter.
+     * Creates a new CodeExecutionBridge with the specified service resolver, transport, and event notifier.
      *
      * @param serviceResolver the resolver for locating code execution services
      * @param transport the transport for gRPC communication
-     * @param toolCallEventEmitter the emitter for tool call events (nullable)
+     * @param eventNotifier the notifier for tool call events (nullable)
      */
     public CodeExecutionBridge(
-            ServiceResolver serviceResolver,
-            WanakuBridgeTransport transport,
-            MutinyEmitter<ToolCallEvent> toolCallEventEmitter) {
+            ServiceResolver serviceResolver, WanakuBridgeTransport transport, EventNotifier eventNotifier) {
         this.serviceResolver = serviceResolver;
         this.transport = transport;
-        this.toolCallEventEmitter = toolCallEventEmitter;
+        this.eventNotifier = eventNotifier;
     }
 
     /**
@@ -108,7 +105,7 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
 
         // Emit STARTED event
         ToolCallEvent startedEvent = null;
-        if (toolCallEventEmitter != null) {
+        if (eventNotifier != null) {
             startedEvent = emitStartedEvent(engineType, language, service, request);
         }
 
@@ -123,9 +120,9 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             return new CloseableCodeExecutionIterator(replyIterator, finalStartedEvent, startTime, this);
         } catch (Exception e) {
             // Emit FAILED event
-            if (toolCallEventEmitter != null && startedEvent != null) {
+            if (eventNotifier != null && startedEvent != null) {
                 long duration = Duration.between(startTime, Instant.now()).toMillis();
-                emitFailedEvent(
+                eventNotifier.emitFailedEvent(
                         startedEvent.getEventId(),
                         ToolCallEvent.ErrorCategory.SERVICE_UNAVAILABLE,
                         e.getMessage(),
@@ -221,28 +218,20 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
 
     private void emitCompletionEvent(
             ToolCallEvent startedEvent, Instant startTime, boolean hasError, String errorMessage) {
-        if (toolCallEventEmitter == null || startedEvent == null) {
+        if (eventNotifier == null || startedEvent == null) {
             return;
         }
         long duration = Duration.between(startTime, Instant.now()).toMillis();
         if (hasError) {
-            emitFailedEvent(
+            eventNotifier.emitFailedEvent(
                     startedEvent.getEventId(), ToolCallEvent.ErrorCategory.EXECUTION_ERROR, errorMessage, duration);
         } else {
-            emitCompletedEvent(startedEvent.getEventId(), "Code execution completed", duration);
+            eventNotifier.emitCompletedEvent(startedEvent.getEventId(), "Code execution completed", duration);
         }
     }
 
     /**
      * Resolves a code execution service by matching serviceType, serviceSubType, and serviceName.
-     * <p>
-     * This method uses the service resolver to locate the appropriate service
-     * and throws an exception if no service is found.
-     *
-     * @param engineType the engine type (serviceSubType)
-     * @param language the language (serviceName)
-     * @return the resolved service target
-     * @throws ServiceNotFoundException if no matching service is found
      */
     private ServiceTarget resolveService(String engineType, String language) {
         LOG.debugf(
@@ -262,22 +251,12 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
 
     /**
      * Builds a gRPC CodeExecutionRequest from the SDK request.
-     * <p>
-     * The code in the request is expected to be base64-encoded and will be
-     * decoded before being sent to the code execution service.
-     * </p>
-     *
-     * @param engineType the engine type
-     * @param language the programming language
-     * @param request the SDK code execution request
-     * @return the gRPC code execution request
      */
     private ai.wanaku.core.exchange.v1.CodeExecutionRequest buildGrpcRequest(
             String engineType, String language, CodeExecutionRequest request) {
 
         String uri = String.format("code-execution-engine://%s/%s", engineType, language);
 
-        // Decode the base64-encoded code
         String decodedCode = decodeBase64Code(request.getCode());
 
         ai.wanaku.core.exchange.v1.CodeExecutionRequest.Builder builder =
@@ -286,7 +265,6 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
                         .setCode(decodedCode)
                         .setTimeout(request.getTimeout());
 
-        // Convert List<String> arguments to Map<String, String> with indexed keys
         List<String> arguments = request.getArguments();
         if (arguments != null && !arguments.isEmpty()) {
             for (int i = 0; i < arguments.size(); i++) {
@@ -294,7 +272,6 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             }
         }
 
-        // Add environment variables if present
         Map<String, String> environment = request.getEnvironment();
         if (environment != null && !environment.isEmpty()) {
             builder.putAllEnvironment(environment);
@@ -303,13 +280,6 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
         return builder.build();
     }
 
-    /**
-     * Decodes base64-encoded code to plain text.
-     *
-     * @param base64Code the base64-encoded code string
-     * @return the decoded code as a UTF-8 string
-     * @throws IllegalArgumentException if the input is not valid base64
-     */
     private String decodeBase64Code(String base64Code) {
         if (StringHelper.isEmpty(base64Code)) {
             return "";
@@ -320,26 +290,16 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             return new String(decodedBytes, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException e) {
             LOG.warnf("Failed to decode base64 code, using raw value: %s", e.getMessage());
-            // If decoding fails, assume the code is not base64-encoded and return as-is
             return base64Code;
         }
     }
 
-    /**
-     * Emits a STARTED event for a code execution call.
-     * <p>
-     * Note: Arguments are redacted to avoid exposing potentially sensitive data.
-     * Only metadata about the arguments (count) is logged, not the actual values.
-     * </p>
-     */
     private ToolCallEvent emitStartedEvent(
             String engineType, String language, ServiceTarget service, CodeExecutionRequest request) {
         try {
             Map<String, String> arguments = new HashMap<>();
             arguments.put("engineType", engineType);
             arguments.put("language", language);
-            // Redact raw argument values to avoid leaking secrets or large payloads.
-            // Only emit safe metadata about the arguments.
             if (request.getArguments() != null && !request.getArguments().isEmpty()) {
                 arguments.put("argCount", String.valueOf(request.getArguments().size()));
                 arguments.put("argsRedacted", "true");
@@ -350,51 +310,19 @@ public class CodeExecutionBridge implements CodeExecutorBridge {
             ToolCallEvent event = ToolCallEvent.started(
                     toolName,
                     "code-execution-engine",
-                    "code-execution", // connectionId for code execution
+                    "code-execution",
                     service.getId(),
                     service.toAddress(),
                     arguments,
-                    new HashMap<>(), // no headers for code execution
-                    "[CODE]", // redact actual code
+                    new HashMap<>(),
+                    "[CODE]",
                     "",
                     "");
 
-            if (toolCallEventEmitter.hasRequests()) {
-                toolCallEventEmitter.sendAndForget(event);
-            }
-            return event;
+            return eventNotifier.emit(event);
         } catch (Exception e) {
             LOG.warnf(e, "Failed to emit STARTED event for code execution %s/%s", engineType, language);
             return null;
-        }
-    }
-
-    /**
-     * Emits a COMPLETED event for a successful code execution.
-     */
-    private void emitCompletedEvent(String eventId, String content, long duration) {
-        try {
-            ToolCallEvent event = ToolCallEvent.completed(eventId, content, duration);
-            if (toolCallEventEmitter.hasRequests()) {
-                toolCallEventEmitter.sendAndForget(event);
-            }
-        } catch (Exception e) {
-            LOG.warnf(e, "Failed to emit COMPLETED event for %s", eventId);
-        }
-    }
-
-    /**
-     * Emits a FAILED event for a failed code execution.
-     */
-    private void emitFailedEvent(
-            String eventId, ToolCallEvent.ErrorCategory category, String errorMessage, long duration) {
-        try {
-            ToolCallEvent event = ToolCallEvent.failed(eventId, category, errorMessage, null, duration);
-            if (toolCallEventEmitter.hasRequests()) {
-                toolCallEventEmitter.sendAndForget(event);
-            }
-        } catch (Exception e) {
-            LOG.warnf(e, "Failed to emit FAILED event for %s", eventId);
         }
     }
 }

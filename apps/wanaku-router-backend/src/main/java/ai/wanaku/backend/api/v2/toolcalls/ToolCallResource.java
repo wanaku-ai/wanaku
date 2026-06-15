@@ -18,20 +18,26 @@ package ai.wanaku.backend.api.v2.toolcalls;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 
+import java.util.List;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import io.smallrye.mutiny.Multi;
 import ai.wanaku.backend.common.ToolCallEvent;
+import ai.wanaku.backend.common.ToolCallRecord;
+import ai.wanaku.backend.core.persistence.api.ToolCallRecordRepository;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 /**
  * JAX-RS REST resource for tool call debugging endpoints.
@@ -59,6 +65,9 @@ public class ToolCallResource {
     @Inject
     @Channel("tool-call-event")
     Multi<ToolCallEvent> toolCallEvents;
+
+    @Inject
+    ToolCallRecordRepository toolCallRecordRepository;
 
     @PostConstruct
     void initialize() {
@@ -127,5 +136,39 @@ public class ToolCallResource {
                         .name(event.getEventType().asValue())
                         .data(event)
                         .build());
+    }
+
+    @GET
+    @Path("/history")
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<List<ToolCallRecord>> listHistory(
+            @QueryParam("toolName") String toolName, @QueryParam("connectionId") String connectionId) {
+
+        List<ToolCallRecord> records;
+        if (toolName != null && !toolName.isBlank()) {
+            records = toolCallRecordRepository.findByToolName(toolName);
+        } else if (connectionId != null && !connectionId.isBlank()) {
+            records = toolCallRecordRepository.findByConnectionId(connectionId);
+        } else {
+            records = toolCallRecordRepository.listAll();
+        }
+
+        return new WanakuResponse<>(records);
+    }
+
+    @GET
+    @Path("/history/{eventId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<ToolCallRecord> getHistoryEvent(@PathParam("eventId") String eventId) {
+        ToolCallRecord record = toolCallRecordRepository.findById(eventId);
+        return new WanakuResponse<>(record);
+    }
+
+    @DELETE
+    @Path("/history")
+    @Produces(MediaType.APPLICATION_JSON)
+    public WanakuResponse<Integer> clearHistory() {
+        int removed = toolCallRecordRepository.removeAll();
+        return new WanakuResponse<>(removed);
     }
 }
