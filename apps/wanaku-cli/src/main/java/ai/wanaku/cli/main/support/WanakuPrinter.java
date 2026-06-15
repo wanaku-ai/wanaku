@@ -159,7 +159,13 @@ public class WanakuPrinter extends DefaultPrinter {
         if (plainMode) {
             // Plain mode: route I/O through System.in/System.out with no ANSI escapes
             // Disable all native providers (JNI, JNA, Jansi) to avoid loading issues
-            return newBuilder().jansi(false).jni(false).jna(false).color(false).build();
+            return newBuilder()
+                    .jansi(false)
+                    .jni(false)
+                    .jna(false)
+                    .color(false)
+                    .system(true)
+                    .build();
         }
 
         try {
