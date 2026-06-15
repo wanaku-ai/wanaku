@@ -23,6 +23,9 @@ import java.util.regex.Pattern;
 import ai.wanaku.core.util.StringHelper;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.AUTH_PREFIX;
+import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.METADATA_PREFIX;
+
 /**
  * Event representing a tool call invocation lifecycle.
  * <p>
@@ -37,8 +40,6 @@ public class ToolCallEvent {
             Pattern.compile("(?i)(authorization|x-api-key|api-key|auth-token|bearer|cookie|session)");
     private static final Pattern SENSITIVE_FIELD_PATTERN =
             Pattern.compile("(?i)(password|secret|token|apikey|api_key|credentials)");
-    private static final String AUTH_ARG_PREFIX = "wanaku_auth_";
-    private static final String META_ARG_PREFIX = "wanaku_meta_";
 
     /**
      * Event type indicating the lifecycle stage.
@@ -212,7 +213,7 @@ public class ToolCallEvent {
         }
         Map<String, String> redacted = new HashMap<>();
         arguments.forEach((key, value) -> {
-            if (key != null && (key.startsWith(AUTH_ARG_PREFIX) || key.startsWith(META_ARG_PREFIX))) {
+            if (key != null && (key.startsWith(AUTH_PREFIX) || key.startsWith(METADATA_PREFIX))) {
                 return;
             }
             if (key != null && SENSITIVE_FIELD_PATTERN.matcher(key).find()) {

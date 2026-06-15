@@ -37,6 +37,7 @@ import io.smallrye.mutiny.Multi;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.common.ToolCallRecord;
 import ai.wanaku.backend.core.persistence.api.ToolCallRecordRepository;
+import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
 /**
@@ -161,6 +162,9 @@ public class ToolCallResource {
     @Produces(MediaType.APPLICATION_JSON)
     public WanakuResponse<ToolCallRecord> getHistoryEvent(@PathParam("eventId") String eventId) {
         ToolCallRecord record = toolCallRecordRepository.findById(eventId);
+        if (record == null) {
+            throw new ResourceNotFoundException(eventId);
+        }
         return new WanakuResponse<>(record);
     }
 
