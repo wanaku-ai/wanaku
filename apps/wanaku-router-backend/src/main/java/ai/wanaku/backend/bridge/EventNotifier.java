@@ -1,6 +1,12 @@
 package ai.wanaku.backend.bridge;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
+
 import java.util.Map;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -14,14 +20,17 @@ import ai.wanaku.core.util.CollectionsHelper;
  * Responsible for emitting tool call lifecycle events (started, completed, failed)
  * to a reactive messaging channel for UI observability.
  */
+@ApplicationScoped
 public class EventNotifier {
     private static final Logger LOG = Logger.getLogger(EventNotifier.class);
 
-    private final MutinyEmitter<ToolCallEvent> emitter;
+    @Inject
+    @Channel("tool-call-event")
+    @OnOverflow(OnOverflow.Strategy.DROP)
+    MutinyEmitter<ToolCallEvent> emitter;
 
-    public EventNotifier(MutinyEmitter<ToolCallEvent> emitter) {
-        this.emitter = emitter;
-    }
+    @Inject
+    Event<ToolCallEvent> cdiEvent;
 
     /**
      * Emits a STARTED event for a tool call.
@@ -51,10 +60,7 @@ public class EventNotifier {
                     request.getConfigurationUri(),
                     request.getSecretsUri());
 
-            if (emitter.hasRequests()) {
-                emitter.sendAndForget(event);
-            }
-            return event;
+            return emit(event);
         } catch (Exception e) {
             LOG.warnf(e, "Failed to emit STARTED event for tool %s", toolReference.getName());
             return null;
@@ -71,9 +77,7 @@ public class EventNotifier {
     public void emitCompletedEvent(String eventId, String content, long duration) {
         try {
             ToolCallEvent event = ToolCallEvent.completed(eventId, content, duration);
-            if (emitter.hasRequests()) {
-                emitter.sendAndForget(event);
-            }
+            emit(event);
         } catch (Exception e) {
             LOG.warnf(e, "Failed to emit COMPLETED event for %s", eventId);
         }
@@ -91,9 +95,7 @@ public class EventNotifier {
             String eventId, ToolCallEvent.ErrorCategory category, String errorMessage, long duration) {
         try {
             ToolCallEvent event = ToolCallEvent.failed(eventId, category, errorMessage, null, duration);
-            if (emitter.hasRequests()) {
-                emitter.sendAndForget(event);
-            }
+            emit(event);
         } catch (Exception e) {
             LOG.warnf(e, "Failed to emit FAILED event for %s", eventId);
         }
@@ -130,5 +132,13 @@ public class EventNotifier {
         }
 
         return ToolCallEvent.ErrorCategory.UNKNOWN;
+    }
+
+    ToolCallEvent emit(ToolCallEvent event) {
+        if (emitter.hasRequests()) {
+            emitter.sendAndForget(event);
+        }
+        cdiEvent.fireAsync(event);
+        return event;
     }
 }

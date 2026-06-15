@@ -4,16 +4,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.bridge.EventNotifier;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
-import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.core.util.VersionHelper;
 import picocli.CommandLine;
@@ -35,9 +31,7 @@ public class ToolsProvider {
     WanakuBridgeTransport transport;
 
     @Inject
-    @Channel("tool-call-event")
-    @OnOverflow(OnOverflow.Strategy.DROP)
-    MutinyEmitter<ToolCallEvent> toolCallEventEmitter;
+    EventNotifier eventNotifier;
 
     @Produces
     ToolsBridge getToolsBridge() {
@@ -46,6 +40,6 @@ public class ToolsProvider {
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);
-        return new InvokerBridge(serviceResolver, transport, new EventNotifier(toolCallEventEmitter));
+        return new InvokerBridge(serviceResolver, transport, eventNotifier);
     }
 }

@@ -1,0 +1,19 @@
+syntax = "proto3";
+package ai.wanaku.backend.common;
+
+message ToolCallRecord {
+  string id = 1;
+  string eventId = 2;
+  string eventType = 3;
+  fixed64 timestamp = 4;
+  string toolName = 5;
+  string toolType = 6;
+  string connectionId = 7;
+  string serviceId = 8;
+  string serviceAddress = 9;
+  bool error = 10;
+  fixed64 duration = 11;
+  string errorCategory = 12;
+  string errorMessage = 13;
+  string argumentKeys = 14;
+}
