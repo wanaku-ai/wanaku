@@ -37,6 +37,8 @@ public class ToolCallEvent {
             Pattern.compile("(?i)(authorization|x-api-key|api-key|auth-token|bearer|cookie|session)");
     private static final Pattern SENSITIVE_FIELD_PATTERN =
             Pattern.compile("(?i)(password|secret|token|apikey|api_key|credentials)");
+    private static final String AUTH_ARG_PREFIX = "wanaku_auth_";
+    private static final String META_ARG_PREFIX = "wanaku_meta_";
 
     /**
      * Event type indicating the lifecycle stage.
@@ -152,7 +154,7 @@ public class ToolCallEvent {
         event.connectionId = connectionId;
         event.serviceId = serviceId;
         event.serviceAddress = serviceAddress;
-        event.arguments = arguments;
+        event.arguments = redactArguments(arguments);
         event.headers = redactHeaders(headers);
         event.body = redactBody(body);
         event.configurationURI = configurationURI;
@@ -199,6 +201,27 @@ public class ToolCallEvent {
         event.errorDetails = errorDetails;
         event.duration = duration;
         return event;
+    }
+
+    /**
+     * Redacts arguments by removing reserved prefixes and masking sensitive values.
+     */
+    private static Map<String, String> redactArguments(Map<String, String> arguments) {
+        if (arguments == null) {
+            return null;
+        }
+        Map<String, String> redacted = new HashMap<>();
+        arguments.forEach((key, value) -> {
+            if (key != null && (key.startsWith(AUTH_ARG_PREFIX) || key.startsWith(META_ARG_PREFIX))) {
+                return;
+            }
+            if (key != null && SENSITIVE_FIELD_PATTERN.matcher(key).find()) {
+                redacted.put(key, REDACTED);
+            } else {
+                redacted.put(key, value);
+            }
+        });
+        return redacted;
     }
 
     /**
