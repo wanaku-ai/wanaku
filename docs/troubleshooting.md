@@ -154,7 +154,7 @@ All services in the provided `docker-compose.yml` use `network_mode: host`, whic
 
 Use Docker Desktop on macOS instead of Podman, or modify the compose file to use bridge networking with explicit port mappings.
 
-### Router healthcheck is silently ignored in docker-compose.yml
+### Router health check is silently ignored in docker-compose.yml
 
 **Symptoms:**
 
@@ -179,6 +179,7 @@ No error, which is the problem. The provided docker-compose ships with well-know
 **Why this happens:**
 
 The development docker-compose uses default credentials for convenience:
+
 - Keycloak admin: `admin` / `admin`
 - OIDC client secret for `wanaku-service`: `mypasswd`
 
