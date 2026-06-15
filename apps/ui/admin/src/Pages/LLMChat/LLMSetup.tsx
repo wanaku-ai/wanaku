@@ -9,6 +9,7 @@ import {
   isConfigStoredInLocalStorage,
   LLM_CONFIG,
   LlmConfig,
+  persistConfig,
   STORE_IN_LOCAL_STORAGE
 } from "./config.ts"
 import {LLMSelect} from "./LLMSelect"
@@ -26,7 +27,7 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
   
   function applyConfigChange(config: LlmConfig) {
     if (isStoredInLocalStorage) {
-      localStorage.setItem(LLM_CONFIG, JSON.stringify(config))
+      persistConfig(config)
     }
     onChange(config)
   }
@@ -35,7 +36,7 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
     <Form>
       <Stack gap={5}>
         <Toggle
-          labelText="Store in Local Storage"
+          labelText="Store LLM settings in Local Storage (the API key is never saved)"
           labelA="Off"
           labelB="On"
           toggled={isStoredInLocalStorage}
@@ -43,7 +44,7 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
             localStorage.setItem(STORE_IN_LOCAL_STORAGE, value.toString())
             setStoreInLocalStorage(value)
             if (value) {
-              localStorage.setItem(LLM_CONFIG, JSON.stringify(config))
+              persistConfig(config)
             } else {
               localStorage.removeItem(LLM_CONFIG)
             }
@@ -69,6 +70,7 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
         <PasswordInput
           id="api-key"
           labelText="API Key"
+          helperText="For your security the API key is kept only in memory for this session and is never saved to local storage."
           placeholder="Type your API key here..."
           value={config.apiKey}
           onChange={(event) => {
