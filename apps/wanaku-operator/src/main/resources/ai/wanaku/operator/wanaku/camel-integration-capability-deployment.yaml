@@ -17,6 +17,13 @@ spec:
       containers:
       - name: camel-integration-capability
         image: quay.io/wanaku/camel-integration-capability:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
         env:
         - name: REGISTRATION_URL
           value: ""

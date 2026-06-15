@@ -1129,13 +1129,13 @@ message ResourceRequest {
 ```
 
 - `uri` — the resource URI as registered with Wanaku (e.g., `file:///data/report.txt`)
-- - `params` — optional key-value parameters passed by the MCP client
- 
-  - ### Response Schema
- 
-  - The provider returns a `ResourceResponse` message:
- 
-  - ```proto
+- `params` — optional key-value parameters passed by the MCP client
+
+### Response Schema
+
+The provider returns a `ResourceResponse` message:
+
+```proto
     message ResourceResponse {
       repeated ResourceContent contents = 1;
       ResourceError error = 2; // Present only on failure
@@ -1156,12 +1156,12 @@ message ResourceRequest {
     }
     ```
 
-    - `contents` — one or more content items returned by the provider
-    - - `error` — present only when the provider encountered an error
-     
-      - ### Example Java Resource Provider
-     
-      - ```java
+- `contents` — one or more content items returned by the provider
+- `error` — present only when the provider encountered an error
+
+### Example Java Resource Provider
+
+```java
         @ApplicationScoped
         public class FileResourceProvider implements ResourceAcquirerBridge {
 

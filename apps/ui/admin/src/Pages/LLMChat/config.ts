@@ -31,11 +31,22 @@ export function loadConfig(): LlmConfig {
     if (config) {
       try {
         return JSON.parse(config)
-      } catch (error) {
+      } catch {
         console.log("Error loading config: " + config)
         return defaultLlmConfig()
       }
     }
   }
   return defaultLlmConfig()
+}
+
+/**
+ * Persists the LLM config to local storage, excluding the API key. The API key is sensitive and is
+ * kept in memory for the current session only — it is never written to local storage (where it
+ * would be readable by any script/extension on the page).
+ */
+export function persistConfig(config: LlmConfig) {
+  // JSON.stringify drops undefined values, so the api key is omitted from the stored payload.
+  const safe: LlmConfig = { ...config, apiKey: undefined }
+  localStorage.setItem(LLM_CONFIG, JSON.stringify(safe))
 }

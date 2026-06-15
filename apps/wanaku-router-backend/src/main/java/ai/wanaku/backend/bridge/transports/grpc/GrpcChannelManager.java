@@ -2,6 +2,7 @@ package ai.wanaku.backend.bridge.transports.grpc;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -16,24 +17,34 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
  * features like connection pooling, interceptors, and custom configurations
  * in the future.
  * <p>
- * Current implementation creates channels with plaintext communication.
- * Future enhancements may include:
+ * By default channels use plaintext communication; TLS can be enabled via
+ * {@code wanaku.bridge.grpc.transport.tls.enabled}. Future enhancements may include:
  * <ul>
  *   <li>Connection pooling for reusing channels</li>
  *   <li>Interceptors for logging and metrics</li>
- *   <li>SSL/TLS configuration</li>
+ *   <li>Per-target TLS trust material configuration</li>
  *   <li>Retry policies and circuit breakers</li>
  * </ul>
  */
 class GrpcChannelManager {
     private static final Logger LOG = Logger.getLogger(GrpcChannelManager.class);
     private static final Map<ServiceTarget, ManagedChannel> CHANNEL_MAP = new ConcurrentHashMap<>();
+    private static final String WANAKU_BRIDGE_GRPC_TRANSPORT_TLS_ENABLED = "wanaku.bridge.grpc.transport.tls.enabled";
+
+    /**
+     * Whether to secure the channel with TLS. Defaults to {@code false} (plaintext), which is only
+     * appropriate when the router and capabilities share a trusted (in-cluster / localhost) network.
+     */
+    private final boolean tlsEnabled = ConfigProvider.getConfig()
+            .getOptionalValue(WANAKU_BRIDGE_GRPC_TRANSPORT_TLS_ENABLED, Boolean.class)
+            .orElse(false);
 
     /**
      * Creates a new gRPC channel for the specified service target.
      * <p>
-     * The channel is configured with plaintext communication. The caller
-     * is responsible for managing the channel lifecycle, including shutdown.
+     * The channel uses plaintext or TLS depending on
+     * {@code wanaku.bridge.grpc.transport.tls.enabled}. The caller is responsible for managing the
+     * channel lifecycle, including shutdown.
      *
      * @param service the service target containing the address to connect to
      * @return a new ManagedChannel configured for the service
@@ -44,10 +55,14 @@ class GrpcChannelManager {
             return CHANNEL_MAP.get(service);
         }
 
-        LOG.debugf("Creating gRPC channel for service: %s", service.toAddress());
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(service.toAddress())
-                .usePlaintext()
-                .build();
+        LOG.debugf("Creating gRPC channel for service: %s (TLS: %s)", service.toAddress(), tlsEnabled);
+        ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(service.toAddress());
+        if (tlsEnabled) {
+            builder.useTransportSecurity();
+        } else {
+            builder.usePlaintext();
+        }
+        ManagedChannel channel = builder.build();
 
         CHANNEL_MAP.put(service, channel);
         return channel;

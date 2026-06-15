@@ -200,6 +200,7 @@ public final class CapabilityResourceFactory {
         service.setName(serviceName);
 
         String serviceImage = capabilitiesSpec.getImage();
+        OperatorUtil.validateImageAllowed(serviceImage);
         service.setImage(serviceImage);
 
         // Resolve pull policy with fallback chain: component -> global -> default

@@ -1,6 +1,7 @@
 package ai.wanaku.cli.main.support;
 
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,6 +9,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -165,6 +167,7 @@ class AuthCredentialStoreTest {
 
     @Test
     void shouldCreateCredentialsFileWithOwnerOnlyPermissions() throws Exception {
+        assumePosixFileSystem();
         credentialStore.storeApiToken("secret-token");
 
         Path credentialsFile = Paths.get(credentialStore.getCredentialsFile());
@@ -178,6 +181,7 @@ class AuthCredentialStoreTest {
 
     @Test
     void shouldCreateCredentialsDirectoryWithOwnerOnlyPermissions() throws Exception {
+        assumePosixFileSystem();
         Path nestedCredentials = tempDir.resolve("nested").resolve(".wanaku").resolve("credentials");
         AuthCredentialStore store = new AuthCredentialStore(nestedCredentials.toUri());
         store.storeApiToken("secret-token");
@@ -188,5 +192,11 @@ class AuthCredentialStoreTest {
                 PosixFilePermissions.fromString("rwx------"),
                 dirPerms,
                 "Credentials directory must not be accessible by group or others");
+    }
+
+    private static void assumePosixFileSystem() {
+        Assumptions.assumeTrue(
+                FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "POSIX file permissions are not supported on this filesystem");
     }
 }
