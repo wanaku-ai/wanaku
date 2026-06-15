@@ -3179,6 +3179,9 @@ By using these CLI commands, you can manage resources and tools for your Wanaku 
 
 ## Troubleshooting
 
+> [!TIP]
+> If you are setting up Wanaku for the first time, see the [First-Run Troubleshooting Guide](troubleshooting.md) for the most common setup issues (authentication, service registration, Docker Compose, SDK, and deployment).
+
 This section provides solutions to common issues you may encounter while using Wanaku.
 
 ### Authentication Issues
