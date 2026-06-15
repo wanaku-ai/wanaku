@@ -2,10 +2,10 @@
 # WARNING: development / evaluation use only — DO NOT use this file in production.
 # It ships well-known, insecure default credentials:
 #   - Keycloak admin:    admin / admin
-#   - OIDC client secret for "wanaku-service": mypasswd (see ../auth/wanaku-config.json)
-# Before any non-local deployment you MUST rotate the Keycloak admin password and
-# regenerate the wanaku-service client secret (e.g. inject it via an environment
-# variable / secret manager instead of hardcoding it here and in wanaku-config.json).
+#   - OIDC client secret for "wanaku-service": defaults to "mypasswd" (override WANAKU_SERVICE_SECRET)
+# Before any non-local deployment you MUST rotate the Keycloak admin password and set a strong
+# WANAKU_SERVICE_SECRET environment variable. When set, it is applied to both the Keycloak realm
+# import and the capability services below; it defaults to "mypasswd" for local development only.
 # =============================================================================
 services:
   keycloak:
@@ -16,6 +16,8 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_PORT: 8080
       KC_HEALTH_ENABLED: "true"
+      # Substituted into the wanaku-service client secret during realm import.
+      WANAKU_SERVICE_SECRET: ${WANAKU_SERVICE_SECRET:-mypasswd}
     ports:
       - "8543:8080"
     volumes:
@@ -32,8 +34,8 @@ services:
     environment:
       WANAKU_SERVICE_REGISTRATION_URI: http://localhost:8080/
       AUTH_SERVER: http://localhost:8543
-      # from wanaku-config.json
-      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: mypasswd
+      # Must match the wanaku-service client secret in the realm (WANAKU_SERVICE_SECRET).
+      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: ${WANAKU_SERVICE_SECRET:-mypasswd}
     network_mode: host
     depends_on:
       wanaku-router:
