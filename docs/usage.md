@@ -134,13 +134,13 @@ Expose the Keycloak service outside the cluster.
 
 Note that the service is exposed with a self-signed certificate, for development purposes only.
 
-* Minikube
+- Minikube
 
 ```shell
 cat deploy/auth/keycloak-ingress.yaml | sed "s/KEYCLOAK_HOST/keycloak.$(minikube ip).nip.io/"| kubectl create -f -
 ```
 
-* OpenShift
+- OpenShift
 
 ```shell
 kubectl apply -f deploy/auth/keycloak-router.yaml
@@ -160,8 +160,9 @@ This imports the default realm configuration from `deploy/auth/wanaku-config.jso
 Also, in case the keycloak server is in https with a self-signed certificate, then you have to import the realm config file with the Keycloak UI or execute the `deploy/auth/configure-auth.sh` script.
 
 To get the keycloak server:
-* Minikube : `echo "https://"$(kubectl get ingress keycloak -o jsonpath='{.spec.rules[0].host}')`
-* OpenShift: `echo "https://"$(kubectl get route keycloak -o jsonpath='{.spec.host}')`
+
+- Minikube : `echo "https://"$(kubectl get ingress keycloak -o jsonpath='{.spec.rules[0].host}')`
+- OpenShift: `echo "https://"$(kubectl get route keycloak -o jsonpath='{.spec.host}')`
 
 ### Importing the Wanaku Realm Configuration (via Shell Script)
 
@@ -312,7 +313,7 @@ source ~/.bashrc
 ```
 
 > **Note:** If you are using `zsh`, replace `~/.bashrc` with `~/.zshrc`.
-
+>
 > [!TIP]
 > The `get-wanaku.sh` script auto-detects your OS and architecture, downloads the latest release, verifies the checksum, and installs to `$HOME/bin`. You can override the install directory with `WANAKU_INSTALL_DIR=/usr/local/bin`.
 
@@ -407,8 +408,6 @@ It automates the creation and configuration of all necessary resources, making i
 You can build the container image and push it to a container registry, or use a pre-built image.
 
 There is a pre-built image in `quay.io/wanaku/wanaku-router-backend:latest`
-
-
 
 **Install the operator:**
 

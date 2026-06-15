@@ -305,12 +305,13 @@ If you are deploying to a regular OpenShift cluster, it's pretty similar, you ju
 ### Building for Minikube
 
 Requirements:
-* Minikube must be started.
-* Enable the `registry` and `ingress` addon in minikube.
-* Keycloak already installed and the `wanaku` configuration is created.
-* docker
-* Set the current namespace to wanaku: `kubectl config set-context --current --namespace=wanaku`.
-* `kubectl` cli.
+
+- Minikube must be started.
+- Enable the `registry` and `ingress` addon in minikube.
+- Keycloak already installed and the `wanaku` configuration is created.
+- docker
+- Set the current namespace to wanaku: `kubectl config set-context --current --namespace=wanaku`.
+- `kubectl` cli.
 
 1. Connect to minikube internal registry.
 
@@ -318,13 +319,13 @@ Requirements:
 eval $(minikube docker-env)
 ```
 
-2. Log in with podman:
+1. Log in with podman:
 
 ```shell
 podman login -u $(oc whoami) -p $(oc whoami -t) --tls-verify=false $REGISTRY
 ```
 
-3. Build the container image from wanaku-router-backend:
+1. Build the container image from wanaku-router-backend:
 
 ```shell
 mvn -Dquarkus.container-image.build=true -Dquarkus.container-image.push=false -DskipTests package -f apps/wanaku-router-backend
@@ -343,21 +344,21 @@ You can look with the cli: `docker images|grep wanaku`.
 quay.io/wanaku/wanaku-router-backend:latest       895e595bb4f6        537MB             0B
 ```
 
-4. Deploy to Minikube
+1. Deploy to Minikube
 
 ```shell
 ./deploy/deploy-to-dev-env.sh
 ```
 
-
 ### Building for CRC
 
 Requirements:
-* CRC must be started.
-* podman
-* Keycloak already installed and the `wanaku` configuration is created.
-* Set the current namespace to wanaku: `kubectl config set-context --current --namespace=wanaku`.
-* `oc` cli.
+
+- CRC must be started.
+- podman
+- Keycloak already installed and the `wanaku` configuration is created.
+- Set the current namespace to wanaku: `kubectl config set-context --current --namespace=wanaku`.
+- `oc` cli.
 
 1. The internal registry should be exposed, assign to REGISTRY environment variable.
 
@@ -365,13 +366,13 @@ Requirements:
 REGISTRY="$(kubectl get route/default-route -n openshift-image-registry -o=jsonpath='{.spec.host}')"
 ```
 
-2. Log in with podman:
+1. Log in with podman:
 
 ```shell
 podman login -u $(oc whoami) -p $(oc whoami -t) --tls-verify=false $REGISTRY
 ```
 
-3. Build the container image from wanaku-router-backend:
+1. Build the container image from wanaku-router-backend:
 
 ```shell
 mvn -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -DskipTests package -f apps/wanaku-router-backend -Dquarkus.container-image.registry=$REGISTRY -Dquarkus.container-image.insecure=true
@@ -383,7 +384,7 @@ If everything went well, you should see the container being pushed to the regist
 [io.quarkus.container.image.jib.deployment.JibProcessor] Pushed container image default-route-openshift-image-registry.apps-crc.testing/wanaku/wanaku-router-backend (sha256:a5d17a6d1bc1f7f0d2992872d37e5b00b444c9ab567a1ad97303acbb763ae132)
 ```
 
-4. Deploy to CRC:
+1. Deploy to CRC:
 
 The default image url is in `apps/wanaku-operator/deploy/helm/wanaku-operator/values.yaml`, but we shoud override it with the environment variable `WANAKU_IMAGE`, you should get the correct url from the `imagestream.image.openshift.io/wanaku-router-backend` resource.
 The default username/password is `admin/admin`, you can override it with the environment variable `WANAKU_ADMIN_USERNAME` and `WANAKU_ADMIN_PASSWORD`.
