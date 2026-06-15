@@ -48,7 +48,13 @@ public abstract class AbstractRemoteInfinispanRepository<A extends WanakuEntity<
         if (id == null) {
             return false;
         }
-        return cache.remove(id) != null;
+        // HotRod RemoteCache.remove() returns null by default (no FORCE_RETURN_VALUE).
+        // Check existence first, then remove.
+        if (!cache.containsKey(id)) {
+            return false;
+        }
+        cache.remove(id);
+        return true;
     }
 
     @Override

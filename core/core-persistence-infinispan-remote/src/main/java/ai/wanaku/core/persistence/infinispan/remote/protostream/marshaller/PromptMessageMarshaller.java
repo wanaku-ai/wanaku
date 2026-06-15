@@ -2,13 +2,13 @@ package ai.wanaku.core.persistence.infinispan.remote.protostream.marshaller;
 
 import java.io.IOException;
 import org.infinispan.protostream.MessageMarshaller;
-import org.infinispan.protostream.WrappedMessage;
 import ai.wanaku.capabilities.sdk.api.types.PromptContent;
 import ai.wanaku.capabilities.sdk.api.types.PromptMessage;
 
 /**
  * Protostream marshaller for PromptMessage.
- * Handles the nested PromptContent with oneof by using WrappedMessage.
+ * The {@code content} field maps to the PromptContent oneof defined in content.proto,
+ * so it must be written/read directly as PromptContent (not as WrappedMessage).
  */
 public class PromptMessageMarshaller implements MessageMarshaller<PromptMessage> {
 
@@ -26,24 +26,13 @@ public class PromptMessageMarshaller implements MessageMarshaller<PromptMessage>
     public PromptMessage readFrom(ProtoStreamReader reader) throws IOException {
         PromptMessage message = new PromptMessage();
         message.setRole(reader.readString("role"));
-
-        WrappedMessage wrappedContent = reader.readObject("content", WrappedMessage.class);
-        if (wrappedContent != null) {
-            Object content = wrappedContent.getValue();
-            if (content instanceof PromptContent promptContent) {
-                message.setContent(promptContent);
-            }
-        }
-
+        message.setContent(reader.readObject("content", PromptContent.class));
         return message;
     }
 
     @Override
     public void writeTo(ProtoStreamWriter writer, PromptMessage message) throws IOException {
         writer.writeString("role", message.getRole());
-
-        if (message.getContent() != null) {
-            writer.writeObject("content", new WrappedMessage(message.getContent()), WrappedMessage.class);
-        }
+        writer.writeObject("content", message.getContent(), PromptContent.class);
     }
 }
