@@ -215,21 +215,6 @@ Two capability SDK ecosystems coexist:
 
 - Use the **Java SDK** (`ai.wanaku.sdk`) for standalone capabilities that run independently
 - Use the **Quarkus SDK** (`ai.wanaku`) for capabilities developed within the Wanaku monorepo
-- The Java SDK is not published to Maven Central, so you must clone and `mvn install` it locally
-
-### Archetype-generated projects cannot build outside the monorepo
-
-**Symptoms:**
-
-- `mvn verify` fails with "Non-resolvable parent POM for `ai.wanaku:tools`"
-
-**Why this happens:**
-
-The in-tree archetypes (`wanaku-tool-service-archetype`, `wanaku-provider-archetype`, `wanaku-mcp-servers-archetype`) generate a `pom.xml` with a `<parent>` element pointing to a monorepo-internal module. The generated project must reside inside the Wanaku monorepo directory tree.
-
-**Fix:**
-
-Either keep the project inside the monorepo's `capabilities/` directory, or use the standalone Java SDK archetype (`capabilities-archetypes-java-tool`) which generates fully self-contained projects.
 
 ### Port 8080 conflict between router and new capabilities
 
@@ -269,29 +254,6 @@ The archetype generates a `coerceResponse()` method that unconditionally throws 
 Before deploying, implement the `coerceResponse()` method in your generated delegate class. Replace the `throw` statement with your actual response conversion logic.
 
 ## Frontend and Admin UI
-
-### Frontend dev server fails to start (missing openapi.yaml)
-
-**Symptoms:**
-
-- `npm run dev` in `apps/ui/admin/` fails with `ENOENT: no such file or directory, open '.../openapi.yaml'`
-
-**Why this happens:**
-
-The frontend uses [Orval](https://orval.dev/) to generate TypeScript API clients from the router's OpenAPI specification. This file (`wanaku-router-backend/src/main/webui/openapi.yaml`) is generated during the backend Maven build and does not exist in a fresh clone.
-
-**Fix:**
-
-Build the backend first:
-
-```shell
-# From the project root
-mvn verify
-
-# Then start the frontend
-cd apps/ui/admin
-npm run dev
-```
 
 ### CORS errors when frontend runs on a non-default port
 
