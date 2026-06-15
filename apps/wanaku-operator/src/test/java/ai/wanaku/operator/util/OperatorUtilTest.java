@@ -10,8 +10,10 @@ import ai.wanaku.operator.wanaku.WanakuRouterSpec;
 import ai.wanaku.operator.wanaku.WanakuTypes;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OperatorUtilTest {
 
@@ -171,6 +173,33 @@ class OperatorUtilTest {
                 .build());
         router.setSpec(new WanakuRouterSpec());
         assertEquals("wanaku", OperatorUtil.resolveAuthRealm(router));
+    }
+
+    @Test
+    void validateImageAllowedAllowsAnyImageWhenAllowlistEmpty() {
+        assertDoesNotThrow(() -> OperatorUtil.validateImageAllowed("docker.io/library/anything:latest", ""));
+        assertDoesNotThrow(() -> OperatorUtil.validateImageAllowed("docker.io/library/anything:latest", "  "));
+    }
+
+    @Test
+    void validateImageAllowedAcceptsImageMatchingAllowlistedPrefix() {
+        assertDoesNotThrow(() ->
+                OperatorUtil.validateImageAllowed("quay.io/wanaku/wanaku-tool-service-http:latest", "quay.io/wanaku/"));
+        assertDoesNotThrow(() ->
+                OperatorUtil.validateImageAllowed("registry.internal/team/x:1", "quay.io/wanaku/, registry.internal/"));
+    }
+
+    @Test
+    void validateImageAllowedRejectsImageOutsideAllowlist() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OperatorUtil.validateImageAllowed("docker.io/evil/payload:latest", "quay.io/wanaku/"));
+    }
+
+    @Test
+    void validateImageAllowedSkipsBlankImage() {
+        assertDoesNotThrow(() -> OperatorUtil.validateImageAllowed(null, "quay.io/wanaku/"));
+        assertDoesNotThrow(() -> OperatorUtil.validateImageAllowed("", "quay.io/wanaku/"));
     }
 
     private static WanakuCapability createCapabilityWithRealm(String realm) {

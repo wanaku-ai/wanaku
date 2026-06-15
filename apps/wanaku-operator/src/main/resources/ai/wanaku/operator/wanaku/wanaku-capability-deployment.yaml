@@ -26,6 +26,13 @@ spec:
         image: ""
         imagePullPolicy: IfNotPresent
         name: wanaku-capability
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
         ports:
         - containerPort: 9000
           name: grpc
