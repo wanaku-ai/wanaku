@@ -1,7 +1,6 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -10,8 +9,6 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.util.CollectionsHelper;
-
-import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.AUTH_PREFIX;
 
 /**
  * Responsible for emitting tool call lifecycle events (started, completed, failed)
@@ -41,11 +38,7 @@ public class EventNotifier {
             ServiceTarget service,
             ToolInvokeRequest request) {
         try {
-            // Filter out auth args so they never appear in events
-            Map<String, Object> safeArgs = toolArguments.args().entrySet().stream()
-                    .filter(e -> e.getKey() == null || !e.getKey().startsWith(AUTH_PREFIX))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(safeArgs);
+            Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
             ToolCallEvent event = ToolCallEvent.started(
                     toolReference.getName(),
                     toolReference.getType(),
