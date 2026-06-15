@@ -45,7 +45,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
 
         <!-- Deps -->
-        <quarkus.platform.version>3.33.2</quarkus.platform.version>
+        <quarkus.platform.version>3.36.2</quarkus.platform.version>
         <jackson.version>2.21.2</jackson.version>
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
         <quarkus-mcp-server.version>1.12.1</quarkus-mcp-server.version>
