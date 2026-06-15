@@ -75,6 +75,7 @@ public final class RouterResourceFactory {
         if (resource.getSpec().getRouter() != null
                 && resource.getSpec().getRouter().getImage() != null
                 && !resource.getSpec().getRouter().getImage().isEmpty()) {
+            OperatorUtil.validateImageAllowed(resource.getSpec().getRouter().getImage());
             routerContainer.setImage(resource.getSpec().getRouter().getImage());
             LOG.infof(
                     "Using custom router image: %s",
@@ -253,6 +254,7 @@ public final class RouterResourceFactory {
             final String image = routerSpec.getImage();
 
             if (image != null) {
+                OperatorUtil.validateImageAllowed(image);
                 service.setImage(image);
             }
 

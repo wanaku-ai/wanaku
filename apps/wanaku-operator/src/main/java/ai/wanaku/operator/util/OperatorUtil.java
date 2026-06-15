@@ -2,8 +2,10 @@ package ai.wanaku.operator.util;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
@@ -30,7 +32,50 @@ public final class OperatorUtil {
     public static final String DEFAULT_PULL_POLICY = "IfNotPresent";
     public static final Set<String> VALID_PULL_POLICIES = Set.of("Always", "IfNotPresent", "Never");
 
+    /** Optional comma-separated allowlist of permitted container-image prefixes. */
+    public static final String ALLOWED_IMAGE_PREFIXES = "wanaku.operator.allowed-image-prefixes";
+
     private OperatorUtil() {}
+
+    /**
+     * Validates a custom-resource-supplied container image against the optional allowlist
+     * {@value #ALLOWED_IMAGE_PREFIXES} (comma-separated registry/repository prefixes). When the
+     * allowlist is empty (the default) any image is permitted; when configured, the image must
+     * start with one of the prefixes, otherwise reconciliation fails. This prevents a principal
+     * able to create/patch a {@code WanakuCapability}/{@code WanakuRouter} from scheduling an
+     * arbitrary, untrusted image.
+     *
+     * @param image the image reference from the custom resource (may be null or blank)
+     * @throws IllegalArgumentException if the image is not in the configured allowlist
+     */
+    public static void validateImageAllowed(String image) {
+        String allowlist = ConfigProvider.getConfig()
+                .getOptionalValue(ALLOWED_IMAGE_PREFIXES, String.class)
+                .orElse("");
+        validateImageAllowed(image, allowlist);
+    }
+
+    /**
+     * Package-private variant taking the allowlist explicitly, so the matching logic can be unit
+     * tested without configuration.
+     *
+     * @param image the image reference from the custom resource (may be null or blank)
+     * @param allowlist comma-separated allowed prefixes (empty disables the check)
+     * @throws IllegalArgumentException if the image is not in the allowlist
+     */
+    static void validateImageAllowed(String image, String allowlist) {
+        if (allowlist == null || allowlist.isBlank() || image == null || image.isBlank()) {
+            return;
+        }
+        boolean allowed = Arrays.stream(allowlist.split(","))
+                .map(String::trim)
+                .filter(prefix -> !prefix.isEmpty())
+                .anyMatch(image::startsWith);
+        if (!allowed) {
+            throw new IllegalArgumentException(
+                    "Container image '%s' is not in the allowed registries (%s)".formatted(image, allowlist));
+        }
+    }
 
     /**
      * Creates a Ready condition for a custom resource status.

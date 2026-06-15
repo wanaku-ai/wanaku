@@ -13,10 +13,19 @@ spec:
       labels:
         app: ""
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: "wanaku-mcp-router"
           image: quay.io/wanaku/wanaku-router-backend:0.0.8
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: AUTH_SERVER
               value: ""
