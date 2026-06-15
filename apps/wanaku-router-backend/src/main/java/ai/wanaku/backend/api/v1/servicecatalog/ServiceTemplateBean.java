@@ -24,6 +24,7 @@ import ai.wanaku.backend.api.v1.exceptions.ServiceTemplateNotFoundException;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.core.services.api.SafeZip;
 import ai.wanaku.core.services.api.ServiceCatalogIndex;
 import ai.wanaku.core.util.StringHelper;
 
@@ -188,7 +189,7 @@ public class ServiceTemplateBean {
         ServiceCatalogIndex index = parseIndex(template);
         Map<String, Map<String, String>> result = new HashMap<>();
 
-        byte[] zipBytes = Base64.getDecoder().decode(template.getData());
+        byte[] zipBytes = SafeZip.decodeArchive(template.getData());
         Map<String, String> fileContents = extractFileContents(zipBytes);
 
         for (String system : index.getServiceNames()) {
@@ -251,7 +252,7 @@ public class ServiceTemplateBean {
         }
 
         ServiceCatalogIndex index = parseIndex(template);
-        byte[] originalZip = Base64.getDecoder().decode(template.getData());
+        byte[] originalZip = SafeZip.decodeArchive(template.getData());
 
         String effectiveName = (serviceName != null && !serviceName.isBlank()) ? serviceName : index.getName();
 
@@ -287,9 +288,20 @@ public class ServiceTemplateBean {
             // Read all entries from template ZIP
             try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(templateZip))) {
                 ZipEntry entry;
+                int entryCount = 0;
+                long totalBytes = 0;
                 while ((entry = zis.getNextEntry()) != null) {
+                    if (++entryCount > SafeZip.MAX_ENTRIES) {
+                        throw new IOException(
+                                "Template ZIP has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
+                    }
                     String name = entry.getName();
-                    byte[] content = zis.readAllBytes();
+                    byte[] content = SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES);
+                    totalBytes += content.length;
+                    if (totalBytes > SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES) {
+                        throw new IOException("Template ZIP uncompressed size exceeds the maximum of %d bytes"
+                                .formatted(SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES));
+                    }
                     entries.put(name, content);
                     zis.closeEntry();
                 }
@@ -382,9 +394,19 @@ public class ServiceTemplateBean {
         Map<String, String> result = new HashMap<>();
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry;
+            int entryCount = 0;
+            long totalBytes = 0;
             while ((entry = zis.getNextEntry()) != null) {
+                if (++entryCount > SafeZip.MAX_ENTRIES) {
+                    throw new IOException("Template ZIP has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
+                }
                 if (!entry.isDirectory()) {
-                    byte[] content = zis.readAllBytes();
+                    byte[] content = SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES);
+                    totalBytes += content.length;
+                    if (totalBytes > SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES) {
+                        throw new IOException("Template ZIP uncompressed size exceeds the maximum of %d bytes"
+                                .formatted(SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES));
+                    }
                     result.put(entry.getName(), new String(content));
                 }
                 zis.closeEntry();

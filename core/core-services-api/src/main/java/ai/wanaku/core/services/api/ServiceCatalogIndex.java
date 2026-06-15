@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -67,13 +66,7 @@ public class ServiceCatalogIndex {
      * @throws WanakuException if the ZIP is invalid or required properties are missing
      */
     public static ServiceCatalogIndex fromBase64(String base64Data) throws WanakuException {
-        byte[] zipBytes;
-        try {
-            zipBytes = Base64.getDecoder().decode(base64Data);
-        } catch (IllegalArgumentException e) {
-            throw new WanakuException("Invalid Base64 data: " + e.getMessage());
-        }
-        return fromZipBytes(zipBytes);
+        return fromZipBytes(SafeZip.decodeArchive(base64Data));
     }
 
     /**
@@ -89,7 +82,11 @@ public class ServiceCatalogIndex {
 
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry;
+            int entryCount = 0;
             while ((entry = zis.getNextEntry()) != null) {
+                if (++entryCount > SafeZip.MAX_ENTRIES) {
+                    throw new IOException("ZIP archive has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
+                }
                 String entryName = entry.getName();
 
                 // Protect against ZIP path traversal
@@ -99,7 +96,7 @@ public class ServiceCatalogIndex {
 
                 if (INDEX_FILE.equals(entryName)) {
                     props = new Properties();
-                    props.load(zis);
+                    props.load(new ByteArrayInputStream(SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES)));
                 }
                 zis.closeEntry();
             }
