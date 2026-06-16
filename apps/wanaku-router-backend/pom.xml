@@ -83,6 +83,10 @@
             <groupId>io.kaoto.forage</groupId>
             <artifactId>forage-catalog-reader</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.kaoto.forage</groupId>
+            <artifactId>forage-catalog</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>ai.wanaku.sdk</groupId>

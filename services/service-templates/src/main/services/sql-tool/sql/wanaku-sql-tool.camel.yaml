@@ -13,6 +13,6 @@
             uri: sql
             parameters:
               dataSource: "#dataSource"
-              query: "${header.CamelSqlQuery}"
-        - marshal:
-            json: {}
+              query: ${header.CamelSqlQuery}
+        - convertBodyTo:
+            type: "java.lang.String"

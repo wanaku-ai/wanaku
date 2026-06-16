@@ -304,6 +304,69 @@ class ServiceTemplateBeanTest {
         assertEquals("sys1/sys1.dependencies.txt", indexProps.getProperty("catalog.dependencies.sys1"));
     }
 
+    @Test
+    void testInstantiateResolvesForageDependenciesFromTemplateDefaults() throws Exception {
+        String serviceProps = "tool.description=SQL tool\nforage.jdbc.db.kind=postgresql\nsql.query=SELECT 1\n";
+        String depsContent = "org.apache.camel:camel-sql\n";
+        DataStore tmpl = new DataStore();
+        tmpl.setId("tmpl-forage-default");
+        tmpl.setName("sql-template");
+        tmpl.setData(createTemplateZipWithServiceProperties("sql-svc", "SQL test", "sql", depsContent, serviceProps));
+        tmpl.setLabels(Map.of("wanaku.type", "template"));
+
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=template"))
+                .thenReturn(List.of(tmpl));
+        when(forageDependencyResolver.resolveGavs("postgresql"))
+                .thenReturn(Set.of("io.kaoto.forage:forage-jdbc", "io.kaoto.forage:forage-jdbc-postgresql"));
+
+        DataStore deployed = new DataStore();
+        deployed.setId("catalog-forage-default");
+        deployed.setName("sql-svc");
+        when(serviceCatalogBean.deploy(any())).thenReturn(deployed);
+
+        serviceTemplateBean.instantiate("sql-svc", Map.of());
+
+        ArgumentCaptor<DataStore> captor = ArgumentCaptor.forClass(DataStore.class);
+        verify(serviceCatalogBean).deploy(captor.capture());
+
+        String depsFile = extractZipEntry(captor.getValue().getData(), "sql/sql.dependencies.txt");
+        assertNotNull(depsFile, "dependencies file should exist in the output ZIP");
+        assertTrue(depsFile.contains("org.apache.camel:camel-sql"));
+        assertTrue(depsFile.contains("io.kaoto.forage:forage-jdbc"));
+        assertTrue(depsFile.contains("io.kaoto.forage:forage-jdbc-postgresql"));
+    }
+
+    @Test
+    void testInstantiateUserPropertyOverridesTemplateForageKind() throws Exception {
+        String serviceProps = "tool.description=SQL tool\nforage.jdbc.db.kind=postgresql\nsql.query=SELECT 1\n";
+        String depsContent = "org.apache.camel:camel-sql\n";
+        DataStore tmpl = new DataStore();
+        tmpl.setId("tmpl-forage-override");
+        tmpl.setName("sql-override-template");
+        tmpl.setData(createTemplateZipWithServiceProperties(
+                "sql-override", "SQL override", "sql", depsContent, serviceProps));
+        tmpl.setLabels(Map.of("wanaku.type", "template"));
+
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=template"))
+                .thenReturn(List.of(tmpl));
+        when(forageDependencyResolver.resolveGavs("mysql"))
+                .thenReturn(Set.of("io.kaoto.forage:forage-jdbc", "io.kaoto.forage:forage-jdbc-mysql"));
+
+        DataStore deployed = new DataStore();
+        deployed.setId("catalog-forage-override");
+        deployed.setName("sql-override");
+        when(serviceCatalogBean.deploy(any())).thenReturn(deployed);
+
+        serviceTemplateBean.instantiate("sql-override", Map.of("forage.jdbc.db.kind", "mysql"));
+
+        ArgumentCaptor<DataStore> captor = ArgumentCaptor.forClass(DataStore.class);
+        verify(serviceCatalogBean).deploy(captor.capture());
+
+        String depsFile = extractZipEntry(captor.getValue().getData(), "sql/sql.dependencies.txt");
+        assertNotNull(depsFile);
+        assertTrue(depsFile.contains("io.kaoto.forage:forage-jdbc-mysql"));
+    }
+
     // --- Helpers ---
 
     private String createTemplateZipBase64(String name, String description, String... systems) {
@@ -369,6 +432,53 @@ class ServiceTemplateBeanTest {
 
                 zos.putNextEntry(new ZipEntry(depsPath));
                 zos.write(depsContent.getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry("index.properties"));
+                ByteArrayOutputStream propsOut = new ByteArrayOutputStream();
+                props.store(propsOut, null);
+                zos.write(propsOut.toByteArray());
+                zos.closeEntry();
+            }
+            return Base64.getEncoder().encodeToString(baos.toByteArray());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String createTemplateZipWithServiceProperties(
+            String name, String description, String system, String depsContent, String servicePropsContent) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                Properties props = new Properties();
+                props.setProperty("catalog.name", name);
+                props.setProperty("catalog.description", description);
+                props.setProperty("catalog.services", system);
+
+                String routesPath = system + "/" + system + ".camel.yaml";
+                String rulesPath = system + "/" + system + ".wanaku-rules.yaml";
+                String depsPath = system + "/" + system + ".dependencies.txt";
+                String servicePropsPath = system + "/service.properties";
+                props.setProperty("catalog.routes." + system, routesPath);
+                props.setProperty("catalog.rules." + system, rulesPath);
+                props.setProperty("catalog.dependencies." + system, depsPath);
+                props.setProperty("catalog.properties." + system, servicePropsPath);
+
+                zos.putNextEntry(new ZipEntry(routesPath));
+                zos.write(("# Routes for " + system).getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry(rulesPath));
+                zos.write(("# Rules for " + system).getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry(depsPath));
+                zos.write(depsContent.getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry(servicePropsPath));
+                zos.write(servicePropsContent.getBytes());
                 zos.closeEntry();
 
                 zos.putNextEntry(new ZipEntry("index.properties"));

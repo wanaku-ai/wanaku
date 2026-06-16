@@ -203,6 +203,11 @@
                 <artifactId>forage-catalog-reader</artifactId>
                 <version>${forage.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.kaoto.forage</groupId>
+                <artifactId>forage-catalog</artifactId>
+                <version>${forage.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
