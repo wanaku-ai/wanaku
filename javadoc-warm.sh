@@ -7,8 +7,10 @@ set -euo pipefail
 VERSION="${1:?Usage: $0 <version>}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(pwd)"
 
+
+echo $PROJECT_ROOT
 find "$PROJECT_ROOT" -name "pom.xml" \
     -not -path "*/target/*" \
     -not -path "*/archetype-resources/*" \
@@ -45,6 +47,7 @@ PYEOF
     url="https://javadoc.io/doc/${gid}/${aid}/${VERSION}"
     echo "Warming: ${gid}:${aid}:${VERSION} -> ${url}"
     curl -sf -o /dev/null "$url" || echo "  WARNING: failed for ${aid}"
+    sleep 2
 done
 
 echo "Done."
