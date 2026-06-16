@@ -227,7 +227,8 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
 
     @Test
     void testGetCapabilities_UpdatesWhenServiceAdded() {
-        int initialCount = given().when()
+        int initialCount = given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -256,7 +257,8 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
                 .extract()
                 .path("data.id");
 
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -303,7 +305,8 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
                 .path("data.id");
 
         // Verify it exists
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -329,7 +332,8 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
                 .statusCode(Response.Status.OK.getStatusCode());
 
         // Verify it's removed
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -351,7 +355,8 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
                                 .getStatusCode()); // Service registry accepts any string, validation happens at usage
 
         // Clean up
-        String serviceId = given().when()
+        String serviceId = given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities")
                 .then()
                 .extract()
@@ -375,13 +380,17 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
     }
 
     @Test
-    void testGetCapabilities_WithoutAuthentication_ShouldSucceed() {
-        // GET /api/v1/capabilities is a public endpoint and doesn't require authentication
-        given().when()
+    void testGetCapabilities_WithInvalidToken() {
+        // GET /api/v1/capabilities now requires authentication. When auth is enabled, a request with
+        // an invalid bearer token is rejected with 401; when auth is disabled the token is ignored
+        // and the endpoint responds normally.
+        int expected =
+                isAuthEnabled() ? Response.Status.UNAUTHORIZED.getStatusCode() : Response.Status.OK.getStatusCode();
+        given().header("Authorization", "Bearer invalid-token")
+                .when()
                 .get("/api/v1/capabilities")
                 .then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body("data", notNullValue());
+                .statusCode(expected);
     }
 
     @Test
@@ -656,7 +665,8 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
 
     @Test
     void testGetStaleCapabilities_WithNegativeMaxAge_ShouldHandleGracefully() {
-        given().queryParam("maxAgeSeconds", -1)
+        given().headers(getHeaders())
+                .queryParam("maxAgeSeconds", -1)
                 .when()
                 .get("/api/v1/capabilities/stale")
                 .then()
