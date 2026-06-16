@@ -1,0 +1,18 @@
+- route:
+    id: sql-tool
+    description: Execute SQL queries against a relational database
+    from:
+      uri: direct:wanaku
+      steps:
+        - setHeader:
+            name: CamelSqlQuery
+            expression:
+              simple:
+                expression: "{{sql.query}}"
+        - to:
+            uri: sql
+            parameters:
+              dataSource: "#dataSource"
+              query: "${header.CamelSqlQuery}"
+        - marshal:
+            json: {}

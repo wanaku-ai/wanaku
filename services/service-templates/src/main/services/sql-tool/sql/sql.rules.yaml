@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - sql:
+        route:
+          id: "sql-tool"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The SQL query to execute (e.g. SELECT * FROM users WHERE id = 1)
+            required: true
