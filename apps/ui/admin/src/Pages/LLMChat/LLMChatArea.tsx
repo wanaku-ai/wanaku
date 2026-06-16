@@ -8,9 +8,9 @@ import {
   Tile
 } from "@carbon/react"
 import {Send, Stop} from "@carbon/icons-react"
-import {LlmConfig} from "./config"
 import {LLMChatMessage} from "./LLMChatMessage"
 import {getUrl} from "../../custom-fetch"
+import {ToolReference} from "../../models"
 
 
 interface ChatMessage {
@@ -18,13 +18,22 @@ interface ChatMessage {
   content: string
 }
 
-interface LLMChatAreaProps {
-  config: LlmConfig
+export interface LlmChatConfig {
+  llm: string
+  model?: string
+  apiKey?: string
+  selectedTools: ToolReference[]
+  extraLlmParams?: string
+  systemPrompt?: string
 }
 
-export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
+interface LLMChatAreaProps {
+  config: LlmChatConfig
+  onSystemPromptChange: (systemPrompt: string) => void
+}
+
+export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPromptChange }) => {
   
-  const [systemPrompt, setSystemPrompt] = useState("You are an assistant that can use tools.")
   const [userPrompt, setUserPrompt] = useState("")
   const [displayedMessages, setDisplayedMessages] = useState<ChatMessage[]>([])
   const [isRunning, setIsRunning] = useState(false)
@@ -54,12 +63,12 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
         },
         body: JSON.stringify({
           llm: config.llm,
-          model: config.llmModel,
+          model: config.model,
           apiKey: config.apiKey,
-          systemPrompt: systemPrompt,
+          systemPrompt: config.systemPrompt,
           userPrompt: userPrompt,
           chatHistory: filteredChatHistory(),
-          selectedTools: config.tools.map(tool => tool.name),
+          selectedTools: config.selectedTools.map(tool => tool.name),
           extraLlmParams: config.extraLlmParams ? JSON.parse(config.extraLlmParams) : {}
         })
       })
@@ -127,9 +136,10 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config }) => {
             id="system-input"
             labelText="System message"
             placeholder="Type system message here..."
-            value={systemPrompt}
+            value={config.systemPrompt}
             onChange={(event) => {
-              setSystemPrompt(event.target.value)
+              const systemPrompt = event.target.value
+              onSystemPromptChange(systemPrompt)
             }}
             rows={4}
           />

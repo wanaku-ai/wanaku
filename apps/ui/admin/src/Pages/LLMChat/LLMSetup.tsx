@@ -1,37 +1,32 @@
-import React, {useState} from "react"
+import React from "react"
 import {
   Form,
-  PasswordInput, Stack,
+  PasswordInput,
+  Stack,
   TextArea,
   Toggle
 } from "@carbon/react"
-import {
-  isConfigStoredInLocalStorage,
-  LLM_CONFIG,
-  LlmConfig,
-  persistConfig,
-  STORE_IN_LOCAL_STORAGE
-} from "./config.ts"
+import {LlmConfig, OLLAMA} from "./config"
 import {LLMSelect} from "./LLMSelect"
 import {LLMModelComboBox} from "./LLMModelComboBox"
 
 
 interface LLMSetupProps {
   config: LlmConfig
-  onChange: (config: LlmConfig) => void
+  stored: boolean
+  onConfigChange: (config: LlmConfig) => void
+  onStoredChange: (store: boolean) => void
 }
 
-export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
+export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, onConfigChange, onStoredChange }) => {
+
+  const selectedLlm = config.selectedLlm
+  const selectedModel = config.llms[selectedLlm].selectedModel
+  const apiKey = config.llms[selectedLlm].apiKey
+  const extraLlmParams = config.llms[selectedLlm].extraLlmParams
   
-  const [isStoredInLocalStorage, setStoreInLocalStorage] = useState<boolean>(isConfigStoredInLocalStorage())
-  
-  function applyConfigChange(config: LlmConfig) {
-    if (isStoredInLocalStorage) {
-      persistConfig(config)
-    }
-    onChange(config)
-  }
-  
+  const isApiKeyRequired = selectedLlm !== OLLAMA
+
   return (
     <Form>
       <Stack gap={5}>
@@ -39,54 +34,53 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, onChange }) => {
           labelText="Store LLM settings in Local Storage (the API key is never saved)"
           labelA="Off"
           labelB="On"
-          toggled={isStoredInLocalStorage}
-          onToggle={(value: boolean) => {
-            localStorage.setItem(STORE_IN_LOCAL_STORAGE, value.toString())
-            setStoreInLocalStorage(value)
-            if (value) {
-              persistConfig(config)
-            } else {
-              localStorage.removeItem(LLM_CONFIG)
-            }
-          }}
+          toggled={stored}
+          onToggle={onStoredChange}
           id="enabledLocalStorage"
         />
         <LLMSelect
           id="base-url"
           labelText="LLM API"
-          value={config.llm || ""}
-          onChange={(llm: string) => {
-            applyConfigChange({ ...config, llm })
+          value={selectedLlm}
+          onChange={(selectedLlm: string) => {
+            onConfigChange({ ...config, selectedLlm })
           }}
         />
         <LLMModelComboBox
           labelText="LLM Model"
-          llm={config.llm || ""}
-          value={config.llmModel}
-          onChange={(llmModel) => {
-            applyConfigChange({ ...config, llmModel })
+          llm={selectedLlm}
+          value={selectedModel}
+          onChange={(selectedModel: string) => {
+            const newConfig = structuredClone(config)
+            newConfig.llms[selectedLlm].selectedModel = selectedModel
+            onConfigChange(newConfig)
           }}
         />
-        <PasswordInput
-          id="api-key"
-          labelText="API Key"
-          helperText="For your security the API key is kept only in memory for this session and is never saved to local storage."
-          placeholder="Type your API key here..."
-          value={config.apiKey}
-          onChange={(event) => {
-            const apiKey = event.target.value
-            applyConfigChange({ ...config, apiKey })
-          }}
-          size="md"
-        />
+        {isApiKeyRequired && (
+          <PasswordInput
+            id="api-key"
+            labelText="API Key"
+            placeholder="Type your API key here..."
+            value={apiKey}
+            onChange={(event) => {
+              const apiKey = event.target.value
+              const newConfig = structuredClone(config)
+              newConfig.llms[selectedLlm].apiKey = apiKey
+              onConfigChange(newConfig)
+            }}
+            size="md"
+          />
+        )}
         <TextArea
           id="extra-llm-input"
           labelText="Extra LLM Parameters"
           placeholder='Json format, e.g. {"max_tokens":400,"temperature":0.7,"tool_choice":"auto"}'
-          value={config.extraLlmParams}
+          value={extraLlmParams}
           onChange={(event) => {
             const extraLlmParams = event.target.value
-            applyConfigChange({ ...config, extraLlmParams })
+            const newConfig = structuredClone(config)
+            newConfig.llms[selectedLlm].extraLlmParams = extraLlmParams
+            onConfigChange(newConfig)
           }}
           rows={4}
         />
