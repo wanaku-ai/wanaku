@@ -11,10 +11,13 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -51,6 +54,9 @@ public class ServiceTemplateBean {
 
     @Inject
     ServiceCatalogBean serviceCatalogBean;
+
+    @Inject
+    ForageDependencyResolver forageDependencyResolver;
 
     private DataStoreRepository dataStoreRepository;
 
@@ -256,9 +262,12 @@ public class ServiceTemplateBean {
 
         String effectiveName = (serviceName != null && !serviceName.isBlank()) ? serviceName : index.getName();
 
+        Map<String, String> effectiveProperties = userProperties != null ? userProperties : Map.of();
+        Collection<String> forageGavs = resolveForageDependencies(effectiveProperties);
+
         // Build a new ZIP with modified properties files
-        byte[] newZipBytes = buildCatalogZip(
-                originalZip, index, userProperties != null ? userProperties : Map.of(), effectiveName, serviceSystem);
+        byte[] newZipBytes =
+                buildCatalogZip(originalZip, index, effectiveProperties, effectiveName, serviceSystem, forageGavs);
 
         // Create a new DataStore for the catalog
         DataStore catalog = new DataStore();
@@ -269,113 +278,194 @@ public class ServiceTemplateBean {
         return serviceCatalogBean.deploy(catalog);
     }
 
-    /**
-     * Build a new catalog ZIP from a template ZIP by:
-     * - Removing catalog.properties.* entries from index.properties
-     * - Optionally overriding catalog.name and catalog.services
-     * - Replacing property values in service.properties files
-     */
     private byte[] buildCatalogZip(
             byte[] templateZip,
             ServiceCatalogIndex index,
             Map<String, String> userProperties,
             String catalogName,
-            String serviceSystem)
+            String serviceSystem,
+            Collection<String> forageGavs)
             throws WanakuException {
         try {
-            Map<String, byte[]> entries = new HashMap<>();
-
-            // Read all entries from template ZIP
-            try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(templateZip))) {
-                ZipEntry entry;
-                int entryCount = 0;
-                long totalBytes = 0;
-                while ((entry = zis.getNextEntry()) != null) {
-                    if (++entryCount > SafeZip.MAX_ENTRIES) {
-                        throw new IOException(
-                                "Template ZIP has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
-                    }
-                    String name = entry.getName();
-                    byte[] content = SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES);
-                    totalBytes += content.length;
-                    if (totalBytes > SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES) {
-                        throw new IOException("Template ZIP uncompressed size exceeds the maximum of %d bytes"
-                                .formatted(SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES));
-                    }
-                    entries.put(name, content);
-                    zis.closeEntry();
-                }
-            }
-
-            // Modify index.properties to remove catalog.properties.* entries
-            byte[] indexBytes = entries.get("index.properties");
-            if (indexBytes == null) {
-                throw new WanakuException("index.properties not found in template ZIP");
-            }
-
-            Properties indexProps = new Properties();
-            indexProps.load(new StringReader(new String(indexBytes)));
-
-            // Remove all catalog.properties.* entries
-            for (String system : index.getServiceNames()) {
-                indexProps.remove("catalog.properties." + system);
-            }
-
-            // Override catalog.name if provided
-            if (catalogName != null && !catalogName.isBlank()) {
-                indexProps.setProperty("catalog.name", catalogName);
-            }
-
-            // Override catalog.services if provided, remapping per-system entries
-            if (serviceSystem != null && !serviceSystem.isBlank()) {
-                for (String oldSystem : index.getServiceNames()) {
-                    remapSystemProperty(indexProps, "catalog.routes.", oldSystem, serviceSystem);
-                    remapSystemProperty(indexProps, "catalog.rules.", oldSystem, serviceSystem);
-                    remapSystemProperty(indexProps, "catalog.dependencies.", oldSystem, serviceSystem);
-                }
-                indexProps.setProperty("catalog.services", serviceSystem);
-            }
-
-            StringWriter indexWriter = new StringWriter();
-            indexProps.store(indexWriter, null);
-            entries.put("index.properties", indexWriter.toString().getBytes());
-
-            // Modify service.properties files with user values
-            for (String system : index.getServiceNames()) {
-                String propertiesPath = resolvePropertiesPath(index, system, entries);
-                if (propertiesPath != null) {
-                    byte[] propsBytes = entries.get(propertiesPath);
-                    Properties props = new Properties();
-                    props.load(new StringReader(new String(propsBytes)));
-
-                    // Override with user-provided values
-                    for (Map.Entry<String, String> userEntry : userProperties.entrySet()) {
-                        if (props.containsKey(userEntry.getKey())) {
-                            props.setProperty(userEntry.getKey(), userEntry.getValue());
-                        }
-                    }
-
-                    StringWriter propsWriter = new StringWriter();
-                    props.store(propsWriter, null);
-                    entries.put(propertiesPath, propsWriter.toString().getBytes());
-                }
-            }
-
-            // Build new ZIP
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-                for (Map.Entry<String, byte[]> e : entries.entrySet()) {
-                    ZipEntry zipEntry = new ZipEntry(e.getKey());
-                    zos.putNextEntry(zipEntry);
-                    zos.write(e.getValue());
-                    zos.closeEntry();
-                }
-            }
-
-            return baos.toByteArray();
+            Map<String, byte[]> entries = readZipEntries(templateZip);
+            modifyIndexProperties(entries, index, catalogName, serviceSystem);
+            applyUserProperties(entries, index, userProperties);
+            appendForageDependencies(entries, index, forageGavs, serviceSystem);
+            return assembleZip(entries);
         } catch (IOException e) {
             throw new WanakuException("Failed to build catalog ZIP: %s".formatted(e.getMessage()));
         }
+    }
+
+    private Map<String, byte[]> readZipEntries(byte[] templateZip) throws IOException {
+        Map<String, byte[]> entries = new HashMap<>();
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(templateZip))) {
+            ZipEntry entry;
+            int entryCount = 0;
+            long totalBytes = 0;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (++entryCount > SafeZip.MAX_ENTRIES) {
+                    throw new IOException("Template ZIP has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
+                }
+                byte[] content = SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES);
+                totalBytes += content.length;
+                if (totalBytes > SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES) {
+                    throw new IOException("Template ZIP uncompressed size exceeds the maximum of %d bytes"
+                            .formatted(SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES));
+                }
+                entries.put(entry.getName(), content);
+                zis.closeEntry();
+            }
+        }
+        return entries;
+    }
+
+    private void modifyIndexProperties(
+            Map<String, byte[]> entries, ServiceCatalogIndex index, String catalogName, String serviceSystem)
+            throws IOException, WanakuException {
+        byte[] indexBytes = entries.get("index.properties");
+        if (indexBytes == null) {
+            throw new WanakuException("index.properties not found in template ZIP");
+        }
+
+        Properties indexProps = new Properties();
+        indexProps.load(new StringReader(new String(indexBytes)));
+
+        for (String system : index.getServiceNames()) {
+            indexProps.remove("catalog.properties." + system);
+        }
+
+        if (catalogName != null && !catalogName.isBlank()) {
+            indexProps.setProperty("catalog.name", catalogName);
+        }
+
+        if (serviceSystem != null && !serviceSystem.isBlank()) {
+            for (String oldSystem : index.getServiceNames()) {
+                remapSystemProperty(indexProps, "catalog.routes.", oldSystem, serviceSystem);
+                remapSystemProperty(indexProps, "catalog.rules.", oldSystem, serviceSystem);
+                remapSystemProperty(indexProps, "catalog.dependencies.", oldSystem, serviceSystem);
+            }
+            indexProps.setProperty("catalog.services", serviceSystem);
+        }
+
+        StringWriter indexWriter = new StringWriter();
+        indexProps.store(indexWriter, null);
+        entries.put("index.properties", indexWriter.toString().getBytes());
+    }
+
+    private void applyUserProperties(
+            Map<String, byte[]> entries, ServiceCatalogIndex index, Map<String, String> userProperties)
+            throws IOException {
+        for (String system : index.getServiceNames()) {
+            String propertiesPath = resolvePropertiesPath(index, system, entries);
+            if (propertiesPath != null) {
+                byte[] propsBytes = entries.get(propertiesPath);
+                Properties props = new Properties();
+                props.load(new StringReader(new String(propsBytes)));
+
+                for (Map.Entry<String, String> userEntry : userProperties.entrySet()) {
+                    if (props.containsKey(userEntry.getKey())) {
+                        props.setProperty(userEntry.getKey(), userEntry.getValue());
+                    }
+                }
+
+                StringWriter propsWriter = new StringWriter();
+                props.store(propsWriter, null);
+                entries.put(propertiesPath, propsWriter.toString().getBytes());
+            }
+        }
+    }
+
+    private Collection<String> resolveForageDependencies(Map<String, String> userProperties) {
+        Set<String> gavs = new LinkedHashSet<>();
+        userProperties.forEach((key, value) -> {
+            if (key.startsWith("forage.") && key.endsWith(".kind") && value != null && !value.isBlank()) {
+                LOG.debugf("Resolving Forage dependencies for bean kind '%s' (property '%s')", value, key);
+                Collection<String> beanGavs = forageDependencyResolver.resolveGavs(value);
+                gavs.addAll(beanGavs);
+            }
+        });
+        return gavs;
+    }
+
+    private void appendForageDependencies(
+            Map<String, byte[]> entries, ServiceCatalogIndex index, Collection<String> forageGavs, String serviceSystem)
+            throws IOException {
+        if (forageGavs == null || forageGavs.isEmpty()) {
+            return;
+        }
+
+        for (String system : index.getServiceNames()) {
+            String depsPath = index.getDependenciesFile(system);
+
+            if (depsPath != null && entries.containsKey(depsPath)) {
+                String existing = new String(entries.get(depsPath));
+                Set<String> existingGavs = parseDependenciesFile(existing);
+                Set<String> merged = new LinkedHashSet<>(existingGavs);
+
+                for (String gav : forageGavs) {
+                    if (!merged.contains(gav)) {
+                        merged.add(gav);
+                    }
+                }
+
+                StringBuilder sb = new StringBuilder();
+                for (String gav : merged) {
+                    sb.append(gav).append('\n');
+                }
+                entries.put(depsPath, sb.toString().getBytes());
+
+                if (serviceSystem != null && !serviceSystem.isBlank()) {
+                    String remappedPath = depsPath.replace(system + "/", serviceSystem + "/");
+                    if (!remappedPath.equals(depsPath) && !entries.containsKey(remappedPath)) {
+                        entries.put(remappedPath, entries.get(depsPath));
+                    }
+                }
+            } else {
+                String effectiveSystem = (serviceSystem != null && !serviceSystem.isBlank()) ? serviceSystem : system;
+                String newDepsPath = effectiveSystem + "/" + effectiveSystem + ".dependencies.txt";
+
+                StringBuilder sb = new StringBuilder();
+                for (String gav : forageGavs) {
+                    sb.append(gav).append('\n');
+                }
+                entries.put(newDepsPath, sb.toString().getBytes());
+
+                byte[] indexBytes = entries.get("index.properties");
+                if (indexBytes != null) {
+                    Properties indexProps = new Properties();
+                    indexProps.load(new StringReader(new String(indexBytes)));
+                    indexProps.setProperty("catalog.dependencies." + effectiveSystem, newDepsPath);
+                    StringWriter indexWriter = new StringWriter();
+                    indexProps.store(indexWriter, null);
+                    entries.put("index.properties", indexWriter.toString().getBytes());
+                }
+            }
+        }
+    }
+
+    private static Set<String> parseDependenciesFile(String content) {
+        Set<String> gavs = new LinkedHashSet<>();
+        for (String line : content.split("\n")) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && !trimmed.startsWith("#")) {
+                gavs.add(trimmed);
+            }
+        }
+        return gavs;
+    }
+
+    private byte[] assembleZip(Map<String, byte[]> entries) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            for (Map.Entry<String, byte[]> e : entries.entrySet()) {
+                ZipEntry zipEntry = new ZipEntry(e.getKey());
+                zos.putNextEntry(zipEntry);
+                zos.write(e.getValue());
+                zos.closeEntry();
+            }
+        }
+        return baos.toByteArray();
     }
 
     private static void remapSystemProperty(Properties props, String prefix, String oldSystem, String newSystem) {
@@ -387,9 +477,6 @@ public class ServiceTemplateBean {
         }
     }
 
-    /**
-     * Extract all file contents from a ZIP archive.
-     */
     private Map<String, String> extractFileContents(byte[] zipBytes) throws WanakuException {
         Map<String, String> result = new HashMap<>();
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
@@ -417,10 +504,6 @@ public class ServiceTemplateBean {
         return result;
     }
 
-    /**
-     * Resolve the properties file path for a system: first check the explicit declaration
-     * in index.properties, then fall back to the convention {@code <system>/service.properties}.
-     */
     private static <V> String resolvePropertiesPath(ServiceCatalogIndex index, String system, Map<String, V> entries) {
         String declared = index.getPropertiesFile(system);
         if (declared != null && entries.containsKey(declared)) {
@@ -439,7 +522,6 @@ public class ServiceTemplateBean {
         if (ds.getName() != null && ds.getName().toLowerCase().contains(lowerSearch)) {
             return true;
         }
-        // Try to parse the index for description matching
         try {
             ServiceCatalogIndex index = ServiceCatalogIndex.fromBase64(ds.getData());
             if (index.getDescription() != null

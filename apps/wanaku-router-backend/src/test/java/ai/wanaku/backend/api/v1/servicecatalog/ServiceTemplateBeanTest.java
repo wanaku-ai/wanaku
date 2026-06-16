@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +38,9 @@ class ServiceTemplateBeanTest {
 
     @Mock
     ServiceCatalogBean serviceCatalogBean;
+
+    @Mock
+    ForageDependencyResolver forageDependencyResolver;
 
     @InjectMocks
     ServiceTemplateBean serviceTemplateBean;
@@ -184,6 +189,121 @@ class ServiceTemplateBeanTest {
         assertEquals("sys1", indexProps.getProperty("catalog.services"));
     }
 
+    @Test
+    void testInstantiateWithForageKindResolvesDependencies() throws Exception {
+        String depsContent = "org.apache.camel:camel-jms\n";
+        DataStore tmpl = new DataStore();
+        tmpl.setId("tmpl-forage");
+        tmpl.setName("forage-template");
+        tmpl.setData(createTemplateZipWithDependencies("forage-svc", "Forage test", "jms", depsContent));
+        tmpl.setLabels(Map.of("wanaku.type", "template"));
+
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=template"))
+                .thenReturn(List.of(tmpl));
+        when(forageDependencyResolver.resolveGavs("artemis"))
+                .thenReturn(Set.of("io.kaoto.forage:forage-jms", "io.kaoto.forage:forage-jms-artemis"));
+
+        DataStore deployed = new DataStore();
+        deployed.setId("catalog-forage");
+        deployed.setName("forage-svc");
+        when(serviceCatalogBean.deploy(any())).thenReturn(deployed);
+
+        serviceTemplateBean.instantiate("forage-svc", Map.of("forage.jms.kind", "artemis"));
+
+        ArgumentCaptor<DataStore> captor = ArgumentCaptor.forClass(DataStore.class);
+        verify(serviceCatalogBean).deploy(captor.capture());
+
+        String depsFile = extractZipEntry(captor.getValue().getData(), "jms/jms.dependencies.txt");
+        assertNotNull(depsFile, "dependencies file should exist in the output ZIP");
+        assertTrue(depsFile.contains("org.apache.camel:camel-jms"));
+        assertTrue(depsFile.contains("io.kaoto.forage:forage-jms"));
+        assertTrue(depsFile.contains("io.kaoto.forage:forage-jms-artemis"));
+    }
+
+    @Test
+    void testInstantiateWithForageKindDeduplicatesGavs() throws Exception {
+        String depsContent = "org.apache.camel:camel-jms\nio.kaoto.forage:forage-jms\n";
+        DataStore tmpl = new DataStore();
+        tmpl.setId("tmpl-dedup");
+        tmpl.setName("dedup-template");
+        tmpl.setData(createTemplateZipWithDependencies("dedup-svc", "Dedup test", "jms", depsContent));
+        tmpl.setLabels(Map.of("wanaku.type", "template"));
+
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=template"))
+                .thenReturn(List.of(tmpl));
+        when(forageDependencyResolver.resolveGavs("artemis"))
+                .thenReturn(Set.of("io.kaoto.forage:forage-jms", "io.kaoto.forage:forage-jms-artemis"));
+
+        DataStore deployed = new DataStore();
+        deployed.setId("catalog-dedup");
+        deployed.setName("dedup-svc");
+        when(serviceCatalogBean.deploy(any())).thenReturn(deployed);
+
+        serviceTemplateBean.instantiate("dedup-svc", Map.of("forage.jms.kind", "artemis"));
+
+        ArgumentCaptor<DataStore> captor = ArgumentCaptor.forClass(DataStore.class);
+        verify(serviceCatalogBean).deploy(captor.capture());
+
+        String depsFile = extractZipEntry(captor.getValue().getData(), "jms/jms.dependencies.txt");
+        assertNotNull(depsFile);
+
+        long count = depsFile.lines()
+                .filter(l -> l.equals("io.kaoto.forage:forage-jms"))
+                .count();
+        assertEquals(1, count, "forage-jms should appear exactly once");
+    }
+
+    @Test
+    void testInstantiateWithoutForageKindLeavesDepsTxtUnchanged() throws Exception {
+        String depsContent = "org.apache.camel:camel-jms\nio.kaoto.forage:forage-jms\n";
+        DataStore tmpl = new DataStore();
+        tmpl.setId("tmpl-noforage");
+        tmpl.setName("noforage-template");
+        tmpl.setData(createTemplateZipWithDependencies("noforage-svc", "No forage test", "jms", depsContent));
+        tmpl.setLabels(Map.of("wanaku.type", "template"));
+
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=template"))
+                .thenReturn(List.of(tmpl));
+
+        DataStore deployed = new DataStore();
+        deployed.setId("catalog-noforage");
+        deployed.setName("noforage-svc");
+        when(serviceCatalogBean.deploy(any())).thenReturn(deployed);
+
+        serviceTemplateBean.instantiate("noforage-svc", Map.of("some.other.property", "value"));
+
+        ArgumentCaptor<DataStore> captor = ArgumentCaptor.forClass(DataStore.class);
+        verify(serviceCatalogBean).deploy(captor.capture());
+
+        String depsFile = extractZipEntry(captor.getValue().getData(), "jms/jms.dependencies.txt");
+        assertNotNull(depsFile);
+        assertEquals(2, depsFile.lines().filter(l -> !l.isBlank()).count());
+    }
+
+    @Test
+    void testInstantiateWithForageKindNoDepsFileCreatesDepsFile() throws Exception {
+        when(dataStoreRepository.findAllFilterByLabelExpression("wanaku.type=template"))
+                .thenReturn(List.of(templateStore));
+        when(forageDependencyResolver.resolveGavs("artemis")).thenReturn(Set.of("io.kaoto.forage:forage-jms"));
+
+        DataStore deployed = new DataStore();
+        deployed.setId("catalog-newdeps");
+        deployed.setName("my-service");
+        when(serviceCatalogBean.deploy(any())).thenReturn(deployed);
+
+        serviceTemplateBean.instantiate("my-service", Map.of("forage.jms.kind", "artemis"));
+
+        ArgumentCaptor<DataStore> captor = ArgumentCaptor.forClass(DataStore.class);
+        verify(serviceCatalogBean).deploy(captor.capture());
+
+        String depsFile = extractZipEntry(captor.getValue().getData(), "sys1/sys1.dependencies.txt");
+        assertNotNull(depsFile, "new dependencies file should be created");
+        assertTrue(depsFile.contains("io.kaoto.forage:forage-jms"));
+
+        Properties indexProps = extractIndexProperties(captor.getValue().getData());
+        assertEquals("sys1/sys1.dependencies.txt", indexProps.getProperty("catalog.dependencies.sys1"));
+    }
+
     // --- Helpers ---
 
     private String createTemplateZipBase64(String name, String description, String... systems) {
@@ -222,6 +342,47 @@ class ServiceTemplateBeanTest {
         }
     }
 
+    private String createTemplateZipWithDependencies(
+            String name, String description, String system, String depsContent) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                Properties props = new Properties();
+                props.setProperty("catalog.name", name);
+                props.setProperty("catalog.description", description);
+                props.setProperty("catalog.services", system);
+
+                String routesPath = system + "/" + system + ".camel.yaml";
+                String rulesPath = system + "/" + system + ".wanaku-rules.yaml";
+                String depsPath = system + "/" + system + ".dependencies.txt";
+                props.setProperty("catalog.routes." + system, routesPath);
+                props.setProperty("catalog.rules." + system, rulesPath);
+                props.setProperty("catalog.dependencies." + system, depsPath);
+
+                zos.putNextEntry(new ZipEntry(routesPath));
+                zos.write(("# Routes for " + system).getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry(rulesPath));
+                zos.write(("# Rules for " + system).getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry(depsPath));
+                zos.write(depsContent.getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry("index.properties"));
+                ByteArrayOutputStream propsOut = new ByteArrayOutputStream();
+                props.store(propsOut, null);
+                zos.write(propsOut.toByteArray());
+                zos.closeEntry();
+            }
+            return Base64.getEncoder().encodeToString(baos.toByteArray());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Properties extractIndexProperties(String base64Zip) throws Exception {
         byte[] zipBytes = Base64.getDecoder().decode(base64Zip);
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
@@ -236,5 +397,19 @@ class ServiceTemplateBeanTest {
             }
         }
         throw new AssertionError("index.properties not found in ZIP");
+    }
+
+    private String extractZipEntry(String base64Zip, String entryName) throws Exception {
+        byte[] zipBytes = Base64.getDecoder().decode(base64Zip);
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entryName.equals(entry.getName())) {
+                    return new String(zis.readAllBytes());
+                }
+                zis.closeEntry();
+            }
+        }
+        return null;
     }
 }
