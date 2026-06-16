@@ -3,9 +3,9 @@ mcp:
     - sql:
         route:
           id: "sql-tool"
-        description: "{{tool.description}}"
+        description: "Search on a database using a predefined query"
         properties:
           - name: wanaku_body
             type: string
-            description: The SQL query to execute (e.g. SELECT * FROM users WHERE id = 1)
+            description: Input argument for the query
             required: true

@@ -273,6 +273,47 @@ A template for creating a GitHub Pull Request tool service. This template allows
 - `sort`: What to sort results by (`created`, `updated`, `popularity`, `long-running`). Default: `created`
 - `direction`: The direction of the sort (`asc`, `desc`)
 
+### `sql-tool`
+
+A template for querying a relational database using the [Apache Camel SQL component](https://camel.apache.org/components/next/sql-component.html). This template exposes a SQL query as an MCP tool, allowing AI assistants to fetch live data from any JDBC-compatible database.
+
+**Parameters:**
+
+- `forage.jdbc.username`: Database username
+- `forage.jdbc.password`: Database password
+- `forage.jdbc.db.kind`: Database type (e.g., `postgresql`, `mysql`). Used to resolve the correct JDBC driver dependencies. If not provided, the template's default is used.
+- `sql.query`: The SQL query to execute
+
+**Example:**
+
+```shell
+wanaku service template instantiate \
+  --name sql-tool \
+  --property forage.jdbc.username=postgres \
+  --property forage.jdbc.password=wanaku \
+  --property sql.query='SELECT name, price FROM products WHERE price < ${body} ORDER BY price' \
+  --service-name product-catalog \
+  --service-system product-catalog
+```
+
+#### Passing Dynamic Arguments to SQL Queries
+
+The `sql-tool` template supports dynamic input from the AI assistant using Camel Simple expressions in the query. The most common pattern is `${body}`, which is replaced at runtime with the input the AI sends when it calls the tool.
+
+For example, with this query:
+
+```
+SELECT name, price FROM products WHERE price < ${body} ORDER BY price
+```
+
+When the AI assistant sends `800` as the tool input, the query executes as:
+
+```sql
+SELECT name, price FROM products WHERE price < 800 ORDER BY price
+```
+
+Since this template is built on the Apache Camel SQL component, you can use any query pattern that the component supports — including named parameters. For advanced query patterns, refer to the [Camel SQL component documentation](https://camel.apache.org/components/next/sql-component.html).
+
 ## Best Practices
 
 ### When to Use Templates

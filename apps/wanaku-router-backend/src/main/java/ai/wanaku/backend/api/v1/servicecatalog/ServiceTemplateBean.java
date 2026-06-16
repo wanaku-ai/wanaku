@@ -263,7 +263,8 @@ public class ServiceTemplateBean {
         String effectiveName = (serviceName != null && !serviceName.isBlank()) ? serviceName : index.getName();
 
         Map<String, String> effectiveProperties = userProperties != null ? userProperties : Map.of();
-        Collection<String> forageGavs = resolveForageDependencies(effectiveProperties);
+        Map<String, String> mergedProperties = mergeTemplateAndUserProperties(originalZip, index, effectiveProperties);
+        Collection<String> forageGavs = resolveForageDependencies(mergedProperties);
 
         // Build a new ZIP with modified properties files
         byte[] newZipBytes =
@@ -374,6 +375,31 @@ public class ServiceTemplateBean {
                 entries.put(propertiesPath, propsWriter.toString().getBytes());
             }
         }
+    }
+
+    private Map<String, String> mergeTemplateAndUserProperties(
+            byte[] templateZip, ServiceCatalogIndex index, Map<String, String> userProperties) {
+        Map<String, String> merged = new HashMap<>();
+        try {
+            Map<String, String> fileContents = extractFileContents(templateZip);
+            for (String system : index.getServiceNames()) {
+                String propertiesPath = resolvePropertiesPath(index, system, fileContents);
+                if (propertiesPath != null) {
+                    String content = fileContents.get(propertiesPath);
+                    if (content != null) {
+                        Properties props = new Properties();
+                        props.load(new StringReader(content));
+                        for (String key : props.stringPropertyNames()) {
+                            merged.put(key, props.getProperty(key));
+                        }
+                    }
+                }
+            }
+        } catch (WanakuException | IOException e) {
+            LOG.warnf("Failed to read template service properties: %s", e.getMessage());
+        }
+        merged.putAll(userProperties);
+        return merged;
     }
 
     private Collection<String> resolveForageDependencies(Map<String, String> userProperties) {
