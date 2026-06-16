@@ -456,39 +456,6 @@ components:
           type: string
         serviceSystem:
           type: string
-    ToolCallRecord:
-      type: object
-      properties:
-        id:
-          type: string
-        eventId:
-          type: string
-        eventType:
-          type: string
-        timestamp:
-          type: integer
-          format: int64
-        toolName:
-          type: string
-        toolType:
-          type: string
-        connectionId:
-          type: string
-        serviceId:
-          type: string
-        serviceAddress:
-          type: string
-        error:
-          type: boolean
-        duration:
-          type: integer
-          format: int64
-        errorCategory:
-          type: string
-        errorMessage:
-          type: string
-        argumentKeys:
-          type: string
     ToolPayload:
       type: object
       properties:
@@ -656,15 +623,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StaleCapabilityInfo"
-    WanakuResponseListToolCallRecord:
-      type: object
-      properties:
-        error:
-          $ref: "#/components/schemas/WanakuError"
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/ToolCallRecord"
     WanakuResponseListToolReference:
       type: object
       properties:
@@ -755,13 +713,6 @@ components:
           $ref: "#/components/schemas/WanakuError"
         data:
           $ref: "#/components/schemas/SystemStatistics"
-    WanakuResponseToolCallRecord:
-      type: object
-      properties:
-        error:
-          $ref: "#/components/schemas/WanakuError"
-        data:
-          $ref: "#/components/schemas/ToolCallRecord"
     WanakuResponseToolReference:
       type: object
       properties:
@@ -881,6 +832,20 @@ paths:
       summary: Tools State
       tags:
       - Capabilities Resource
+  /api/v1/chat/allowlist:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+      summary: Get Base Urls
+      tags:
+      - Llm Chat Resource
   /api/v1/chat/completions:
     post:
       requestBody:
@@ -893,44 +858,10 @@ paths:
         "200":
           description: OK
           content:
-            text/plain:
+            application/json:
               schema:
                 type: string
       summary: Code Completions
-      tags:
-      - Llm Chat Resource
-  /api/v1/chat/llms:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-      summary: Get Allowed Llms
-      tags:
-      - Llm Chat Resource
-  /api/v1/chat/{llm}/models:
-    get:
-      parameters:
-      - name: llm
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-      summary: Get Models
       tags:
       - Llm Chat Resource
   /api/v1/data-store:
@@ -2178,56 +2109,6 @@ paths:
       summary: Stream Results
       tags:
       - Code Execution Resource
-  /api/v2/tool-calls/history:
-    get:
-      parameters:
-      - name: connectionId
-        in: query
-        schema:
-          type: string
-      - name: toolName
-        in: query
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseListToolCallRecord"
-      summary: List History
-      tags:
-      - Tool Call Resource
-    delete:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseInteger"
-      summary: Clear History
-      tags:
-      - Tool Call Resource
-  /api/v2/tool-calls/history/{eventId}:
-    get:
-      parameters:
-      - name: eventId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseToolCallRecord"
-      summary: Get History Event
-      tags:
-      - Tool Call Resource
   /api/v2/tool-calls/notifications:
     get:
       responses:
