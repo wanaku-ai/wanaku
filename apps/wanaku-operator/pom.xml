@@ -127,6 +127,7 @@
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-capability-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-capability-cluster-role" />
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-router-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-router-cluster-role" />
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-service-catalog-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-service-catalog-cluster-role" />
+                                <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-camel-route-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-camel-route-cluster-role" />
                                 <replace dir="${helm.templates}" includes="validating-clusterrolebinding.yaml" token="name: josdk-crd-validating-cluster-role" value="name: {{ $.Release.Namespace }}-josdk-crd-validating-cluster-role" />
                                 <!-- Remove duplicate RoleBindings from rolebinding.yaml;
                                      the *-crd-role-binding.yaml files handle these conditionally -->

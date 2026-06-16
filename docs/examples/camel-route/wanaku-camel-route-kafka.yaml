@@ -1,0 +1,46 @@
+apiVersion: wanaku.ai/v1alpha1
+kind: WanakuCamelRoute
+metadata:
+  name: kafka-tool
+spec:
+  routerRef: my-router
+  route:
+    - route:
+        id: kafka-request-reply
+        description: Send a Kafka request and wait for the correlated reply
+        from:
+          uri: direct:wanaku
+          steps:
+            - setExchangePattern:
+                pattern: InOut
+            - setHeader:
+                name: wanakuCorrelationId
+                expression:
+                  simple:
+                    expression: "${exchangeId}"
+            - log:
+                message: "Sending Kafka request with correlation ID: ${header.wanakuCorrelationId}"
+            - to:
+                uri: "kafka:{{kafka.request.topic}}?brokers={{kafka.brokers}}"
+    - route:
+        id: kafka-response-reply
+        description: Listen for correlated Kafka replies
+        from:
+          uri: "kafka:{{kafka.response.topic}}?brokers={{kafka.brokers}}"
+          steps:
+            - log:
+                message: "Received Kafka reply"
+  mcp:
+    tools:
+      - name: send-message-to-kafka
+        routeId: kafka-request-reply
+        description: Send a message to Kafka and wait for the correlated reply
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The message to send to Kafka
+            required: true
+  properties:
+    kafka.brokers: "{{kafka.brokers}}"
+    kafka.request.topic: "{{kafka.request.topic}}"
+    kafka.response.topic: "{{kafka.response.topic}}"
