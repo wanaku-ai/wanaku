@@ -48,7 +48,8 @@ public abstract class AbstractDiscoveryResourceTest extends WanakuRouterTest {
 
         LOG.infof("Created service with id %s", serviceId);
 
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities/")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -76,7 +77,8 @@ public abstract class AbstractDiscoveryResourceTest extends WanakuRouterTest {
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode());
 
-        given().when()
+        given().headers(getHeaders())
+                .when()
                 .get("/api/v1/capabilities/")
                 .then()
                 .statusCode(Response.Status.OK.getStatusCode())
