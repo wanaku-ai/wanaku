@@ -1,11 +1,14 @@
 package ai.wanaku.cli.main.support;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import org.jline.consoleui.elements.ConfirmChoice;
-import org.jline.consoleui.prompt.ConsolePrompt;
-import org.jline.consoleui.prompt.PromptResultItemIF;
-import org.jline.consoleui.prompt.builder.PromptBuilder;
+import org.jline.prompt.ConfirmResult;
+import org.jline.prompt.Prompt;
+import org.jline.prompt.PromptBuilder;
+import org.jline.prompt.PromptResult;
+import org.jline.prompt.Prompter;
+import org.jline.prompt.PrompterFactory;
 import org.jline.terminal.Terminal;
 
 /**
@@ -26,17 +29,18 @@ public class CommandHelper {
      * @throws IOException if an I/O error occurs during the prompt.
      */
     public static boolean confirm(Terminal terminal, String message) throws IOException {
-        ConsolePrompt prompt = new ConsolePrompt(terminal);
-        PromptBuilder builder = prompt.getPromptBuilder();
+        Prompter prompter = PrompterFactory.create(terminal);
+        PromptBuilder builder = prompter.newBuilder();
         // Create a simple yes/no prompt
 
-        builder.createConfirmPromp()
+        builder.createConfirmPrompt()
                 .name("continue")
                 .message(message)
-                .defaultValue(ConfirmChoice.ConfirmationValue.NO)
+                .defaultValue(false)
                 .addPrompt();
 
-        Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
-        return "YES".equalsIgnoreCase(result.get("continue").getResult());
+        Map<String, ? extends PromptResult<? extends Prompt>> result = prompter.prompt(List.of(), builder.build());
+        ConfirmResult confirmResult = (ConfirmResult) result.get("continue");
+        return confirmResult.isConfirmed();
     }
 }

@@ -34,10 +34,11 @@
                 <groupId>org.jline</groupId>
                 <artifactId>jline</artifactId>
                 <version>${jline.version}</version>
+                <classifier>jdk11</classifier>
             </dependency>
             <dependency>
                 <groupId>org.jline</groupId>
-                <artifactId>jline-console-ui</artifactId>
+                <artifactId>jline-prompt</artifactId>
                 <version>${jline.version}</version>
             </dependency>
 
@@ -127,11 +128,12 @@
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
+            <classifier>jdk11</classifier>
         </dependency>
 
         <dependency>
             <groupId>org.jline</groupId>
-            <artifactId>jline-console-ui</artifactId>
+            <artifactId>jline-prompt</artifactId>
         </dependency>
 
         <dependency>

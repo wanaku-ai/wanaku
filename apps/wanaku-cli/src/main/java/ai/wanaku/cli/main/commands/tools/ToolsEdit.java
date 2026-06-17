@@ -10,11 +10,15 @@ import java.util.Map;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.builtins.Nano;
 import org.jline.builtins.Options;
-import org.jline.consoleui.elements.ConfirmChoice;
-import org.jline.consoleui.prompt.ConsolePrompt;
-import org.jline.consoleui.prompt.PromptResultItemIF;
-import org.jline.consoleui.prompt.builder.ListPromptBuilder;
-import org.jline.consoleui.prompt.builder.PromptBuilder;
+import org.jline.prompt.ConfirmResult;
+import org.jline.prompt.ListBuilder;
+import org.jline.prompt.ListResult;
+import org.jline.prompt.Prompt;
+import org.jline.prompt.PromptBuilder;
+import org.jline.prompt.PromptResult;
+import org.jline.prompt.Prompter;
+import org.jline.prompt.PrompterConfig;
+import org.jline.prompt.PrompterFactory;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -116,18 +120,19 @@ public class ToolsEdit extends BaseCommand {
      * @throws IOException if an I/O error occurs during the prompt.
      */
     public boolean confirm(Terminal terminal, ToolReference tool) throws IOException {
-        ConsolePrompt prompt = new ConsolePrompt(terminal);
-        PromptBuilder builder = prompt.getPromptBuilder();
+        Prompter prompter = PrompterFactory.create(terminal);
+        PromptBuilder builder = prompter.newBuilder();
         // Create a simple yes/no prompt
 
-        builder.createConfirmPromp()
+        builder.createConfirmPrompt()
                 .name("continue")
                 .message("Do you want to update the '" + tool.getName() + "' tool?")
-                .defaultValue(ConfirmChoice.ConfirmationValue.NO)
+                .defaultValue(false)
                 .addPrompt();
 
-        Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
-        return "YES".equalsIgnoreCase(result.get("continue").getResult());
+        Map<String, ? extends PromptResult<? extends Prompt>> result = prompter.prompt(List.of(), builder.build());
+        ConfirmResult confirmResult = (ConfirmResult) result.get("continue");
+        return confirmResult.isConfirmed();
     }
 
     /**
@@ -168,22 +173,22 @@ public class ToolsEdit extends BaseCommand {
      */
     public ToolReference selectTool(Terminal terminal, List<ToolReference> list) throws IOException {
 
-        ConsolePrompt.UiConfig uiConfig = new ConsolePrompt.UiConfig("=> ", "[]", "[x]", "-");
-        ConsolePrompt prompt = new ConsolePrompt(terminal, uiConfig);
+        Prompter prompter =
+                PrompterFactory.create(terminal, PrompterConfig.custom("=> ", "[]", "[x]", "-", null, false));
+        PromptBuilder builder = prompter.newBuilder();
 
-        PromptBuilder builder = prompt.getPromptBuilder();
-
-        ListPromptBuilder lpb = builder.createListPrompt()
+        ListBuilder lpb = builder.createListPrompt()
                 .name("tool")
                 .message("Choose the tool you want to edit:")
                 .pageSize(5);
 
         List<Item> items = formatTable(list);
 
-        items.stream().forEach(x -> lpb.newItem().text(x.text).name(x.id).add());
+        items.stream().forEach(x -> lpb.newItem(x.id).text(x.text).add());
         lpb.addPrompt();
-        Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
-        String toolId = result.get("tool").getResult();
+        Map<String, ? extends PromptResult<? extends Prompt>> result = prompter.prompt(List.of(), builder.build());
+        ListResult selection = (ListResult) result.get("tool");
+        String toolId = selection.getSelectedId();
         ToolReference tool =
                 list.stream().filter(x -> x.getId().equals(toolId)).findFirst().orElse(null);
         return tool;
