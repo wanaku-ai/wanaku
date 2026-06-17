@@ -5,8 +5,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -19,9 +17,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.api.v1.exceptions.ServiceTemplateNotFoundException;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
@@ -196,7 +191,7 @@ public class ServiceTemplateBean {
         Map<String, Map<String, String>> result = new HashMap<>();
 
         byte[] zipBytes = SafeZip.decodeArchive(template.getData());
-        Map<String, String> fileContents = extractFileContents(zipBytes);
+        Map<String, String> fileContents = CatalogZipReader.readEntriesAsText(zipBytes);
 
         for (String system : index.getServiceNames()) {
             String propertiesPath = resolvePropertiesPath(index, system, fileContents);
@@ -263,62 +258,25 @@ public class ServiceTemplateBean {
         String effectiveName = (serviceName != null && !serviceName.isBlank()) ? serviceName : index.getName();
 
         Map<String, String> effectiveProperties = userProperties != null ? userProperties : Map.of();
-        Map<String, String> mergedProperties = mergeTemplateAndUserProperties(originalZip, index, effectiveProperties);
+
+        Map<String, byte[]> entries = CatalogZipReader.readEntries(originalZip);
+        Map<String, String> textEntries = CatalogZipReader.toTextView(entries);
+
+        Map<String, String> mergedProperties = TemplatePropertyMerger.merge(textEntries, index, effectiveProperties);
         Collection<String> forageGavs = resolveForageDependencies(mergedProperties);
 
-        // Build a new ZIP with modified properties files
-        byte[] newZipBytes =
-                buildCatalogZip(originalZip, index, effectiveProperties, effectiveName, serviceSystem, forageGavs);
-
-        // Create a new DataStore for the catalog
-        DataStore catalog = new DataStore();
-        catalog.setName(effectiveName);
-        catalog.setData(Base64.getEncoder().encodeToString(newZipBytes));
-
-        // Deploy via ServiceCatalogBean
-        return serviceCatalogBean.deploy(catalog);
-    }
-
-    private byte[] buildCatalogZip(
-            byte[] templateZip,
-            ServiceCatalogIndex index,
-            Map<String, String> userProperties,
-            String catalogName,
-            String serviceSystem,
-            Collection<String> forageGavs)
-            throws WanakuException {
         try {
-            Map<String, byte[]> entries = readZipEntries(templateZip);
-            modifyIndexProperties(entries, index, catalogName, serviceSystem);
-            applyUserProperties(entries, index, userProperties);
-            appendForageDependencies(entries, index, forageGavs, serviceSystem);
-            return assembleZip(entries);
+            modifyIndexProperties(entries, index, effectiveName, serviceSystem);
+            applyUserProperties(entries, index, effectiveProperties);
+            ForageDependencyAppender.append(entries, index, forageGavs, serviceSystem);
+
+            DataStore catalog = new DataStore();
+            catalog.setName(effectiveName);
+            catalog.setData(Base64.getEncoder().encodeToString(CatalogZipWriter.assemble(entries)));
+            return serviceCatalogBean.deploy(catalog);
         } catch (IOException e) {
             throw new WanakuException("Failed to build catalog ZIP: %s".formatted(e.getMessage()));
         }
-    }
-
-    private Map<String, byte[]> readZipEntries(byte[] templateZip) throws IOException {
-        Map<String, byte[]> entries = new HashMap<>();
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(templateZip))) {
-            ZipEntry entry;
-            int entryCount = 0;
-            long totalBytes = 0;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (++entryCount > SafeZip.MAX_ENTRIES) {
-                    throw new IOException("Template ZIP has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
-                }
-                byte[] content = SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES);
-                totalBytes += content.length;
-                if (totalBytes > SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES) {
-                    throw new IOException("Template ZIP uncompressed size exceeds the maximum of %d bytes"
-                            .formatted(SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES));
-                }
-                entries.put(entry.getName(), content);
-                zis.closeEntry();
-            }
-        }
-        return entries;
     }
 
     private void modifyIndexProperties(
@@ -377,31 +335,6 @@ public class ServiceTemplateBean {
         }
     }
 
-    private Map<String, String> mergeTemplateAndUserProperties(
-            byte[] templateZip, ServiceCatalogIndex index, Map<String, String> userProperties) {
-        Map<String, String> merged = new HashMap<>();
-        try {
-            Map<String, String> fileContents = extractFileContents(templateZip);
-            for (String system : index.getServiceNames()) {
-                String propertiesPath = resolvePropertiesPath(index, system, fileContents);
-                if (propertiesPath != null) {
-                    String content = fileContents.get(propertiesPath);
-                    if (content != null) {
-                        Properties props = new Properties();
-                        props.load(new StringReader(content));
-                        for (String key : props.stringPropertyNames()) {
-                            merged.put(key, props.getProperty(key));
-                        }
-                    }
-                }
-            }
-        } catch (WanakuException | IOException e) {
-            LOG.warnf("Failed to read template service properties: %s", e.getMessage());
-        }
-        merged.putAll(userProperties);
-        return merged;
-    }
-
     private Collection<String> resolveForageDependencies(Map<String, String> userProperties) {
         Set<String> gavs = new LinkedHashSet<>();
         userProperties.forEach((key, value) -> {
@@ -414,86 +347,6 @@ public class ServiceTemplateBean {
         return gavs;
     }
 
-    private void appendForageDependencies(
-            Map<String, byte[]> entries, ServiceCatalogIndex index, Collection<String> forageGavs, String serviceSystem)
-            throws IOException {
-        if (forageGavs == null || forageGavs.isEmpty()) {
-            return;
-        }
-
-        for (String system : index.getServiceNames()) {
-            String depsPath = index.getDependenciesFile(system);
-
-            if (depsPath != null && entries.containsKey(depsPath)) {
-                String existing = new String(entries.get(depsPath));
-                Set<String> existingGavs = parseDependenciesFile(existing);
-                Set<String> merged = new LinkedHashSet<>(existingGavs);
-
-                for (String gav : forageGavs) {
-                    if (!merged.contains(gav)) {
-                        merged.add(gav);
-                    }
-                }
-
-                StringBuilder sb = new StringBuilder();
-                for (String gav : merged) {
-                    sb.append(gav).append('\n');
-                }
-                entries.put(depsPath, sb.toString().getBytes());
-
-                if (serviceSystem != null && !serviceSystem.isBlank()) {
-                    String remappedPath = depsPath.replace(system + "/", serviceSystem + "/");
-                    if (!remappedPath.equals(depsPath) && !entries.containsKey(remappedPath)) {
-                        entries.put(remappedPath, entries.get(depsPath));
-                    }
-                }
-            } else {
-                String effectiveSystem = (serviceSystem != null && !serviceSystem.isBlank()) ? serviceSystem : system;
-                String newDepsPath = effectiveSystem + "/" + effectiveSystem + ".dependencies.txt";
-
-                StringBuilder sb = new StringBuilder();
-                for (String gav : forageGavs) {
-                    sb.append(gav).append('\n');
-                }
-                entries.put(newDepsPath, sb.toString().getBytes());
-
-                byte[] indexBytes = entries.get("index.properties");
-                if (indexBytes != null) {
-                    Properties indexProps = new Properties();
-                    indexProps.load(new StringReader(new String(indexBytes)));
-                    indexProps.setProperty("catalog.dependencies." + effectiveSystem, newDepsPath);
-                    StringWriter indexWriter = new StringWriter();
-                    indexProps.store(indexWriter, null);
-                    entries.put("index.properties", indexWriter.toString().getBytes());
-                }
-            }
-        }
-    }
-
-    private static Set<String> parseDependenciesFile(String content) {
-        Set<String> gavs = new LinkedHashSet<>();
-        for (String line : content.split("\n")) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty() && !trimmed.startsWith("#")) {
-                gavs.add(trimmed);
-            }
-        }
-        return gavs;
-    }
-
-    private byte[] assembleZip(Map<String, byte[]> entries) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            for (Map.Entry<String, byte[]> e : entries.entrySet()) {
-                ZipEntry zipEntry = new ZipEntry(e.getKey());
-                zos.putNextEntry(zipEntry);
-                zos.write(e.getValue());
-                zos.closeEntry();
-            }
-        }
-        return baos.toByteArray();
-    }
-
     private static void remapSystemProperty(Properties props, String prefix, String oldSystem, String newSystem) {
         String oldKey = prefix + oldSystem;
         String value = props.getProperty(oldKey);
@@ -503,34 +356,7 @@ public class ServiceTemplateBean {
         }
     }
 
-    private Map<String, String> extractFileContents(byte[] zipBytes) throws WanakuException {
-        Map<String, String> result = new HashMap<>();
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
-            ZipEntry entry;
-            int entryCount = 0;
-            long totalBytes = 0;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (++entryCount > SafeZip.MAX_ENTRIES) {
-                    throw new IOException("Template ZIP has too many entries (max %d)".formatted(SafeZip.MAX_ENTRIES));
-                }
-                if (!entry.isDirectory()) {
-                    byte[] content = SafeZip.readEntry(zis, SafeZip.MAX_ENTRY_BYTES);
-                    totalBytes += content.length;
-                    if (totalBytes > SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES) {
-                        throw new IOException("Template ZIP uncompressed size exceeds the maximum of %d bytes"
-                                .formatted(SafeZip.MAX_TOTAL_UNCOMPRESSED_BYTES));
-                    }
-                    result.put(entry.getName(), new String(content));
-                }
-                zis.closeEntry();
-            }
-        } catch (IOException e) {
-            throw new WanakuException("Failed to extract ZIP contents: %s".formatted(e.getMessage()));
-        }
-        return result;
-    }
-
-    private static <V> String resolvePropertiesPath(ServiceCatalogIndex index, String system, Map<String, V> entries) {
+    static <V> String resolvePropertiesPath(ServiceCatalogIndex index, String system, Map<String, V> entries) {
         String declared = index.getPropertiesFile(system);
         if (declared != null && entries.containsKey(declared)) {
             return declared;
