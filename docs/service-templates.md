@@ -302,7 +302,7 @@ The `sql-tool` template supports dynamic input from the AI assistant using Camel
 
 For example, with this query:
 
-```
+```sql
 SELECT name, price FROM products WHERE price < ${body} ORDER BY price
 ```
 
