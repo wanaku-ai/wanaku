@@ -164,3 +164,7 @@ export * from "./wanakuResponseString";
 export * from "./wanakuResponseSystemStatistics";
 export * from "./wanakuResponseToolReference";
 export * from "./wanakuResponseVoid";
+export * from "./getApiV2ToolCallsHistoryParams";
+export * from "./toolCallRecord";
+export * from "./wanakuResponseListToolCallRecord";
+export * from "./wanakuResponseToolCallRecord";

@@ -30,6 +30,7 @@ import type {
   GetApiV1ServiceTemplateListParams,
   GetApiV1ServiceTemplatePropertiesParams,
   GetApiV1ToolsParams,
+  GetApiV2ToolCallsHistoryParams,
   Namespace,
   OutboundSseEvent,
   PostApiV1ToolsetReposBody,
@@ -56,6 +57,7 @@ import type {
   WanakuResponseListResourceReference,
   WanakuResponseListServiceTarget,
   WanakuResponseListStaleCapabilityInfo,
+  WanakuResponseListToolCallRecord,
   WanakuResponseListToolReference,
   WanakuResponseMapStringListActivityRecord,
   WanakuResponseMapStringMapStringString,
@@ -67,6 +69,7 @@ import type {
   WanakuResponseServerInfo,
   WanakuResponseServiceTarget,
   WanakuResponseSystemStatistics,
+  WanakuResponseToolCallRecord,
   WanakuResponseToolReference,
   WanakuResponseVoid,
 } from "../models";
@@ -319,37 +322,6 @@ export const getApiV1CapabilitiesToolsState = async (
 };
 
 /**
- * @summary Get Base Urls
- */
-export type getApiV1ChatAllowlistResponse200 = {
-  data: string[];
-  status: 200;
-};
-
-export type getApiV1ChatAllowlistResponseSuccess =
-  getApiV1ChatAllowlistResponse200 & {
-    headers: Headers;
-  };
-export type getApiV1ChatAllowlistResponse =
-  getApiV1ChatAllowlistResponseSuccess;
-
-export const getGetApiV1ChatAllowlistUrl = () => {
-  return `/api/v1/chat/allowlist`;
-};
-
-export const getApiV1ChatAllowlist = async (
-  options?: RequestInit,
-): Promise<getApiV1ChatAllowlistResponse> => {
-  return customFetch<getApiV1ChatAllowlistResponse>(
-    getGetApiV1ChatAllowlistUrl(),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-/**
  * @summary Code Completions
  */
 export type postApiV1ChatCompletionsResponse200 = {
@@ -379,6 +351,64 @@ export const postApiV1ChatCompletions = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(postApiV1ChatCompletionsBody),
+    },
+  );
+};
+
+/**
+ * @summary Get Allowed Llms
+ */
+export type getApiV1ChatLlmsResponse200 = {
+  data: string[];
+  status: 200;
+};
+
+export type getApiV1ChatLlmsResponseSuccess = getApiV1ChatLlmsResponse200 & {
+  headers: Headers;
+};
+export type getApiV1ChatLlmsResponse = getApiV1ChatLlmsResponseSuccess;
+
+export const getGetApiV1ChatLlmsUrl = () => {
+  return `/api/v1/chat/llms`;
+};
+
+export const getApiV1ChatLlms = async (
+  options?: RequestInit,
+): Promise<getApiV1ChatLlmsResponse> => {
+  return customFetch<getApiV1ChatLlmsResponse>(getGetApiV1ChatLlmsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+/**
+ * @summary Get Models
+ */
+export type getApiV1ChatLlmModelsResponse200 = {
+  data: string[];
+  status: 200;
+};
+
+export type getApiV1ChatLlmModelsResponseSuccess =
+  getApiV1ChatLlmModelsResponse200 & {
+    headers: Headers;
+  };
+export type getApiV1ChatLlmModelsResponse =
+  getApiV1ChatLlmModelsResponseSuccess;
+
+export const getGetApiV1ChatLlmModelsUrl = (llm: string) => {
+  return `/api/v1/chat/${llm}/models`;
+};
+
+export const getApiV1ChatLlmModels = async (
+  llm: string,
+  options?: RequestInit,
+): Promise<getApiV1ChatLlmModelsResponse> => {
+  return customFetch<getApiV1ChatLlmModelsResponse>(
+    getGetApiV1ChatLlmModelsUrl(llm),
+    {
+      ...options,
+      method: "GET",
     },
   );
 };
@@ -2936,6 +2966,115 @@ export const getApiV2CodeExecutionEngineEngineTypeLanguageTaskId = async (
       language,
       taskId,
     ),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary List History
+ */
+export type getApiV2ToolCallsHistoryResponse200 = {
+  data: WanakuResponseListToolCallRecord;
+  status: 200;
+};
+
+export type getApiV2ToolCallsHistoryResponseSuccess =
+  getApiV2ToolCallsHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getApiV2ToolCallsHistoryResponse =
+  getApiV2ToolCallsHistoryResponseSuccess;
+
+export const getGetApiV2ToolCallsHistoryUrl = (
+  params?: GetApiV2ToolCallsHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/tool-calls/history?${stringifiedParams}`
+    : `/api/v2/tool-calls/history`;
+};
+
+export const getApiV2ToolCallsHistory = async (
+  params?: GetApiV2ToolCallsHistoryParams,
+  options?: RequestInit,
+): Promise<getApiV2ToolCallsHistoryResponse> => {
+  return customFetch<getApiV2ToolCallsHistoryResponse>(
+    getGetApiV2ToolCallsHistoryUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Clear History
+ */
+export type deleteApiV2ToolCallsHistoryResponse200 = {
+  data: WanakuResponseInteger;
+  status: 200;
+};
+
+export type deleteApiV2ToolCallsHistoryResponseSuccess =
+  deleteApiV2ToolCallsHistoryResponse200 & {
+    headers: Headers;
+  };
+export type deleteApiV2ToolCallsHistoryResponse =
+  deleteApiV2ToolCallsHistoryResponseSuccess;
+
+export const getDeleteApiV2ToolCallsHistoryUrl = () => {
+  return `/api/v2/tool-calls/history`;
+};
+
+export const deleteApiV2ToolCallsHistory = async (
+  options?: RequestInit,
+): Promise<deleteApiV2ToolCallsHistoryResponse> => {
+  return customFetch<deleteApiV2ToolCallsHistoryResponse>(
+    getDeleteApiV2ToolCallsHistoryUrl(),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+/**
+ * @summary Get History Event
+ */
+export type getApiV2ToolCallsHistoryEventIdResponse200 = {
+  data: WanakuResponseToolCallRecord;
+  status: 200;
+};
+
+export type getApiV2ToolCallsHistoryEventIdResponseSuccess =
+  getApiV2ToolCallsHistoryEventIdResponse200 & {
+    headers: Headers;
+  };
+export type getApiV2ToolCallsHistoryEventIdResponse =
+  getApiV2ToolCallsHistoryEventIdResponseSuccess;
+
+export const getGetApiV2ToolCallsHistoryEventIdUrl = (eventId: string) => {
+  return `/api/v2/tool-calls/history/${eventId}`;
+};
+
+export const getApiV2ToolCallsHistoryEventId = async (
+  eventId: string,
+  options?: RequestInit,
+): Promise<getApiV2ToolCallsHistoryEventIdResponse> => {
+  return customFetch<getApiV2ToolCallsHistoryEventIdResponse>(
+    getGetApiV2ToolCallsHistoryEventIdUrl(eventId),
     {
       ...options,
       method: "GET",
