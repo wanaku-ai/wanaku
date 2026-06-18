@@ -3,6 +3,7 @@ package ai.wanaku.backend.api.v1.servicecatalog;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -38,7 +39,7 @@ final class ForageDependencyAppender {
             Collection<String> forageGavs,
             String system,
             String serviceSystem) {
-        String existing = new String(entries.get(depsPath));
+        String existing = new String(entries.get(depsPath), StandardCharsets.UTF_8);
         Set<String> merged = new LinkedHashSet<>(parseDependenciesFile(existing));
 
         for (String gav : forageGavs) {
@@ -66,11 +67,11 @@ final class ForageDependencyAppender {
         byte[] indexBytes = entries.get("index.properties");
         if (indexBytes != null) {
             Properties indexProps = new Properties();
-            indexProps.load(new StringReader(new String(indexBytes)));
+            indexProps.load(new StringReader(new String(indexBytes, StandardCharsets.UTF_8)));
             indexProps.setProperty("catalog.dependencies." + effectiveSystem, newDepsPath);
             StringWriter indexWriter = new StringWriter();
             indexProps.store(indexWriter, null);
-            entries.put("index.properties", indexWriter.toString().getBytes());
+            entries.put("index.properties", indexWriter.toString().getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -90,6 +91,6 @@ final class ForageDependencyAppender {
         for (String gav : gavs) {
             sb.append(gav).append('\n');
         }
-        return sb.toString().getBytes();
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 }

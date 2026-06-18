@@ -2,6 +2,7 @@ package ai.wanaku.backend.api.v1.servicecatalog;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -28,7 +29,7 @@ final class CatalogZipReader {
     static Map<String, String> toTextView(Map<String, byte[]> entries) {
         Map<String, String> text = new HashMap<>(entries.size());
         for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
-            text.put(entry.getKey(), new String(entry.getValue()));
+            text.put(entry.getKey(), new String(entry.getValue(), StandardCharsets.UTF_8));
         }
         return text;
     }
