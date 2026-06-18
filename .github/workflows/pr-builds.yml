@@ -12,7 +12,7 @@ on:
   pull_request:
     branches:
       - "main"
-      - '[0-9]*.[0-9]*.x'
+      - "[0-9]*.[0-9]*.x"
     paths-ignore:
       - .github/**
       - docs/**
@@ -30,6 +30,7 @@ on:
       - SECURITY.md
       - get-wanaku.sh
       - javadoc-warm.sh
+      - tests/plans/**
       - .*
 
 # Least-privilege default for the automatically-provided GITHUB_TOKEN. PR builds run untrusted
@@ -42,7 +43,6 @@ env:
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
@@ -55,46 +55,46 @@ jobs:
       fail-fast: true
 
     steps:
-    - name: Determine SDK ref
-      id: sdk-ref
-      shell: bash
-      run: |
-        BRANCH="${{ github.base_ref }}"
-        if git ls-remote --heads https://github.com/wanaku-ai/wanaku-capabilities-java-sdk.git "$BRANCH" | grep -q .; then
-          echo "ref=$BRANCH" >> $GITHUB_OUTPUT
-        else
-          echo "ref=main" >> $GITHUB_OUTPUT
-        fi
-    - name: Checkout Wanaku Capabilities SDK
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      with:
-        repository: wanaku-ai/wanaku-capabilities-java-sdk
-        persist-credentials: false
-        ref: ${{ steps.sdk-ref.outputs.ref }}
-        path: wanaku-capabilities-java-sdk
-    - name: Set up JDK 21
-      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build Wanaku Capabilities SDK
-      run: mvn --no-transfer-progress -DskipTests clean install
-      working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-    - name: Build with Maven
-      run: mvn -B --no-transfer-progress install --file pom.xml
-    - name: Generate Test Reports
-      if: always()
-      run: mvn -B --no-transfer-progress surefire-report:report-only surefire-report:failsafe-report-only -Daggregate=true
-    - name: Upload Test Reports
-      if: always()
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-      with:
-        name: test-reports-${{ matrix.os }}
-        path: 'target/reports/'
-        retention-days: 14
-        if-no-files-found: ignore
-    - name: Test Archetypes
-      if: runner.os != 'Windows'
-      run: bash tests/archetype-tests/test-archetypes.sh
+      - name: Determine SDK ref
+        id: sdk-ref
+        shell: bash
+        run: |
+          BRANCH="${{ github.base_ref }}"
+          if git ls-remote --heads https://github.com/wanaku-ai/wanaku-capabilities-java-sdk.git "$BRANCH" | grep -q .; then
+            echo "ref=$BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "ref=main" >> $GITHUB_OUTPUT
+          fi
+      - name: Checkout Wanaku Capabilities SDK
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: wanaku-ai/wanaku-capabilities-java-sdk
+          persist-credentials: false
+          ref: ${{ steps.sdk-ref.outputs.ref }}
+          path: wanaku-capabilities-java-sdk
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+      - name: Build Wanaku Capabilities SDK
+        run: mvn --no-transfer-progress -DskipTests clean install
+        working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Build with Maven
+        run: mvn -B --no-transfer-progress install --file pom.xml
+      - name: Generate Test Reports
+        if: always()
+        run: mvn -B --no-transfer-progress surefire-report:report-only surefire-report:failsafe-report-only -Daggregate=true
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: "target/reports/"
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Test Archetypes
+        if: runner.os != 'Windows'
+        run: bash tests/archetype-tests/test-archetypes.sh
