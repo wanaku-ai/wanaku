@@ -53,6 +53,43 @@ echo ""
 echo "PASS: all prerequisites met"
 ```
 
+### Environment variables
+
+Set these before running the plan. All image tags default to `latest` but can be overridden to test specific versions.
+
+```bash
+export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test}"
+export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
+export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
+export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
+```
+
+### Helper: wait for resource deletion
+
+Several tests verify that owned resources are garbage-collected after CR deletion. This helper polls for deletion instead of using a fixed sleep.
+
+```bash
+wait_for_deletion() {
+  local RESOURCE_TYPE="$1"
+  local RESOURCE_NAME="$2"
+  local NAMESPACE="$3"
+  local TIMEOUT="${4:-60}"
+  local INTERVAL=3
+  local ELAPSED=0
+
+  while oc get "${RESOURCE_TYPE}" "${RESOURCE_NAME}" -n "${NAMESPACE}" > /dev/null 2>&1; do
+    if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
+      echo "FAIL: ${RESOURCE_TYPE}/${RESOURCE_NAME} still exists after ${TIMEOUT}s"
+      return 1
+    fi
+    sleep ${INTERVAL}
+    ELAPSED=$((ELAPSED + INTERVAL))
+  done
+  echo "PASS: ${RESOURCE_TYPE}/${RESOURCE_NAME} deleted (${ELAPSED}s)"
+  return 0
+}
+```
+
 ---
 
 ## Phase 0: OpenShift Login (MANUAL)
@@ -88,45 +125,20 @@ oc version
 
 ### Step 1.1: Create namespace
 
-> Reference: [common/namespace-setup.md](common/namespace-setup.md)
-
-```bash
-export WANAKU_NAMESPACE="wanaku-test"
-
-oc new-project "${WANAKU_NAMESPACE}" --display-name="Wanaku Operator Test" 2>/dev/null \
-  || oc project "${WANAKU_NAMESPACE}"
-```
-
-**Verification:**
-
-```bash
-CURRENT_NS=$(oc project -q)
-if [ "${CURRENT_NS}" != "${WANAKU_NAMESPACE}" ]; then
-  echo "FAIL: current namespace is '${CURRENT_NS}', expected '${WANAKU_NAMESPACE}'"
-  exit 1
-fi
-echo "PASS: namespace is ${WANAKU_NAMESPACE}"
-```
+Follow [common/namespace-setup.md](common/namespace-setup.md) to create and verify the namespace.
 
 ### Step 1.2: Deploy Keycloak
 
-> Reference: [common/keycloak-setup.md](common/keycloak-setup.md)
-
-Follow all steps in the Keycloak setup guide. After completion, these variables must be set:
-
-- `KEYCLOAK_HOST`
-- `KEYCLOAK_URL`
-- `WANAKU_OIDC_SECRET`
-
-**Verification:**
+Follow [common/keycloak-setup.md](common/keycloak-setup.md). After completion, verify these variables are set:
 
 ```bash
-for VAR in KEYCLOAK_HOST KEYCLOAK_URL WANAKU_OIDC_SECRET; do
-  if [ -z "${!VAR}" ]; then
-    echo "FAIL: ${VAR} is not set"
+for VAR_NAME in KEYCLOAK_HOST KEYCLOAK_URL WANAKU_OIDC_SECRET; do
+  eval "VAL=\${${VAR_NAME}}"
+  if [ -z "${VAL}" ]; then
+    echo "FAIL: ${VAR_NAME} is not set"
     exit 1
   fi
-  echo "PASS: ${VAR} is set"
+  echo "PASS: ${VAR_NAME} is set"
 done
 ```
 
@@ -134,83 +146,7 @@ done
 
 ## Phase 2: Operator Installation
 
-> Reference: [common/operator-deployment.md](common/operator-deployment.md)
-
-### Step 2.1: Install the operator via Helm
-
-```bash
-export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
-
-helm install wanaku-operator \
-  "${WANAKU_REPO_ROOT}/apps/wanaku-operator/deploy/helm/wanaku-operator" \
-  --namespace "${WANAKU_NAMESPACE}" \
-  --set operatorNamespace="${WANAKU_NAMESPACE}"
-```
-
-### Step 2.2: Wait for operator pod to be available
-
-```bash
-oc wait deployment/wanaku-operator \
-  --for=condition=Available \
-  --timeout=180s \
-  --namespace "${WANAKU_NAMESPACE}"
-```
-
-**Expected output:** `deployment.apps/wanaku-operator condition met`
-
-### Step 2.3: Verify operator pod status
-
-```bash
-OPERATOR_POD_STATUS=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].status.phase}')
-if [ "${OPERATOR_POD_STATUS}" != "Running" ]; then
-  echo "FAIL: operator pod status is '${OPERATOR_POD_STATUS}'"
-  exit 1
-fi
-echo "PASS: operator pod is Running"
-```
-
-### Step 2.4: Verify CRDs exist
-
-```bash
-for CRD in wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai; do
-  if ! oc get crd "${CRD}" > /dev/null 2>&1; then
-    echo "FAIL: CRD ${CRD} not found"
-    exit 1
-  fi
-  echo "PASS: CRD ${CRD} exists"
-done
-```
-
-### Step 2.5: Verify RBAC
-
-```bash
-for ROLE_SUFFIX in wanaku-capability-cluster-role wanaku-router-cluster-role wanaku-service-catalog-cluster-role josdk-crd-validating-cluster-role; do
-  ROLE_NAME="${WANAKU_NAMESPACE}-${ROLE_SUFFIX}"
-  if ! oc get clusterrole "${ROLE_NAME}" > /dev/null 2>&1; then
-    echo "FAIL: ClusterRole ${ROLE_NAME} not found"
-    exit 1
-  fi
-  echo "PASS: ClusterRole ${ROLE_NAME} exists"
-done
-```
-
-### Step 2.6: Verify operator health
-
-```bash
-OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-oc exec "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8081/q/health/live > /dev/null 2>&1
-echo "liveness=$?"
-
-oc exec "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8081/q/health/ready > /dev/null 2>&1
-echo "readiness=$?"
-
-# Expected: both return 0
-```
+Follow [common/operator-deployment.md](common/operator-deployment.md) to install the operator via Helm and verify CRDs, RBAC, and health endpoints.
 
 ---
 
@@ -231,7 +167,7 @@ spec:
     authServer: "http://keycloak:8080"
     authProxy: "auto"
   router:
-    image: quay.io/wanaku/wanaku-router-backend:latest
+    image: ${WANAKU_ROUTER_IMAGE}
     imagePullPolicy: Always
 EOF
 ```
@@ -268,13 +204,9 @@ echo "host=${ROUTER_HOST}"
 echo "sseEndpoint=${SSE_ENDPOINT}"
 echo "streamableEndpoint=${STREAMABLE_ENDPOINT}"
 
-for FIELD_NAME in ROUTER_HOST SSE_ENDPOINT STREAMABLE_ENDPOINT; do
-  if [ -z "${!FIELD_NAME}" ]; then
-    echo "FAIL: ${FIELD_NAME} is empty"
-    exit 1
-  fi
-  echo "PASS: ${FIELD_NAME} is set"
-done
+[ -n "${ROUTER_HOST}" ] && echo "PASS: host is set" || { echo "FAIL: host is empty"; exit 1; }
+[ -n "${SSE_ENDPOINT}" ] && echo "PASS: sseEndpoint is set" || { echo "FAIL: sseEndpoint is empty"; exit 1; }
+[ -n "${STREAMABLE_ENDPOINT}" ] && echo "PASS: streamableEndpoint is set" || { echo "FAIL: streamableEndpoint is empty"; exit 1; }
 ```
 
 ### Test 3.2: Verify reconciled resources - Deployment
@@ -282,11 +214,6 @@ done
 **Description:** The operator should create a deployment named `wanaku-test-router-mcp-router`.
 
 ```bash
-oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
-echo "router-deployment-exists=$?"
-# Expected: router-deployment-exists=0
-
-# Verify the deployment is available
 oc wait deployment/wanaku-test-router-mcp-router \
   --for=condition=Available \
   --timeout=120s \
@@ -296,7 +223,7 @@ oc wait deployment/wanaku-test-router-mcp-router \
 ROUTER_IMAGE=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
   -o jsonpath='{.spec.template.spec.containers[0].image}')
 echo "router-image=${ROUTER_IMAGE}"
-if [ "${ROUTER_IMAGE}" != "quay.io/wanaku/wanaku-router-backend:latest" ]; then
+if [ "${ROUTER_IMAGE}" != "${WANAKU_ROUTER_IMAGE}" ]; then
   echo "FAIL: unexpected router image '${ROUTER_IMAGE}'"
   exit 1
 fi
@@ -467,14 +394,14 @@ done
 **Description:** Create a second router with `wanaku.http.auth=none` for testing unauthenticated access.
 
 ```bash
-cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
 apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuRouter
 metadata:
   name: wanaku-noauth-router
 spec:
   router:
-    image: quay.io/wanaku/wanaku-router-backend:latest
+    image: ${WANAKU_ROUTER_IMAGE}
     imagePullPolicy: Always
     env:
       - name: wanaku.http.auth
@@ -529,22 +456,9 @@ done
 ```bash
 oc delete wanakurouter wanaku-noauth-router -n "${WANAKU_NAMESPACE}"
 
-# Wait for managed resources to be cleaned up
-sleep 10
-
-# Verify the deployment is gone
-if oc get deployment wanaku-noauth-router-mcp-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: noauth router deployment still exists"
-  exit 1
-fi
-echo "PASS: noauth router deployment cleaned up"
-
-# Verify the route is gone
-if oc get route wanaku-noauth-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: noauth router route still exists"
-  exit 1
-fi
-echo "PASS: noauth router route cleaned up"
+# Wait for managed resources to be garbage-collected
+wait_for_deletion deployment wanaku-noauth-router-mcp-router "${WANAKU_NAMESPACE}" 60
+wait_for_deletion route wanaku-noauth-router "${WANAKU_NAMESPACE}" 30
 ```
 
 ---
@@ -570,7 +484,7 @@ spec:
   routerRef: wanaku-test-router
   capabilities:
     - name: wanaku-http-test
-      image: quay.io/wanaku/wanaku-tool-service-http:latest
+      image: ${WANAKU_CAPABILITY_HTTP_IMAGE}
       imagePullPolicy: Always
 EOF
 ```
@@ -588,10 +502,6 @@ oc wait wanakucapability/wanaku-test-capabilities \
 ### Test 5.3: Verify capability deployment
 
 ```bash
-oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
-echo "capability-deployment-exists=$?"
-# Expected: capability-deployment-exists=0
-
 oc wait deployment/wanaku-http-test \
   --for=condition=Available \
   --timeout=120s \
@@ -601,7 +511,7 @@ oc wait deployment/wanaku-http-test \
 CAP_IMAGE=$(oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" \
   -o jsonpath='{.spec.template.spec.containers[0].image}')
 echo "capability-image=${CAP_IMAGE}"
-if [ "${CAP_IMAGE}" != "quay.io/wanaku/wanaku-tool-service-http:latest" ]; then
+if [ "${CAP_IMAGE}" != "${WANAKU_CAPABILITY_HTTP_IMAGE}" ]; then
   echo "FAIL: unexpected capability image"
   exit 1
 fi
@@ -657,7 +567,7 @@ echo "PASS: OIDC secret is set on capability"
 **Description:** A capability without `routerRef` should fail reconciliation.
 
 ```bash
-cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
 apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuCapability
 metadata:
@@ -665,11 +575,17 @@ metadata:
 spec:
   capabilities:
     - name: bad-capability
-      image: quay.io/wanaku/wanaku-tool-service-http:latest
+      image: ${WANAKU_CAPABILITY_HTTP_IMAGE}
 EOF
 
-# Wait briefly for reconciliation to attempt
-sleep 10
+# Poll until the CR has a status (reconciler attempted) or timeout
+END=$((SECONDS + 30))
+while [ $SECONDS -lt $END ]; do
+  STATUS=$(oc get wanakucapability wanaku-bad-capability-no-ref -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{.status}' 2>/dev/null || echo "")
+  [ -n "${STATUS}" ] && break
+  sleep 3
+done
 
 # The CR should exist but should NOT have a Ready=True condition
 READY_STATUS=$(oc get wanakucapability wanaku-bad-capability-no-ref -n "${WANAKU_NAMESPACE}" \
@@ -687,7 +603,7 @@ oc delete wanakucapability wanaku-bad-capability-no-ref -n "${WANAKU_NAMESPACE}"
 ### Test 6.2: Create capability referencing a non-existent router
 
 ```bash
-cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
 apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuCapability
 metadata:
@@ -696,10 +612,17 @@ spec:
   routerRef: non-existent-router
   capabilities:
     - name: bad-capability-2
-      image: quay.io/wanaku/wanaku-tool-service-http:latest
+      image: ${WANAKU_CAPABILITY_HTTP_IMAGE}
 EOF
 
-sleep 10
+# Poll until the CR has a status or timeout
+END=$((SECONDS + 30))
+while [ $SECONDS -lt $END ]; do
+  STATUS=$(oc get wanakucapability wanaku-bad-capability-bad-ref -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{.status}' 2>/dev/null || echo "")
+  [ -n "${STATUS}" ] && break
+  sleep 3
+done
 
 READY_STATUS=$(oc get wanakucapability wanaku-bad-capability-bad-ref -n "${WANAKU_NAMESPACE}" \
   -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
@@ -820,7 +743,14 @@ spec:
       configMapRef: this-configmap-does-not-exist
 EOF
 
-sleep 10
+# Poll until the CR has a status or timeout
+END=$((SECONDS + 30))
+while [ $SECONDS -lt $END ]; do
+  STATUS=$(oc get wanakuservicecatalog wanaku-bad-service-catalog -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{.status}' 2>/dev/null || echo "")
+  [ -n "${STATUS}" ] && break
+  sleep 3
+done
 
 BAD_SC_READY=$(oc get wanakuservicecatalog wanaku-bad-service-catalog -n "${WANAKU_NAMESPACE}" \
   -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
@@ -941,15 +871,17 @@ fi
 # Patch the router to use a specific tag
 oc patch wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
   --type=merge \
-  -p '{"spec":{"router":{"image":"quay.io/wanaku/wanaku-router-backend:latest"}}}'
+  -p "{\"spec\":{\"router\":{\"image\":\"${WANAKU_ROUTER_IMAGE}\"}}}"
 
-# Wait for the deployment to reflect the change
-sleep 15
+# Wait for the deployment rollout to complete
+oc rollout status deployment/wanaku-test-router-mcp-router \
+  -n "${WANAKU_NAMESPACE}" \
+  --timeout=120s
 
 UPDATED_IMAGE=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
   -o jsonpath='{.spec.template.spec.containers[0].image}')
 echo "updated-image=${UPDATED_IMAGE}"
-if [ "${UPDATED_IMAGE}" = "quay.io/wanaku/wanaku-router-backend:latest" ]; then
+if [ "${UPDATED_IMAGE}" = "${WANAKU_ROUTER_IMAGE}" ]; then
   echo "PASS: deployment image updated by operator"
 else
   echo "FAIL: deployment image not updated (got '${UPDATED_IMAGE}')"
@@ -963,7 +895,10 @@ oc patch wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
   --type=merge \
   -p '{"spec":{"router":{"env":[{"name":"TEST_VAR","value":"test_value"}]}}}'
 
-sleep 15
+# Wait for the deployment rollout to complete
+oc rollout status deployment/wanaku-test-router-mcp-router \
+  -n "${WANAKU_NAMESPACE}" \
+  --timeout=120s
 
 TEST_VAR_VAL=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
   -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="TEST_VAR")].value}')
@@ -991,22 +926,9 @@ echo "service-catalog-deleted=$?"
 ```bash
 oc delete wanakucapability wanaku-test-capabilities -n "${WANAKU_NAMESPACE}"
 
-# Wait for Kubernetes garbage collection
-sleep 15
-
-# Verify capability deployment is gone
-if oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: capability deployment still exists after CR deletion"
-  exit 1
-fi
-echo "PASS: capability deployment deleted"
-
-# Verify capability service is gone
-if oc get service wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: capability service still exists after CR deletion"
-  exit 1
-fi
-echo "PASS: capability service deleted"
+# Wait for Kubernetes garbage collection via polling
+wait_for_deletion deployment wanaku-http-test "${WANAKU_NAMESPACE}" 60
+wait_for_deletion service wanaku-http-test "${WANAKU_NAMESPACE}" 30
 ```
 
 ### Test 10.3: Delete the router CR and verify managed resources are removed
@@ -1014,38 +936,17 @@ echo "PASS: capability service deleted"
 ```bash
 oc delete wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}"
 
-# Wait for Kubernetes garbage collection
-sleep 15
-
-# Verify router deployment is gone
-if oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: router deployment still exists after CR deletion"
-  exit 1
-fi
-echo "PASS: router deployment deleted"
-
-# Verify internal service is gone
-if oc get service internal-wanaku-test-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: internal service still exists after CR deletion"
-  exit 1
-fi
-echo "PASS: internal service deleted"
-
-# Verify route is gone
-if oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "FAIL: route still exists after CR deletion"
-  exit 1
-fi
-echo "PASS: route deleted"
+# Wait for Kubernetes garbage collection via polling
+wait_for_deletion deployment wanaku-test-router-mcp-router "${WANAKU_NAMESPACE}" 60
+wait_for_deletion service internal-wanaku-test-router "${WANAKU_NAMESPACE}" 30
+wait_for_deletion route wanaku-test-router "${WANAKU_NAMESPACE}" 30
 ```
 
 ---
 
 ## Phase 11: Cleanup
 
-> Reference: [common/cleanup.md](common/cleanup.md)
-
-### Step 11.1: Delete remaining test resources
+Follow [common/cleanup.md](common/cleanup.md) for full teardown. Quick inline version:
 
 ```bash
 # Delete any remaining Wanaku CRs
@@ -1053,33 +954,22 @@ oc delete wanakuservicecatalog --all -n "${WANAKU_NAMESPACE}" --ignore-not-found
 oc delete wanakucapability --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
 oc delete wanakurouter --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
 
-sleep 10
-```
+# Wait for operator-managed resources to drain
+oc wait --for=delete deployment -l component=wanaku-router-backend -n "${WANAKU_NAMESPACE}" --timeout=60s 2>/dev/null || true
 
-### Step 11.2: Delete test ConfigMaps
-
-```bash
+# Delete test ConfigMaps
 oc delete configmap -l wanaku-test=true -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-```
 
-### Step 11.3: Delete Keycloak
-
-```bash
+# Delete Keycloak
 oc delete deployment keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
 oc delete service keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
 oc delete route keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
 oc delete pvc keycloak-data-pvc -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-```
 
-### Step 11.4: Uninstall operator
-
-```bash
+# Uninstall operator
 helm uninstall wanaku-operator --namespace "${WANAKU_NAMESPACE}"
-```
 
-### Step 11.5: Final verification
-
-```bash
+# Final verification
 echo "--- Remaining resources ---"
 oc get all -n "${WANAKU_NAMESPACE}"
 echo "--- Wanaku custom resources ---"
@@ -1096,7 +986,7 @@ helm list --namespace "${WANAKU_NAMESPACE}"
 |-------|---------|-----------|----------|
 | 0 | 0.1-0.2 | OpenShift login (MANUAL) | Critical |
 | 1 | 1.1-1.2 | Environment setup | Critical |
-| 2 | 2.1-2.6 | Operator installation and health | Critical |
+| 2 | — | Operator installation and health | Critical |
 | 3 | 3.1-3.8 | WanakuRouter lifecycle and reconciliation | Critical |
 | 4 | 4.1-4.4 | WanakuRouter noauth mode | High |
 | 5 | 5.1-5.6 | WanakuCapability lifecycle | Critical |
@@ -1105,4 +995,4 @@ helm list --namespace "${WANAKU_NAMESPACE}"
 | 8 | 8.1-8.4 | Smoke test (full flow) | Critical |
 | 9 | 9.1-9.2 | Update reconciliation | Medium |
 | 10 | 10.1-10.3 | Deletion and ownership cascade | Critical |
-| 11 | 11.1-11.5 | Cleanup | Critical |
+| 11 | — | Cleanup | Critical |
