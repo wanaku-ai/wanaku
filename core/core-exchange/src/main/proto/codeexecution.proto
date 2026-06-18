@@ -73,7 +73,13 @@ message CodeExecutionRequest {
    * These environment variables will be set in the execution context.
    */
   map<string, string> environment = 8;
-}
+
+  /**
+   * The MCP session request ID for tracing.
+   * Used to correlate requests across the system.
+   */
+  string request_id = 9;
+ }
 
 /**
  * The code execution reply message.

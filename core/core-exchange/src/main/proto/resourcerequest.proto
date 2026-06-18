@@ -19,7 +19,8 @@ message ResourceRequest {
   string name = 3;
   map<string, string> params = 4;
   string configuration_uri = 5;
-  string secrets_uri = 6;
+  string secrets_uri = 6;   
+  string request_id = 7;
 }
 
 // The resource response message
