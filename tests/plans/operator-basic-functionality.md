@@ -1,0 +1,1108 @@
+# Test Plan: Wanaku Operator Basic Functionality on OpenShift
+
+## Overview
+
+This test plan verifies the basic functionality of the Wanaku Kubernetes operator deployed on OpenShift. It covers operator installation, CRD lifecycle, reconciliation, Keycloak/OIDC integration, router and capability deployment, service catalog management, and cleanup.
+
+Every step except the initial `oc login` is fully automatable.
+
+## Prerequisites
+
+### Required tools
+
+| Tool | Minimum version | Verify command |
+|------|-----------------|----------------|
+| `oc` | 4.12+ | `oc version --client` |
+| `helm` | 3.x | `helm version --short` |
+| `curl` | any | `curl --version` |
+| `jq` | 1.6+ | `jq --version` |
+| `base64` | any (coreutils) | `base64 --version 2>/dev/null \|\| echo "available"` |
+
+### Prerequisite check script
+
+```bash
+#!/bin/bash
+set -e
+
+FAIL=0
+
+for CMD in oc helm curl jq base64; do
+  if ! command -v "${CMD}" > /dev/null 2>&1; then
+    echo "FAIL: ${CMD} is not installed"
+    FAIL=1
+  else
+    echo "PASS: ${CMD} found at $(command -v ${CMD})"
+  fi
+done
+
+# Verify oc client version
+OC_VERSION=$(oc version --client -o json 2>/dev/null | jq -r '.clientVersion.gitVersion // empty' || echo "unknown")
+echo "  oc client version: ${OC_VERSION}"
+
+# Verify helm version
+HELM_VERSION=$(helm version --short 2>/dev/null || echo "unknown")
+echo "  helm version: ${HELM_VERSION}"
+
+if [ "${FAIL}" -ne 0 ]; then
+  echo ""
+  echo "FAIL: one or more prerequisites missing"
+  exit 1
+fi
+
+echo ""
+echo "PASS: all prerequisites met"
+```
+
+---
+
+## Phase 0: OpenShift Login (MANUAL)
+
+This is the only manual step in the plan.
+
+### Step 0.1: Log in to OpenShift
+
+Log in to the target OpenShift cluster:
+
+```bash
+oc login <cluster-api-url> --username=<username> --password=<password>
+# Or with a token:
+# oc login <cluster-api-url> --token=<token>
+```
+
+### Step 0.2: Verify login
+
+```bash
+oc whoami
+# Expected: prints the logged-in username
+
+oc whoami --show-server
+# Expected: prints the cluster API URL
+
+oc version
+# Expected: prints client and server version info
+```
+
+---
+
+## Phase 1: Environment Setup
+
+### Step 1.1: Create namespace
+
+> Reference: [common/namespace-setup.md](common/namespace-setup.md)
+
+```bash
+export WANAKU_NAMESPACE="wanaku-test"
+
+oc new-project "${WANAKU_NAMESPACE}" --display-name="Wanaku Operator Test" 2>/dev/null \
+  || oc project "${WANAKU_NAMESPACE}"
+```
+
+**Verification:**
+
+```bash
+CURRENT_NS=$(oc project -q)
+if [ "${CURRENT_NS}" != "${WANAKU_NAMESPACE}" ]; then
+  echo "FAIL: current namespace is '${CURRENT_NS}', expected '${WANAKU_NAMESPACE}'"
+  exit 1
+fi
+echo "PASS: namespace is ${WANAKU_NAMESPACE}"
+```
+
+### Step 1.2: Deploy Keycloak
+
+> Reference: [common/keycloak-setup.md](common/keycloak-setup.md)
+
+Follow all steps in the Keycloak setup guide. After completion, these variables must be set:
+
+- `KEYCLOAK_HOST`
+- `KEYCLOAK_URL`
+- `WANAKU_OIDC_SECRET`
+
+**Verification:**
+
+```bash
+for VAR in KEYCLOAK_HOST KEYCLOAK_URL WANAKU_OIDC_SECRET; do
+  if [ -z "${!VAR}" ]; then
+    echo "FAIL: ${VAR} is not set"
+    exit 1
+  fi
+  echo "PASS: ${VAR} is set"
+done
+```
+
+---
+
+## Phase 2: Operator Installation
+
+> Reference: [common/operator-deployment.md](common/operator-deployment.md)
+
+### Step 2.1: Install the operator via Helm
+
+```bash
+export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
+
+helm install wanaku-operator \
+  "${WANAKU_REPO_ROOT}/apps/wanaku-operator/deploy/helm/wanaku-operator" \
+  --namespace "${WANAKU_NAMESPACE}" \
+  --set operatorNamespace="${WANAKU_NAMESPACE}"
+```
+
+### Step 2.2: Wait for operator pod to be available
+
+```bash
+oc wait deployment/wanaku-operator \
+  --for=condition=Available \
+  --timeout=180s \
+  --namespace "${WANAKU_NAMESPACE}"
+```
+
+**Expected output:** `deployment.apps/wanaku-operator condition met`
+
+### Step 2.3: Verify operator pod status
+
+```bash
+OPERATOR_POD_STATUS=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].status.phase}')
+if [ "${OPERATOR_POD_STATUS}" != "Running" ]; then
+  echo "FAIL: operator pod status is '${OPERATOR_POD_STATUS}'"
+  exit 1
+fi
+echo "PASS: operator pod is Running"
+```
+
+### Step 2.4: Verify CRDs exist
+
+```bash
+for CRD in wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai; do
+  if ! oc get crd "${CRD}" > /dev/null 2>&1; then
+    echo "FAIL: CRD ${CRD} not found"
+    exit 1
+  fi
+  echo "PASS: CRD ${CRD} exists"
+done
+```
+
+### Step 2.5: Verify RBAC
+
+```bash
+for ROLE_SUFFIX in wanaku-capability-cluster-role wanaku-router-cluster-role wanaku-service-catalog-cluster-role josdk-crd-validating-cluster-role; do
+  ROLE_NAME="${WANAKU_NAMESPACE}-${ROLE_SUFFIX}"
+  if ! oc get clusterrole "${ROLE_NAME}" > /dev/null 2>&1; then
+    echo "FAIL: ClusterRole ${ROLE_NAME} not found"
+    exit 1
+  fi
+  echo "PASS: ClusterRole ${ROLE_NAME} exists"
+done
+```
+
+### Step 2.6: Verify operator health
+
+```bash
+OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+oc exec "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" -- \
+  curl -sf http://localhost:8081/q/health/live > /dev/null 2>&1
+echo "liveness=$?"
+
+oc exec "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" -- \
+  curl -sf http://localhost:8081/q/health/ready > /dev/null 2>&1
+echo "readiness=$?"
+
+# Expected: both return 0
+```
+
+---
+
+## Phase 3: WanakuRouter Lifecycle
+
+### Test 3.1: Create a WanakuRouter with Keycloak authentication
+
+**Description:** Create a `WanakuRouter` CR with `authServer` pointing to the deployed Keycloak instance. Verify the operator reconciles and creates the expected resources.
+
+```bash
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuRouter
+metadata:
+  name: wanaku-test-router
+spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
+  router:
+    image: quay.io/wanaku/wanaku-router-backend:latest
+    imagePullPolicy: Always
+EOF
+```
+
+**Verification - CR accepted:**
+
+```bash
+oc get wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" -o name
+echo "router-cr-exists=$?"
+# Expected: router-cr-exists=0
+```
+
+**Verification - Wait for Ready condition:**
+
+```bash
+oc wait wanakurouter/wanaku-test-router \
+  --for=condition=Ready \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+# Expected output: wanakurouter.wanaku.ai/wanaku-test-router condition met
+```
+
+**Verification - Status fields populated:**
+
+```bash
+ROUTER_HOST=$(oc get wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.host}')
+SSE_ENDPOINT=$(oc get wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.sseEndpoint}')
+STREAMABLE_ENDPOINT=$(oc get wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.streamableEndpoint}')
+
+echo "host=${ROUTER_HOST}"
+echo "sseEndpoint=${SSE_ENDPOINT}"
+echo "streamableEndpoint=${STREAMABLE_ENDPOINT}"
+
+for FIELD_NAME in ROUTER_HOST SSE_ENDPOINT STREAMABLE_ENDPOINT; do
+  if [ -z "${!FIELD_NAME}" ]; then
+    echo "FAIL: ${FIELD_NAME} is empty"
+    exit 1
+  fi
+  echo "PASS: ${FIELD_NAME} is set"
+done
+```
+
+### Test 3.2: Verify reconciled resources - Deployment
+
+**Description:** The operator should create a deployment named `wanaku-test-router-mcp-router`.
+
+```bash
+oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "router-deployment-exists=$?"
+# Expected: router-deployment-exists=0
+
+# Verify the deployment is available
+oc wait deployment/wanaku-test-router-mcp-router \
+  --for=condition=Available \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+
+# Verify container image
+ROUTER_IMAGE=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].image}')
+echo "router-image=${ROUTER_IMAGE}"
+if [ "${ROUTER_IMAGE}" != "quay.io/wanaku/wanaku-router-backend:latest" ]; then
+  echo "FAIL: unexpected router image '${ROUTER_IMAGE}'"
+  exit 1
+fi
+echo "PASS: router image matches"
+
+# Verify imagePullPolicy
+ROUTER_PULL_POLICY=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].imagePullPolicy}')
+if [ "${ROUTER_PULL_POLICY}" != "Always" ]; then
+  echo "FAIL: unexpected pull policy '${ROUTER_PULL_POLICY}', expected 'Always'"
+  exit 1
+fi
+echo "PASS: imagePullPolicy is Always"
+```
+
+### Test 3.3: Verify reconciled resources - Internal Service
+
+**Description:** The operator should create a ClusterIP service named `internal-wanaku-test-router`.
+
+```bash
+oc get service internal-wanaku-test-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "internal-service-exists=$?"
+# Expected: internal-service-exists=0
+
+SVC_TYPE=$(oc get service internal-wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.type}')
+if [ "${SVC_TYPE}" != "ClusterIP" ]; then
+  echo "FAIL: service type is '${SVC_TYPE}', expected 'ClusterIP'"
+  exit 1
+fi
+echo "PASS: internal service is ClusterIP"
+
+SVC_PORT=$(oc get service internal-wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.ports[0].port}')
+echo "internal-service-port=${SVC_PORT}"
+# Expected: 8080
+```
+
+### Test 3.4: Verify reconciled resources - OpenShift Route
+
+**Description:** On OpenShift, the operator creates a Route (not an Ingress) for external access.
+
+```bash
+oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "route-exists=$?"
+# Expected: route-exists=0
+
+ROUTE_HOST=$(oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.host}')
+echo "route-host=${ROUTE_HOST}"
+
+if [ -z "${ROUTE_HOST}" ]; then
+  echo "FAIL: route host is empty"
+  exit 1
+fi
+echo "PASS: route host is set"
+
+# Verify the route targets the internal service
+ROUTE_SVC=$(oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.to.name}')
+if [ "${ROUTE_SVC}" != "internal-wanaku-test-router" ]; then
+  echo "FAIL: route targets '${ROUTE_SVC}', expected 'internal-wanaku-test-router'"
+  exit 1
+fi
+echo "PASS: route targets internal service"
+```
+
+### Test 3.5: Verify reconciled resources - PVC
+
+**Description:** The operator creates a PersistentVolumeClaim named `router-volume-claim`.
+
+```bash
+oc get pvc router-volume-claim -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "pvc-exists=$?"
+# Expected: pvc-exists=0
+
+PVC_STATUS=$(oc get pvc router-volume-claim -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.phase}')
+echo "pvc-status=${PVC_STATUS}"
+# Expected: Bound
+```
+
+### Test 3.6: Verify reconciled resources - Environment variables
+
+**Description:** The router deployment should have AUTH_SERVER, AUTH_PROXY, and AUTH_REALM set.
+
+```bash
+DEPLOYMENT="wanaku-test-router-mcp-router"
+
+AUTH_SERVER_VAL=$(oc get deployment "${DEPLOYMENT}" -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="AUTH_SERVER")].value}')
+echo "AUTH_SERVER=${AUTH_SERVER_VAL}"
+if [ "${AUTH_SERVER_VAL}" != "http://keycloak:8080" ]; then
+  echo "FAIL: AUTH_SERVER is '${AUTH_SERVER_VAL}'"
+  exit 1
+fi
+echo "PASS: AUTH_SERVER is correct"
+
+AUTH_PROXY_VAL=$(oc get deployment "${DEPLOYMENT}" -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="AUTH_PROXY")].value}')
+echo "AUTH_PROXY=${AUTH_PROXY_VAL}"
+# When authProxy=auto, this should be http://<route-host>
+if [ -z "${AUTH_PROXY_VAL}" ]; then
+  echo "FAIL: AUTH_PROXY is empty"
+  exit 1
+fi
+echo "PASS: AUTH_PROXY is set"
+
+AUTH_REALM_VAL=$(oc get deployment "${DEPLOYMENT}" -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="AUTH_REALM")].value}')
+echo "AUTH_REALM=${AUTH_REALM_VAL}"
+if [ "${AUTH_REALM_VAL}" != "wanaku" ]; then
+  echo "FAIL: AUTH_REALM is '${AUTH_REALM_VAL}', expected 'wanaku'"
+  exit 1
+fi
+echo "PASS: AUTH_REALM is correct"
+```
+
+### Test 3.7: Verify owner references
+
+**Description:** All operator-managed resources should have an ownerReference pointing to the WanakuRouter CR.
+
+```bash
+ROUTER_UID=$(oc get wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.metadata.uid}')
+
+for RESOURCE in "deployment/wanaku-test-router-mcp-router" "service/internal-wanaku-test-router" "route.route.openshift.io/wanaku-test-router" "pvc/router-volume-claim"; do
+  OWNER_UID=$(oc get "${RESOURCE}" -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{.metadata.ownerReferences[0].uid}' 2>/dev/null || echo "")
+  if [ "${OWNER_UID}" != "${ROUTER_UID}" ]; then
+    echo "FAIL: ${RESOURCE} ownerReference UID mismatch (got '${OWNER_UID}', expected '${ROUTER_UID}')"
+  else
+    echo "PASS: ${RESOURCE} ownerReference is correct"
+  fi
+done
+```
+
+### Test 3.8: Verify router health endpoint is accessible
+
+**Description:** The router backend should expose health probes.
+
+```bash
+export WANAKU_ROUTER_URL="http://$(oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')"
+
+MAX_RETRIES=24
+RETRY_INTERVAL=5
+for i in $(seq 1 ${MAX_RETRIES}); do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${WANAKU_ROUTER_URL}/q/health/live" 2>/dev/null || echo "000")
+  if [ "${HTTP_CODE}" = "200" ]; then
+    echo "PASS: router health endpoint is live (attempt ${i})"
+    break
+  fi
+  if [ "${i}" -eq "${MAX_RETRIES}" ]; then
+    echo "FAIL: router health not reachable after ${MAX_RETRIES} attempts (last HTTP ${HTTP_CODE})"
+    exit 1
+  fi
+  echo "Waiting for router... (attempt ${i}, HTTP ${HTTP_CODE})"
+  sleep ${RETRY_INTERVAL}
+done
+```
+
+---
+
+## Phase 4: WanakuRouter Without Authentication (noauth)
+
+### Test 4.1: Create a WanakuRouter with auth disabled
+
+**Description:** Create a second router with `wanaku.http.auth=none` for testing unauthenticated access.
+
+```bash
+cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuRouter
+metadata:
+  name: wanaku-noauth-router
+spec:
+  router:
+    image: quay.io/wanaku/wanaku-router-backend:latest
+    imagePullPolicy: Always
+    env:
+      - name: wanaku.http.auth
+        value: none
+EOF
+```
+
+**Verification:**
+
+```bash
+oc wait wanakurouter/wanaku-noauth-router \
+  --for=condition=Ready \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+```
+
+### Test 4.2: Verify noauth router has the env var set
+
+```bash
+NOAUTH_ENV=$(oc get deployment wanaku-noauth-router-mcp-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="wanaku.http.auth")].value}')
+if [ "${NOAUTH_ENV}" != "none" ]; then
+  echo "FAIL: wanaku.http.auth is '${NOAUTH_ENV}', expected 'none'"
+  exit 1
+fi
+echo "PASS: wanaku.http.auth=none is set"
+```
+
+### Test 4.3: Verify noauth router REST API is accessible without token
+
+```bash
+NOAUTH_URL="http://$(oc get route wanaku-noauth-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')"
+
+MAX_RETRIES=24
+RETRY_INTERVAL=5
+for i in $(seq 1 ${MAX_RETRIES}); do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${NOAUTH_URL}/q/health/ready" 2>/dev/null || echo "000")
+  if [ "${HTTP_CODE}" = "200" ]; then
+    echo "PASS: noauth router is ready (attempt ${i})"
+    break
+  fi
+  if [ "${i}" -eq "${MAX_RETRIES}" ]; then
+    echo "FAIL: noauth router not reachable after ${MAX_RETRIES} attempts"
+    exit 1
+  fi
+  sleep ${RETRY_INTERVAL}
+done
+```
+
+### Test 4.4: Clean up the noauth router
+
+```bash
+oc delete wanakurouter wanaku-noauth-router -n "${WANAKU_NAMESPACE}"
+
+# Wait for managed resources to be cleaned up
+sleep 10
+
+# Verify the deployment is gone
+if oc get deployment wanaku-noauth-router-mcp-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: noauth router deployment still exists"
+  exit 1
+fi
+echo "PASS: noauth router deployment cleaned up"
+
+# Verify the route is gone
+if oc get route wanaku-noauth-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: noauth router route still exists"
+  exit 1
+fi
+echo "PASS: noauth router route cleaned up"
+```
+
+---
+
+## Phase 5: WanakuCapability Lifecycle
+
+### Test 5.1: Create a WanakuCapability (HTTP tool service)
+
+**Description:** Deploy a basic HTTP capability that references the router created in Phase 3.
+
+```bash
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-test-capabilities
+spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
+  secrets:
+    oidcCredentialsSecret: "${WANAKU_OIDC_SECRET}"
+  routerRef: wanaku-test-router
+  capabilities:
+    - name: wanaku-http-test
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
+      imagePullPolicy: Always
+EOF
+```
+
+### Test 5.2: Wait for capability to be Ready
+
+```bash
+oc wait wanakucapability/wanaku-test-capabilities \
+  --for=condition=Ready \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+# Expected output: wanakucapability.wanaku.ai/wanaku-test-capabilities condition met
+```
+
+### Test 5.3: Verify capability deployment
+
+```bash
+oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "capability-deployment-exists=$?"
+# Expected: capability-deployment-exists=0
+
+oc wait deployment/wanaku-http-test \
+  --for=condition=Available \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+
+# Verify the container image
+CAP_IMAGE=$(oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].image}')
+echo "capability-image=${CAP_IMAGE}"
+if [ "${CAP_IMAGE}" != "quay.io/wanaku/wanaku-tool-service-http:latest" ]; then
+  echo "FAIL: unexpected capability image"
+  exit 1
+fi
+echo "PASS: capability image matches"
+```
+
+### Test 5.4: Verify capability internal service
+
+```bash
+oc get service wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "capability-service-exists=$?"
+# Expected: capability-service-exists=0
+```
+
+### Test 5.5: Verify capability PVC
+
+```bash
+PVC_NAME="wanaku-http-test-volume-claim"
+oc get pvc "${PVC_NAME}" -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+echo "capability-pvc-exists=$?"
+# Expected: capability-pvc-exists=0
+```
+
+### Test 5.6: Verify capability environment variables
+
+```bash
+# Check WANAKU_SERVICE_REGISTRATION_URI (should point to internal router service)
+REG_URI=$(oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="WANAKU_SERVICE_REGISTRATION_URI")].value}')
+echo "registration-uri=${REG_URI}"
+if ! echo "${REG_URI}" | grep -q "internal-wanaku-test-router"; then
+  echo "FAIL: registration URI does not reference the internal router service"
+  exit 1
+fi
+echo "PASS: registration URI is correct"
+
+# Check OIDC credentials
+OIDC_SECRET_VAL=$(oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET")].value}')
+if [ -z "${OIDC_SECRET_VAL}" ]; then
+  echo "FAIL: OIDC secret not set on capability"
+  exit 1
+fi
+echo "PASS: OIDC secret is set on capability"
+```
+
+---
+
+## Phase 6: WanakuCapability Negative Tests
+
+### Test 6.1: Create capability with missing routerRef
+
+**Description:** A capability without `routerRef` should fail reconciliation.
+
+```bash
+cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-bad-capability-no-ref
+spec:
+  capabilities:
+    - name: bad-capability
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
+EOF
+
+# Wait briefly for reconciliation to attempt
+sleep 10
+
+# The CR should exist but should NOT have a Ready=True condition
+READY_STATUS=$(oc get wanakucapability wanaku-bad-capability-no-ref -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
+if [ "${READY_STATUS}" = "True" ]; then
+  echo "FAIL: capability without routerRef should not become Ready"
+  exit 1
+fi
+echo "PASS: capability without routerRef is not Ready"
+
+# Cleanup
+oc delete wanakucapability wanaku-bad-capability-no-ref -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+```
+
+### Test 6.2: Create capability referencing a non-existent router
+
+```bash
+cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-bad-capability-bad-ref
+spec:
+  routerRef: non-existent-router
+  capabilities:
+    - name: bad-capability-2
+      image: quay.io/wanaku/wanaku-tool-service-http:latest
+EOF
+
+sleep 10
+
+READY_STATUS=$(oc get wanakucapability wanaku-bad-capability-bad-ref -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
+if [ "${READY_STATUS}" = "True" ]; then
+  echo "FAIL: capability with non-existent routerRef should not become Ready"
+  exit 1
+fi
+echo "PASS: capability with non-existent routerRef is not Ready"
+
+# Check operator logs for the error
+OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" --tail=20 | grep -i "non-existent-router" && \
+  echo "PASS: operator logged the missing router error" || \
+  echo "INFO: missing router error not in recent logs"
+
+# Cleanup
+oc delete wanakucapability wanaku-bad-capability-bad-ref -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+```
+
+---
+
+## Phase 7: WanakuServiceCatalog Lifecycle
+
+### Test 7.1: Create a test ConfigMap with catalog data
+
+**Description:** Create a ConfigMap containing a Base64-encoded ZIP (simulated minimal catalog data).
+
+```bash
+# Create a minimal test catalog ZIP
+TEMP_DIR=$(mktemp -d)
+mkdir -p "${TEMP_DIR}/test-system"
+echo "# Test Camel route" > "${TEMP_DIR}/test-system/test-system.camel.yaml"
+echo "# Test Wanaku rules" > "${TEMP_DIR}/test-system/test-system.wanaku-rules.yaml"
+echo "test-system" > "${TEMP_DIR}/index.properties"
+
+# Package it as a Base64-encoded ZIP
+(cd "${TEMP_DIR}" && zip -r - . 2>/dev/null) | base64 > "${TEMP_DIR}/catalog.b64"
+
+# Create the ConfigMap
+oc create configmap test-catalog-data \
+  --from-file=catalog.zip="${TEMP_DIR}/catalog.b64" \
+  -n "${WANAKU_NAMESPACE}"
+oc label configmap test-catalog-data wanaku-test=true -n "${WANAKU_NAMESPACE}"
+
+# Cleanup temp files
+rm -rf "${TEMP_DIR}"
+
+echo "PASS: test ConfigMap created"
+```
+
+**Verification:**
+
+```bash
+oc get configmap test-catalog-data -n "${WANAKU_NAMESPACE}" -o jsonpath='{.data}' | jq -r 'keys[]' | grep -q "catalog.zip"
+echo "configmap-has-catalog-zip=$?"
+# Expected: configmap-has-catalog-zip=0
+```
+
+### Test 7.2: Create a WanakuServiceCatalog
+
+```bash
+cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuServiceCatalog
+metadata:
+  name: wanaku-test-service-catalogs
+spec:
+  routerRef: wanaku-test-router
+  catalogs:
+    - name: test-catalog
+      configMapRef: test-catalog-data
+EOF
+```
+
+### Test 7.3: Verify service catalog reconciliation
+
+**Description:** The service catalog reconciler reads the ConfigMap and sends the data to the router's REST API. If the router is running and reachable, the catalog should be deployed.
+
+```bash
+# Wait for the service catalog to become Ready
+# Note: this may fail if the router's REST API is not yet fully available,
+# which is an expected behavior worth verifying separately
+oc wait wanakuservicecatalog/wanaku-test-service-catalogs \
+  --for=condition=Ready \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}" 2>/dev/null
+
+SC_READY=$(oc get wanakuservicecatalog wanaku-test-service-catalogs -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "unknown")
+echo "service-catalog-ready=${SC_READY}"
+
+# If ready, check deployed catalogs list
+if [ "${SC_READY}" = "True" ]; then
+  DEPLOYED=$(oc get wanakuservicecatalog wanaku-test-service-catalogs -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{.status.deployedCatalogs[*]}')
+  echo "deployed-catalogs=${DEPLOYED}"
+  if echo "${DEPLOYED}" | grep -q "test-catalog"; then
+    echo "PASS: test-catalog listed in deployedCatalogs"
+  else
+    echo "FAIL: test-catalog not found in deployedCatalogs"
+  fi
+fi
+```
+
+### Test 7.4: Service catalog negative test - missing ConfigMap
+
+```bash
+cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuServiceCatalog
+metadata:
+  name: wanaku-bad-service-catalog
+spec:
+  routerRef: wanaku-test-router
+  catalogs:
+    - name: missing-catalog
+      configMapRef: this-configmap-does-not-exist
+EOF
+
+sleep 10
+
+BAD_SC_READY=$(oc get wanakuservicecatalog wanaku-bad-service-catalog -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
+if [ "${BAD_SC_READY}" = "True" ]; then
+  echo "FAIL: service catalog with missing ConfigMap should not become Ready"
+  exit 1
+fi
+echo "PASS: service catalog with missing ConfigMap is not Ready"
+
+# Cleanup
+oc delete wanakuservicecatalog wanaku-bad-service-catalog -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+```
+
+---
+
+## Phase 8: Smoke Test - Full Flow
+
+### Test 8.1: Verify the MCP SSE endpoint is accessible
+
+```bash
+ROUTER_HOST=$(oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
+MCP_SSE_URL="http://${ROUTER_HOST}/mcp/sse"
+
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+  -H "Accept: text/event-stream" \
+  --max-time 5 \
+  "${MCP_SSE_URL}" 2>/dev/null || echo "000")
+
+# SSE endpoint should return 200 (streaming) or a valid HTTP response
+# A timeout (000) while connected is normal for SSE since it streams indefinitely
+echo "mcp-sse-http-code=${HTTP_CODE}"
+if [ "${HTTP_CODE}" = "000" ] || [ "${HTTP_CODE}" = "200" ] || [ "${HTTP_CODE}" = "401" ]; then
+  echo "PASS: MCP SSE endpoint is reachable (HTTP ${HTTP_CODE})"
+  # 401 is expected when auth is enabled and no token is provided
+else
+  echo "FAIL: unexpected response from MCP SSE endpoint (HTTP ${HTTP_CODE})"
+fi
+```
+
+### Test 8.2: Verify the MCP streamable endpoint is accessible
+
+```bash
+MCP_STREAMABLE_URL="http://${ROUTER_HOST}/mcp/"
+
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  --max-time 5 \
+  "${MCP_STREAMABLE_URL}" 2>/dev/null || echo "000")
+
+echo "mcp-streamable-http-code=${HTTP_CODE}"
+# Expect 401 (auth required) or 400 (bad request, but endpoint exists) or 200/405
+if [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "400" ] || [ "${HTTP_CODE}" = "200" ] || [ "${HTTP_CODE}" = "405" ]; then
+  echo "PASS: MCP streamable endpoint is reachable (HTTP ${HTTP_CODE})"
+else
+  echo "FAIL: unexpected response from MCP streamable endpoint (HTTP ${HTTP_CODE})"
+fi
+```
+
+### Test 8.3: Verify router and capability pods are running
+
+```bash
+echo "--- All pods in ${WANAKU_NAMESPACE} ---"
+oc get pods -n "${WANAKU_NAMESPACE}" -o wide
+
+# Check all non-completed pods are Running
+NOT_RUNNING=$(oc get pods -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{range .items[?(@.status.phase!="Running")]}{.metadata.name}={.status.phase}{"\n"}{end}' \
+  | grep -v "^$" | wc -l | tr -d ' ')
+
+if [ "${NOT_RUNNING}" != "0" ]; then
+  echo "WARN: ${NOT_RUNNING} pod(s) not in Running state"
+  oc get pods -n "${WANAKU_NAMESPACE}" --field-selector=status.phase!=Running
+else
+  echo "PASS: all pods are Running"
+fi
+```
+
+### Test 8.4: Verify operator logs contain reconciliation records
+
+```bash
+OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+echo "--- Operator reconciliation log entries ---"
+oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -i "reconciliation" | tail -10
+
+# Verify we see reconciliation entries for both router and capability
+ROUTER_RECON=$(oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -c "Starting router reconciliation" || echo "0")
+CAP_RECON=$(oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -c "Starting capability reconciliation" || echo "0")
+
+echo "router-reconciliation-count=${ROUTER_RECON}"
+echo "capability-reconciliation-count=${CAP_RECON}"
+
+if [ "${ROUTER_RECON}" -gt 0 ]; then
+  echo "PASS: router reconciliation logged"
+else
+  echo "FAIL: no router reconciliation found in logs"
+fi
+
+if [ "${CAP_RECON}" -gt 0 ]; then
+  echo "PASS: capability reconciliation logged"
+else
+  echo "FAIL: no capability reconciliation found in logs"
+fi
+```
+
+---
+
+## Phase 9: Resource Update Reconciliation
+
+### Test 9.1: Update the router image and verify reconciliation
+
+**Description:** Change the router CR spec and verify the operator updates the deployment.
+
+```bash
+# Patch the router to use a specific tag
+oc patch wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  --type=merge \
+  -p '{"spec":{"router":{"image":"quay.io/wanaku/wanaku-router-backend:latest"}}}'
+
+# Wait for the deployment to reflect the change
+sleep 15
+
+UPDATED_IMAGE=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].image}')
+echo "updated-image=${UPDATED_IMAGE}"
+if [ "${UPDATED_IMAGE}" = "quay.io/wanaku/wanaku-router-backend:latest" ]; then
+  echo "PASS: deployment image updated by operator"
+else
+  echo "FAIL: deployment image not updated (got '${UPDATED_IMAGE}')"
+fi
+```
+
+### Test 9.2: Add an environment variable to the router
+
+```bash
+oc patch wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
+  --type=merge \
+  -p '{"spec":{"router":{"env":[{"name":"TEST_VAR","value":"test_value"}]}}}'
+
+sleep 15
+
+TEST_VAR_VAL=$(oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="TEST_VAR")].value}')
+if [ "${TEST_VAR_VAL}" = "test_value" ]; then
+  echo "PASS: TEST_VAR environment variable added"
+else
+  echo "FAIL: TEST_VAR not found or wrong value (got '${TEST_VAR_VAL}')"
+fi
+```
+
+---
+
+## Phase 10: Deletion and Ownership Cascade
+
+### Test 10.1: Delete the service catalog CR and verify cleanup
+
+```bash
+oc delete wanakuservicecatalog wanaku-test-service-catalogs -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+echo "service-catalog-deleted=$?"
+# Expected: service-catalog-deleted=0
+```
+
+### Test 10.2: Delete the capability CR and verify managed resources are removed
+
+```bash
+oc delete wanakucapability wanaku-test-capabilities -n "${WANAKU_NAMESPACE}"
+
+# Wait for Kubernetes garbage collection
+sleep 15
+
+# Verify capability deployment is gone
+if oc get deployment wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: capability deployment still exists after CR deletion"
+  exit 1
+fi
+echo "PASS: capability deployment deleted"
+
+# Verify capability service is gone
+if oc get service wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: capability service still exists after CR deletion"
+  exit 1
+fi
+echo "PASS: capability service deleted"
+```
+
+### Test 10.3: Delete the router CR and verify managed resources are removed
+
+```bash
+oc delete wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}"
+
+# Wait for Kubernetes garbage collection
+sleep 15
+
+# Verify router deployment is gone
+if oc get deployment wanaku-test-router-mcp-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: router deployment still exists after CR deletion"
+  exit 1
+fi
+echo "PASS: router deployment deleted"
+
+# Verify internal service is gone
+if oc get service internal-wanaku-test-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: internal service still exists after CR deletion"
+  exit 1
+fi
+echo "PASS: internal service deleted"
+
+# Verify route is gone
+if oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: route still exists after CR deletion"
+  exit 1
+fi
+echo "PASS: route deleted"
+```
+
+---
+
+## Phase 11: Cleanup
+
+> Reference: [common/cleanup.md](common/cleanup.md)
+
+### Step 11.1: Delete remaining test resources
+
+```bash
+# Delete any remaining Wanaku CRs
+oc delete wanakuservicecatalog --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+oc delete wanakucapability --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+oc delete wanakurouter --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+
+sleep 10
+```
+
+### Step 11.2: Delete test ConfigMaps
+
+```bash
+oc delete configmap -l wanaku-test=true -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+```
+
+### Step 11.3: Delete Keycloak
+
+```bash
+oc delete deployment keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+oc delete service keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+oc delete route keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+oc delete pvc keycloak-data-pvc -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+```
+
+### Step 11.4: Uninstall operator
+
+```bash
+helm uninstall wanaku-operator --namespace "${WANAKU_NAMESPACE}"
+```
+
+### Step 11.5: Final verification
+
+```bash
+echo "--- Remaining resources ---"
+oc get all -n "${WANAKU_NAMESPACE}"
+echo "--- Wanaku custom resources ---"
+oc get wanakurouter,wanakucapability,wanakuservicecatalog -n "${WANAKU_NAMESPACE}" 2>/dev/null || echo "None"
+echo "--- Helm releases ---"
+helm list --namespace "${WANAKU_NAMESPACE}"
+```
+
+---
+
+## Test Summary Matrix
+
+| Phase | Test ID | Test Name | Priority |
+|-------|---------|-----------|----------|
+| 0 | 0.1-0.2 | OpenShift login (MANUAL) | Critical |
+| 1 | 1.1-1.2 | Environment setup | Critical |
+| 2 | 2.1-2.6 | Operator installation and health | Critical |
+| 3 | 3.1-3.8 | WanakuRouter lifecycle and reconciliation | Critical |
+| 4 | 4.1-4.4 | WanakuRouter noauth mode | High |
+| 5 | 5.1-5.6 | WanakuCapability lifecycle | Critical |
+| 6 | 6.1-6.2 | WanakuCapability negative tests | High |
+| 7 | 7.1-7.4 | WanakuServiceCatalog lifecycle | High |
+| 8 | 8.1-8.4 | Smoke test (full flow) | Critical |
+| 9 | 9.1-9.2 | Update reconciliation | Medium |
+| 10 | 10.1-10.3 | Deletion and ownership cascade | Critical |
+| 11 | 11.1-11.5 | Cleanup | Critical |

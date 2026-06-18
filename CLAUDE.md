@@ -36,6 +36,7 @@ core/
 deploy/                    # Deployment scripts and configs
 docs/                      # Documentation
 tests/                     # Integration, MCP server, and load tests
+tests/plans                # Test plans for humans and AI agents to follow
 ```
 
 ## Commands
