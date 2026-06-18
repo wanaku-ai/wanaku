@@ -83,6 +83,11 @@ make install
 - `wanaku service deploy` packages and deploys directly to router REST API
 - Route ID extraction uses indentation-aware parsing (route-level only, ignores step-level IDs)
 
+## Test Plans
+
+- Test plans live under `tests/plans/`, reusable steps under `tests/plans/common/`
+- Guidelines for writing test plans are in `docs/contributing.md` (section "Writing Test Plans")
+
 ## Acceptance Criteria
 
 - Major features should have tests
