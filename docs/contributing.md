@@ -314,7 +314,7 @@ A test plan has three layers:
 
 Organize tests into numbered phases that run sequentially. Each phase groups related assertions. This makes it easy to skip phases, resume after failure, or run a subset.
 
-```
+```text
 Phase 0: Manual prerequisites
 Phase 1: Environment setup
 Phase 2-N: Test scenarios
