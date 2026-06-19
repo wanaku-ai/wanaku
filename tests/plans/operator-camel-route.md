@@ -97,7 +97,7 @@ The router has OIDC auth enabled, so external `curl` calls get a 302 redirect. A
 query_router_api() {
   local ENDPOINT="$1"
   local ROUTER_POD
-  ROUTER_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-test-router-mcp-router \
+  ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
     -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
   oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
@@ -208,12 +208,38 @@ spec:
 EOF
 ```
 
-**Verification - Wait for Ready condition:**
+**Verification - Wait for pod to schedule and start (fail fast if stuck):**
+
+```bash
+# Wait for the pod to exist
+sleep 5
+ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+
+if [ -z "${ROUTER_POD}" ]; then
+  echo "FAIL: no router pod found after 5s — operator may not have created the deployment"
+  exit 1
+fi
+
+# Fail fast if pod is stuck in Pending/ContainerCreating for more than 60s
+oc wait pod "${ROUTER_POD}" --for=condition=ContainersReady --timeout=60s -n "${WANAKU_NAMESPACE}" 2>/dev/null || {
+  POD_PHASE=$(oc get pod "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -o jsonpath='{.status.phase}')
+  CONTAINER_STATE=$(oc get pod "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{.status.containerStatuses[0].state}' 2>/dev/null || echo "unknown")
+  echo "FAIL: router pod not ready after 60s (phase=${POD_PHASE}, state=${CONTAINER_STATE})"
+  echo "This usually indicates a cluster-level problem (image pull, PVC, scheduling)."
+  oc describe pod "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" | tail -20
+  exit 1
+}
+echo "PASS: router pod containers are ready"
+```
+
+**Wait for Ready condition on the CR:**
 
 ```bash
 oc wait wanakurouter/wanaku-test-router \
   --for=condition=Ready \
-  --timeout=120s \
+  --timeout=60s \
   -n "${WANAKU_NAMESPACE}"
 # Expected output: wanakurouter.wanaku.ai/wanaku-test-router condition met
 ```
@@ -223,19 +249,19 @@ oc wait wanakurouter/wanaku-test-router \
 ```bash
 oc wait deployment/wanaku-test-router-mcp-router \
   --for=condition=Available \
-  --timeout=120s \
+  --timeout=60s \
   -n "${WANAKU_NAMESPACE}"
 echo "router-deployment-available=$?"
 # Expected: router-deployment-available=0
 ```
 
-### Test 3.3: Verify router pod is running and REST API is reachable
+### Test 3.3: Verify router REST API is reachable
 
 ```bash
-ROUTER_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-test-router-mcp-router \
+ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
-MAX_RETRIES=24
+MAX_RETRIES=12
 RETRY_INTERVAL=5
 for i in $(seq 1 ${MAX_RETRIES}); do
   HTTP_CODE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
@@ -355,7 +381,7 @@ echo "PASS: registeredResources is empty"
 ### Test 4.6: Verify catalog exists in router
 
 ```bash
-ROUTER_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-test-router-mcp-router \
+ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
 CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
@@ -468,7 +494,7 @@ echo "PASS: registeredTools is empty"
 ### Test 5.5: Verify resource catalog exists in router
 
 ```bash
-ROUTER_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-test-router-mcp-router \
+ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
 CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
@@ -573,7 +599,7 @@ echo "${RESOURCES}" | grep -q "combined-resource" && echo "PASS: combined-resour
 ### Test 6.4: Verify combined catalog exists in router
 
 ```bash
-ROUTER_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-test-router-mcp-router \
+ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
 CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
@@ -931,7 +957,7 @@ oc delete wanakucamelroute test-greeting-tool -n "${WANAKU_NAMESPACE}"
 wait_for_deletion wanakucamelroute test-greeting-tool "${WANAKU_NAMESPACE}" 60
 
 # Verify catalog was removed from router
-ROUTER_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-test-router-mcp-router \
+ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
 sleep 5
