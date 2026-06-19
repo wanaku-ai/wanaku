@@ -2,7 +2,10 @@ package ai.wanaku.operator.wanaku;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +28,7 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.services.api.ServiceCatalogService;
+import ai.wanaku.operator.util.OperatorAuthHelper;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
@@ -44,6 +48,8 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
     private static final Logger LOG = Logger.getLogger(WanakuServiceCatalogReconciler.class);
 
     private static final String CATALOG_DATA_KEY = "catalog.zip";
+
+    private final OperatorAuthHelper authHelper = new OperatorAuthHelper();
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -75,8 +81,9 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
                     routerRef, namespace));
         }
 
+        final WanakuTypes.AuthSpec authSpec = router.getSpec().getAuth();
         final String routerBaseUrl = getRouterBaseUrl(routerRef);
-        final List<String> deployedCatalogs = deployCatalogs(resource, namespace, routerBaseUrl);
+        final List<String> deployedCatalogs = deployCatalogs(resource, namespace, routerBaseUrl, authSpec);
 
         final WanakuServiceCatalogStatus status = new WanakuServiceCatalogStatus();
         status.setDeployedCatalogs(deployedCatalogs);
@@ -106,10 +113,20 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
             return DeleteControl.defaultDelete();
         }
 
+        WanakuTypes.AuthSpec authSpec = null;
+        WanakuRouter router = kubernetesClient
+                .resources(WanakuRouter.class)
+                .inNamespace(resource.getMetadata().getNamespace())
+                .withName(routerRef)
+                .get();
+        if (router != null) {
+            authSpec = router.getSpec().getAuth();
+        }
+
         final String routerBaseUrl = getRouterBaseUrl(routerRef);
         for (String catalogName : deployedCatalogs) {
             try {
-                removeServiceCatalog(routerBaseUrl, catalogName);
+                removeServiceCatalog(routerBaseUrl, authSpec, catalogName);
                 LOG.infof("Removed service catalog '%s' from router", catalogName);
             } catch (Exception e) {
                 LOG.warnf("Failed to remove service catalog '%s' during cleanup: %s", catalogName, e.getMessage());
@@ -119,7 +136,8 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         return DeleteControl.defaultDelete();
     }
 
-    private List<String> deployCatalogs(WanakuServiceCatalog resource, String namespace, String routerBaseUrl)
+    private List<String> deployCatalogs(
+            WanakuServiceCatalog resource, String namespace, String routerBaseUrl, WanakuTypes.AuthSpec authSpec)
             throws WanakuException {
         List<WanakuServiceCatalogSpec.CatalogEntrySpec> catalogs =
                 resource.getSpec().getCatalogs();
@@ -154,7 +172,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
             }
 
             String catalogData = data.get(CATALOG_DATA_KEY);
-            deployServiceCatalog(routerBaseUrl, catalogName, catalogData);
+            deployServiceCatalog(routerBaseUrl, authSpec, catalogName, catalogData);
             deployed.add(catalogName);
             LOG.infof("Successfully deployed service catalog '%s'", catalogName);
         }
@@ -162,13 +180,14 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         return deployed;
     }
 
-    private void deployServiceCatalog(String routerBaseUrl, String name, String data) throws WanakuException {
+    private void deployServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name, String data)
+            throws WanakuException {
         DataStore dataStore = new DataStore();
         dataStore.setName(name);
         dataStore.setData(data);
 
         try {
-            ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl);
+            ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
             service.deploy(dataStore);
         } catch (WebApplicationException e) {
             throw new WanakuException(
@@ -181,14 +200,37 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         }
     }
 
-    private void removeServiceCatalog(String routerBaseUrl, String name) {
-        ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl);
+    private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name) {
+        ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
         service.remove(name);
     }
 
-    private static ServiceCatalogService createServiceCatalogClient(String routerBaseUrl) {
-        return QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(routerBaseUrl))
-                .build(ServiceCatalogService.class);
+    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+        QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
+
+        if (OperatorAuthHelper.isAuthEnabled(authSpec)) {
+            builder.register(new BearerTokenFilter(authHelper, authSpec));
+        }
+
+        return builder.build(ServiceCatalogService.class);
+    }
+
+    /**
+     * JAX-RS client request filter that adds a bearer token to outgoing requests.
+     */
+    private static class BearerTokenFilter implements ClientRequestFilter {
+        private final OperatorAuthHelper authHelper;
+        private final WanakuTypes.AuthSpec authSpec;
+
+        BearerTokenFilter(OperatorAuthHelper authHelper, WanakuTypes.AuthSpec authSpec) {
+            this.authHelper = authHelper;
+            this.authSpec = authSpec;
+        }
+
+        @Override
+        public void filter(ClientRequestContext requestContext) throws IOException {
+            String token = authHelper.getToken(authSpec);
+            requestContext.getHeaders().putSingle("Authorization", "Bearer " + token);
+        }
     }
 }

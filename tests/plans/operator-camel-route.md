@@ -61,6 +61,8 @@ Set these before running the plan. All image tags default to `latest` but can be
 export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
+# OIDC client secret for operator-to-router authentication (defaults to "mypasswd")
+export WANAKU_OIDC_CLIENT_SECRET="${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}"
 ```
 
 ### Helper: wait for resource deletion
@@ -415,6 +417,29 @@ oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Starting CamelRout
 oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Successfully deployed CamelRoute 'test-greeting-tool'" && \
   echo "PASS: successful deployment logged" || \
   echo "FAIL: successful deployment not found in operator logs"
+```
+
+### Test 4.8: Verify operator used OIDC authentication for catalog deployment
+
+**Description:** Since the router has auth enabled (`authServer: "http://keycloak:8080"`), the operator must obtain an OIDC token before deploying catalogs. Verify by checking that the operator did NOT get a 302 redirect (which would indicate missing auth), and that the deployment succeeded. With `DEBUG` logging enabled, the token request is also logged.
+
+```bash
+OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+# The operator should NOT have logged a 302 redirect error
+if oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "HTTP 302"; then
+  echo "FAIL: operator received HTTP 302 — OIDC authentication may not be working"
+  exit 1
+fi
+echo "PASS: no HTTP 302 errors in operator logs"
+
+# With DEBUG logging, the token request is visible
+if oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Requesting OIDC token"; then
+  echo "PASS: OIDC token request logged (DEBUG level)"
+else
+  echo "INFO: OIDC token request not in logs (enable DEBUG logging to see it)"
+fi
 ```
 
 ---
