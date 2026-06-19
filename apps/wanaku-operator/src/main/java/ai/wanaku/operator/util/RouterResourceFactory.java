@@ -208,38 +208,37 @@ public final class RouterResourceFactory {
                 .findFirst()
                 .get();
 
-        final String authServer = resource.getSpec().getAuth().getAuthServer();
-
-        // If a proxy is not defined,
-        String authProxy = resource.getSpec().getAuth().getAuthProxy();
-        if ("auto".equals(authProxy)) {
-            // TODO: needs to support https
-            authProxy = String.format("http://%s", host);
-        } else {
-            if (authProxy == null) {
-                authProxy = authServer;
-            }
-        }
-
-        String realm = OperatorUtil.resolveAuthRealm(resource);
-
-        EnvVar authServerEnv = new EnvVarBuilder()
-                .withName(EnvironmentVariables.AUTH_SERVER)
-                .withValue(authServer)
-                .build();
-        EnvVar authProxyEnv = new EnvVarBuilder()
-                .withName(EnvironmentVariables.AUTH_PROXY)
-                .withValue(authProxy)
-                .build();
-        EnvVar authRealmEnv = new EnvVarBuilder()
-                .withName(EnvironmentVariables.AUTH_REALM)
-                .withValue(realm)
-                .build();
-
         List<EnvVar> envVars = new java.util.ArrayList<>();
-        envVars.add(authServerEnv);
-        envVars.add(authProxyEnv);
-        envVars.add(authRealmEnv);
+
+        final WanakuTypes.AuthSpec authSpec = resource.getSpec().getAuth();
+        if (authSpec != null) {
+            final String authServer = authSpec.getAuthServer();
+
+            String authProxy = authSpec.getAuthProxy();
+            if ("auto".equals(authProxy)) {
+                // TODO: needs to support https
+                authProxy = String.format("http://%s", host);
+            } else {
+                if (authProxy == null) {
+                    authProxy = authServer;
+                }
+            }
+
+            String realm = OperatorUtil.resolveAuthRealm(resource);
+
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.AUTH_SERVER)
+                    .withValue(authServer)
+                    .build());
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.AUTH_PROXY)
+                    .withValue(authProxy)
+                    .build());
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.AUTH_REALM)
+                    .withValue(realm)
+                    .build());
+        }
 
         final WanakuRouterSpec.RouterSpec routerSpec = resource.getSpec().getRouter();
 
