@@ -203,36 +203,33 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         }
     }
 
-    private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name) {
+    private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name)
+            throws IOException {
         ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
         service.remove(name);
     }
 
-    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec)
+            throws IOException {
         QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
 
         if (OperatorAuthHelper.isAuthEnabled(authSpec)) {
-            builder.register(new BearerTokenFilter(authHelper, authSpec));
+            String token = authHelper.getToken(authSpec);
+            builder.register(new BearerTokenFilter(token));
         }
 
         return builder.build(ServiceCatalogService.class);
     }
 
-    /**
-     * JAX-RS client request filter that adds a bearer token to outgoing requests.
-     */
     private static class BearerTokenFilter implements ClientRequestFilter {
-        private final OperatorAuthHelper authHelper;
-        private final WanakuTypes.AuthSpec authSpec;
+        private final String token;
 
-        BearerTokenFilter(OperatorAuthHelper authHelper, WanakuTypes.AuthSpec authSpec) {
-            this.authHelper = authHelper;
-            this.authSpec = authSpec;
+        BearerTokenFilter(String token) {
+            this.token = token;
         }
 
         @Override
-        public void filter(ClientRequestContext requestContext) throws IOException {
-            String token = authHelper.getToken(authSpec);
+        public void filter(ClientRequestContext requestContext) {
             requestContext.getHeaders().putSingle("Authorization", "Bearer " + token);
         }
     }
