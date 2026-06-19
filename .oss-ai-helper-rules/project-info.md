@@ -1,6 +1,6 @@
 # Project Information
 
-This rule file contains project-specific metadata used by OSS Helper commands. Commands detect the current project by matching `git remote get-url origin` against the remote pattern below.
+This rule file contains project-specific metadata used by OSS Helper. Commands detect the current project by matching `git remote get-url origin` against the remote pattern below.
 
 - **Remote pattern:** `wanaku-ai/wanaku`
 - **GitHub repo:** `wanaku-ai/wanaku`
