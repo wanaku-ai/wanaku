@@ -51,6 +51,13 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /q/health/started
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 30
           volumeMounts:
             - mountPath: /home/default/.wanaku/router
               name: router-volume
