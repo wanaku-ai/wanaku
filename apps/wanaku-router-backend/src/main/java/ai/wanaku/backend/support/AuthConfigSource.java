@@ -62,7 +62,12 @@ public class AuthConfigSource implements ConfigSource {
             return value;
         }
 
-        return System.getenv(ENV_VAR);
+        value = System.getenv(ENV_VAR);
+        if (value != null) {
+            return value;
+        }
+
+        return System.getenv(AUTH_PROPERTY);
     }
 
     private Map<String, String> getNoauthProperties() {
