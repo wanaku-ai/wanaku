@@ -2,6 +2,8 @@ package ai.wanaku.operator.wanaku;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,6 +25,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.core.services.api.ServiceCatalogService;
 import ai.wanaku.operator.util.CamelRoutePackager;
+import ai.wanaku.operator.util.OperatorAuthHelper;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
@@ -36,6 +39,8 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
         description = "Deploys and manages Wanaku Camel Routes as service catalogs")
 public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>, Cleaner<WanakuCamelRoute> {
     private static final Logger LOG = Logger.getLogger(WanakuCamelRouteReconciler.class);
+
+    private final OperatorAuthHelper authHelper = new OperatorAuthHelper();
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -77,6 +82,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
                     routerRef, namespace));
         }
 
+        final WanakuTypes.AuthSpec authSpec = router.getSpec().getAuth();
         final String routerBaseUrl = getRouterBaseUrl(routerRef);
         final String catalogName = crName;
 
@@ -87,7 +93,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             throw new WanakuException("Failed to package CamelRoute '%s'".formatted(catalogName), e);
         }
 
-        deployServiceCatalog(routerBaseUrl, catalogName, base64Zip);
+        deployServiceCatalog(routerBaseUrl, authSpec, catalogName, base64Zip);
         LOG.infof("Successfully deployed CamelRoute '%s' as service catalog", catalogName);
 
         final WanakuCamelRouteStatus status = new WanakuCamelRouteStatus();
@@ -120,9 +126,19 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             return DeleteControl.defaultDelete();
         }
 
+        WanakuTypes.AuthSpec authSpec = null;
+        WanakuRouter router = kubernetesClient
+                .resources(WanakuRouter.class)
+                .inNamespace(resource.getMetadata().getNamespace())
+                .withName(routerRef)
+                .get();
+        if (router != null) {
+            authSpec = router.getSpec().getAuth();
+        }
+
         final String routerBaseUrl = getRouterBaseUrl(routerRef);
         try {
-            removeServiceCatalog(routerBaseUrl, deployedCatalogName);
+            removeServiceCatalog(routerBaseUrl, authSpec, deployedCatalogName);
             LOG.infof("Removed service catalog '%s' from router", deployedCatalogName);
         } catch (Exception e) {
             LOG.warnf("Failed to remove service catalog '%s' during cleanup: %s", deployedCatalogName, e.getMessage());
@@ -131,13 +147,14 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         return DeleteControl.defaultDelete();
     }
 
-    private void deployServiceCatalog(String routerBaseUrl, String name, String data) throws WanakuException {
+    private void deployServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name, String data)
+            throws WanakuException {
         DataStore dataStore = new DataStore();
         dataStore.setName(name);
         dataStore.setData(data);
 
         try {
-            ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl);
+            ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
             service.deploy(dataStore);
         } catch (WebApplicationException e) {
             throw new WanakuException(
@@ -150,15 +167,38 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         }
     }
 
-    private void removeServiceCatalog(String routerBaseUrl, String name) {
-        ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl);
+    private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name) {
+        ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
         service.remove(name);
     }
 
-    private static ServiceCatalogService createServiceCatalogClient(String routerBaseUrl) {
-        return QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create(routerBaseUrl))
-                .build(ServiceCatalogService.class);
+    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+        QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
+
+        if (OperatorAuthHelper.isAuthEnabled(authSpec)) {
+            builder.register(new BearerTokenFilter(authHelper, authSpec));
+        }
+
+        return builder.build(ServiceCatalogService.class);
+    }
+
+    /**
+     * JAX-RS client request filter that adds a bearer token to outgoing requests.
+     */
+    private static class BearerTokenFilter implements ClientRequestFilter {
+        private final OperatorAuthHelper authHelper;
+        private final WanakuTypes.AuthSpec authSpec;
+
+        BearerTokenFilter(OperatorAuthHelper authHelper, WanakuTypes.AuthSpec authSpec) {
+            this.authHelper = authHelper;
+            this.authSpec = authSpec;
+        }
+
+        @Override
+        public void filter(ClientRequestContext requestContext) throws IOException {
+            String token = authHelper.getToken(authSpec);
+            requestContext.getHeaders().putSingle("Authorization", "Bearer " + token);
+        }
     }
 
     private static List<String> extractToolNames(WanakuCamelRouteSpec spec) {
