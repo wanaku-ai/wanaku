@@ -290,6 +290,10 @@ video that shows how to use the MCP Inspector to perform these steps.
 
 ## Testing
 
+> [!IMPORTANT]
+> When running operator test plans on OpenShift, use a dedicated service account instead of your personal (admin) credentials.
+> See [Service Account Setup](../tests/plans/setup/service-account-setup.md) for instructions.
+
 There are multiple ways you can test Wanaku and the integrations you develop.
 
 1. Wanaku's LLMchat page in the Web UI
