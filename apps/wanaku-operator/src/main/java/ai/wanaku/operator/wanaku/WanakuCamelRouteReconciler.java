@@ -7,10 +7,13 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
@@ -54,20 +57,25 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
 
         final String routerRef = resource.getSpec().getRouterRef();
         if (routerRef == null || routerRef.isBlank()) {
-            throw new WanakuException(
+            return setErrorStatus(
+                    resource,
+                    "ValidationError",
                     "routerRef must be specified in the WanakuCamelRoute spec to indicate which WanakuRouter to deploy to.");
         }
 
         if (resource.getSpec().getRoute() == null
                 || resource.getSpec().getRoute().isEmpty()) {
-            throw new WanakuException("route must be specified in the WanakuCamelRoute spec.");
+            return setErrorStatus(resource, "ValidationError", "route must be specified in the WanakuCamelRoute spec.");
         }
 
         WanakuCamelRouteSpec.McpSpec mcp = resource.getSpec().getMcp();
         if (mcp == null
                 || ((mcp.getTools() == null || mcp.getTools().isEmpty())
                         && (mcp.getResources() == null || mcp.getResources().isEmpty()))) {
-            throw new WanakuException("mcp must define at least one tool or resource in the WanakuCamelRoute spec.");
+            return setErrorStatus(
+                    resource,
+                    "ValidationError",
+                    "mcp must define at least one tool or resource in the WanakuCamelRoute spec.");
         }
 
         WanakuRouter router = kubernetesClient
@@ -76,10 +84,13 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
                 .withName(routerRef)
                 .get();
         if (router == null) {
-            throw new WanakuException(String.format(
-                    "Referenced WanakuRouter '%s' not found in namespace '%s'. "
-                            + "Ensure the WanakuRouter resource is created before the WanakuCamelRoute.",
-                    routerRef, namespace));
+            return setErrorStatus(
+                    resource,
+                    "ValidationError",
+                    String.format(
+                            "Referenced WanakuRouter '%s' not found in namespace '%s'. "
+                                    + "Ensure the WanakuRouter resource is created before the WanakuCamelRoute.",
+                            routerRef, namespace));
         }
 
         final WanakuTypes.AuthSpec authSpec = router.getSpec().getAuth();
@@ -90,10 +101,17 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         try {
             base64Zip = CamelRoutePackager.packageCamelRoute(resource.getSpec(), catalogName);
         } catch (IOException e) {
-            throw new WanakuException("Failed to package CamelRoute '%s'".formatted(catalogName), e);
+            return setErrorStatus(
+                    resource,
+                    "DeploymentError",
+                    "Failed to package CamelRoute '%s': %s".formatted(catalogName, e.getMessage()));
         }
 
-        deployServiceCatalog(routerBaseUrl, authSpec, catalogName, base64Zip);
+        try {
+            deployServiceCatalog(routerBaseUrl, authSpec, catalogName, base64Zip);
+        } catch (WanakuException e) {
+            return setErrorStatus(resource, "DeploymentError", e.getMessage());
+        }
         LOG.infof("Successfully deployed CamelRoute '%s' as service catalog", catalogName);
 
         final WanakuCamelRouteStatus status = new WanakuCamelRouteStatus();
@@ -145,6 +163,24 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         }
 
         return DeleteControl.defaultDelete();
+    }
+
+    private UpdateControl<WanakuCamelRoute> setErrorStatus(WanakuCamelRoute resource, String reason, String message) {
+        LOG.warnf("WanakuCamelRoute '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+
+        final WanakuCamelRouteStatus status = new WanakuCamelRouteStatus();
+        Condition condition = new ConditionBuilder()
+                .withType(READY_CONDITION)
+                .withStatus("False")
+                .withObservedGeneration(resource.getMetadata().getGeneration())
+                .withLastTransitionTime(OffsetDateTime.now(ZoneOffset.UTC).toString())
+                .withReason(reason)
+                .withMessage(message)
+                .build();
+        status.setConditions(List.of(condition));
+        resource.setStatus(status);
+
+        return UpdateControl.patchStatus(resource);
     }
 
     private void deployServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name, String data)
