@@ -391,7 +391,7 @@ done
 
 ### Test 4.1: Create a WanakuRouter with auth disabled
 
-**Description:** Create a second router with `wanaku.http.auth=none` for testing unauthenticated access.
+**Description:** Create a second router with `WANAKU_HTTP_AUTH=none` for testing unauthenticated access.
 
 ```bash
 cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -404,7 +404,7 @@ spec:
     image: ${WANAKU_ROUTER_IMAGE}
     imagePullPolicy: Always
     env:
-      - name: wanaku.http.auth
+      - name: WANAKU_HTTP_AUTH
         value: none
 EOF
 ```
@@ -422,12 +422,12 @@ oc wait wanakurouter/wanaku-noauth-router \
 
 ```bash
 NOAUTH_ENV=$(oc get deployment wanaku-noauth-router-mcp-router -n "${WANAKU_NAMESPACE}" \
-  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="wanaku.http.auth")].value}')
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="WANAKU_HTTP_AUTH")].value}')
 if [ "${NOAUTH_ENV}" != "none" ]; then
-  echo "FAIL: wanaku.http.auth is '${NOAUTH_ENV}', expected 'none'"
+  echo "FAIL: WANAKU_HTTP_AUTH is '${NOAUTH_ENV}', expected 'none'"
   exit 1
 fi
-echo "PASS: wanaku.http.auth=none is set"
+echo "PASS: WANAKU_HTTP_AUTH=none is set"
 ```
 
 ### Test 4.3: Verify noauth router REST API is accessible without token
