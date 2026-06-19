@@ -28,14 +28,18 @@ public final class EnvironmentVariableHelper {
     public static List<EnvVar> computeWanakuCapabilitiesEnvVars(
             WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
 
-        final String authServer = resource.getSpec().getAuth().getAuthServer();
-
-        List<EnvVar> envVars = buildCommonEnvVars(
-                resource,
-                authServer,
-                EnvironmentVariables.AUTH_SERVER,
-                EnvironmentVariables.WANAKU_SERVICE_REGISTRATION_URI,
-                EnvironmentVariables.QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET);
+        List<EnvVar> envVars;
+        WanakuTypes.AuthSpec authSpec = resource.getSpec().getAuth();
+        if (authSpec != null) {
+            envVars = buildCommonEnvVars(
+                    resource,
+                    authSpec.getAuthServer(),
+                    EnvironmentVariables.AUTH_SERVER,
+                    EnvironmentVariables.WANAKU_SERVICE_REGISTRATION_URI,
+                    EnvironmentVariables.QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET);
+        } else {
+            envVars = new java.util.ArrayList<>();
+        }
 
         addCustomVars(capabilitiesSpec.getEnv(), envVars);
         return envVars;
@@ -51,15 +55,21 @@ public final class EnvironmentVariableHelper {
     public static List<EnvVar> computeCamelIntegrationCapabilitiesEnvVars(
             WanakuCapability resource, WanakuCapabilitySpec.CapabilitiesSpec capabilitiesSpec) {
 
-        String realm = OperatorUtil.resolveAuthRealm(resource);
-        String authServerValue = resource.getSpec().getAuth().getAuthServer() + "/realms/" + realm;
+        List<EnvVar> envVars;
+        WanakuTypes.AuthSpec authSpec = resource.getSpec().getAuth();
+        if (authSpec != null) {
+            String realm = OperatorUtil.resolveAuthRealm(resource);
+            String authServerValue = authSpec.getAuthServer() + "/realms/" + realm;
 
-        List<EnvVar> envVars = buildCommonEnvVars(
-                resource,
-                authServerValue,
-                EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT,
-                EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_REGISTRATION_URL,
-                EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_SECRET);
+            envVars = buildCommonEnvVars(
+                    resource,
+                    authServerValue,
+                    EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT,
+                    EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_REGISTRATION_URL,
+                    EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_SECRET);
+        } else {
+            envVars = new java.util.ArrayList<>();
+        }
 
         envVars.add(new EnvVarBuilder()
                 .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_NAME)
