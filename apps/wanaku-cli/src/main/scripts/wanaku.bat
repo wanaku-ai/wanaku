@@ -8,4 +8,4 @@ if exist "%~dp0wanaku-cli.exe" (
     exit /b %ERRORLEVEL%
 )
 
-@java -jar "%~dp0..\quarkus-run.jar" %*
+@java -jar "%~dp0quarkus-run.jar" %*
