@@ -8,7 +8,10 @@ export class ResourcesPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto(`${this.baseUrl}#/resources`);
+    await this.navigateTo('/resources');
+  }
+
+  override async waitForDataLoad() {
     await this.page.locator('button:has-text("Add Resource")').waitFor({ state: 'visible', timeout: 15_000 });
   }
 
@@ -21,6 +24,10 @@ export class ResourcesPage extends BasePage {
     await this.page.locator(Carbon.textInput('resource-name')).fill(resource.name);
     await this.page.locator(Carbon.textInput('resource-description')).fill(resource.description);
     await this.page.locator(Carbon.textInput('resource-location')).fill(resource.location);
+  }
+
+  async fillDescription(description: string) {
+    await this.page.locator(Carbon.textInput('resource-description')).fill(description);
   }
 
   async clickEditResource(name: string) {

@@ -22,6 +22,10 @@ export class ToolsPage extends BasePage {
     await this.page.locator(Carbon.textInput('tool-uri')).fill(tool.uri);
   }
 
+  async fillDescription(description: string) {
+    await this.page.locator(Carbon.textInput('tool-description')).fill(description);
+  }
+
   async clickEditTool(name: string) {
     await this.rowWithText(name).locator(Carbon.iconButton('Edit')).click();
     await this.modal().waitFor({ state: 'visible' });

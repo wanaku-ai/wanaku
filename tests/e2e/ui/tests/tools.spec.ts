@@ -56,8 +56,7 @@ test.describe('Tools', () => {
     const heading = await tools.getModalHeading();
     expect(heading).toBe('Edit Tool');
 
-    const descInput = tools['page'].locator('#tool-description');
-    await descInput.fill('Updated by e2e test');
+    await tools.fillDescription('Updated by e2e test');
     await tools.submitModal();
 
     await tools.waitForToolInTable(data.name);
