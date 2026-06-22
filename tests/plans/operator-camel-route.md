@@ -498,21 +498,34 @@ else
 fi
 ```
 
-### Test 4.9: Verify tool is accessible via MCP client
+### Test 4.9: Verify tool is listed and callable via MCP client
 
-**Description:** Use the `wanaku mcp` CLI to connect to the router's public MCP endpoint and verify the deployed tool is listed.
+**Description:** Use the `wanaku mcp` CLI to verify the deployed tool is listed and returns a meaningful response when invoked.
 
 ```bash
 start_mcp_port_forward
 
+# Verify tool is listed
 TOOL_LIST=$(wanaku mcp tool list --uri "${MCP_URI}" 2>&1)
 echo "MCP tool list output:"
 echo "${TOOL_LIST}"
 
-if echo "${TOOL_LIST}" | grep -q "test-greeting"; then
-  echo "PASS: test-greeting tool visible via MCP"
-else
+if ! echo "${TOOL_LIST}" | grep -q "test-greeting"; then
   echo "FAIL: test-greeting tool not found in MCP tool list"
+  stop_mcp_port_forward
+  exit 1
+fi
+echo "PASS: test-greeting tool visible via MCP"
+
+# Invoke the tool and verify a meaningful response
+TOOL_RESPONSE=$(wanaku mcp tool --uri "${MCP_URI}" --name test-greeting --param message=hello 2>&1)
+echo "MCP tool invocation response:"
+echo "${TOOL_RESPONSE}"
+
+if echo "${TOOL_RESPONSE}" | grep -qi "hello"; then
+  echo "PASS: test-greeting tool returned a meaningful response"
+else
+  echo "FAIL: test-greeting tool response does not contain expected content"
   stop_mcp_port_forward
   exit 1
 fi
@@ -607,26 +620,39 @@ else
 fi
 ```
 
-### Test 5.6: Verify resource is accessible via MCP client
+### Test 5.6: Verify resource is listed and readable via MCP client
 
-**Description:** Use the `wanaku mcp` CLI to verify the deployed resource is listed via MCP.
+**Description:** Use the `wanaku mcp` CLI to verify the deployed resource is listed and returns meaningful content when read.
 
 ```bash
 start_mcp_port_forward
 
+# Verify resource is listed
 RESOURCE_LIST=$(wanaku mcp resource list --uri "${MCP_URI}" 2>&1)
 echo "MCP resource list output:"
 echo "${RESOURCE_LIST}"
 
-if echo "${RESOURCE_LIST}" | grep -q "test-info"; then
-  echo "PASS: test-info resource visible via MCP"
-else
+if ! echo "${RESOURCE_LIST}" | grep -q "test-info"; then
   echo "FAIL: test-info resource not found in MCP resource list"
   stop_mcp_port_forward
   exit 1
 fi
+echo "PASS: test-info resource visible via MCP"
 
-# Also verify the previously deployed tool is still visible
+# Read the resource and verify meaningful content
+RESOURCE_RESPONSE=$(wanaku mcp resource --uri "${MCP_URI}" --resource-uri "wanaku://test/info" 2>&1)
+echo "MCP resource read response:"
+echo "${RESOURCE_RESPONSE}"
+
+if echo "${RESOURCE_RESPONSE}" | grep -q "healthy"; then
+  echo "PASS: test-info resource returned meaningful content"
+else
+  echo "FAIL: test-info resource response does not contain expected content"
+  stop_mcp_port_forward
+  exit 1
+fi
+
+# Also verify the previously deployed tool is still callable
 TOOL_LIST=$(wanaku mcp tool list --uri "${MCP_URI}" 2>&1)
 if echo "${TOOL_LIST}" | grep -q "test-greeting"; then
   echo "PASS: test-greeting tool still visible via MCP"
@@ -738,9 +764,9 @@ else
 fi
 ```
 
-### Test 6.5: Verify combined tools and resources are accessible via MCP client
+### Test 6.5: Verify all tools are callable and resources readable via MCP client
 
-**Description:** Verify all deployed tools and resources from all CRs are visible through the MCP endpoint.
+**Description:** Verify all deployed tools and resources from all CRs are visible, callable, and return meaningful responses through the MCP endpoint.
 
 ```bash
 start_mcp_port_forward
@@ -756,21 +782,29 @@ echo "${RESOURCE_LIST}"
 
 FAIL=0
 
-# Tools from test-greeting-tool CR
+# Verify all tools are listed
 echo "${TOOL_LIST}" | grep -q "test-greeting" && \
-  echo "PASS: test-greeting tool visible" || { echo "FAIL: test-greeting not found"; FAIL=1; }
-
-# Tools from test-combined-cr CR
+  echo "PASS: test-greeting listed" || { echo "FAIL: test-greeting not found"; FAIL=1; }
 echo "${TOOL_LIST}" | grep -q "combined-tool" && \
-  echo "PASS: combined-tool visible" || { echo "FAIL: combined-tool not found"; FAIL=1; }
+  echo "PASS: combined-tool listed" || { echo "FAIL: combined-tool not found"; FAIL=1; }
 
-# Resources from test-info-resource CR
+# Verify all resources are listed
 echo "${RESOURCE_LIST}" | grep -q "test-info" && \
-  echo "PASS: test-info resource visible" || { echo "FAIL: test-info not found"; FAIL=1; }
-
-# Resources from test-combined-cr CR
+  echo "PASS: test-info listed" || { echo "FAIL: test-info not found"; FAIL=1; }
 echo "${RESOURCE_LIST}" | grep -q "combined-resource" && \
-  echo "PASS: combined-resource visible" || { echo "FAIL: combined-resource not found"; FAIL=1; }
+  echo "PASS: combined-resource listed" || { echo "FAIL: combined-resource not found"; FAIL=1; }
+
+# Invoke combined-tool and verify response
+COMBINED_TOOL_RESPONSE=$(wanaku mcp tool --uri "${MCP_URI}" --name combined-tool --param input=test 2>&1)
+echo "combined-tool response: ${COMBINED_TOOL_RESPONSE}"
+echo "${COMBINED_TOOL_RESPONSE}" | grep -qi "test" && \
+  echo "PASS: combined-tool returned meaningful response" || { echo "FAIL: combined-tool response unexpected"; FAIL=1; }
+
+# Read combined-resource and verify response
+COMBINED_RESOURCE_RESPONSE=$(wanaku mcp resource --uri "${MCP_URI}" --resource-uri "wanaku://test/combined" 2>&1)
+echo "combined-resource response: ${COMBINED_RESOURCE_RESPONSE}"
+echo "${COMBINED_RESOURCE_RESPONSE}" | grep -q "combined" && \
+  echo "PASS: combined-resource returned meaningful content" || { echo "FAIL: combined-resource response unexpected"; FAIL=1; }
 
 stop_mcp_port_forward
 
@@ -1192,7 +1226,7 @@ done
 
 ### Test 9.5: Verify tools and resources are gone from MCP after deletion
 
-**Description:** After all CamelRoute CRs are deleted, verify the MCP endpoint no longer lists the tools and resources that were deployed.
+**Description:** After all CamelRoute CRs are deleted, verify the MCP endpoint no longer lists the previously deployed tools and resources, and that invoking them fails.
 
 ```bash
 start_mcp_port_forward
@@ -1208,6 +1242,7 @@ echo "${RESOURCE_LIST}"
 
 FAIL=0
 
+# Verify tools are no longer listed
 echo "${TOOL_LIST}" | grep -q "test-greeting" && \
   { echo "FAIL: test-greeting still in MCP tool list"; FAIL=1; } || \
   echo "PASS: test-greeting removed from MCP"
@@ -1216,6 +1251,7 @@ echo "${TOOL_LIST}" | grep -q "combined-tool" && \
   { echo "FAIL: combined-tool still in MCP tool list"; FAIL=1; } || \
   echo "PASS: combined-tool removed from MCP"
 
+# Verify resources are no longer listed
 echo "${RESOURCE_LIST}" | grep -q "test-info" && \
   { echo "FAIL: test-info still in MCP resource list"; FAIL=1; } || \
   echo "PASS: test-info removed from MCP"
@@ -1223,6 +1259,16 @@ echo "${RESOURCE_LIST}" | grep -q "test-info" && \
 echo "${RESOURCE_LIST}" | grep -q "combined-resource" && \
   { echo "FAIL: combined-resource still in MCP resource list"; FAIL=1; } || \
   echo "PASS: combined-resource removed from MCP"
+
+# Verify invoking a deleted tool fails
+DELETED_TOOL_RESPONSE=$(wanaku mcp tool --uri "${MCP_URI}" --name test-greeting --param message=hello 2>&1)
+echo "Deleted tool invocation response: ${DELETED_TOOL_RESPONSE}"
+if echo "${DELETED_TOOL_RESPONSE}" | grep -qi "error\|not found\|No tools found"; then
+  echo "PASS: invoking deleted tool correctly fails"
+else
+  echo "FAIL: invoking deleted tool did not produce an error"
+  FAIL=1
+fi
 
 stop_mcp_port_forward
 
