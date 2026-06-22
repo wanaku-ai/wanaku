@@ -165,9 +165,9 @@ java -Dwanaku.http.auth=none -jar quarkus-run.jar
 > | `quarkus.oidc.mcp.enabled` | `false` | Disables the MCP OIDC tenant |
 > | `quarkus.oidc.mcp.discovery-enabled` | `false` | Same, for the MCP OIDC tenant used by OidcProxy |
 > | `quarkus.oidc.mcp.resource-metadata.enabled` | `false` | Disables resource metadata for MCP tenant |
-> | `quarkus.oidc.ns-{1..10}.enabled` | `false` | Disables per-namespace OIDC tenants |
-> | `quarkus.oidc.ns-{1..10}.discovery-enabled` | `false` | Same, for per-namespace OIDC tenants |
-> | `quarkus.oidc.ns-{1..10}.resource-metadata.enabled` | `false` | Disables resource metadata for namespace tenants |
+> | `quarkus.oidc.ns-{0..9}.enabled` | `false` | Disables per-namespace OIDC tenants |
+> | `quarkus.oidc.ns-{0..9}.discovery-enabled` | `false` | Same, for per-namespace OIDC tenants |
+> | `quarkus.oidc.ns-{0..9}.resource-metadata.enabled` | `false` | Disables resource metadata for namespace tenants |
 > | `quarkus.oidc-proxy.enabled` | `false` | Disables the OIDC proxy |
 > | `quarkus.http.auth.permission.authenticated.policy` | `permit` | Opens management / data-store APIs |
 > | `quarkus.http.auth.permission.mcp-authenticated.policy` | `permit` | Opens MCP namespace endpoints |
