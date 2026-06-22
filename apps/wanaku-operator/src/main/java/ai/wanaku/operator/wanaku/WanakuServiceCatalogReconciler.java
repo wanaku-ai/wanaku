@@ -5,7 +5,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -30,8 +29,9 @@ import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
 import ai.wanaku.core.services.api.ServiceCatalogService;
-import ai.wanaku.operator.util.OperatorAuthHelper;
+import ai.wanaku.operator.util.OperatorSecurityConfig;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
@@ -52,7 +52,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
 
     private static final String CATALOG_DATA_KEY = "catalog.zip";
 
-    private final OperatorAuthHelper authHelper = new OperatorAuthHelper();
+    private ServiceAuthenticator serviceAuthenticator;
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -235,18 +235,19 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         }
     }
 
-    private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name)
-            throws IOException {
+    private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name) {
         ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
         service.remove(name);
     }
 
-    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec)
-            throws IOException {
+    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
         QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
 
-        if (OperatorAuthHelper.isAuthEnabled(authSpec)) {
-            String token = authHelper.getToken(authSpec);
+        if (OperatorSecurityConfig.isAuthEnabled(authSpec)) {
+            if (serviceAuthenticator == null) {
+                serviceAuthenticator = new ServiceAuthenticator(new OperatorSecurityConfig(authSpec));
+            }
+            String token = serviceAuthenticator.currentValidAccessToken();
             builder.register(new BearerTokenFilter(token));
         }
 
