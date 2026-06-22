@@ -1,10 +1,10 @@
 package ai.wanaku.backend.api.v1.chat;
 
-import ai.wanaku.backend.support.NoOidcTestProfile;
-import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import ai.wanaku.backend.support.NoOidcTestProfile;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;

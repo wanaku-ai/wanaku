@@ -1,22 +1,23 @@
 package ai.wanaku.backend.api.v1.chat;
 
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+
+import java.io.StringReader;
+import java.util.List;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import ai.wanaku.backend.support.NoOidcTestProfile;
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.io.StringReader;
-import java.util.List;
 
 import static ai.wanaku.test.assertions.WanakuAssertions.assertHttpStatus;
 import static ai.wanaku.test.assertions.WanakuAssertions.assertHttpSuccess;
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
@@ -72,5 +73,4 @@ public class LlmChatResourceTest extends AbstractLlmChatResourceTest {
         var response = given().headers(getHeaders()).when().get("/api/v1/chat/foobar/models");
         assertHttpStatus(response, NOT_FOUND.getStatusCode());
     }
-
 }

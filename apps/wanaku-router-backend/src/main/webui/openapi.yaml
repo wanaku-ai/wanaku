@@ -893,9 +893,7 @@ paths:
         "200":
           description: OK
           content:
-            text/plain:
-              schema:
-                type: string
+            text/plain: {}
       summary: Code Completions
       tags:
       - Llm Chat Resource
@@ -926,11 +924,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-      summary: Get Models
+              schema: {}
+      summary: Get Model Suggestions
       tags:
       - Llm Chat Resource
   /api/v1/data-store:

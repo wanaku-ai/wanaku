@@ -324,17 +324,17 @@ export const getApiV1CapabilitiesToolsState = async (
 /**
  * @summary Code Completions
  */
-export type postApiV1ChatCompletionsResponse200 = {
-  data: string;
-  status: 200;
+export type postApiV1ChatCompletionsResponseDefault = {
+  data: unknown;
+  status: number;
 };
-
-export type postApiV1ChatCompletionsResponseSuccess =
-  postApiV1ChatCompletionsResponse200 & {
+export type postApiV1ChatCompletionsResponseError =
+  postApiV1ChatCompletionsResponseDefault & {
     headers: Headers;
   };
+
 export type postApiV1ChatCompletionsResponse =
-  postApiV1ChatCompletionsResponseSuccess;
+  postApiV1ChatCompletionsResponseError;
 
 export const getPostApiV1ChatCompletionsUrl = () => {
   return `/api/v1/chat/completions`;
@@ -382,10 +382,10 @@ export const getApiV1ChatLlms = async (
 };
 
 /**
- * @summary Get Models
+ * @summary Get Model Suggestions
  */
 export type getApiV1ChatLlmModelsResponse200 = {
-  data: string[];
+  data: unknown;
   status: 200;
 };
 

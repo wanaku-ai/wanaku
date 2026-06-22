@@ -26,5 +26,4 @@ public abstract class AbstractLlmChatResourceTest extends WanakuRouterTest {
 
         assertHttpStatus(response, BAD_REQUEST.getStatusCode());
     }
-
 }

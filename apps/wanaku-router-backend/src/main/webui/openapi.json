@@ -1334,11 +1334,7 @@
           "200" : {
             "description" : "OK",
             "content" : {
-              "text/plain" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
+              "text/plain" : { }
             }
           }
         },
@@ -1382,17 +1378,12 @@
             "description" : "OK",
             "content" : {
               "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "type" : "string"
-                  }
-                }
+                "schema" : { }
               }
             }
           }
         },
-        "summary" : "Get Models",
+        "summary" : "Get Model Suggestions",
         "tags" : [ "Llm Chat Resource" ]
       }
     },
