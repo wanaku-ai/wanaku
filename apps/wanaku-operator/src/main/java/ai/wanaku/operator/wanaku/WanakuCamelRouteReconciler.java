@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
@@ -33,6 +34,8 @@ import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
+import io.quarkiverse.operatorsdk.annotations.RBACRule;
+import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
@@ -53,6 +56,42 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
 @CSVMetadata(
         displayName = "Wanaku Camel Route operator",
         description = "Deploys and manages Wanaku Camel Routes as service catalogs")
+@RBACRule(
+        apiGroups = "apps",
+        resources = {"deployments"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+@RBACRule(
+        apiGroups = "",
+        resources = {"services"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
+@RBACRule(
+        apiGroups = "",
+        resources = {"persistentvolumeclaims"},
+        verbs = {
+            RBACVerbs.GET,
+            RBACVerbs.LIST,
+            RBACVerbs.WATCH,
+            RBACVerbs.CREATE,
+            RBACVerbs.UPDATE,
+            RBACVerbs.PATCH,
+            RBACVerbs.DELETE
+        })
 public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>, Cleaner<WanakuCamelRoute> {
     private static final Logger LOG = Logger.getLogger(WanakuCamelRouteReconciler.class);
 
@@ -271,14 +310,23 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         pvc.getMetadata().getLabels().put("app", crName);
         pvc.getMetadata().getLabels().put("component", cicName);
         pvc.addOwnerReference(resource);
-        kubernetesClient.resource(pvc).serverSideApply();
+        kubernetesClient
+                .persistentVolumeClaims()
+                .inNamespace(namespace)
+                .resource(pvc)
+                .createOr(Replaceable::update);
 
         Deployment deployment = ReconcilerUtilsInternal.loadYaml(
                 Deployment.class,
                 WanakuCamelRouteReconciler.class,
                 CapabilityResourceFactory.CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
         configureCicDeployment(deployment, resource, crName, cicName, namespace, routerBaseUrl, authSpec);
-        kubernetesClient.resource(deployment).serverSideApply();
+        kubernetesClient
+                .apps()
+                .deployments()
+                .inNamespace(namespace)
+                .resource(deployment)
+                .createOr(Replaceable::update);
 
         Service service = ReconcilerUtilsInternal.loadYaml(
                 Service.class,
@@ -295,7 +343,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             port.setName("9190-tcp");
         }
         service.addOwnerReference(resource);
-        kubernetesClient.resource(service).serverSideApply();
+        kubernetesClient.services().inNamespace(namespace).resource(service).createOr(Replaceable::update);
     }
 
     private void configureCicDeployment(
