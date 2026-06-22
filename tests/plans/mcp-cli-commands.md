@@ -368,6 +368,7 @@ export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-mcp-test}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
+export WANAKU_PROVIDER_STATIC_FILE_IMAGE="${WANAKU_PROVIDER_STATIC_FILE_IMAGE:-quay.io/wanaku/wanaku-provider-performance-static-file:latest}"
 ```
 
 ### Helper: wait for resource deletion
@@ -486,6 +487,9 @@ spec:
     - name: wanaku-http
       image: ${WANAKU_CAPABILITY_HTTP_IMAGE}
       imagePullPolicy: Always
+    - name: wanaku-static-file
+      image: ${WANAKU_PROVIDER_STATIC_FILE_IMAGE}
+      imagePullPolicy: Always
 EOF
 ```
 
@@ -504,6 +508,10 @@ oc wait wanakucapability/wanaku-mcp-test-capabilities \
 oc wait --for=condition=ready pod -l app=wanaku-http \
   --timeout=120s -n "${WANAKU_NAMESPACE}"
 echo "PASS: HTTP capability pod is ready"
+
+oc wait --for=condition=ready pod -l app=wanaku-static-file \
+  --timeout=120s -n "${WANAKU_NAMESPACE}"
+echo "PASS: static file provider pod is ready"
 ```
 
 ### Step 8.7: Set router URL variables
@@ -741,9 +749,42 @@ fi
 
 ---
 
-## Phase 12: List Resources via MCP CLI
+## Phase 12: Register and Read Resources via MCP CLI
 
-### Test 12.1: List resources via MCP SSE endpoint
+### Test 12.1: Register a resource backed by the static file provider
+
+**Description:** Expose a resource via the CLI that is backed by the `performancestaticfile` provider type. The static file provider returns the fixed content `1234567890`.
+
+```bash
+${WANAKU_CLI:-wanaku} resources expose \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --location "performancestaticfile://test-file.txt" \
+  --type performancestaticfile \
+  --name "test-static-resource" \
+  --namespace public \
+  --description "A static file resource for MCP CLI testing" \
+  --mimeType "text/plain"
+
+if [ $? -eq 0 ]; then
+  echo "PASS: static file resource registered"
+else
+  echo "FAIL: could not register static file resource"
+  exit 1
+fi
+```
+
+### Test 12.2: Verify resource is listed via REST API
+
+```bash
+RESOURCES_RESPONSE=$(curl -s "${WANAKU_ROUTER_URL}/api/v1/resources" 2>/dev/null)
+
+echo "${RESOURCES_RESPONSE}" | jq -e '.data[] | select(.name == "test-static-resource")' > /dev/null 2>&1 \
+  && echo "PASS: test-static-resource is listed in REST API" \
+  || echo "FAIL: test-static-resource not found in REST API response"
+```
+
+### Test 12.3: List resources via MCP SSE endpoint
 
 ```bash
 OUTPUT=$(wanaku mcp resource list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
@@ -752,8 +793,54 @@ EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "FAIL: wanaku mcp resource list failed (exit code ${EXIT_CODE})"
   echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: resource list succeeded"
+echo "${OUTPUT}"
+
+echo "${OUTPUT}" | grep -q "test-static-resource" \
+  && echo "PASS: test-static-resource visible via MCP" \
+  || echo "FAIL: test-static-resource not visible via MCP"
+```
+
+### Test 12.4: Read the static file resource via MCP
+
+**Description:** Read the registered resource through the MCP endpoint. The static file provider should return its fixed content (`1234567890`).
+
+```bash
+OUTPUT=$(wanaku mcp resource \
+  --uri "${WANAKU_MCP_SSE_URI}" \
+  --resource-uri "performancestaticfile://test-file.txt" \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+echo "Exit code: ${EXIT_CODE}"
+echo "Output: ${OUTPUT}"
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: resource read failed (exit code ${EXIT_CODE})"
+  exit 1
+fi
+
+echo "${OUTPUT}" | grep -q "1234567890" \
+  && echo "PASS: resource content matches expected static data" \
+  || echo "FAIL: resource content does not contain expected '1234567890'"
+```
+
+### Test 12.5: Read a non-existent resource via MCP
+
+```bash
+OUTPUT=$(wanaku mcp resource \
+  --uri "${WANAKU_MCP_SSE_URI}" \
+  --resource-uri "performancestaticfile://does-not-exist.txt" \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: non-existent resource read failed as expected (exit code ${EXIT_CODE})"
 else
-  echo "PASS: resource list succeeded"
+  echo "WARN: non-existent resource read did not fail — server may return empty content"
   echo "${OUTPUT}"
 fi
 ```
@@ -781,7 +868,7 @@ fi
 
 ## Phase 14: Cleanup
 
-### Step 14.1: Remove registered tools
+### Step 14.1: Remove registered tools and resources
 
 ```bash
 ${WANAKU_CLI:-wanaku} tools remove \
@@ -794,7 +881,12 @@ ${WANAKU_CLI:-wanaku} tools remove \
   --no-auth \
   --name meow-facts 2>/dev/null || true
 
-echo "PASS: tools removed"
+${WANAKU_CLI:-wanaku} resources remove \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name test-static-resource 2>/dev/null || true
+
+echo "PASS: tools and resources removed"
 ```
 
 ### Step 14.2: Delete capability and router CRs
@@ -828,6 +920,6 @@ Follow [common/cleanup.md](common/cleanup.md) for remaining teardown (Keycloak, 
 | 9 | 9.1-9.3 | Register real HTTP tools | Critical | 2 |
 | 10 | 10.1 | List tools via MCP SSE endpoint | Critical | 2 |
 | 11 | 11.1-11.4 | Invoke real tools (currency, cat facts, missing param) | Critical | 2 |
-| 12 | 12.1 | List resources via MCP endpoint | High | 2 |
+| 12 | 12.1-12.5 | Register, list, and read resources via MCP endpoint | Critical | 2 |
 | 13 | 13.1 | List prompts via MCP endpoint | High | 2 |
 | 14 | 14.1-14.3 | Cleanup | Critical | 2 |
