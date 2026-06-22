@@ -300,6 +300,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             WanakuTypes.AuthSpec authSpec) {
 
         String cicName = crName + "-cic";
+        LOG.infof("Creating CIC instance '%s' in namespace '%s'", cicName, namespace);
 
         PersistentVolumeClaim pvc = ReconcilerUtilsInternal.loadYaml(
                 PersistentVolumeClaim.class,
@@ -310,6 +311,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         pvc.getMetadata().getLabels().put("app", crName);
         pvc.getMetadata().getLabels().put("component", cicName);
         pvc.addOwnerReference(resource);
+        LOG.infof("Creating PVC '%s'", pvc.getMetadata().getName());
         kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
@@ -321,6 +323,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
                 WanakuCamelRouteReconciler.class,
                 CapabilityResourceFactory.CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
         configureCicDeployment(deployment, resource, crName, cicName, namespace, routerBaseUrl, authSpec);
+        LOG.infof("Creating Deployment '%s' with image '%s'", cicName, resource.getSpec().getImage());
         kubernetesClient
                 .apps()
                 .deployments()
@@ -343,6 +346,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             port.setName("9190-tcp");
         }
         service.addOwnerReference(resource);
+        LOG.infof("Creating Service '%s' on port %d", cicName, CIC_GRPC_PORT);
         kubernetesClient.services().inNamespace(namespace).resource(service).createOr(Replaceable::update);
     }
 
