@@ -20,6 +20,7 @@ import {Param, ResourceReference} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {useResources} from "../../hooks/api/use-resources"
 import {TableEmptyState} from "../EmptyTableState"
+import {getErrorMessage} from "../../utils/error"
 
 
 export interface RefreshHandle {
@@ -30,10 +31,11 @@ interface ResourcesTableProps {
   onAdd: () => void
   onEdit: (resource: ResourceReference) => void
   onDelete: (resourceName: string) => void
+  onError?: (message: string) => void
   ref?: RefObject<RefreshHandle>
 }
 
-export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, onDelete, ref }) => {
+export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, onDelete, onError, ref }) => {
   
   const [resources, setResources] = useState<ResourceReference[]>([])
   const [isLoading, setLoading] = useState(true)
@@ -57,7 +59,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, o
       const resources = result.data.data as ResourceReference[]
       setResources(resources)
     } catch (error) {
-      console.error(error)
+      onError?.(getErrorMessage(error))
     } finally {
       setLoading(false)
     }

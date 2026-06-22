@@ -56,8 +56,7 @@ export const ServiceCatalogPage: React.FC = () => {
         const body = result.data as { data: ServiceCatalogSummary[] };
         setCatalogs(body.data || []);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching service catalogs:", error);
+      } catch {
         setErrorMessage("Failed to load service catalogs");
         setIsLoading(false);
       }
@@ -72,8 +71,7 @@ export const ServiceCatalogPage: React.FC = () => {
         const body = result.data as { data: ServiceTemplateSummary[] };
         setTemplates(body.data || []);
         setIsLoadingTemplates(false);
-      } catch (error) {
-        console.error("Error fetching service templates:", error);
+      } catch {
         setErrorMessage("Failed to load service templates");
         setIsLoadingTemplates(false);
       }
@@ -105,8 +103,7 @@ export const ServiceCatalogPage: React.FC = () => {
       await removeServiceCatalog(name);
       setSuccessMessage(`Service catalog '${name}' deleted successfully`);
       fetchCatalogs();
-    } catch (error) {
-      console.error("Error deleting service catalog:", error);
+    } catch {
       setErrorMessage(`Failed to delete service catalog '${name}'`);
     }
   };

@@ -12,9 +12,10 @@ interface ResourceModalProps {
   openedResource?: ResourceReference
   onSubmit: (resource: ResourceReference) => void
   onCancel: () => void
+  onError?: (message: string) => void
 }
 
-export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, onSubmit, onCancel }) => {
+export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, onSubmit, onCancel, onError }) => {
   
   const [name, setName] = useState(openedResource?.name)
   const [description, setDescription] = useState(openedResource?.description)
@@ -102,6 +103,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                 value={type}
                 onChange={setType}
                 apiCall={listManagementResources}
+                onError={onError}
               />
               <ComboBox
                 id="resource-mime-type"

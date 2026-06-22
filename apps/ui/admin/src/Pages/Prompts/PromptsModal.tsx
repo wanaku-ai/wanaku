@@ -1,6 +1,6 @@
 import React, {useState} from "react"
 import {PromptReference} from "../../models"
-import {Modal, Stack, Tab, TabList, TabPanel, TabPanels, Tabs, TextArea, TextInput} from "@carbon/react"
+import {InlineNotification, Modal, Stack, Tab, TabList, TabPanel, TabPanels, Tabs, TextArea, TextInput} from "@carbon/react"
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
 
 
@@ -17,8 +17,10 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
   const [argumentsJson, setArgumentsJson] = useState("")
   const [toolReferences, setToolReferences] = useState("")
   const [selectedNamespace, setSelectedNamespace] = useState("")
-  
+  const [jsonError, setJsonError] = useState<string | null>(null)
+
   const handleSubmit = () => {
+    setJsonError(null)
     try {
       const messages = messagesJson ? JSON.parse(messagesJson) : []
       const args = argumentsJson ? JSON.parse(argumentsJson) : []
@@ -32,8 +34,8 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
         toolReferences: toolRefs,
         namespace: selectedNamespace
       })
-    } catch (error) {
-      console.error("Invalid JSON in prompt data:", error)
+    } catch {
+      setJsonError("Invalid JSON in messages or arguments fields")
     }
   }
   
@@ -46,6 +48,14 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
     >
+      {jsonError && (
+        <InlineNotification
+          kind="error"
+          title="Invalid JSON"
+          subtitle={jsonError}
+          onCloseButtonClick={() => setJsonError(null)}
+        />
+      )}
       <Tabs>
         <TabList>
           <Tab>Overview</Tab>

@@ -2,6 +2,7 @@ import {
   Column,
   ContentSwitcher,
   Grid,
+  InlineNotification,
   Modal,
   Stack,
   Switch,
@@ -12,6 +13,7 @@ import React, {useRef, useState} from "react"
 import {ToolReference} from "../../models"
 import {ToolParserError, Tools} from "./tools"
 import {ImportToolsetTable} from "./ImportToolsetTable"
+import {getErrorMessage} from "../../utils/error"
 
 
 interface ImportToolsetModalProps {
@@ -34,6 +36,7 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
   const [step, setStep] = useState(0)
   const [contentSwitcherEnabled, setContentSwitcherEnabled] = useState(true)
   const [viewMode, setViewMode] = useState(VIEW_MODE_TABLE)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const selectedTools = useRef<ToolReference[]>([])
 
   
@@ -86,10 +89,11 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
       } else if (isToolsetUrlValid()) {
         // try to fetch toolset and proceed to next step
         try {
+          setFetchError(null)
           await fetchToolset()
           setStep(step + 1)
         } catch (error) {
-          console.error(error)
+          setFetchError(getErrorMessage(error))
         }
       } else {
         // URL is invalid
@@ -123,6 +127,14 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
       onRequestClose={onCancel}
     >
       <Stack gap={7}>
+        {fetchError && (
+          <InlineNotification
+            kind="error"
+            title="Fetch failed"
+            subtitle={fetchError}
+            onCloseButtonClick={() => setFetchError(null)}
+          />
+        )}
         {step === 0 && (
           <TextInput
             id="toolset-url"
