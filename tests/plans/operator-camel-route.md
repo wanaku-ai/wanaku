@@ -17,6 +17,7 @@ Every step except the initial `oc login` is fully automatable.
 | `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 | `base64` | any (coreutils) | `base64 --version 2>/dev/null \|\| echo "available"` |
+| `wanaku` | 0.2.0+ | `wanaku --version` |
 
 ### Prerequisite check script
 
@@ -26,7 +27,7 @@ set -e
 
 FAIL=0
 
-for CMD in oc helm curl jq base64; do
+for CMD in oc helm curl jq base64 wanaku; do
   if ! command -v "${CMD}" > /dev/null 2>&1; then
     echo "FAIL: ${CMD} is not installed"
     FAIL=1
@@ -132,6 +133,38 @@ query_router_api() {
   oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
     curl -sf -H "Authorization: Bearer ${TOKEN}" "http://localhost:8080${ENDPOINT}"
 }
+```
+
+### Helper: port-forward for MCP CLI access
+
+MCP verification tests use the `wanaku mcp` CLI to connect to the router's public MCP endpoint. This requires port-forwarding from the local machine to the router pod.
+
+```bash
+start_mcp_port_forward() {
+  local ROUTER_POD
+  ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
+    -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+  oc port-forward "${ROUTER_POD}" 18080:8080 -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1 &
+  MCP_PORT_FWD_PID=$!
+  sleep 3
+
+  if ! kill -0 "${MCP_PORT_FWD_PID}" 2>/dev/null; then
+    echo "FAIL: port-forward process died"
+    return 1
+  fi
+  echo "PASS: port-forward started (PID ${MCP_PORT_FWD_PID})"
+}
+
+stop_mcp_port_forward() {
+  if [ -n "${MCP_PORT_FWD_PID}" ]; then
+    kill "${MCP_PORT_FWD_PID}" 2>/dev/null
+    wait "${MCP_PORT_FWD_PID}" 2>/dev/null
+    unset MCP_PORT_FWD_PID
+  fi
+}
+
+MCP_URI="http://localhost:18080/public/mcp"
 ```
 
 ---
@@ -465,6 +498,28 @@ else
 fi
 ```
 
+### Test 4.9: Verify tool is accessible via MCP client
+
+**Description:** Use the `wanaku mcp` CLI to connect to the router's public MCP endpoint and verify the deployed tool is listed.
+
+```bash
+start_mcp_port_forward
+
+TOOL_LIST=$(wanaku mcp tool list --uri "${MCP_URI}" 2>&1)
+echo "MCP tool list output:"
+echo "${TOOL_LIST}"
+
+if echo "${TOOL_LIST}" | grep -q "test-greeting"; then
+  echo "PASS: test-greeting tool visible via MCP"
+else
+  echo "FAIL: test-greeting tool not found in MCP tool list"
+  stop_mcp_port_forward
+  exit 1
+fi
+
+stop_mcp_port_forward
+```
+
 ---
 
 ## Phase 5: WanakuCamelRoute Happy Path - Resource
@@ -550,6 +605,36 @@ else
   echo "FAIL: test-info-resource catalog not found in router response"
   exit 1
 fi
+```
+
+### Test 5.6: Verify resource is accessible via MCP client
+
+**Description:** Use the `wanaku mcp` CLI to verify the deployed resource is listed via MCP.
+
+```bash
+start_mcp_port_forward
+
+RESOURCE_LIST=$(wanaku mcp resource list --uri "${MCP_URI}" 2>&1)
+echo "MCP resource list output:"
+echo "${RESOURCE_LIST}"
+
+if echo "${RESOURCE_LIST}" | grep -q "test-info"; then
+  echo "PASS: test-info resource visible via MCP"
+else
+  echo "FAIL: test-info resource not found in MCP resource list"
+  stop_mcp_port_forward
+  exit 1
+fi
+
+# Also verify the previously deployed tool is still visible
+TOOL_LIST=$(wanaku mcp tool list --uri "${MCP_URI}" 2>&1)
+if echo "${TOOL_LIST}" | grep -q "test-greeting"; then
+  echo "PASS: test-greeting tool still visible via MCP"
+else
+  echo "FAIL: test-greeting tool disappeared from MCP tool list"
+fi
+
+stop_mcp_port_forward
 ```
 
 ---
@@ -649,6 +734,47 @@ if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-combined-
   echo "PASS: test-combined-cr catalog found in router"
 else
   echo "FAIL: test-combined-cr catalog not found in router response"
+  exit 1
+fi
+```
+
+### Test 6.5: Verify combined tools and resources are accessible via MCP client
+
+**Description:** Verify all deployed tools and resources from all CRs are visible through the MCP endpoint.
+
+```bash
+start_mcp_port_forward
+
+TOOL_LIST=$(wanaku mcp tool list --uri "${MCP_URI}" 2>&1)
+RESOURCE_LIST=$(wanaku mcp resource list --uri "${MCP_URI}" 2>&1)
+
+echo "MCP tool list:"
+echo "${TOOL_LIST}"
+echo ""
+echo "MCP resource list:"
+echo "${RESOURCE_LIST}"
+
+FAIL=0
+
+# Tools from test-greeting-tool CR
+echo "${TOOL_LIST}" | grep -q "test-greeting" && \
+  echo "PASS: test-greeting tool visible" || { echo "FAIL: test-greeting not found"; FAIL=1; }
+
+# Tools from test-combined-cr CR
+echo "${TOOL_LIST}" | grep -q "combined-tool" && \
+  echo "PASS: combined-tool visible" || { echo "FAIL: combined-tool not found"; FAIL=1; }
+
+# Resources from test-info-resource CR
+echo "${RESOURCE_LIST}" | grep -q "test-info" && \
+  echo "PASS: test-info resource visible" || { echo "FAIL: test-info not found"; FAIL=1; }
+
+# Resources from test-combined-cr CR
+echo "${RESOURCE_LIST}" | grep -q "combined-resource" && \
+  echo "PASS: combined-resource visible" || { echo "FAIL: combined-resource not found"; FAIL=1; }
+
+stop_mcp_port_forward
+
+if [ "${FAIL}" -ne 0 ]; then
   exit 1
 fi
 ```
@@ -1064,6 +1190,47 @@ for CR_NAME in test-greeting-tool test-info-resource test-combined-cr; do
 done
 ```
 
+### Test 9.5: Verify tools and resources are gone from MCP after deletion
+
+**Description:** After all CamelRoute CRs are deleted, verify the MCP endpoint no longer lists the tools and resources that were deployed.
+
+```bash
+start_mcp_port_forward
+
+TOOL_LIST=$(wanaku mcp tool list --uri "${MCP_URI}" 2>&1)
+RESOURCE_LIST=$(wanaku mcp resource list --uri "${MCP_URI}" 2>&1)
+
+echo "MCP tool list after deletion:"
+echo "${TOOL_LIST}"
+echo ""
+echo "MCP resource list after deletion:"
+echo "${RESOURCE_LIST}"
+
+FAIL=0
+
+echo "${TOOL_LIST}" | grep -q "test-greeting" && \
+  { echo "FAIL: test-greeting still in MCP tool list"; FAIL=1; } || \
+  echo "PASS: test-greeting removed from MCP"
+
+echo "${TOOL_LIST}" | grep -q "combined-tool" && \
+  { echo "FAIL: combined-tool still in MCP tool list"; FAIL=1; } || \
+  echo "PASS: combined-tool removed from MCP"
+
+echo "${RESOURCE_LIST}" | grep -q "test-info" && \
+  { echo "FAIL: test-info still in MCP resource list"; FAIL=1; } || \
+  echo "PASS: test-info removed from MCP"
+
+echo "${RESOURCE_LIST}" | grep -q "combined-resource" && \
+  { echo "FAIL: combined-resource still in MCP resource list"; FAIL=1; } || \
+  echo "PASS: combined-resource removed from MCP"
+
+stop_mcp_port_forward
+
+if [ "${FAIL}" -ne 0 ]; then
+  exit 1
+fi
+```
+
 ---
 
 ## Phase 10: Post-Deletion Verification
@@ -1181,11 +1348,15 @@ Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 | 1 | 1.1-1.2 | Environment setup | Critical |
 | 2 | 2.1-2.2 | Operator installation + CamelRoute CRD/RBAC | Critical |
 | 3 | 3.1-3.3 | WanakuRouter setup and readiness | Critical |
-| 4 | 4.1-4.7 | CamelRoute happy path - tool | Critical |
-| 5 | 5.1-5.5 | CamelRoute happy path - resource | Critical |
-| 6 | 6.1-6.4 | CamelRoute happy path - combined (tools + resources + properties) | High |
+| 4 | 4.1-4.8 | CamelRoute happy path - tool (REST API verification) | Critical |
+| 4 | 4.9 | CamelRoute tool visible via MCP client | Critical |
+| 5 | 5.1-5.5 | CamelRoute happy path - resource (REST API verification) | Critical |
+| 5 | 5.6 | CamelRoute resource visible via MCP client | Critical |
+| 6 | 6.1-6.4 | CamelRoute happy path - combined (REST API verification) | High |
+| 6 | 6.5 | Combined tools and resources visible via MCP client | High |
 | 7 | 7.1-7.3 | CamelRoute update reconciliation | Medium |
 | 8 | 8.1-8.5 | CamelRoute negative tests (validation errors) | High |
-| 9 | 9.1-9.4 | CamelRoute deletion and catalog removal | Critical |
+| 9 | 9.1-9.4 | CamelRoute deletion and catalog removal (REST API) | Critical |
+| 9 | 9.5 | Tools and resources gone from MCP after deletion | Critical |
 | 10 | 10.1-10.3 | Post-deletion verification | Medium |
 | 11 | 11.1-11.3 | Cleanup | Critical |
