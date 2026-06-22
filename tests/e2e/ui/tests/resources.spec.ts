@@ -56,8 +56,7 @@ test.describe('Resources', () => {
     const heading = await resources.getModalHeading();
     expect(heading).toBe('Edit resource');
 
-    const descInput = resources['page'].locator('#resource-description');
-    await descInput.fill('Updated by e2e test');
+    await resources.fillDescription('Updated by e2e test');
     await resources.submitModal();
 
     await resources.waitForResourceInTable(data.name);

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
+const isLocalhost = new URL(routerUrl).hostname === 'localhost' || new URL(routerUrl).hostname === '127.0.0.1';
 
 export default defineConfig({
   testDir: './tests',
@@ -23,12 +24,14 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'WANAKU_HTTP_AUTH=none java -jar ../../../apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar',
-    url: `${routerUrl}/q/health/ready`,
-    reuseExistingServer: true,
-    timeout: 60_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  ...(isLocalhost ? {
+    webServer: {
+      command: 'WANAKU_HTTP_AUTH=none java -jar ../../../apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar',
+      url: `${routerUrl}/q/health/ready`,
+      reuseExistingServer: true,
+      timeout: 60_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  } : {}),
 });
