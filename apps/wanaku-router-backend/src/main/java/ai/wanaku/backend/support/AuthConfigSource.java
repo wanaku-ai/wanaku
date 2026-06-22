@@ -70,9 +70,14 @@ public class AuthConfigSource implements ConfigSource {
             Map<String, String> props = new HashMap<>();
             props.put("quarkus.oidc.enabled", "false");
             props.put("quarkus.oidc.discovery-enabled", "false");
+            props.put("quarkus.oidc.resource-metadata.enabled", "false");
+            props.put("quarkus.oidc.mcp.enabled", "false");
             props.put("quarkus.oidc.mcp.discovery-enabled", "false");
+            props.put("quarkus.oidc.mcp.resource-metadata.enabled", "false");
             for (int i = 0; i < MAX_NAMESPACES; i++) {
+                props.put("quarkus.oidc.ns-%d.enabled".formatted(i), "false");
                 props.put("quarkus.oidc.ns-%d.discovery-enabled".formatted(i), "false");
+                props.put("quarkus.oidc.ns-%d.resource-metadata.enabled".formatted(i), "false");
             }
             props.put("quarkus.oidc-proxy.enabled", "false");
             props.put("quarkus.http.auth.permission.authenticated.policy", "permit");
