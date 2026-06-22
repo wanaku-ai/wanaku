@@ -57,7 +57,7 @@ public final class OperatorSecurityConfig implements SecurityServiceConfig {
         return TokenEndpoint.fromBaseUrl(authServer + "/realms/" + realm);
     }
 
-    static String resolveClientSecret() {
+    public static String resolveClientSecret() {
         String secret = System.getenv(CLIENT_SECRET_ENV);
         return (secret != null && !secret.isBlank()) ? secret : DEFAULT_CLIENT_SECRET;
     }

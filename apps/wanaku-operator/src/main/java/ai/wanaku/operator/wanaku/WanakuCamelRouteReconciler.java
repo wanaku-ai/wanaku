@@ -11,10 +11,20 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -29,6 +39,8 @@ import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
 import ai.wanaku.core.services.api.ServiceCatalogService;
 import ai.wanaku.operator.util.CamelRoutePackager;
+import ai.wanaku.operator.util.CapabilityResourceFactory;
+import ai.wanaku.operator.util.EnvironmentVariables;
 import ai.wanaku.operator.util.OperatorSecurityConfig;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
@@ -114,6 +126,9 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             return setErrorStatus(resource, "DeploymentError", e.getMessage());
         }
         LOG.infof("Successfully deployed CamelRoute '%s' as service catalog", catalogName);
+
+        deployCicInstance(resource, crName, namespace, routerBaseUrl, authSpec);
+        LOG.infof("CIC instance deployed for CamelRoute '%s'", crName);
 
         final WanakuCamelRouteStatus status = new WanakuCamelRouteStatus();
         status.setDeployedCatalogName(catalogName);
@@ -234,6 +249,148 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         public void filter(ClientRequestContext requestContext) {
             requestContext.getHeaders().putSingle("Authorization", "Bearer " + token);
         }
+    }
+
+    private static final int CIC_GRPC_PORT = 9190;
+
+    private void deployCicInstance(
+            WanakuCamelRoute resource,
+            String crName,
+            String namespace,
+            String routerBaseUrl,
+            WanakuTypes.AuthSpec authSpec) {
+
+        String cicName = crName + "-cic";
+
+        PersistentVolumeClaim pvc = ReconcilerUtilsInternal.loadYaml(
+                PersistentVolumeClaim.class,
+                WanakuCamelRouteReconciler.class,
+                CapabilityResourceFactory.SERVICES_VOLUME_PVC_FILE);
+        pvc.getMetadata().setName(cicName + "-volume-claim");
+        pvc.getMetadata().setNamespace(namespace);
+        pvc.getMetadata().getLabels().put("app", crName);
+        pvc.getMetadata().getLabels().put("component", cicName);
+        pvc.addOwnerReference(resource);
+        kubernetesClient.resource(pvc).serverSideApply();
+
+        Deployment deployment = ReconcilerUtilsInternal.loadYaml(
+                Deployment.class,
+                WanakuCamelRouteReconciler.class,
+                CapabilityResourceFactory.CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
+        configureCicDeployment(deployment, resource, crName, cicName, namespace, routerBaseUrl, authSpec);
+        kubernetesClient.resource(deployment).serverSideApply();
+
+        Service service = ReconcilerUtilsInternal.loadYaml(
+                Service.class,
+                WanakuCamelRouteReconciler.class,
+                CapabilityResourceFactory.CAPABILITY_INTERNAL_SERVICE_FILE);
+        service.getMetadata().setName(cicName);
+        service.getMetadata().setNamespace(namespace);
+        service.getMetadata().getLabels().put("app", crName);
+        service.getMetadata().getLabels().put("component", cicName);
+        service.getSpec().setSelector(Map.of("app", crName, "component", cicName));
+        for (ServicePort port : service.getSpec().getPorts()) {
+            port.setPort(CIC_GRPC_PORT);
+            port.setTargetPort(new io.fabric8.kubernetes.api.model.IntOrString(CIC_GRPC_PORT));
+            port.setName("9190-tcp");
+        }
+        service.addOwnerReference(resource);
+        kubernetesClient.resource(service).serverSideApply();
+    }
+
+    private void configureCicDeployment(
+            Deployment deployment,
+            WanakuCamelRoute resource,
+            String crName,
+            String cicName,
+            String namespace,
+            String routerBaseUrl,
+            WanakuTypes.AuthSpec authSpec) {
+
+        deployment.getMetadata().setName(cicName);
+        deployment.getMetadata().setNamespace(namespace);
+        deployment.getMetadata().getLabels().put("app", crName);
+        deployment.getMetadata().getLabels().put("component", cicName);
+
+        DeploymentSpec spec = deployment.getSpec();
+        spec.getSelector().getMatchLabels().put("app", crName);
+        spec.getSelector().getMatchLabels().put("component", cicName);
+        spec.getTemplate().getMetadata().getLabels().put("app", crName);
+        spec.getTemplate().getMetadata().getLabels().put("component", cicName);
+
+        String volumeName = cicName + "-volume";
+        spec.getTemplate()
+                .getSpec()
+                .getContainers()
+                .getFirst()
+                .getVolumeMounts()
+                .getFirst()
+                .setName(volumeName);
+        spec.getTemplate().getSpec().getVolumes().getFirst().setName(volumeName);
+        spec.getTemplate()
+                .getSpec()
+                .getVolumes()
+                .getFirst()
+                .getPersistentVolumeClaim()
+                .setClaimName(cicName + "-volume-claim");
+
+        Container container = spec.getTemplate().getSpec().getContainers().getFirst();
+        container.setName(cicName);
+        container.setImage(resource.getSpec().getImage());
+        container.setImagePullPolicy("Always");
+        container.setEnv(buildCicEnvVars(crName, routerBaseUrl, authSpec));
+
+        deployment.addOwnerReference(resource);
+    }
+
+    private static List<EnvVar> buildCicEnvVars(String crName, String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+        List<EnvVar> envVars = new ArrayList<>();
+
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_NAME)
+                .withValue(crName)
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_REGISTRATION_URL)
+                .withValue(routerBaseUrl + "/")
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_REGISTRATION_ANNOUNCE_ADDRESS)
+                .withValue(crName + "-cic")
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_GRPC_PORT)
+                .withValue(String.valueOf(CIC_GRPC_PORT))
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_CATALOG)
+                .withValue(crName)
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_CATALOG_SYSTEM)
+                .withValue(crName)
+                .build());
+
+        if (OperatorSecurityConfig.isAuthEnabled(authSpec)) {
+            String realm = authSpec.getAuthRealm();
+            if (realm == null || realm.isBlank()) {
+                realm = EnvironmentVariables.DEFAULT_AUTH_REALM;
+            }
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT)
+                    .withValue(authSpec.getAuthServer() + "/realms/" + realm)
+                    .build());
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_SECRET)
+                    .withValue(OperatorSecurityConfig.resolveClientSecret())
+                    .build());
+            envVars.add(new EnvVarBuilder()
+                    .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_ID)
+                    .withValue("wanaku-service")
+                    .build());
+        }
+
+        return envVars;
     }
 
     private static List<String> extractToolNames(WanakuCamelRouteSpec spec) {
