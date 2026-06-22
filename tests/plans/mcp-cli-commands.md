@@ -2,9 +2,12 @@
 
 ## Overview
 
-This test plan verifies the `wanaku mcp` CLI commands for interacting directly with MCP servers. It covers tool invocation, resource reading, prompt retrieval, and listing operations.
+This test plan verifies the `wanaku mcp` CLI commands for interacting directly with MCP servers. It is split into two parts:
 
-Every step is fully automatable.
+- **Part 1 — Unit-level validation:** Help output, required option enforcement, and basic command behavior against any MCP server.
+- **Part 2 — End-to-end with real capabilities:** Full deployment on OpenShift with the operator, HTTP capability service, and real external APIs (currency conversion).
+
+Every step except the initial `oc login` is fully automatable.
 
 ## Prerequisites
 
@@ -324,7 +327,7 @@ fi
 
 ---
 
-## Test Summary Matrix
+## Part 1 Summary
 
 | Phase | Test ID | Test Name | Priority |
 |-------|---------|-----------|----------|
@@ -334,3 +337,497 @@ fi
 | 4 | 4.1-4.3 | Resource list, read, non-existent | Critical |
 | 5 | 5.1-5.3 | Prompt list, get, non-existent | Critical |
 | 6 | 6.1-6.2 | Connection error handling | High |
+
+---
+---
+
+# Part 2 — End-to-End: MCP CLI with Real Capabilities on OpenShift
+
+## Overview
+
+This part deploys a full Wanaku stack via the operator (router + HTTP capability), registers real HTTP tools (currency conversion, cat facts), and verifies end-to-end tool invocation through the `wanaku mcp` CLI commands against the deployed router's MCP endpoints.
+
+The first `oc login` step is manual; everything else is automatable.
+
+## Prerequisites
+
+### Required tools
+
+| Tool | Minimum version | Verify command |
+|------|-----------------|----------------|
+| `oc` | 4.12+ | `oc version --client` |
+| `helm` | 3.x | `helm version --short` |
+| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `curl` | any | `curl --version` |
+| `jq` | 1.6+ | `jq --version` |
+
+### Environment variables
+
+```bash
+export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-mcp-test}"
+export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
+export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
+export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
+```
+
+### Helper: wait for resource deletion
+
+```bash
+wait_for_deletion() {
+  local RESOURCE_TYPE="$1"
+  local RESOURCE_NAME="$2"
+  local NAMESPACE="$3"
+  local TIMEOUT="${4:-60}"
+  local INTERVAL=3
+  local ELAPSED=0
+
+  while oc get "${RESOURCE_TYPE}" "${RESOURCE_NAME}" -n "${NAMESPACE}" > /dev/null 2>&1; do
+    if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
+      echo "FAIL: ${RESOURCE_TYPE}/${RESOURCE_NAME} still exists after ${TIMEOUT}s"
+      return 1
+    fi
+    sleep ${INTERVAL}
+    ELAPSED=$((ELAPSED + INTERVAL))
+  done
+  echo "PASS: ${RESOURCE_TYPE}/${RESOURCE_NAME} deleted (${ELAPSED}s)"
+  return 0
+}
+```
+
+---
+
+## Phase 7: OpenShift Login (MANUAL)
+
+This is the only manual step in Part 2.
+
+### Step 7.1: Log in to OpenShift
+
+```bash
+oc login <cluster-api-url> --username=<username> --password=<password>
+```
+
+### Step 7.2: Verify login
+
+```bash
+oc whoami
+oc whoami --show-server
+```
+
+---
+
+## Phase 8: Deploy the Wanaku Stack
+
+### Step 8.1: Create namespace
+
+Follow [common/namespace-setup.md](common/namespace-setup.md) to create and verify the namespace.
+
+### Step 8.2: Deploy Keycloak
+
+Follow [common/keycloak-setup.md](common/keycloak-setup.md). After completion, verify:
+
+```bash
+for VAR_NAME in KEYCLOAK_HOST KEYCLOAK_URL WANAKU_OIDC_SECRET; do
+  eval "VAL=\${${VAR_NAME}}"
+  if [ -z "${VAL}" ]; then
+    echo "FAIL: ${VAR_NAME} is not set"
+    exit 1
+  fi
+  echo "PASS: ${VAR_NAME} is set"
+done
+```
+
+### Step 8.3: Install the operator
+
+Follow [common/operator-deployment.md](common/operator-deployment.md) to install the operator via Helm.
+
+### Step 8.4: Create WanakuRouter
+
+```bash
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuRouter
+metadata:
+  name: wanaku-mcp-test-router
+spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
+  router:
+    image: ${WANAKU_ROUTER_IMAGE}
+    imagePullPolicy: Always
+EOF
+```
+
+**Wait for Ready:**
+
+```bash
+oc wait wanakurouter/wanaku-mcp-test-router \
+  --for=condition=Ready \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+```
+
+### Step 8.5: Create WanakuCapability (HTTP tool service)
+
+```bash
+cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCapability
+metadata:
+  name: wanaku-mcp-test-capabilities
+spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
+  secrets:
+    oidcCredentialsSecret: "${WANAKU_OIDC_SECRET}"
+  routerRef: wanaku-mcp-test-router
+  capabilities:
+    - name: wanaku-http
+      image: ${WANAKU_CAPABILITY_HTTP_IMAGE}
+      imagePullPolicy: Always
+EOF
+```
+
+**Wait for Ready:**
+
+```bash
+oc wait wanakucapability/wanaku-mcp-test-capabilities \
+  --for=condition=Ready \
+  --timeout=120s \
+  -n "${WANAKU_NAMESPACE}"
+```
+
+### Step 8.6: Wait for all pods to be ready
+
+```bash
+oc wait --for=condition=ready pod -l app=wanaku-http \
+  --timeout=120s -n "${WANAKU_NAMESPACE}"
+echo "PASS: HTTP capability pod is ready"
+```
+
+### Step 8.7: Set router URL variables
+
+```bash
+export WANAKU_ROUTER_HOST=$(oc get route wanaku-mcp-test-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
+export WANAKU_ROUTER_URL="http://${WANAKU_ROUTER_HOST}"
+export WANAKU_MCP_SSE_URI="${WANAKU_ROUTER_URL}/public/mcp/sse"
+
+if [ -z "${WANAKU_ROUTER_HOST}" ]; then
+  echo "FAIL: could not retrieve router host from route"
+  exit 1
+fi
+echo "PASS: router URL is ${WANAKU_ROUTER_URL}"
+echo "PASS: MCP SSE URI is ${WANAKU_MCP_SSE_URI}"
+```
+
+### Step 8.8: Wait for router health
+
+```bash
+MAX_RETRIES=24
+RETRY_INTERVAL=5
+for i in $(seq 1 ${MAX_RETRIES}); do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${WANAKU_ROUTER_URL}/q/health/ready" 2>/dev/null || echo "000")
+  if [ "${HTTP_CODE}" = "200" ]; then
+    echo "PASS: router is healthy (attempt ${i})"
+    break
+  fi
+  if [ "${i}" -eq "${MAX_RETRIES}" ]; then
+    echo "FAIL: router not healthy after ${MAX_RETRIES} attempts (last HTTP ${HTTP_CODE})"
+    exit 1
+  fi
+  echo "Waiting for router... (attempt ${i}, HTTP ${HTTP_CODE})"
+  sleep ${RETRY_INTERVAL}
+done
+```
+
+---
+
+## Phase 9: Register Real HTTP Tools
+
+### Test 9.1: Register the currency conversion tool
+
+```bash
+${WANAKU_CLI:-wanaku} tools add \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name free-currency-conversion-api \
+  --namespace public \
+  --description "Free currency conversion API" \
+  --uri "https://economia.awesomeapi.com.br/last/{firstCurrency}-{secondCurrency}" \
+  --type http \
+  --property "firstCurrency:string,The first currency (3 letter code, e.g.: USD, EUR)" \
+  --property "secondCurrency:string,The second currency (3 letter code, e.g.: BRL, CZK)" \
+  --required firstCurrency \
+  --required secondCurrency
+
+if [ $? -eq 0 ]; then
+  echo "PASS: currency conversion tool registered"
+else
+  echo "FAIL: could not register currency conversion tool"
+  exit 1
+fi
+```
+
+### Test 9.2: Register the cat facts tool
+
+```bash
+${WANAKU_CLI:-wanaku} tools add \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name meow-facts \
+  --namespace public \
+  --description "Retrieve random facts about cats" \
+  --uri "https://meowfacts.herokuapp.com?count={count}" \
+  --type http \
+  --property "count:int,The number of facts to retrieve" \
+  --required count
+
+if [ $? -eq 0 ]; then
+  echo "PASS: meow-facts tool registered"
+else
+  echo "FAIL: could not register meow-facts tool"
+  exit 1
+fi
+```
+
+### Test 9.3: Verify tools are listed via REST API
+
+```bash
+TOOLS_RESPONSE=$(curl -s "${WANAKU_ROUTER_URL}/api/v1/tools" 2>/dev/null)
+echo "${TOOLS_RESPONSE}" | jq -r '.data[].name' 2>/dev/null | sort
+
+echo "${TOOLS_RESPONSE}" | jq -e '.data[] | select(.name == "free-currency-conversion-api")' > /dev/null 2>&1 \
+  && echo "PASS: currency conversion tool is listed" \
+  || echo "FAIL: currency conversion tool not found in API response"
+
+echo "${TOOLS_RESPONSE}" | jq -e '.data[] | select(.name == "meow-facts")' > /dev/null 2>&1 \
+  && echo "PASS: meow-facts tool is listed" \
+  || echo "FAIL: meow-facts tool not found in API response"
+```
+
+---
+
+## Phase 10: List Tools via MCP CLI
+
+### Test 10.1: List tools via MCP SSE endpoint
+
+```bash
+OUTPUT=$(wanaku mcp tool list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: wanaku mcp tool list failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: tool list succeeded"
+echo "${OUTPUT}"
+
+echo "${OUTPUT}" | grep -q "free-currency-conversion-api" \
+  && echo "PASS: currency conversion tool visible via MCP" \
+  || echo "FAIL: currency conversion tool not visible via MCP"
+
+echo "${OUTPUT}" | grep -q "meow-facts" \
+  && echo "PASS: meow-facts tool visible via MCP" \
+  || echo "FAIL: meow-facts tool not visible via MCP"
+```
+
+---
+
+## Phase 11: Invoke Real Tools via MCP CLI
+
+### Test 11.1: Call the currency conversion tool (USD to EUR)
+
+**Description:** Invoke the currency conversion API via the deployed HTTP capability and verify the response contains exchange rate data.
+
+```bash
+OUTPUT=$(wanaku mcp tool \
+  --uri "${WANAKU_MCP_SSE_URI}" \
+  --name free-currency-conversion-api \
+  --param firstCurrency=USD \
+  --param secondCurrency=EUR \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+echo "Exit code: ${EXIT_CODE}"
+echo "Output: ${OUTPUT}"
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: currency conversion tool call failed"
+  exit 1
+fi
+
+# The API returns JSON with currency pair data (e.g., "USDEUR")
+echo "${OUTPUT}" | grep -qi "USD" \
+  && echo "PASS: response contains currency data" \
+  || echo "FAIL: response does not contain expected currency data"
+```
+
+### Test 11.2: Call the currency conversion tool (EUR to BRL)
+
+**Description:** Verify a different currency pair also works, confirming parameter interpolation.
+
+```bash
+OUTPUT=$(wanaku mcp tool \
+  --uri "${WANAKU_MCP_SSE_URI}" \
+  --name free-currency-conversion-api \
+  --param firstCurrency=EUR \
+  --param secondCurrency=BRL \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: EUR-BRL conversion tool call failed"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "${OUTPUT}" | grep -qi "EUR" \
+  && echo "PASS: EUR-BRL response contains currency data" \
+  || echo "FAIL: EUR-BRL response does not contain expected data"
+```
+
+### Test 11.3: Call the cat facts tool
+
+**Description:** Invoke meow-facts and verify the response contains fact data.
+
+```bash
+OUTPUT=$(wanaku mcp tool \
+  --uri "${WANAKU_MCP_SSE_URI}" \
+  --name meow-facts \
+  --param count=2 \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+echo "Exit code: ${EXIT_CODE}"
+echo "Output: ${OUTPUT}"
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: meow-facts tool call failed"
+  exit 1
+fi
+
+# Response should be non-empty and contain some data
+if [ -n "${OUTPUT}" ]; then
+  echo "PASS: meow-facts returned data"
+else
+  echo "FAIL: meow-facts returned empty response"
+fi
+```
+
+### Test 11.4: Call a tool with missing required parameters
+
+**Description:** The MCP server or capability should handle missing required parameters gracefully.
+
+```bash
+OUTPUT=$(wanaku mcp tool \
+  --uri "${WANAKU_MCP_SSE_URI}" \
+  --name free-currency-conversion-api \
+  --param firstCurrency=USD \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+echo "Exit code: ${EXIT_CODE}"
+# Missing secondCurrency — the API may return an error or the capability may reject it
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: missing required parameter caused an error (expected)"
+else
+  echo "WARN: missing required parameter did not fail — check if API returned an error in the response body"
+  echo "${OUTPUT}"
+fi
+```
+
+---
+
+## Phase 12: List Resources via MCP CLI
+
+### Test 12.1: List resources via MCP SSE endpoint
+
+```bash
+OUTPUT=$(wanaku mcp resource list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: wanaku mcp resource list failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+else
+  echo "PASS: resource list succeeded"
+  echo "${OUTPUT}"
+fi
+```
+
+---
+
+## Phase 13: List Prompts via MCP CLI
+
+### Test 13.1: List prompts via MCP SSE endpoint
+
+```bash
+OUTPUT=$(wanaku mcp prompt list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: wanaku mcp prompt list failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+else
+  echo "PASS: prompt list succeeded"
+  echo "${OUTPUT}"
+fi
+```
+
+---
+
+## Phase 14: Cleanup
+
+### Step 14.1: Remove registered tools
+
+```bash
+${WANAKU_CLI:-wanaku} tools remove \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name free-currency-conversion-api 2>/dev/null || true
+
+${WANAKU_CLI:-wanaku} tools remove \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name meow-facts 2>/dev/null || true
+
+echo "PASS: tools removed"
+```
+
+### Step 14.2: Delete capability and router CRs
+
+```bash
+oc delete wanakucapability wanaku-mcp-test-capabilities -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+wait_for_deletion deployment wanaku-http "${WANAKU_NAMESPACE}" 60
+
+oc delete wanakurouter wanaku-mcp-test-router -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
+wait_for_deletion deployment wanaku-mcp-test-router-mcp-router "${WANAKU_NAMESPACE}" 60
+```
+
+### Step 14.3: Full cleanup
+
+Follow [common/cleanup.md](common/cleanup.md) for remaining teardown (Keycloak, operator, namespace).
+
+---
+
+## Full Test Summary Matrix
+
+| Phase | Test ID | Test Name | Priority | Part |
+|-------|---------|-----------|----------|------|
+| 1 | 1.1-1.4 | Help and usage output | Medium | 1 |
+| 2 | 2.1-2.4 | Required option validation | High | 1 |
+| 3 | 3.1-3.4 | Tool list, call, multi-param, non-existent | Critical | 1 |
+| 4 | 4.1-4.3 | Resource list, read, non-existent | Critical | 1 |
+| 5 | 5.1-5.3 | Prompt list, get, non-existent | Critical | 1 |
+| 6 | 6.1-6.2 | Connection error handling | High | 1 |
+| 7 | 7.1-7.2 | OpenShift login (MANUAL) | Critical | 2 |
+| 8 | 8.1-8.8 | Stack deployment (operator, router, capability) | Critical | 2 |
+| 9 | 9.1-9.3 | Register real HTTP tools | Critical | 2 |
+| 10 | 10.1 | List tools via MCP SSE endpoint | Critical | 2 |
+| 11 | 11.1-11.4 | Invoke real tools (currency, cat facts, missing param) | Critical | 2 |
+| 12 | 12.1 | List resources via MCP endpoint | High | 2 |
+| 13 | 13.1 | List prompts via MCP endpoint | High | 2 |
+| 14 | 14.1-14.3 | Cleanup | Critical | 2 |
