@@ -86,6 +86,7 @@ public final class CamelRoutePackager {
                 routeRef.put("id", tool.getRouteId());
                 toolBody.put("route", routeRef);
                 toolBody.put("description", tool.getDescription());
+                toolBody.put("namespace", "public");
 
                 if (tool.getProperties() != null && !tool.getProperties().isEmpty()) {
                     List<Map<String, Object>> propsList = new ArrayList<>();
@@ -117,7 +118,7 @@ public final class CamelRoutePackager {
                 routeRef.put("uri", resource.getUri());
                 resourceBody.put("route", routeRef);
                 resourceBody.put("description", resource.getDescription());
-                resourceBody.put("mimeType", resource.getMimeType());
+                resourceBody.put("namespace", "public");
 
                 resourceEntry.put(resource.getName(), resourceBody);
                 resourcesList.add(resourceEntry);
