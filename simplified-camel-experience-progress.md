@@ -3,7 +3,7 @@
 ## Branch & PR
 
 - **Branch:** `ci-simplified-camel-experience`
-- **PR:** https://github.com/wanaku-ai/wanaku/pull/1372
+- **PR:** [#1372](https://github.com/wanaku-ai/wanaku/pull/1372)
 - **Repo (fork):** `orpiske/wanaku`
 - **Upstream:** `wanaku-ai/wanaku`
 - **CI images:** `quay.io/orpiske/wanaku-operator:ci-simplified-camel-experience` and `quay.io/orpiske/wanaku-router-backend:ci-simplified-camel-experience`
