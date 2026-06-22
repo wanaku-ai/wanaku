@@ -50,8 +50,7 @@ export const PromptsPage: React.FC = () => {
       setErrorMessage(null);
 
       await updatePrompts();
-    } catch (error) {
-      console.error("Error adding prompt:", error);
+    } catch {
       setIsAddModalOpen(false);
       setErrorMessage("Error adding prompt: The prompt name must be unique");
     }
@@ -61,8 +60,7 @@ export const PromptsPage: React.FC = () => {
     try {
       await removePrompt(promptName!);
       await updatePrompts();
-    } catch (error) {
-      console.error("Error deleting prompt:", error);
+    } catch {
       setErrorMessage(`Failed to delete prompt: ${promptName}`);
     }
   };

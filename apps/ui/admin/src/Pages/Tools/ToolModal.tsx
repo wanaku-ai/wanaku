@@ -22,13 +22,15 @@ interface ToolModalProps {
   tool?: ToolReference
   onSubmit: (tool: ToolReference) => void
   onRequestClose: () => void
+  onError?: (message: string) => void
 }
 
 export const ToolModal: React.FC<ToolModalProps> = ({
   tools,
   tool,
   onSubmit,
-  onRequestClose
+  onRequestClose,
+  onError
 }) => {
   const [namespaces, setNamespaces] = useState<Namespace[]>([])
   const [toolName, setToolName] = useState(tool?.name || "")
@@ -69,8 +71,9 @@ export const ToolModal: React.FC<ToolModalProps> = ({
         configurationURI,
         secretsURI
       })
-    } catch (error) {
-      console.error("Invalid JSON in input schema:", error)
+    } catch {
+      setInputSchemaInvalid(true)
+      setInputSchemaInvalidText("Invalid JSON in input schema")
     }
   }
   
@@ -157,6 +160,7 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               value={toolType}
               onChange={setToolType}
               apiCall={listManagementTools}
+              onError={onError}
             />
             <TextInput
               id="input-schema"

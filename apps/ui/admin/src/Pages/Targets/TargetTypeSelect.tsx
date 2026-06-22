@@ -1,19 +1,22 @@
 import {Select, SelectItem, SelectSkeleton} from "@carbon/react";
 import React, {useEffect, useState} from "react";
 import {ServiceTarget} from "../../models";
+import {getErrorMessage} from "../../utils/error";
 
 interface TargetTypeSelectProps {
   value: string;
   onChange: (value: string) => void;
   apiCall: () => Promise<any>;
+  onError?: (message: string) => void;
 }
 
 export const TargetTypeSelect: React.FC<TargetTypeSelectProps> = ({
   value,
   onChange,
-  apiCall
+  apiCall,
+  onError
 }) => {
-  
+
   const [targetTypes, setTargetTypes] = useState<ServiceTarget[]>([])
   const [isLoading, setLoading] = useState(true)
 
@@ -25,9 +28,12 @@ export const TargetTypeSelect: React.FC<TargetTypeSelectProps> = ({
           const targetTypes: ServiceTarget[] = result.data.data
           setTargetTypes(targetTypes)
         } else {
-          console.error(`Error fetching target types: ${result.status}`)
+          onError?.(`Failed to load target types: ${result.status}`)
           setTargetTypes([])
         }
+      } catch (error) {
+        onError?.(getErrorMessage(error))
+        setTargetTypes([])
       } finally {
         setLoading(false)
       }
