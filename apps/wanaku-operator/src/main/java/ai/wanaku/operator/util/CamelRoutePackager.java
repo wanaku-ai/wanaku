@@ -114,10 +114,10 @@ public final class CamelRoutePackager {
 
                 Map<String, Object> routeRef = new LinkedHashMap<>();
                 routeRef.put("id", resource.getRouteId());
-                routeRef.put("description", resource.getDescription());
                 routeRef.put("uri", resource.getUri());
-                routeRef.put("mimeType", resource.getMimeType());
                 resourceBody.put("route", routeRef);
+                resourceBody.put("description", resource.getDescription());
+                resourceBody.put("mimeType", resource.getMimeType());
 
                 resourceEntry.put(resource.getName(), resourceBody);
                 resourcesList.add(resourceEntry);
