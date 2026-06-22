@@ -91,9 +91,29 @@ wait_for_deletion() {
 }
 ```
 
+### Helper: obtain a Bearer token from Keycloak
+
+The router has OIDC auth enabled, so all API requests (even from inside the pod) require a Bearer token. This helper obtains a token from Keycloak using the `wanaku-service` client credentials. It uses `oc exec` into the Keycloak pod since the Keycloak route may not be accessible from outside the cluster.
+
+```bash
+get_router_token() {
+  local KC_POD
+  KC_POD=$(oc get pods -l app=keycloak \
+    -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+  oc exec "${KC_POD}" -n "${WANAKU_NAMESPACE}" -- \
+    curl -sf \
+      -d "client_id=wanaku-service" \
+      -d "client_secret=${WANAKU_OIDC_CLIENT_SECRET}" \
+      -d "grant_type=client_credentials" \
+      "http://localhost:8080/realms/wanaku/protocol/openid-connect/token" \
+    | jq -r '.access_token'
+}
+```
+
 ### Helper: query router REST API via oc exec
 
-The router has OIDC auth enabled, so external `curl` calls get a 302 redirect. All catalog verification steps use `oc exec` into the router pod to query the internal localhost endpoint.
+Uses `oc exec` into the router pod with a Bearer token obtained from Keycloak. Health endpoints (`/q/health/*`) do not require auth and are queried without a token.
 
 ```bash
 query_router_api() {
@@ -102,8 +122,15 @@ query_router_api() {
   ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
     -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
+  local TOKEN
+  TOKEN=$(get_router_token)
+  if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+    echo "ERROR: failed to obtain Bearer token from Keycloak" >&2
+    return 1
+  fi
+
   oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-    curl -sf "http://localhost:8080${ENDPOINT}"
+    curl -sf -H "Authorization: Bearer ${TOKEN}" "http://localhost:8080${ENDPOINT}"
 }
 ```
 
@@ -383,11 +410,7 @@ echo "PASS: registeredResources is empty"
 ### Test 4.6: Verify catalog exists in router
 
 ```bash
-ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8080/api/v1/service-catalog)
+CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data' > /dev/null 2>&1; then
   if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-greeting-tool")' > /dev/null 2>&1; then
@@ -519,11 +542,7 @@ echo "PASS: registeredTools is empty"
 ### Test 5.5: Verify resource catalog exists in router
 
 ```bash
-ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8080/api/v1/service-catalog)
+CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-info-resource")' > /dev/null 2>&1; then
   echo "PASS: test-info-resource catalog found in router"
@@ -624,11 +643,7 @@ echo "${RESOURCES}" | grep -q "combined-resource" && echo "PASS: combined-resour
 ### Test 6.4: Verify combined catalog exists in router
 
 ```bash
-ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8080/api/v1/service-catalog)
+CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-combined-cr")' > /dev/null 2>&1; then
   echo "PASS: test-combined-cr catalog found in router"
@@ -981,13 +996,8 @@ oc delete wanakucamelroute bad-missing-router -n "${WANAKU_NAMESPACE}" --ignore-
 oc delete wanakucamelroute test-greeting-tool -n "${WANAKU_NAMESPACE}"
 wait_for_deletion wanakucamelroute test-greeting-tool "${WANAKU_NAMESPACE}" 60
 
-# Verify catalog was removed from router
-ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
 sleep 5
-CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8080/api/v1/service-catalog)
+CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-greeting-tool")' > /dev/null 2>&1; then
   echo "FAIL: test-greeting-tool catalog still exists in router after CR deletion"
@@ -1012,8 +1022,7 @@ oc delete wanakucamelroute test-info-resource -n "${WANAKU_NAMESPACE}"
 wait_for_deletion wanakucamelroute test-info-resource "${WANAKU_NAMESPACE}" 60
 
 sleep 5
-CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8080/api/v1/service-catalog)
+CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-info-resource")' > /dev/null 2>&1; then
   echo "FAIL: test-info-resource catalog still exists in router after CR deletion"
@@ -1033,8 +1042,7 @@ oc delete wanakucamelroute test-combined-cr -n "${WANAKU_NAMESPACE}"
 wait_for_deletion wanakucamelroute test-combined-cr "${WANAKU_NAMESPACE}" 60
 
 sleep 5
-CATALOG_RESPONSE=$(oc exec "${ROUTER_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf http://localhost:8080/api/v1/service-catalog)
+CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "test-combined-cr")' > /dev/null 2>&1; then
   echo "FAIL: test-combined-cr catalog still exists in router after CR deletion"

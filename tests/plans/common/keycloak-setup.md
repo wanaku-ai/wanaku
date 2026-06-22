@@ -265,6 +265,37 @@ fi
 echo "PASS: OIDC token endpoint works"
 ```
 
+### 9. Workaround: force-set the client secret if token request fails
+
+When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 8 fails with HTTP 401, force-set the client secret:
+
+```bash
+if [ "${TOKEN_RESPONSE}" = "401" ]; then
+  echo "WARN: OIDC secret may be stored literally — force-setting via Admin API"
+
+  curl -s -X PUT \
+    -H "Authorization: Bearer ${KEYCLOAK_ADMIN_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "{\"type\":\"secret\",\"value\":\"${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}\"}" \
+    "${KEYCLOAK_URL}/admin/realms/wanaku/clients/${WANAKU_SERVICE_UUID}/client-secret"
+
+  export WANAKU_OIDC_SECRET="${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}"
+
+  # Re-verify
+  TOKEN_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+    -d "client_id=wanaku-service" \
+    -d "client_secret=${WANAKU_OIDC_SECRET}" \
+    -d "grant_type=client_credentials" \
+    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token")
+
+  if [ "${TOKEN_RESPONSE}" != "200" ]; then
+    echo "FAIL: token endpoint still failing after secret reset (HTTP ${TOKEN_RESPONSE})"
+    exit 1
+  fi
+  echo "PASS: OIDC token endpoint works after secret reset"
+fi
+```
+
 ## Output Variables
 
 After completing this procedure, the following variables are set and available for subsequent steps:
