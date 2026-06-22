@@ -14,6 +14,7 @@ import ai.wanaku.cli.main.commands.configure.Configure;
 import ai.wanaku.cli.main.commands.datastores.DataStores;
 import ai.wanaku.cli.main.commands.forwards.Forwards;
 import ai.wanaku.cli.main.commands.man.Man;
+import ai.wanaku.cli.main.commands.mcp.Mcp;
 import ai.wanaku.cli.main.commands.namespaces.Namespaces;
 import ai.wanaku.cli.main.commands.prompts.Prompts;
 import ai.wanaku.cli.main.commands.resources.Resources;
@@ -39,6 +40,7 @@ import picocli.CommandLine;
             Tools.class,
             ToolSet.class,
             Namespaces.class,
+            Mcp.class,
             Man.class,
             Completion.class,
             DataStores.class,
