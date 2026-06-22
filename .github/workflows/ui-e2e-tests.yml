@@ -108,6 +108,13 @@ jobs:
         yarn install --frozen-lockfile
         npx playwright install --with-deps chromium
 
+    - name: Re-augment Router Backend (disable OIDC)
+      run: >
+        java -Dquarkus.launch.rebuild=true
+        -Dquarkus.oidc.enabled=false
+        -Dquarkus.oidc-proxy.enabled=false
+        -jar apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar
+
     - name: Start Router Backend
       run: |
         WANAKU_HTTP_AUTH=none java -jar apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar &
