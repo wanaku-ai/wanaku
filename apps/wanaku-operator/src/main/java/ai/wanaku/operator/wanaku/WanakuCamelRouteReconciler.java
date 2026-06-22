@@ -311,19 +311,28 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         pvc.getMetadata().getLabels().put("app", crName);
         pvc.getMetadata().getLabels().put("component", cicName);
         pvc.addOwnerReference(resource);
-        LOG.infof("Creating PVC '%s'", pvc.getMetadata().getName());
-        kubernetesClient
+        PersistentVolumeClaim existingPvc = kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
-                .resource(pvc)
-                .createOr(Replaceable::update);
+                .withName(pvc.getMetadata().getName())
+                .get();
+        if (existingPvc == null) {
+            LOG.infof("Creating PVC '%s'", pvc.getMetadata().getName());
+            kubernetesClient
+                    .persistentVolumeClaims()
+                    .inNamespace(namespace)
+                    .resource(pvc)
+                    .create();
+        }
 
         Deployment deployment = ReconcilerUtilsInternal.loadYaml(
                 Deployment.class,
                 WanakuCamelRouteReconciler.class,
                 CapabilityResourceFactory.CAMEL_INTEGRATION_CAPABILITY_DEPLOYMENT_FILE);
         configureCicDeployment(deployment, resource, crName, cicName, namespace, routerBaseUrl, authSpec);
-        LOG.infof("Creating Deployment '%s' with image '%s'", cicName, resource.getSpec().getImage());
+        LOG.infof(
+                "Creating Deployment '%s' with image '%s'",
+                cicName, resource.getSpec().getImage());
         kubernetesClient
                 .apps()
                 .deployments()

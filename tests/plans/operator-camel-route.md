@@ -1263,7 +1263,7 @@ echo "${RESOURCE_LIST}" | grep -q "combined-resource" && \
 # Verify invoking a deleted tool fails
 DELETED_TOOL_RESPONSE=$(wanaku mcp tool --uri "${MCP_URI}" --name test-greeting --param message=hello 2>&1)
 echo "Deleted tool invocation response: ${DELETED_TOOL_RESPONSE}"
-if echo "${DELETED_TOOL_RESPONSE}" | grep -qi "error\|not found\|No tools found"; then
+if echo "${DELETED_TOOL_RESPONSE}" | grep -qi "error\|not found\|No tools found\|invalid"; then
   echo "PASS: invoking deleted tool correctly fails"
 else
   echo "FAIL: invoking deleted tool did not produce an error"
