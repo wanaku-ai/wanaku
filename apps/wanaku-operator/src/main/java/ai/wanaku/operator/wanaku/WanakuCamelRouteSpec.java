@@ -5,7 +5,10 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class WanakuCamelRouteSpec {
+    private static final String DEFAULT_CIC_IMAGE = "quay.io/wanaku/camel-integration-capability:latest";
+
     private String routerRef;
+    private String image;
     private JsonNode route;
     private McpSpec mcp;
     private Map<String, String> properties;
@@ -16,6 +19,14 @@ public class WanakuCamelRouteSpec {
 
     public void setRouterRef(String routerRef) {
         this.routerRef = routerRef;
+    }
+
+    public String getImage() {
+        return (image != null && !image.isBlank()) ? image : DEFAULT_CIC_IMAGE;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 
     public JsonNode getRoute() {
