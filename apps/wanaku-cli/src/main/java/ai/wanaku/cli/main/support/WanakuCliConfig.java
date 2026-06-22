@@ -64,7 +64,7 @@ public interface WanakuCliConfig extends WanakuConfig {
      * Maximum number of seconds to wait for the local router readiness
      * endpoint before starting capability services.
      */
-    @WithDefault("5")
+    @WithDefault("30")
     int routerStartWaitSecs();
 
     @WithDefault("local")
