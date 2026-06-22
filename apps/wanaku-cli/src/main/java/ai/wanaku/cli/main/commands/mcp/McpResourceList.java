@@ -30,7 +30,7 @@ public class McpResourceList extends BaseCommand {
             }
 
             for (dev.langchain4j.mcp.client.McpResource resource : resources) {
-                printer.println(String.format(
+                System.out.println(String.format(
                         "%-30s %-40s %s",
                         nullSafe(resource.name()), nullSafe(resource.uri()), nullSafe(resource.mimeType())));
             }

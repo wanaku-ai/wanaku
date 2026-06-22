@@ -1,5 +1,7 @@
 package ai.wanaku.cli.main.commands.mcp;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -46,11 +49,16 @@ class McpToolTest {
                         .isError(false)
                         .build());
 
-        WanakuPrinter printer = mock(WanakuPrinter.class);
-        Integer result = command.doCall(null, printer);
-
-        assertEquals(BaseCommand.EXIT_OK, result);
-        verify(printer).println("hello world");
+        PrintStream original = System.out;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(captured));
+        try {
+            Integer result = command.doCall(null, mock(WanakuPrinter.class));
+            assertEquals(BaseCommand.EXIT_OK, result);
+            assertTrue(captured.toString().contains("hello world"));
+        } finally {
+            System.setOut(original);
+        }
     }
 
     @Test
@@ -92,5 +100,25 @@ class McpToolTest {
         String json = McpTool.serializeParams(params);
 
         assertEquals("{\"key1\":\"value1\",\"key2\":\"value2\"}", json);
+    }
+
+    @Test
+    @DisplayName("Should return error when uri is missing")
+    void shouldReturnErrorWhenUriMissing() throws Exception {
+        command.uri = null;
+        WanakuPrinter printer = mock(WanakuPrinter.class);
+        Integer result = command.doCall(null, printer);
+        assertEquals(BaseCommand.EXIT_ERROR, result);
+        verify(printer).printErrorMessage("Missing required option: --uri");
+    }
+
+    @Test
+    @DisplayName("Should return error when name is missing")
+    void shouldReturnErrorWhenNameMissing() throws Exception {
+        command.name = null;
+        WanakuPrinter printer = mock(WanakuPrinter.class);
+        Integer result = command.doCall(null, printer);
+        assertEquals(BaseCommand.EXIT_ERROR, result);
+        verify(printer).printErrorMessage("Missing required option: --name");
     }
 }

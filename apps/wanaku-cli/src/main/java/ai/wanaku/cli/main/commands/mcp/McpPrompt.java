@@ -20,14 +20,12 @@ public class McpPrompt extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--uri"},
-            description = "MCP server endpoint URI",
-            required = true)
+            description = "MCP server endpoint URI")
     String uri;
 
     @CommandLine.Option(
             names = {"--name"},
-            description = "Name of the prompt to get",
-            required = true)
+            description = "Name of the prompt to get")
     String name;
 
     @CommandLine.Option(
@@ -40,6 +38,14 @@ public class McpPrompt extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+        if (uri == null) {
+            printer.printErrorMessage("Missing required option: --uri");
+            return EXIT_ERROR;
+        }
+        if (name == null) {
+            printer.printErrorMessage("Missing required option: --name");
+            return EXIT_ERROR;
+        }
         try (McpClient client = resolveClient()) {
             Map<String, Object> promptArgs = new LinkedHashMap<>(args);
             McpGetPromptResult result = client.getPrompt(name, promptArgs);
@@ -51,7 +57,7 @@ public class McpPrompt extends BaseCommand {
             }
 
             for (McpPromptMessage message : messages) {
-                printer.println(message.toString());
+                System.out.println(message.toString());
             }
 
             return EXIT_OK;

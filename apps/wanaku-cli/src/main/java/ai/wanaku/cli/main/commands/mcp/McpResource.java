@@ -18,20 +18,26 @@ public class McpResource extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--uri"},
-            description = "MCP server endpoint URI",
-            required = true)
+            description = "MCP server endpoint URI")
     String uri;
 
     @CommandLine.Option(
             names = {"--resource-uri"},
-            description = "URI of the resource to read",
-            required = true)
+            description = "URI of the resource to read")
     String resourceUri;
 
     McpClient mcpClient;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+        if (uri == null) {
+            printer.printErrorMessage("Missing required option: --uri");
+            return EXIT_ERROR;
+        }
+        if (resourceUri == null) {
+            printer.printErrorMessage("Missing required option: --resource-uri");
+            return EXIT_ERROR;
+        }
         try (McpClient client = resolveClient()) {
             McpReadResourceResult result = client.readResource(resourceUri);
             List<McpResourceContents> contents = result.contents();
@@ -42,7 +48,7 @@ public class McpResource extends BaseCommand {
             }
 
             for (McpResourceContents content : contents) {
-                printer.println(content.toString());
+                System.out.println(content.toString());
             }
 
             return EXIT_OK;

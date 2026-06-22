@@ -19,22 +19,49 @@ Every step except the initial `oc login` is fully automatable.
 | `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 
+### CLI invocation
+
+When using the CLI from a local build (not installed), use `java -jar` directly:
+
+```bash
+CLI_JAR="apps/wanaku-cli/target/quarkus-app/quarkus-run.jar"
+java -jar ${CLI_JAR} mcp tool list --uri ...
+```
+
+Do **not** assign the full command to a single variable (e.g., `WANAKU_CLI="java -jar path/to/jar"`) — zsh treats it as a single token. Use `CLI_JAR` for the path and call `java -jar ${CLI_JAR}` explicitly.
+
 ### Environment variables
 
 ```bash
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/mcp}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
 ```
 
 ### MCP server setup
 
-An MCP server must be running and accessible at `MCP_SERVER_URI`. You can use the project's mock MCP server for testing:
+An MCP server must be running and accessible at `MCP_SERVER_URI`. Start the Wanaku stack locally:
 
 ```bash
-cd tests/mcp-servers/wanaku-performance-test-mock-mcp
-mvn quarkus:dev
+# Build first
+mvn -DskipTests -Pdist clean package
+
+# Start the local stack (auth disabled automatically)
+VERSION=$(cat core/core-util/target/classes/version.txt)
+java -jar apps/wanaku-cli/target/quarkus-app/quarkus-run.jar start local \
+  --local-dist apps/wanaku-router-backend/target/distributions/wanaku-router-backend-${VERSION}.zip \
+  --local-dist capabilities/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-${VERSION}.zip
 ```
 
-Or start a Wanaku router with capabilities registered.
+Wait for the router health check:
+
+```bash
+curl -sf http://localhost:8080/q/health/ready > /dev/null && echo "READY" || echo "NOT READY"
+```
+
+### Known limitations for local testing
+
+- **No resource providers in `wanaku start local`:** The local start command only supports tool services (`service-http`, `service-exec`, etc.). Resource providers (like `performancestaticfile`) are not available locally. Resource read tests (Phase 12) require a deployed environment.
+- **Prompts are not registered by default:** No prompt providers ship with the base installation. Prompt list/get tests will return empty results locally.
+- **MCP SSE path:** The public MCP endpoint is `/public/mcp/sse` (not `/mcp`). Using a wrong path will return connection errors.
 
 ---
 

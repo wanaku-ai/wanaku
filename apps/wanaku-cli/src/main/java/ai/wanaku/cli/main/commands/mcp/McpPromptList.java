@@ -30,7 +30,7 @@ public class McpPromptList extends BaseCommand {
             }
 
             for (dev.langchain4j.mcp.client.McpPrompt prompt : prompts) {
-                printer.println(String.format("%-30s %s", prompt.name(), nullSafe(prompt.description())));
+                System.out.println(String.format("%-30s %s", prompt.name(), nullSafe(prompt.description())));
             }
 
             return EXIT_OK;
