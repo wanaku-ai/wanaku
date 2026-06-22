@@ -7,14 +7,16 @@ import {
 import React, {useEffect, useState} from "react"
 import {useTools} from "../../hooks/api/use-tools"
 import {ToolReference} from "../../models"
+import {getErrorMessage} from "../../utils/error"
 
 
 interface LLMToolsProps {
   selectedTools: ToolReference[]
   onSelectionChange: (tools: ToolReference[]) => void
+  onError?: (message: string) => void
 }
 
-export const LLMTools: React.FC<LLMToolsProps> = ({ selectedTools, onSelectionChange }) => {
+export const LLMTools: React.FC<LLMToolsProps> = ({ selectedTools, onSelectionChange, onError }) => {
   
   const [tools, setTools] = useState<ToolReference[]>([])
   const [isLoading, setLoading] = useState(true)
@@ -26,7 +28,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({ selectedTools, onSelectionCh
         const tools = await fetchTools()
         setTools(tools)
       } catch (error) {
-        console.error("Failed to load tools", error)
+        onError?.(getErrorMessage(error))
         setTools([])
       } finally {
         setLoading(false)

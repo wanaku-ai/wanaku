@@ -11,6 +11,7 @@ import {Send, Stop} from "@carbon/icons-react"
 import {LLMChatMessage} from "./LLMChatMessage"
 import {getUrl} from "../../custom-fetch"
 import {ToolReference} from "../../models"
+import {getErrorMessage} from "../../utils/error"
 
 
 interface ChatMessage {
@@ -88,7 +89,11 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
         setDisplayedMessages(chatHistory.current)
       }
     } catch (error) {
-      console.error("Error during conversation:", error)
+      if (!signal.aborted) {
+        const networkError = { role: "error", content: `Network error: ${getErrorMessage(error)}` } as const
+        chatHistory.current.push(networkError)
+        setDisplayedMessages([...chatHistory.current])
+      }
     } finally {
       setIsRunning(false)
     }

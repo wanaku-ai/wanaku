@@ -60,8 +60,7 @@ export const NamespacesPage: React.FC = () => {
       setIsModalOpen(false);
       setErrorMessage(null);
       await refreshNamespaces();
-    } catch (error) {
-      console.error("Error creating namespace:", error);
+    } catch {
       setIsModalOpen(false);
       setErrorMessage("Error creating namespace. The name or path may already be in use.");
     }
@@ -72,8 +71,7 @@ export const NamespacesPage: React.FC = () => {
       await updateNamespace(namespace);
       setErrorMessage(null);
       await refreshNamespaces();
-    } catch (error) {
-      console.error("Error updating namespace:", error);
+    } catch {
       setErrorMessage("Error updating namespace.");
     } finally {
       handleModalClose();
@@ -85,8 +83,7 @@ export const NamespacesPage: React.FC = () => {
       if (!namespace.id) return;
       await removeNamespace(namespace.id);
       await refreshNamespaces();
-    } catch (error) {
-      console.error("Error deleting namespace:", error);
+    } catch {
       setErrorMessage(`Failed to delete namespace: ${namespace.name || namespace.path}`);
     }
   };

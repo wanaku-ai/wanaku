@@ -60,8 +60,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
       const result = await listRepos();
       setRepos(result.data.data || []);
       setIsLoading(false);
-    } catch (error) {
-      console.error("Error fetching toolset repos:", error);
+    } catch {
       onError("Failed to load toolset repositories");
       setIsLoading(false);
     }
@@ -87,8 +86,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
       setAddBranch("main");
       setAddDescription("");
       loadRepos();
-    } catch (error) {
-      console.error("Error adding repo:", error);
+    } catch {
       onError("Failed to add toolset repository");
     }
   };
@@ -108,8 +106,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
       setEditBranch("");
       setEditDescription("");
       loadRepos();
-    } catch (error) {
-      console.error("Error updating repo:", error);
+    } catch {
       onError("Failed to update toolset repository");
     }
   };
@@ -120,8 +117,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
       onSuccess(`Toolset repository '${name}' removed`);
       setDeleteTarget(null);
       loadRepos();
-    } catch (error) {
-      console.error("Error removing repo:", error);
+    } catch {
       onError(`Failed to remove repository '${name}'`);
     }
   };
@@ -132,8 +128,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
     try {
       const result = await browseRepo(name);
       setBrowseCatalog(result.data.data ?? null);
-    } catch (error) {
-      console.error("Error browsing repo:", error);
+    } catch {
       onError(`Failed to browse repository '${name}'`);
       setBrowseTarget(null);
     } finally {
@@ -148,8 +143,7 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
       setImportToolsetName(toolsetName);
       setImportTools(tools);
       setSelectedToolIds(tools.filter((t: ToolReference) => t.name).map((t: ToolReference) => t.name!));
-    } catch (error) {
-      console.error("Error fetching toolset:", error);
+    } catch {
       onError(`Failed to fetch toolset '${toolsetName}'`);
     }
   };
@@ -161,8 +155,8 @@ export const ToolsetReposTab: React.FC<ToolsetReposTabProps> = ({onError, onSucc
       try {
         await postApiV1Tools(tool);
         imported++;
-      } catch (error) {
-        console.error(`Error importing tool '${tool.name}':`, error);
+      } catch {
+        // failed tools counted by absence from imported count
       }
     }
     onSuccess(`Imported ${imported} tool(s) from '${importToolsetName}'`);

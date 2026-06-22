@@ -4,6 +4,7 @@ import {RefreshHandle, ResourcesTable} from "./ResourcesTable"
 import React, {useRef, useState} from "react"
 import {ResourceReference} from "../../models"
 import {useResources} from "../../hooks/api/use-resources"
+import {getErrorMessage} from "../../utils/error"
 
 
 export const ResourcesPage: React.FC = () => {
@@ -31,7 +32,7 @@ export const ResourcesPage: React.FC = () => {
     try {
       await exposeResource(resource)
     } catch (error) {
-      setErrorMessage(`Error adding resource: ${error}`)
+      setErrorMessage(`Error adding resource: ${getErrorMessage(error)}`)
     } finally {
       setModalOpen(false)
       refreshResources()
@@ -42,7 +43,7 @@ export const ResourcesPage: React.FC = () => {
     try {
       await updateResource(resource)
     } catch (error) {
-      setErrorMessage(`Error updating resource: ${error}`)
+      setErrorMessage(`Error updating resource: ${getErrorMessage(error)}`)
     } finally {
       setOpenedResource(undefined)
       setModalOpen(false)
@@ -54,7 +55,7 @@ export const ResourcesPage: React.FC = () => {
     try {
       await removeResource(resourceName)
     } catch (error) {
-      setErrorMessage(`Error deleting resource: ${error}`)
+      setErrorMessage(`Error deleting resource: ${getErrorMessage(error)}`)
     } finally {
       refreshResources()
     }
@@ -89,6 +90,7 @@ export const ResourcesPage: React.FC = () => {
             setModalOpen(true)
           }}
           onDelete={handleDeleteResource}
+          onError={(msg) => setErrorMessage(msg)}
           ref={resourceTableRef}
         />
       </div>
@@ -97,6 +99,7 @@ export const ResourcesPage: React.FC = () => {
           openedResource={openedResource}
           onSubmit={handleModalSubmit}
           onCancel={handleModalCancel}
+          onError={(msg) => setErrorMessage(msg)}
         />
       )}
     </div>

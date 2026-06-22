@@ -21,8 +21,7 @@ export const DataStoresPage: React.FC = () => {
         setFetchedData((result.data.data as DataStore[]) || []);
         setIsLoading(false);
       })
-      .catch((error) => {
-        console.error("Error fetching data stores:", error);
+      .catch(() => {
         setErrorMessage("Failed to load data stores");
         setIsLoading(false);
       });
@@ -50,8 +49,7 @@ export const DataStoresPage: React.FC = () => {
       listDataStores().then((result) => {
         setFetchedData((result.data.data as DataStore[]) || []);
       });
-    } catch (error) {
-      console.error("Error adding data store:", error);
+    } catch {
       setErrorMessage("Error adding data store. Please try again.");
     }
   };
@@ -64,8 +62,7 @@ export const DataStoresPage: React.FC = () => {
       listDataStores().then((result) => {
         setFetchedData((result.data.data as DataStore[]) || []);
       });
-    } catch (error) {
-      console.error("Error deleting data store:", error);
+    } catch {
       setErrorMessage(`Failed to delete data store`);
     }
   };
@@ -94,8 +91,7 @@ export const DataStoresPage: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error downloading file:", error);
+    } catch {
       setErrorMessage("Failed to download file. Data may be corrupted.");
     }
   };

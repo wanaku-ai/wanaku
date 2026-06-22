@@ -1,9 +1,9 @@
-import React, {useState} from "react"
+import React, {useEffect, useState} from "react"
 import "highlight.js/styles/atom-one-dark.css"
 import {LLMSetup} from "./LLMSetup.tsx"
 import {LLMTools} from "./LLMTools.tsx"
 import {LLMChatArea, LlmChatConfig} from "./LLMChatArea"
-import {Column, Grid} from "@carbon/react"
+import {Column, Grid, ToastNotification} from "@carbon/react"
 import {
   isConfigStoredInLocalStorage,
   LLM_CONFIG,
@@ -18,6 +18,14 @@ export const LLMChatPage: React.FC = () => {
   
   const [isStoredInLocalStorage, setStoreInLocalStorage] = useState(isConfigStoredInLocalStorage())
   const [config, setConfig] = useState<LlmConfig>(loadConfig())
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(null), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
   
   
   function applyConfigChange(config: LlmConfig) {
@@ -41,6 +49,16 @@ export const LLMChatPage: React.FC = () => {
   
   return (
     <div>
+      {errorMessage && (
+        <ToastNotification
+          kind="error"
+          title="Error"
+          subtitle={errorMessage}
+          onCloseButtonClick={() => setErrorMessage(null)}
+          timeout={10000}
+          style={{float: "right"}}
+        />
+      )}
       <h1 className="title">LLM Chat for testing</h1>
       <Grid fullWidth>
         <Column lg={4}>
@@ -65,6 +83,7 @@ export const LLMChatPage: React.FC = () => {
             onSelectionChange={(selectedTools) => {
               applyConfigChange({ ...config, selectedTools })
             }}
+            onError={(msg) => setErrorMessage(msg)}
           />
         </Column>
         <Column lg={12}>

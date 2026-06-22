@@ -67,8 +67,7 @@ export const ToolsPage: React.FC = () => {
       setErrorMessage(null);
 
       await updateTools();
-    } catch (error) {
-      console.error("Error adding tool:", error);
+    } catch {
       setIsAddModalOpen(false);
       setErrorMessage("Error adding tool: The tool name must be unique");
     }
@@ -79,8 +78,8 @@ export const ToolsPage: React.FC = () => {
       await updateTool(tool)
       setErrorMessage(null)
       await updateTools();
-    } catch (error) {
-      console.error("Error updating tool:", error)
+    } catch {
+      setErrorMessage(`Error updating tool: ${tool.name}`)
     } finally {
       handleToolModalClose()
     }
@@ -88,13 +87,16 @@ export const ToolsPage: React.FC = () => {
 
   const handleImportToolset = async (tools: ToolReference[]) => {
     setErrorMessage(null);
+    const failedTools: string[] = [];
     for (const tool of tools) {
       try {
         await addTool(tool);
-      } catch (error) {
-        console.error("Error adding tool:", error);
-        setErrorMessage(`Failed to add tool: ${tool.name}`);
+      } catch {
+        failedTools.push(tool.name || "unknown");
       }
+    }
+    if (failedTools.length > 0) {
+      setErrorMessage(`Failed to import: ${failedTools.join(", ")}`);
     }
     setIsImportModalOpen(false);
     await updateTools();
@@ -105,8 +107,7 @@ export const ToolsPage: React.FC = () => {
       if (!toolName) return;
       await removeTool(toolName);
       await updateTools();
-    } catch (error) {
-      console.error("Error deleting tool:", error);
+    } catch {
       setErrorMessage(`Failed to delete tool: ${toolName}`);
     }
   };
@@ -145,6 +146,7 @@ export const ToolsPage: React.FC = () => {
             tool={openedTool}
             onRequestClose={handleToolModalClose}
             onSubmit={handleToolModalSubmit}
+            onError={(msg) => setErrorMessage(msg)}
           />
         )}
         {isImportModalOpen && (
