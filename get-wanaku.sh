@@ -93,7 +93,11 @@ fetch_latest_version() {
 }
 
 build_download_url() {
-    local base="https://github.com/${REPO}/releases/download/${VERSION}"
+    local tag="${VERSION}"
+    if echo "$VERSION_NUM" | grep -q 'SNAPSHOT'; then
+        tag="early-access"
+    fi
+    local base="https://github.com/${REPO}/releases/download/${tag}"
 
     if [ "$PLATFORM" = "java" ]; then
         ARTIFACT="wanaku-cli-${VERSION_NUM}.zip"
