@@ -20,14 +20,12 @@ public class McpTool extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--uri"},
-            description = "MCP server endpoint URI",
-            required = true)
+            description = "MCP server endpoint URI")
     String uri;
 
     @CommandLine.Option(
             names = {"--name"},
-            description = "Name of the tool to call",
-            required = true)
+            description = "Name of the tool to call")
     String name;
 
     @CommandLine.Option(
@@ -40,6 +38,14 @@ public class McpTool extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+        if (uri == null) {
+            printer.printErrorMessage("Missing required option: --uri");
+            return EXIT_ERROR;
+        }
+        if (name == null) {
+            printer.printErrorMessage("Missing required option: --name");
+            return EXIT_ERROR;
+        }
         try (McpClient client = resolveClient()) {
             ToolExecutionRequest request = ToolExecutionRequest.builder()
                     .name(name)
@@ -52,7 +58,7 @@ public class McpTool extends BaseCommand {
                 return EXIT_ERROR;
             }
 
-            printer.println(result.resultText());
+            System.out.println(result.resultText());
             return EXIT_OK;
         } catch (Exception e) {
             printer.printErrorMessage(e.getMessage());

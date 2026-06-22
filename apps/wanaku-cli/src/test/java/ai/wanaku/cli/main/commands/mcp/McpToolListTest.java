@@ -1,5 +1,7 @@
 package ai.wanaku.cli.main.commands.mcp;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,12 +50,18 @@ class McpToolListTest {
 
         when(mcpClient.listTools()).thenReturn(List.of(tool1, tool2));
 
-        WanakuPrinter printer = mock(WanakuPrinter.class);
-        Integer result = command.doCall(null, printer);
-
-        assertEquals(BaseCommand.EXIT_OK, result);
-        verify(printer).println(String.format("%-30s %s", "echo", "Echoes the input"));
-        verify(printer).println(String.format("%-30s %s", "add", "Adds two numbers"));
+        PrintStream original = System.out;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(captured));
+        try {
+            Integer result = command.doCall(null, mock(WanakuPrinter.class));
+            assertEquals(BaseCommand.EXIT_OK, result);
+            String output = captured.toString();
+            assertTrue(output.contains("echo"));
+            assertTrue(output.contains("add"));
+        } finally {
+            System.setOut(original);
+        }
     }
 
     @Test

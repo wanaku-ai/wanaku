@@ -31,7 +31,7 @@ public class McpToolList extends BaseCommand {
             }
 
             for (ToolSpecification tool : tools) {
-                printer.println(String.format("%-30s %s", tool.name(), nullSafe(tool.description())));
+                System.out.println(String.format("%-30s %s", tool.name(), nullSafe(tool.description())));
             }
 
             return EXIT_OK;
