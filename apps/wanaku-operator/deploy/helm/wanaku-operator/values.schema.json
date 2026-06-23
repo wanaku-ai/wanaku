@@ -113,6 +113,14 @@
             "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES" : {
               "type" : "string"
             },
+            "project" : {
+              "type" : "object",
+              "properties" : {
+                "version" : {
+                  "type" : "string"
+                }
+              }
+            },
             "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES" : {
               "type" : "string"
             },

@@ -165,7 +165,6 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: wanaku-operator
-    app.kubernetes.io/version: ${project.version}
   name: wanaku-operator-view
 roleRef:
   kind: ClusterRole

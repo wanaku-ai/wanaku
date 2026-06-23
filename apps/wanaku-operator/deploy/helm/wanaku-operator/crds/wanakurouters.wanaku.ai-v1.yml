@@ -21,6 +21,8 @@ spec:
                 properties:
                   authProxy:
                     type: "string"
+                  authRealm:
+                    type: "string"
                   authServer:
                     type: "string"
                 type: "object"
