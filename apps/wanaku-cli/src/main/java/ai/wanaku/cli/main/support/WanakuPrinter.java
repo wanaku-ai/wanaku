@@ -158,27 +158,16 @@ public class WanakuPrinter extends DefaultPrinter {
     public static Terminal terminalInstance() throws IOException {
         if (plainMode) {
             // Plain mode: route I/O through System.in/System.out with no ANSI escapes
-            // Disable all native providers (JNI, JNA, Jansi) to avoid loading issues
-            return newBuilder()
-                    .jansi(false)
-                    .jni(false)
-                    .jna(false)
-                    .color(false)
-                    .system(true)
-                    .build();
+            // Disable JNI and colors to avoid loading issues
+            return newBuilder().jni(false).color(false).build();
         }
 
         try {
-            // First attempt: Jansi-backed terminal with color support
-            return newBuilder().jansi(true).color(true).jna(false).build();
+            // First attempt: system terminal with color support
+            return newBuilder().build();
         } catch (Exception e) {
-            // Second attempt: without Jansi (native library may be unavailable)
-            try {
-                return newBuilder().jansi(false).jna(false).build();
-            } catch (Exception ex) {
-                // Final fallback: dumb terminal (no colors, but always works)
-                return TerminalBuilder.builder().dumb(true).build();
-            }
+            // Final fallback: dumb terminal (no colors, but always works)
+            return TerminalBuilder.builder().dumb(true).build();
         }
     }
 

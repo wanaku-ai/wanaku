@@ -3,15 +3,21 @@ package ai.wanaku.cli.main.commands.capabilities;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.jline.consoleui.prompt.ConsolePrompt;
-import org.jline.consoleui.prompt.PromptResultItemIF;
-import org.jline.consoleui.prompt.builder.ListPromptBuilder;
-import org.jline.consoleui.prompt.builder.PromptBuilder;
+import org.jline.prompt.ListBuilder;
+import org.jline.prompt.ListResult;
+import org.jline.prompt.PromptBuilder;
+import org.jline.prompt.PromptResult;
+import org.jline.prompt.Prompter;
+import org.jline.prompt.PrompterConfig;
+import org.jline.prompt.PrompterFactory;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.CapabilitiesHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.CapabilitiesService;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
@@ -158,28 +164,24 @@ public class CapabilitiesShow extends BaseCommand {
 
         printer.printWarningMessage("Multiple capabilities found for the " + service + " service. Please choose one.");
 
-        ConsolePrompt.UiConfig uiConfig = new ConsolePrompt.UiConfig("=> ", "[]", "[x]", "-");
-        ConsolePrompt prompt = new ConsolePrompt(terminal, uiConfig);
+        Prompter prompter =
+                PrompterFactory.create(terminal, PrompterConfig.custom("=> ", "[]", "[x]", "-", null, false));
+        PromptBuilder builder = prompter.newBuilder();
 
-        PromptBuilder builder = prompt.getPromptBuilder();
-
-        // Create interactive selection prompt
-        ListPromptBuilder listPromptBuilder =
+        ListBuilder listPromptBuilder =
                 builder.createListPrompt().name(SELECTION_PROMPT_NAME).message("Select a capability instance:");
 
         // Add each capability as a selectable option with formatted display text
         for (int i = 0; i < capabilities.size(); i++) {
             CapabilitiesHelper.PrintableCapability capability = capabilities.get(i);
             String displayText = formatCapabilityChoice(capability);
-
             listPromptBuilder.newItem(String.valueOf(i)).text(displayText).add();
         }
         listPromptBuilder.addPrompt();
-
         try {
-            Map<String, PromptResultItemIF> result = prompt.prompt(builder.build());
-            int selectedIndex =
-                    Integer.parseInt(result.get(SELECTION_PROMPT_NAME).getResult());
+            Map<String, ? extends PromptResult<?>> result = prompter.prompt(List.of(), builder.build());
+            ListResult selection = (ListResult) result.get(SELECTION_PROMPT_NAME);
+            int selectedIndex = Integer.parseInt(selection.getSelectedId());
             printCapabilityDetails(printer, capabilities.get(selectedIndex));
             return EXIT_OK;
         } catch (Exception e) {
