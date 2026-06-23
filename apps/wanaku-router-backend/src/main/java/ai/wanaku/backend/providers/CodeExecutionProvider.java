@@ -27,6 +27,7 @@ import ai.wanaku.backend.bridge.CodeExecutionBridge;
 import ai.wanaku.backend.bridge.CodeExecutorBridge;
 import ai.wanaku.backend.bridge.EventNotifier;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
+import ai.wanaku.backend.bridge.transports.grpc.GrpcChannelManager;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.backend.service.support.FirstAvailable;
@@ -54,6 +55,9 @@ public class CodeExecutionProvider {
     @Inject
     EventNotifier eventNotifier;
 
+    @Inject
+    GrpcChannelManager channelManager;
+
     ServiceRegistry serviceRegistry;
 
     @PostConstruct
@@ -77,7 +81,7 @@ public class CodeExecutionProvider {
 
         LOG.info("Creating CodeExecutionBridge");
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        WanakuBridgeTransport transport = new GrpcTransport();
+        WanakuBridgeTransport transport = new GrpcTransport(channelManager);
         return new CodeExecutionBridge(resolver, transport, eventNotifier);
     }
 }

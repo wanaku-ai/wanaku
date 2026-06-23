@@ -14,6 +14,7 @@ import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
 import ai.wanaku.backend.bridge.ResourceBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
+import ai.wanaku.backend.bridge.transports.grpc.GrpcChannelManager;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.backend.service.support.FirstAvailable;
@@ -32,6 +33,9 @@ public class ResourcesProvider {
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
 
+    @Inject
+    GrpcChannelManager channelManager;
+
     private ServiceRegistry serviceRegistry;
 
     @PostConstruct
@@ -46,13 +50,13 @@ public class ResourcesProvider {
 
     @Produces
     WanakuBridgeTransport getTransport() {
-        return new GrpcTransport();
+        return new GrpcTransport(channelManager);
     }
 
     @Produces
     ProvisionerBridge getProvisionerBridge() {
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        WanakuBridgeTransport transport = new GrpcTransport();
+        WanakuBridgeTransport transport = new GrpcTransport(channelManager);
         return new ProvisionerBridge(resolver, transport);
     }
 
@@ -69,7 +73,7 @@ public class ResourcesProvider {
         }
 
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        WanakuBridgeTransport transport = new GrpcTransport();
+        WanakuBridgeTransport transport = new GrpcTransport(channelManager);
         ProvisionerBridge provisioner = new ProvisionerBridge(resolver, transport);
 
         return new ResourceAcquirerBridge(provisioner, transport);

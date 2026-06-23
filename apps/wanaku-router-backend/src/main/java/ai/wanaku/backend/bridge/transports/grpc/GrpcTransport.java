@@ -74,24 +74,11 @@ public class GrpcTransport implements WanakuBridgeTransport {
     private final int deadlineSeconds;
 
     /**
-     * Creates a new GrpcTransport with default channel manager.
-     */
-    public GrpcTransport() {
-        this.channelManager = new GrpcChannelManager();
-
-        deadlineSeconds =
-                ConfigProvider.getConfig().getValue(WANAKU_BRIDGE_GRPC_TRANSPORT_DEADLINE_SECONDS, Integer.class);
-    }
-
-    /**
-     * Creates a new GrpcTransport with a custom channel manager.
-     * <p>
-     * This constructor is primarily intended for testing purposes, allowing
-     * injection of mock or custom implementations.
+     * Creates a new GrpcTransport with the given channel manager.
      *
      * @param channelManager the channel manager for creating gRPC channels
      */
-    GrpcTransport(GrpcChannelManager channelManager) {
+    public GrpcTransport(GrpcChannelManager channelManager) {
         this.channelManager = channelManager;
 
         deadlineSeconds =
