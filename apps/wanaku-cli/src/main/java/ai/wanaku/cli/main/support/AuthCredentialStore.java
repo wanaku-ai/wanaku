@@ -12,6 +12,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Properties;
 import org.jboss.logging.Logger;
+import ai.wanaku.core.util.WanakuHome;
 
 /**
  * A credential store specifically designed for CLI authentication.
@@ -22,7 +23,7 @@ public class AuthCredentialStore {
 
     private static final Logger LOG = Logger.getLogger(AuthCredentialStore.class);
 
-    private static final String DEFAULT_CREDENTIALS_FILE = "~/.wanaku/credentials";
+    private static final String DEFAULT_CREDENTIALS_FILE = WanakuHome.get() + File.separator + "credentials";
     private static final String API_TOKEN_KEY = "api.token";
     private static final String REFRESH_TOKEN_KEY = "refresh.token";
     private static final String AUTH_MODE_KEY = "auth.mode";
@@ -297,7 +298,7 @@ public class AuthCredentialStore {
     }
 
     private static URI resolveCredentialsPath(String credentialsPath) {
-        String resolvedPath = credentialsPath;
+        String resolvedPath = WanakuHome.expandPlaceholders(credentialsPath);
         if (resolvedPath.startsWith("~/")) {
             resolvedPath = System.getProperty("user.home") + resolvedPath.substring(1);
         }

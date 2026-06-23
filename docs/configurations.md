@@ -195,7 +195,7 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 
 | Property                                    | Description                                                                   |
 |---------------------------------------------|-------------------------------------------------------------------------------|
-| `wanaku.persistence.infinispan.base-folder` | Where to store Infinispan files (defaults to `${user.home}/.wanaku/router/`). |
+| `wanaku.persistence.infinispan.base-folder` | Where to store Infinispan files (defaults to `${wanaku.home}/router/`). |
 | `wanaku.infinispan.max-state-count`         | `10` - The maximum number of historical states to keep for each service.      |
 
 ### Namespaces

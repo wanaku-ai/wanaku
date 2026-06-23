@@ -365,13 +365,12 @@ public abstract class AbstractWanakuSerializationContextInitializer
 public class InfinispanConfigurationProvider {
 
     @ConfigProperty(name = "wanaku.persistence.infinispan.base-folder",
-                   defaultValue = "${user.home}/.wanaku/router/")
+                   defaultValue = "${wanaku.home}/router/")
     String baseFolder;
 
     @Produces
     Configuration newConfiguration() {
-        String location = baseFolder.replace(
-            "${user.home}", System.getProperty("user.home"));
+        String location = WanakuHome.expandPlaceholders(baseFolder);
         Files.createDirectories(Paths.get(location));
 
         return new ConfigurationBuilder()

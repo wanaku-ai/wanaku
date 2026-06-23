@@ -67,7 +67,7 @@ auth.server=http://localhost:8543
 quarkus.oidc.client-id=wanaku-mcp-router
 
 # Persistence
-wanaku.persistence.infinispan.base-folder=${user.home}/.wanaku/router/
+wanaku.persistence.infinispan.base-folder=${wanaku.home}/router/
 
 # MCP
 quarkus.mcp.server.traffic-logging.enabled=true

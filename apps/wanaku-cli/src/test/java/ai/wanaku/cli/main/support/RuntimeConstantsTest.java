@@ -1,6 +1,7 @@
 package ai.wanaku.cli.main.support;
 
 import java.io.File;
+import ai.wanaku.core.util.WanakuHome;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,8 +11,18 @@ class RuntimeConstantsTest {
 
     @Test
     void wanakuHomeDirUsesCurrentUserHome() {
-        String expected = System.getProperty("user.home") + File.separator + ".wanaku";
+        String expected = WanakuHome.get();
         assertEquals(expected, RuntimeConstants.wanakuHomeDir());
+    }
+
+    @Test
+    void wanakuHomeDirDefaultsToUserHomeDotWanaku() {
+        String userHome = System.getProperty("user.home");
+        assertNotNull(userHome);
+        String expected = userHome + File.separator + ".wanaku";
+        // When no wanaku.home system property is set, it should default to user.home/.wanaku
+        // This test validates the default behavior - in test env wanaku.home may not be set
+        assertEquals(expected, WanakuHome.get());
     }
 
     @Test
@@ -30,6 +41,6 @@ class RuntimeConstantsTest {
     void directoriesReflectSystemProperty() {
         String userHome = System.getProperty("user.home");
         assertNotNull(userHome);
-        assertEquals(userHome + File.separator + ".wanaku", RuntimeConstants.wanakuHomeDir());
+        assertEquals(WanakuHome.get(), RuntimeConstants.wanakuHomeDir());
     }
 }
