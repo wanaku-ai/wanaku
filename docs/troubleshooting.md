@@ -372,7 +372,7 @@ quarkus.log.category."ai.wanaku".level=DEBUG
 
 **Why this happens:**
 
-The Infinispan data directory defaults to `${user.home}/.wanaku/router/`. In container images, this resolves to `/home/jboss/.wanaku/router/`. Running the container with a different UID or mounting a host directory with incompatible permissions causes Infinispan's `SoftIndexFileStore` to fail.
+The Infinispan data directory defaults to `${wanaku.home}/router/`. In container images, this resolves to `/home/jboss/.wanaku/router/`. Running the container with a different UID or mounting a host directory with incompatible permissions causes Infinispan's `SoftIndexFileStore` to fail.
 
 **Fix:**
 

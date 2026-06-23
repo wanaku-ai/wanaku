@@ -16,15 +16,15 @@ public interface WanakuServiceConfig extends WanakuConfig {
      * Returns the base directory where service-specific data and configuration will be stored.
      * <p>
      * The service home directory is used to persist service instance data, configuration files,
-     * and other service-specific artifacts. The path may contain the {@code ${user.home}}
+     * and other service-specific artifacts. The path may contain the {@code ${wanaku.home}}
      * placeholder, which will be expanded at runtime to the user's home directory.
      * <p>
-     * By default, this is set to {@code ${user.home}/.wanaku/services/}, and each service
+     * By default, this is set to {@code ${wanaku.home}/services/}, and each service
      * will have its own subdirectory based on its service name.
      *
      * @return the service home directory path, potentially containing placeholders
      */
-    @WithDefault("${user.home}/.wanaku/services/")
+    @WithDefault("${wanaku.home}/services/")
     String serviceHome();
 
     /**

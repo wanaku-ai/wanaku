@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.core.util.WanakuHome;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +78,17 @@ class ServicesHelperTest {
         TestServiceConfig config = new TestServiceConfig("my-service", "${user.home}/.wanaku");
         String result = ServicesHelper.getCanonicalServiceHome(config);
         assertEquals(java.nio.file.Path.of(userHome, ".wanaku", "my-service").toString(), result);
+    }
+
+    @Test
+    void getCanonicalServiceHomeExpandsWanakuHomePlaceholder() {
+        // Create a minimal config implementation for testing with ${wanaku.home}
+        TestServiceConfig config = new TestServiceConfig("my-service", "${wanaku.home}/services");
+        String result = ServicesHelper.getCanonicalServiceHome(config);
+        assertEquals(
+                java.nio.file.Path.of(WanakuHome.get(), "services", "my-service")
+                        .toString(),
+                result);
     }
 
     @Test

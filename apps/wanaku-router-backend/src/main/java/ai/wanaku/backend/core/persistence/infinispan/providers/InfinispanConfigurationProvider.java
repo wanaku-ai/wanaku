@@ -11,9 +11,10 @@ import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.StorageType;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.core.util.WanakuHome;
 
 public class InfinispanConfigurationProvider {
-    @ConfigProperty(name = "wanaku.persistence.infinispan.base-folder", defaultValue = "${user.home}/.wanaku/router/")
+    @ConfigProperty(name = "wanaku.persistence.infinispan.base-folder", defaultValue = "${wanaku.home}/router/")
     String baseFolder;
 
     @ConfigProperty(name = "wanaku.persistence.infinispan.max-entries", defaultValue = "10000")
@@ -53,6 +54,6 @@ public class InfinispanConfigurationProvider {
     }
 
     private String resolveBaseFolder() {
-        return baseFolder.replace("${user.home}", System.getProperty("user.home"));
+        return WanakuHome.expandPlaceholders(baseFolder);
     }
 }

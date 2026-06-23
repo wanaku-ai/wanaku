@@ -19,6 +19,7 @@ import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.capabilities.discovery.DefaultRegistrationManager;
 import ai.wanaku.core.exchange.v1.PropertySchema;
 import ai.wanaku.core.service.discovery.client.DiscoveryService;
+import ai.wanaku.core.util.WanakuHome;
 
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
 
@@ -141,7 +142,7 @@ public class ServicesHelper {
      * Resolves the canonical service home directory path.
      * <p>
      * This method resolves the service home directory by expanding any
-     * {@code ${user.home}}
+     * {@code ${wanaku.home}} and {@code ${user.home}}
      * placeholders and appending the service name. The result is a fully qualified
      * path
      * where service-specific data and configuration can be stored.
@@ -150,7 +151,7 @@ public class ServicesHelper {
      * @return the canonical service home directory path
      */
     public static String getCanonicalServiceHome(WanakuServiceConfig config) {
-        String home = config.serviceHome().replace("${user.home}", System.getProperty("user.home"));
+        String home = WanakuHome.expandPlaceholders(config.serviceHome());
         return java.nio.file.Path.of(home).resolve(config.name()).normalize().toString();
     }
 
