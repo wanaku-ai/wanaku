@@ -4,7 +4,7 @@
 
 This test plan verifies the WanakuCamelRoute CRD feature on OpenShift. The WanakuCamelRoute lets users define Apache Camel routes and MCP tool/resource metadata inline in a Kubernetes CR. The operator packages the route into a service catalog ZIP and deploys it to the router via REST API.
 
-Every step except the initial `oc login` is fully automatable.
+Every step is fully automatable.
 
 ## Prerequisites
 
@@ -68,29 +68,7 @@ export WANAKU_OIDC_CLIENT_SECRET="${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}"
 
 ### Helper: wait for resource deletion
 
-Several tests verify that resources are cleaned up after CR deletion. This helper polls for deletion instead of using a fixed sleep.
-
-```bash
-wait_for_deletion() {
-  local RESOURCE_TYPE="$1"
-  local RESOURCE_NAME="$2"
-  local NAMESPACE="$3"
-  local TIMEOUT="${4:-60}"
-  local INTERVAL=3
-  local ELAPSED=0
-
-  while oc get "${RESOURCE_TYPE}" "${RESOURCE_NAME}" -n "${NAMESPACE}" > /dev/null 2>&1; do
-    if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
-      echo "FAIL: ${RESOURCE_TYPE}/${RESOURCE_NAME} still exists after ${TIMEOUT}s"
-      return 1
-    fi
-    sleep ${INTERVAL}
-    ELAPSED=$((ELAPSED + INTERVAL))
-  done
-  echo "PASS: ${RESOURCE_TYPE}/${RESOURCE_NAME} deleted (${ELAPSED}s)"
-  return 0
-}
-```
+Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the `wait_for_deletion` function.
 
 ### Helper: obtain a Bearer token from Keycloak
 
@@ -169,32 +147,9 @@ MCP_URI="http://localhost:18080/public/mcp"
 
 ---
 
-## Phase 0: OpenShift Login (MANUAL)
+## Phase 0: OpenShift Login
 
-This is the only manual step in the plan.
-
-### Step 0.1: Log in to OpenShift
-
-Log in to the target OpenShift cluster:
-
-```bash
-oc login <cluster-api-url> --username=<username> --password=<password>
-# Or with a token:
-# oc login <cluster-api-url> --token=<token>
-```
-
-### Step 0.2: Verify login
-
-```bash
-oc whoami
-# Expected: prints the logged-in username
-
-oc whoami --show-server
-# Expected: prints the cluster API URL
-
-oc version
-# Expected: prints client and server version info
-```
+Follow [common/openshift-login.md](common/openshift-login.md) to log in to the target OpenShift cluster using a service account token.
 
 ---
 
@@ -1368,7 +1323,7 @@ Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 
 | Phase | Test ID | Test Name | Priority |
 |-------|---------|-----------|----------|
-| 0 | 0.1-0.2 | OpenShift login (MANUAL) | Critical |
+| 0 | — | OpenShift login | Critical |
 | 1 | 1.1-1.2 | Environment setup | Critical |
 | 2 | 2.1-2.2 | Operator installation + CamelRoute CRD/RBAC | Critical |
 | 3 | 3.1-3.3 | WanakuRouter setup and readiness | Critical |
