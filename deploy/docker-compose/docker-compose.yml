@@ -51,7 +51,8 @@ services:
       WANAKU_SERVICE_REGISTRATION_URI: http://localhost:8080/
       AUTH_SERVER: http://localhost:8543
       # Must match the wanaku-service client secret in the realm (WANAKU_SERVICE_SECRET).
-      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: ${WANAKU_SERVICE_SECRET:-mypasswd}      
+      QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET: ${WANAKU_SERVICE_SECRET:-mypasswd}
+      QUARKUS_OTEL_SDK_DISABLED: "false"
       QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     network_mode: host
     depends_on:
@@ -69,6 +70,7 @@ services:
       QUARKUS_HTTP_HOST: 0.0.0.0
       AUTH_SERVER: http://localhost:8543
       AUTH_PROXY: http://localhost:8080
+      QUARKUS_OTEL_SDK_DISABLED: "false"
       QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     depends_on:
       keycloak:
