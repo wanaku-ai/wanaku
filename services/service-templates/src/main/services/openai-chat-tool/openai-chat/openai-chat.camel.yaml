@@ -1,0 +1,55 @@
+- route:
+    id: openai-chat-completion
+    description: Chat completion using OpenAI models
+    from:
+      uri: direct:wanaku
+      steps:
+        - setHeader:
+            name: CamelOpenAI.operation
+            constant: "{{openai.operation}}"
+        - setHeader:
+            name: CamelOpenAI.model
+            constant: "{{openai.model}}"
+        - setHeader:
+            name: CamelOpenAI.temperature
+            constant: "{{openai.temperature}}"
+        - setHeader:
+            name: CamelOpenAI.maxTokens
+            constant: "{{openai.max.tokens}}"
+        - setHeader:
+            name: CamelOpenAI.topP
+            constant: "{{openai.top.p}}"
+        - setHeader:
+            name: CamelOpenAI.frequencyPenalty
+            constant: "{{openai.frequency.penalty}}"
+        - setHeader:
+            name: CamelOpenAI.presencePenalty
+            constant: "{{openai.presence.penalty}}"
+        - choice:
+            when:
+              - simple: "${header.CamelOpenAI.systemMessage} != ''"
+                steps:
+                  - setHeader:
+                      name: CamelOpenAI.messages
+                      simple: '[{"role": "system", "content": "{{openai.system.message}}"}, {"role": "user", "content": "${body}"}]'
+            otherwise:
+              steps:
+                - setHeader:
+                    name: CamelOpenAI.messages
+                    simple: '[{"role": "user", "content": "${body}"}]'
+        - choice:
+            when:
+              - simple: "${header.CamelOpenAI.stopSequences} != ''"
+                steps:
+                  - setHeader:
+                      name: CamelOpenAI.stop
+                      simple: "${header.CamelOpenAI.stopSequences}"
+            otherwise:
+              steps:
+                - setHeader:
+                    name: CamelOpenAI.stop
+                    simple: "{{openai.stop.sequences}}"
+        - to:
+            uri: "openai:chat-completion"
+            parameters:
+              apiKey: "{{openai.api.key}}"
