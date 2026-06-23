@@ -1,0 +1,27 @@
+mcp:
+  tools:
+  - openai-chat-completion:
+      route:
+        id: "openai-chat-completion"
+      description: "{{tool.description}}"
+      properties:
+      - name: wanaku_body
+        type: string
+        description: The prompt text to send to OpenAI for chat completion
+        required: true
+      - name: systemMessage
+        type: string
+        description: Optional system message to set the behavior of the assistant
+        required: false
+      - name: model
+        type: string
+        description: Override the default OpenAI model (e.g., gpt-4, gpt-3.5-turbo)
+        required: false
+      - name: temperature
+        type: number
+        description: Sampling temperature (0.0 to 2.0)
+        required: false
+      - name: maxTokens
+        type: integer
+        description: Maximum number of tokens to generate
+        required: false
