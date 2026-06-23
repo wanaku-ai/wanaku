@@ -44,7 +44,7 @@ public class McpPromptList extends BaseCommand {
         if (mcpClient != null) {
             return mcpClient;
         }
-        return ClientUtil.createClient(uri);
+        return ClientUtil.createClient(uri, authTokenOverride);
     }
 
     private static String nullSafe(String value) {

@@ -70,7 +70,7 @@ public class McpTool extends BaseCommand {
         if (mcpClient != null) {
             return mcpClient;
         }
-        return ClientUtil.createClient(uri);
+        return ClientUtil.createClient(uri, authTokenOverride);
     }
 
     static String serializeParams(Map<String, String> params) {
