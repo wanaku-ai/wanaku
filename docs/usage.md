@@ -146,6 +146,40 @@ cat deploy/auth/keycloak-ingress.yaml | sed "s/KEYCLOAK_HOST/keycloak.$(minikube
 kubectl apply -f deploy/auth/keycloak-router.yaml
 ```
 
+#### Setting KC_HOSTNAME (required for external access)
+
+After exposing Keycloak, you **must** set the `KC_HOSTNAME` environment variable on the Keycloak deployment to match the
+external route or ingress host. Without this, tokens obtained via the external URL will have a different issuer than what
+the Wanaku router expects, causing all authenticated requests to fail with HTTP 401.
+
+- OpenShift
+
+```shell
+KEYCLOAK_HOST=$(kubectl get route keycloak -o jsonpath='{.spec.host}')
+kubectl set env deployment/keycloak \
+  KC_HOSTNAME="${KEYCLOAK_HOST}" \
+  KC_HOSTNAME_STRICT=false
+```
+
+- Minikube
+
+```shell
+KEYCLOAK_HOST=$(kubectl get ingress keycloak -o jsonpath='{.spec.rules[0].host}')
+kubectl set env deployment/keycloak \
+  KC_HOSTNAME="${KEYCLOAK_HOST}" \
+  KC_HOSTNAME_STRICT=false
+```
+
+Wait for the rollout to complete before proceeding:
+
+```shell
+kubectl rollout status deployment/keycloak --timeout=300s
+```
+
+> [!NOTE]
+> The `deploy/auth/keycloak.yaml` manifest includes a `KEYCLOAK_HOST` placeholder for `KC_HOSTNAME`. If you prefer to set
+> the hostname before deploying, replace the placeholder with your actual hostname in the manifest and skip this step.
+
 ### Importing the Wanaku Realm Configuration (via Wanaku CLI)
 
 The simplest way to import the realm configuration is using the Wanaku CLI. You can set admin credentials once via environment variables:
