@@ -31,6 +31,8 @@ spec:
               value: "xforwarded"
             - name: KC_HTTP_ENABLED
               value: "true"
+            - name: KC_HOSTNAME
+              value: "KEYCLOAK_HOST"
             - name: KC_HOSTNAME_STRICT
               value: "false"
           args:
