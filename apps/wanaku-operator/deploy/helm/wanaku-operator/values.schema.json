@@ -1,47 +1,6 @@
 {
   "$schema" : "https://json-schema.org/draft-07/schema#",
   "properties" : {
-    "podSecurityContext" : {
-      "description" : "Pod-level security context for the operator Deployment.",
-      "type" : "object",
-      "properties" : {
-        "runAsNonRoot" : {
-          "description" : "Require the pod to run as a non-root user.",
-          "type" : "boolean"
-        },
-        "seccompProfile" : {
-          "type" : "object",
-          "properties" : {
-            "type" : {
-              "description" : "The seccomp profile type (e.g. RuntimeDefault).",
-              "type" : "string"
-            }
-          }
-        }
-      }
-    },
-    "containerSecurityContext" : {
-      "description" : "Container-level security context for the operator container.",
-      "type" : "object",
-      "properties" : {
-        "allowPrivilegeEscalation" : {
-          "description" : "Whether the container can gain more privileges than its parent process.",
-          "type" : "boolean"
-        },
-        "capabilities" : {
-          "type" : "object",
-          "properties" : {
-            "drop" : {
-              "description" : "Linux capabilities to drop.",
-              "type" : "array",
-              "items" : {
-                "type" : "string"
-              }
-            }
-          }
-        }
-      }
-    },
     "app" : {
       "type" : "object",
       "properties" : {
@@ -90,6 +49,23 @@
           "description" : "The container image to use.",
           "type" : "string"
         },
+        "podSecurityContext" : {
+          "type" : "object",
+          "properties" : {
+            "seccompProfile" : {
+              "type" : "object",
+              "properties" : {
+                "type" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "runAsNonRoot" : {
+              "description" : "Require the pod to run as a non-root user.",
+              "type" : "boolean"
+            }
+          }
+        },
         "readinessProbe" : {
           "type" : "object",
           "properties" : {
@@ -134,11 +110,30 @@
             "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES" : {
               "type" : "string"
             },
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES" : {
+              "type" : "string"
+            },
             "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES" : {
               "type" : "string"
             },
             "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES" : {
               "type" : "string"
+            }
+          }
+        },
+        "containerSecurityContext" : {
+          "type" : "object",
+          "properties" : {
+            "capabilities" : {
+              "type" : "object",
+              "properties" : {
+                "drop" : {
+                  "type" : "array"
+                }
+              }
+            },
+            "allowPrivilegeEscalation" : {
+              "type" : "boolean"
             }
           }
         },
