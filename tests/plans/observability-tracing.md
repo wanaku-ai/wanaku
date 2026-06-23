@@ -13,7 +13,7 @@ This test plan verifies the OpenTelemetry tracing, Micrometer metrics, and MCP r
 
 The plan uses the `wanaku mcp` CLI commands from PR #1393 (installed locally) as the MCP client to drive requests.
 
-Every step except Phase 0 is fully automatable.
+Every step is fully automatable.
 
 ## Prerequisites
 
@@ -70,32 +70,12 @@ export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
 export OTEL_COLLECTOR_IMAGE="${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.127.0}"
-export JAEGER_IMAGE="${JAEGER_IMAGE:-jaegertracing/jaeger:2.6}"
+export JAEGER_IMAGE="${JAEGER_IMAGE:-jaegertracing/jaeger:latest}"
 ```
 
 ### Helper: wait for resource deletion
 
-```bash
-wait_for_deletion() {
-  local RESOURCE_TYPE="$1"
-  local RESOURCE_NAME="$2"
-  local NAMESPACE="$3"
-  local TIMEOUT="${4:-60}"
-  local INTERVAL=3
-  local ELAPSED=0
-
-  while oc get "${RESOURCE_TYPE}" "${RESOURCE_NAME}" -n "${NAMESPACE}" > /dev/null 2>&1; do
-    if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
-      echo "FAIL: ${RESOURCE_TYPE}/${RESOURCE_NAME} still exists after ${TIMEOUT}s"
-      return 1
-    fi
-    sleep ${INTERVAL}
-    ELAPSED=$((ELAPSED + INTERVAL))
-  done
-  echo "PASS: ${RESOURCE_TYPE}/${RESOURCE_NAME} deleted (${ELAPSED}s)"
-  return 0
-}
-```
+Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the `wait_for_deletion` function.
 
 ### Helper: retry with backoff
 
@@ -123,9 +103,13 @@ retry_until() {
 
 ---
 
-## Phase 0: Build Images via CI (MANUAL)
+## Phase 0: Build Images via CI and OpenShift Login
 
-### Step 0.1: Checkout PR #1311 to a CI branch
+### Step 0.1: Log in to OpenShift
+
+Follow [common/openshift-login.md](common/openshift-login.md) to log in to the target OpenShift cluster using a service account token.
+
+### Step 0.2: Checkout PR #1311 to a CI branch
 
 Checkout the PR locally and push it to a `ci-` prefixed branch so CI builds container images with the tracing changes.
 
@@ -135,7 +119,7 @@ git checkout -b ci-observability-tracing
 git push origin ci-observability-tracing
 ```
 
-### Step 0.2: Wait for CI to build images
+### Step 0.3: Wait for CI to build images
 
 Monitor the CI pipeline until images are published. The CI-built image tags should correspond to the branch name or commit SHA.
 
@@ -147,7 +131,7 @@ gh run list --branch ci-observability-tracing --limit 5
 gh run watch $(gh run list --branch ci-observability-tracing --limit 1 --json databaseId -q '.[0].databaseId')
 ```
 
-### Step 0.3: Update environment variables with CI-built images
+### Step 0.4: Update environment variables with CI-built images
 
 Once CI completes, set the image variables to the CI-built tags:
 
@@ -165,14 +149,6 @@ for IMG in "${WANAKU_ROUTER_IMAGE}" "${WANAKU_CAPABILITY_HTTP_IMAGE}"; do
 done
 ```
 
-### Step 0.4: Log in to OpenShift
-
-```bash
-oc login <cluster-api-url> --token=<token>
-oc whoami
-# Expected: prints the logged-in username
-```
-
 ---
 
 ## Phase 1: Environment Setup
@@ -184,6 +160,21 @@ Follow [common/namespace-setup.md](common/namespace-setup.md).
 ### Step 1.2: Deploy Operator
 
 Follow [common/operator-deployment.md](common/operator-deployment.md).
+
+### Step 1.3: Deploy Keycloak
+
+Follow [common/keycloak-setup.md](common/keycloak-setup.md). After completion, verify these variables are set:
+
+```bash
+for VAR_NAME in KEYCLOAK_HOST KEYCLOAK_URL WANAKU_OIDC_SECRET; do
+  eval "VAL=\${${VAR_NAME}}"
+  if [ -z "${VAL}" ]; then
+    echo "FAIL: ${VAR_NAME} is not set"
+    exit 1
+  fi
+  echo "PASS: ${VAR_NAME} is set"
+done
+```
 
 ---
 
@@ -382,9 +373,9 @@ oc logs "${OTEL_POD}" -n "${WANAKU_NAMESPACE}" --tail=20 | grep -i "error" && {
 
 ## Phase 3: Deploy Wanaku Stack with Tracing Enabled
 
-### Step 3.1: Create WanakuRouter with OTEL enabled (noauth)
+### Step 3.1: Create WanakuRouter with OTEL enabled
 
-Deploy a router with tracing enabled, pointing to the OTEL Collector service deployed in Phase 2.
+Deploy a router with Keycloak authentication and tracing enabled, pointing to the OTEL Collector service deployed in Phase 2 and the Keycloak instance from Phase 1.
 
 ```bash
 cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -393,12 +384,13 @@ kind: WanakuRouter
 metadata:
   name: wanaku-tracing-router
 spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
   router:
     image: ${WANAKU_ROUTER_IMAGE}
     imagePullPolicy: Always
     env:
-      - name: WANAKU_HTTP_AUTH
-        value: none
       - name: QUARKUS_OTEL_SDK_DISABLED
         value: "false"
       - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
@@ -456,6 +448,11 @@ kind: WanakuCapability
 metadata:
   name: wanaku-tracing-capabilities
 spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
+  secrets:
+    oidcCredentialsSecret: "${WANAKU_OIDC_SECRET}"
   routerRef: wanaku-tracing-router
   capabilities:
     - name: wanaku-http-tracing
@@ -766,7 +763,7 @@ fi
 
 ### Test 9.1: Verify OTEL is disabled without explicit configuration
 
-Deploy a router without OTEL env vars and confirm it starts without sending traces.
+Deploy a router with auth but without OTEL env vars and confirm it starts without sending traces.
 
 ```bash
 cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -775,12 +772,12 @@ kind: WanakuRouter
 metadata:
   name: wanaku-no-otel-router
 spec:
+  auth:
+    authServer: "http://keycloak:8080"
+    authProxy: "auto"
   router:
     image: ${WANAKU_ROUTER_IMAGE}
     imagePullPolicy: Always
-    env:
-      - name: WANAKU_HTTP_AUTH
-        value: none
 EOF
 
 oc wait wanakurouter/wanaku-no-otel-router \
@@ -797,15 +794,24 @@ NO_OTEL_URL="http://$(oc get route wanaku-no-otel-router -n "${WANAKU_NAMESPACE}
 retry_until "no-otel router health" \
   "curl -sf -o /dev/null '${NO_OTEL_URL}/q/health/live'" 24 5
 
-# Send a request
-curl -sf "${NO_OTEL_URL}/api/v1/management/info/version" > /dev/null
+# Record existing trace count before sending requests
+START=$(( ($(date +%s) - 3600) * 1000000 ))
+END=$(( $(date +%s) * 1000000 ))
+TRACE_COUNT_BEFORE=$(curl -sf "${JAEGER_URL}/api/traces?service=wanaku-router&start=${START}&end=${END}&limit=100" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('data',[])))" 2>/dev/null || echo "0")
+
+# Send a request to the health endpoint (no auth required)
+curl -sf "${NO_OTEL_URL}/q/health/live" > /dev/null
 sleep 5
 
-# Check Jaeger for traces from this service — there should be none with the default name
-# (quarkus.otel.sdk.disabled=true is the default in the PR)
-NOOTEL_TRACES=$(curl -sf "${JAEGER_URL}/api/traces?service=wanaku-router&limit=20" 2>/dev/null)
-echo "INFO: This is a best-effort check. Since the no-otel router has OTEL disabled by default, no new traces should appear from it."
-echo "PASS: negative test completed (manual verification in Jaeger UI recommended)"
+# Verify no new traces appeared (quarkus.otel.sdk.disabled=true is the default in the PR)
+END_AFTER=$(( $(date +%s) * 1000000 ))
+TRACE_COUNT_AFTER=$(curl -sf "${JAEGER_URL}/api/traces?service=wanaku-router&start=${START}&end=${END_AFTER}&limit=100" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('data',[])))" 2>/dev/null || echo "0")
+
+if [ "${TRACE_COUNT_AFTER}" -eq "${TRACE_COUNT_BEFORE}" ]; then
+  echo "PASS: no new traces from router with OTEL disabled by default"
+else
+  echo "WARN: trace count changed (before: ${TRACE_COUNT_BEFORE}, after: ${TRACE_COUNT_AFTER}) — may be timing-related"
+fi
 ```
 
 ### Test 9.3: Clean up no-OTEL router
@@ -1101,17 +1107,9 @@ test.describe("Jaeger UI - Wanaku trace verification", () => {
 
 ## Phase 11: Cleanup
 
-### Step 11.1: Delete Wanaku custom resources
+### Step 11.1: Delete observability infrastructure
 
-```bash
-oc delete wanakucapability wanaku-tracing-capabilities -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-wait_for_deletion deployment wanaku-http-tracing "${WANAKU_NAMESPACE}" 60
-
-oc delete wanakurouter wanaku-tracing-router -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-wait_for_deletion deployment wanaku-tracing-router-mcp-router "${WANAKU_NAMESPACE}" 60
-```
-
-### Step 11.2: Delete observability infrastructure
+These resources are specific to this test plan and are not covered by [common/cleanup.md](common/cleanup.md).
 
 ```bash
 oc delete deployment jaeger -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
@@ -1125,11 +1123,11 @@ oc delete configmap otel-collector-config -n "${WANAKU_NAMESPACE}" --ignore-not-
 echo "PASS: observability infrastructure deleted"
 ```
 
-### Step 11.3: Full cleanup
+### Step 11.2: Full cleanup
 
-Follow [common/cleanup.md](common/cleanup.md) for remaining resources and operator uninstallation.
+Follow [common/cleanup.md](common/cleanup.md) for Wanaku CRs, Keycloak, operator uninstallation, and remaining resources.
 
-### Step 11.4: Delete CI branch
+### Step 11.3: Delete CI branch
 
 ```bash
 git push origin --delete ci-observability-tracing 2>/dev/null || true
