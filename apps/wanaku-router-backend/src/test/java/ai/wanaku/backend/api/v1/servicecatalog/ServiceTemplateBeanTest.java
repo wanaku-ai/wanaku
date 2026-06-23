@@ -13,6 +13,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -83,6 +85,17 @@ class ServiceTemplateBeanTest {
         Properties indexProps = extractIndexProperties(catalogArg.getData());
         assertEquals("my-service", indexProps.getProperty("catalog.name"));
         assertEquals("sys1", indexProps.getProperty("catalog.services"));
+    }
+
+    @Test
+    void testInstantiateRejectsInvalidServiceName() {
+        assertThrows(
+                WanakuException.class, () -> serviceTemplateBean.instantiate("my-service", Map.of(), "bad name", null));
+    }
+
+    @Test
+    void testInstantiateRejectsInvalidServiceSystem() {
+        assertThrows(WanakuException.class, () -> serviceTemplateBean.instantiate("my-service", Map.of(), null, ".."));
     }
 
     @Test

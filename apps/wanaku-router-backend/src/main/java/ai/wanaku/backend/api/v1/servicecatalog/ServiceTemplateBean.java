@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.api.v1.exceptions.ServiceTemplateNotFoundException;
@@ -43,6 +44,13 @@ public class ServiceTemplateBean {
 
     /** Label value used to identify service template entries. */
     public static final String LABEL_TYPE_VALUE = "template";
+
+    /**
+     * Allowed characters for the optional service name / system identifiers that callers may supply
+     * when instantiating a template. These values are used to build catalog entry names, so they are
+     * restricted to a conservative identifier charset.
+     */
+    private static final Pattern SYSTEM_IDENTIFIER_PATTERN = Pattern.compile("[A-Za-z0-9._-]+");
 
     @Inject
     Instance<DataStoreRepository> dataStoreRepositoryInstance;
@@ -243,6 +251,8 @@ public class ServiceTemplateBean {
     public DataStore instantiate(
             String templateName, Map<String, String> userProperties, String serviceName, String serviceSystem)
             throws WanakuException {
+        validateOptionalIdentifier(serviceName, "serviceName");
+        validateOptionalIdentifier(serviceSystem, "serviceSystem");
         LOG.debugf(
                 "Instantiating template '%s' with %d properties",
                 templateName, userProperties != null ? userProperties.size() : 0);
@@ -276,6 +286,17 @@ public class ServiceTemplateBean {
             return serviceCatalogBean.deploy(catalog);
         } catch (IOException e) {
             throw new WanakuException("Failed to build catalog ZIP: %s".formatted(e.getMessage()));
+        }
+    }
+
+    private static void validateOptionalIdentifier(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        if (value.contains("..") || !SYSTEM_IDENTIFIER_PATTERN.matcher(value).matches()) {
+            throw new WanakuException(
+                    "Invalid %s '%s': only letters, digits, '.', '_' and '-' are allowed (and no '..')"
+                            .formatted(fieldName, value));
         }
     }
 
