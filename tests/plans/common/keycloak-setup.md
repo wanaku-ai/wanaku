@@ -155,7 +155,31 @@ fi
 echo "PASS: Keycloak host is ${KEYCLOAK_HOST}"
 ```
 
-### 5. Wait for Keycloak to respond
+### 5. Set KC_HOSTNAME to match the external route
+
+Setting `KC_HOSTNAME` ensures Keycloak stamps the same issuer in tokens regardless of whether
+they are obtained via the external route or internally. Without this, tokens obtained externally
+(e.g. `http://keycloak-wanaku-test.<cluster>/realms/wanaku`) will have a different issuer than
+what the router expects (`http://keycloak:8080/realms/wanaku`), causing 401 errors.
+
+```bash
+oc set env deployment/keycloak \
+  KC_HOSTNAME="${KEYCLOAK_HOST}" \
+  KC_HOSTNAME_STRICT=false \
+  -n "${WANAKU_NAMESPACE}"
+```
+
+Wait for the rollout to complete (the env change triggers a new pod):
+
+```bash
+oc rollout status deployment/keycloak \
+  --timeout=300s \
+  -n "${WANAKU_NAMESPACE}"
+```
+
+**Expected output:** `deployment "keycloak" successfully rolled out`
+
+### 6. Wait for Keycloak to respond
 
 ```bash
 MAX_RETRIES=30
@@ -175,7 +199,7 @@ for i in $(seq 1 ${MAX_RETRIES}); do
 done
 ```
 
-### 6. Import the Wanaku realm using the CLI
+### 7. Import the Wanaku realm using the CLI
 
 The Wanaku CLI imports a full realm configuration that includes:
 - The `wanaku` realm with all settings
@@ -205,7 +229,7 @@ fi
 echo "PASS: wanaku realm is accessible"
 ```
 
-### 7. Retrieve the OIDC client secret for wanaku-service
+### 8. Retrieve the OIDC client secret for wanaku-service
 
 The realm configuration sets the `wanaku-service` client secret via the Keycloak variable `${WANAKU_SERVICE_SECRET:mypasswd}`. By default this resolves to `mypasswd` unless the `WANAKU_SERVICE_SECRET` environment variable was set on the Keycloak container.
 
@@ -249,7 +273,7 @@ fi
 echo "PASS: OIDC secret retrieved (length: ${#WANAKU_OIDC_SECRET})"
 ```
 
-### 8. Verify the OIDC token endpoint works
+### 9. Verify the OIDC token endpoint works
 
 ```bash
 TOKEN_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -265,9 +289,9 @@ fi
 echo "PASS: OIDC token endpoint works"
 ```
 
-### 9. Workaround: force-set the client secret if token request fails
+### 10. Workaround: force-set the client secret if token request fails
 
-When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 8 fails with HTTP 401, force-set the client secret:
+When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 9 fails with HTTP 401, force-set the client secret:
 
 ```bash
 if [ "${TOKEN_RESPONSE}" = "401" ]; then
