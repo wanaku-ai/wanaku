@@ -93,6 +93,40 @@ wanaku auth login --url http://localhost:8080
 wanaku tools list --no-auth
 ```
 
+### Token issuer mismatch causes 401 on OpenShift / Kubernetes
+
+**Symptoms:**
+
+- External clients obtain tokens from Keycloak and send them to the router
+- The router rejects all tokens with HTTP 401
+- Keycloak and the router are both running, and the realm is configured correctly
+
+**Why this happens:**
+
+When Keycloak is accessed via an external route (e.g. `http://keycloak-wanaku-test.<cluster>/realms/wanaku`), tokens are stamped with that route URL as the issuer. The router, however, validates tokens against the internal service URL (`http://keycloak:8080/realms/wanaku`). Because the issuers don't match, every token is rejected.
+
+**Fix:**
+
+Set `KC_HOSTNAME` on the Keycloak deployment to match the external route or ingress host. This forces Keycloak to stamp the same issuer in all tokens regardless of how it is accessed:
+
+```shell
+# OpenShift
+KEYCLOAK_HOST=$(oc get route keycloak -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
+oc set env deployment/keycloak \
+  KC_HOSTNAME="${KEYCLOAK_HOST}" \
+  KC_HOSTNAME_STRICT=false \
+  -n "${WANAKU_NAMESPACE}"
+
+# Kubernetes (use the Ingress host instead)
+KEYCLOAK_HOST=$(kubectl get ingress keycloak -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.rules[0].host}')
+kubectl set env deployment/keycloak \
+  KC_HOSTNAME="${KEYCLOAK_HOST}" \
+  KC_HOSTNAME_STRICT=false \
+  -n "${WANAKU_NAMESPACE}"
+```
+
+The `deploy/auth/keycloak.yaml` manifest includes a `KEYCLOAK_HOST` placeholder for `KC_HOSTNAME` — replace it with your actual hostname before applying. See also the [Keycloak setup test plan](../tests/plans/common/keycloak-setup.md) for the full automated procedure.
+
 ## Capability Service Registration
 
 ### Capability services start but don't appear in the router
