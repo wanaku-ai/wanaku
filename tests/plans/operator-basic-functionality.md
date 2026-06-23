@@ -4,7 +4,7 @@
 
 This test plan verifies the basic functionality of the Wanaku Kubernetes operator deployed on OpenShift. It covers operator installation, CRD lifecycle, reconciliation, Keycloak/OIDC integration, router and capability deployment, service catalog management, and cleanup.
 
-Every step except the initial `oc login` is fully automatable.
+Every step is fully automatable.
 
 ## Prerequisites
 
@@ -66,58 +66,13 @@ export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wan
 
 ### Helper: wait for resource deletion
 
-Several tests verify that owned resources are garbage-collected after CR deletion. This helper polls for deletion instead of using a fixed sleep.
-
-```bash
-wait_for_deletion() {
-  local RESOURCE_TYPE="$1"
-  local RESOURCE_NAME="$2"
-  local NAMESPACE="$3"
-  local TIMEOUT="${4:-60}"
-  local INTERVAL=3
-  local ELAPSED=0
-
-  while oc get "${RESOURCE_TYPE}" "${RESOURCE_NAME}" -n "${NAMESPACE}" > /dev/null 2>&1; do
-    if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
-      echo "FAIL: ${RESOURCE_TYPE}/${RESOURCE_NAME} still exists after ${TIMEOUT}s"
-      return 1
-    fi
-    sleep ${INTERVAL}
-    ELAPSED=$((ELAPSED + INTERVAL))
-  done
-  echo "PASS: ${RESOURCE_TYPE}/${RESOURCE_NAME} deleted (${ELAPSED}s)"
-  return 0
-}
-```
+Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the `wait_for_deletion` function.
 
 ---
 
-## Phase 0: OpenShift Login (MANUAL)
+## Phase 0: OpenShift Login
 
-This is the only manual step in the plan.
-
-### Step 0.1: Log in to OpenShift
-
-Log in to the target OpenShift cluster:
-
-```bash
-oc login <cluster-api-url> --username=<username> --password=<password>
-# Or with a token:
-# oc login <cluster-api-url> --token=<token>
-```
-
-### Step 0.2: Verify login
-
-```bash
-oc whoami
-# Expected: prints the logged-in username
-
-oc whoami --show-server
-# Expected: prints the cluster API URL
-
-oc version
-# Expected: prints client and server version info
-```
+Follow [common/openshift-login.md](common/openshift-login.md) to log in to the target OpenShift cluster using a service account token.
 
 ---
 
@@ -946,37 +901,7 @@ wait_for_deletion route wanaku-test-router "${WANAKU_NAMESPACE}" 30
 
 ## Phase 11: Cleanup
 
-Follow [common/cleanup.md](common/cleanup.md) for full teardown. Quick inline version:
-
-```bash
-# Delete any remaining Wanaku CRs
-oc delete wanakuservicecatalog --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-oc delete wanakucapability --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-oc delete wanakurouter --all -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-
-# Wait for operator-managed resources to drain
-oc wait --for=delete deployment -l component=wanaku-router-backend -n "${WANAKU_NAMESPACE}" --timeout=60s 2>/dev/null || true
-
-# Delete test ConfigMaps
-oc delete configmap -l wanaku-test=true -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-
-# Delete Keycloak
-oc delete deployment keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-oc delete service keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-oc delete route keycloak -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-oc delete pvc keycloak-data-pvc -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
-
-# Uninstall operator
-helm uninstall wanaku-operator --namespace "${WANAKU_NAMESPACE}"
-
-# Final verification
-echo "--- Remaining resources ---"
-oc get all -n "${WANAKU_NAMESPACE}"
-echo "--- Wanaku custom resources ---"
-oc get wanakurouter,wanakucapability,wanakuservicecatalog -n "${WANAKU_NAMESPACE}" 2>/dev/null || echo "None"
-echo "--- Helm releases ---"
-helm list --namespace "${WANAKU_NAMESPACE}"
-```
+Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 
 ---
 
@@ -984,7 +909,7 @@ helm list --namespace "${WANAKU_NAMESPACE}"
 
 | Phase | Test ID | Test Name | Priority |
 |-------|---------|-----------|----------|
-| 0 | 0.1-0.2 | OpenShift login (MANUAL) | Critical |
+| 0 | — | OpenShift login | Critical |
 | 1 | 1.1-1.2 | Environment setup | Critical |
 | 2 | — | Operator installation and health | Critical |
 | 3 | 3.1-3.8 | WanakuRouter lifecycle and reconciliation | Critical |
