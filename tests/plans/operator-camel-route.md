@@ -624,8 +624,6 @@ fi
 
 **Description:** Verify the deployed resource is registered with the router (via REST API) and that previously deployed tools remain visible via MCP.
 
-**Note:** `wanaku mcp resource list` may fail in native image builds due to missing GraalVM reflection config for `McpResource` (see [#1406](https://github.com/wanaku-ai/wanaku/issues/1406)). Resource registration is verified via the REST API instead.
-
 ```bash
 # Verify resource is registered via REST API
 RESOURCES_RESPONSE=$(query_router_api /api/v1/resources)
