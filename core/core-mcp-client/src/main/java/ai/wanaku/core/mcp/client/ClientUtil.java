@@ -15,7 +15,15 @@ import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 public class ClientUtil {
 
     public static McpClient createClient(String address) {
-        return createClient(address, null);
+        return createClient(address, (McpHeadersSupplier) null);
+    }
+
+    public static McpClient createClient(String address, String token) {
+        String normalizedToken = token != null ? token.trim() : null;
+        McpHeadersSupplier tokenHeaders = (normalizedToken != null && !normalizedToken.isEmpty())
+                ? callContext -> Map.of("Authorization", "Bearer " + normalizedToken)
+                : null;
+        return createClient(address, tokenHeaders);
     }
 
     public static McpClient createClient(String address, McpHeadersSupplier headersSupplier) {

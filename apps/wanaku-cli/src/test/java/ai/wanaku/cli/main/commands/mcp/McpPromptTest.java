@@ -8,21 +8,25 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.McpGetPromptResult;
 import dev.langchain4j.mcp.client.McpPromptMessage;
+import picocli.CommandLine;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,5 +94,37 @@ class McpPromptTest {
 
         assertEquals(BaseCommand.EXIT_ERROR, result);
         verify(printer).printErrorMessage("not found");
+    }
+
+    @Test
+    @DisplayName("Should forward auth token to MCP client")
+    void shouldForwardAuthToken() throws Exception {
+        McpClient tokenClient = mock(McpClient.class);
+        McpGetPromptResult emptyResult = mock(McpGetPromptResult.class);
+        when(emptyResult.messages()).thenReturn(Collections.emptyList());
+        when(tokenClient.getPrompt(eq("greeting"), any())).thenReturn(emptyResult);
+
+        McpPrompt cmd = new McpPrompt();
+        new CommandLine(cmd)
+                .parseArgs(
+                        "--uri",
+                        "http://localhost:9999/mcp/sse",
+                        "--name",
+                        "greeting",
+                        "--arg",
+                        "name=Alice",
+                        "--token",
+                        "my-secret-token");
+
+        try (MockedStatic<ClientUtil> clientUtil = mockStatic(ClientUtil.class)) {
+            clientUtil
+                    .when(() -> ClientUtil.createClient("http://localhost:9999/mcp/sse", "my-secret-token"))
+                    .thenReturn(tokenClient);
+
+            Integer result = cmd.doCall(null, mock(WanakuPrinter.class));
+            assertEquals(BaseCommand.EXIT_OK, result);
+
+            clientUtil.verify(() -> ClientUtil.createClient("http://localhost:9999/mcp/sse", "my-secret-token"));
+        }
     }
 }
