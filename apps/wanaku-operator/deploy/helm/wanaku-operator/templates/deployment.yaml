@@ -30,10 +30,10 @@ spec:
         app.kubernetes.io/version: 0.1.1-SNAPSHOT
         app.kubernetes.io/name: wanaku-operator
     spec:
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - env:
             - name: KUBERNETES_NAMESPACE
@@ -61,11 +61,10 @@ spec:
             successThreshold: {{ .Values.app.livenessProbe.successThreshold }}
             timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds }}
           name: wanaku-operator
+          {{- with .Values.containerSecurityContext }}
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: {{ .Values.app.ports.http }}
               name: http
