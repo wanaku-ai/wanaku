@@ -41,7 +41,7 @@ class GrpcTransportTest {
         int port = server.start();
         target = new ServiceTarget(
                 "test-id", "test-service", "localhost", port, "tool-invoker", "mcp", null, null, null);
-        transport = new GrpcTransport();
+        transport = new GrpcTransport(new GrpcChannelManager());
     }
 
     @AfterEach

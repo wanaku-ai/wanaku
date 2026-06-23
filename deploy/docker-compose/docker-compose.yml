@@ -18,7 +18,7 @@ services:
       - "4318:4318"
 
   jaeger:
-    image: jaegertracing/jaeger:2.6
+    image: jaegertracing/jaeger:latest
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:

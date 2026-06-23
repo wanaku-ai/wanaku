@@ -12,6 +12,7 @@ import io.vertx.core.Vertx;
 import ai.wanaku.backend.bridge.InvokerBridge;
 import ai.wanaku.backend.bridge.ToolsBridge;
 import ai.wanaku.backend.bridge.WanakuBridgeTransport;
+import ai.wanaku.backend.bridge.transports.grpc.GrpcChannelManager;
 import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.backend.service.support.FirstAvailable;
@@ -29,6 +30,9 @@ public class E2ETestProvider {
     @Inject
     Instance<ServiceRegistry> serviceRegistryInstance;
 
+    @Inject
+    GrpcChannelManager channelManager;
+
     private ServiceRegistry serviceRegistry;
 
     @PostConstruct
@@ -40,7 +44,7 @@ public class E2ETestProvider {
     ToolsBridge toolsBridge() {
         LOG.info("Creating real ToolsBridge for e2e tests");
         ServiceResolver resolver = new FirstAvailable(serviceRegistry);
-        WanakuBridgeTransport transport = new GrpcTransport();
+        WanakuBridgeTransport transport = new GrpcTransport(channelManager);
         return new InvokerBridge(resolver, transport, null, Vertx.vertx());
     }
 
@@ -53,6 +57,6 @@ public class E2ETestProvider {
     @Produces
     WanakuBridgeTransport getTransport() {
         LOG.info("Creating real GrpcTransport for e2e tests");
-        return new GrpcTransport();
+        return new GrpcTransport(channelManager);
     }
 }
