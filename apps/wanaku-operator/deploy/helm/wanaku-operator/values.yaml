@@ -1,22 +1,15 @@
 ---
-podSecurityContext:
-  runAsNonRoot: true
-  seccompProfile:
-    type: RuntimeDefault
-
-containerSecurityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - ALL
-
 app:
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   envs:
+    QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES: JOSDK_WATCH_CURRENT
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES: JOSDK_WATCH_CURRENT
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES: JOSDK_WATCH_CURRENT
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES: JOSDK_WATCH_CURRENT
-    QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES: JOSDK_WATCH_CURRENT
-    AUTH_SERVER: http://keycloak:8080
   image: quay.io/wanaku/wanaku-operator:latest
   imagePullPolicy: IfNotPresent
   livenessProbe:
@@ -28,6 +21,10 @@ app:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 10
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   ports:
     http: 8081
   readinessProbe:
