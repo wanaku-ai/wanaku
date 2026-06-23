@@ -1,9 +1,17 @@
 - route:
     id: sql-tool
-    description: Execute SQL queries against a relational database
+    description: Execute a predefined, parameterized SQL query against a relational database
     from:
       uri: direct:wanaku
       steps:
+        # The tool input (wanaku_body) is exposed as a named parameter and is bound by camel-sql as
+        # a prepared-statement parameter (:#wanakuBody). Keep sql.query a fixed, predefined statement
+        # and reference the input via :#wanakuBody - never concatenate tool input into the SQL text.
+        - setHeader:
+            name: wanakuBody
+            expression:
+              simple:
+                expression: ${body}
         - setHeader:
             name: CamelSqlQuery
             expression:
