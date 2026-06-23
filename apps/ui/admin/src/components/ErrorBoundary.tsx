@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { InlineNotification, Button } from "@carbon/react";
 
 interface Props {
@@ -8,6 +9,22 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+function DashboardButton({ onReset }: { onReset: () => void }) {
+  const navigate = useNavigate();
+  return (
+    <Button
+      kind="primary"
+      style={{ marginTop: "1rem" }}
+      onClick={() => {
+        onReset();
+        navigate("/");
+      }}
+    >
+      Go to Dashboard
+    </Button>
+  );
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -34,16 +51,7 @@ class ErrorBoundary extends Component<Props, State> {
             subtitle={this.state.error?.message || "An unexpected error occurred"}
             hideCloseButton
           />
-          <Button
-            kind="primary"
-            style={{ marginTop: "1rem" }}
-            onClick={() => {
-              window.location.hash = "#/";
-              this.setState({ hasError: false, error: null });
-            }}
-          >
-            Go to Dashboard
-          </Button>
+          <DashboardButton onReset={() => this.setState({ hasError: false, error: null })} />
         </div>
       );
     }

@@ -121,8 +121,8 @@ export const ServiceCatalogPage: React.FC = () => {
       const result = await getServiceCatalog(name);
       const body = result.data as { data: ServiceCatalogDetail };
       return body.data;
-    } catch (error) {
-      console.error("Error fetching catalog detail:", error);
+    } catch {
+      setErrorMessage("Failed to load catalog details");
       return null;
     }
   };

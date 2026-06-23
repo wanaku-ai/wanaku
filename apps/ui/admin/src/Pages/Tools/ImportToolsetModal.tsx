@@ -11,7 +11,7 @@ import {
 } from "@carbon/react"
 import React, {useRef, useState} from "react"
 import {ToolReference} from "../../models"
-import {ToolParserError, Tools} from "./tools"
+import {Tools} from "./tools"
 import {ImportToolsetTable} from "./ImportToolsetTable"
 import {getErrorMessage} from "../../utils/error"
 
@@ -107,12 +107,8 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
       const tools: ToolReference[] = Tools.parse(toolsetJson!)
       onSubmit(tools)
     } catch (error) {
-      if (error instanceof SyntaxError || error instanceof ToolParserError) {
-        setInvalidJson(true)
-        setInvalidJsonText(error.message)
-      } else {
-        console.error(error)
-      }
+      setInvalidJson(true)
+      setInvalidJsonText(error instanceof Error ? error.message : "Failed to parse toolset")
     }
   }
   

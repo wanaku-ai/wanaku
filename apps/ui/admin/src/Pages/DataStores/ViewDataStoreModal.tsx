@@ -37,8 +37,7 @@ export const ViewDataStoreModal: React.FC<ViewDataStoreModalProps> = ({
       const decoded = new TextDecoder("utf-8").decode(bytes);
       setDecodedContent(decoded);
       setIsLoading(false);
-    } catch (err) {
-      console.error("Error decoding data:", err);
+    } catch {
       setError("Failed to decode data. The content may be binary or corrupted.");
       setIsLoading(false);
     }

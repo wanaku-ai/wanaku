@@ -53,8 +53,7 @@ export const AddDataStoreModal: React.FC<AddDataStoreModalProps> = ({
       };
 
       onSubmit(dataStore);
-    } catch (error) {
-      console.error("Error reading file:", error);
+    } catch {
       setErrorText("Error reading file. Please try again.");
     }
   };
