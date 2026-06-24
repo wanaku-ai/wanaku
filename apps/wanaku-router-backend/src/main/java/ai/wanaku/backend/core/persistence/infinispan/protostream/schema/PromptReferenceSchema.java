@@ -32,7 +32,6 @@ public class PromptReferenceSchema extends AbstractWanakuSerializationContextIni
     @Override
     public void registerMarshallers(SerializationContext serCtx) {
         contentSchema.registerMarshallers(serCtx);
-        // PromptContent is handled via WrappedMessage in PromptMessageMarshaller
         serCtx.registerMarshaller(new PromptArgumentMarshaller());
         serCtx.registerMarshaller(new PromptMessageMarshaller());
         serCtx.registerMarshaller(new PromptReferenceMarshaller());
