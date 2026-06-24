@@ -163,9 +163,14 @@ they are obtained via the external route or internally. Without this, tokens obt
 (e.g. `http://keycloak-wanaku-test.<cluster>/realms/wanaku`) will have a different issuer than
 what the router expects (`http://keycloak:8080/realms/wanaku`), causing 401 errors.
 
+**Important:** In Keycloak 26+, `KC_HOSTNAME` must be a **full URL** (e.g., `http://hostname`),
+not a bare hostname. A bare hostname causes Keycloak to append the internal HTTP port (8080) to
+the issuer URL, which is unreachable from inside the cluster via the external route and causes
+the Quarkus OIDC tenants to timeout sequentially at startup.
+
 ```bash
 oc set env deployment/keycloak \
-  KC_HOSTNAME="${KEYCLOAK_HOST}" \
+  KC_HOSTNAME="${KEYCLOAK_URL}" \
   KC_HOSTNAME_STRICT=false \
   -n "${WANAKU_NAMESPACE}"
 ```
