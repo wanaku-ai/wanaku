@@ -307,6 +307,7 @@ public class LocalRunner {
             LocalRunnerEnvironment environment) {
         File componentDir = quarkusAppDir(componentName);
         String grpcPortOpt = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
+        String httpPortOpt = String.format("-Dquarkus.http.port=%d", grpcPort);
 
         executorService.submit(() -> {
             try {
@@ -316,6 +317,7 @@ public class LocalRunner {
                         "java",
                         profileOpt,
                         grpcPortOpt,
+                        httpPortOpt,
                         "-jar",
                         "quarkus-run.jar");
             } catch (Exception e) {

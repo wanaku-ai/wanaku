@@ -13,15 +13,18 @@ import io.smallrye.mutiny.Uni;
 import ai.wanaku.core.capabilities.config.WanakuServiceConfig;
 import ai.wanaku.core.exchange.HealthProbeDelegate;
 import ai.wanaku.core.exchange.InvocationDelegate;
+import ai.wanaku.core.exchange.v1.HealthProbe;
 import ai.wanaku.core.exchange.v1.HealthProbeReply;
 import ai.wanaku.core.exchange.v1.HealthProbeRequest;
 import ai.wanaku.core.exchange.v1.ProvisionReply;
 import ai.wanaku.core.exchange.v1.ProvisionRequest;
+import ai.wanaku.core.exchange.v1.Provisioner;
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
+import ai.wanaku.core.exchange.v1.ToolInvoker;
 
 @GrpcService
-public class InvocationService {
+public class InvocationService implements ToolInvoker, Provisioner, HealthProbe {
     private static final Logger LOG = Logger.getLogger(InvocationService.class);
 
     @Inject
