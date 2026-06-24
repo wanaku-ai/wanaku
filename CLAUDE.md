@@ -86,7 +86,7 @@ make install
 ## Test Plans
 
 - Test plans live under `tests/plans/`, reusable steps under `tests/plans/common/`
-- Guidelines for writing test plans are in `docs/contributing.md` (section "Writing Test Plans")
+- Guidelines for writing test plans are in `docs/contributing-test-plans.md`
 
 ## Acceptance Criteria
 

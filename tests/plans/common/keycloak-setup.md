@@ -7,7 +7,8 @@ Reusable steps for deploying and configuring Keycloak as the OIDC provider for W
 - Namespace created (see [namespace-setup.md](namespace-setup.md))
 - `WANAKU_NAMESPACE` environment variable set
 - `WANAKU_REPO_ROOT` environment variable set (path to the wanaku repository root)
-- `jq` and `curl` available
+- `jq` available
+- `curl` available (only for Keycloak readiness polling — all Wanaku/Keycloak API calls use the CLI)
 - `wanaku` CLI available on `PATH`, **or** the project built with `mvn verify` (to use the jar directly)
 
 ## Variables
@@ -233,90 +234,86 @@ echo "PASS: wanaku realm is accessible"
 
 The realm configuration sets the `wanaku-service` client secret via the Keycloak variable `${WANAKU_SERVICE_SECRET:mypasswd}`. By default this resolves to `mypasswd` unless the `WANAKU_SERVICE_SECRET` environment variable was set on the Keycloak container.
 
-To retrieve the actual secret from Keycloak, obtain an admin token and query the API:
+Retrieve the actual secret using the CLI:
 
 ```bash
-# Obtain an admin token
-KEYCLOAK_ADMIN_TOKEN=$(curl -s \
-  -d "client_id=admin-cli" \
-  -d "username=${KEYCLOAK_ADMIN_USER}" \
-  -d "password=${KEYCLOAK_ADMIN_PASS}" \
-  -d "grant_type=password" \
-  "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" | jq -r '.access_token')
+CREDENTIALS_OUTPUT=$(${WANAKU_CLI} credentials show \
+  --keycloak-url "${KEYCLOAK_URL}" \
+  --admin-username "${KEYCLOAK_ADMIN_USER}" \
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --client-id wanaku-service \
+  --show-secret \
+  --plain 2>&1)
 
-if [ -z "${KEYCLOAK_ADMIN_TOKEN}" ] || [ "${KEYCLOAK_ADMIN_TOKEN}" = "null" ]; then
-  echo "FAIL: could not obtain Keycloak admin token"
-  exit 1
-fi
-
-# Get the internal UUID of the wanaku-service client
-WANAKU_SERVICE_UUID=$(curl -s \
-  -H "Authorization: Bearer ${KEYCLOAK_ADMIN_TOKEN}" \
-  "${KEYCLOAK_URL}/admin/realms/wanaku/clients?clientId=wanaku-service" \
-  | jq -r '.[0].id')
-
-if [ -z "${WANAKU_SERVICE_UUID}" ] || [ "${WANAKU_SERVICE_UUID}" = "null" ]; then
-  echo "FAIL: could not find UUID for client wanaku-service"
-  exit 1
-fi
-
-# Retrieve the secret
-export WANAKU_OIDC_SECRET=$(curl -s \
-  -H "Authorization: Bearer ${KEYCLOAK_ADMIN_TOKEN}" \
-  "${KEYCLOAK_URL}/admin/realms/wanaku/clients/${WANAKU_SERVICE_UUID}/client-secret" \
-  | jq -r '.value')
+export WANAKU_OIDC_SECRET=$(echo "${CREDENTIALS_OUTPUT}" | grep "Client Secret:" | sed 's/.*Client Secret: //')
 
 if [ -z "${WANAKU_OIDC_SECRET}" ] || [ "${WANAKU_OIDC_SECRET}" = "null" ]; then
   echo "FAIL: could not retrieve OIDC secret"
+  echo "${CREDENTIALS_OUTPUT}"
   exit 1
 fi
 echo "PASS: OIDC secret retrieved (length: ${#WANAKU_OIDC_SECRET})"
 ```
 
-### 9. Verify the OIDC token endpoint works
+### 9. Verify the OIDC login works
 
 ```bash
-TOKEN_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-  -d "client_id=wanaku-service" \
-  -d "client_secret=${WANAKU_OIDC_SECRET}" \
-  -d "grant_type=client_credentials" \
-  "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token")
+${WANAKU_CLI} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --username "${KEYCLOAK_ADMIN_USER}" \
+  --password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1
 
-if [ "${TOKEN_RESPONSE}" != "200" ]; then
-  echo "FAIL: token endpoint returned HTTP ${TOKEN_RESPONSE}"
-  exit 1
+LOGIN_EXIT=$?
+
+if [ "${LOGIN_EXIT}" -ne 0 ]; then
+  echo "FAIL: OIDC login failed (exit code ${LOGIN_EXIT})"
+  LOGIN_FAILED=true
+else
+  echo "PASS: OIDC login works"
+  LOGIN_FAILED=false
 fi
-echo "PASS: OIDC token endpoint works"
 ```
 
-### 10. Workaround: force-set the client secret if token request fails
+### 10. Workaround: regenerate the client secret if login fails
 
-When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 9 fails with HTTP 401, force-set the client secret:
+When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 9 failed, regenerate the secret:
 
 ```bash
-if [ "${TOKEN_RESPONSE}" = "401" ]; then
-  echo "WARN: OIDC secret may be stored literally — force-setting via Admin API"
+if [ "${LOGIN_FAILED}" = "true" ]; then
+  echo "WARN: OIDC secret may be stored literally — regenerating via CLI"
 
-  curl -s -X PUT \
-    -H "Authorization: Bearer ${KEYCLOAK_ADMIN_TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d "{\"type\":\"secret\",\"value\":\"${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}\"}" \
-    "${KEYCLOAK_URL}/admin/realms/wanaku/clients/${WANAKU_SERVICE_UUID}/client-secret"
+  ${WANAKU_CLI} credentials regenerate \
+    --keycloak-url "${KEYCLOAK_URL}" \
+    --admin-username "${KEYCLOAK_ADMIN_USER}" \
+    --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+    --client-id wanaku-service \
+    --show-secret \
+    --plain 2>&1
 
-  export WANAKU_OIDC_SECRET="${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}"
+  # Re-retrieve the new secret
+  CREDENTIALS_OUTPUT=$(${WANAKU_CLI} credentials show \
+    --keycloak-url "${KEYCLOAK_URL}" \
+    --admin-username "${KEYCLOAK_ADMIN_USER}" \
+    --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+    --client-id wanaku-service \
+    --show-secret \
+    --plain 2>&1)
 
-  # Re-verify
-  TOKEN_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -d "client_id=wanaku-service" \
-    -d "client_secret=${WANAKU_OIDC_SECRET}" \
-    -d "grant_type=client_credentials" \
-    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token")
+  export WANAKU_OIDC_SECRET=$(echo "${CREDENTIALS_OUTPUT}" | grep "Client Secret:" | sed 's/.*Client Secret: //')
 
-  if [ "${TOKEN_RESPONSE}" != "200" ]; then
-    echo "FAIL: token endpoint still failing after secret reset (HTTP ${TOKEN_RESPONSE})"
+  # Re-verify login
+  ${WANAKU_CLI} auth login \
+    --auth-server "${KEYCLOAK_URL}" \
+    --username "${KEYCLOAK_ADMIN_USER}" \
+    --password "${KEYCLOAK_ADMIN_PASS}" \
+    --plain 2>&1
+
+  if [ $? -ne 0 ]; then
+    echo "FAIL: OIDC login still failing after secret regeneration"
     exit 1
   fi
-  echo "PASS: OIDC token endpoint works after secret reset"
+  echo "PASS: OIDC login works after secret regeneration"
 fi
 ```
 

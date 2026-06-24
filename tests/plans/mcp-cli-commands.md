@@ -16,7 +16,6 @@ Every step except the initial `oc login` is fully automatable.
 | Tool | Minimum version | Verify command |
 |------|-----------------|----------------|
 | `wanaku` | 0.2.0+ | `wanaku --version` |
-| `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 
 ### CLI invocation
@@ -51,7 +50,7 @@ java -jar apps/wanaku-cli/target/quarkus-app/quarkus-run.jar start local \
   --local-dist capabilities/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-${VERSION}.zip
 ```
 
-Wait for the router health check:
+Wait for the router health check (curl is used here specifically to test HTTP-level readiness):
 
 ```bash
 curl -sf http://localhost:8080/q/health/ready > /dev/null && echo "READY" || echo "NOT READY"
@@ -385,7 +384,6 @@ The first `oc login` step is manual; everything else is automatable.
 | `oc` | 4.12+ | `oc version --client` |
 | `helm` | 3.x | `helm version --short` |
 | `wanaku` | 0.2.0+ | `wanaku --version` |
-| `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 
 ### Environment variables
@@ -626,19 +624,18 @@ else
 fi
 ```
 
-### Test 9.3: Verify tools are listed via REST API
+### Test 9.3: Verify tools are listed via CLI
 
 ```bash
-TOOLS_RESPONSE=$(curl -s "${WANAKU_ROUTER_URL}/api/v1/tools" 2>/dev/null)
-echo "${TOOLS_RESPONSE}" | jq -r '.data[].name' 2>/dev/null | sort
+TOOLS_OUTPUT=$(wanaku tools list --host "${WANAKU_ROUTER_URL}" --no-auth --plain 2>&1)
 
-echo "${TOOLS_RESPONSE}" | jq -e '.data[] | select(.name == "free-currency-conversion-api")' > /dev/null 2>&1 \
+echo "${TOOLS_OUTPUT}" | grep -q "free-currency-conversion-api" \
   && echo "PASS: currency conversion tool is listed" \
-  || echo "FAIL: currency conversion tool not found in API response"
+  || echo "FAIL: currency conversion tool not found"
 
-echo "${TOOLS_RESPONSE}" | jq -e '.data[] | select(.name == "meow-facts")' > /dev/null 2>&1 \
+echo "${TOOLS_OUTPUT}" | grep -q "meow-facts" \
   && echo "PASS: meow-facts tool is listed" \
-  || echo "FAIL: meow-facts tool not found in API response"
+  || echo "FAIL: meow-facts tool not found"
 ```
 
 ---
@@ -801,14 +798,14 @@ else
 fi
 ```
 
-### Test 12.2: Verify resource is listed via REST API
+### Test 12.2: Verify resource is listed via CLI
 
 ```bash
-RESOURCES_RESPONSE=$(curl -s "${WANAKU_ROUTER_URL}/api/v1/resources" 2>/dev/null)
+RESOURCES_OUTPUT=$(wanaku resources list --host "${WANAKU_ROUTER_URL}" --no-auth --plain 2>&1)
 
-echo "${RESOURCES_RESPONSE}" | jq -e '.data[] | select(.name == "test-static-resource")' > /dev/null 2>&1 \
-  && echo "PASS: test-static-resource is listed in REST API" \
-  || echo "FAIL: test-static-resource not found in REST API response"
+echo "${RESOURCES_OUTPUT}" | grep -q "test-static-resource" \
+  && echo "PASS: test-static-resource is listed" \
+  || echo "FAIL: test-static-resource not found"
 ```
 
 ### Test 12.3: List resources via MCP SSE endpoint
