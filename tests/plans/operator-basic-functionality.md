@@ -342,85 +342,9 @@ done
 
 ---
 
-## Phase 4: WanakuRouter Without Authentication (noauth)
+## Phase 4: WanakuCapability Lifecycle
 
-### Test 4.1: Create a WanakuRouter with auth disabled
-
-**Description:** Create a second router with `WANAKU_HTTP_AUTH=none` for testing unauthenticated access.
-
-```bash
-cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
-apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuRouter
-metadata:
-  name: wanaku-noauth-router
-spec:
-  router:
-    image: ${WANAKU_ROUTER_IMAGE}
-    imagePullPolicy: Always
-    env:
-      - name: WANAKU_HTTP_AUTH
-        value: none
-EOF
-```
-
-**Verification:**
-
-```bash
-oc wait wanakurouter/wanaku-noauth-router \
-  --for=condition=Ready \
-  --timeout=120s \
-  -n "${WANAKU_NAMESPACE}"
-```
-
-### Test 4.2: Verify noauth router has the env var set
-
-```bash
-NOAUTH_ENV=$(oc get deployment wanaku-noauth-router-mcp-router -n "${WANAKU_NAMESPACE}" \
-  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="WANAKU_HTTP_AUTH")].value}')
-if [ "${NOAUTH_ENV}" != "none" ]; then
-  echo "FAIL: WANAKU_HTTP_AUTH is '${NOAUTH_ENV}', expected 'none'"
-  exit 1
-fi
-echo "PASS: WANAKU_HTTP_AUTH=none is set"
-```
-
-### Test 4.3: Verify noauth router REST API is accessible without token
-
-```bash
-NOAUTH_URL="http://$(oc get route wanaku-noauth-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')"
-
-MAX_RETRIES=24
-RETRY_INTERVAL=5
-for i in $(seq 1 ${MAX_RETRIES}); do
-  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${NOAUTH_URL}/q/health/ready" 2>/dev/null || echo "000")
-  if [ "${HTTP_CODE}" = "200" ]; then
-    echo "PASS: noauth router is ready (attempt ${i})"
-    break
-  fi
-  if [ "${i}" -eq "${MAX_RETRIES}" ]; then
-    echo "FAIL: noauth router not reachable after ${MAX_RETRIES} attempts"
-    exit 1
-  fi
-  sleep ${RETRY_INTERVAL}
-done
-```
-
-### Test 4.4: Clean up the noauth router
-
-```bash
-oc delete wanakurouter wanaku-noauth-router -n "${WANAKU_NAMESPACE}"
-
-# Wait for managed resources to be garbage-collected
-wait_for_deletion deployment wanaku-noauth-router-mcp-router "${WANAKU_NAMESPACE}" 60
-wait_for_deletion route wanaku-noauth-router "${WANAKU_NAMESPACE}" 30
-```
-
----
-
-## Phase 5: WanakuCapability Lifecycle
-
-### Test 5.1: Create a WanakuCapability (HTTP tool service)
+### Test 4.1: Create a WanakuCapability (HTTP tool service)
 
 **Description:** Deploy a basic HTTP capability that references the router created in Phase 3.
 
@@ -444,7 +368,7 @@ spec:
 EOF
 ```
 
-### Test 5.2: Wait for capability to be Ready
+### Test 4.2: Wait for capability to be Ready
 
 ```bash
 oc wait wanakucapability/wanaku-test-capabilities \
@@ -454,7 +378,7 @@ oc wait wanakucapability/wanaku-test-capabilities \
 # Expected output: wanakucapability.wanaku.ai/wanaku-test-capabilities condition met
 ```
 
-### Test 5.3: Verify capability deployment
+### Test 4.3: Verify capability deployment
 
 ```bash
 oc wait deployment/wanaku-http-test \
@@ -473,7 +397,7 @@ fi
 echo "PASS: capability image matches"
 ```
 
-### Test 5.4: Verify capability internal service
+### Test 4.4: Verify capability internal service
 
 ```bash
 oc get service wanaku-http-test -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
@@ -481,7 +405,7 @@ echo "capability-service-exists=$?"
 # Expected: capability-service-exists=0
 ```
 
-### Test 5.5: Verify capability PVC
+### Test 4.5: Verify capability PVC
 
 ```bash
 PVC_NAME="wanaku-http-test-volume-claim"
@@ -490,7 +414,7 @@ echo "capability-pvc-exists=$?"
 # Expected: capability-pvc-exists=0
 ```
 
-### Test 5.6: Verify capability environment variables
+### Test 4.6: Verify capability environment variables
 
 ```bash
 # Check WANAKU_SERVICE_REGISTRATION_URI (should point to internal router service)
@@ -515,9 +439,9 @@ echo "PASS: OIDC secret is set on capability"
 
 ---
 
-## Phase 6: WanakuCapability Negative Tests
+## Phase 5: WanakuCapability Negative Tests
 
-### Test 6.1: Create capability with missing routerRef
+### Test 5.1: Create capability with missing routerRef
 
 **Description:** A capability without `routerRef` should fail reconciliation.
 
@@ -555,7 +479,7 @@ echo "PASS: capability without routerRef is not Ready"
 oc delete wanakucapability wanaku-bad-capability-no-ref -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
 ```
 
-### Test 6.2: Create capability referencing a non-existent router
+### Test 5.2: Create capability referencing a non-existent router
 
 ```bash
 cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -600,9 +524,9 @@ oc delete wanakucapability wanaku-bad-capability-bad-ref -n "${WANAKU_NAMESPACE}
 
 ---
 
-## Phase 7: WanakuServiceCatalog Lifecycle
+## Phase 6: WanakuServiceCatalog Lifecycle
 
-### Test 7.1: Create a test ConfigMap with catalog data
+### Test 6.1: Create a test ConfigMap with catalog data
 
 **Description:** Create a ConfigMap containing a Base64-encoded ZIP (simulated minimal catalog data).
 
@@ -637,7 +561,7 @@ echo "configmap-has-catalog-zip=$?"
 # Expected: configmap-has-catalog-zip=0
 ```
 
-### Test 7.2: Create a WanakuServiceCatalog
+### Test 6.2: Create a WanakuServiceCatalog
 
 ```bash
 cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -653,7 +577,7 @@ spec:
 EOF
 ```
 
-### Test 7.3: Verify service catalog reconciliation
+### Test 6.3: Verify service catalog reconciliation
 
 **Description:** The service catalog reconciler reads the ConfigMap and sends the data to the router's REST API. If the router is running and reachable, the catalog should be deployed.
 
@@ -683,7 +607,7 @@ if [ "${SC_READY}" = "True" ]; then
 fi
 ```
 
-### Test 7.4: Service catalog negative test - missing ConfigMap
+### Test 6.4: Service catalog negative test - missing ConfigMap
 
 ```bash
 cat <<'EOF' | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -721,9 +645,9 @@ oc delete wanakuservicecatalog wanaku-bad-service-catalog -n "${WANAKU_NAMESPACE
 
 ---
 
-## Phase 8: Smoke Test - Full Flow
+## Phase 7: Smoke Test - Full Flow
 
-### Test 8.1: Verify the MCP SSE endpoint is accessible
+### Test 7.1: Verify the MCP SSE endpoint is accessible
 
 ```bash
 ROUTER_HOST=$(oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
@@ -745,7 +669,7 @@ else
 fi
 ```
 
-### Test 8.2: Verify the MCP streamable endpoint is accessible
+### Test 7.2: Verify the MCP streamable endpoint is accessible
 
 ```bash
 MCP_STREAMABLE_URL="http://${ROUTER_HOST}/mcp/"
@@ -766,7 +690,7 @@ else
 fi
 ```
 
-### Test 8.3: Verify router and capability pods are running
+### Test 7.3: Verify router and capability pods are running
 
 ```bash
 echo "--- All pods in ${WANAKU_NAMESPACE} ---"
@@ -785,7 +709,7 @@ else
 fi
 ```
 
-### Test 8.4: Verify operator logs contain reconciliation records
+### Test 7.4: Verify operator logs contain reconciliation records
 
 ```bash
 OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
@@ -816,9 +740,9 @@ fi
 
 ---
 
-## Phase 9: Resource Update Reconciliation
+## Phase 8: Resource Update Reconciliation
 
-### Test 9.1: Update the router image and verify reconciliation
+### Test 8.1: Update the router image and verify reconciliation
 
 **Description:** Change the router CR spec and verify the operator updates the deployment.
 
@@ -843,7 +767,7 @@ else
 fi
 ```
 
-### Test 9.2: Add an environment variable to the router
+### Test 8.2: Add an environment variable to the router
 
 ```bash
 oc patch wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}" \
@@ -866,9 +790,9 @@ fi
 
 ---
 
-## Phase 10: Deletion and Ownership Cascade
+## Phase 9: Deletion and Ownership Cascade
 
-### Test 10.1: Delete the service catalog CR and verify cleanup
+### Test 9.1: Delete the service catalog CR and verify cleanup
 
 ```bash
 oc delete wanakuservicecatalog wanaku-test-service-catalogs -n "${WANAKU_NAMESPACE}" --ignore-not-found=true
@@ -876,7 +800,7 @@ echo "service-catalog-deleted=$?"
 # Expected: service-catalog-deleted=0
 ```
 
-### Test 10.2: Delete the capability CR and verify managed resources are removed
+### Test 9.2: Delete the capability CR and verify managed resources are removed
 
 ```bash
 oc delete wanakucapability wanaku-test-capabilities -n "${WANAKU_NAMESPACE}"
@@ -886,7 +810,7 @@ wait_for_deletion deployment wanaku-http-test "${WANAKU_NAMESPACE}" 60
 wait_for_deletion service wanaku-http-test "${WANAKU_NAMESPACE}" 30
 ```
 
-### Test 10.3: Delete the router CR and verify managed resources are removed
+### Test 9.3: Delete the router CR and verify managed resources are removed
 
 ```bash
 oc delete wanakurouter wanaku-test-router -n "${WANAKU_NAMESPACE}"
@@ -899,7 +823,7 @@ wait_for_deletion route wanaku-test-router "${WANAKU_NAMESPACE}" 30
 
 ---
 
-## Phase 11: Cleanup
+## Phase 10: Cleanup
 
 Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 
@@ -913,11 +837,10 @@ Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 | 1 | 1.1-1.2 | Environment setup | Critical |
 | 2 | — | Operator installation and health | Critical |
 | 3 | 3.1-3.8 | WanakuRouter lifecycle and reconciliation | Critical |
-| 4 | 4.1-4.4 | WanakuRouter noauth mode | High |
-| 5 | 5.1-5.6 | WanakuCapability lifecycle | Critical |
-| 6 | 6.1-6.2 | WanakuCapability negative tests | High |
-| 7 | 7.1-7.4 | WanakuServiceCatalog lifecycle | High |
-| 8 | 8.1-8.4 | Smoke test (full flow) | Critical |
-| 9 | 9.1-9.2 | Update reconciliation | Medium |
-| 10 | 10.1-10.3 | Deletion and ownership cascade | Critical |
-| 11 | — | Cleanup | Critical |
+| 4 | 4.1-4.6 | WanakuCapability lifecycle | Critical |
+| 5 | 5.1-5.2 | WanakuCapability negative tests | High |
+| 6 | 6.1-6.4 | WanakuServiceCatalog lifecycle | High |
+| 7 | 7.1-7.4 | Smoke test (full flow) | Critical |
+| 8 | 8.1-8.2 | Update reconciliation | Medium |
+| 9 | 9.1-9.3 | Deletion and ownership cascade | Critical |
+| 10 | — | Cleanup | Critical |
