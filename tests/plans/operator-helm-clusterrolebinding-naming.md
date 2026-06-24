@@ -291,7 +291,8 @@ done
 ```bash
 helm install wanaku-operator-a "${WANAKU_CHART_DIR}" \
   --namespace "${WANAKU_NAMESPACE_A}" \
-  --set operatorNamespace="${WANAKU_NAMESPACE_A}"
+  --set operatorNamespace="${WANAKU_NAMESPACE_A}" \
+  --set app.imagePullPolicy=Always
 ```
 
 **Verification:**
@@ -315,7 +316,8 @@ fi
 ```bash
 helm install wanaku-operator-b "${WANAKU_CHART_DIR}" \
   --namespace "${WANAKU_NAMESPACE_B}" \
-  --set operatorNamespace="${WANAKU_NAMESPACE_B}"
+  --set operatorNamespace="${WANAKU_NAMESPACE_B}" \
+  --set app.imagePullPolicy=Always
 
 INSTALL_EXIT=$?
 
@@ -655,7 +657,8 @@ oc delete clusterrolebinding "${WANAKU_NAMESPACE_B}-crd-validating-role-binding"
 # Re-install
 helm install wanaku-operator-b "${WANAKU_CHART_DIR}" \
   --namespace "${WANAKU_NAMESPACE_B}" \
-  --set operatorNamespace="${WANAKU_NAMESPACE_B}"
+  --set operatorNamespace="${WANAKU_NAMESPACE_B}" \
+  --set app.imagePullPolicy=Always
 
 if [ $? -eq 0 ]; then
   echo "PASS: re-installation in ${WANAKU_NAMESPACE_B} succeeded"
