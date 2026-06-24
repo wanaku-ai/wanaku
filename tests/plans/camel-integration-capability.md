@@ -10,6 +10,8 @@ No manual Deployment, Service, or ConfigMap resources should be created for CIC 
 
 Every step is fully automatable.
 
+**Hard timeout rule:** Any single operation (oc wait, polling loop, port-forward setup, etc.) that takes longer than **3 minutes** MUST be considered broken. Mark the test as FAIL immediately and abort — do not wait longer. All `--timeout` values in this plan MUST NOT exceed `180s`.
+
 ## Prerequisites
 
 ### Required tools
