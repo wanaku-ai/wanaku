@@ -43,7 +43,8 @@ echo "PASS: Helm chart found"
 helm install wanaku-operator \
   "${WANAKU_REPO_ROOT}/apps/wanaku-operator/deploy/helm/wanaku-operator" \
   --namespace "${WANAKU_NAMESPACE}" \
-  --set operatorNamespace="${WANAKU_NAMESPACE}"
+  --set operatorNamespace="${WANAKU_NAMESPACE}" \
+  --set app.imagePullPolicy=Always
 ```
 
 **Expected output:** Helm prints a success message containing `STATUS: deployed`.
