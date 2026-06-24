@@ -106,6 +106,22 @@ Use POSIX-compatible constructs. Avoid bash-only features like `${!VAR}` (indire
 
 Verify that invalid inputs are rejected gracefully — missing required fields, references to non-existent resources, malformed data. These often catch real bugs.
 
+## Re-augmentation for local test plans
+
+Test plans that run locally (not on OpenShift) must re-augment the router before starting it. The router ships with OIDC authentication enabled, and without a Keycloak instance it will fail to start. Re-augmentation disables OIDC at Quarkus build time so the router can run unauthenticated.
+
+After unzipping the router distribution, run:
+
+```bash
+java -Dquarkus.launch.rebuild=true \
+     -Dquarkus.log.level=WARNING \
+     -Dquarkus.oidc.enabled=false \
+     -Dquarkus.oidc-proxy.enabled=false \
+     -jar quarkus-run.jar
+```
+
+Then start the router with `WANAKU_HTTP_AUTH=none` and `-Dquarkus.profile=local`. This is not needed for OpenShift-based test plans, where Keycloak is deployed as part of the environment setup.
+
 ## Cleanup must be idempotent
 
 Use `--ignore-not-found=true` on all delete commands and `2>/dev/null || true` on wait commands. A cleanup phase that fails on missing resources makes re-runs painful.
