@@ -1,4 +1,4 @@
-import {ToolReference} from "../../models"
+import {Namespace, ToolReference} from "../../models"
 
 export const STORE_IN_LOCAL_STORAGE = "storeInLocalStorage"
 export const LLM_CONFIG = "llmConfig"
@@ -17,9 +17,12 @@ const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
 const DEFAULT_MISTRAL_MODEL = "mistral-small-latest"
 const DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 
+const DEFAULT_NAMESPACE = { name: "default", path: "default" }
+
 export interface LlmConfig {
   selectedLlm: string
   llms: Record<string, { selectedModel: string, apiKey?: string, extraLlmParams: string } >
+  selectedNamespace: Namespace
   selectedTools: ToolReference[]
   systemPrompt: string
 }
@@ -27,6 +30,7 @@ export interface LlmConfig {
 export function defaultLlmConfig(): LlmConfig {
   return {
     selectedLlm: DEFAULT_LLM,
+    selectedNamespace: DEFAULT_NAMESPACE,
     selectedTools: [],
     llms: {
       [ANTHROPIC]: createSubconfig(DEFAULT_ANTHROPIC_MODEL),
@@ -66,6 +70,7 @@ function parseConfig(json: string): LlmConfig {
   config.llms[OPENAI] ??= createSubconfig(DEFAULT_OPENAI_MODEL)
   config.llms[OPENAI].selectedModel ??= DEFAULT_OPENAI_MODEL
   config.llms[OPENAI].extraLlmParams ??= DEFAULT_EXTRA_LLM_PARAMS
+  config.selectedNamespace ??= DEFAULT_NAMESPACE
   config.selectedTools ??= []
   config.systemPrompt ??= DEFAULT_SYSTEM_PROMPT
   return config
