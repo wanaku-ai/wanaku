@@ -242,7 +242,7 @@ The realm configuration sets the `wanaku-service` client secret via the Keycloak
 Retrieve the actual secret using the CLI:
 
 ```bash
-CREDENTIALS_OUTPUT=$(${WANAKU_CLI} credentials show \
+CREDENTIALS_OUTPUT=$(${WANAKU_CLI} admin credentials show \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
   --admin-password "${KEYCLOAK_ADMIN_PASS}" \
@@ -288,7 +288,7 @@ When importing the realm via the CLI (not at Keycloak bootstrap), the variable `
 if [ "${LOGIN_FAILED}" = "true" ]; then
   echo "WARN: OIDC secret may be stored literally — regenerating via CLI"
 
-  ${WANAKU_CLI} credentials regenerate \
+  ${WANAKU_CLI} admin credentials regenerate \
     --keycloak-url "${KEYCLOAK_URL}" \
     --admin-username "${KEYCLOAK_ADMIN_USER}" \
     --admin-password "${KEYCLOAK_ADMIN_PASS}" \
@@ -297,7 +297,7 @@ if [ "${LOGIN_FAILED}" = "true" ]; then
     --plain 2>&1
 
   # Re-retrieve the new secret
-  CREDENTIALS_OUTPUT=$(${WANAKU_CLI} credentials show \
+  CREDENTIALS_OUTPUT=$(${WANAKU_CLI} admin credentials show \
     --keycloak-url "${KEYCLOAK_URL}" \
     --admin-username "${KEYCLOAK_ADMIN_USER}" \
     --admin-password "${KEYCLOAK_ADMIN_PASS}" \
