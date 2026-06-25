@@ -260,7 +260,24 @@ fi
 echo "PASS: OIDC secret retrieved (length: ${#WANAKU_OIDC_SECRET})"
 ```
 
-### 9. Create a test user
+### 9. Create the Kubernetes Secret for the operator
+
+The operator Helm chart reads `WANAKU_OIDC_CLIENT_SECRET` from a Kubernetes Secret named `wanaku-oidc` (configurable via `app.oidc.secretName`). Create this Secret so the operator can authenticate with the OIDC-protected router when deploying service catalogs.
+
+```bash
+oc create secret generic wanaku-oidc \
+  --from-literal=client-secret="${WANAKU_OIDC_SECRET}" \
+  -n "${WANAKU_NAMESPACE}" 2>/dev/null \
+  || oc get secret wanaku-oidc -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1
+
+if ! oc get secret wanaku-oidc -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+  echo "FAIL: could not create wanaku-oidc secret"
+  exit 1
+fi
+echo "PASS: wanaku-oidc Kubernetes Secret created"
+```
+
+### 10. Create a test user
 
 The realm import creates clients and roles but no regular users. Create a test user that
 subsequent steps will use to interact with the router.
@@ -289,7 +306,7 @@ fi
 echo "PASS: test user '${WANAKU_TEST_USER}' created"
 ```
 
-### 10. Verify OIDC login (requires the router)
+### 11. Verify OIDC login (requires the router)
 
 The `wanaku auth login` command authenticates via the router's OIDC proxy endpoint (`/q/oidc/...`), not directly against Keycloak. This means the WanakuRouter must be deployed and healthy before this step can run.
 
