@@ -14,7 +14,6 @@ import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.fabric8.openshift.client.OpenShiftClient;
-import io.javaoperatorsdk.operator.OperatorException;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
@@ -134,14 +133,11 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
         // Create the internal service (cluster IP)
         final Service desiredExternalService = makeRouterInternalService(resource);
-        Service existingExternalService;
-        try {
-            existingExternalService =
-                    context.getSecondaryResource(Service.class).orElse(null);
-        } catch (IllegalStateException | OperatorException e) {
-            LOG.warnf(e, "There is no existing service");
-            existingExternalService = null;
-        }
+        Service existingExternalService = kubernetesClient
+                .services()
+                .inNamespace(namespace)
+                .withName(desiredExternalService.getMetadata().getName())
+                .get();
         if (!match(desiredExternalService, existingExternalService)) {
             String ns = resource.getMetadata().getNamespace();
             LOG.infof(
@@ -172,13 +168,12 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         // Create the router deployment
         final Deployment desiredDeployment = makeDesiredRouterBackendDeployment(resource, context, host);
 
-        Deployment existingDeployment;
-        try {
-            existingDeployment = context.getSecondaryResource(Deployment.class).orElse(null);
-        } catch (IllegalStateException | OperatorException e) {
-            LOG.warnf(e, "There is no existing deployment");
-            existingDeployment = null;
-        }
+        Deployment existingDeployment = kubernetesClient
+                .apps()
+                .deployments()
+                .inNamespace(namespace)
+                .withName(desiredDeployment.getMetadata().getName())
+                .get();
 
         if (!match(desiredDeployment, existingDeployment)) {
             String ns = resource.getMetadata().getNamespace();
