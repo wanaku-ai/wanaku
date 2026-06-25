@@ -11,6 +11,8 @@ app:
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES: JOSDK_WATCH_CURRENT
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES: JOSDK_WATCH_CURRENT
   image: quay.io/wanaku/wanaku-operator:latest
+  oidc:
+    secretName: wanaku-oidc
   imagePullPolicy: IfNotPresent
   livenessProbe:
     failureThreshold: 3
