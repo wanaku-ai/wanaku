@@ -134,6 +134,8 @@
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-service-catalog-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-service-catalog-cluster-role" />
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-camel-route-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-camel-route-cluster-role" />
                                 <replace dir="${helm.templates}" includes="validating-clusterrolebinding.yaml" token="name: josdk-crd-validating-cluster-role" value="name: {{ $.Release.Namespace }}-josdk-crd-validating-cluster-role" />
+                                <!-- Prefix the JOSDK validating ClusterRoleBinding resource name with Release.Namespace -->
+                                <replace file="${helm.templates}/validating-clusterrolebinding.yaml" token="name: {{ .Chart.Name }}-crd-validating-role-binding" value="name: {{ .Release.Namespace }}-crd-validating-role-binding" />
                                 <!-- Add seccompProfile to pod-level securityContext -->
                                 <replace file="${helm.templates}/deployment.yaml">
                                     <replacetoken><![CDATA[      securityContext:

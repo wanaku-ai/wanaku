@@ -12,6 +12,7 @@ The following table lists the configurable parameters and their default values.
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES` |   | JOSDK_WATCH_CURRENT |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES` |   | JOSDK_WATCH_CURRENT |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES` |   | JOSDK_WATCH_CURRENT |
+| `app.envs.WANAKU_OIDC_CLIENT_SECRET` |   | client-secret |
 | `app.envs.project.version` |   |   |
 | `app.image` | The container image to use. | quay.io/wanaku/wanaku-operator:latest |
 | `app.imagePullPolicy` |   | IfNotPresent |
@@ -22,6 +23,7 @@ The following table lists the configurable parameters and their default values.
 | `app.livenessProbe.periodSeconds` | The period in which the action should be called. | 10 |
 | `app.livenessProbe.successThreshold` | The success threshold to use. | 1 |
 | `app.livenessProbe.timeoutSeconds` | The amount of time to wait for each action. | 10 |
+| `app.oidc.secretName` |   | wanaku-oidc |
 | `app.podSecurityContext.runAsNonRoot` | Require the pod to run as a non-root user. | true |
 | `app.podSecurityContext.seccompProfile.type` |   | RuntimeDefault |
 | `app.ports.http` | The http port to use for the probe. | 8081 |

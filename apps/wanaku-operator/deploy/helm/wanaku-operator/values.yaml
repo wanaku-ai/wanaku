@@ -10,11 +10,10 @@ app:
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES: JOSDK_WATCH_CURRENT
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES: JOSDK_WATCH_CURRENT
     QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES: JOSDK_WATCH_CURRENT
+    WANAKU_OIDC_CLIENT_SECRET: client-secret
     project:
       version: ""
   image: quay.io/wanaku/wanaku-operator:latest
-  oidc:
-    secretName: wanaku-oidc
   imagePullPolicy: IfNotPresent
   livenessProbe:
     failureThreshold: 3
@@ -25,6 +24,8 @@ app:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 10
+  oidc:
+    secretName: wanaku-oidc
   podSecurityContext:
     runAsNonRoot: true
     seccompProfile:
