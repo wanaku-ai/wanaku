@@ -8,3 +8,5 @@ app:
     capabilities:
       drop:
         - ALL
+  oidc:
+    secretName: wanaku-oidc
