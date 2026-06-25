@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.jboss.logging.Logger;
+import io.quarkus.grpc.runtime.GrpcServer;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
@@ -164,24 +165,47 @@ public class ServicesHelper {
     }
 
     static int resolveRegistrationPort() {
+        return resolveServerPort(true);
+    }
+
+    static int resolveServerPortForHealthCheck() {
+        return resolveServerPort(false);
+    }
+
+    private static int resolveServerPort(boolean requireHttpHostEnabled) {
+        return resolveEffectiveServerPort(null, requireHttpHostEnabled);
+    }
+
+    static int resolveEffectiveServerPort(GrpcServer grpcServer) {
+        return resolveEffectiveServerPort(grpcServer, false);
+    }
+
+    static int resolveEffectiveServerPort(GrpcServer grpcServer, boolean requireHttpHostEnabled) {
         Config config = ConfigProvider.getConfig();
         boolean useSeparateServer = config.getOptionalValue("quarkus.grpc.server.use-separate-server", Boolean.class)
                 .orElse(Boolean.TRUE);
 
         if (useSeparateServer) {
-            return config.getValue("quarkus.grpc.server.port", Integer.class);
+            return grpcServer != null
+                    ? grpcServer.getPort()
+                    : config.getValue("quarkus.grpc.server.port", Integer.class);
         }
 
         boolean httpHostEnabled = config.getOptionalValue("quarkus.http.host-enabled", Boolean.class)
                 .orElse(Boolean.TRUE);
         if (!httpHostEnabled) {
-            throw new WanakuException(
-                    "quarkus.grpc.server.use-separate-server=false requires quarkus.http.host-enabled=true "
-                            + "because the gRPC server shares the HTTP listener in that mode");
+            if (requireHttpHostEnabled) {
+                throw new WanakuException(
+                        "quarkus.grpc.server.use-separate-server=false requires quarkus.http.host-enabled=true "
+                                + "because the gRPC server shares the HTTP listener in that mode");
+            }
+            return PORT_UNAVAILABLE;
         }
 
         return config.getValue("quarkus.http.port", Integer.class);
     }
+
+    public static final int PORT_UNAVAILABLE = 0;
 
     private record ServiceClientHeadersFactory(Tokens accessToken) implements ClientHeadersFactory {
 

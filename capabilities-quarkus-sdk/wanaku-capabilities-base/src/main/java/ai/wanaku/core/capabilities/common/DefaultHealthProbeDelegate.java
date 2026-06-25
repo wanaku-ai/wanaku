@@ -19,8 +19,8 @@ public class DefaultHealthProbeDelegate implements HealthProbeDelegate {
     @Override
     public RuntimeStatus getStatus(String id) {
         try {
-            int port = grpcServer.getPort();
-            if (port > 0) {
+            int port = getServerPort();
+            if (port > ServicesHelper.PORT_UNAVAILABLE) {
                 return RuntimeStatus.RUNTIME_STATUS_STARTED;
             }
             return RuntimeStatus.RUNTIME_STATUS_STARTING;
@@ -28,5 +28,9 @@ public class DefaultHealthProbeDelegate implements HealthProbeDelegate {
             LOG.debugf(e, "Health probe check failed for %s: %s", id, e.getMessage());
             return RuntimeStatus.RUNTIME_STATUS_STARTING;
         }
+    }
+
+    private int getServerPort() {
+        return ServicesHelper.resolveEffectiveServerPort(grpcServer);
     }
 }

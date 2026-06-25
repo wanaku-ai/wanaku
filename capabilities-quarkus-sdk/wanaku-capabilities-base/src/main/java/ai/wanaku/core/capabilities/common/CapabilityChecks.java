@@ -18,8 +18,8 @@ class CapabilityChecks {
         HealthCheckResponseBuilder builder = HealthCheckResponse.builder().name(name);
 
         try {
-            int port = grpcServer.getPort();
-            if (port > 0) {
+            int port = getServerPort(grpcServer);
+            if (port > ServicesHelper.PORT_UNAVAILABLE) {
                 builder.up().withData("grpcPort", port);
             } else {
                 builder.down().withData("grpcPort", "not available");
@@ -29,5 +29,9 @@ class CapabilityChecks {
         }
 
         return builder.build();
+    }
+
+    private static int getServerPort(GrpcServer grpcServer) {
+        return ServicesHelper.resolveEffectiveServerPort(grpcServer);
     }
 }
