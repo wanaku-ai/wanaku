@@ -544,8 +544,9 @@ echo "# Test Camel route" > "${TEMP_DIR}/test-system/test-system.camel.yaml"
 echo "# Test Wanaku rules" > "${TEMP_DIR}/test-system/test-system.wanaku-rules.yaml"
 echo "test-system" > "${TEMP_DIR}/index.properties"
 
-# Package it as a Base64-encoded ZIP
-(cd "${TEMP_DIR}" && zip -r - . 2>/dev/null) | base64 > "${TEMP_DIR}/catalog.b64"
+# Package it as a Base64-encoded ZIP (write to file first to avoid streaming/EXT descriptors)
+(cd "${TEMP_DIR}" && zip -r catalog.zip . 2>/dev/null)
+base64 < "${TEMP_DIR}/catalog.zip" | tr -d '\n' > "${TEMP_DIR}/catalog.b64"
 
 # Create the ConfigMap
 oc create configmap test-catalog-data \

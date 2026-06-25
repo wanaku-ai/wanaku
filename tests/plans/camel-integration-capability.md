@@ -897,7 +897,8 @@ mcp:
 RULES
 
 # Package as base64-encoded ZIP
-(cd "${TEMP_DIR}" && zip -r - . 2>/dev/null) | base64 > "${TEMP_DIR}/catalog.b64"
+(cd "${TEMP_DIR}" && zip -r catalog.zip . 2>/dev/null)
+base64 < "${TEMP_DIR}/catalog.zip" | tr -d '\n' > "${TEMP_DIR}/catalog.b64"
 
 # Create the ConfigMap
 oc create configmap cic-hello-catalog-data \
