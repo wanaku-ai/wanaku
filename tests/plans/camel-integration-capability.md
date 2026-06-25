@@ -863,7 +863,7 @@ TEMP_DIR=$(mktemp -d)
 mkdir -p "${TEMP_DIR}/hello-system"
 
 cat > "${TEMP_DIR}/index.properties" <<'PROPS'
-name = hello-system
+catalog.name = hello-system
 PROPS
 
 cat > "${TEMP_DIR}/hello-system/hello-system.camel.yaml" <<'ROUTES'

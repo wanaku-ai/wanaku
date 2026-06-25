@@ -542,7 +542,7 @@ TEMP_DIR=$(mktemp -d)
 mkdir -p "${TEMP_DIR}/test-system"
 echo "# Test Camel route" > "${TEMP_DIR}/test-system/test-system.camel.yaml"
 echo "# Test Wanaku rules" > "${TEMP_DIR}/test-system/test-system.wanaku-rules.yaml"
-echo "test-system" > "${TEMP_DIR}/index.properties"
+echo "catalog.name = test-system" > "${TEMP_DIR}/index.properties"
 
 # Package it as a Base64-encoded ZIP (write to file first to avoid streaming/EXT descriptors)
 (cd "${TEMP_DIR}" && zip -r catalog.zip . 2>/dev/null)
