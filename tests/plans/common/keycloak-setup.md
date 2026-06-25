@@ -260,13 +260,44 @@ fi
 echo "PASS: OIDC secret retrieved (length: ${#WANAKU_OIDC_SECRET})"
 ```
 
-### 9. Verify the OIDC login works
+### 9. Create a test user
+
+The realm import creates clients and roles but no regular users. Create a test user that
+subsequent steps will use to interact with the router.
+
+```bash
+export WANAKU_TEST_USER="${WANAKU_TEST_USER:-alice}"
+export WANAKU_TEST_PASS="${WANAKU_TEST_PASS:-secretpass}"
+export WANAKU_TEST_EMAIL="${WANAKU_TEST_EMAIL:-alice@example.com}"
+
+${WANAKU_CLI} admin users add \
+  --keycloak-url "${KEYCLOAK_URL}" \
+  --admin-username "${KEYCLOAK_ADMIN_USER}" \
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password "${WANAKU_TEST_PASS}" \
+  --email "${WANAKU_TEST_EMAIL}"
+```
+
+**Verification:**
+
+```bash
+if [ $? -ne 0 ]; then
+  echo "FAIL: could not create test user"
+  exit 1
+fi
+echo "PASS: test user '${WANAKU_TEST_USER}' created"
+```
+
+### 10. Verify the OIDC login works
+
+Log in as the test user (not the Keycloak admin) to verify end-to-end authentication.
 
 ```bash
 ${WANAKU_CLI} auth login \
   --auth-server "${KEYCLOAK_URL}" \
-  --username "${KEYCLOAK_ADMIN_USER}" \
-  --password "${KEYCLOAK_ADMIN_PASS}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password "${WANAKU_TEST_PASS}" \
   --plain 2>&1
 
 LOGIN_EXIT=$?
@@ -275,12 +306,12 @@ if [ "${LOGIN_EXIT}" -ne 0 ]; then
   echo "FAIL: OIDC login failed (exit code ${LOGIN_EXIT})"
   LOGIN_FAILED=true
 else
-  echo "PASS: OIDC login works"
+  echo "PASS: OIDC login works for user '${WANAKU_TEST_USER}'"
   LOGIN_FAILED=false
 fi
 ```
 
-### 10. Workaround: regenerate the client secret if login fails
+### 11. Workaround: regenerate the client secret if login fails
 
 When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 9 failed, regenerate the secret:
 
@@ -307,11 +338,11 @@ if [ "${LOGIN_FAILED}" = "true" ]; then
 
   export WANAKU_OIDC_SECRET=$(echo "${CREDENTIALS_OUTPUT}" | grep "Client Secret:" | sed 's/.*Client Secret: //')
 
-  # Re-verify login
+  # Re-verify login with the test user
   ${WANAKU_CLI} auth login \
     --auth-server "${KEYCLOAK_URL}" \
-    --username "${KEYCLOAK_ADMIN_USER}" \
-    --password "${KEYCLOAK_ADMIN_PASS}" \
+    --username "${WANAKU_TEST_USER}" \
+    --password "${WANAKU_TEST_PASS}" \
     --plain 2>&1
 
   if [ $? -ne 0 ]; then
@@ -331,3 +362,6 @@ After completing this procedure, the following variables are set and available f
 | `KEYCLOAK_HOST` | External hostname of Keycloak (from OpenShift Route) |
 | `KEYCLOAK_URL` | Full URL (`http://<host>`) |
 | `WANAKU_OIDC_SECRET` | Client secret for the `wanaku-service` client |
+| `WANAKU_TEST_USER` | Username for authenticated CLI operations (default: `alice`) |
+| `WANAKU_TEST_PASS` | Password for the test user (default: `secretpass`) |
+| `WANAKU_TEST_EMAIL` | Email for the test user (default: `alice@example.com`) |

@@ -78,21 +78,6 @@ export WANAKU_OIDC_CLIENT_SECRET="${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}"
 
 Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the `wait_for_deletion` function.
 
-### Helper: authenticate with Keycloak via wanaku CLI
-
-The router has OIDC auth enabled. Use `wanaku auth login` to authenticate against the Keycloak route exposed by the common Keycloak setup. This stores the token locally so subsequent `wanaku` CLI commands authenticate automatically -- no `--token` flag needed.
-
-```bash
-wanaku_auth_login() {
-  wanaku auth login \
-    --auth-server "${KEYCLOAK_URL}" \
-    --client-id "wanaku-service" \
-    --realm "wanaku" \
-    --username "admin" \
-    --password 2>&1
-}
-```
-
 ### Helper: obtain a Bearer token from Keycloak
 
 For direct REST API queries against the router (bypassing the `wanaku` CLI), obtain a Bearer token from Keycloak using `oc exec` into the Keycloak pod.
@@ -307,31 +292,6 @@ for i in $(seq 1 ${MAX_RETRIES}); do
   echo "Waiting for router REST API... (attempt ${i}, HTTP ${HTTP_CODE})"
   sleep ${RETRY_INTERVAL}
 done
-```
-
-### Test 3.4: Authenticate with Keycloak via wanaku CLI
-
-**Description:** Start port-forward and authenticate so that subsequent `wanaku` CLI commands carry a valid token automatically.
-
-```bash
-start_port_forward
-
-wanaku_auth_login
-AUTH_EXIT=$?
-
-if [ "${AUTH_EXIT}" -eq 0 ]; then
-  echo "PASS: authenticated with Keycloak via wanaku auth login"
-else
-  echo "FAIL: wanaku auth login failed (exit code ${AUTH_EXIT})"
-  stop_port_forward
-  exit 1
-fi
-
-# Verify auth status
-wanaku auth status --plain 2>&1
-echo "PASS: auth status verified"
-
-stop_port_forward
 ```
 
 ---
