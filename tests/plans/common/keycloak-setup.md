@@ -289,71 +289,11 @@ fi
 echo "PASS: test user '${WANAKU_TEST_USER}' created"
 ```
 
-### 10. Verify the OIDC login works
+### 10. Verify OIDC login (requires the router)
 
-Log in as the test user (not the Keycloak admin) to verify end-to-end authentication.
+The `wanaku auth login` command authenticates via the router's OIDC proxy endpoint (`/q/oidc/...`), not directly against Keycloak. This means the WanakuRouter must be deployed and healthy before this step can run.
 
-Note: `--password` is a boolean flag that prompts for input. Pipe the password via stdin.
-
-```bash
-echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI} auth login \
-  --auth-server "${KEYCLOAK_URL}" \
-  --username "${WANAKU_TEST_USER}" \
-  --password \
-  --plain 2>&1
-
-LOGIN_EXIT=$?
-
-if [ "${LOGIN_EXIT}" -ne 0 ]; then
-  echo "FAIL: OIDC login failed (exit code ${LOGIN_EXIT})"
-  LOGIN_FAILED=true
-else
-  echo "PASS: OIDC login works for user '${WANAKU_TEST_USER}'"
-  LOGIN_FAILED=false
-fi
-```
-
-### 11. Workaround: regenerate the client secret if login fails
-
-When importing the realm via the CLI (not at Keycloak bootstrap), the variable `${WANAKU_SERVICE_SECRET:mypasswd}` may be stored literally instead of being resolved. If step 9 failed, regenerate the secret:
-
-```bash
-if [ "${LOGIN_FAILED}" = "true" ]; then
-  echo "WARN: OIDC secret may be stored literally — regenerating via CLI"
-
-  ${WANAKU_CLI} admin credentials regenerate \
-    --keycloak-url "${KEYCLOAK_URL}" \
-    --admin-username "${KEYCLOAK_ADMIN_USER}" \
-    --admin-password "${KEYCLOAK_ADMIN_PASS}" \
-    --client-id wanaku-service \
-    --show-secret \
-    --plain 2>&1
-
-  # Re-retrieve the new secret
-  CREDENTIALS_OUTPUT=$(${WANAKU_CLI} admin credentials show \
-    --keycloak-url "${KEYCLOAK_URL}" \
-    --admin-username "${KEYCLOAK_ADMIN_USER}" \
-    --admin-password "${KEYCLOAK_ADMIN_PASS}" \
-    --client-id wanaku-service \
-    --show-secret \
-    --plain 2>&1)
-
-  export WANAKU_OIDC_SECRET=$(echo "${CREDENTIALS_OUTPUT}" | grep "Client Secret:" | sed 's/.*Client Secret: //')
-
-  # Re-verify login with the test user
-  echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI} auth login \
-    --auth-server "${KEYCLOAK_URL}" \
-    --username "${WANAKU_TEST_USER}" \
-    --password \
-    --plain 2>&1
-
-  if [ $? -ne 0 ]; then
-    echo "FAIL: OIDC login still failing after secret regeneration"
-    exit 1
-  fi
-  echo "PASS: OIDC login works after secret regeneration"
-fi
-```
+Follow [common/oidc-login-verification.md](oidc-login-verification.md) **after the router is created** in the test plan.
 
 ## Output Variables
 

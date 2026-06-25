@@ -342,6 +342,10 @@ for i in $(seq 1 ${MAX_RETRIES}); do
 done
 ```
 
+### Test 3.9: Verify OIDC login via router
+
+Follow [common/oidc-login-verification.md](common/oidc-login-verification.md) to verify end-to-end OIDC authentication through the router.
+
 ---
 
 ## Phase 4: WanakuCapability Lifecycle
@@ -838,7 +842,7 @@ Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 | 0 | — | OpenShift login | Critical |
 | 1 | 1.1-1.2 | Environment setup | Critical |
 | 2 | — | Operator installation and health | Critical |
-| 3 | 3.1-3.8 | WanakuRouter lifecycle and reconciliation | Critical |
+| 3 | 3.1-3.9 | WanakuRouter lifecycle, reconciliation, and OIDC login | Critical |
 | 4 | 4.1-4.6 | WanakuCapability lifecycle | Critical |
 | 5 | 5.1-5.2 | WanakuCapability negative tests | High |
 | 6 | 6.1-6.4 | WanakuServiceCatalog lifecycle | High |

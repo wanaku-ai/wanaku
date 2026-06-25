@@ -294,6 +294,10 @@ for i in $(seq 1 ${MAX_RETRIES}); do
 done
 ```
 
+### Test 3.4: Verify OIDC login via router
+
+Follow [common/oidc-login-verification.md](common/oidc-login-verification.md) to verify end-to-end OIDC authentication through the router.
+
 ---
 
 ## Phase 4: Deploy CIC via WanakuCamelRoute (Hello World)

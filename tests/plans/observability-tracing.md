@@ -439,7 +439,11 @@ retry_until "router health live" \
   "curl -sf -o /dev/null '${WANAKU_ROUTER_URL}/q/health/live'" 24 5
 ```
 
-### Step 3.4: Deploy WanakuCapability with OTEL enabled
+### Step 3.4: Verify OIDC login via router
+
+Follow [common/oidc-login-verification.md](common/oidc-login-verification.md) to verify end-to-end OIDC authentication through the router.
+
+### Step 3.5: Deploy WanakuCapability with OTEL enabled
 
 ```bash
 cat <<EOF | oc apply -n "${WANAKU_NAMESPACE}" -f -
@@ -481,7 +485,7 @@ oc wait deployment/wanaku-http-tracing \
 echo "PASS: capability deployment available"
 ```
 
-### Step 3.5: Verify capability has OTEL env vars
+### Step 3.6: Verify capability has OTEL env vars
 
 ```bash
 OTEL_EP=$(oc get deployment wanaku-http-tracing -n "${WANAKU_NAMESPACE}" \

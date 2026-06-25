@@ -574,6 +574,10 @@ for i in $(seq 1 ${MAX_RETRIES}); do
 done
 ```
 
+### Step 8.9: Verify OIDC login via router
+
+Follow [common/oidc-login-verification.md](common/oidc-login-verification.md) to verify end-to-end OIDC authentication through the router.
+
 ---
 
 ## Phase 9: Register Real HTTP Tools
