@@ -293,11 +293,13 @@ echo "PASS: test user '${WANAKU_TEST_USER}' created"
 
 Log in as the test user (not the Keycloak admin) to verify end-to-end authentication.
 
+Note: `--password` is a boolean flag that prompts for input. Pipe the password via stdin.
+
 ```bash
-${WANAKU_CLI} auth login \
+echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI} auth login \
   --auth-server "${KEYCLOAK_URL}" \
   --username "${WANAKU_TEST_USER}" \
-  --password "${WANAKU_TEST_PASS}" \
+  --password \
   --plain 2>&1
 
 LOGIN_EXIT=$?
@@ -339,10 +341,10 @@ if [ "${LOGIN_FAILED}" = "true" ]; then
   export WANAKU_OIDC_SECRET=$(echo "${CREDENTIALS_OUTPUT}" | grep "Client Secret:" | sed 's/.*Client Secret: //')
 
   # Re-verify login with the test user
-  ${WANAKU_CLI} auth login \
+  echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI} auth login \
     --auth-server "${KEYCLOAK_URL}" \
     --username "${WANAKU_TEST_USER}" \
-    --password "${WANAKU_TEST_PASS}" \
+    --password \
     --plain 2>&1
 
   if [ $? -ne 0 ]; then
