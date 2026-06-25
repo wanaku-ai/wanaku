@@ -66,6 +66,34 @@
             }
           }
         },
+        "envs" : {
+          "type" : "object",
+          "properties" : {
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES" : {
+              "type" : "string"
+            },
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES" : {
+              "type" : "string"
+            },
+            "project" : {
+              "type" : "object",
+              "properties" : {
+                "version" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES" : {
+              "type" : "string"
+            },
+            "WANAKU_OIDC_CLIENT_SECRET" : {
+              "type" : "string"
+            },
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES" : {
+              "type" : "string"
+            }
+          }
+        },
         "readinessProbe" : {
           "type" : "object",
           "properties" : {
@@ -101,31 +129,6 @@
                   "type" : "string"
                 }
               }
-            }
-          }
-        },
-        "envs" : {
-          "type" : "object",
-          "properties" : {
-            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES" : {
-              "type" : "string"
-            },
-            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES" : {
-              "type" : "string"
-            },
-            "project" : {
-              "type" : "object",
-              "properties" : {
-                "version" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES" : {
-              "type" : "string"
-            },
-            "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES" : {
-              "type" : "string"
             }
           }
         },
@@ -189,6 +192,14 @@
             "http" : {
               "description" : "The http port to use for the probe.",
               "type" : "integer"
+            }
+          }
+        },
+        "oidc" : {
+          "type" : "object",
+          "properties" : {
+            "secretName" : {
+              "type" : "string"
             }
           }
         }
