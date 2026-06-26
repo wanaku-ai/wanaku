@@ -71,7 +71,7 @@ public class PeriodicHealthCheckService {
         }
 
         List<ServiceTarget> entries = serviceRegistry.getEntries();
-        LOG.debugf("Health check sweep: checking %d capabilities", entries.size());
+        LOG.infof("Health check sweep: checking %d registered capabilities", entries.size());
 
         int maxConcurrent = Math.max(0, config.healthCheck().maxConcurrent());
         int budget = maxConcurrent - inProgress.size();
@@ -109,14 +109,14 @@ public class PeriodicHealthCheckService {
         // and will still be probed and marked as DOWN.
         ActivityRecord activityRecord = serviceRegistry.getStates(id);
         if (activityRecord == null) {
-            LOG.debugf(
+            LOG.infof(
                     "Skipping health check for capability without activity record %s (%s)",
                     target.getServiceName(), id);
             return;
         }
 
         if (!activityRecord.isActive()) {
-            LOG.debugf("Skipping health check for deregistered capability %s (%s)", target.getServiceName(), id);
+            LOG.infof("Skipping health check for deregistered capability %s (%s)", target.getServiceName(), id);
             return;
         }
 
@@ -128,7 +128,7 @@ public class PeriodicHealthCheckService {
         }
 
         if (inProgress.putIfAbsent(id, Boolean.TRUE) != null) {
-            LOG.tracef("Health check already in progress for %s, skipping", id);
+            LOG.infof("Health check already in progress for %s, skipping", id);
             return;
         }
 
@@ -142,7 +142,7 @@ public class PeriodicHealthCheckService {
 
     private void completeHealthCheck(ServiceTarget target, String id, HealthStatus status) {
         try {
-            LOG.debugf("Health probe result for %s (%s): %s", target.getServiceName(), id, status.asValue());
+            LOG.infof("Health probe result for %s (%s): %s", target.getServiceName(), id, status.asValue());
             serviceRegistry.updateHealthStatus(id, status);
             emitHealthStatusEvent(id, status);
         } finally {
@@ -152,6 +152,9 @@ public class PeriodicHealthCheckService {
 
     private void failHealthCheck(String id, ActivityRecord activityRecord, Throwable failure) {
         try {
+            LOG.infof(
+                    "Health probe failed for capability %s, current status: %s",
+                    id, activityRecord.getHealthStatus().asValue());
             if (activityRecord.getHealthStatus() == HealthStatus.PENDING) {
                 final Instant lastSeen = activityRecord.getLastSeen();
                 final Duration between = Duration.between(lastSeen, Instant.now());

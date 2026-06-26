@@ -37,7 +37,13 @@ class HealthProbeClient {
 
         return transport
                 .probeHealthAsync(request, target)
-                .map(reply -> mapRuntimeStatus(reply.getStatus()))
+                .map(reply -> {
+                    HealthStatus mapped = mapRuntimeStatus(reply.getStatus());
+                    LOG.infof(
+                            "Health probe for %s returned %s (runtime: %s)",
+                            target.toAddress(), mapped.asValue(), reply.getStatus());
+                    return mapped;
+                })
                 .onFailure(ServiceUnavailableException.class)
                 .recoverWithItem(e -> handleServiceUnavailable(target, (ServiceUnavailableException) e))
                 .onFailure()

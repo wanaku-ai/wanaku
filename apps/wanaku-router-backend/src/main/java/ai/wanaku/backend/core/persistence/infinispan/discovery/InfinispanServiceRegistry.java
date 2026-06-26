@@ -52,6 +52,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     @Override
     public ServiceTarget register(ServiceTarget serviceTarget) {
         ServiceTarget persisted = capabilitiesRepository.persist(serviceTarget);
+        LOG.infof("Registering capability %s with initial health status PENDING", persisted.getId());
         updateHealthStatus(persisted.getId(), HealthStatus.PENDING);
         return persisted;
     }
@@ -139,6 +140,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
 
     @Override
     public void updateHealthStatus(String id, HealthStatus healthStatus) {
+        LOG.infof("Updating health status for capability %s to %s", id, healthStatus.asValue());
         activityRecordRepository.update(id, e -> {
             e.setHealthStatus(healthStatus);
             e.setLastSeen(Instant.now());
