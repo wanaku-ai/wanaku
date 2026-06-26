@@ -40,9 +40,11 @@ export K6_BIN="${K6_BIN:-$HOME/bin/k6}"
 export WANAKU_BIN="${WANAKU_BIN:-$HOME/bin/wanaku}"
 export JAVA_OPTS="${JAVA_OPTS:--XX:+UseNUMA -Xmx4G -Xms4G}"
 export KEYCLOAK_IMAGE="${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.6.1}"
+export KEYCLOAK_HOST="${KEYCLOAK_HOST:-localhost}"
 export KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 export KEYCLOAK_ADMIN_PASS="${KEYCLOAK_ADMIN_PASS:-admin}"
 export KEYCLOAK_REALM="${KEYCLOAK_REALM:-wanaku}"
+export ROUTER_HOST="${ROUTER_HOST:-${KEYCLOAK_HOST}}"
 export VU_LEVELS="${VU_LEVELS:-1 10 500 1000 2000 30000}"
 export TEST_DURATION="${TEST_DURATION:-30s}"
 export TEST_BASE_DIR="${TEST_BASE_DIR:-$HOME/perf-results}"
@@ -53,6 +55,10 @@ export BASELINE_BRANCH="${BASELINE_BRANCH:-main}"
 export CI_BASE="${CI_BASE:-http://integration-ci.usersys.redhat.com:8080/view/Wanaku/job/wanaku-automated-builds/job}"
 export EVAL_DIR="${EVAL_DIR:-$HOME/perf-evaluation-$(date +%Y%m%d-%H%M%S)}"
 ```
+
+### Variable persistence across phases
+
+This plan is designed to run as a single session. Variables set in earlier phases (e.g. `WORK_DIR`, `ROUTER_JAR`, `TOOL_JAR`, `PROVIDER_JAR`, `ROUTER_PID`, `TOOL_PID`, `PROVIDER_PID`, `CLIENT_SECRET`, `KEYCLOAK_URL`, `ROUTER_URL`) must remain exported for subsequent phases. If running phases independently, re-derive these values before proceeding — each phase documents what it produces and what it consumes.
 
 ---
 
@@ -223,8 +229,8 @@ echo "PASS: provider-static JAR at ${PROVIDER_JAR}"
 If a keycloak container is already running, skip the start.
 
 ```bash
-HOSTNAME_FQDN=$(hostname -f)
-export KEYCLOAK_URL="http://${HOSTNAME_FQDN}:8543"
+export KEYCLOAK_HOST="${KEYCLOAK_HOST:-localhost}"
+export KEYCLOAK_URL="http://${KEYCLOAK_HOST}:8543"
 
 if podman ps --filter name=keycloak --format '{{.Names}}' 2>/dev/null | grep -q '^keycloak$'; then
   echo "PASS: Keycloak container already running"
@@ -249,7 +255,7 @@ fi
 MAX_RETRIES=90
 RETRY_INTERVAL=2
 for i in $(seq 1 ${MAX_RETRIES}); do
-  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8543" 2>/dev/null || echo "000")
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${KEYCLOAK_URL}" 2>/dev/null || echo "000")
   if [ "${HTTP_CODE}" = "200" ]; then
     echo "PASS: Keycloak is responding (attempt ${i})"
     break
@@ -269,7 +275,8 @@ done
 ### Test 3.1: Start the router
 
 ```bash
-export ROUTER_URL="http://${HOSTNAME_FQDN}:8080"
+export ROUTER_HOST="${ROUTER_HOST:-${KEYCLOAK_HOST}}"
+export ROUTER_URL="http://${ROUTER_HOST}:8080"
 
 java ${JAVA_OPTS} -Dquarkus.profile=perf \
   -Dquarkus.http.host=0.0.0.0 \
@@ -285,7 +292,7 @@ echo "Router started with PID ${ROUTER_PID}"
 MAX_RETRIES=60
 RETRY_INTERVAL=2
 for i in $(seq 1 ${MAX_RETRIES}); do
-  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080" 2>/dev/null || echo "000")
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${ROUTER_URL}" 2>/dev/null || echo "000")
   if [ "${HTTP_CODE}" = "200" ] || [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "404" ]; then
     echo "PASS: router is responding (attempt ${i}, HTTP ${HTTP_CODE})"
     break
@@ -520,11 +527,18 @@ done
 
 ## Phase 7: Metric Validation
 
+**Required variables from prior phases:** `TEST_BASE_DIR` (env var, Phase 0), `TOOL_RESULTS_DIR` (set in Phase 5). If running this phase independently, derive the path:
+
+```bash
+TOOL_RESULTS_DIR="${TEST_BASE_DIR}/tools-invoke-sse"
+```
+
 ### Test 7.1: Verify no excessive errors at low VU levels
 
 At 1 VU, the error count should be zero (the system is not under stress).
 
 ```bash
+TOOL_RESULTS_DIR="${TOOL_RESULTS_DIR:-${TEST_BASE_DIR}/tools-invoke-sse}"
 SUMMARY="${TOOL_RESULTS_DIR}/test-summary-vus-1.json"
 ERROR_COUNT=$(python3 -c "
 import json
