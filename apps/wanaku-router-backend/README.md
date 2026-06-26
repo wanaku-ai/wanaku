@@ -7,6 +7,7 @@ The main MCP server engine that receives MCP requests and routes them to appropr
 ## Purpose
 
 The router backend is the central component of Wanaku that:
+
 - Serves MCP protocol requests from AI clients
 - Routes tool invocations to appropriate tool services via gRPC
 - Routes resource read requests to appropriate providers via gRPC
@@ -29,6 +30,7 @@ The router backend is the central component of Wanaku that:
 ## Architecture
 
 Built on:
+
 - **Quarkus**: Modern Java framework for cloud-native applications
 - **Quarkus MCP Server Extension**: MCP protocol implementation
 - **gRPC**: Service communication protocol
