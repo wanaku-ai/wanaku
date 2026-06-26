@@ -143,6 +143,20 @@ public class PeriodicHealthCheckService {
     private void completeHealthCheck(ServiceTarget target, String id, HealthStatus status) {
         try {
             LOG.infof("Health probe result for %s (%s): %s", target.getServiceName(), id, status.asValue());
+
+            if (status == HealthStatus.DOWN) {
+                ActivityRecord activityRecord = serviceRegistry.getStates(id);
+                if (activityRecord != null && activityRecord.getHealthStatus() == HealthStatus.PENDING) {
+                    final Duration since = Duration.between(activityRecord.getLastSeen(), Instant.now());
+                    if (since.toMinutes() < ActivityRecord.TIME_TO_LET_GO) {
+                        LOG.infof(
+                                "Keeping capability %s (%s) in PENDING state (registered %d seconds ago, grace period %d minutes)",
+                                target.getServiceName(), id, since.getSeconds(), ActivityRecord.TIME_TO_LET_GO);
+                        return;
+                    }
+                }
+            }
+
             serviceRegistry.updateHealthStatus(id, status);
             emitHealthStatusEvent(id, status);
         } finally {
