@@ -502,6 +502,7 @@ echo "${TOOL}" | jq -e '.inputSchema.required | index("wanaku_body")' > /dev/nul
 ## Phase 6: End-to-End MCP Tool Invocation (requires valid OpenAI API key + Camel Integration Capability)
 
 > **Note:** This phase requires:
+>
 > 1. A valid `OPENAI_API_KEY` (not `test-key-placeholder`)
 > 2. A built Camel Integration Capability JAR (`CIC_JAR`)
 >
@@ -656,6 +657,7 @@ echo "${DATA}" | base64 -d 2>/dev/null | file - | grep -q "Zip\|archive" \
 ### Test 7.3: Camel route system message conditional logic
 
 Verify the Camel route handles the system message choice:
+
 - When `systemMessage` header is set, messages array includes both system and user roles.
 - When `systemMessage` header is empty, messages array only includes user role.
 
