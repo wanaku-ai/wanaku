@@ -17,5 +17,10 @@ globs:
 
 ignores:
   - ".oss-ai-helper-rules/**"
+  - ".claude/**"
   - "CLAUDE.md"
-  - "target/**"
+  - "**/node_modules/**"
+  - "**/target/**"
+  - "out/**"
+  - "plan/**"
+  - "working-data/**"
