@@ -44,6 +44,6 @@ java -jar apps/wanaku-cli/target/quarkus-app/quarkus-run.jar start local \
 
 The `camel-integration` service is automatically added when any CIC option is provided.
 
-## Stopping the router 
+## Stopping the router
 
 The router must be stopped gently. Do not kill the process with signal -9 because it leaves dangling process.
