@@ -306,11 +306,22 @@ fi
 echo "PASS: test user '${WANAKU_TEST_USER}' created"
 ```
 
-### 11. Verify OIDC login (requires the router)
+### 11. Verify OIDC login
 
-The `wanaku auth login` command authenticates via the router's OIDC proxy endpoint (`/q/oidc/...`), not directly against Keycloak. This means the WanakuRouter must be deployed and healthy before this step can run.
+The `wanaku auth login` command authenticates via the router's OIDC proxy endpoint (`/q/oidc/...`) by default.
+When `--realm <realm>` is provided, it uses Keycloak's native discovery path (`/realms/<realm>`) and does not require the router to be deployed.
 
-Follow [common/oidc-login-verification.md](oidc-login-verification.md) **after the router is created** in the test plan.
+- For standard router-based authentication, follow [common/oidc-login-verification.md](oidc-login-verification.md) **after the router is created**.
+- For direct Keycloak authentication (no router needed):
+
+  ```bash
+  echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+    --auth-server "${KEYCLOAK_URL}" \
+    --realm wanaku \
+    --username "${WANAKU_TEST_USER}" \
+    --password \
+    --plain 2>&1
+  ```
 
 ## Output Variables
 

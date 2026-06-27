@@ -109,19 +109,52 @@ class AuthenticationInterceptorTest {
         credentialStore.storeRefreshToken(refreshToken);
         credentialStore.storeAuthServerUrl(authServerUrl);
         credentialStore.storeClientId(clientId);
+        credentialStore.storeRealm(null);
         credentialStore.storeAuthMode("token");
         // Token expired 60 seconds ago
         credentialStore.storeTokenExpiry(Instant.now().getEpochSecond() - 60);
 
         TokenRefresher mockRefresher = mock(TokenRefresher.class);
         long newExpiry = Instant.now().getEpochSecond() + 300;
-        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId))
+        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId, null))
                 .thenReturn(new RefreshResult(newToken, refreshToken, newExpiry));
 
         AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
         interceptorWithMock.filter(requestContext);
 
-        verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId);
+        verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId, null);
+        assertEquals("Bearer " + newToken, headers.getFirst(HttpHeaders.AUTHORIZATION));
+        assertEquals(newToken, credentialStore.getApiToken());
+        assertEquals(newExpiry, credentialStore.getTokenExpiry());
+    }
+
+    @Test
+    void shouldRefreshTokenWithRealmWhenExpired() throws Exception {
+        String oldToken = "old-token";
+        String newToken = "new-token";
+        String refreshToken = "refresh-token";
+        String authServerUrl = "http://keycloak-host";
+        String clientId = "admin-cli";
+        String realm = "wanaku";
+
+        credentialStore.storeApiToken(oldToken);
+        credentialStore.storeRefreshToken(refreshToken);
+        credentialStore.storeAuthServerUrl(authServerUrl);
+        credentialStore.storeClientId(clientId);
+        credentialStore.storeRealm(realm);
+        credentialStore.storeAuthMode("token");
+        // Token expired 60 seconds ago
+        credentialStore.storeTokenExpiry(Instant.now().getEpochSecond() - 60);
+
+        TokenRefresher mockRefresher = mock(TokenRefresher.class);
+        long newExpiry = Instant.now().getEpochSecond() + 300;
+        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId, realm))
+                .thenReturn(new RefreshResult(newToken, refreshToken, newExpiry));
+
+        AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
+        interceptorWithMock.filter(requestContext);
+
+        verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId, realm);
         assertEquals("Bearer " + newToken, headers.getFirst(HttpHeaders.AUTHORIZATION));
         assertEquals(newToken, credentialStore.getApiToken());
         assertEquals(newExpiry, credentialStore.getTokenExpiry());
@@ -139,7 +172,7 @@ class AuthenticationInterceptorTest {
         AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
         interceptorWithMock.filter(requestContext);
 
-        verify(mockRefresher, never()).refresh(any(), any(), any());
+        verify(mockRefresher, never()).refresh(any(), any(), any(), any());
         assertEquals("Bearer " + token, headers.getFirst(HttpHeaders.AUTHORIZATION));
     }
 
@@ -154,12 +187,13 @@ class AuthenticationInterceptorTest {
         credentialStore.storeRefreshToken(refreshToken);
         credentialStore.storeAuthServerUrl(authServerUrl);
         credentialStore.storeClientId(clientId);
+        credentialStore.storeRealm(null);
         credentialStore.storeAuthMode("token");
         // Token expired
         credentialStore.storeTokenExpiry(Instant.now().getEpochSecond() - 60);
 
         TokenRefresher mockRefresher = mock(TokenRefresher.class);
-        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId))
+        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId, null))
                 .thenThrow(new TokenRefresher.TokenRefreshException("Refresh failed"));
 
         AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
@@ -180,7 +214,7 @@ class AuthenticationInterceptorTest {
         AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
         interceptorWithMock.filter(requestContext);
 
-        verify(mockRefresher, never()).refresh(any(), any(), any());
+        verify(mockRefresher, never()).refresh(any(), any(), any(), any());
         assertEquals("Bearer " + token, headers.getFirst(HttpHeaders.AUTHORIZATION));
     }
 
@@ -196,19 +230,20 @@ class AuthenticationInterceptorTest {
         credentialStore.storeRefreshToken(refreshToken);
         credentialStore.storeAuthServerUrl(authServerUrl);
         credentialStore.storeClientId(clientId);
+        credentialStore.storeRealm(null);
         credentialStore.storeAuthMode("token");
         // Token expires in 20 seconds (within 30 second buffer)
         credentialStore.storeTokenExpiry(Instant.now().getEpochSecond() + 20);
 
         TokenRefresher mockRefresher = mock(TokenRefresher.class);
         long newExpiry = Instant.now().getEpochSecond() + 300;
-        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId))
+        when(mockRefresher.refresh(refreshToken, authServerUrl, clientId, null))
                 .thenReturn(new RefreshResult(newToken, refreshToken, newExpiry));
 
         AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
         interceptorWithMock.filter(requestContext);
 
-        verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId);
+        verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId, null);
         assertEquals("Bearer " + newToken, headers.getFirst(HttpHeaders.AUTHORIZATION));
     }
 }
