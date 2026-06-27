@@ -12,19 +12,23 @@
     "name": "dev.langchain4j.mcp.client.McpResource",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
     "allDeclaredMethods": true,
     "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpResourceTemplate",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
     "allDeclaredMethods": true,
     "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpReadResourceResult",
@@ -33,7 +37,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpResourceContents",
@@ -42,7 +48,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpResourceContents$Type",
@@ -51,7 +59,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpTextResourceContents",
@@ -60,7 +70,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpBlobResourceContents",
@@ -69,7 +81,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpPrompt",
@@ -78,7 +92,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpPromptArgument",
@@ -87,7 +103,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpPromptMessage",
@@ -96,7 +114,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpPromptContent",
@@ -105,7 +125,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpPromptContent$Type",
@@ -114,7 +136,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpGetPromptResult",
@@ -123,7 +147,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpTextContent",
@@ -132,7 +158,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpImageContent",
@@ -141,7 +169,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpEmbeddedResource",
@@ -150,7 +180,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.client.McpRole",
@@ -159,7 +191,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "io.swagger.v3.oas.models.Components",
@@ -699,7 +733,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpCallToolRequest",
@@ -708,7 +744,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpCallToolResult",
@@ -717,7 +755,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpCallToolResult$Content",
@@ -726,7 +766,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpCallToolResult$Result",
@@ -735,7 +777,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpCancellationNotification",
@@ -744,7 +788,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpCancellationParams",
@@ -753,7 +799,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpClientMessage",
@@ -762,7 +810,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpClientMethod",
@@ -771,7 +821,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpClientNotification",
@@ -780,7 +832,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpClientParams",
@@ -789,7 +843,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpClientRequest",
@@ -798,7 +854,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpClientResponse",
@@ -807,7 +865,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpErrorResponse",
@@ -816,7 +876,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpErrorResponse$Error",
@@ -825,7 +887,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpGetPromptParams",
@@ -834,7 +898,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpGetPromptRequest",
@@ -843,7 +909,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpImplementation",
@@ -852,7 +920,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializationNotification",
@@ -861,7 +931,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeParams",
@@ -870,7 +942,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeParams$Capabilities",
@@ -879,7 +953,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeParams$Capabilities$Roots",
@@ -888,7 +964,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeParams$Capabilities$Sampling",
@@ -897,7 +975,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeRequest",
@@ -906,7 +986,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeResult",
@@ -915,7 +997,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeResult$Capabilities",
@@ -924,7 +1008,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeResult$Capabilities$Tools",
@@ -933,7 +1019,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpInitializeResult$Result",
@@ -942,7 +1030,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpJsonRpcMessage",
@@ -951,7 +1041,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListPromptsParams",
@@ -960,7 +1052,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListPromptsRequest",
@@ -969,7 +1063,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListResourcesParams",
@@ -978,7 +1074,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListResourcesRequest",
@@ -987,7 +1085,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListResourceTemplatesParams",
@@ -996,7 +1096,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListResourceTemplatesRequest",
@@ -1005,7 +1107,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListToolsParams",
@@ -1014,7 +1118,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListToolsRequest",
@@ -1023,7 +1129,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListToolsResult",
@@ -1032,7 +1140,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpListToolsResult$Result",
@@ -1041,7 +1151,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpPingRequest",
@@ -1050,7 +1162,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpPingResponse",
@@ -1059,7 +1173,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpReadResourceParams",
@@ -1068,7 +1184,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpReadResourceRequest",
@@ -1077,7 +1195,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpRootsListChangedNotification",
@@ -1086,7 +1206,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpRootsListResponse",
@@ -1095,7 +1217,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpServerMethod",
@@ -1104,7 +1228,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpSubscribeResourceParams",
@@ -1113,7 +1239,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpSubscribeResourceRequest",
@@ -1122,7 +1250,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpUnsubscribeResourceParams",
@@ -1131,7 +1261,9 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   },
   {
     "name": "dev.langchain4j.mcp.protocol.McpUnsubscribeResourceRequest",
@@ -1140,6 +1272,8 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
-    "allPublicFields": true
+    "allPublicFields": true,
+    "allConstructorParameterAnnotations": true,
+    "allPublicConstructorParameterAnnotations": true
   }
 ]
