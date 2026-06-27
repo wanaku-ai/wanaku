@@ -170,8 +170,10 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
             clientId = "admin-cli";
         }
 
+        String realm = credentialStore.getRealm();
+
         try {
-            RefreshResult result = tokenRefresher.refresh(refreshToken, authServerUrl, clientId);
+            RefreshResult result = tokenRefresher.refresh(refreshToken, authServerUrl, clientId, realm);
 
             // Store the new tokens
             credentialStore.storeApiToken(result.getAccessToken());

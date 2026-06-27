@@ -1,8 +1,11 @@
 # Common: OIDC Login Verification
 
-Reusable steps for verifying OIDC authentication via the Wanaku router.
+Reusable steps for verifying OIDC authentication via the Wanaku router or directly against Keycloak.
 
-The `wanaku auth login` command authenticates via the router's OIDC proxy endpoint (`/q/oidc/...`), so the WanakuRouter must be deployed and healthy before running these steps.
+The `wanaku auth login` command authenticates via the router's OIDC proxy endpoint (`/q/oidc/...`) by default.
+When the `--realm` option is provided, it uses Keycloak's native discovery path (`/realms/<realm>`) instead,
+allowing direct authentication against Keycloak without going through the router proxy.
+The default test path below uses the router OIDC proxy; for direct Keycloak authentication, add `--realm <realm>`.
 
 ## Prerequisites
 

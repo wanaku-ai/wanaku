@@ -30,6 +30,7 @@ public class AuthCredentialStore {
     private static final String AUTH_SERVER_URL_KEY = "auth.server.url";
     private static final String TOKEN_EXPIRY_KEY = "token.expiry";
     private static final String CLIENT_ID_KEY = "client.id";
+    private static final String REALM_KEY = "auth.realm";
 
     private final URI credentialsUri;
 
@@ -153,6 +154,28 @@ public class AuthCredentialStore {
     }
 
     /**
+     * Stores the Keycloak realm used for OIDC discovery.
+     *
+     * @param realm the realm value, or null to clear
+     */
+    public void storeRealm(String realm) {
+        if (realm != null) {
+            storeCredential(REALM_KEY, realm);
+        } else {
+            clearCredential(REALM_KEY);
+        }
+    }
+
+    /**
+     * Retrieves the stored Keycloak realm, or null if not found.
+     *
+     * @return the realm, or null
+     */
+    public String getRealm() {
+        return get(REALM_KEY);
+    }
+
+    /**
      * Retrieves the OAuth2 client ID.
      *
      * @return the client ID, or null if not found
@@ -204,6 +227,22 @@ public class AuthCredentialStore {
             throw new RuntimeException("Failed to load credentials", e);
         }
         return props;
+    }
+
+    private void clearCredential(String key) {
+        try {
+            Path credentialsPath = Paths.get(credentialsUri);
+            if (!Files.exists(credentialsPath)) {
+                return;
+            }
+            Properties props = loadProperties();
+            props.remove(key);
+            try (OutputStream out = Files.newOutputStream(credentialsPath)) {
+                props.store(out, "Wanaku CLI Authentication Credentials");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to clear credential: " + key, e);
+        }
     }
 
     private void storeCredential(String key, String value) {
