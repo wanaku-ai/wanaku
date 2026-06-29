@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.support.security;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +14,11 @@ import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
-import net.minidev.json.JSONObject;
 
 /**
  * Handles OAuth2 token refresh using stored refresh tokens.
@@ -30,6 +27,12 @@ import net.minidev.json.JSONObject;
  */
 public class TokenRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(TokenRefresher.class);
+
+    private final boolean insecure;
+
+    public TokenRefresher(boolean insecure) {
+        this.insecure = insecure;
+    }
 
     /**
      * Result of a token refresh operation.
@@ -78,7 +81,18 @@ public class TokenRefresher {
             TokenRequest request = new TokenRequest(tokenEndpoint, clientID, refreshTokenGrant, null);
 
             LOG.debug("Sending token refresh request to {}", tokenEndpoint);
-            TokenResponse response = TokenResponse.parse(request.toHTTPRequest().send());
+            HTTPRequest httpRequest = request.toHTTPRequest();
+
+            if (insecure) {
+                try {
+                    httpRequest.setSSLSocketFactory(InsecureSSLHelper.getInsecureSSLSocketFactory());
+                    httpRequest.setHostnameVerifier(InsecureSSLHelper.getInsecureHostnameVerifier());
+                } catch (Exception e) {
+                    throw new TokenRefreshException("Failed to configure insecure SSL: " + e.getMessage(), e);
+                }
+            }
+
+            TokenResponse response = TokenResponse.parse(httpRequest.send());
 
             if (!response.indicatesSuccess()) {
                 TokenErrorResponse errorResponse = response.toErrorResponse();
@@ -105,24 +119,12 @@ public class TokenRefresher {
         }
     }
 
-    private static Issuer resolveIssuer(String authServerUrl, String realm) {
+    private Issuer resolveIssuer(String authServerUrl, String realm) {
         String discoveryUrl = TokenEndpoint.forDiscovery(authServerUrl, realm);
         Issuer issuer = new Issuer(discoveryUrl);
 
         try {
-            final URL openIdConfigUrl = OIDCProviderMetadata.resolveURL(issuer);
-
-            HTTPRequest httpRequest = new HTTPRequest(HTTPRequest.Method.GET, openIdConfigUrl);
-            HTTPResponse httpResponse = httpRequest.send();
-
-            if (httpResponse.getStatusCode() != 200) {
-                throw new TokenRefreshException("Unable to download OpenID Provider metadata from " + openIdConfigUrl
-                        + ": Status code " + httpResponse.getStatusCode());
-            }
-
-            JSONObject jsonObject = httpResponse.getBodyAsJSONObject();
-            OIDCProviderMetadata op = OIDCProviderMetadata.parse(jsonObject);
-
+            OIDCProviderMetadata op = OIDCHttpUtils.performHttpRequest(issuer, insecure);
             return op.getIssuer();
         } catch (GeneralException e) {
             throw new TokenRefreshException("Unable to resolve token endpoint URI: " + e.getMessage(), e);
@@ -131,11 +133,11 @@ public class TokenRefresher {
         }
     }
 
-    private static URI resolveTokenEndpointUri(String authServerUrl, String realm) {
+    private URI resolveTokenEndpointUri(String authServerUrl, String realm) {
         Issuer issuer = new Issuer(resolveIssuer(authServerUrl, realm));
 
         try {
-            final OIDCProviderMetadata resolvedOp = OIDCProviderMetadata.resolve(issuer);
+            OIDCProviderMetadata resolvedOp = OIDCHttpUtils.performHttpRequest(issuer, insecure);
             return resolvedOp.getTokenEndpointURI();
         } catch (GeneralException e) {
             throw new TokenRefreshException("Unable to resolve token endpoint URI: " + e.getMessage(), e);

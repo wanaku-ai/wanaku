@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.common.ProcessRunner;
 import ai.wanaku.cli.main.support.Downloader;
+import ai.wanaku.cli.main.support.HttpUtil;
 import ai.wanaku.cli.main.support.RuntimeConstants;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
 import ai.wanaku.cli.main.support.ZipHelper;
@@ -131,8 +132,8 @@ public class LocalRunner {
 
     private final LocalRunnerEnvironment environment;
 
-    public LocalRunner(WanakuCliConfig config, LocalRunnerEnvironment environment) {
-        this(config, environment, HttpClient.newHttpClient(), DEFAULT_ROUTER_READINESS_URI);
+    public LocalRunner(WanakuCliConfig config, LocalRunnerEnvironment environment, boolean insecure) {
+        this(config, environment, HttpUtil.newHttpClient(insecure), DEFAULT_ROUTER_READINESS_URI);
     }
 
     LocalRunner(

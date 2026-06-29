@@ -227,6 +227,11 @@ Currently, all authenticated users have admin access to tools and resources. Fin
 
 While not recommended for production, you can set `wanaku.http.auth=none` to disable authentication for development and testing.
 
+### How to skip certificate validation for development purposes
+
+- Wanaku CLI: you can set the `--insecure` parameter to trust the server certificates.
+- Wanaku MCP server: set the environment variable `QUARKUS_TLS_TRUST_ALL=true`.
+
 ## Troubleshooting
 
 ### Why aren't my capability services showing up?
@@ -258,6 +263,8 @@ quarkus.log.level=DEBUG
 quarkus.log.category."ai.wanaku".level=DEBUG
 quarkus.mcp.server.traffic-logging.enabled=true
 ```
+
+When using the Wanaku CLI, set the `--verbose` parameter to show additional logging.
 
 ### Where can I get help?
 
