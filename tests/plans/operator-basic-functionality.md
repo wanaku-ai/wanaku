@@ -703,7 +703,58 @@ else
 fi
 ```
 
-### Test 7.3: Verify router and capability pods are running
+### Test 7.3: Verify namespace MCP SSE endpoint requires authentication and is reachable
+
+**Description:** The namespace-scoped MCP endpoints (`/ns-{N}/mcp/sse`) use a dynamic OIDC tenant resolver (`NamespaceTenantConfigResolver`). Verify that unauthenticated requests are rejected (HTTP 401) and authenticated requests are accepted. This covers the fix for [#1430](https://github.com/wanaku-ai/wanaku/issues/1430).
+
+```bash
+NS_MCP_SSE_URL="http://${ROUTER_HOST}/ns-0/mcp/sse"
+
+# Step 1: Unauthenticated request should return 401
+UNAUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+  -H "Accept: text/event-stream" \
+  --max-time 5 \
+  "${NS_MCP_SSE_URL}" 2>/dev/null || echo "000")
+
+echo "ns-0-mcp-sse-unauth=${UNAUTH_CODE}"
+if [ "${UNAUTH_CODE}" = "401" ]; then
+  echo "PASS: namespace MCP SSE returns 401 without token"
+else
+  echo "FAIL: expected 401, got HTTP ${UNAUTH_CODE}"
+fi
+
+# Step 2: Authenticated request should be accepted
+KC_POD=$(oc get pods -l app=keycloak \
+  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+NS_TOKEN=$(oc exec "${KC_POD}" -n "${WANAKU_NAMESPACE}" -- \
+  curl -sf \
+    -d "client_id=wanaku-service" \
+    -d "client_secret=${WANAKU_OIDC_CLIENT_SECRET}" \
+    -d "grant_type=client_credentials" \
+    "http://localhost:8080/realms/wanaku/protocol/openid-connect/token" \
+  | jq -r '.access_token')
+
+if [ -z "${NS_TOKEN}" ] || [ "${NS_TOKEN}" = "null" ]; then
+  echo "FAIL: could not obtain token for namespace MCP test"
+else
+  AUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+    -H "Accept: text/event-stream" \
+    -H "Authorization: Bearer ${NS_TOKEN}" \
+    --max-time 5 \
+    "${NS_MCP_SSE_URL}" 2>/dev/null || echo "000")
+
+  echo "ns-0-mcp-sse-auth=${AUTH_CODE}"
+  # 200 = streaming, 000 = SSE timeout (normal for streaming endpoints)
+  if [ "${AUTH_CODE}" = "200" ] || [ "${AUTH_CODE}" = "000" ]; then
+    echo "PASS: namespace MCP SSE accepts authenticated request (HTTP ${AUTH_CODE})"
+  else
+    echo "FAIL: unexpected response from namespace MCP SSE with token (HTTP ${AUTH_CODE})"
+  fi
+fi
+```
+
+### Test 7.4: Verify router and capability pods are running
 
 ```bash
 echo "--- All pods in ${WANAKU_NAMESPACE} ---"
@@ -722,7 +773,7 @@ else
 fi
 ```
 
-### Test 7.4: Verify operator logs contain reconciliation records
+### Test 7.5: Verify operator logs contain reconciliation records
 
 ```bash
 OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
@@ -853,7 +904,7 @@ Follow [common/cleanup.md](common/cleanup.md) for full teardown.
 | 4 | 4.1-4.6 | WanakuCapability lifecycle | Critical |
 | 5 | 5.1-5.2 | WanakuCapability negative tests | High |
 | 6 | 6.1-6.4 | WanakuServiceCatalog lifecycle | High |
-| 7 | 7.1-7.4 | Smoke test (full flow) | Critical |
+| 7 | 7.1-7.5 | Smoke test (full flow, incl. namespace OIDC) | Critical |
 | 8 | 8.1-8.2 | Update reconciliation | Medium |
 | 9 | 9.1-9.3 | Deletion and ownership cascade | Critical |
 | 10 | — | Cleanup | Critical |
