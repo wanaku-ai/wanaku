@@ -2,6 +2,7 @@ package ai.wanaku.operator.util;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -266,6 +267,17 @@ public final class RouterResourceFactory {
                             .build();
                     envVars.add(customEnvVar);
                 }
+            }
+        }
+
+        final List<EnvVar> templateEnvs = service.getEnv();
+        for (EnvVar templateVar : templateEnvs) {
+            final Optional<EnvVar> override = envVars.stream()
+                    .filter(envVar -> envVar.getName().equals(templateVar.getName()))
+                    .findFirst();
+
+            if (override.isEmpty()) {
+                envVars.add(templateVar);
             }
         }
 
