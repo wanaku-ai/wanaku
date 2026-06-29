@@ -14,8 +14,6 @@ public class AuthConfigSource implements ConfigSource {
 
     private static final String ENV_VAR = "WANAKU_HTTP_AUTH";
 
-    private static final int MAX_NAMESPACES = 10;
-
     private volatile Map<String, String> noauthProperties;
 
     @Override
@@ -74,11 +72,6 @@ public class AuthConfigSource implements ConfigSource {
             props.put("quarkus.oidc.mcp.enabled", "false");
             props.put("quarkus.oidc.mcp.discovery-enabled", "false");
             props.put("quarkus.oidc.mcp.resource-metadata.enabled", "false");
-            for (int i = 0; i < MAX_NAMESPACES; i++) {
-                props.put("quarkus.oidc.ns-%d.enabled".formatted(i), "false");
-                props.put("quarkus.oidc.ns-%d.discovery-enabled".formatted(i), "false");
-                props.put("quarkus.oidc.ns-%d.resource-metadata.enabled".formatted(i), "false");
-            }
             props.put("quarkus.oidc-proxy.enabled", "false");
             props.put("quarkus.http.auth.permission.authenticated.policy", "permit");
             props.put("quarkus.http.auth.permission.mcp-authenticated.policy", "permit");
