@@ -50,8 +50,8 @@ public class NamespaceTenantConfigResolver implements TenantConfigResolver {
         }
 
         String tenantId = "ns-" + nsIndex;
-        String authServerUrl = authServer + "/realms/" + authRealm;
-        String authorizationServer = authProxy + oidcProxyRootPath;
+        String authServerUrl = stripTrailingSlash(authServer) + "/realms/" + authRealm;
+        String authorizationServer = stripTrailingSlash(authProxy) + oidcProxyRootPath;
 
         OidcTenantConfig config = OidcTenantConfig.authServerUrl(authServerUrl)
                 .tenantId(tenantId)
@@ -67,5 +67,12 @@ public class NamespaceTenantConfigResolver implements TenantConfigResolver {
                 .build();
 
         return Uni.createFrom().item(config);
+    }
+
+    private static String stripTrailingSlash(String url) {
+        if (url != null && url.endsWith("/")) {
+            return url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 }

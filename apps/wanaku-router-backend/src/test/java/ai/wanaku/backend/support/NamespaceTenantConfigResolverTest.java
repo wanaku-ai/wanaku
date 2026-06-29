@@ -99,6 +99,21 @@ class NamespaceTenantConfigResolverTest {
     }
 
     @Test
+    void normalizesTrailingSlashesOnAuthServer() {
+        resolver.authServer = "http://keycloak:8080/";
+        resolver.authProxy = "http://localhost:8080/";
+        RoutingContext ctx = mockContext("/ns-0/mcp/sse");
+        OidcTenantConfig config = resolver.resolve(ctx, null).await().indefinitely();
+
+        assertNotNull(config);
+        assertEquals(
+                "http://keycloak:8080/realms/wanaku", config.authServerUrl().orElse(null));
+        assertEquals(
+                "http://localhost:8080/q/oidc",
+                config.resourceMetadata().authorizationServer().orElse(null));
+    }
+
+    @Test
     void patternDoesNotMatchBareNamespacePath() {
         RoutingContext ctx = mockContext("/ns-0");
         OidcTenantConfig config = resolver.resolve(ctx, null).await().indefinitely();
