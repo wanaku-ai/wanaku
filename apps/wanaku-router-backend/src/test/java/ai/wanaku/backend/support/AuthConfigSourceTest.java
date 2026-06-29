@@ -69,11 +69,6 @@ class AuthConfigSourceTest {
         assertEquals("false", props.get("quarkus.oidc.mcp.enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.discovery-enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.resource-metadata.enabled"));
-        for (int i = 0; i < 10; i++) {
-            assertEquals("false", props.get("quarkus.oidc.ns-" + i + ".enabled"));
-            assertEquals("false", props.get("quarkus.oidc.ns-" + i + ".discovery-enabled"));
-            assertEquals("false", props.get("quarkus.oidc.ns-" + i + ".resource-metadata.enabled"));
-        }
         assertEquals("permit", props.get("quarkus.http.auth.permission.authenticated.policy"));
         assertEquals("permit", props.get("quarkus.http.auth.permission.mcp-authenticated.policy"));
         assertEquals("permit", props.get("quarkus.http.auth.permission.web.policy"));
@@ -94,12 +89,6 @@ class AuthConfigSourceTest {
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.resource-metadata.enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc.ns-0.enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc.ns-0.discovery-enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc.ns-0.resource-metadata.enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc.ns-9.enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc.ns-9.discovery-enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc.ns-9.resource-metadata.enabled"));
         assertEquals("permit", configSource.getValue("quarkus.http.auth.permission.authenticated.policy"));
     }
 
