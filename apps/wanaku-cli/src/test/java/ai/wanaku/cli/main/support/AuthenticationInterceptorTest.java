@@ -45,7 +45,7 @@ class AuthenticationInterceptorTest {
         Path credentialsFile = tempDir.resolve("test-credentials");
         URI credentialsUri = credentialsFile.toUri();
         credentialStore = new AuthCredentialStore(credentialsUri);
-        interceptor = new AuthenticationInterceptor(credentialStore);
+        interceptor = new AuthenticationInterceptor(credentialStore, false);
     }
 
     @Test
@@ -118,7 +118,8 @@ class AuthenticationInterceptorTest {
         when(mockRefresher.refresh(refreshToken, authServerUrl, clientId))
                 .thenReturn(new RefreshResult(newToken, refreshToken, newExpiry));
 
-        AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
+        AuthenticationInterceptor interceptorWithMock =
+                new AuthenticationInterceptor(credentialStore, mockRefresher, false);
         interceptorWithMock.filter(requestContext);
 
         verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId);
@@ -136,7 +137,8 @@ class AuthenticationInterceptorTest {
         credentialStore.storeTokenExpiry(Instant.now().getEpochSecond() + 300);
 
         TokenRefresher mockRefresher = mock(TokenRefresher.class);
-        AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
+        AuthenticationInterceptor interceptorWithMock =
+                new AuthenticationInterceptor(credentialStore, mockRefresher, false);
         interceptorWithMock.filter(requestContext);
 
         verify(mockRefresher, never()).refresh(any(), any(), any());
@@ -162,7 +164,8 @@ class AuthenticationInterceptorTest {
         when(mockRefresher.refresh(refreshToken, authServerUrl, clientId))
                 .thenThrow(new TokenRefresher.TokenRefreshException("Refresh failed"));
 
-        AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
+        AuthenticationInterceptor interceptorWithMock =
+                new AuthenticationInterceptor(credentialStore, mockRefresher, false);
         interceptorWithMock.filter(requestContext);
 
         // Should still use old token as fallback
@@ -177,7 +180,8 @@ class AuthenticationInterceptorTest {
         // No expiry stored (legacy token)
 
         TokenRefresher mockRefresher = mock(TokenRefresher.class);
-        AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
+        AuthenticationInterceptor interceptorWithMock =
+                new AuthenticationInterceptor(credentialStore, mockRefresher, false);
         interceptorWithMock.filter(requestContext);
 
         verify(mockRefresher, never()).refresh(any(), any(), any());
@@ -205,7 +209,8 @@ class AuthenticationInterceptorTest {
         when(mockRefresher.refresh(refreshToken, authServerUrl, clientId))
                 .thenReturn(new RefreshResult(newToken, refreshToken, newExpiry));
 
-        AuthenticationInterceptor interceptorWithMock = new AuthenticationInterceptor(credentialStore, mockRefresher);
+        AuthenticationInterceptor interceptorWithMock =
+                new AuthenticationInterceptor(credentialStore, mockRefresher, false);
         interceptorWithMock.filter(requestContext);
 
         verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId);

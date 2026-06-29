@@ -174,7 +174,7 @@ public class WanakuPrinter extends DefaultPrinter {
     }
 
     private static TerminalBuilder newBuilder() {
-        TerminalBuilder builder = TerminalBuilder.builder().system(!plainMode);
+        TerminalBuilder builder = TerminalBuilder.builder().system(true);
         if (plainMode) {
             // When not using the system terminal, JLine needs explicit streams
             // otherwise masterInput/masterOutput are null and any I/O throws NPE
