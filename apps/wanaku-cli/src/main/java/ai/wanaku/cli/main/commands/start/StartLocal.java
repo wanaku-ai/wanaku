@@ -114,7 +114,7 @@ public class StartLocal extends StartBase {
 
         environment.withFailFast(failFast);
 
-        LocalRunner localRunner = new LocalRunner(config, environment);
+        LocalRunner localRunner = new LocalRunner(config, environment, insecure);
         try {
             localRunner.start(services);
         } catch (WanakuException | IOException e) {

@@ -23,7 +23,7 @@ public class AuthLogin extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--auth-server"},
-            description = "Authentication server URL")
+            description = "Authentication server URL (Wanaku or Keycloak)")
     private String authServerUrl;
 
     @CommandLine.Option(
@@ -72,16 +72,16 @@ public class AuthLogin extends BaseCommand {
             try {
                 printer.printInfoMessage("Authenticating with username and password...");
                 CustomSecurityServiceConfig config = new CustomSecurityServiceConfig();
-                config.setClientId(DEFAULT_CLIENT_ID);
+                config.setClientId(clientId);
                 config.setUsername(username);
                 config.setPassword(password);
                 config.setTokenEndpoint(TokenEndpoint.forDiscovery(serverUrl, realm));
-                ServiceAuthenticator serviceAuthenticator = new ServiceAuthenticator(config);
+                ServiceAuthenticator serviceAuthenticator = new ServiceAuthenticator(config, insecure);
 
                 credentialStore.storeApiToken(serviceAuthenticator.currentValidAccessToken());
                 credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
                 credentialStore.storeTokenExpiry(serviceAuthenticator.getTokenExpiryEpochSeconds());
-                credentialStore.storeClientId(DEFAULT_CLIENT_ID);
+                credentialStore.storeClientId(clientId);
                 credentialStore.storeRealm(realm != null && realm.isBlank() ? null : realm);
 
                 credentialStore.storeAuthMode("token");
