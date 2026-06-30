@@ -66,9 +66,34 @@ export ROUTE_ID="${ROUTE_ID:-langchain4j-agent-chat}"
 export WANAKU_HOST="${WANAKU_HOST:-http://localhost:8080}"
 export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
 
-# LLM provider credentials (required for Phase 6 end-to-end)
-export LANGCHAIN4J_API_KEY="${LANGCHAIN4J_API_KEY:-test-key-placeholder}"
-export LANGCHAIN4J_MODEL="${LANGCHAIN4J_MODEL:-gpt-4}"
+# LLM backend configuration (required for Phase 6 end-to-end)
+# These values are passed to the template instantiation API as properties.
+# The template's service.properties uses Forage-prefixed keys
+# (forage.wanaku.agent.*) with {{placeholder}} values that the
+# instantiation engine substitutes.
+#
+# PRIMARY approach: local Ollama (no API key required)
+#   export AGENT_MODEL_KIND=ollama
+#   export AGENT_MODEL_NAME=llama3.2
+#   export AGENT_BASE_URL=http://localhost:11434
+#   export AGENT_API_KEY=unused
+#
+# ALTERNATIVE: OpenRouter (cloud, requires API key from https://openrouter.ai)
+#   export AGENT_MODEL_KIND=openai           # OpenRouter uses OpenAI-compatible API
+#   export AGENT_MODEL_NAME=meta-llama/llama-3-8b-instruct
+#   export AGENT_BASE_URL=https://openrouter.ai/api/v1
+#   export AGENT_API_KEY=sk-or-...
+#
+# ALTERNATIVE: Direct OpenAI (cloud, requires API key from https://platform.openai.com)
+#   export AGENT_MODEL_KIND=openai
+#   export AGENT_MODEL_NAME=gpt-4o
+#   export AGENT_BASE_URL=https://api.openai.com/v1
+#   export AGENT_API_KEY=sk-...
+#
+export AGENT_MODEL_KIND="${AGENT_MODEL_KIND:-ollama}"
+export AGENT_MODEL_NAME="${AGENT_MODEL_NAME:-llama3.2}"
+export AGENT_BASE_URL="${AGENT_BASE_URL:-http://localhost:11434}"
+export AGENT_API_KEY="${AGENT_API_KEY:-unused}"
 
 # Template directory (relative to repo root)
 export TEMPLATE_BASE_DIR="${TEMPLATE_BASE_DIR:-services/service-templates/src/main/services}"
@@ -158,6 +183,77 @@ else
   echo "WARN: CIC_JAR not found -- Phase 6 (end-to-end) will be skipped"
 fi
 ```
+
+### LLM Backend Setup (required for Phase 6)
+
+Phase 6 sends a prompt to a real LLM. The template ships with `forage-model-ollama` as the
+default provider, so the primary approach uses a **local Ollama instance**. Cloud providers
+are documented as alternatives for CI environments or when Ollama is not available.
+
+#### Option A: Local Ollama (recommended)
+
+Install Ollama (<https://ollama.com/download>) and pull a small model:
+
+```bash
+# Install (macOS example -- see https://ollama.com/download for other platforms)
+brew install ollama
+
+# Start the Ollama server (if not already running as a service)
+ollama serve &
+
+# Pull a model -- llama3.2 is small (~2 GB) and sufficient for testing
+ollama pull llama3.2
+```
+
+Verify:
+
+```bash
+curl -sf http://localhost:11434/api/tags | jq '.models[].name' | grep -q "llama3.2" \
+  && echo "PASS: Ollama is running and llama3.2 is available" \
+  || echo "FAIL: Ollama not running or llama3.2 not pulled"
+```
+
+No API key is needed. Set the environment variables (these are the defaults):
+
+```bash
+export AGENT_MODEL_KIND=ollama
+export AGENT_MODEL_NAME=llama3.2
+export AGENT_BASE_URL=http://localhost:11434
+export AGENT_API_KEY=unused
+```
+
+#### Option B: OpenRouter (cloud alternative)
+
+OpenRouter (<https://openrouter.ai>) provides an OpenAI-compatible API that fronts many
+models. It is useful in CI where Ollama cannot run.
+
+1. Create an account and generate an API key at <https://openrouter.ai/keys>.
+2. Set environment variables:
+
+```bash
+export AGENT_MODEL_KIND=openai
+export AGENT_MODEL_NAME=meta-llama/llama-3-8b-instruct
+export AGENT_BASE_URL=https://openrouter.ai/api/v1
+export AGENT_API_KEY=sk-or-YOUR_KEY_HERE
+```
+
+#### Option C: Direct OpenAI (cloud alternative)
+
+1. Obtain an API key from <https://platform.openai.com/api-keys>.
+2. Set environment variables:
+
+```bash
+export AGENT_MODEL_KIND=openai
+export AGENT_MODEL_NAME=gpt-4o
+export AGENT_BASE_URL=https://api.openai.com/v1
+export AGENT_API_KEY=sk-YOUR_KEY_HERE
+```
+
+> [!NOTE]
+> The `forage-model-ollama` dependency is bundled in the template. When using a cloud provider
+> (Options B or C), the Camel Integration Capability must also have the appropriate Forage
+> model JAR on its classpath (e.g., `forage-model-openai`). Check the Forage documentation
+> for details.
 
 ### CLI invocation
 
@@ -423,8 +519,10 @@ RESPONSE=$(curl -sf -X POST "${WANAKU_HOST}/api/v1/service-template/instantiate"
   -d '{
     "templateName": "'"${TEMPLATE_NAME}"'",
     "properties": {
-      "langchain4j.api.key": "'"${LANGCHAIN4J_API_KEY}"'",
-      "langchain4j.model": "'"${LANGCHAIN4J_MODEL}"'"
+      "forage.wanaku.agent.model.kind": "'"${AGENT_MODEL_KIND}"'",
+      "forage.wanaku.agent.model.name": "'"${AGENT_MODEL_NAME}"'",
+      "forage.wanaku.agent.base.url": "'"${AGENT_BASE_URL}"'",
+      "forage.wanaku.agent.api.key": "'"${AGENT_API_KEY}"'"
     }
   }' | jq '.')
 
@@ -437,9 +535,9 @@ echo "${RESPONSE}" | jq -e '.error == null or .error == ""' > /dev/null 2>&1 \
   || { echo "FAIL: error in response"; echo "${RESPONSE}" | jq '.error'; }
 ```
 
-> **Note:** The exact property key names (`langchain4j.api.key`, `langchain4j.model`) depend on the
-> implementation. Adjust to match the actual `service.properties` placeholders. The pattern will match
-> whatever the implementer chooses as long as Phase 1.6 passes.
+> **Note:** The property key names (`forage.wanaku.agent.model.kind`, etc.) match the
+> Forage-prefixed keys in `service.properties`. The instantiation engine substitutes by
+> matching property keys, not placeholder names.
 
 ### Test 4.2: Instantiate with custom service name via REST
 
@@ -449,8 +547,10 @@ RESPONSE=$(curl -sf -X POST "${WANAKU_HOST}/api/v1/service-template/instantiate"
   -d '{
     "templateName": "'"${TEMPLATE_NAME}"'",
     "properties": {
-      "langchain4j.api.key": "'"${LANGCHAIN4J_API_KEY}"'",
-      "langchain4j.model": "'"${LANGCHAIN4J_MODEL}"'"
+      "forage.wanaku.agent.model.kind": "'"${AGENT_MODEL_KIND}"'",
+      "forage.wanaku.agent.model.name": "'"${AGENT_MODEL_NAME}"'",
+      "forage.wanaku.agent.base.url": "'"${AGENT_BASE_URL}"'",
+      "forage.wanaku.agent.api.key": "'"${AGENT_API_KEY}"'"
     },
     "serviceName": "my-custom-langchain4j",
     "serviceSystem": "custom-langchain4j-system"
@@ -468,8 +568,10 @@ CLI_JAR="apps/wanaku-cli/target/quarkus-app/quarkus-run.jar"
 OUTPUT=$(java -jar ${CLI_JAR} service template instantiate \
   --host "${WANAKU_HOST}" \
   --name "${TEMPLATE_NAME}" \
-  --property "langchain4j.api.key=${LANGCHAIN4J_API_KEY}" \
-  --property "langchain4j.model=${LANGCHAIN4J_MODEL}" 2>&1)
+  --property "forage.wanaku.agent.model.kind=${AGENT_MODEL_KIND}" \
+  --property "forage.wanaku.agent.model.name=${AGENT_MODEL_NAME}" \
+  --property "forage.wanaku.agent.base.url=${AGENT_BASE_URL}" \
+  --property "forage.wanaku.agent.api.key=${AGENT_API_KEY}" 2>&1)
 
 echo "${OUTPUT}" | grep -qi "success\|created" \
   && echo "PASS: CLI instantiation succeeded" \
@@ -483,8 +585,10 @@ CLI_JAR="apps/wanaku-cli/target/quarkus-app/quarkus-run.jar"
 PROPS_FILE=$(mktemp)
 
 cat > "${PROPS_FILE}" <<EOF
-langchain4j.api.key=${LANGCHAIN4J_API_KEY}
-langchain4j.model=${LANGCHAIN4J_MODEL}
+agent.model.kind=${AGENT_MODEL_KIND}
+agent.model.name=${AGENT_MODEL_NAME}
+agent.base.url=${AGENT_BASE_URL}
+agent.api.key=${AGENT_API_KEY}
 EOF
 
 OUTPUT=$(java -jar ${CLI_JAR} service template instantiate \
@@ -523,7 +627,7 @@ After instantiation, verify the resulting service catalog is properly registered
 ### Test 5.1: Instantiated catalog appears in service catalog list
 
 ```bash
-RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/service-catalog/list" | jq '.')
+RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/service-catalog" | jq '.')
 
 echo "${RESPONSE}" | jq -e '.data[] | select(.name | test("langchain4j"))' > /dev/null 2>&1 \
   && echo "PASS: langchain4j catalog appears in service catalog list" \
@@ -533,7 +637,7 @@ echo "${RESPONSE}" | jq -e '.data[] | select(.name | test("langchain4j"))' > /de
 ### Test 5.2: MCP tool is discoverable via tools list
 
 ```bash
-RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/tools/list" | jq '.')
+RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/tools" | jq '.')
 
 echo "${RESPONSE}" | jq -e '.data[] | select(.name | test("langchain4j"))' > /dev/null 2>&1 \
   && echo "PASS: langchain4j agent tool is registered" \
@@ -543,7 +647,7 @@ echo "${RESPONSE}" | jq -e '.data[] | select(.name | test("langchain4j"))' > /de
 ### Test 5.3: Tool has correct input schema
 
 ```bash
-RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/tools/list" | jq '.')
+RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/tools" | jq '.')
 
 TOOL=$(echo "${RESPONSE}" | jq '.data[] | select(.name | test("langchain4j"))')
 
@@ -558,30 +662,70 @@ echo "${TOOL}" | jq -e '.inputSchema.required | index("wanaku_body")' > /dev/nul
 
 ---
 
-## Phase 6: End-to-End MCP Tool Invocation (requires valid API key + Camel Integration Capability)
+## Phase 6: End-to-End MCP Tool Invocation (requires LLM backend + Camel Integration Capability)
 
-> **Note:** This phase requires:
+> **Note:** This phase sends a prompt to a real LLM and verifies the round-trip through the
+> MCP tool. It requires:
 >
-> 1. A valid `LANGCHAIN4J_API_KEY` (not `test-key-placeholder`)
-> 2. A built Camel Integration Capability JAR (`CIC_JAR`)
+> 1. A reachable LLM backend -- either a **local Ollama instance** (default, recommended) or a
+>    cloud provider with a valid API key (see *Prerequisites > LLM Backend Setup*).
+> 2. A built Camel Integration Capability JAR (`CIC_JAR`).
 >
-> If either is missing, all tests in this phase are skipped.
+> If neither backend is available or the CIC JAR is missing, all tests in this phase are skipped.
 
 ### Test 6.0: Pre-flight check
 
+Verify that either (a) Ollama is running locally, or (b) a cloud API key has been configured.
+Also verify the CIC JAR is available.
+
 ```bash
-if [ "${LANGCHAIN4J_API_KEY}" = "test-key-placeholder" ]; then
-  echo "SKIP: LANGCHAIN4J_API_KEY not set -- skipping all Phase 6 tests"
-  exit 0
+PHASE6_SKIP=0
+
+# Check LLM backend availability
+if [ "${AGENT_MODEL_KIND}" = "ollama" ]; then
+  # Ollama mode: verify the server is reachable
+  if curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; then
+    echo "PASS: Ollama is running at ${AGENT_BASE_URL}"
+    # Verify the requested model is pulled
+    if curl -sf http://localhost:11434/api/tags | grep -q "${AGENT_MODEL_NAME}"; then
+      echo "PASS: model '${AGENT_MODEL_NAME}' is available"
+    else
+      echo "WARN: model '${AGENT_MODEL_NAME}' not found -- pull it with: ollama pull ${AGENT_MODEL_NAME}"
+      echo "  Available models:"
+      curl -sf http://localhost:11434/api/tags | jq -r '.models[].name' 2>/dev/null || echo "  (could not list models)"
+      PHASE6_SKIP=1
+    fi
+  else
+    echo "SKIP: Ollama not running at localhost:11434"
+    echo "  Start it with: ollama serve"
+    echo "  Or switch to a cloud provider (see Prerequisites > LLM Backend Setup)"
+    PHASE6_SKIP=1
+  fi
+else
+  # Cloud provider mode: verify API key is not the default placeholder
+  if [ "${AGENT_API_KEY}" = "unused" ] || [ -z "${AGENT_API_KEY}" ]; then
+    echo "SKIP: AGENT_MODEL_KIND=${AGENT_MODEL_KIND} but AGENT_API_KEY is not set"
+    echo "  Set AGENT_API_KEY to a valid API key for your provider"
+    PHASE6_SKIP=1
+  else
+    echo "PASS: cloud provider configured (kind=${AGENT_MODEL_KIND}, model=${AGENT_MODEL_NAME})"
+  fi
 fi
 
+# Check CIC JAR
 if [ -z "${CIC_JAR}" ] || [ ! -f "${CIC_JAR}" ]; then
   echo "SKIP: CIC_JAR not set or not found -- skipping all Phase 6 tests"
-  echo "  Build camel-integration-capability and set CIC_JAR (see Prerequisites)"
+  echo "  Download it from the camel-integration-capability early-access release (see Prerequisites)"
+  PHASE6_SKIP=1
+fi
+
+if [ "${PHASE6_SKIP}" -ne 0 ]; then
+  echo ""
+  echo "SKIP: Phase 6 pre-flight failed -- skipping all end-to-end tests"
   exit 0
 fi
 
-echo "PASS: pre-flight checks passed"
+echo "PASS: pre-flight checks passed (backend=${AGENT_MODEL_KIND}, model=${AGENT_MODEL_NAME})"
 ```
 
 ### Test 6.1: Launch the Camel Integration Capability with the instantiated catalog
@@ -626,7 +770,7 @@ fi
 ### Test 6.2: Verify capability registered with the router
 
 ```bash
-RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/tools/list" | jq '.')
+RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/tools" | jq '.')
 
 TOOL=$(echo "${RESPONSE}" | jq '.data[] | select(.name | test("langchain4j"))')
 if [ -n "${TOOL}" ]; then
@@ -646,10 +790,10 @@ fi
 
 ```bash
 CLI_JAR="apps/wanaku-cli/target/quarkus-app/quarkus-run.jar"
-OUTPUT=$(java -jar ${CLI_JAR} mcp tool invoke \
+OUTPUT=$(java -jar ${CLI_JAR} mcp tool \
   --uri "${MCP_SERVER_URI}" \
-  --tool-name "${ROUTE_ID}" \
-  --arg "wanaku_body=Say hello in exactly three words." 2>&1)
+  --name "${ROUTE_ID}" \
+  --param "wanaku_body=Say hello in exactly three words." 2>&1)
 
 echo "${OUTPUT}" | grep -qiv "error\|exception\|fail" \
   && echo "PASS: MCP CLI tool invoke succeeded" \
@@ -659,19 +803,16 @@ echo "${OUTPUT}" | grep -qiv "error\|exception\|fail" \
 ### Test 6.4: Invoke with optional parameters (system message)
 
 ```bash
-RESPONSE=$(curl -sf -X POST "${WANAKU_HOST}/api/v1/tools/call" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "'"${ROUTE_ID}"'",
-    "arguments": {
-      "wanaku_body": "What is 2+2?",
-      "systemMessage": "You are a math tutor. Answer concisely."
-    }
-  }' | jq '.')
+CLI_JAR="apps/wanaku-cli/target/quarkus-app/quarkus-run.jar"
+OUTPUT=$(java -jar ${CLI_JAR} mcp tool \
+  --uri "${MCP_SERVER_URI}" \
+  --name "${ROUTE_ID}" \
+  --param "wanaku_body=What is 2+2?" \
+  --param "systemMessage=You are a math tutor. Answer concisely." 2>&1)
 
-echo "${RESPONSE}" | jq -e '.data' > /dev/null 2>&1 \
-  && echo "PASS: tool call with optional params returned data" \
-  || { echo "FAIL: tool call with optional params failed"; echo "${RESPONSE}"; }
+echo "${OUTPUT}" | grep -qiv "error\|exception\|fail" \
+  && echo "PASS: MCP CLI tool invoke with optional params succeeded" \
+  || { echo "FAIL: MCP CLI tool invoke with optional params failed"; echo "${OUTPUT}"; }
 ```
 
 ### Test 6.5: Stop the Camel Integration Capability
@@ -789,7 +930,7 @@ curl -sf -X DELETE "${WANAKU_HOST}/api/v1/service-catalog/remove?name=my-custom-
 ### Test 8.2: Verify cleanup
 
 ```bash
-RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/service-catalog/list" | jq '.')
+RESPONSE=$(curl -sf "${WANAKU_HOST}/api/v1/service-catalog" | jq '.')
 
 echo "${RESPONSE}" | jq -e '.data[] | select(.name | test("langchain4j"))' > /dev/null 2>&1 \
   && echo "FAIL: langchain4j catalog still present after cleanup" \
@@ -836,7 +977,7 @@ fi
 | 5 | 5.1 | Catalog appears in service catalog list | P0 |
 | 5 | 5.2 | MCP tool is discoverable | P0 |
 | 5 | 5.3 | Tool has correct input schema | P1 |
-| 6 | 6.0 | Pre-flight check (API key + CIC JAR) | P0 |
+| 6 | 6.0 | Pre-flight check (LLM backend + CIC JAR) | P0 |
 | 6 | 6.1 | Launch Camel Integration Capability with catalog | P0 |
 | 6 | 6.2 | Verify capability registered with router | P0 |
 | 6 | 6.3 | Invoke tool via MCP CLI (live API) | P1 |

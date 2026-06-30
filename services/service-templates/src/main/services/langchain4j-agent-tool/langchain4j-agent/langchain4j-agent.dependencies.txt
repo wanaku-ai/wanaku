@@ -1,5 +1,6 @@
 org.apache.camel:camel-langchain4j-agent
 io.kaoto.forage:forage-core-common
 io.kaoto.forage:forage-core-ai
+io.kaoto.forage:forage-agent-factories
 io.kaoto.forage:forage-agent
 io.kaoto.forage:forage-model-ollama

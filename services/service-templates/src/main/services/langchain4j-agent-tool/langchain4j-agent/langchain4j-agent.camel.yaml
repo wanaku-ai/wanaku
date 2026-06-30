@@ -5,3 +5,6 @@
       steps:
         - to:
             uri: "langchain4j-agent:{{agent.id}}"
+            parameters:
+              agent: "#agent"
+              tags: users
