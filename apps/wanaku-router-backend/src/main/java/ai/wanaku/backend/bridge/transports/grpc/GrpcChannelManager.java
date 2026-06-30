@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge.transports.grpc;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.util.Map;
@@ -12,6 +13,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.grpc.v1_6.GrpcTelemetry;
+import io.quarkus.runtime.ShutdownEvent;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 
 /**
@@ -34,7 +36,7 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 @ApplicationScoped
 public class GrpcChannelManager {
     private static final Logger LOG = Logger.getLogger(GrpcChannelManager.class);
-    private static final Map<ServiceTarget, ManagedChannel> CHANNEL_MAP = new ConcurrentHashMap<>();
+    private final Map<ServiceTarget, ManagedChannel> channelMap = new ConcurrentHashMap<>();
     private static final String WANAKU_BRIDGE_GRPC_TRANSPORT_TLS_ENABLED = "wanaku.bridge.grpc.transport.tls.enabled";
 
     /**
@@ -70,21 +72,26 @@ public class GrpcChannelManager {
     }
 
     /**
-     * Creates a new gRPC channel for the specified service target.
+     * Returns a cached gRPC channel for the specified service target, creating one if absent.
      * <p>
-     * The channel uses plaintext or TLS depending on
-     * {@code wanaku.bridge.grpc.transport.tls.enabled}. The caller is responsible for managing the
-     * channel lifecycle, including shutdown.
+     * Channels are cached per {@link ServiceTarget} and reused across requests.
+     * A cached channel that has been shut down or terminated is automatically replaced.
      *
      * @param service the service target containing the address to connect to
-     * @return a new ManagedChannel configured for the service
+     * @return a ManagedChannel configured for the service
      */
     public ManagedChannel createChannel(ServiceTarget service) {
-        if (CHANNEL_MAP.containsKey(service)) {
-            LOG.debugf("Reusing gRPC channel for service: %s", service.toAddress());
-            return CHANNEL_MAP.get(service);
+        ManagedChannel channel = channelMap.computeIfAbsent(service, this::buildChannel);
+
+        if (channel.isShutdown() || channel.isTerminated()) {
+            channelMap.remove(service, channel);
+            channel = channelMap.computeIfAbsent(service, this::buildChannel);
         }
 
+        return channel;
+    }
+
+    private ManagedChannel buildChannel(ServiceTarget service) {
         LOG.debugf("Creating gRPC channel for service: %s (TLS: %s)", service.toAddress(), tlsEnabled);
         ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(service.toAddress());
         if (tlsEnabled) {
@@ -100,10 +107,7 @@ public class GrpcChannelManager {
             builder.intercept(requestIdInterceptor);
         }
 
-        ManagedChannel channel = builder.build();
-
-        CHANNEL_MAP.put(service, channel);
-        return channel;
+        return builder.build();
     }
 
     /**
@@ -137,9 +141,14 @@ public class GrpcChannelManager {
         // NO-OP
     }
 
+    void onShutdown(@Observes ShutdownEvent ev) {
+        shutdown();
+    }
+
     public void shutdown() {
-        for (Map.Entry<ServiceTarget, ManagedChannel> entry : CHANNEL_MAP.entrySet()) {
+        for (Map.Entry<ServiceTarget, ManagedChannel> entry : channelMap.entrySet()) {
             doCloseChannel(entry.getValue());
         }
+        channelMap.clear();
     }
 }
