@@ -96,6 +96,8 @@ fi
 
 ## Shutdown
 
+When `WANAKU_PID` is available (captured at startup), you can stop the process directly:
+
 ```bash
 if [ -n "${WANAKU_PID}" ]; then
   kill "${WANAKU_PID}" 2>/dev/null || true
@@ -103,3 +105,11 @@ if [ -n "${WANAKU_PID}" ]; then
   echo "PASS: Wanaku process stopped"
 fi
 ```
+
+Alternatively, use the stop script which discovers and gracefully shuts down all wanaku processes (router + capabilities):
+
+```bash
+./tests/wanaku-start-local-stop.sh
+```
+
+Do **not** use `kill -9` — it bypasses shutdown hooks and leaves child processes (capabilities) running.

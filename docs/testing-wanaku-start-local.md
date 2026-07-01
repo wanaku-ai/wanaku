@@ -46,4 +46,18 @@ The `camel-integration` service is automatically added when any CIC option is pr
 
 ## Stopping the router
 
-The router must be stopped gently. Do not kill the process with signal -9 because it leaves dangling process.
+The router must be stopped gently. Do not kill the process with signal -9 because it leaves dangling processes.
+
+Use the stop script to gracefully shut down the router and all capability services:
+
+```shell
+./tests/wanaku-start-local-stop.sh
+```
+
+If you captured the PID at startup, you can pass it directly:
+
+```shell
+WANAKU_PID=<pid> ./tests/wanaku-start-local-stop.sh
+```
+
+The script sends SIGTERM first and waits for processes to exit. SIGKILL is only used as a last resort if processes do not respond.
