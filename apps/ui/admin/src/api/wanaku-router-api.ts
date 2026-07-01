@@ -140,7 +140,7 @@ export const getApiV1CapabilitiesFleetStatus = async (
  * @summary Targets Event Stream
  */
 export type getApiV1CapabilitiesNotificationsResponse200 = {
-  data: OutboundSseEvent[];
+  data: OutboundSseEvent;
   status: 200;
 };
 
@@ -2935,7 +2935,7 @@ export const postApiV2CodeExecutionEngineEngineTypeLanguage = async (
  * @summary Stream Results
  */
 export type getApiV2CodeExecutionEngineEngineTypeLanguageTaskIdResponse200 = {
-  data: OutboundSseEvent[];
+  data: OutboundSseEvent;
   status: 200;
 };
 
@@ -3086,7 +3086,7 @@ export const getApiV2ToolCallsHistoryEventId = async (
  * @summary Stream All Tool Calls
  */
 export type getApiV2ToolCallsNotificationsResponse200 = {
-  data: OutboundSseEvent[];
+  data: OutboundSseEvent;
   status: 200;
 };
 
@@ -3117,7 +3117,7 @@ export const getApiV2ToolCallsNotifications = async (
  * @summary Stream Tool Calls By Connection
  */
 export type getApiV2ToolCallsNotificationsConnectionIdResponse200 = {
-  data: OutboundSseEvent[];
+  data: OutboundSseEvent;
   status: 200;
 };
 
