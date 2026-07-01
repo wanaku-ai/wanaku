@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package ai.wanaku.capabilities.sdk.api.types;
+
+message DataStore {
+/** @Indexed */
+  string id = 1;
+  /** @Keyword */
+  string name = 2;
+  /** @Keyword */
+  string data = 3;
+  /** @Text */
+  map<string, string> labels = 4;
+}

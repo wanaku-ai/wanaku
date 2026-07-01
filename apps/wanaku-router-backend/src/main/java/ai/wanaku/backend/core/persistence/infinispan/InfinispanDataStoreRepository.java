@@ -6,8 +6,8 @@ import org.infinispan.Cache;
 import org.infinispan.commons.api.query.Query;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
-import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.core.persistence.api.DataStoreRepository;
 
 /**
  * Infinispan implementation of the DataStoreRepository with label support.

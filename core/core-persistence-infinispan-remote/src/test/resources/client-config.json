@@ -1,0 +1,112 @@
+{
+  "cache-container": {
+    "name": "default",
+    "defaults": {
+      "mode": "SYNC",
+      "statistics": true,
+      "encoding": {
+        "media-type": "application/x-protostream"
+      }
+    }
+  },
+  "distributed-cache": [
+    {
+      "name": "tool",
+      "indexing": {
+        "enabled": true,
+        "storage": "local-heap",
+        "startup-mode": "auto",
+        "indexed-entities": [
+          {
+            "entity": "ai.wanaku.capabilities.sdk.api.types.ToolReference",
+            "indexes": [
+              { "property": "name", "type": "KEYWORD" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "prompt",
+      "indexing": {
+        "enabled": true,
+        "storage": "local-heap",
+        "startup-mode": "auto",
+        "indexed-entities": [
+          {
+            "entity": "ai.wanaku.capabilities.sdk.api.types.PromptReference",
+            "indexes": [
+              { "property": "name", "type": "KEYWORD" },
+              { "property": "namespace", "type": "KEYWORD" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "resource",
+      "indexing": {
+        "enabled": true,
+        "storage": "local-heap",
+        "startup-mode": "auto",
+        "indexed-entities": [
+          {
+            "entity": "ai.wanaku.capabilities.sdk.api.types.ResourceReference",
+            "indexes": [
+              { "property": "name", "type": "KEYWORD" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "datastore",
+      "indexing": {
+        "enabled": true,
+        "storage": "local-heap",
+        "startup-mode": "auto",
+        "indexed-entities": [
+          {
+            "entity": "ai.wanaku.capabilities.sdk.api.types.DataStore",
+            "indexes": [
+              { "property": "name", "type": "KEYWORD" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "namespace",
+      "indexing": {
+        "enabled": true,
+        "storage": "local-heap",
+        "startup-mode": "auto",
+        "indexed-entities": [
+          {
+            "entity": "ai.wanaku.capabilities.sdk.api.types.Namespace",
+            "indexes": [
+              { "property": "name", "type": "KEYWORD" },
+              { "property": "path", "type": "KEYWORD" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "forward",
+      "indexing": {
+        "enabled": true,
+        "storage": "local-heap",
+        "startup-mode": "auto",
+        "indexed-entities": [
+          {
+            "entity": "ai.wanaku.capabilities.sdk.api.types.ForwardReference",
+            "indexes": [
+              { "property": "name", "type": "KEYWORD" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

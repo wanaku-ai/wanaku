@@ -8,11 +8,11 @@ import jakarta.inject.Inject;
 import java.util.List;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
-import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
+import ai.wanaku.core.persistence.api.DataStoreRepository;
 import ai.wanaku.core.util.StringHelper;
 
 /**

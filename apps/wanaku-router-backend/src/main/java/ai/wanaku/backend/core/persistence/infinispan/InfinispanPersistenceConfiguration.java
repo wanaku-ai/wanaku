@@ -5,13 +5,13 @@ import jakarta.inject.Inject;
 
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.EmbeddedCacheManager;
-import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.NamespaceRepository;
 import ai.wanaku.backend.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.ToolCallRecordRepository;
 import ai.wanaku.backend.core.persistence.api.ToolReferenceRepository;
+import ai.wanaku.core.persistence.api.DataStoreRepository;
 
 public class InfinispanPersistenceConfiguration {
 
