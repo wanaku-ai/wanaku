@@ -1,0 +1,10 @@
+- route:
+    id: langchain4j-agent-chat
+    from:
+      uri: direct:wanaku
+      steps:
+        - to:
+            uri: "langchain4j-agent:{{agent.id}}"
+            parameters:
+              agent: "#agent"
+              tags: users

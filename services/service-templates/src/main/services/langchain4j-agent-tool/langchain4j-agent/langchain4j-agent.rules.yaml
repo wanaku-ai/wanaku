@@ -1,0 +1,15 @@
+mcp:
+  tools:
+    - langchain4j-agent-chat:
+        route:
+          id: "langchain4j-agent-chat"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The user message to send to the AI agent
+            required: true
+          - name: systemMessage
+            type: string
+            description: Optional system prompt to set the agent's behavior
+            required: false
