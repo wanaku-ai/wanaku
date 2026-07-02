@@ -2,11 +2,13 @@ package ai.wanaku.cli.main.support;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import org.jline.builtins.ConfigurationPath;
@@ -259,6 +261,11 @@ public class WanakuPrinter extends DefaultPrinter {
             List<Map<String, Object>> mappedObjects =
                     objectsToPrint.stream().map(toMap).toList();
 
+            if (plainMode) {
+                printPlainTable(mappedObjects, columns);
+                return;
+            }
+
             Map<String, Object> mergedOptions = createMergedOptions(options);
 
             if (columns != null && columns.length > 0) {
@@ -308,6 +315,10 @@ public class WanakuPrinter extends DefaultPrinter {
         }
 
         try {
+            if (plainMode) {
+                printPlainMap(map);
+                return;
+            }
             println(DEFAULT_MAP_OPTIONS, map);
         } catch (Exception e) {
             printErrorMessage("Failed to print object: " + e.getMessage());
@@ -492,6 +503,42 @@ public class WanakuPrinter extends DefaultPrinter {
             builder.append(exception.getMessage(), Styles.prntStyle().resolve(".em"));
             builder.toAttributedString().println(terminal());
         }
+    }
+
+    private void printPlainTable(List<Map<String, Object>> rows, String... columns) {
+        PrintWriter writer = terminal.writer();
+
+        List<String> cols;
+        if (columns != null && columns.length > 0) {
+            cols = Arrays.asList(columns);
+        } else if (!rows.isEmpty()) {
+            cols = List.copyOf(rows.get(0).keySet());
+        } else {
+            return;
+        }
+
+        writer.println(String.join("\t", cols));
+
+        for (Map<String, Object> row : rows) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < cols.size(); i++) {
+                if (i > 0) {
+                    sb.append('\t');
+                }
+                Object value = row.get(cols.get(i));
+                sb.append(Objects.toString(value, ""));
+            }
+            writer.println(sb.toString());
+        }
+        terminal.flush();
+    }
+
+    private void printPlainMap(Map<String, Object> map) {
+        PrintWriter writer = terminal.writer();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            writer.println(entry.getKey() + "\t" + Objects.toString(entry.getValue(), ""));
+        }
+        terminal.flush();
     }
 
     /**
