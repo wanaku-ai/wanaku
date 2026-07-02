@@ -99,12 +99,35 @@ class CredentialsCommandsTest {
     }
 
     @Test
-    void credentialsShowWithoutFlagShouldWarn() throws Exception {
+    void credentialsShowWithoutFlagShouldShowMetadataAndWarn() throws Exception {
+        when(adminClient.listClients(any()))
+                .thenReturn(List.of(Map.of("clientId", "my-service", "description", "test", "enabled", true)));
+
         CredentialsShow cmd = new CredentialsShow(adminClient);
+        java.lang.reflect.Field f = CredentialsShow.class.getDeclaredField("clientId");
+        f.setAccessible(true);
+        f.set(cmd, "my-service");
+
         int result = cmd.doCall(terminal, printer);
 
         assertEquals(EXIT_OK, result);
+        verify(printer).printTable(any(List.class), eq("clientId"), eq("description"), eq("enabled"));
         verify(printer).printWarningMessage(any());
+    }
+
+    @Test
+    void credentialsShowNonExistentClientShouldReturnError() throws Exception {
+        when(adminClient.listClients(any())).thenReturn(List.of());
+
+        CredentialsShow cmd = new CredentialsShow(adminClient);
+        java.lang.reflect.Field f = CredentialsShow.class.getDeclaredField("clientId");
+        f.setAccessible(true);
+        f.set(cmd, "non-existent");
+
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_ERROR, result);
+        verify(printer).printErrorMessage("Client 'non-existent' not found");
     }
 
     // ---- Error-propagation tests ----
