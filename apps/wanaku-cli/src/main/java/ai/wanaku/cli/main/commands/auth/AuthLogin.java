@@ -13,7 +13,6 @@ import picocli.CommandLine;
 public class AuthLogin extends BaseCommand {
 
     private static final String DEFAULT_AUTH_SERVER = "http://localhost:8080";
-    private static final String DEFAULT_REALM = "wanaku";
     private static final String DEFAULT_CLIENT_ID = "admin-cli";
     private static final String DEFAULT_AUTH_MODE = "token";
 
@@ -40,8 +39,7 @@ public class AuthLogin extends BaseCommand {
 
     @CommandLine.Option(
             names = {"--realm"},
-            description = "Authentication realm",
-            defaultValue = DEFAULT_REALM)
+            description = "Authentication realm (e.g. 'wanaku'). When omitted, uses the router OIDC proxy.")
     private String realm;
 
     @CommandLine.Option(
@@ -77,13 +75,14 @@ public class AuthLogin extends BaseCommand {
                 config.setClientId(DEFAULT_CLIENT_ID);
                 config.setUsername(username);
                 config.setPassword(password);
-                config.setTokenEndpoint(TokenEndpoint.forDiscovery(serverUrl));
+                config.setTokenEndpoint(TokenEndpoint.forDiscovery(serverUrl, realm));
                 ServiceAuthenticator serviceAuthenticator = new ServiceAuthenticator(config);
 
                 credentialStore.storeApiToken(serviceAuthenticator.currentValidAccessToken());
                 credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
                 credentialStore.storeTokenExpiry(serviceAuthenticator.getTokenExpiryEpochSeconds());
                 credentialStore.storeClientId(DEFAULT_CLIENT_ID);
+                credentialStore.storeRealm(realm);
 
                 credentialStore.storeAuthMode("token");
                 credentialStore.storeAuthServerUrl(serverUrl);

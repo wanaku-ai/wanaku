@@ -86,8 +86,18 @@ When the router has authentication enabled, the CLI requires an active session. 
 **Fix:**
 
 ```shell
-# Log in first
-wanaku auth login --url http://localhost:8080
+# Log in first (through the router OIDC proxy)
+wanaku auth login \
+  --auth-server http://localhost:8080 \
+  --username alice \
+  --password
+
+# Or log in directly against Keycloak (bypasses the router)
+wanaku auth login \
+  --auth-server http://keycloak-host \
+  --realm wanaku \
+  --username alice \
+  --password
 
 # For routers running without authentication, use --no-auth
 wanaku tools list --no-auth

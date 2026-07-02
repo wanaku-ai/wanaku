@@ -829,9 +829,19 @@ wanaku auth login --api-token <your-api-token>
 
 **Options:**
 
-- `--api-token <token>`: API token for authentication (required)
+- `--api-token <token>`: API token for authentication
 - `--auth-server <url>`: Authentication server URL (optional)
+- `--username <username>`: Username for password-based login
+- `--password <password>`: Password for password-based login (interactive)
+- `--realm <realm>`: Keycloak realm for direct Keycloak authentication (optional; when omitted, uses the router OIDC proxy)
+- `--client-id <client-id>`: OAuth2 client ID (default: `admin-cli`)
 - `--mode <mode>`: Authentication mode - `token` or `oauth2` (default: `token`)
+
+**Discovery URL behavior:**
+
+- When `--realm` is provided, the CLI constructs a Keycloak-native OIDC discovery URL: `<auth-server>/realms/<realm>/.well-known/openid-configuration`
+- When `--realm` is omitted (or blank), the CLI falls back to the Wanaku router OIDC proxy path: `<auth-server>/q/oidc/.well-known/openid-configuration`
+- This allows `wanaku auth login` to work directly against a Keycloak instance (e.g. `--auth-server http://keycloak-host --realm wanaku`) as well as through the router's OIDC proxy.
 
 **Example:**
 
@@ -846,6 +856,25 @@ wanaku auth login \
   --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... \
   --auth-server https://keycloak.example.com \
   --mode token
+```
+
+With username/password directly against Keycloak:
+
+```shell
+wanaku auth login \
+--auth-server http://keycloak-host \
+--realm wanaku \
+--username alice \
+--password
+```
+
+With username/password through the router's OIDC proxy:
+
+```shell
+wanaku auth login \
+--auth-server http://localhost:8080 \
+--username alice \
+--password
 ```
 
 #### Status

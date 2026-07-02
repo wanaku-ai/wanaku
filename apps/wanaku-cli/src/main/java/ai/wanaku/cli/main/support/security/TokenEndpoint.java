@@ -32,13 +32,19 @@ public final class TokenEndpoint {
     }
 
     /**
-     * Constructs a token endpoint URL by appending the discovery OpenID Connect path to a base URL.
+     * Constructs a discovery URL using the Keycloak-native realm path when a realm is provided,
+     * or falls back to the Quarkus OIDC proxy path otherwise.
      *
      * @param baseUrl The base URL of the authentication server.
-     * @return The complete token endpoint URL.
+     * @param realm   The authentication realm, or {@code null} if not applicable.
+     * @return The complete discovery URL.
      */
-    public static String forDiscovery(String baseUrl) {
-        return stripTrailingSlash(baseUrl) + "/q/oidc/";
+    public static String forDiscovery(String baseUrl, String realm) {
+        String url = stripTrailingSlash(baseUrl);
+        if (realm != null && !realm.isBlank()) {
+            return url + "/realms/" + realm.strip();
+        }
+        return url + "/q/oidc/";
     }
 
     private static String stripTrailingSlash(String url) {

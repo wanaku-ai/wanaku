@@ -64,12 +64,13 @@ public class TokenRefresher {
      * @param refreshTokenValue the refresh token value
      * @param authServerUrl the authentication server URL (e.g., http://localhost:8080)
      * @param clientId the OAuth2 client ID
+     * @param realm the authentication realm, or null to use the router OIDC proxy
      * @return the refresh result containing new tokens and expiry
      * @throws TokenRefreshException if the refresh fails
      */
-    public RefreshResult refresh(String refreshTokenValue, String authServerUrl, String clientId) {
+    public RefreshResult refresh(String refreshTokenValue, String authServerUrl, String clientId, String realm) {
         try {
-            URI tokenEndpoint = resolveTokenEndpointUri(authServerUrl);
+            URI tokenEndpoint = resolveTokenEndpointUri(authServerUrl, realm);
             RefreshToken refreshToken = new RefreshToken(refreshTokenValue);
             AuthorizationGrant refreshTokenGrant = new RefreshTokenGrant(refreshToken);
             ClientID clientID = new ClientID(clientId);
@@ -104,8 +105,8 @@ public class TokenRefresher {
         }
     }
 
-    private static Issuer resolveIssuer(String authServerUrl) {
-        String discoveryUrl = authServerUrl + "/q/oidc/";
+    private static Issuer resolveIssuer(String authServerUrl, String realm) {
+        String discoveryUrl = TokenEndpoint.forDiscovery(authServerUrl, realm);
         Issuer issuer = new Issuer(discoveryUrl);
 
         try {
@@ -130,8 +131,8 @@ public class TokenRefresher {
         }
     }
 
-    private static URI resolveTokenEndpointUri(String authServerUrl) {
-        Issuer issuer = new Issuer(resolveIssuer(authServerUrl));
+    private static URI resolveTokenEndpointUri(String authServerUrl, String realm) {
+        Issuer issuer = new Issuer(resolveIssuer(authServerUrl, realm));
 
         try {
             final OIDCProviderMetadata resolvedOp = OIDCProviderMetadata.resolve(issuer);
