@@ -14,10 +14,10 @@ Before running or deploying the Wanaku MCP Router, you need to build the project
 To build the Wanaku MCP Router, run:
 
 ```shell
-mvn clean package
+mvn verify
 ```
 
-This command will compile the source code and package it.
+This command will compile, test, and verify the project.
 
 To package it into a distributable format (i.e.: tarballs), run:
 

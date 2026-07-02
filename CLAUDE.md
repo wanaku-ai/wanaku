@@ -1,6 +1,6 @@
 # Wanaku Development Guidelines
 
-Last updated: 2026-05-26
+Last updated: 2026-07-02
 
 ## Core Guidelines
 
@@ -24,7 +24,7 @@ apps/
   wanaku-operator/         # Kubernetes operator (JOSDK)
   wanaku-jbang/            # JBang integration
   ui/admin/                # Admin UI (React + Vite + Carbon)
-archetypes/                # Maven archetypes for tools/providers
+archetypes/                # Maven archetypes for tools/providers/MCP servers
 capabilities/              # Built-in capability services
 capabilities-quarkus-sdk/  # Quarkus SDK for capabilities
 core/
@@ -35,8 +35,15 @@ core/
   core-mcp-client/         # MCP client (router)
 deploy/                    # Deployment scripts and configs
 docs/                      # Documentation
-tests/                     # Integration, MCP server, and load tests
-tests/plans                # Test plans for humans and AI agents to follow
+parent/                    # Maven parent POM
+services/
+  service-templates/       # Service templates
+tests/
+  e2e/                     # End-to-end tests
+  archetype-tests/         # Archetype tests
+  mcp-servers/             # MCP server tests
+  load/                    # Load tests
+  plans/                   # Test plans for humans and AI agents
 ```
 
 ## Commands
@@ -70,7 +77,7 @@ make install
 
 ## Operator
 
-- CRDs: `WanakuRouter`, `WanakuCapability`, `WanakuServiceCatalog` (all `wanaku.ai/v1alpha1`)
+- CRDs: `WanakuRouter`, `WanakuCapability`, `WanakuServiceCatalog`, `WanakuCamelRoute` (all `wanaku.ai/v1alpha1`)
 - Helm chart: `apps/wanaku-operator/deploy/helm/wanaku-operator/`
 - When adding new CRDs, RBAC rules must be added to the Helm chart (see `docs/contributing.md`)
 - CRD manifests are auto-generated during build in `target/kubernetes/`, must be copied to `crds/`

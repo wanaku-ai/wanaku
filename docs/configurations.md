@@ -190,6 +190,7 @@ These `wanaku.router.health-check.*` properties control the periodic health prob
 | Property                                        | Description                                                                                                                           |
 |-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | `wanaku.bridge.grpc.transport.deadline-seconds` | `10` - The deadline in seconds for gRPC transport calls to capability services. Requests that exceed this deadline will be cancelled. |
+| `wanaku.bridge.grpc.transport.tls.enabled`      | `false` - Whether to enable TLS for gRPC transport calls to capability services.                                                     |
 
 ### Persistence (`core-persistence-infinispan`)
 
