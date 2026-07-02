@@ -75,7 +75,7 @@ When using the CLI from a local build (not installed), use `java -jar` directly:
 
 ```bash
 CLI_JAR="${WANAKU_REPO_ROOT}/apps/wanaku-cli/target/quarkus-app/quarkus-run.jar"
-java -jar ${CLI_JAR} admin users list --keycloak-url ...
+java -jar ${CLI_JAR} admin users list --keycloak-url ... --plain
 ```
 
 Do **not** assign the full command to a single variable (e.g., `WANAKU_CLI="java -jar path/to/jar"`) — zsh treats it as a single token. Use `CLI_JAR` for the path and call `java -jar ${CLI_JAR}` explicitly.
@@ -148,7 +148,8 @@ fi
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
-  --admin-password "${KEYCLOAK_ADMIN_PASS}" 2>&1)
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1)
 EXIT_CODE=$?
 
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -167,7 +168,8 @@ echo "${OUTPUT}"
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
-  --admin-password "${KEYCLOAK_ADMIN_PASS}" 2>&1)
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1)
 
 echo "${OUTPUT}" | grep -q "${TEST_USERNAME}" \
   && echo "FAIL: test user '${TEST_USERNAME}' already exists before creation" \
@@ -205,7 +207,8 @@ echo "PASS: user '${TEST_USERNAME}' created"
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
-  --admin-password "${KEYCLOAK_ADMIN_PASS}" 2>&1)
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1)
 
 echo "${OUTPUT}" | grep -q "${TEST_USERNAME}" \
   && echo "PASS: user '${TEST_USERNAME}' found in users list" \
@@ -323,7 +326,8 @@ echo "PASS: user '${TEST_USERNAME}-minimal' removed"
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
-  --admin-password "${KEYCLOAK_ADMIN_PASS}" 2>&1)
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1)
 
 echo "${OUTPUT}" | grep -q "${TEST_USERNAME}-minimal" \
   && echo "FAIL: removed user '${TEST_USERNAME}-minimal' still present in list" \
@@ -721,7 +725,8 @@ fi
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "wrong-admin" \
-  --admin-password "wrong-pass" 2>&1)
+  --admin-password "wrong-pass" \
+  --plain 2>&1)
 EXIT_CODE=$?
 
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -737,7 +742,8 @@ fi
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "http://localhost:59999" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
-  --admin-password "${KEYCLOAK_ADMIN_PASS}" 2>&1)
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1)
 EXIT_CODE=$?
 
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -834,7 +840,8 @@ echo "PASS: test client cleanup complete"
 OUTPUT=$(wanaku admin users list \
   --keycloak-url "${KEYCLOAK_URL}" \
   --admin-username "${KEYCLOAK_ADMIN_USER}" \
-  --admin-password "${KEYCLOAK_ADMIN_PASS}" 2>&1)
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --plain 2>&1)
 
 echo "${OUTPUT}" | grep -q "${TEST_USERNAME}" \
   && echo "FAIL: test user '${TEST_USERNAME}' still present after cleanup" \

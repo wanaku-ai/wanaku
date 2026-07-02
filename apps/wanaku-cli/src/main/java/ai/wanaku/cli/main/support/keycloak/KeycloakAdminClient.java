@@ -63,7 +63,7 @@ public class KeycloakAdminClient {
     }
 
     public List<Map<String, Object>> listUsers(String realm) throws KeycloakAdminException {
-        String url = keycloakUrl + "/admin/realms/" + realm + "/users";
+        String url = keycloakUrl + "/admin/realms/" + realm + "/users?max=1000";
         HttpRequest request = getRequest(url);
         HttpResponse<String> response = send(request);
 

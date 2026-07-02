@@ -93,7 +93,7 @@ class KeycloakAdminClientTest {
         verify(httpClient).send(captor.capture(), any());
         assertEquals("GET", captor.getValue().method());
         assertEquals(
-                KEYCLOAK_URL + "/admin/realms/" + REALM + "/users",
+                KEYCLOAK_URL + "/admin/realms/" + REALM + "/users?max=1000",
                 captor.getValue().uri().toString());
     }
 
