@@ -72,13 +72,13 @@ Alternatively, if you don't have the CLI installed locally, you can obtain it us
 
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-tool-service-archetype \
-  -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool.kafka -DartifactId=wanaku-tool-service-kafka \
-  -Dname=Kafka -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
+  -DarchetypeVersion=LATEST_VERSION -DgroupId=ai.wanaku -Dpackage=ai.wanaku.tool.kafka -DartifactId=wanaku-tool-service-kafka \
+  -Dname=Kafka -Dwanaku-version=LATEST_VERSION -Dwanaku-capability-type=camel
 ```
 
 > [!IMPORTANT]
-> When using the maven way, please make sure to adjust the version of Wanaku
-> to be used by correctly setting the `wanaku-version` property to the base Wanaku version to use.
+> Replace `LATEST_VERSION` with the actual Wanaku version from the [releases page](https://github.com/wanaku-ai/wanaku/releases).
+> Both `archetypeVersion` and `wanaku-version` must match.
 
 ### Adjusting the Tool Service
 
@@ -131,13 +131,13 @@ Alternatively, if you don't have the CLI installed locally, you can obtain it us
 
 ```shell
 mvn -B archetype:generate -DarchetypeGroupId=ai.wanaku -DarchetypeArtifactId=wanaku-provider-archetype \
-  -DarchetypeVersion=0.0.8 -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider.s3 -DartifactId=wanaku-provider-s3 \
-  -Dname=S3 -Dwanaku-version=0.0.8 -Dwanaku-capability-type=camel
+  -DarchetypeVersion=LATEST_VERSION -DgroupId=ai.wanaku -Dpackage=ai.wanaku.provider.s3 -DartifactId=wanaku-provider-s3 \
+  -Dname=S3 -Dwanaku-version=LATEST_VERSION -Dwanaku-capability-type=camel
 ```
 
 > [!IMPORTANT]
-> Make sure to adjust the version of Wanaku to be used by correctly setting the `wanaku-version` property to the base Wanaku
-> version to use.
+> Replace `LATEST_VERSION` with the actual Wanaku version from the [releases page](https://github.com/wanaku-ai/wanaku/releases).
+> Both `archetypeVersion` and `wanaku-version` must match.
 
 ### Adjusting the Provider Service
 
@@ -298,7 +298,7 @@ There are multiple ways you can test Wanaku and the integrations you develop.
 
 1. Wanaku's LLMchat page in the Web UI
 2. You can use the [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) to easily test your tool or provider.
-3. Use the maintained test suites under `tests/integration`, `tests/mcp-servers`, and `tests/load`.
+3. Use the maintained test suites under `tests/e2e`, `tests/mcp-servers`, and `tests/load`.
 4. Follow or create test plans under `tests/plans/` (see [Writing Test Plans](contributing-test-plans.md)).
 5. Any agent application (such as [HyperChat](https://github.com/BigSweetPotatoStudio/HyperChat))
 
