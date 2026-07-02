@@ -1,11 +1,14 @@
 package ai.wanaku.cli.main.commands;
 
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.util.concurrent.Callable;
 import org.jline.terminal.Terminal;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.cli.main.support.AuthenticationInterceptor;
+import ai.wanaku.cli.main.support.HttpUtil;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.cli.main.support.security.InsecureSSLHelper;
 import picocli.CommandLine;
 
 /**
@@ -46,9 +49,24 @@ public abstract class BaseCommand implements Callable<Integer> {
     protected boolean noAuth = false;
 
     @CommandLine.Option(
+            names = {"--insecure"},
+            description =
+                    "Skip certificate checks for the TLS connections (insecure, use only for development purposes)")
+    protected boolean insecure = false;
+
+    @CommandLine.Option(
             names = {"--plain"},
             description = "Route output through stdout so it can be captured by a parent process")
     boolean plain = false;
+
+    /**
+     * Creates an HttpClient instance, optionally configured for insecure SSL.
+     *
+     * @return a configured HttpClient
+     */
+    protected HttpClient createHttpClient() {
+        return HttpUtil.newHttpClient(insecure);
+    }
 
     /**
      * Initializes and configures the REST client for communicating with the Wanaku service.
@@ -64,7 +82,7 @@ public abstract class BaseCommand implements Callable<Integer> {
      * @throws IllegalArgumentException if the host URL is invalid or malformed
      * @throws NullPointerException if host is null
      */
-    protected static <T> T initService(Class<T> clazz, String host) {
+    protected <T> T initService(Class<T> clazz, String host) {
         return initService(clazz, host, null, false);
     }
 
@@ -72,7 +90,23 @@ public abstract class BaseCommand implements Callable<Integer> {
         return initService(clazz, host, this.authTokenOverride, this.noAuth);
     }
 
-    protected static <T> T initService(Class<T> clazz, String host, String tokenOverride, boolean noAuth) {
+    /**
+     * Initializes and configures the REST client for communicating with the Wanaku service.
+     *
+     * <p>Creates a properly configured Quarkus REST client builder with the specified host URL.
+     * The client is configured with appropriate timeouts and error handling for reliable
+     * communication with the Wanaku API endpoints.</p>
+     *
+     * @param <T> the type of the service interface
+     * @param clazz the Class object representing the service interface
+     * @param host the base URL of the Wanaku service API (must be a valid URI)
+     * @param tokenOverride to set the Bearer token in the http call
+     * @param noAuth to skip the keycloak authentication
+     * @return a configured Service instance ready for API calls
+     * @throws IllegalArgumentException if the host URL is invalid or malformed
+     * @throws NullPointerException if host is null
+     */
+    protected <T> T initService(Class<T> clazz, String host, String tokenOverride, boolean noAuth) {
         if (host == null) {
             throw new NullPointerException("Host URL cannot be null");
         }
@@ -81,10 +115,14 @@ public abstract class BaseCommand implements Callable<Integer> {
             QuarkusRestClientBuilder builder =
                     QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host));
 
+            if (insecure) {
+                builder.trustAll(true).hostnameVerifier(InsecureSSLHelper.getInsecureHostnameVerifier());
+            }
+
             if (!noAuth) {
                 AuthenticationInterceptor authInterceptor = tokenOverride != null
                         ? newAuthenticationInterceptor(tokenOverride)
-                        : new AuthenticationInterceptor();
+                        : new AuthenticationInterceptor(insecure);
                 builder.register(authInterceptor);
             }
 
@@ -94,7 +132,7 @@ public abstract class BaseCommand implements Callable<Integer> {
         }
     }
 
-    protected static <T> T initServiceIfNeeded(T existing, Class<T> clazz, String host) {
+    protected <T> T initServiceIfNeeded(T existing, Class<T> clazz, String host) {
         if (existing != null) {
             return existing;
         }
@@ -108,8 +146,8 @@ public abstract class BaseCommand implements Callable<Integer> {
         return initAuthenticatedService(clazz, host);
     }
 
-    private static AuthenticationInterceptor newAuthenticationInterceptor(String tokenOverride) {
-        return new AuthenticationInterceptor() {
+    private AuthenticationInterceptor newAuthenticationInterceptor(String tokenOverride) {
+        return new AuthenticationInterceptor(insecure) {
             @Override
             public void filter(jakarta.ws.rs.client.ClientRequestContext requestContext) {
                 requestContext
@@ -124,6 +162,10 @@ public abstract class BaseCommand implements Callable<Integer> {
         WanakuPrinter.setPlainMode(plain);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
             WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            if (insecure) {
+                printer.printWarningMessage(
+                        "WARNING: TLS certificate verification is disabled. This is insecure and should only be used for development.");
+            }
             return doCall(terminal, printer);
         } finally {
             WanakuPrinter.setPlainMode(false);

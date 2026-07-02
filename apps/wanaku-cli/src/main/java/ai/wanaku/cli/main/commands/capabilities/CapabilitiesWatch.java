@@ -53,7 +53,7 @@ public class CapabilitiesWatch extends BaseCommand {
         printer.printInfoMessage("Connecting to " + url + " ...");
         printer.printInfoMessage("Press Ctrl+C to stop watching.\n");
 
-        HttpClient client = HttpClient.newHttpClient();
+        HttpClient client = createHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Accept", "text/event-stream")

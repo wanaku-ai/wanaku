@@ -2,7 +2,6 @@ package ai.wanaku.cli.main.support.security;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -20,13 +19,11 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
-import net.minidev.json.JSONObject;
 
 /**
  * Handles OAuth2 authentication with the Wanaku.
@@ -35,6 +32,7 @@ import net.minidev.json.JSONObject;
 public class ServiceAuthenticator {
     private static final Logger LOG = LoggerFactory.getLogger(ServiceAuthenticator.class);
     private final SecurityServiceConfig config;
+    private final boolean insecure;
     private AccessToken accessToken;
     private RefreshToken refreshToken;
     private Instant creationTime;
@@ -45,7 +43,18 @@ public class ServiceAuthenticator {
      * @param config The security service configuration containing OAuth2 credentials.
      */
     public ServiceAuthenticator(SecurityServiceConfig config) {
+        this(config, false);
+    }
+
+    /**
+     * Creates a new authenticator and obtains an initial access token.
+     *
+     * @param config The security service configuration containing OAuth2 credentials.
+     * @param insecure Whether to skip SSL certificate verification.
+     */
+    public ServiceAuthenticator(SecurityServiceConfig config, boolean insecure) {
         this.config = config;
+        this.insecure = insecure;
 
         renewToken(config);
 
@@ -94,29 +103,15 @@ public class ServiceAuthenticator {
      * This mimics the resolve logic, but ignores the validation and other things we don't
      * need.
      */
-    private static Issuer resolveIssuer(SecurityServiceConfig config) {
+    private Issuer resolveIssuer(SecurityServiceConfig config) {
         // The OpenID provider issuer URL (strip trailing slash to avoid malformed paths)
         String endpoint = config.getTokenEndpoint();
         if (endpoint != null && endpoint.endsWith("/")) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         Issuer issuer = new Issuer(endpoint);
-
         try {
-            final URL openIdConfigUrl = OIDCProviderMetadata.resolveURL(issuer);
-
-            HTTPRequest httpRequest = new HTTPRequest(HTTPRequest.Method.GET, openIdConfigUrl);
-            HTTPResponse httpResponse = httpRequest.send();
-
-            if (httpResponse.getStatusCode() != 200) {
-                throw new ServiceAuthException("Unable to download OpenID Provider metadata from " + openIdConfigUrl
-                        + ": Status code " + httpResponse.getStatusCode());
-            }
-
-            JSONObject jsonObject = httpResponse.getBodyAsJSONObject();
-
-            OIDCProviderMetadata op = OIDCProviderMetadata.parse(jsonObject);
-
+            OIDCProviderMetadata op = OIDCHttpUtils.performHttpRequest(issuer, insecure);
             return op.getIssuer();
         } catch (GeneralException e) {
             throw new ServiceAuthException("Unable to resolve token endpoint URI: " + e.getMessage(), e);
@@ -125,17 +120,15 @@ public class ServiceAuthenticator {
         }
     }
 
-    private static URI resolveTokenEndpointUri(SecurityServiceConfig config) {
+    private URI resolveTokenEndpointUri(SecurityServiceConfig config) {
 
         /* We cannot use Wanaku's base address because it's typically behind the OIDC
          * proxy. Therefore, we first need to resolve the issuer address, and then
          * use the issuer address to resolve the OIDC metadata.
          */
         Issuer issuer = new Issuer(resolveIssuer(config));
-
         try {
-            final OIDCProviderMetadata resolvedOp = OIDCProviderMetadata.resolve(issuer);
-
+            OIDCProviderMetadata resolvedOp = OIDCHttpUtils.performHttpRequest(issuer, insecure);
             return resolvedOp.getTokenEndpointURI();
         } catch (GeneralException e) {
             throw new ServiceAuthException("Unable to resolve token endpoint URI: " + e.getMessage(), e);
@@ -167,7 +160,18 @@ public class ServiceAuthenticator {
     private void requestToken(TokenRequest request) {
         TokenResponse response = null;
         try {
-            response = TokenResponse.parse(request.toHTTPRequest().send());
+            HTTPRequest httpRequest = request.toHTTPRequest();
+
+            if (insecure) {
+                try {
+                    httpRequest.setSSLSocketFactory(InsecureSSLHelper.getInsecureSSLSocketFactory());
+                    httpRequest.setHostnameVerifier(InsecureSSLHelper.getInsecureHostnameVerifier());
+                } catch (Exception e) {
+                    throw new ServiceAuthException("Failed to configure insecure SSL: " + e.getMessage(), e);
+                }
+            }
+
+            response = TokenResponse.parse(httpRequest.send());
         } catch (IOException | ParseException e) {
             throw new ServiceAuthException(e);
         }

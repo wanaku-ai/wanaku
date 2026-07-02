@@ -77,7 +77,7 @@ public abstract class BaseAdminCommand extends BaseCommand {
         }
 
         String token = obtainAdminToken();
-        return new KeycloakAdminClient(keycloakUrl, token);
+        return KeycloakAdminClient.create(keycloakUrl, token, insecure);
     }
 
     private String obtainAdminToken() {
@@ -97,7 +97,7 @@ public abstract class BaseAdminCommand extends BaseCommand {
                 .build();
 
         try {
-            HttpClient client = HttpClient.newHttpClient();
+            HttpClient client = createHttpClient();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {

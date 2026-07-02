@@ -8,6 +8,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import ai.wanaku.cli.main.support.HttpUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +29,18 @@ public class KeycloakAdminClient {
         this.keycloakUrl = keycloakUrl.endsWith("/") ? keycloakUrl.substring(0, keycloakUrl.length() - 1) : keycloakUrl;
         this.accessToken = accessToken;
         this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    /**
+     * Creates a KeycloakAdminClient with optional insecure SSL configuration.
+     *
+     * @param keycloakUrl the Keycloak server URL
+     * @param accessToken the access token for authentication
+     * @param insecure whether to skip SSL certificate verification
+     * @return a configured KeycloakAdminClient instance
+     */
+    public static KeycloakAdminClient create(String keycloakUrl, String accessToken, boolean insecure) {
+        return new KeycloakAdminClient(HttpUtil.newHttpClient(insecure), keycloakUrl, accessToken);
     }
 
     // ---- User methods ----

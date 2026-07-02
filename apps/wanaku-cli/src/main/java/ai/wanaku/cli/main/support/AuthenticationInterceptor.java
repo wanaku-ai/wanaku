@@ -31,22 +31,27 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
 
     private final AuthCredentialStore credentialStore;
     private final TokenRefresher tokenRefresher;
+    private final boolean insecure;
 
     private volatile Boolean routerAuthEnabled;
 
-    public AuthenticationInterceptor() {
+    public AuthenticationInterceptor(boolean insecure) {
         this.credentialStore = new AuthCredentialStore();
-        this.tokenRefresher = new TokenRefresher();
+        this.tokenRefresher = new TokenRefresher(insecure);
+        this.insecure = insecure;
     }
 
-    public AuthenticationInterceptor(AuthCredentialStore credentialStore) {
+    public AuthenticationInterceptor(AuthCredentialStore credentialStore, boolean insecure) {
         this.credentialStore = credentialStore;
-        this.tokenRefresher = new TokenRefresher();
+        this.tokenRefresher = new TokenRefresher(insecure);
+        this.insecure = insecure;
     }
 
-    public AuthenticationInterceptor(AuthCredentialStore credentialStore, TokenRefresher tokenRefresher) {
+    public AuthenticationInterceptor(
+            AuthCredentialStore credentialStore, TokenRefresher tokenRefresher, boolean insecure) {
         this.credentialStore = credentialStore;
         this.tokenRefresher = tokenRefresher;
+        this.insecure = insecure;
     }
 
     @Override
@@ -82,8 +87,7 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
         }
 
         URI wellKnown = requestUri.resolve("/.well-known/oauth-authorization-server");
-        try (HttpClient client =
-                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build()) {
+        try (HttpClient client = HttpUtil.newHttpClient(insecure, Duration.ofSeconds(3))) {
             HttpRequest request = HttpRequest.newBuilder(wellKnown)
                     .timeout(Duration.ofSeconds(5))
                     .GET()
