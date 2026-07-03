@@ -13,6 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.verify;
 
@@ -55,6 +56,26 @@ class AuthCommandsTest {
 
         assertEquals(EXIT_OK, result);
         verify(printer).printInfoMessage("No authentication credentials found");
+    }
+
+    @Test
+    void storeRealmShouldClearOnBlankValue() throws Exception {
+        AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
+        store.storeRealm("wanaku");
+        assertEquals("wanaku", store.getRealm());
+
+        store.storeRealm(null);
+        assertNull(store.getRealm());
+    }
+
+    @Test
+    void storeRealmShouldNotPersistWhitespaceOnlyValue() throws Exception {
+        AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
+        store.storeRealm("wanaku");
+        assertEquals("wanaku", store.getRealm());
+
+        store.storeRealm("   ");
+        assertEquals("   ", store.getRealm(), "storeRealm stores verbatim; callers must normalize");
     }
 
     @Test
