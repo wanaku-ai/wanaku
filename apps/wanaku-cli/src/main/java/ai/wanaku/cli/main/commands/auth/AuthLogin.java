@@ -82,7 +82,7 @@ public class AuthLogin extends BaseCommand {
                 credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
                 credentialStore.storeTokenExpiry(serviceAuthenticator.getTokenExpiryEpochSeconds());
                 credentialStore.storeClientId(DEFAULT_CLIENT_ID);
-                credentialStore.storeRealm(realm);
+                credentialStore.storeRealm(realm != null && realm.isBlank() ? null : realm);
 
                 credentialStore.storeAuthMode("token");
                 credentialStore.storeAuthServerUrl(serverUrl);
