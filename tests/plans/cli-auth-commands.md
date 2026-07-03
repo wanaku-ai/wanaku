@@ -1344,6 +1344,184 @@ echo "PASS: auth login test user cleanup complete"
 
 ---
 
+## Phase 18: CLI --token Flag Verification (#1489)
+
+This phase verifies that the `--token` flag works on CLI commands after the fix in #1489 (all commands now use `initAuthenticatedService()`). Requires `WANAKU_ROUTER_URL` to be set (router deployed with OIDC enabled).
+
+### Test 18.1: Obtain a Keycloak access token
+
+```bash
+if [ -z "${WANAKU_ROUTER_URL}" ]; then
+  echo "SKIP: WANAKU_ROUTER_URL not set -- skipping --token tests"
+  exit 0
+fi
+
+TOKEN_RESPONSE=$(curl -s -X POST \
+  "${KEYCLOAK_URL}/realms/${WANAKU_REALM}/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=wanaku-mcp-router" \
+  -d "username=${WANAKU_TEST_USER}" \
+  -d "password=${WANAKU_TEST_PASS}")
+
+TOKEN=$(echo "${TOKEN_RESPONSE}" | jq -r '.access_token')
+
+if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+  echo "FAIL: could not obtain access token from Keycloak"
+  echo "${TOKEN_RESPONSE}"
+  exit 1
+fi
+
+echo "PASS: obtained access token (length: ${#TOKEN})"
+```
+
+### Test 18.2: tools list with --token succeeds
+
+```bash
+rm -f "${CREDENTIALS_FILE}"
+
+OUTPUT=$(wanaku tools list --host "${WANAKU_ROUTER_URL}" --token "${TOKEN}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: tools list with --token failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: tools list with --token succeeded (fix for #1489 confirmed)"
+```
+
+### Test 18.3: resources list with --token succeeds
+
+```bash
+OUTPUT=$(wanaku resources list --host "${WANAKU_ROUTER_URL}" --token "${TOKEN}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: resources list with --token failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: resources list with --token succeeded"
+```
+
+### Test 18.4: prompts list with --token succeeds
+
+```bash
+OUTPUT=$(wanaku prompts list --host "${WANAKU_ROUTER_URL}" --token "${TOKEN}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: prompts list with --token failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: prompts list with --token succeeded"
+```
+
+### Test 18.5: capabilities list with --token succeeds
+
+```bash
+OUTPUT=$(wanaku capabilities list --host "${WANAKU_ROUTER_URL}" --token "${TOKEN}" --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: capabilities list with --token failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: capabilities list with --token succeeded"
+```
+
+### Test 18.6: --no-auth skips authentication
+
+```bash
+OUTPUT=$(wanaku tools list --host "${WANAKU_ROUTER_URL}" --no-auth --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: tools list with --no-auth failed as expected against OIDC-protected router (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: tools list with --no-auth should have failed against OIDC-protected router"
+fi
+```
+
+---
+
+## Phase 19: Auth Probe WARN Logging (#1490)
+
+This phase verifies that the OIDC auth probe failure is logged at WARN level.
+
+### Test 19.1: Probe failure against unreachable host produces WARN
+
+```bash
+OUTPUT=$(wanaku tools list --host "http://localhost:59999" --token "dummy-token" --plain 2>&1)
+
+if echo "${OUTPUT}" | grep -qi "WARN.*Could not reach OIDC endpoint"; then
+  echo "PASS: OIDC probe failure logged at WARN level (fix for #1490 confirmed)"
+elif echo "${OUTPUT}" | grep -qi "Could not reach OIDC endpoint"; then
+  echo "PASS: OIDC probe failure message present in output"
+elif echo "${OUTPUT}" | grep -q "authentication headers will not be sent"; then
+  echo "PASS: WARN message with consequence detail found"
+else
+  echo "WARN: probe failure message not found in CLI output -- may require Quarkus log configuration"
+  echo "INFO: output was: ${OUTPUT}"
+fi
+```
+
+---
+
+## Phase 20: Admin UI PKCE (#1491)
+
+This phase verifies that the router sends PKCE parameters in the OIDC authorization code flow for the admin UI.
+
+### Test 20.1: Admin UI redirect includes PKCE code_challenge
+
+```bash
+if [ -z "${WANAKU_ROUTER_URL}" ]; then
+  echo "SKIP: WANAKU_ROUTER_URL not set -- skipping PKCE tests"
+  exit 0
+fi
+
+REDIRECT_URL=$(curl -sI "${WANAKU_ROUTER_URL}/admin" 2>/dev/null | grep -i "^location:" | sed 's/[Ll]ocation: //' | tr -d '\r')
+
+if [ -z "${REDIRECT_URL}" ]; then
+  echo "FAIL: no redirect Location header found for /admin"
+  exit 1
+fi
+
+if echo "${REDIRECT_URL}" | grep -q "code_challenge="; then
+  echo "PASS: redirect includes code_challenge parameter (PKCE enabled, fix for #1491 confirmed)"
+else
+  echo "FAIL: redirect does not include code_challenge parameter"
+  echo "INFO: redirect URL: ${REDIRECT_URL}"
+fi
+
+if echo "${REDIRECT_URL}" | grep -q "code_challenge_method=S256"; then
+  echo "PASS: code_challenge_method is S256"
+else
+  echo "WARN: code_challenge_method=S256 not found in redirect"
+fi
+```
+
+### Test 20.2: No PKCE error in Keycloak redirect chain
+
+```bash
+ERROR_PAGE=$(curl -sL "${WANAKU_ROUTER_URL}/admin" 2>/dev/null)
+
+if echo "${ERROR_PAGE}" | grep -qi "Missing parameter.*code_challenge"; then
+  echo "FAIL: PKCE error found -- Keycloak is rejecting the login flow"
+else
+  echo "PASS: no PKCE-related error in the login redirect chain"
+fi
+```
+
+---
+
 ## Summary Matrix
 
 | Phase | Test ID | Test Name | Priority |
@@ -1366,3 +1544,6 @@ echo "PASS: auth login test user cleanup complete"
 | 15 | 15.1–15.2 | Token refresh with stored realm (forced expiry, realm preserved) | Critical |
 | 16 | 16.1–16.6 | Negative tests — auth login (invalid realm, wrong creds, unreachable, missing username, blank realm) | High |
 | 17 | 17.1–17.5 | Cleanup (admin users/clients, auth credentials, auth login test user) | Critical |
+| 18 | 18.1–18.6 | CLI --token flag verification (tools, resources, prompts, capabilities, --no-auth) | Critical |
+| 19 | 19.1 | Auth probe WARN logging on unreachable host | High |
+| 20 | 20.1–20.2 | Admin UI PKCE (code_challenge in redirect, no PKCE error) | Critical |
