@@ -50,7 +50,7 @@ public class ToolsShow extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        toolsService = initService(ToolsService.class, host);
+        toolsService = initAuthenticatedService(ToolsService.class, host);
         try {
             WanakuResponse<ToolReference> response = toolsService.getByName(toolName);
             ToolReference tool = response.data();

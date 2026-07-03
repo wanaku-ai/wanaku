@@ -95,7 +95,10 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
             Thread.currentThread().interrupt();
             routerAuthEnabled = false;
         } catch (Exception e) {
-            LOG.debug("Could not reach OIDC endpoint at {}: {}", wellKnown, e.getMessage());
+            LOG.warn(
+                    "Could not reach OIDC endpoint at {}: {} — authentication headers will not be sent",
+                    wellKnown,
+                    e.getMessage());
             routerAuthEnabled = false;
         }
 

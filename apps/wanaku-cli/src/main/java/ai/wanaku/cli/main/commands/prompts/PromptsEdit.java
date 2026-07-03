@@ -81,7 +81,7 @@ public class PromptsEdit extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
-        promptsService = initService(PromptsService.class, host);
+        promptsService = initAuthenticatedService(PromptsService.class, host);
 
         // First, fetch the existing prompt
         PromptReference existingPrompt;

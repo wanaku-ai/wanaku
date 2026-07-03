@@ -97,7 +97,7 @@ public class ToolsRemove extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        toolsService = initService(ToolsService.class, host);
+        toolsService = initAuthenticatedService(ToolsService.class, host);
 
         int validationResult = validateLabelExpression(name, labelExpression, "--name", printer);
         if (validationResult != EXIT_OK) {

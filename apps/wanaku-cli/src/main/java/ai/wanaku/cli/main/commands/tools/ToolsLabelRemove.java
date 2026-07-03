@@ -71,7 +71,7 @@ public class ToolsLabelRemove extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         if (toolsService == null) {
-            toolsService = initService(ToolsService.class, host);
+            toolsService = initAuthenticatedService(ToolsService.class, host);
         }
 
         int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);

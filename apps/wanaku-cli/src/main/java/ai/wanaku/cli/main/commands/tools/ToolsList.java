@@ -54,7 +54,7 @@ Note: If omitted, all tools are listed. Label matching is case-sensitive.
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        toolsService = initService(ToolsService.class, host);
+        toolsService = initAuthenticatedService(ToolsService.class, host);
         try {
             WanakuResponse<List<ToolReference>> response = toolsService.list(labelExpression);
             List<ToolReference> list = response.data();

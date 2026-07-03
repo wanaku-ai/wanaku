@@ -155,7 +155,7 @@ public class ToolsAdd extends BaseCommand {
         FileHelper.loadConfigurationSources(configurationFromFile, toolPayload::setConfigurationData);
         FileHelper.loadConfigurationSources(secretsFromFile, toolPayload::setSecretsData);
 
-        toolsService = initService(ToolsService.class, host);
+        toolsService = initAuthenticatedService(ToolsService.class, host);
 
         try {
             WanakuResponse<ToolReference> data = toolsService.addWithPayload(toolPayload);

@@ -74,7 +74,7 @@ public class DataStoresAdd extends BaseCommand {
         dataStore.setData(base64Data);
 
         // Call API
-        dataStoresService = initService(DataStoresService.class, host);
+        dataStoresService = initAuthenticatedService(DataStoresService.class, host);
 
         try {
             WanakuResponse<DataStore> response = dataStoresService.add(dataStore);

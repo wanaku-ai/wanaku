@@ -128,12 +128,12 @@ public class ServiceDeploy extends BaseCommand {
 
         try {
             if (template) {
-                ServiceTemplateService service = initService(ServiceTemplateService.class, host);
+                ServiceTemplateService service = initAuthenticatedService(ServiceTemplateService.class, host);
                 WanakuResponse<DataStore> response = service.deploy(dataStore);
                 printer.printSuccessMessage(
                         String.format("Service template '%s' deployed successfully%n", catalogName));
             } else {
-                ServiceCatalogService service = initService(ServiceCatalogService.class, host);
+                ServiceCatalogService service = initAuthenticatedService(ServiceCatalogService.class, host);
                 WanakuResponse<DataStore> response = service.deploy(dataStore);
                 printer.printSuccessMessage(String.format("Service catalog '%s' deployed successfully%n", catalogName));
             }

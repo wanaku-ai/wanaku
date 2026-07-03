@@ -30,7 +30,7 @@ public class PromptsList extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        promptsService = initService(PromptsService.class, host);
+        promptsService = initAuthenticatedService(PromptsService.class, host);
         try {
             WanakuResponse<List<PromptReference>> response = promptsService.list();
             List<PromptReference> list = response.data();

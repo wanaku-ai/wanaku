@@ -110,7 +110,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        ServiceTemplateService service = initService(ServiceTemplateService.class, host);
+        ServiceTemplateService service = initAuthenticatedService(ServiceTemplateService.class, host);
 
         Map<String, String> propsMap = resolveProperties(printer);
         if (propsMap == null) {

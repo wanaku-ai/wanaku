@@ -67,7 +67,7 @@ public class DataStoresGet extends BaseCommand {
             printer.printWarningMessage("Both --id and --name provided, using --id%n");
         }
 
-        dataStoresService = initService(DataStoresService.class, host);
+        dataStoresService = initAuthenticatedService(DataStoresService.class, host);
 
         try {
             DataStore dataStore = null;

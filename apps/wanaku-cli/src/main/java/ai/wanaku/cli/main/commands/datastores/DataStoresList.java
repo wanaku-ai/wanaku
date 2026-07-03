@@ -53,7 +53,7 @@ Note: If omitted, all data stores are listed. Label matching is case-sensitive.
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        dataStoresService = initService(DataStoresService.class, host);
+        dataStoresService = initAuthenticatedService(DataStoresService.class, host);
 
         try {
             WanakuResponse<List<DataStore>> response = dataStoresService.list(labelExpression);

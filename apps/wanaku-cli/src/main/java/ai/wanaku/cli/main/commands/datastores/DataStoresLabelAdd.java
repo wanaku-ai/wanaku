@@ -72,7 +72,7 @@ public class DataStoresLabelAdd extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         if (dataStoresService == null) {
-            dataStoresService = initService(DataStoresService.class, host);
+            dataStoresService = initAuthenticatedService(DataStoresService.class, host);
         }
 
         int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);

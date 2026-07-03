@@ -72,7 +72,7 @@ public class ResourcesLabelRemove extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         if (resourcesService == null) {
-            resourcesService = initService(ResourcesService.class, host);
+            resourcesService = initAuthenticatedService(ResourcesService.class, host);
         }
 
         int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);

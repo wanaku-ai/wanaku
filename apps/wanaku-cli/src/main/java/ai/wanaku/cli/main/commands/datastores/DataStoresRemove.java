@@ -52,7 +52,7 @@ public class DataStoresRemove extends BaseCommand {
             printer.printWarningMessage("Both --id and --name provided. Using --id only.%n");
         }
 
-        dataStoresService = initService(DataStoresService.class, host);
+        dataStoresService = initAuthenticatedService(DataStoresService.class, host);
 
         try {
             // Prefer ID over name if both provided
