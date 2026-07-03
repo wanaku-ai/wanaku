@@ -1,8 +1,8 @@
-# Test Plan: CLI Auth Commands (User Management and Service Client Credentials)
+# Test Plan: CLI Auth Commands (User Management, Service Client Credentials, and Auth Login)
 
 ## Overview
 
-This test plan verifies the `wanaku admin users` and `wanaku admin credentials` CLI commands against a Keycloak instance deployed on OpenShift. It covers full CRUD operations for users (list, add, set-password, remove) and service client credentials (list, add, show, regenerate, remove).
+This test plan verifies the `wanaku admin users`, `wanaku admin credentials`, and `wanaku auth login` CLI commands against a Keycloak instance deployed on OpenShift. It covers full CRUD operations for users (list, add, set-password, remove), service client credentials (list, add, show, regenerate, remove), and the OIDC login flow in two modes: direct Keycloak login with `--realm` and router OIDC proxy login without `--realm`.
 
 Every step is fully automatable.
 
@@ -51,6 +51,11 @@ export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test}"
 export KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 export KEYCLOAK_ADMIN_PASS="${KEYCLOAK_ADMIN_PASS:-admin}"
 export KEYCLOAK_URL="${KEYCLOAK_URL:-}"
+export WANAKU_ROUTER_URL="${WANAKU_ROUTER_URL:-}"
+export WANAKU_TEST_USER="${WANAKU_TEST_USER:-alice}"
+export WANAKU_TEST_PASS="${WANAKU_TEST_PASS:-secretpass}"
+export WANAKU_REALM="${WANAKU_REALM:-wanaku}"
+export CREDENTIALS_FILE="${CREDENTIALS_FILE:-${HOME}/.wanaku/credentials}"
 export TEST_USERNAME="${TEST_USERNAME:-testuser-811}"
 export TEST_PASSWORD="${TEST_PASSWORD:-TestPass123}"
 export TEST_EMAIL="${TEST_EMAIL:-testuser811@example.com}"
@@ -64,6 +69,11 @@ export TEST_CLIENT_ID="${TEST_CLIENT_ID:-test-service-811}"
 | `KEYCLOAK_ADMIN_USER` | `admin` | Keycloak admin username |
 | `KEYCLOAK_ADMIN_PASS` | `admin` | Keycloak admin password |
 | `KEYCLOAK_URL` | _(set by setup)_ | Keycloak URL (set after Keycloak deployment) |
+| `WANAKU_ROUTER_URL` | _(set by setup)_ | Router URL (set after router deployment, needed for proxy login tests) |
+| `WANAKU_TEST_USER` | `alice` | Username for auth login tests (created by keycloak-setup.md) |
+| `WANAKU_TEST_PASS` | `secretpass` | Password for auth login tests |
+| `WANAKU_REALM` | `wanaku` | Keycloak realm name for direct login tests |
+| `CREDENTIALS_FILE` | `~/.wanaku/credentials` | Path to the CLI credentials file (Java Properties format) |
 | `TEST_USERNAME` | `testuser-811` | Username for test user CRUD operations |
 | `TEST_PASSWORD` | `TestPass123` | Password for test user creation |
 | `TEST_EMAIL` | `testuser811@example.com` | Email for test user creation |
@@ -806,9 +816,458 @@ fi
 
 ---
 
-## Phase 12: Cleanup
+## Phase 12: Auth Login — Direct Keycloak (with --realm)
 
-### Step 12.1: Remove the test user
+These tests authenticate directly against Keycloak using `--realm`. The router is NOT required.
+
+### Test 12.1: Back up existing credentials file
+
+```bash
+if [ -f "${CREDENTIALS_FILE}" ]; then
+  cp "${CREDENTIALS_FILE}" "${CREDENTIALS_FILE}.bak-realm-test"
+  echo "PASS: existing credentials backed up to ${CREDENTIALS_FILE}.bak-realm-test"
+else
+  echo "PASS: no existing credentials file to back up"
+fi
+```
+
+### Test 12.2: Clear credentials before auth login tests
+
+```bash
+rm -f "${CREDENTIALS_FILE}"
+echo "PASS: credentials cleared before auth login tests"
+```
+
+### Test 12.3: Login with --realm succeeds
+
+```bash
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "${WANAKU_REALM}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: auth login with --realm failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: auth login with --realm '${WANAKU_REALM}' succeeded"
+```
+
+### Test 12.4: Realm is persisted in the credential store
+
+```bash
+STORED_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" | sed 's/^auth.realm=//')
+
+if [ "${STORED_REALM}" = "${WANAKU_REALM}" ]; then
+  echo "PASS: realm '${STORED_REALM}' persisted in credentials file"
+else
+  echo "FAIL: expected realm '${WANAKU_REALM}' in credentials file, found '${STORED_REALM}'"
+  exit 1
+fi
+```
+
+### Test 12.5: API token is stored after realm login
+
+```bash
+STORED_TOKEN=$(grep "^api.token=" "${CREDENTIALS_FILE}" | sed 's/^api.token=//')
+
+if [ -n "${STORED_TOKEN}" ]; then
+  echo "PASS: API token stored in credentials file (length: ${#STORED_TOKEN})"
+else
+  echo "FAIL: API token not found in credentials file after login"
+  exit 1
+fi
+```
+
+### Test 12.6: Refresh token is stored after realm login
+
+```bash
+STORED_REFRESH=$(grep "^refresh.token=" "${CREDENTIALS_FILE}" | sed 's/^refresh.token=//')
+
+if [ -n "${STORED_REFRESH}" ]; then
+  echo "PASS: refresh token stored in credentials file (length: ${#STORED_REFRESH})"
+else
+  echo "FAIL: refresh token not found in credentials file after login"
+  exit 1
+fi
+```
+
+### Test 12.7: Auth server URL is stored after realm login
+
+```bash
+STORED_URL=$(grep "^auth.server.url=" "${CREDENTIALS_FILE}" | sed 's/^auth.server.url=//')
+
+if [ -n "${STORED_URL}" ]; then
+  echo "PASS: auth server URL stored: ${STORED_URL}"
+else
+  echo "FAIL: auth server URL not found in credentials file after login"
+  exit 1
+fi
+```
+
+### Test 12.8: Auth status reports valid session after realm login
+
+```bash
+OUTPUT=$(${WANAKU_CLI:-wanaku} auth status --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -eq 0 ]; then
+  echo "PASS: auth status reports valid session after realm login"
+else
+  echo "FAIL: auth status failed after realm login (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+fi
+```
+
+---
+
+## Phase 13: Auth Login — Router OIDC Proxy (without --realm)
+
+These tests authenticate via the router's OIDC proxy. If `WANAKU_ROUTER_URL` is not set, skip this phase.
+
+### Test 13.1: Verify router is available
+
+```bash
+if [ -z "${WANAKU_ROUTER_URL}" ]; then
+  echo "SKIP: WANAKU_ROUTER_URL not set -- skipping router proxy login tests"
+  exit 0
+fi
+
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${WANAKU_ROUTER_URL}/q/health" 2>/dev/null || echo "000")
+if [ "${HTTP_CODE}" = "200" ]; then
+  echo "PASS: router is healthy at ${WANAKU_ROUTER_URL}"
+else
+  echo "FAIL: router not healthy at ${WANAKU_ROUTER_URL} (HTTP ${HTTP_CODE})"
+  exit 1
+fi
+```
+
+### Test 13.2: Clear credentials before router proxy login
+
+```bash
+rm -f "${CREDENTIALS_FILE}"
+echo "PASS: credentials cleared before router proxy login test"
+```
+
+### Test 13.3: Login without --realm succeeds (router OIDC proxy)
+
+```bash
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${WANAKU_ROUTER_URL}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: auth login without --realm failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+echo "PASS: auth login without --realm succeeded (router OIDC proxy)"
+```
+
+### Test 13.4: Realm is NOT persisted when --realm is omitted
+
+```bash
+if [ ! -f "${CREDENTIALS_FILE}" ]; then
+  echo "FAIL: credentials file not created after login"
+  exit 1
+fi
+
+STORED_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" 2>/dev/null || true)
+
+if [ -z "${STORED_REALM}" ]; then
+  echo "PASS: no realm entry in credentials file (expected for router proxy login)"
+else
+  echo "FAIL: realm unexpectedly persisted: ${STORED_REALM}"
+  exit 1
+fi
+```
+
+### Test 13.5: API token is stored after router proxy login
+
+```bash
+STORED_TOKEN=$(grep "^api.token=" "${CREDENTIALS_FILE}" | sed 's/^api.token=//')
+
+if [ -n "${STORED_TOKEN}" ]; then
+  echo "PASS: API token stored after router proxy login (length: ${#STORED_TOKEN})"
+else
+  echo "FAIL: API token not found in credentials file after router proxy login"
+  exit 1
+fi
+```
+
+---
+
+## Phase 14: Realm Persistence — Overwrite and Clear
+
+### Test 14.1: Login with --realm overwrites previous credentials
+
+```bash
+rm -f "${CREDENTIALS_FILE}"
+
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "${WANAKU_REALM}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: auth login with --realm failed on fresh credentials (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+STORED_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" | sed 's/^auth.realm=//')
+if [ "${STORED_REALM}" = "${WANAKU_REALM}" ]; then
+  echo "PASS: realm stored correctly on fresh credentials"
+else
+  echo "FAIL: realm not stored correctly (expected '${WANAKU_REALM}', found '${STORED_REALM}')"
+  exit 1
+fi
+```
+
+### Test 14.2: Re-login without --realm clears the stored realm
+
+```bash
+if [ -z "${WANAKU_ROUTER_URL}" ]; then
+  echo "SKIP: WANAKU_ROUTER_URL not set -- skipping realm-clear test"
+  exit 0
+fi
+
+# First verify realm is currently stored
+BEFORE_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" 2>/dev/null || true)
+if [ -z "${BEFORE_REALM}" ]; then
+  echo "FAIL: realm should be stored before this test"
+  exit 1
+fi
+
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${WANAKU_ROUTER_URL}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: auth login without --realm failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+AFTER_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" 2>/dev/null || true)
+if [ -z "${AFTER_REALM}" ]; then
+  echo "PASS: stored realm cleared after login without --realm"
+else
+  echo "FAIL: realm still present after login without --realm: ${AFTER_REALM}"
+  exit 1
+fi
+```
+
+---
+
+## Phase 15: Token Refresh with Realm
+
+### Test 15.1: Token refresh works when realm is stored
+
+```bash
+rm -f "${CREDENTIALS_FILE}"
+
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "${WANAKU_REALM}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: initial login for refresh test failed (exit code ${EXIT_CODE})"
+  echo "${OUTPUT}"
+  exit 1
+fi
+
+# Force token expiry by setting expiry to the past
+sed -i.tmp "s/^token.expiry=.*/token.expiry=1000000000/" "${CREDENTIALS_FILE}"
+rm -f "${CREDENTIALS_FILE}.tmp"
+
+EXPIRED_EXPIRY=$(grep "^token.expiry=" "${CREDENTIALS_FILE}" | sed 's/^token.expiry=//')
+if [ "${EXPIRED_EXPIRY}" != "1000000000" ]; then
+  echo "FAIL: could not set token expiry to past epoch"
+  exit 1
+fi
+
+if [ -n "${WANAKU_ROUTER_URL}" ]; then
+  OUTPUT=$(${WANAKU_CLI:-wanaku} tools list --host "${WANAKU_ROUTER_URL}" --plain 2>&1)
+
+  NEW_EXPIRY=$(grep "^token.expiry=" "${CREDENTIALS_FILE}" | sed 's/^token.expiry=//')
+  if [ "${NEW_EXPIRY}" != "1000000000" ] && [ -n "${NEW_EXPIRY}" ]; then
+    echo "PASS: token was refreshed (new expiry: ${NEW_EXPIRY})"
+  else
+    echo "WARN: token expiry not updated; refresh may not have triggered"
+    echo "INFO: this may be expected if the router is not OIDC-protected"
+  fi
+else
+  echo "SKIP: WANAKU_ROUTER_URL not set -- cannot trigger token refresh via CLI command"
+  STORED_REFRESH=$(grep "^refresh.token=" "${CREDENTIALS_FILE}" | sed 's/^refresh.token=//')
+  if [ -n "${STORED_REFRESH}" ]; then
+    echo "PASS: refresh token is present (length: ${#STORED_REFRESH})"
+  else
+    echo "FAIL: refresh token not present"
+  fi
+fi
+```
+
+### Test 15.2: Realm is preserved after token refresh
+
+```bash
+STORED_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" | sed 's/^auth.realm=//')
+
+if [ "${STORED_REALM}" = "${WANAKU_REALM}" ]; then
+  echo "PASS: realm preserved after token refresh: ${STORED_REALM}"
+else
+  echo "FAIL: realm changed or cleared after token refresh (expected '${WANAKU_REALM}', found '${STORED_REALM}')"
+fi
+```
+
+---
+
+## Phase 16: Auth Login — Negative Tests
+
+### Test 16.1: Login with invalid realm should fail
+
+```bash
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "nonexistent-realm-99999" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: login with invalid realm failed as expected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: login with invalid realm should have failed"
+fi
+```
+
+### Test 16.2: Login with wrong password should fail
+
+```bash
+OUTPUT=$(echo "wrong-password-99999" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "${WANAKU_REALM}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: login with wrong password failed as expected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: login with wrong password should have failed"
+fi
+```
+
+### Test 16.3: Login with nonexistent username should fail
+
+```bash
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "${WANAKU_REALM}" \
+  --username "nonexistent-user-99999" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: login with nonexistent username failed as expected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: login with nonexistent username should have failed"
+fi
+```
+
+### Test 16.4: Login against unreachable auth server should fail
+
+```bash
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "http://localhost:59999" \
+  --realm "${WANAKU_REALM}" \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: login against unreachable server failed gracefully (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: login against unreachable server should have failed"
+fi
+```
+
+### Test 16.5: Login without --username should fail
+
+```bash
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${KEYCLOAK_URL}" \
+  --realm "${WANAKU_REALM}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: login without --username failed as expected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: login without --username should have failed"
+fi
+```
+
+### Test 16.6: Login with blank realm falls back to router proxy path
+
+```bash
+if [ -z "${WANAKU_ROUTER_URL}" ]; then
+  echo "SKIP: WANAKU_ROUTER_URL not set -- skipping blank realm test"
+  exit 0
+fi
+
+rm -f "${CREDENTIALS_FILE}"
+
+OUTPUT=$(echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+  --auth-server "${WANAKU_ROUTER_URL}" \
+  --realm "   " \
+  --username "${WANAKU_TEST_USER}" \
+  --password \
+  --plain 2>&1)
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "FAIL: login with blank realm failed (exit code ${EXIT_CODE}) -- should fall back to proxy"
+  echo "${OUTPUT}"
+else
+  STORED_REALM=$(grep "^auth.realm=" "${CREDENTIALS_FILE}" 2>/dev/null || true)
+  if [ -z "${STORED_REALM}" ]; then
+    echo "PASS: blank realm falls back to router proxy; no realm persisted"
+  else
+    echo "FAIL: blank realm should not be persisted but found: ${STORED_REALM}"
+  fi
+fi
+```
+
+---
+
+## Phase 17: Cleanup
+
+### Step 17.1: Remove the test user
 
 ```bash
 wanaku admin users remove \
@@ -820,7 +1279,7 @@ wanaku admin users remove \
 echo "PASS: test user cleanup complete"
 ```
 
-### Step 12.2: Remove test clients (idempotent)
+### Step 17.2: Remove test clients (idempotent)
 
 ```bash
 for CLIENT in "${TEST_CLIENT_ID}" "${TEST_CLIENT_ID}-with-secret"; do
@@ -834,7 +1293,7 @@ done
 echo "PASS: test client cleanup complete"
 ```
 
-### Step 12.3: Verify cleanup
+### Step 17.3: Verify admin cleanup
 
 ```bash
 OUTPUT=$(wanaku admin users list \
@@ -858,6 +1317,31 @@ echo "${OUTPUT}" | grep -q "${TEST_CLIENT_ID}" \
   || echo "PASS: test client cleaned up"
 ```
 
+### Step 17.4: Clean up auth login credentials
+
+```bash
+rm -f "${CREDENTIALS_FILE}"
+
+if [ -f "${CREDENTIALS_FILE}.bak-realm-test" ]; then
+  mv "${CREDENTIALS_FILE}.bak-realm-test" "${CREDENTIALS_FILE}"
+  echo "PASS: original credentials restored from backup"
+else
+  echo "PASS: no backup to restore"
+fi
+```
+
+### Step 17.5: Remove auth login test user (idempotent)
+
+```bash
+${WANAKU_CLI:-wanaku} admin users remove \
+  --keycloak-url "${KEYCLOAK_URL}" \
+  --admin-username "${KEYCLOAK_ADMIN_USER}" \
+  --admin-password "${KEYCLOAK_ADMIN_PASS}" \
+  --username "${WANAKU_TEST_USER}" 2>/dev/null || true
+
+echo "PASS: auth login test user cleanup complete"
+```
+
 ---
 
 ## Summary Matrix
@@ -875,5 +1359,10 @@ echo "${OUTPUT}" | grep -q "${TEST_CLIENT_ID}" \
 | 8 | 8.1–8.4 | Credentials show (details, show-secret, without flag, non-existent) | Critical |
 | 9 | 9.1–9.3 | Credentials regenerate (regenerate, verify differs, non-existent) | Critical |
 | 10 | 10.1–10.4 | Credentials remove (delete secondary, primary, verify, non-existent) | Critical |
-| 11 | 11.1–11.5 | Negative tests (wrong creds, unreachable, missing args) | High |
-| 12 | 12.1–12.3 | Cleanup (users, clients, verification) | Critical |
+| 11 | 11.1–11.5 | Negative tests — admin commands (wrong creds, unreachable, missing args) | High |
+| 12 | 12.1–12.8 | Auth login — direct Keycloak with --realm (login, credential persistence, auth status) | Critical |
+| 13 | 13.1–13.5 | Auth login — router OIDC proxy without --realm (login, no realm persisted, token stored) | Critical |
+| 14 | 14.1–14.2 | Realm persistence — overwrite and clear lifecycle | High |
+| 15 | 15.1–15.2 | Token refresh with stored realm (forced expiry, realm preserved) | Critical |
+| 16 | 16.1–16.6 | Negative tests — auth login (invalid realm, wrong creds, unreachable, missing username, blank realm) | High |
+| 17 | 17.1–17.5 | Cleanup (admin users/clients, auth credentials, auth login test user) | Critical |
