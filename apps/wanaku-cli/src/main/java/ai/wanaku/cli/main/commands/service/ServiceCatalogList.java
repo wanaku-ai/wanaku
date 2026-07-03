@@ -35,7 +35,7 @@ public class ServiceCatalogList extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        ServiceCatalogService service = initService(ServiceCatalogService.class, host);
+        ServiceCatalogService service = initAuthenticatedService(ServiceCatalogService.class, host);
 
         try {
             WanakuResponse<List<Map<String, Object>>> response = service.list(search);

@@ -27,7 +27,7 @@ public class NamespacesDelete extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
+        namespacesService = initAuthenticatedServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         try {
             namespacesService.delete(id);

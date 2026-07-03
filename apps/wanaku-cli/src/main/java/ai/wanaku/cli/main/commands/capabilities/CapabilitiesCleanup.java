@@ -86,7 +86,7 @@ public class CapabilitiesCleanup extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initAuthenticatedService(CapabilitiesService.class, host);
 
         long maxAgeSeconds = maxAgeDays * SECONDS_PER_DAY;
 

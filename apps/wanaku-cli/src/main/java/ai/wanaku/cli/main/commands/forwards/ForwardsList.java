@@ -35,7 +35,7 @@ public class ForwardsList extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
-        ForwardsService forwardsService = initService(ForwardsService.class, host);
+        ForwardsService forwardsService = initAuthenticatedService(ForwardsService.class, host);
 
         try {
             WanakuResponse<List<ForwardReference>> wanakuResponseRestResponse = forwardsService.listForwards(null);

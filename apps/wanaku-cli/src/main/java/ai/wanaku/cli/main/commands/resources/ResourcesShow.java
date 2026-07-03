@@ -49,7 +49,7 @@ public class ResourcesShow extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        resourcesService = initService(ResourcesService.class, host);
+        resourcesService = initAuthenticatedService(ResourcesService.class, host);
         try {
             WanakuResponse<ResourceReference> response = resourcesService.getByName(resourceName);
             ResourceReference resource = response.data();

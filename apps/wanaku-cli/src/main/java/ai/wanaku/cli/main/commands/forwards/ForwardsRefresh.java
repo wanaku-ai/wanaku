@@ -29,7 +29,7 @@ public class ForwardsRefresh extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        ForwardsService forwardsService = initService(ForwardsService.class, host);
+        ForwardsService forwardsService = initAuthenticatedService(ForwardsService.class, host);
 
         try {
             forwardsService.refreshForward(name);

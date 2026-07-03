@@ -53,7 +53,7 @@ Note: If omitted, all resources are listed. Label matching is case-sensitive.
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        resourcesService = initService(ResourcesService.class, host);
+        resourcesService = initAuthenticatedService(ResourcesService.class, host);
         try {
             WanakuResponse<List<ResourceReference>> response = resourcesService.list(labelExpression);
             List<ResourceReference> list = response.data();

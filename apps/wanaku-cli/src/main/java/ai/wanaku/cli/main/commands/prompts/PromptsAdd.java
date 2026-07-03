@@ -120,7 +120,7 @@ public class PromptsAdd extends BaseCommand {
 
         FileHelper.loadConfigurationSources(configurationFromFile, promptPayload::setConfigurationData);
 
-        promptsService = initService(PromptsService.class, host);
+        promptsService = initAuthenticatedService(PromptsService.class, host);
 
         try {
             WanakuResponse<PromptReference> data = promptsService.addWithPayload(promptPayload);

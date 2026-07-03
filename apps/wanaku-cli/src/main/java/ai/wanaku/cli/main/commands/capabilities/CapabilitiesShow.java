@@ -105,7 +105,7 @@ public class CapabilitiesShow extends BaseCommand {
      */
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws IOException, Exception {
-        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initAuthenticatedService(CapabilitiesService.class, host);
 
         // Fetch and filter capabilities by service name
         List<CapabilitiesHelper.PrintableCapability> capabilities =

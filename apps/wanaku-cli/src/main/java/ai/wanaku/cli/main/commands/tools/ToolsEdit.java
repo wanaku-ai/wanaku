@@ -64,7 +64,7 @@ public class ToolsEdit extends BaseCommand {
      */
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        toolsService = initService(ToolsService.class, host);
+        toolsService = initAuthenticatedService(ToolsService.class, host);
 
         List<ToolReference> list = toolsService.list().data();
 

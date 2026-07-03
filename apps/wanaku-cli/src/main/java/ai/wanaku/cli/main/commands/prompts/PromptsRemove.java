@@ -32,7 +32,7 @@ public class PromptsRemove extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        promptsService = initService(PromptsService.class, host);
+        promptsService = initAuthenticatedService(PromptsService.class, host);
         try {
             promptsService.remove(name);
             printer.printSuccessMessage("Successfully removed prompt reference '" + name + "'");

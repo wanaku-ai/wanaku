@@ -55,7 +55,7 @@ public class NamespacesCleanup extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService = initServiceIfNeeded(namespacesService, NamespacesService.class, host);
+        namespacesService = initAuthenticatedServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         long maxAgeSeconds = maxAgeDays * SECONDS_PER_DAY;
         boolean unassignedOnly = !includeAssigned;

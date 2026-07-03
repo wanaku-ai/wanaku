@@ -46,7 +46,7 @@ public class ForwardsAdd extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        ForwardsService forwardsService = initService(ForwardsService.class, host);
+        ForwardsService forwardsService = initAuthenticatedService(ForwardsService.class, host);
 
         ForwardReference reference = new ForwardReference();
         reference.setName(name);

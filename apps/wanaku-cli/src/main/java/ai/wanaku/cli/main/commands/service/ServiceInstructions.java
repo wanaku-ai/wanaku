@@ -38,7 +38,7 @@ public class ServiceInstructions extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        ServiceCatalogService service = initService(ServiceCatalogService.class, host);
+        ServiceCatalogService service = initAuthenticatedService(ServiceCatalogService.class, host);
 
         try {
             WanakuResponse<DeploymentInstructions> response = service.getDeploymentInstructions(name, model);

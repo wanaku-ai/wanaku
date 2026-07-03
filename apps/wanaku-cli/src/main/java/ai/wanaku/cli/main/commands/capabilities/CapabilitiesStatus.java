@@ -55,7 +55,7 @@ public class CapabilitiesStatus extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
-        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initAuthenticatedService(CapabilitiesService.class, host);
 
         List<PrintableCapability> capabilities =
                 fetchAndMergeCapabilities(capabilitiesService).await().atMost(API_TIMEOUT);

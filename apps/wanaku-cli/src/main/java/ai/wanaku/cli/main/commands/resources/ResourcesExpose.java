@@ -116,7 +116,7 @@ public class ResourcesExpose extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        resourcesService = initService(ResourcesService.class, host);
+        resourcesService = initAuthenticatedService(ResourcesService.class, host);
         ResourceReference resource = new ResourceReference();
         resource.setLocation(location);
         resource.setType(type);

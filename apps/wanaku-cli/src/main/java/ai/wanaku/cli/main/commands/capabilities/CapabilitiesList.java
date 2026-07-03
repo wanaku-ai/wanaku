@@ -101,7 +101,7 @@ Note: If omitted, all capabilities are listed. Label matching is case-sensitive.
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
 
-        CapabilitiesService capabilitiesService = initService(CapabilitiesService.class, host);
+        CapabilitiesService capabilitiesService = initAuthenticatedService(CapabilitiesService.class, host);
         var capabilities = fetchAndMergeCapabilities(capabilitiesService, labelExpression)
                 .await()
                 .atMost(API_TIMEOUT);

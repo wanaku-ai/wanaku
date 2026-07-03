@@ -72,7 +72,7 @@ public class NamespacesLabelAdd extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         if (namespacesService == null) {
-            namespacesService = initService(NamespacesService.class, host);
+            namespacesService = initAuthenticatedService(NamespacesService.class, host);
         }
 
         int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
