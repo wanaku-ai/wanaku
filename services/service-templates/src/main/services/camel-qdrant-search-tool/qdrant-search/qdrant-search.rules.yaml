@@ -1,0 +1,11 @@
+mcp:
+  tools:
+  - qdrant-similarity-search:
+      route:
+        id: "qdrant-similarity-search"
+      description: "{{tool.description}}"
+      properties:
+      - name: wanaku_body
+        type: string
+        description: The search query or vector data for similarity search
+        required: true
