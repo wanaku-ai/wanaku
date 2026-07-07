@@ -1,0 +1,11 @@
+mcp:
+  tools:
+  - pinecone-search:
+      route:
+        id: "pinecone-search"
+      description: "{{tool.description}}"
+      properties:
+      - name: wanaku_body
+        type: string
+        description: The search query vector or text to search in Pinecone
+        required: true

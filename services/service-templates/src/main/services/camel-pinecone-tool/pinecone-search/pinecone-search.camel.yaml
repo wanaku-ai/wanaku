@@ -1,0 +1,20 @@
+- route:
+    id: pinecone-search
+    description: Vectorized search in Pinecone
+    from:
+      uri: direct:wanaku
+      steps:
+        - setHeader:
+            name: CamelPineconeAction
+            constant: "QUERY"
+        - setHeader:
+            name: CamelPineconeQueryTopK
+            constant: "{{pinecone.top.k}}"
+        - to:
+            uri: "pinecone:{{pinecone.collection}}"
+            parameters:
+              token: "{{pinecone.token}}"
+              indexName: "{{pinecone.index.name}}"
+              host: "{{pinecone.index.host}}"
+              cloud: "{{pinecone.cloud}}"
+              cloudRegion: "{{pinecone.cloud.region}}"
