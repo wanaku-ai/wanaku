@@ -808,9 +808,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OutboundSseEvent"
+                $ref: "#/components/schemas/OutboundSseEvent"
       summary: Targets Event Stream
       tags:
       - Capabilities Resource
@@ -2167,9 +2165,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OutboundSseEvent"
+                $ref: "#/components/schemas/OutboundSseEvent"
       summary: Stream Results
       tags:
       - Code Execution Resource
@@ -2231,9 +2227,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OutboundSseEvent"
+                $ref: "#/components/schemas/OutboundSseEvent"
       summary: Stream All Tool Calls
       tags:
       - Tool Call Resource
@@ -2251,9 +2245,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OutboundSseEvent"
+                $ref: "#/components/schemas/OutboundSseEvent"
       summary: Stream Tool Calls By Connection
       tags:
       - Tool Call Resource

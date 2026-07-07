@@ -69,14 +69,11 @@ class AuthConfigSourceTest {
         assertEquals("false", props.get("quarkus.oidc.mcp.enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.discovery-enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.resource-metadata.enabled"));
-        assertEquals("permit", props.get("quarkus.http.auth.permission.authenticated.policy"));
-        assertEquals("permit", props.get("quarkus.http.auth.permission.mcp-authenticated.policy"));
-        assertEquals("permit", props.get("quarkus.http.auth.permission.web.policy"));
     }
 
     @Test
     void getValue_returnsNull_whenAuthNotConfigured() {
-        assertNull(configSource.getValue("quarkus.http.auth.permission.authenticated.policy"));
+        assertNull(configSource.getValue("quarkus.oidc.enabled"));
     }
 
     @Test
@@ -89,7 +86,6 @@ class AuthConfigSourceTest {
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.resource-metadata.enabled"));
-        assertEquals("permit", configSource.getValue("quarkus.http.auth.permission.authenticated.policy"));
     }
 
     @Test

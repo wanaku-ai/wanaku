@@ -92,8 +92,8 @@ jobs:
 
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
-    - name: Build Router Backend
-      run: mvn -B --no-transfer-progress package -pl apps/wanaku-router-backend -am -DskipTests
+    - name: Build Router Backend (noauth)
+      run: mvn -B --no-transfer-progress package -pl apps/wanaku-router-backend -am -DskipTests -Dquarkus.profile=none
 
     - name: Set up Node.js
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -108,24 +108,20 @@ jobs:
         yarn install --frozen-lockfile
         npx playwright install --with-deps chromium
 
-    - name: Re-augment Router Backend (disable OIDC)
-      run: >
-        java -Dquarkus.launch.rebuild=true
-        -Dquarkus.oidc.enabled=false
-        -Dquarkus.oidc-proxy.enabled=false
-        -jar apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar
-
-    - name: Start Router Backend
+    - name: Start Router Backend in noauth mode
+      # The backend is built with `-Dquarkus.profile=none` so HTTP permission
+      # policies are flipped to `permit` and OIDC + the OIDC proxy are disabled
+      # at build time (see the `%none.` blocks in main application.properties).
       run: |
         WANAKU_HTTP_AUTH=none java -jar apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar &
         echo "Waiting for backend to be ready..."
-        for i in $(seq 1 60); do
+        for i in $(seq 1 90); do
           if curl -sf http://localhost:8080/q/health/ready > /dev/null 2>&1; then
             echo "Backend ready after ${i}s"
             break
           fi
-          if [ "$i" -eq 60 ]; then
-            echo "Backend failed to start within 60s"
+          if [ "$i" -eq 90 ]; then
+            echo "Backend failed to start within 90s"
             exit 1
           fi
           sleep 1
