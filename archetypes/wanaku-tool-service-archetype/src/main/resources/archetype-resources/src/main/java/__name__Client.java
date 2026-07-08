@@ -60,8 +60,8 @@ public class ${name}Client implements Client {
 
         LOG.infof("Invoking tool at URI: %s", parsedRequest.uri());
 
-        // Execute and return the result
-        return null;
+        // TODO: Execute and return the result
+        return "TODO: implement tool logic";
     }
 #end
 }

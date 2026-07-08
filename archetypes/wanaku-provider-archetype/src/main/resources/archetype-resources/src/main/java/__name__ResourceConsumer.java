@@ -14,6 +14,6 @@ public class ${name}ResourceConsumer implements ResourceConsumer {
     @Override
     public Object consume(String uri, ResourceRequest request) {
         // TODO: Implement your resource consumption logic here
-        return null;
+        return "TODO: implement resource logic";
     }
 }
