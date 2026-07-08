@@ -1,17 +1,11 @@
 package ai.wanaku.operator.util;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
-import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -23,163 +17,26 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
 import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.wanaku.WanakuCamelCodeExecutionEngine;
 import ai.wanaku.operator.wanaku.WanakuCamelCodeExecutionEngineReconciler;
 import ai.wanaku.operator.wanaku.WanakuCamelCodeExecutionEngineSpec;
-import ai.wanaku.operator.wanaku.WanakuCapability;
-import ai.wanaku.operator.wanaku.WanakuRouter;
-import ai.wanaku.operator.wanaku.WanakuTypes;
 
 /**
- * Shared operator utilities for condition management, image pull policy resolution,
- * auth realm resolution, and router URL construction.
+ * Factory methods for Kubernetes resources belonging to a {@link WanakuCamelCodeExecutionEngine}.
  *
- * <p>Resource-specific factory methods have been extracted to:
- * <ul>
- * <li>{@link RouterResourceFactory} for router K8s resources</li>
- * <li>{@link CapabilityResourceFactory} for capability K8s resources</li>
- * <li>{@link EnvironmentVariableHelper} for environment variable computation</li>
- * </ul>
+ * <p>Extracted from {@link OperatorUtil} following the pattern established by
+ * {@link RouterResourceFactory} and {@link CapabilityResourceFactory}.
  */
-public final class OperatorUtil {
-    private static final Logger LOG = Logger.getLogger(OperatorUtil.class);
-    public static final String READY_CONDITION = "Ready";
-    public static final String CONDITION_STATUS_TRUE = "True";
-    public static final String CONDITION_REASON_READY = "ReconciliationSucceeded";
+public final class CodeExecutionEngineResourceFactory {
+
+    private static final Logger LOG = Logger.getLogger(CodeExecutionEngineResourceFactory.class);
+
     public static final String CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_FILE =
             "camel-code-execution-engine-deployment.yaml";
     public static final String CODE_EXECUTION_ENGINE_INTERNAL_SERVICE_FILE =
             "camel-code-execution-engine-service-internal.yaml";
 
-    public static final String DEFAULT_PULL_POLICY = "IfNotPresent";
-    public static final Set<String> VALID_PULL_POLICIES = Set.of("Always", "IfNotPresent", "Never");
-
-    /** Optional comma-separated allowlist of permitted container-image prefixes. */
-    public static final String ALLOWED_IMAGE_PREFIXES = "wanaku.operator.allowed-image-prefixes";
-
-    private OperatorUtil() {}
-
-    /**
-     * Validates a custom-resource-supplied container image against the optional allowlist
-     * {@value #ALLOWED_IMAGE_PREFIXES} (comma-separated registry/repository prefixes). When the
-     * allowlist is empty (the default) any image is permitted; when configured, the image must
-     * start with one of the prefixes, otherwise reconciliation fails. This prevents a principal
-     * able to create/patch a {@code WanakuCapability}/{@code WanakuRouter} from scheduling an
-     * arbitrary, untrusted image.
-     *
-     * @param image the image reference from the custom resource (may be null or blank)
-     * @throws IllegalArgumentException if the image is not in the configured allowlist
-     */
-    public static void validateImageAllowed(String image) {
-        String allowlist = ConfigProvider.getConfig()
-                .getOptionalValue(ALLOWED_IMAGE_PREFIXES, String.class)
-                .orElse("");
-        validateImageAllowed(image, allowlist);
-    }
-
-    /**
-     * Package-private variant taking the allowlist explicitly, so the matching logic can be unit
-     * tested without configuration.
-     *
-     * @param image the image reference from the custom resource (may be null or blank)
-     * @param allowlist comma-separated allowed prefixes (empty disables the check)
-     * @throws IllegalArgumentException if the image is not in the allowlist
-     */
-    static void validateImageAllowed(String image, String allowlist) {
-        if (allowlist == null || allowlist.isBlank() || image == null || image.isBlank()) {
-            return;
-        }
-        boolean allowed = Arrays.stream(allowlist.split(","))
-                .map(String::trim)
-                .filter(prefix -> !prefix.isEmpty())
-                .anyMatch(image::startsWith);
-        if (!allowed) {
-            throw new IllegalArgumentException(
-                    "Container image '%s' is not in the allowed registries (%s)".formatted(image, allowlist));
-        }
-    }
-
-    /**
-     * Creates a Ready condition for a custom resource status.
-     *
-     * @param generation the observed generation
-     * @param previousCondition the previous condition (may be null)
-     * @param message the status message
-     * @return a new Ready condition
-     */
-    public static Condition readyCondition(Long generation, Condition previousCondition, String message) {
-        final boolean alreadyReady =
-                previousCondition != null && CONDITION_STATUS_TRUE.equals(previousCondition.getStatus());
-        final String lastTransitionTime = alreadyReady && previousCondition.getLastTransitionTime() != null
-                ? previousCondition.getLastTransitionTime()
-                : OffsetDateTime.now(ZoneOffset.UTC).toString();
-
-        return new ConditionBuilder()
-                .withType(READY_CONDITION)
-                .withStatus(CONDITION_STATUS_TRUE)
-                .withObservedGeneration(generation)
-                .withLastTransitionTime(lastTransitionTime)
-                .withReason(CONDITION_REASON_READY)
-                .withMessage(message)
-                .build();
-    }
-
-    /**
-     * Finds a condition by type in a list of conditions.
-     *
-     * @param conditions the list of conditions (may be null or empty)
-     * @param type the condition type to find
-     * @return the matching condition, or null if not found
-     */
-    public static Condition findCondition(List<Condition> conditions, String type) {
-        if (conditions == null || conditions.isEmpty() || type == null) {
-            return null;
-        }
-
-        return conditions.stream()
-                .filter(condition -> type.equals(condition.getType()))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * Resolves image pull policy with priority:
-     * 1. Component-specific policy (router.imagePullPolicy or capability.imagePullPolicy)
-     * 2. Global policy (spec.imagePullPolicy)
-     * 3. Default (IfNotPresent)
-     *
-     * @param componentPolicy the component-specific policy (may be null)
-     * @param globalPolicy the global policy from spec (may be null)
-     * @return the resolved policy, validated against allowed values
-     */
-    public static String resolveImagePullPolicy(String componentPolicy, String globalPolicy) {
-        String resolved =
-                componentPolicy != null ? componentPolicy : (globalPolicy != null ? globalPolicy : DEFAULT_PULL_POLICY);
-
-        if (!VALID_PULL_POLICIES.contains(resolved)) {
-            LOG.warnf("Invalid imagePullPolicy '%s', using default '%s'", resolved, DEFAULT_PULL_POLICY);
-            return DEFAULT_PULL_POLICY;
-        }
-
-        return resolved;
-    }
-
-    /**
-     * Constructs the internal base URL for a router.
-     *
-     * @param routerRef the router reference name
-     * @return the base URL in the format "http://internal-{routerRef}:8080"
-     */
-    public static String getRouterBaseUrl(String routerRef) {
-        return "http://internal-" + routerRef + ":8080";
-    }
-
-    static String getInternalRegistrationUri(String routerRef) {
-        return getRouterBaseUrl(routerRef) + "/";
-    }
-
-    // ---- Code execution engine methods ----
+    private CodeExecutionEngineResourceFactory() {}
 
     public static Deployment makeDesiredCamelCodeExecutionEngineDeployment(
             WanakuCamelCodeExecutionEngine resource, Context<WanakuCamelCodeExecutionEngine> context) {
@@ -187,7 +44,6 @@ public final class OperatorUtil {
                 Deployment.class,
                 WanakuCamelCodeExecutionEngineReconciler.class,
                 CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_FILE);
-
         return configureCodeExecutionDeployment(desiredDeployment, resource);
     }
 
@@ -196,7 +52,6 @@ public final class OperatorUtil {
                 Service.class,
                 WanakuCamelCodeExecutionEngineReconciler.class,
                 CODE_EXECUTION_ENGINE_INTERNAL_SERVICE_FILE);
-
         final String serviceName = resource.getMetadata().getName();
         final String ns = resource.getMetadata().getNamespace();
         final int port = resolveCodeExecutionPort(resource);
@@ -279,9 +134,10 @@ public final class OperatorUtil {
         final Container container =
                 deploymentSpec.getTemplate().getSpec().getContainers().getFirst();
         container.setName(serviceName);
-        validateImageAllowed(resource.getSpec().getImage());
+        OperatorUtil.validateImageAllowed(resource.getSpec().getImage());
         container.setImage(resource.getSpec().getImage());
-        container.setImagePullPolicy(resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
+        container.setImagePullPolicy(
+                OperatorUtil.resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
         container.setEnv(computeCodeExecutionEngineEnvVars(resource));
 
         final Integer port = resolveCodeExecutionPort(resource);
@@ -297,7 +153,6 @@ public final class OperatorUtil {
         }
 
         applyResourceRequirements(container, resource.getSpec().getResources());
-
         desiredDeployment.addOwnerReference(resource);
         return desiredDeployment;
     }
@@ -307,7 +162,6 @@ public final class OperatorUtil {
         if (resourceSpec == null) {
             return;
         }
-
         ResourceRequirements requirements = new ResourceRequirements();
         Map<String, Quantity> requests = new HashMap<>();
         Map<String, Quantity> limits = new HashMap<>();
@@ -334,7 +188,6 @@ public final class OperatorUtil {
         if (!limits.isEmpty()) {
             requirements.setLimits(limits);
         }
-
         if (!requests.isEmpty() || !limits.isEmpty()) {
             container.setResources(requirements);
         }
@@ -344,8 +197,8 @@ public final class OperatorUtil {
         List<EnvVar> envVars = new ArrayList<>();
         final String serviceName = resource.getMetadata().getName();
         final String registrationUri =
-                getInternalRegistrationUri(resource.getSpec().getRouterRef());
-        final String authRealm = resolveAuthRealm(resource);
+                OperatorUtil.getInternalRegistrationUri(resource.getSpec().getRouterRef());
+        final String authRealm = OperatorUtil.resolveAuthRealm(resource);
         final String authServer = resource.getSpec().getAuth() != null
                 ? resource.getSpec().getAuth().getAuthServer()
                 : null;
@@ -363,7 +216,8 @@ public final class OperatorUtil {
                 .build());
         envVars.add(new EnvVarBuilder()
                 .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_MODE)
-                .withValue(normalizeDeploymentMode(resource.getSpec().getDeploymentMode()))
+                .withValue(
+                        OperatorUtil.normalizeDeploymentMode(resource.getSpec().getDeploymentMode()))
                 .build());
         envVars.add(new EnvVarBuilder()
                 .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_ENGINE_TYPE)
@@ -406,7 +260,6 @@ public final class OperatorUtil {
         if (securitySpec == null) {
             return;
         }
-
         addCommaSeparatedEnvVar(
                 EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_COMPONENT_ALLOWLIST,
                 securitySpec.getComponentAllowlist(),
@@ -438,7 +291,6 @@ public final class OperatorUtil {
         if (cacheSpec == null) {
             return;
         }
-
         if (cacheSpec.getEnabled() != null) {
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_STRATEGY)
@@ -450,7 +302,6 @@ public final class OperatorUtil {
                     .withValue(cacheSpec.getStrategy())
                     .build());
         }
-
         if (cacheSpec.getCacheName() != null && !cacheSpec.getCacheName().isBlank()) {
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_NAME)
@@ -473,11 +324,11 @@ public final class OperatorUtil {
         }
     }
 
-    private static void addRemoteEnvVars(WanakuCamelCodeExecutionEngineSpec.RemoteSpec remoteSpec, List<EnvVar> envVars) {
+    private static void addRemoteEnvVars(
+            WanakuCamelCodeExecutionEngineSpec.RemoteSpec remoteSpec, List<EnvVar> envVars) {
         if (remoteSpec == null) {
             return;
         }
-
         if (remoteSpec.getHost() != null && !remoteSpec.getHost().isBlank()) {
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_REMOTE_HOST)
@@ -508,7 +359,6 @@ public final class OperatorUtil {
         if (values == null || values.isEmpty()) {
             return;
         }
-
         envVars.add(new EnvVarBuilder()
                 .withName(name)
                 .withValue(String.join(",", values))
@@ -516,7 +366,7 @@ public final class OperatorUtil {
     }
 
     public static boolean isRemoteDeploymentMode(WanakuCamelCodeExecutionEngineSpec spec) {
-        return "remote".equalsIgnoreCase(normalizeDeploymentMode(spec.getDeploymentMode()));
+        return OperatorUtil.isRemoteDeploymentMode(spec);
     }
 
     public static int resolveCodeExecutionPort(WanakuCamelCodeExecutionEngine resource) {
@@ -528,70 +378,11 @@ public final class OperatorUtil {
         return resource.getSpec().getPort() != null ? resource.getSpec().getPort() : 9190;
     }
 
-    public static String normalizeDeploymentMode(String deploymentMode) {
-        if (deploymentMode == null || deploymentMode.isBlank()) {
-            return WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
-        }
-        String normalized = deploymentMode.trim().toLowerCase();
-        if (WanakuTypes.VALID_DEPLOYMENT_MODES.contains(normalized) || "incluster".equals(normalized)) {
-            return WanakuTypes.DEPLOYMENT_MODE_REMOTE.equals(normalized)
-                    ? WanakuTypes.DEPLOYMENT_MODE_REMOTE
-                    : WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
-        }
-        return WanakuTypes.DEPLOYMENT_MODE_IN_CLUSTER;
+    public static Condition readyCondition(Long generation, Condition previousCondition, String message) {
+        return OperatorUtil.readyCondition(generation, previousCondition, message);
     }
 
-    public static void validateDeploymentMode(String deploymentMode) {
-        if (deploymentMode == null || deploymentMode.isBlank()) {
-            return;
-        }
-        String normalized = deploymentMode.trim().toLowerCase();
-        if (!WanakuTypes.VALID_DEPLOYMENT_MODES.contains(normalized) && !"incluster".equals(normalized)) {
-            throw new WanakuException(
-                    "deploymentMode must be one of: " + String.join(", ", WanakuTypes.VALID_DEPLOYMENT_MODES));
-        }
-    }
-
-    public static void validateCacheStrategy(WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec) {
-        if (cacheSpec == null
-                || cacheSpec.getStrategy() == null
-                || cacheSpec.getStrategy().isBlank()) {
-            return;
-        }
-        String strategy = cacheSpec.getStrategy().trim().toLowerCase();
-        if (!WanakuTypes.VALID_CACHE_STRATEGIES.contains(strategy)) {
-            throw new WanakuException("dependencyCache.strategy must be one of: "
-                    + String.join(", ", WanakuTypes.VALID_CACHE_STRATEGIES));
-        }
-    }
-
-    static String resolveAuthRealm(WanakuCapability resource) {
-        if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
-            return EnvironmentVariables.DEFAULT_AUTH_REALM;
-        }
-        String realm = resource.getSpec().getAuth().getAuthRealm();
-        return (realm == null || realm.isBlank()) ? EnvironmentVariables.DEFAULT_AUTH_REALM : realm;
-    }
-
-    /**
-     * Resolves the auth realm for a WanakuRouter resource.
-     *
-     * @param resource the WanakuRouter custom resource (may be null)
-     * @return the configured realm, or the default "wanaku" realm
-     */
-    static String resolveAuthRealm(WanakuRouter resource) {
-        if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
-            return EnvironmentVariables.DEFAULT_AUTH_REALM;
-        }
-        String realm = resource.getSpec().getAuth().getAuthRealm();
-        return (realm == null || realm.isBlank()) ? EnvironmentVariables.DEFAULT_AUTH_REALM : realm;
-    }
-
-    static String resolveAuthRealm(WanakuCamelCodeExecutionEngine resource) {
-        if (resource == null || resource.getSpec() == null || resource.getSpec().getAuth() == null) {
-            return EnvironmentVariables.DEFAULT_AUTH_REALM;
-        }
-        String realm = resource.getSpec().getAuth().getAuthRealm();
-        return (realm == null || realm.isBlank()) ? EnvironmentVariables.DEFAULT_AUTH_REALM : realm;
+    public static Condition findCondition(List<Condition> conditions, String type) {
+        return OperatorUtil.findCondition(conditions, type);
     }
 }

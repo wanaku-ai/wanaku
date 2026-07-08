@@ -6,16 +6,19 @@ import ai.wanaku.operator.util.OperatorUtil;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class WanakuCodeExecutionEngineReconcilerTest {
+class WanakuCamelCodeExecutionEngineReconcilerTest {
 
-    private final WanakuCodeExecutionEngineReconciler reconciler = new WanakuCodeExecutionEngineReconciler();
+    private final WanakuCamelCodeExecutionEngineReconciler reconciler = new WanakuCamelCodeExecutionEngineReconciler();
 
-    private WanakuCodeExecutionEngine baseResource() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = new WanakuCodeExecutionEngineSpec();
+    private WanakuCamelCodeExecutionEngine baseResource() {
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = new WanakuCamelCodeExecutionEngineSpec();
         spec.setRouterRef("my-router");
         spec.setEngineType("camel");
         spec.setLanguageName("yaml");
@@ -28,62 +31,77 @@ class WanakuCodeExecutionEngineReconcilerTest {
     }
 
     @Test
-    void validateSpecThrowsWhenSpecIsNull() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+    void validateSpecReturnsInvalidWhenSpecIsNull() {
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
         resource.setSpec(null);
-        assertThrows(WanakuException.class, () -> reconciler.validateSpec(resource));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertEquals("spec must be provided", result.errorMessage);
     }
 
     @Test
-    void validateSpecThrowsWhenRouterRefIsMissing() {
-        WanakuCodeExecutionEngine resource = baseResource();
+    void validateSpecReturnsInvalidWhenRouterRefIsMissing() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setRouterRef(null);
-        WanakuException ex = assertThrows(WanakuException.class, () -> reconciler.validateSpec(resource));
-        assertTrue(ex.getMessage().contains("routerRef"));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("routerRef"));
     }
 
     @Test
-    void validateSpecThrowsWhenLanguageNameIsMissing() {
-        WanakuCodeExecutionEngine resource = baseResource();
+    void validateSpecReturnsInvalidWhenLanguageNameIsMissing() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setLanguageName(null);
-        assertThrows(WanakuException.class, () -> reconciler.validateSpec(resource));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("languageName"));
     }
 
     @Test
-    void validateSpecThrowsWhenEngineTypeIsMissing() {
-        WanakuCodeExecutionEngine resource = baseResource();
+    void validateSpecReturnsInvalidWhenEngineTypeIsMissing() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setEngineType(null);
-        assertThrows(WanakuException.class, () -> reconciler.validateSpec(resource));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("engineType"));
     }
 
     @Test
-    void validateSpecThrowsWhenImageMissingInClusterMode() {
-        WanakuCodeExecutionEngine resource = baseResource();
+    void validateSpecReturnsInvalidWhenImageMissingInClusterMode() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setImage(null);
-        assertThrows(WanakuException.class, () -> reconciler.validateSpec(resource));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("image"));
     }
 
     @Test
-    void validateSpecThrowsWhenRemoteHostMissing() {
-        WanakuCodeExecutionEngine resource = baseResource();
+    void validateSpecReturnsInvalidWhenRemoteHostMissing() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setDeploymentMode("remote");
-        assertThrows(WanakuException.class, () -> reconciler.validateSpec(resource));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("remote.host"));
     }
 
     @Test
-    void validateSpecSucceedsForValidInCluster() {
-        WanakuCodeExecutionEngine resource = baseResource();
-        assertDoesNotThrow(() -> reconciler.validateSpec(resource));
+    void validateSpecReturnsValidForInCluster() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertTrue(result.valid);
+        assertNull(result.errorMessage);
     }
 
     @Test
-    void validateSpecSucceedsForValidRemote() {
-        WanakuCodeExecutionEngine resource = baseResource();
+    void validateSpecReturnsValidForRemote() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setDeploymentMode("remote");
-        WanakuCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCodeExecutionEngineSpec.RemoteSpec();
+        WanakuCamelCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCamelCodeExecutionEngineSpec.RemoteSpec();
         remote.setHost("engine.example.com");
         resource.getSpec().setRemote(remote);
-        assertDoesNotThrow(() -> reconciler.validateSpec(resource));
+        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        assertTrue(result.valid);
+        assertNull(result.errorMessage);
     }
 
     @Test
@@ -115,8 +133,8 @@ class WanakuCodeExecutionEngineReconcilerTest {
     @Test
     void validateCacheStrategyAcceptsValidStrategies() {
         for (String strategy : WanakuTypes.VALID_CACHE_STRATEGIES) {
-            WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
-                    new WanakuCodeExecutionEngineSpec.DependencyCacheSpec();
+            WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
+                    new WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec();
             cacheSpec.setStrategy(strategy);
             assertDoesNotThrow(() -> OperatorUtil.validateCacheStrategy(cacheSpec));
         }
@@ -124,8 +142,8 @@ class WanakuCodeExecutionEngineReconcilerTest {
 
     @Test
     void validateCacheStrategyThrowsForInvalidStrategy() {
-        WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
-                new WanakuCodeExecutionEngineSpec.DependencyCacheSpec();
+        WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
+                new WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec();
         cacheSpec.setStrategy("invalid-strategy");
         WanakuException ex = assertThrows(WanakuException.class, () -> OperatorUtil.validateCacheStrategy(cacheSpec));
         assertTrue(ex.getMessage().contains("dependencyCache.strategy"));
@@ -138,23 +156,24 @@ class WanakuCodeExecutionEngineReconcilerTest {
 
     @Test
     void validateCacheStrategyAcceptsNullStrategy() {
-        WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
-                new WanakuCodeExecutionEngineSpec.DependencyCacheSpec();
+        WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
+                new WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec();
         cacheSpec.setStrategy(null);
         assertDoesNotThrow(() -> OperatorUtil.validateCacheStrategy(cacheSpec));
     }
 
     @Test
     void validateCacheStrategyAcceptsBlankStrategy() {
-        WanakuCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
-                new WanakuCodeExecutionEngineSpec.DependencyCacheSpec();
+        WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec cacheSpec =
+                new WanakuCamelCodeExecutionEngineSpec.DependencyCacheSpec();
         cacheSpec.setStrategy(" ");
         assertDoesNotThrow(() -> OperatorUtil.validateCacheStrategy(cacheSpec));
     }
 
     @Test
     void validateSecurityListsDetectsOverlap() {
-        WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec = new WanakuCodeExecutionEngineSpec.SecuritySpec();
+        WanakuCamelCodeExecutionEngineSpec.SecuritySpec securitySpec =
+                new WanakuCamelCodeExecutionEngineSpec.SecuritySpec();
         securitySpec.setComponentAllowlist(List.of("component-a", "component-b"));
         securitySpec.setComponentBlocklist(List.of("component-b", "component-c"));
         WanakuException ex = assertThrows(WanakuException.class, () -> reconciler.validateSecurityLists(securitySpec));
@@ -163,7 +182,8 @@ class WanakuCodeExecutionEngineReconcilerTest {
 
     @Test
     void validateSecurityListsPassesWhenNoOverlap() {
-        WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec = new WanakuCodeExecutionEngineSpec.SecuritySpec();
+        WanakuCamelCodeExecutionEngineSpec.SecuritySpec securitySpec =
+                new WanakuCamelCodeExecutionEngineSpec.SecuritySpec();
         securitySpec.setComponentAllowlist(List.of("component-a"));
         securitySpec.setComponentBlocklist(List.of("component-b"));
         assertDoesNotThrow(() -> reconciler.validateSecurityLists(securitySpec));
@@ -176,7 +196,8 @@ class WanakuCodeExecutionEngineReconcilerTest {
 
     @Test
     void validateSecurityListsPassesWithEmptyLists() {
-        WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec = new WanakuCodeExecutionEngineSpec.SecuritySpec();
+        WanakuCamelCodeExecutionEngineSpec.SecuritySpec securitySpec =
+                new WanakuCamelCodeExecutionEngineSpec.SecuritySpec();
         securitySpec.setComponentAllowlist(List.of());
         securitySpec.setComponentBlocklist(null);
         assertDoesNotThrow(() -> reconciler.validateSecurityLists(securitySpec));

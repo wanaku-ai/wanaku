@@ -3,7 +3,7 @@ package ai.wanaku.operator.wanaku;
 import java.util.List;
 import io.fabric8.kubernetes.api.model.Condition;
 
-public class WanakuCodeExecutionEngineStatus {
+public class WanakuCamelCodeExecutionEngineStatus {
     private String deploymentState;
     private String serviceUrl;
     private List<String> activeRoutes;

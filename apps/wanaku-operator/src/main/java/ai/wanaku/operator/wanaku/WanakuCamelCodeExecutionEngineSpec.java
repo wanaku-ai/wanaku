@@ -2,7 +2,7 @@ package ai.wanaku.operator.wanaku;
 
 import java.util.List;
 
-public class WanakuCodeExecutionEngineSpec {
+public class WanakuCamelCodeExecutionEngineSpec {
     private WanakuTypes.AuthSpec auth;
     private WanakuTypes.SecretsSpec secrets;
     private String routerRef;

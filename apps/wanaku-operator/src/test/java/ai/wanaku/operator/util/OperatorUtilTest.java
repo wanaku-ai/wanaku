@@ -5,10 +5,10 @@ import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import ai.wanaku.operator.wanaku.WanakuCamelCodeExecutionEngine;
+import ai.wanaku.operator.wanaku.WanakuCamelCodeExecutionEngineSpec;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
-import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngine;
-import ai.wanaku.operator.wanaku.WanakuCodeExecutionEngineSpec;
 import ai.wanaku.operator.wanaku.WanakuRouter;
 import ai.wanaku.operator.wanaku.WanakuRouterSpec;
 import ai.wanaku.operator.wanaku.WanakuTypes;
@@ -91,13 +91,13 @@ class OperatorUtilTest {
 
     @Test
     void makeCodeExecutionEngineInternalServiceUsesConfiguredPortAndLabels() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
         resource.setSpec(baseSpec());
         resource.getMetadata().setName("camel-code-execution-engine");
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        Service service = OperatorUtil.makeCodeExecutionEngineInternalService(resource);
+        Service service = CodeExecutionEngineResourceFactory.makeCodeExecutionEngineInternalService(resource);
 
         assertEquals("camel-code-execution-engine", service.getMetadata().getName());
         assertServiceLabel(service, "serviceType", "code-execution-engine");
@@ -110,10 +110,10 @@ class OperatorUtilTest {
 
     @Test
     void makeCodeExecutionEngineInternalServiceRemoteUsesExternalName() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setDeploymentMode("remote");
-        WanakuCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCodeExecutionEngineSpec.RemoteSpec();
+        WanakuCamelCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCamelCodeExecutionEngineSpec.RemoteSpec();
         remote.setHost("camel-engine.example.com");
         remote.setPort(9555);
         spec.setRemote(remote);
@@ -122,7 +122,7 @@ class OperatorUtilTest {
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        Service service = OperatorUtil.makeCodeExecutionEngineInternalService(resource);
+        Service service = CodeExecutionEngineResourceFactory.makeCodeExecutionEngineInternalService(resource);
 
         assertEquals("ExternalName", service.getSpec().getType());
         assertEquals("camel-engine.example.com", service.getSpec().getExternalName());
@@ -132,15 +132,16 @@ class OperatorUtilTest {
 
     @Test
     void makeDesiredCamelCodeExecutionEngineDeploymentSetsContainerPort() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setPort(9443);
         resource.setSpec(spec);
         resource.getMetadata().setName("test-engine");
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        Deployment deployment = OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+        Deployment deployment =
+                CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
 
         assertNotNull(deployment);
         assertEquals("test-engine", deployment.getMetadata().getName());
@@ -159,15 +160,16 @@ class OperatorUtilTest {
 
     @Test
     void makeDesiredCamelCodeExecutionEngineDeploymentUpdatesProbePorts() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setPort(9443);
         resource.setSpec(spec);
         resource.getMetadata().setName("test-engine");
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        Deployment deployment = OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+        Deployment deployment =
+                CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
 
         var container =
                 deployment.getSpec().getTemplate().getSpec().getContainers().getFirst();
@@ -180,15 +182,16 @@ class OperatorUtilTest {
 
     @Test
     void makeDesiredCamelCodeExecutionEngineDeploymentDefaultsPortTo9190() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setPort(null);
         resource.setSpec(spec);
         resource.getMetadata().setName("test-engine");
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        Deployment deployment = OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+        Deployment deployment =
+                CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
 
         var container =
                 deployment.getSpec().getTemplate().getSpec().getContainers().getFirst();
@@ -200,36 +203,36 @@ class OperatorUtilTest {
 
     @Test
     void resolveCodeExecutionPortUsesSpecPort() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setPort(9443);
         resource.setSpec(spec);
         resource.getMetadata().setName("test-engine");
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        assertEquals(9443, OperatorUtil.resolveCodeExecutionPort(resource));
+        assertEquals(9443, CodeExecutionEngineResourceFactory.resolveCodeExecutionPort(resource));
     }
 
     @Test
     void resolveCodeExecutionPortDefaultsTo9190() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setPort(null);
         resource.setSpec(spec);
         resource.getMetadata().setName("test-engine");
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        assertEquals(9190, OperatorUtil.resolveCodeExecutionPort(resource));
+        assertEquals(9190, CodeExecutionEngineResourceFactory.resolveCodeExecutionPort(resource));
     }
 
     @Test
     void resolveCodeExecutionPortRemoteUsesRemotePort() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setDeploymentMode("remote");
-        WanakuCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCodeExecutionEngineSpec.RemoteSpec();
+        WanakuCamelCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCamelCodeExecutionEngineSpec.RemoteSpec();
         remote.setHost("engine.example.com");
         remote.setPort(9555);
         spec.setRemote(remote);
@@ -238,16 +241,16 @@ class OperatorUtilTest {
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        assertEquals(9555, OperatorUtil.resolveCodeExecutionPort(resource));
+        assertEquals(9555, CodeExecutionEngineResourceFactory.resolveCodeExecutionPort(resource));
     }
 
     @Test
     void resolveCodeExecutionPortRemoteFallsBackToSpecPort() {
-        WanakuCodeExecutionEngine resource = new WanakuCodeExecutionEngine();
-        WanakuCodeExecutionEngineSpec spec = baseSpec();
+        WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
+        WanakuCamelCodeExecutionEngineSpec spec = baseSpec();
         spec.setDeploymentMode("remote");
         spec.setPort(9443);
-        WanakuCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCodeExecutionEngineSpec.RemoteSpec();
+        WanakuCamelCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCamelCodeExecutionEngineSpec.RemoteSpec();
         remote.setHost("engine.example.com");
         spec.setRemote(remote);
         resource.setSpec(spec);
@@ -255,7 +258,7 @@ class OperatorUtilTest {
         resource.getMetadata().setNamespace("wanaku");
         resource.getMetadata().setUid("test-uid");
 
-        assertEquals(9443, OperatorUtil.resolveCodeExecutionPort(resource));
+        assertEquals(9443, CodeExecutionEngineResourceFactory.resolveCodeExecutionPort(resource));
     }
 
     @Test
@@ -294,8 +297,8 @@ class OperatorUtilTest {
         assertEquals("http://internal-my-router:8080/", OperatorUtil.getInternalRegistrationUri("my-router"));
     }
 
-    private static WanakuCodeExecutionEngineSpec baseSpec() {
-        WanakuCodeExecutionEngineSpec spec = new WanakuCodeExecutionEngineSpec();
+    private static WanakuCamelCodeExecutionEngineSpec baseSpec() {
+        WanakuCamelCodeExecutionEngineSpec spec = new WanakuCamelCodeExecutionEngineSpec();
         spec.setRouterRef("router");
         spec.setEngineType("camel");
         spec.setLanguageName("yaml");

@@ -13,9 +13,9 @@ rules:
       - wanakucapabilities
       - wanakucapabilities/status
       - wanakucapabilities/finalizers
-      - camelcodeexecutionengines
-      - camelcodeexecutionengines/status
-      - camelcodeexecutionengines/finalizers
+      - wanakucamelcodeexecutionengines
+      - wanakucamelcodeexecutionengines/status
+      - wanakucamelcodeexecutionengines/finalizers
     verbs:
       - get
       - list
@@ -32,7 +32,53 @@ rules:
       - configmaps
       - secrets
       - serviceaccounts
-      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+    - apps
+    resources:
+    - deployments
+    verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: wanaku-operator
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+  name: {{ .Release.Namespace }}-wanaku-camel-code-execution-engine-cluster-role
+rules:
+  - apiGroups:
+    - wanaku.ai
+    resources:
+      - wanakucamelcodeexecutionengines
+      - wanakucamelcodeexecutionengines/status
+      - wanakucamelcodeexecutionengines/finalizers
+    verbs:
+    - get
+    - list
+    - watch
+    - patch
+    - update
+    - create
+    - delete
+  - apiGroups:
+    - ""
+    resources:
+      - services
     verbs:
       - get
       - list

@@ -83,7 +83,7 @@ echo "PASS: operator pod is Running"
 ### 6. Verify CRDs are installed
 
 ```bash
-for CRD in wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai; do
+for CRD in wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai wanakucamelcodeexecutionengines.wanaku.ai; do
   if ! oc get crd "${CRD}" > /dev/null 2>&1; then
     echo "FAIL: CRD ${CRD} not found"
     exit 1

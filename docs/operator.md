@@ -4,12 +4,13 @@ This guide covers deploying and managing Wanaku using the Kubernetes Operator. T
 
 ## Overview
 
-The Wanaku Operator manages three custom resource definitions (CRDs):
+The Wanaku Operator manages four custom resource definitions (CRDs):
 
 - **WanakuRouter** — deploys and configures the MCP router gateway
 - **WanakuCapability** — deploys capability services (HTTP tools, Camel integrations, etc.) and connects them to a router
 - **WanakuCamelRoute** — packages inline Camel routes into service catalogs and deploys them to a router
 - **WanakuServiceCatalog** — deploys packaged service catalogs (Camel routes + Wanaku rules) to a router
+- **WanakuCodeExecutionEngine** — deploys the Camel Code Execution Engine in-cluster or targets a remote engine endpoint
 
 When you create these custom resources, the operator automatically provisions:
 
@@ -56,7 +57,8 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --namespace wanaku \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES=JOSDK_ALL_NAMESPACES \
-  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES \
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
 ```
 
 ### 3. Verify the Operator
@@ -207,6 +209,78 @@ kubectl create configmap finance-catalog-data \
 > [!TIP]
 > See [Service Catalogs](usage.md#service-catalogs) and [Service Templates](service-templates.md) for details on creating and packaging catalogs.
 
+### WanakuCodeExecutionEngine (`wanaku.ai/v1alpha1`)
+
+Deploys the Camel Code Execution Engine. Supports two modes: **in-cluster** (Kubernetes Deployment) and **remote** (ExternalName service pointing to an existing endpoint).
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `spec.auth.authServer` | string | No | `""` | Keycloak server address (format: `http://address`). |
+| `spec.auth.authRealm` | string | No | `"wanaku"` | Keycloak realm name. |
+| `spec.secrets.oidcCredentialsSecret` | string | No | `""` | OIDC client secret. |
+| `spec.routerRef` | string | **Yes** | — | Name of the `WanakuRouter` CR this engine registers with. |
+| `spec.deploymentMode` | string | No | `"in-cluster"` | Deployment mode: `in-cluster` or `remote`. |
+| `spec.engineType` | string | No | `"camel"` | Engine type identifier. |
+| `spec.languageName` | string | **Yes** | — | Language name for the engine (e.g., `yaml`, `java`). |
+| `spec.image` | string | **Yes** (in-cluster) | — | Container image. Required when `deploymentMode=in-cluster`. |
+| `spec.port` | int | No | `9190` | gRPC port. |
+| `spec.remote.host` | string | **Yes** (remote) | — | Hostname of the remote engine. Required when `deploymentMode=remote`. |
+| `spec.remote.port` | int | No | `9190` | Port of the remote engine. |
+| `spec.remote.scheme` | string | No | `"http"` | URL scheme: `http` or `https`. |
+| `spec.remote.path` | string | No | `""` | Optional path prefix for the remote engine URL. |
+| `spec.security.componentAllowlist` | list | No | `[]` | Allowed Camel component names. |
+| `spec.security.componentBlocklist` | list | No | `[]` | Blocked Camel component names. |
+| `spec.security.endpointAllowlist` | list | No | `[]` | Allowed endpoint URI patterns. |
+| `spec.security.endpointBlocklist` | list | No | `[]` | Blocked endpoint URI patterns. |
+| `spec.security.routeAllowlist` | list | No | `[]` | Allowed route IDs. |
+| `spec.security.routeBlocklist` | list | No | `[]` | Blocked route IDs. |
+| `spec.dependencyCache.enabled` | bool | No | `true` | Enable dependency caching. |
+| `spec.dependencyCache.strategy` | string | No | `"inmemory"` | Cache strategy: `inmemory`, `infinispan`, or `disabled`. |
+| `spec.dependencyCache.cacheName` | string | No | `""` | Infinispan cache name (when strategy=infinispan). |
+| `spec.dependencyCache.templateNamespace` | string | No | `""` | Namespace for template lookup. |
+| `spec.dependencyCache.templatePrefix` | string | No | `""` | Prefix for template keys. |
+| `spec.resources.cpuRequest` | string | No | `""` | CPU request (e.g., `"100m"`). |
+| `spec.resources.memoryRequest` | string | No | `""` | Memory request (e.g., `"128Mi"`). |
+| `spec.resources.cpuLimit` | string | No | `""` | CPU limit (e.g., `"500m"`). |
+| `spec.resources.memoryLimit` | string | No | `""` | Memory limit (e.g., `"256Mi"`). |
+| `spec.imagePullPolicy` | string | No | `"IfNotPresent"` | Image pull policy. |
+| `spec.env` | list | No | `[]` | Additional environment variables. |
+
+**Example (in-cluster):**
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCodeExecutionEngine
+metadata:
+  name: my-code-engine
+spec:
+  routerRef: wanaku-dev
+  languageName: yaml
+  image: quay.io/wanaku/camel-code-execution-engine:latest
+  deploymentMode: in-cluster
+```
+
+**Example (remote):**
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCodeExecutionEngine
+metadata:
+  name: my-remote-engine
+spec:
+  routerRef: wanaku-dev
+  languageName: yaml
+  deploymentMode: remote
+  remote:
+    host: engine.example.com
+    port: 9443
+    scheme: https
+    path: /mcp
+```
+
+> [!IMPORTANT]
+> When `deploymentMode=in-cluster`, `spec.image` is required. When `deploymentMode=remote`, `spec.remote.host` is required.
+
 ### WanakuCamelRoute (`wanaku.ai/v1alpha1`)
 
 Packages inline Camel routes and MCP metadata into a service catalog automatically, then deploys the resulting capability to a router.
@@ -291,7 +365,7 @@ kubectl apply -f service-catalog.yaml -n wanaku
 **List all Wanaku resources:**
 
 ```shell
-kubectl get wanakurouter,wanakucapability,wanakucamelroute,wanakuservicecatalog -n wanaku
+kubectl get wanakurouter,wanakucapability,wanakucamelroute,wanakuservicecatalog,wanakucamelcodeexecutionengine -n wanaku
 ```
 
 **Get detailed status:**
@@ -300,6 +374,7 @@ kubectl get wanakurouter,wanakucapability,wanakucamelroute,wanakuservicecatalog 
 kubectl describe wanakurouter wanaku-dev -n wanaku
 kubectl describe wanakucapability wanaku-capabilities -n wanaku
 kubectl describe wanakuservicecatalog my-catalogs -n wanaku
+kubectl describe wanakucamelcodeexecutionengine my-code-engine -n wanaku
 ```
 
 The status section shows:
@@ -353,6 +428,7 @@ Delete the custom resources in reverse order (catalogs first, then capabilities,
 kubectl delete wanakuservicecatalog my-catalogs -n wanaku
 kubectl delete wanakucamelroute my-camel-route -n wanaku
 kubectl delete wanakucapability wanaku-capabilities -n wanaku
+kubectl delete wanakucamelcodeexecutionengine my-code-engine -n wanaku
 kubectl delete wanakurouter wanaku-dev -n wanaku
 ```
 
@@ -371,7 +447,8 @@ helm uninstall wanaku-operator -n wanaku
 > kubectl delete wanakurouter --all -n wanaku
 > kubectl delete wanakucapability --all -n wanaku
 > kubectl delete wanakuservicecatalog --all -n wanaku
-> kubectl delete crd wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakucamelroutes.wanaku.ai wanakuservicecatalogs.wanaku.ai
+> kubectl delete wanakucamelcodeexecutionengine --all -n wanaku
+> kubectl delete crd wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakucamelroutes.wanaku.ai wanakuservicecatalogs.wanaku.ai wanakucamelcodeexecutionengines.wanaku.ai
 > ```
 
 ## Running Without Authentication
@@ -412,6 +489,7 @@ The operator's Helm chart exposes these key configuration options in `values.yam
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCapability` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelRoute` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuServiceCatalog` resources. |
+| `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCodeExecutionEngine` resources. |
 
 **Example: customize operator image and watch all namespaces**
 
@@ -422,7 +500,8 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES=JOSDK_ALL_NAMESPACES \
-  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES \
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
 ```
 
 ## Troubleshooting
