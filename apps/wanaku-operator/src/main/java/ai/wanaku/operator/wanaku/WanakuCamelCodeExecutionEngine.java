@@ -7,5 +7,6 @@ import io.fabric8.kubernetes.model.annotation.Version;
 
 @Version("v1alpha1")
 @Group("wanaku.ai")
-public class WanakuCodeExecutionEngine
-        extends CustomResource<WanakuCodeExecutionEngineSpec, WanakuCodeExecutionEngineStatus> implements Namespaced {}
+public class WanakuCamelCodeExecutionEngine
+        extends CustomResource<WanakuCamelCodeExecutionEngineSpec, WanakuCamelCodeExecutionEngineStatus>
+        implements Namespaced {}

@@ -512,7 +512,7 @@ done
 ### Test 3.3: Verify CRDs are installed (cluster-scoped, shared)
 
 ```bash
-for CRD in wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai; do
+for CRD in wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai wanakucamelcodeexecutionengines.wanaku.ai; do
   oc get crd "${CRD}" > /dev/null 2>&1
   if [ $? -eq 0 ]; then
     echo "PASS: CRD ${CRD} exists"

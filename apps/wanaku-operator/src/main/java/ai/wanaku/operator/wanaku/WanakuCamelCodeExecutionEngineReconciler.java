@@ -3,11 +3,13 @@ package ai.wanaku.operator.wanaku;
 import jakarta.inject.Inject;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -22,13 +24,13 @@ import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
+import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.findCondition;
+import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.isRemoteDeploymentMode;
+import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeCodeExecutionEngineInternalService;
+import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment;
+import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.readyCondition;
 import static ai.wanaku.operator.util.Matchers.match;
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
-import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.isRemoteDeploymentMode;
-import static ai.wanaku.operator.util.OperatorUtil.makeCodeExecutionEngineInternalService;
-import static ai.wanaku.operator.util.OperatorUtil.makeDesiredCamelCodeExecutionEngineDeployment;
-import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
 import static ai.wanaku.operator.util.OperatorUtil.validateCacheStrategy;
 import static ai.wanaku.operator.util.OperatorUtil.validateDeploymentMode;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
@@ -63,40 +65,49 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
             RBACVerbs.PATCH,
             RBACVerbs.DELETE
         })
-public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCodeExecutionEngine> {
-    private static final Logger LOG = Logger.getLogger(WanakuCodeExecutionEngineReconciler.class);
+public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<WanakuCamelCodeExecutionEngine> {
+
+    private static final Logger LOG = Logger.getLogger(WanakuCamelCodeExecutionEngineReconciler.class);
 
     @Inject
     KubernetesClient kubernetesClient;
 
     @Override
-    public UpdateControl<WanakuCodeExecutionEngine> reconcile(
-            WanakuCodeExecutionEngine resource, Context<WanakuCodeExecutionEngine> context) throws Exception {
+    public UpdateControl<WanakuCamelCodeExecutionEngine> reconcile(
+            WanakuCamelCodeExecutionEngine resource, Context<WanakuCamelCodeExecutionEngine> context) throws Exception {
+
         LOG.infof(
                 "Starting code execution engine reconciliation for %s",
                 resource.getMetadata().getName());
 
-        validateSpec(resource);
+        validateSpecResult validation = validateSpec(resource);
+        if (!validation.valid) {
+            return setErrorStatus(resource, "ValidationError", validation.errorMessage);
+        }
 
         final String namespace = resource.getMetadata().getNamespace();
         final boolean remote = isRemoteDeploymentMode(resource.getSpec());
         final String serviceName = resource.getMetadata().getName();
-
         final String routerRef = resource.getSpec().getRouterRef();
+
         WanakuRouter router = kubernetesClient
                 .resources(WanakuRouter.class)
                 .inNamespace(namespace)
                 .withName(routerRef)
                 .get();
+
         if (router == null) {
-            throw new WanakuException(String.format(
-                    "Referenced WanakuRouter '%s' not found in namespace '%s'. "
-                            + "Ensure the WanakuRouter resource is created before the WanakuCodeExecutionEngine.",
-                    routerRef, namespace));
+            return setErrorStatus(
+                    resource,
+                    "ValidationError",
+                    String.format(
+                            "Referenced WanakuRouter '%s' not found in namespace '%s'. "
+                                    + "Ensure the WanakuRouter resource is created before the "
+                                    + "WanakuCamelCodeExecutionEngine.",
+                            routerRef, namespace));
         }
 
         final String serviceUrl = buildServiceUrl(resource);
-
         final Service desiredService = makeCodeExecutionEngineInternalService(resource);
 
         if (!remote) {
@@ -107,6 +118,7 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                     .inNamespace(namespace)
                     .withName(serviceName)
                     .get();
+
             if (!match(desiredDeployment, existingDeployment)) {
                 LOG.infof("Creating or updating Deployment %s in %s", serviceName, namespace);
                 kubernetesClient
@@ -123,6 +135,7 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                 .inNamespace(namespace)
                 .withName(serviceName)
                 .get();
+
         if (!match(desiredService, existingService)) {
             LOG.infof("Creating or updating Service %s in %s", serviceName, namespace);
             kubernetesClient
@@ -132,7 +145,7 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                     .createOr(Replaceable::update);
         }
 
-        final WanakuCodeExecutionEngineStatus status = new WanakuCodeExecutionEngineStatus();
+        final WanakuCamelCodeExecutionEngineStatus status = new WanakuCamelCodeExecutionEngineStatus();
         status.setDeploymentState(remote ? "REMOTE_READY" : "IN_CLUSTER_READY");
         status.setServiceUrl(serviceUrl);
         status.setActiveRoutes(List.of(buildRouteIdentifier(resource)));
@@ -140,16 +153,17 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
 
         final Condition previousReadyCondition = findCondition(
                 resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
+
         status.setConditions(List.of(readyCondition(
                 resource.getMetadata().getGeneration(),
                 previousReadyCondition,
                 "Camel Code Execution Engine is ready")));
-        resource.setStatus(status);
 
+        resource.setStatus(status);
         return UpdateControl.patchStatus(resource);
     }
 
-    private static String buildRouteIdentifier(WanakuCodeExecutionEngine resource) {
+    private static String buildRouteIdentifier(WanakuCamelCodeExecutionEngine resource) {
         return String.format(
                 Locale.ROOT,
                 "%s/%s",
@@ -157,9 +171,11 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                 resource.getSpec().getLanguageName());
     }
 
-    private WanakuCodeExecutionEngineStatus.HealthCheck buildHealthCheck(
-            WanakuCodeExecutionEngine resource, boolean remote, String serviceName, String namespace) {
-        WanakuCodeExecutionEngineStatus.HealthCheck healthCheck = new WanakuCodeExecutionEngineStatus.HealthCheck();
+    private WanakuCamelCodeExecutionEngineStatus.HealthCheck buildHealthCheck(
+            WanakuCamelCodeExecutionEngine resource, boolean remote, String serviceName, String namespace) {
+
+        WanakuCamelCodeExecutionEngineStatus.HealthCheck healthCheck =
+                new WanakuCamelCodeExecutionEngineStatus.HealthCheck();
         healthCheck.setName(remote ? "remote-endpoint" : "deployment");
         healthCheck.setTimestamp(OffsetDateTime.now().toString());
 
@@ -175,43 +191,46 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                 .inNamespace(namespace)
                 .withName(serviceName)
                 .get();
+
         boolean healthy = deployment != null
                 && deployment.getStatus() != null
                 && deployment.getStatus().getReadyReplicas() != null
                 && deployment.getStatus().getReadyReplicas() > 0;
+
         healthCheck.setStatus(healthy ? "True" : "False");
         healthCheck.setMessage(
                 healthy
                         ? "In-cluster deployment has ready pods ("
-                                + deployment.getStatus().getReadyReplicas() + ")"
+                                + deployment.getStatus().getReadyReplicas()
+                                + ")"
                         : "In-cluster deployment has not been observed yet");
         return healthCheck;
     }
 
-    private String buildServiceUrl(WanakuCodeExecutionEngine resource) {
+    private String buildServiceUrl(WanakuCamelCodeExecutionEngine resource) {
         String scheme = resource.getSpec().getRemote() != null
                         && resource.getSpec().getRemote().getScheme() != null
                 ? resource.getSpec().getRemote().getScheme()
                 : "http";
+
         Integer port = resource.getSpec().getPort() != null ? resource.getSpec().getPort() : 9190;
 
         if (isRemoteDeploymentMode(resource.getSpec())) {
             String path = resource.getSpec().getRemote().getPath();
             String normalizedPath = path != null && !path.isBlank() ? (path.startsWith("/") ? path : "/" + path) : "";
-            String suffix = normalizedPath;
             Integer remotePort = resource.getSpec().getRemote().getPort() != null
                     ? resource.getSpec().getRemote().getPort()
                     : port;
+
             return String.format(
                     Locale.ROOT,
                     "%s://%s:%d%s",
                     scheme,
                     resource.getSpec().getRemote().getHost(),
                     remotePort,
-                    suffix);
+                    normalizedPath);
         }
 
-        // For in-cluster, always use http since it's internal cluster communication
         return String.format(
                 Locale.ROOT,
                 "http://%s.%s.svc.cluster.local:%d",
@@ -220,19 +239,30 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
                 port);
     }
 
-    void validateSpec(WanakuCodeExecutionEngine resource) {
-        final WanakuCodeExecutionEngineSpec spec = resource.getSpec();
+    static class validateSpecResult {
+        boolean valid;
+        String errorMessage;
+
+        validateSpecResult(boolean valid, String errorMessage) {
+            this.valid = valid;
+            this.errorMessage = errorMessage;
+        }
+    }
+
+    validateSpecResult validateSpec(WanakuCamelCodeExecutionEngine resource) {
+        final WanakuCamelCodeExecutionEngineSpec spec = resource.getSpec();
+
         if (spec == null) {
-            throw new WanakuException("spec must be provided");
+            return new validateSpecResult(false, "spec must be provided");
         }
         if (spec.getRouterRef() == null || spec.getRouterRef().isBlank()) {
-            throw new WanakuException("routerRef must be specified for the Camel Code Execution Engine");
+            return new validateSpecResult(false, "routerRef must be specified for the Camel Code Execution Engine");
         }
         if (spec.getLanguageName() == null || spec.getLanguageName().isBlank()) {
-            throw new WanakuException("languageName must be specified for the Camel Code Execution Engine");
+            return new validateSpecResult(false, "languageName must be specified for the Camel Code Execution Engine");
         }
         if (spec.getEngineType() == null || spec.getEngineType().isBlank()) {
-            throw new WanakuException("engineType must be specified for the Camel Code Execution Engine");
+            return new validateSpecResult(false, "engineType must be specified for the Camel Code Execution Engine");
         }
         validateDeploymentMode(spec.getDeploymentMode());
 
@@ -240,21 +270,21 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
             if (spec.getRemote() == null
                     || spec.getRemote().getHost() == null
                     || spec.getRemote().getHost().isBlank()) {
-                throw new WanakuException("remote.host must be specified when deploymentMode=remote");
+                return new validateSpecResult(false, "remote.host must be specified when deploymentMode=remote");
             }
         } else if (spec.getImage() == null || spec.getImage().isBlank()) {
-            throw new WanakuException("image must be specified when deploymentMode=in-cluster");
+            return new validateSpecResult(false, "image must be specified when deploymentMode=in-cluster");
         }
 
         validateSecurityLists(spec.getSecurity());
         validateCacheStrategy(spec.getDependencyCache());
+        return new validateSpecResult(true, null);
     }
 
-    void validateSecurityLists(WanakuCodeExecutionEngineSpec.SecuritySpec securitySpec) {
+    void validateSecurityLists(WanakuCamelCodeExecutionEngineSpec.SecuritySpec securitySpec) {
         if (securitySpec == null) {
             return;
         }
-
         validateNoOverlap("component", securitySpec.getComponentAllowlist(), securitySpec.getComponentBlocklist());
         validateNoOverlap("endpoint", securitySpec.getEndpointAllowlist(), securitySpec.getEndpointBlocklist());
         validateNoOverlap("route", securitySpec.getRouteAllowlist(), securitySpec.getRouteBlocklist());
@@ -264,17 +294,36 @@ public class WanakuCodeExecutionEngineReconciler implements Reconciler<WanakuCod
         if (allowlist == null || allowlist.isEmpty() || blocklist == null || blocklist.isEmpty()) {
             return;
         }
-
         List<String> overlaps = new ArrayList<>();
         for (String entry : allowlist) {
             if (blocklist.contains(entry)) {
                 overlaps.add(entry);
             }
         }
-
         if (!overlaps.isEmpty()) {
             throw new WanakuException(
                     String.format("%s allowlist and blocklist cannot contain the same entries: %s", name, overlaps));
         }
+    }
+
+    private UpdateControl<WanakuCamelCodeExecutionEngine> setErrorStatus(
+            WanakuCamelCodeExecutionEngine resource, String reason, String message) {
+        LOG.warnf(
+                "WanakuCamelCodeExecutionEngine '%s' error (%s): %s",
+                resource.getMetadata().getName(), reason, message);
+
+        WanakuCamelCodeExecutionEngineStatus status = new WanakuCamelCodeExecutionEngineStatus();
+        Condition condition = new ConditionBuilder()
+                .withType(READY_CONDITION)
+                .withStatus("False")
+                .withObservedGeneration(resource.getMetadata().getGeneration())
+                .withLastTransitionTime(OffsetDateTime.now(ZoneOffset.UTC).toString())
+                .withReason(reason)
+                .withMessage(message)
+                .build();
+
+        status.setConditions(List.of(condition));
+        resource.setStatus(status);
+        return UpdateControl.patchStatus(resource);
     }
 }
