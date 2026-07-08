@@ -29,6 +29,7 @@ import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
@@ -175,54 +176,48 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         String address = forwardReference.getAddress();
 
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
-        try (var forwardClient = ForwardClient.newClient(address)) {
-            List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
-            for (ResourceReference reference : resourceReferences) {
-                LOG.debugf("Exposing remote resource %s", reference.getName());
-                ResourceHelper.expose(
-                        reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
+        executeForwardRegistration(forwardReference, nameNamespacePair, address, locallyRegisteredTools, ns);
+    }
+
+    private void registerTools(
+            ForwardClient forwardClient,
+            ForwardReference forwardReference,
+            List<RemoteToolReference> locallyRegisteredTools,
+            Namespace ns)
+            throws ServiceUnavailableException {
+        Set<String> reservedNames = new HashSet<>();
+        for (RemoteToolReference reference : mcpBridge.listTools(forwardClient)) {
+            String remoteName = reference.getName();
+            String localName = ForwardToolHelper.buildUniqueRemoteToolName(
+                    remoteName, forwardReference.getName(), name -> toolManager.getTool(name) != null, reservedNames);
+
+            if (!remoteName.equals(localName)) {
+                LOG.infof("Binding remote tool %s as %s", remoteName, localName);
+            } else {
+                LOG.infof("Binding remote tool %s", remoteName);
             }
 
-            List<RemoteToolReference> toolReferences = mcpBridge.listTools(forwardClient);
-            Set<String> reservedNames = new HashSet<>();
-            for (RemoteToolReference reference : toolReferences) {
-                String remoteName = reference.getName();
-                String localName = ForwardToolHelper.buildUniqueRemoteToolName(
-                        remoteName,
-                        forwardReference.getName(),
-                        name -> toolManager.getTool(name) != null,
-                        reservedNames);
+            RemoteToolReference localReference = ForwardToolHelper.copyRemoteToolReference(reference);
+            localReference.setName(localName);
+            localReference.setNamespace(forwardReference.getNamespace());
 
-                if (!remoteName.equals(localName)) {
-                    LOG.infof("Binding remote tool %s as %s", remoteName, localName);
-                } else {
-                    LOG.infof("Binding remote tool %s", remoteName);
-                }
+            ToolsHelper.registerTool(
+                    localReference,
+                    toolManager,
+                    ns,
+                    (args, ignored) -> mcpBridge.executeTool(forwardClient.address(), args, reference));
 
-                RemoteToolReference localReference = ForwardToolHelper.copyRemoteToolReference(reference);
-                localReference.setName(localName);
-                localReference.setNamespace(forwardReference.getNamespace());
+            reservedNames.add(localName);
+            locallyRegisteredTools.add(localReference);
+        }
+    }
 
-                ToolsHelper.registerTool(
-                        localReference,
-                        toolManager,
-                        ns,
-                        (args, ignored) -> mcpBridge.executeTool(forwardClient.address(), args, reference));
-
-                reservedNames.add(localName);
-                locallyRegisteredTools.add(localReference);
-            }
-
-            registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
-            forwardRegistry.link(nameNamespacePair, forwardClient.address());
-        } catch (WanakuException e) {
-            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
-
-            throw e;
-        } catch (Exception e) {
-            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
-
-            throw new WanakuException(e);
+    private void registerResources(ForwardClient forwardClient, Namespace ns) throws ServiceUnavailableException {
+        List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
+        for (ResourceReference reference : resourceReferences) {
+            LOG.debugf("Exposing remote resource %s", reference.getName());
+            ResourceHelper.expose(
+                    reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
         }
     }
 
@@ -240,6 +235,29 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             }
         }
         registeredRemoteToolsByForward.remove(nameNamespacePair);
+    }
+
+    private void executeForwardRegistration(
+            ForwardReference forwardReference,
+            NameNamespacePair nameNamespacePair,
+            String address,
+            List<RemoteToolReference> locallyRegisteredTools,
+            Namespace ns) {
+        try (var forwardClient = ForwardClient.newClient(address)) {
+            registerResources(forwardClient, ns);
+            registerTools(forwardClient, forwardReference, locallyRegisteredTools, ns);
+
+            registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
+            forwardRegistry.link(nameNamespacePair, forwardClient.address());
+        } catch (WanakuException e) {
+            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
+
+            throw e;
+        } catch (Exception e) {
+            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
+
+            throw new WanakuException(e);
+        }
     }
 
     public List<ResourceReference> listAllResources() {
