@@ -29,6 +29,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.mcp.client.McpException;
 import dev.langchain4j.mcp.client.McpReadResourceResult;
 import dev.langchain4j.mcp.client.McpResource;
 import dev.langchain4j.mcp.client.McpResourceContents;
@@ -43,6 +44,8 @@ import dev.langchain4j.service.tool.ToolExecutionResult;
  */
 @ApplicationScoped
 public class DefaultMcpBridge implements McpBridge {
+    static final int JSON_RPC_METHOD_NOT_FOUND = -32601;
+
     private static final Logger LOG = Logger.getLogger(DefaultMcpBridge.class);
 
     private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
@@ -60,8 +63,18 @@ public class DefaultMcpBridge implements McpBridge {
             }
 
             return references;
+        } catch (McpException e) {
+            if (e.errorCode() == JSON_RPC_METHOD_NOT_FOUND) {
+                LOG.infof(
+                        "Remote MCP server at %s does not support tools/list, continuing without tools",
+                        forwardClient.address());
+                return List.of();
+            }
+            throw new ServiceUnavailableException(
+                    String.format("Service is not available at %s", forwardClient.address()), e, false);
         } catch (Exception e) {
-            throw ServiceUnavailableException.forName(forwardClient.address());
+            throw new ServiceUnavailableException(
+                    String.format("Service is not available at %s", forwardClient.address()), e, false);
         }
     }
 
@@ -115,8 +128,18 @@ public class DefaultMcpBridge implements McpBridge {
             List<McpResource> resourceRefs = forwardClient.client().listResources();
 
             return resourceRefs.stream().map(DefaultMcpBridge::remoteToLocal).collect(Collectors.toList());
+        } catch (McpException e) {
+            if (e.errorCode() == JSON_RPC_METHOD_NOT_FOUND) {
+                LOG.infof(
+                        "Remote MCP server at %s does not support resources/list, continuing without resources",
+                        forwardClient.address());
+                return List.of();
+            }
+            throw new ServiceUnavailableException(
+                    String.format("Service is not available at %s", forwardClient.address()), e, false);
         } catch (Exception e) {
-            throw ServiceUnavailableException.forName(forwardClient.address());
+            throw new ServiceUnavailableException(
+                    String.format("Service is not available at %s", forwardClient.address()), e, false);
         }
     }
 
