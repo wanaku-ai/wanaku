@@ -144,8 +144,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
             final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReference.getName());
             if (!references.isEmpty()) {
-                LOG.warnf("Forward reference %s already exists", forwardReference.getName());
-                return;
+                throw EntityAlreadyExistsException.forName(forwardReference.getName());
             }
 
             registerForward(forwardReference);
