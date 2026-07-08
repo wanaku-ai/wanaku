@@ -17,7 +17,6 @@ public class ${name}Delegate extends AbstractToolDelegate {
             throw new InvalidResponseTypeException("Invalid response type from the consumer: null");
         }
 
-        // Here, convert the response from whatever format it is, to a String instance.
-        throw new InvalidResponseTypeException("The downstream service has not implemented the response coercion method");
+        return List.of(response.toString());
     }
 }
