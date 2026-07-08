@@ -2368,6 +2368,10 @@ wanaku forwards add --service="http://your-mcp-server.com:8080/mcp/sse" --name m
 
 - `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
 - `--name`: A unique human-readable name for the forward, used for identification and management purposes.
+- `--namespace` (required): The namespace ID to associate the forward with. Use `wanaku namespace list` to find the ID.
+- `--namespace-name` (alternative to `--namespace`): The namespace name to use. The CLI will automatically resolve it to the corresponding ID.
+
+Use `--namespace` if you already know the namespace UUID, or `--namespace-name` to specify the namespace by its human-readable name (e.g. `public`, `default`).
 
 Once a forward is added, all tools and resources provided by the external MCP server will be mapped in the Wanaku instance.
 

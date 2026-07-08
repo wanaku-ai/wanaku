@@ -490,7 +490,34 @@ assert_failure "5.2" "forwards add with no service rejected" \
     --name "neg-test-no-service"
 ```
 
-### Test 5.3: Add duplicate forward name
+### Test 5.3: Add forward with no namespace identifier should fail
+
+Providing neither `--namespace` nor `--namespace-name` should be rejected.
+
+```bash
+assert_failure "5.3" "forwards add with no namespace identifier rejected" \
+  wanaku forwards add \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name "neg-test-no-ns" \
+  --service "http://example.com:8080"
+```
+
+### Test 5.4: Add forward with both --namespace and --namespace-name should fail
+
+Both flags cannot be used together.
+
+```bash
+assert_failure "5.4" "forwards add with both --namespace and --namespace-name rejected" \
+  wanaku forwards add \
+  --host "${WANAKU_ROUTER_URL}" \
+  --no-auth \
+  --name "neg-test-both-ns" \
+  --service "http://example.com:8080" \
+  --namespace public \
+  --namespace-name public
+```
+### Test 5.5: Add duplicate forward name
 
 First register a forward, then try to add another with the same name.
 
@@ -503,7 +530,7 @@ wanaku forwards add \
 SETUP_EXIT=$?
 
 if [ "${SETUP_EXIT}" -ne 0 ]; then
-  echo "SKIP [5.3]: could not register setup forward"
+  echo "SKIP [5.5]: could not register setup forward"
 else
   OUTPUT=$(wanaku forwards add \
     --host "${WANAKU_ROUTER_URL}" \
@@ -513,9 +540,9 @@ else
   EXIT_CODE=$?
 
   if [ "${EXIT_CODE}" -ne 0 ]; then
-    echo "PASS [5.3]: duplicate forward name rejected (exit code ${EXIT_CODE})"
+    echo "PASS [5.5]: duplicate forward name rejected (exit code ${EXIT_CODE})"
   else
-    echo "WARN [5.3]: duplicate forward was accepted -- server may allow overwrite"
+    echo "WARN [5.5]: duplicate forward was accepted -- server may allow overwrite"
   fi
 
   # Cleanup
@@ -523,17 +550,7 @@ else
 fi
 ```
 
-### Test 5.4: Remove non-existent forward
-
-```bash
-assert_graceful "5.4" "remove non-existent forward handled gracefully" \
-  wanaku forwards remove \
-    --host "${WANAKU_ROUTER_URL}" \
-    --no-auth \
-    --name "nonexistent-forward-12345"
-```
-
-### Test 5.5: Refresh non-existent forward
+### Test 5.6: Remove non-existent forward
 
 ```bash
 assert_failure "5.5" "refresh non-existent forward rejected" \

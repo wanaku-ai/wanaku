@@ -3,11 +3,19 @@ package ai.wanaku.cli.main.commands.forwards;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.jline.terminal.Terminal;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.capabilities.sdk.api.types.Namespace;
+import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ForwardsService;
+import ai.wanaku.core.services.api.NamespacesService;
 import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
@@ -16,6 +24,13 @@ import static picocli.CommandLine.Option;
 
 @Command(name = "add", description = "Add forward targets")
 public class ForwardsAdd extends BaseCommand {
+
+    private static final String ERROR_NO_NAMESPACE_MATCH =
+            "No namespace matched '%s'. Use 'wanaku namespace list' to see available namespaces.";
+
+    private static final String ERROR_BOTH_FLAGS =
+        "Cannot use both --namespace and --namespace-name. Use --namespace with the ID or --namespace-name with the name.";
+
     @Option(
             names = {"--host"},
             description = "The API host",
@@ -37,21 +52,63 @@ public class ForwardsAdd extends BaseCommand {
             arity = "0..1")
     protected String service;
 
-    @CommandLine.Option(
+    @Option(
             names = {"-N", "--namespace"},
-            description = "The namespace associated with the tool",
-            defaultValue = "",
-            required = true)
+            description = "The namespace ID associated with the tool")
     private String namespace;
+
+    @Option(
+            names = {"--namespace-name"},
+            description = "The namespace name to use (looked up automatically)")
+    private String namespaceName;
+
+    private String resolveNamespaceId() throws Exception {
+        if (namespace != null && !namespace.isBlank()
+            && namespaceName != null && !namespaceName.isBlank()) {
+            throw new IllegalArgumentException(ERROR_BOTH_FLAGS);
+        }
+
+        if (namespace != null && !namespace.isBlank()) {
+            return namespace;
+        }
+
+        if (namespaceName == null || namespaceName.isBlank()) {
+            throw new IllegalArgumentException("Either --namespace or --namespace-name is required.");
+        }
+
+        NamespacesService namespacesService =
+                QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host)).build(NamespacesService.class);
+
+        try {
+            WanakuResponse<List<Namespace>> response = namespacesService.list();
+            List<Namespace> matches = response.data().stream()
+                    .filter(n -> namespaceName.equals(n.getName()))
+                    .collect(Collectors.toList());
+
+            if (matches.isEmpty()) {
+                throw new IllegalArgumentException(ERROR_NO_NAMESPACE_MATCH.formatted(namespaceName));
+            }
+            if (matches.size() > 1) {
+                throw new IllegalStateException("Multiple namespaces matched '%s'. Use --namespace with the ID instead."
+                        .formatted(namespaceName));
+            }
+            return matches.getFirst().getId();
+        } catch (WebApplicationException ex) {
+            commonResponseErrorHandler(ex.getResponse());
+            throw ex;
+        }
+    }
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initAuthenticatedService(ForwardsService.class, host);
 
+        String namespaceId = resolveNamespaceId();
+
         ForwardReference reference = new ForwardReference();
         reference.setName(name);
         reference.setAddress(service);
-        reference.setNamespace(namespace);
+        reference.setNamespace(namespaceId);
 
         try {
             forwardsService.addForward(reference);
