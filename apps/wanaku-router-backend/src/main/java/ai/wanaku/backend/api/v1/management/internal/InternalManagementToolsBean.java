@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.TextContent;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.api.v1.capabilities.CapabilitiesBean;
@@ -21,6 +20,7 @@ import ai.wanaku.backend.api.v1.prompts.PromptsBean;
 import ai.wanaku.backend.api.v1.resources.ResourcesBean;
 import ai.wanaku.backend.api.v1.tools.ToolsBean;
 import ai.wanaku.backend.common.ToolsHelper;
+import ai.wanaku.backend.mcp.McpServerRegistry;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
@@ -40,7 +40,7 @@ public class InternalManagementToolsBean {
     private static final String INTERNAL_NAMESPACE = "wanaku-internal";
 
     @Inject
-    ToolManager toolManager;
+    McpServerRegistry registry;
 
     @Inject
     ObjectMapper objectMapper;
@@ -104,20 +104,27 @@ public class InternalManagementToolsBean {
     }
 
     private void registerTool(ToolReference toolReference, ToolHandler handler) {
+        McpSyncServer server = registry.getInternalServer();
         ToolsHelper.registerTool(
                 toolReference,
-                toolManager,
+                server,
                 internalNamespace,
-                (toolArguments, ignored) -> handler.apply(toolArguments.args()));
+                (callToolRequest, sessionId, ignored) -> handler.apply(callToolRequest.arguments()));
     }
 
-    private Uni<ToolResponse> jsonResponse(Supplier<Object> supplier) {
+    private Uni<McpSchema.CallToolResult> jsonResponse(Supplier<Object> supplier) {
         return Uni.createFrom().item(() -> {
             try {
-                return ToolResponse.success(List.of(new TextContent(objectMapper.writeValueAsString(supplier.get()))));
+                String json = objectMapper.writeValueAsString(supplier.get());
+                return McpSchema.CallToolResult.builder(List.of((McpSchema.Content)
+                                McpSchema.TextContent.builder(json).build()))
+                        .build();
             } catch (Exception e) {
                 LOG.errorf(e, "Internal management tool failed");
-                return ToolResponse.error(e.getMessage());
+                return McpSchema.CallToolResult.builder(List.of((McpSchema.Content)
+                                McpSchema.TextContent.builder(e.getMessage()).build()))
+                        .isError(true)
+                        .build();
             }
         });
     }
@@ -616,6 +623,6 @@ public class InternalManagementToolsBean {
 
     @FunctionalInterface
     private interface ToolHandler {
-        Uni<ToolResponse> apply(Map<String, Object> args);
+        Uni<McpSchema.CallToolResult> apply(Map<String, Object> args);
     }
 }

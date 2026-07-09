@@ -48,6 +48,7 @@
         <quarkus.platform.version>3.33.2</quarkus.platform.version>
         <jackson.version>2.21.2</jackson.version>
         <junit-jupiter.version>6.1.0</junit-jupiter.version>
+        <mcp-sdk.version>2.0.0</mcp-sdk.version>
         <quarkus-mcp-server.version>1.13.1</quarkus-mcp-server.version>
         <quarkus-oidc-proxy.version>0.5.0</quarkus-oidc-proxy.version>
         <camel.version>4.18.1</camel.version>
@@ -135,6 +136,14 @@
                 <groupId>ai.wanaku.sdk</groupId>
                 <artifactId>capabilities-bom</artifactId>
                 <version>${wanaku-capabilities-sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-bom</artifactId>
+                <version>${mcp-sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

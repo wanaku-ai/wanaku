@@ -9,11 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
-import io.quarkiverse.mcp.server.TextResourceContents;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.JsonObject;
@@ -38,10 +34,6 @@ import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 
-/**
- * Default implementation of {@link McpBridge} that interacts with remote MCP servers
- * via the langchain4j MCP client.
- */
 @ApplicationScoped
 public class DefaultMcpBridge implements McpBridge {
     static final int JSON_RPC_METHOD_NOT_FOUND = -32601;
@@ -49,8 +41,6 @@ public class DefaultMcpBridge implements McpBridge {
     private static final Logger LOG = Logger.getLogger(DefaultMcpBridge.class);
 
     private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
-
-    // ---- Tools ----
 
     @Override
     public List<RemoteToolReference> listTools(ForwardClient forwardClient) throws ServiceUnavailableException {
@@ -61,7 +51,6 @@ public class DefaultMcpBridge implements McpBridge {
                 RemoteToolReference toolReference = createRemoteToolReference(toolSpecification);
                 references.add(toolReference);
             }
-
             return references;
         } catch (McpException e) {
             if (e.errorCode() == JSON_RPC_METHOD_NOT_FOUND) {
@@ -79,54 +68,61 @@ public class DefaultMcpBridge implements McpBridge {
     }
 
     @Override
-    public Uni<ToolResponse> executeTool(
-            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+    public Uni<McpSchema.CallToolResult> executeTool(
+            String address,
+            McpSchema.CallToolRequest callToolRequest,
+            String sessionId,
+            CallableReference toolReference) {
         return Uni.createFrom()
-                .item(() -> doExecuteTool(address, toolArguments, toolReference))
+                .item(() -> doExecuteTool(address, callToolRequest, sessionId, toolReference))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor());
     }
 
-    private ToolResponse doExecuteTool(
-            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
-        LOG.infof(
-                "Calling tool on behalf of connection %s",
-                toolArguments.connection().id());
+    private McpSchema.CallToolResult doExecuteTool(
+            String address,
+            McpSchema.CallToolRequest callToolRequest,
+            String sessionId,
+            CallableReference toolReference) {
+        LOG.infof("Calling tool on behalf of session %s", sessionId);
 
         ReentrantLock lock = locks.computeIfAbsent(address, k -> new ReentrantLock());
         try {
             lock.lock();
             ToolExecutionRequest request = ToolExecutionRequest.builder()
                     .name(toolReference.getName())
-                    .arguments(serializeArguments(toolArguments.args()))
+                    .arguments(serializeArguments(callToolRequest.arguments()))
                     .build();
 
             try (var mcpClient = ClientUtil.createClient(address)) {
                 ToolExecutionResult result = mcpClient.executeTool(request);
                 if (result.isError()) {
-                    return ToolResponse.error(result.resultText());
+                    return McpSchema.CallToolResult.builder(
+                                    List.of((McpSchema.Content) McpSchema.TextContent.builder(result.resultText())
+                                            .build()))
+                            .isError(true)
+                            .build();
                 }
 
-                return ToolResponse.success(result.resultText());
+                return McpSchema.CallToolResult.builder(
+                                List.of((McpSchema.Content) McpSchema.TextContent.builder(result.resultText())
+                                        .build()))
+                        .build();
             }
         } catch (Exception e) {
-            LOG.errorf(
-                    e,
-                    "Unable to remote tool: %s (connection: %s)",
-                    e.getMessage(),
-                    toolArguments.connection().id());
-            return ToolResponse.error(e.getMessage());
+            LOG.errorf(e, "Unable to remote tool: %s (session: %s)", e.getMessage(), sessionId);
+            return McpSchema.CallToolResult.builder(List.of((McpSchema.Content)
+                            McpSchema.TextContent.builder(e.getMessage()).build()))
+                    .isError(true)
+                    .build();
         } finally {
             lock.unlock();
         }
     }
 
-    // ---- Resources ----
-
     @Override
     public List<ResourceReference> listResources(ForwardClient forwardClient) throws ServiceUnavailableException {
         try {
             List<McpResource> resourceRefs = forwardClient.client().listResources();
-
             return resourceRefs.stream().map(DefaultMcpBridge::remoteToLocal).collect(Collectors.toList());
         } catch (McpException e) {
             if (e.errorCode() == JSON_RPC_METHOD_NOT_FOUND) {
@@ -144,50 +140,49 @@ public class DefaultMcpBridge implements McpBridge {
     }
 
     @Override
-    public Uni<ResourceResponse> read(
-            ForwardClient forwardClient, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
+    public Uni<McpSchema.ReadResourceResult> read(
+            ForwardClient forwardClient,
+            McpSchema.ReadResourceRequest readRequest,
+            String sessionId,
+            ResourceReference mcpResource) {
         return Uni.createFrom()
                 .item(() -> doRead(forwardClient, mcpResource))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor());
     }
 
-    private ResourceResponse doRead(ForwardClient forwardClient, ResourceReference mcpResource) {
+    private McpSchema.ReadResourceResult doRead(ForwardClient forwardClient, ResourceReference mcpResource) {
         try {
             McpReadResourceResult resourceResponse = forwardClient.client().readResource(mcpResource.getLocation());
 
             List<McpResourceContents> contents = resourceResponse.contents();
-            TextResourceContents textResourceContents = TextResourceContents.create(
-                    mcpResource.getLocation(), contents.getFirst().toString());
+            McpSchema.TextResourceContents textResourceContents = new McpSchema.TextResourceContents(
+                    mcpResource.getLocation(),
+                    mcpResource.getMimeType(),
+                    contents.getFirst().toString());
 
-            return new ResourceResponse(List.of(textResourceContents));
+            return McpSchema.ReadResourceResult.builder(List.of(textResourceContents))
+                    .build();
         } catch (Exception e) {
             throw new WanakuException(e);
         }
     }
 
-    // ---- Private helpers ----
-
     private String serializeArguments(Map<String, Object> arguments) {
         JsonObject content = new JsonObject();
-
         for (Map.Entry<String, Object> entry : arguments.entrySet()) {
             content.put(entry.getKey(), entry.getValue());
         }
-
         return content.toString();
     }
 
     private static RemoteToolReference createRemoteToolReference(ToolSpecification toolSpecification) {
         RemoteToolReference toolReference = new RemoteToolReference();
-
         toolReference.setName(toolSpecification.name());
         toolReference.setDescription(toolSpecification.description());
         toolReference.setType("mcp-remote-tool");
 
         InputSchema inputSchema = new InputSchema();
-
         JsonObjectSchema parameters = toolSpecification.parameters();
-
         Map<String, JsonSchemaElement> properties = parameters.properties();
         for (Map.Entry<String, JsonSchemaElement> entry : properties.entrySet()) {
             createProperties(entry, properties, inputSchema);
@@ -202,7 +197,6 @@ public class DefaultMcpBridge implements McpBridge {
             Map<String, JsonSchemaElement> properties,
             InputSchema inputSchema) {
         String key = entry.getKey();
-
         JsonSchemaElement jsonSchemaElement = properties.get(key);
         if (jsonSchemaElement instanceof JsonStringSchema stringSchema) {
             createStringProperty(stringSchema, inputSchema, key);
@@ -211,11 +205,9 @@ public class DefaultMcpBridge implements McpBridge {
 
     private static void createStringProperty(JsonStringSchema stringSchema, InputSchema inputSchema, String key) {
         String description = stringSchema.description();
-
         Property property = new Property();
         property.setDescription(description);
         property.setType("string");
-
         inputSchema.getProperties().put(key, property);
     }
 

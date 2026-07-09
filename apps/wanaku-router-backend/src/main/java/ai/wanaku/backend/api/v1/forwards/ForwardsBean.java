@@ -15,8 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ToolManager;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ForwardClient;
@@ -28,9 +27,9 @@ import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.backend.mcp.McpServerRegistry;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
-import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
@@ -48,11 +47,10 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     private final Map<NameNamespacePair, List<RemoteToolReference>> registeredRemoteToolsByForward =
             new ConcurrentHashMap<>();
 
-    @Inject
-    ResourceManager resourceManager;
+    private final Set<String> registeredToolNames = ConcurrentHashMap.newKeySet();
 
     @Inject
-    ToolManager toolManager;
+    McpServerRegistry registry;
 
     @Inject
     NamespacesBean namespacesBean;
@@ -94,13 +92,15 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
     private void removeRemoteResources(ForwardClient forwardClient) {
         final List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
+        McpSyncServer server = registry.getPublicServer();
         for (ResourceReference remoteResource : resourceReferences) {
             LOG.infof("Removing remote resource %s", remoteResource);
             try {
-                resourceManager.removeResource(remoteResource.getLocation());
+                server.removeResource(remoteResource.getLocation());
             } catch (Exception e) {
                 LOG.infof(
-                        "Failed to remove forward tool %s (server restart may be necessary)", remoteResource.getName());
+                        "Failed to remove forward resource %s (server restart may be necessary)",
+                        remoteResource.getName());
             }
         }
     }
@@ -108,14 +108,15 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     private void removeRemoteTools(NameNamespacePair nameNamespacePair, ForwardClient forwardClient) {
         List<RemoteToolReference> remoteToolReferences = registeredRemoteToolsByForward.remove(nameNamespacePair);
         if (remoteToolReferences == null) {
-
             remoteToolReferences = mcpBridge.listTools(forwardClient);
         }
 
+        McpSyncServer server = registry.getPublicServer();
         for (RemoteToolReference remoteToolReference : remoteToolReferences) {
             LOG.infof("Removing remote tool %s", remoteToolReference);
             try {
-                toolManager.removeTool(remoteToolReference.getName());
+                server.removeTool(remoteToolReference.getName());
+                registeredToolNames.remove(remoteToolReference.getName());
             } catch (Exception e) {
                 LOG.infof(
                         "Failed to remove forward tool %s (server restart may be necessary)",
@@ -125,7 +126,6 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     public int remove(ForwardReference forwardReferenceHint) {
-        // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
         final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReferenceHint.getName());
         if (references.isEmpty()) {
             LOG.warnf("Forward reference does not exist", forwardReferenceHint.getName());
@@ -137,20 +137,17 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             LOG.warnf("Failed to remove tools and resources references for %s", forwardReference.getName());
         }
 
-        // Remove from the repository
         return removeByName(forwardReference.getName());
     }
 
     public void forward(ForwardReference forwardReference) {
         try {
-            // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
             final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReference.getName());
             if (!references.isEmpty()) {
                 throw EntityAlreadyExistsException.forName(forwardReference.getName());
             }
 
             registerForward(forwardReference);
-
             forwardReferenceRepository.persist(forwardReference);
         } catch (WanakuException e) {
             throw e;
@@ -171,26 +168,28 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             ns = namespacesBean.getById(forwardReference.getNamespace());
         }
 
+        McpSyncServer server = registry.getServerForPath(ns.getPath());
+
         final NameNamespacePair nameNamespacePair =
                 new NameNamespacePair(forwardReference.getName(), forwardReference.getNamespace());
 
         String address = forwardReference.getAddress();
 
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
-        executeForwardRegistration(forwardReference, nameNamespacePair, address, locallyRegisteredTools, ns);
+        executeForwardRegistration(forwardReference, nameNamespacePair, address, locallyRegisteredTools, ns, server);
     }
 
     private void registerTools(
             ForwardClient forwardClient,
             ForwardReference forwardReference,
             List<RemoteToolReference> locallyRegisteredTools,
-            Namespace ns)
-            throws ServiceUnavailableException {
+            Namespace ns,
+            McpSyncServer server) {
         Set<String> reservedNames = new HashSet<>();
         for (RemoteToolReference reference : mcpBridge.listTools(forwardClient)) {
             String remoteName = reference.getName();
             String localName = ForwardToolHelper.buildUniqueRemoteToolName(
-                    remoteName, forwardReference.getName(), name -> toolManager.getTool(name) != null, reservedNames);
+                    remoteName, forwardReference.getName(), registeredToolNames::contains, reservedNames);
 
             if (!remoteName.equals(localName)) {
                 LOG.infof("Binding remote tool %s as %s", remoteName, localName);
@@ -204,33 +203,34 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
             ToolsHelper.registerTool(
                     localReference,
-                    toolManager,
+                    server,
                     ns,
-                    (args, ignored) -> mcpBridge.executeTool(forwardClient.address(), args, reference));
+                    (req, sessionId, ignored) ->
+                            mcpBridge.executeTool(forwardClient.address(), req, sessionId, reference));
 
             reservedNames.add(localName);
+            registeredToolNames.add(localName);
             locallyRegisteredTools.add(localReference);
         }
     }
 
-    private void registerResources(ForwardClient forwardClient, Namespace ns) throws ServiceUnavailableException {
+    private void registerResources(ForwardClient forwardClient, Namespace ns, McpSyncServer server) {
         List<ResourceReference> resourceReferences = mcpBridge.listResources(forwardClient);
         for (ResourceReference reference : resourceReferences) {
             LOG.debugf("Exposing remote resource %s", reference.getName());
             ResourceHelper.expose(
-                    reference, resourceManager, ns, (args, res) -> mcpBridge.read(forwardClient, args, res));
+                    reference, server, ns, (req, sid, res) -> mcpBridge.read(forwardClient, req, sid, res));
         }
     }
 
-    /*
-     * Best-effort cleanup to avoid leaving partially-registered tools around
-     */
     private void cleanupPartiallyRegistered(
-            List<RemoteToolReference> locallyRegisteredTools, NameNamespacePair nameNamespacePair) {
-        // Best-effort cleanup to avoid leaving partially-registered tools around
+            List<RemoteToolReference> locallyRegisteredTools,
+            NameNamespacePair nameNamespacePair,
+            McpSyncServer server) {
         for (RemoteToolReference toolReference : locallyRegisteredTools) {
             try {
-                toolManager.removeTool(toolReference.getName());
+                server.removeTool(toolReference.getName());
+                registeredToolNames.remove(toolReference.getName());
             } catch (Exception ignored) {
                 LOG.warnf("Failed to remove forward tool %s after registration error", toolReference.getName());
             }
@@ -243,20 +243,19 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             NameNamespacePair nameNamespacePair,
             String address,
             List<RemoteToolReference> locallyRegisteredTools,
-            Namespace ns) {
+            Namespace ns,
+            McpSyncServer server) {
         try (var forwardClient = ForwardClient.newClient(address)) {
-            registerResources(forwardClient, ns);
-            registerTools(forwardClient, forwardReference, locallyRegisteredTools, ns);
+            registerResources(forwardClient, ns, server);
+            registerTools(forwardClient, forwardReference, locallyRegisteredTools, ns, server);
 
             registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
             forwardRegistry.link(nameNamespacePair, forwardClient.address());
         } catch (WanakuException e) {
-            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
-
+            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair, server);
             throw e;
         } catch (Exception e) {
-            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
-
+            cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair, server);
             throw new WanakuException(e);
         }
     }
@@ -268,18 +267,12 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                 references.addAll(mcpBridge.listResources(client));
             }
         }
-
         return references;
     }
 
-    /**
-     * List all tools from forward services
-     * @return
-     */
     public List<RemoteToolReference> listAllTools() {
         List<RemoteToolReference> references = new ArrayList<>();
         registeredRemoteToolsByForward.values().forEach(references::addAll);
-
         return references;
     }
 
@@ -318,7 +311,6 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     public List<ForwardReference> listForwards(String labelFilter) {
-        // Label filtering is not supported for forwards
         return forwardReferenceRepository.listAll();
     }
 
@@ -338,11 +330,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
 
         ForwardReference forwardReference = references.getFirst();
-
-        // Remove existing tools/resources and close the MCP client
         removeLinkedEntries(forwardReference);
-
-        // Re-register with fresh data from remote server
         registerForward(forwardReference);
     }
 

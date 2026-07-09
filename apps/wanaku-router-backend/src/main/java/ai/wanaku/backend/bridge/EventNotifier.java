@@ -8,7 +8,7 @@ import java.util.Map;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ToolManager;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -35,23 +35,25 @@ public class EventNotifier {
     /**
      * Emits a STARTED event for a tool call.
      *
-     * @param toolArguments the tool arguments
+     * @param callToolRequest the tool call request
+     * @param sessionId the MCP session ID
      * @param toolReference the tool reference
      * @param service the resolved service target
      * @param request the built tool invoke request
      * @return the started event (for tracking the eventId), or null if emission fails
      */
     public ToolCallEvent emitStartedEvent(
-            ToolManager.ToolArguments toolArguments,
+            McpSchema.CallToolRequest callToolRequest,
+            String sessionId,
             ToolReference toolReference,
             ServiceTarget service,
             ToolInvokeRequest request) {
         try {
-            Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(toolArguments.args());
+            Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(callToolRequest.arguments());
             ToolCallEvent event = ToolCallEvent.started(
                     toolReference.getName(),
                     toolReference.getType(),
-                    toolArguments.connection().id(),
+                    sessionId,
                     service.getId(),
                     service.toAddress(),
                     argumentsMap,

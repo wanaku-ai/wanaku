@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.quarkiverse.mcp.server.RequestUri;
-import io.quarkiverse.mcp.server.ResourceManager;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import ai.wanaku.backend.support.MockGrpcCapabilityServer;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
@@ -26,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class GrpcTransportTest {
 
@@ -128,11 +125,10 @@ class GrpcTransportTest {
         var mcpResource = new ResourceReference();
         mcpResource.setMimeType("text/plain");
 
-        var arguments = mock(ResourceManager.ResourceArguments.class);
-        when(arguments.requestUri()).thenReturn(new RequestUri("test://resource"));
+        McpSchema.ReadResourceRequest readRequest = new McpSchema.ReadResourceRequest("test://resource", null);
 
         var response = transport
-                .acquireResource(request, target, arguments, mcpResource)
+                .acquireResource(request, target, readRequest, mcpResource)
                 .await()
                 .atMost(Duration.ofSeconds(5));
 
@@ -164,11 +160,10 @@ class GrpcTransportTest {
         var mcpResource = new ResourceReference();
         mcpResource.setMimeType("text/plain");
 
-        var arguments = mock(ResourceManager.ResourceArguments.class);
-        when(arguments.requestUri()).thenReturn(new RequestUri("test://resource"));
+        McpSchema.ReadResourceRequest readRequest = new McpSchema.ReadResourceRequest("test://resource", null);
 
         var subscriber = transport
-                .acquireResource(request, target, arguments, mcpResource)
+                .acquireResource(request, target, readRequest, mcpResource)
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create());
 
