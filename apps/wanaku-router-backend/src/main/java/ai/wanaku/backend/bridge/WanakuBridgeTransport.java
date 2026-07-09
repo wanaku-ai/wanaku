@@ -2,9 +2,7 @@ package ai.wanaku.backend.bridge;
 
 import java.util.Iterator;
 import java.util.List;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -93,7 +91,7 @@ public interface WanakuBridgeTransport {
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service);
+    Uni<McpSchema.CallToolResult> invokeTool(ToolInvokeRequest request, ServiceTarget service);
 
     /**
      * Acquires a resource from a remote service.
@@ -105,17 +103,17 @@ public interface WanakuBridgeTransport {
      *
      * @param request the resource acquisition request containing resource details
      * @param service the target service that provides the resource
-     * @param arguments the original request arguments for URI resolution
+     * @param readRequest the original read resource request for URI resolution
      * @param mcpResource the resource reference for MIME type resolution
      * @return a Uni that will emit the resource contents with transport-specific types already transformed
      * @throws ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException
      *         if the service cannot be reached
      * @throws WanakuException if the remote service returns an error
      */
-    Uni<List<ResourceContents>> acquireResource(
+    Uni<List<McpSchema.ResourceContents>> acquireResource(
             ResourceRequest request,
             ServiceTarget service,
-            ResourceManager.ResourceArguments arguments,
+            McpSchema.ReadResourceRequest readRequest,
             ResourceReference mcpResource);
 
     /**

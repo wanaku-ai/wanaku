@@ -13,9 +13,7 @@ import io.grpc.Deadline;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.quarkiverse.mcp.server.ResourceContents;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import ai.wanaku.backend.bridge.InvokerBridge;
@@ -203,7 +201,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public Uni<ToolResponse> invokeTool(ToolInvokeRequest request, ServiceTarget service) {
+    public Uni<McpSchema.CallToolResult> invokeTool(ToolInvokeRequest request, ServiceTarget service) {
         LOG.debugf("Invoking tool on service: %s", service.toAddress());
 
         final GrpcToolResponseTransformer transformer = new GrpcToolResponseTransformer();
@@ -262,10 +260,10 @@ public class GrpcTransport implements WanakuBridgeTransport {
      * @throws WanakuException if the remote service returns an error
      */
     @Override
-    public Uni<List<ResourceContents>> acquireResource(
+    public Uni<List<McpSchema.ResourceContents>> acquireResource(
             ResourceRequest request,
             ServiceTarget service,
-            ResourceManager.ResourceArguments arguments,
+            McpSchema.ReadResourceRequest readRequest,
             ResourceReference mcpResource) {
         LOG.debugf("Acquiring resource from service: %s", service.toAddress());
 
@@ -308,7 +306,7 @@ public class GrpcTransport implements WanakuBridgeTransport {
                                 "Service is not available at the address " + service.toAddress(), e));
                     }
                 })
-                .map(reply -> transformer.transformReply(reply, arguments, mcpResource));
+                .map(reply -> transformer.transformReply(reply, readRequest, mcpResource));
     }
 
     /**

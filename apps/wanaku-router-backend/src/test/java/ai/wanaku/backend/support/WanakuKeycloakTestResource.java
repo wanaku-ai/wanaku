@@ -38,7 +38,7 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
         Map<String, String> conf = new HashMap<>();
         conf.put("wanaku.persistence.infinispan.base-folder", "target/wanaku/router");
         conf.put("wanaku.persistence.infinispan.file-store", "false");
-        conf.put("quarkus.mcp.server.invalid-server-name-strategy", "ignore");
+        // MCP server is configured programmatically by McpServerRegistry
         conf.put("quarkus.log.console.enable", "false");
         conf.put("quarkus.log.file.enable", "true");
         conf.put("quarkus.log.file.path", "target/logs/wanaku-test.log");

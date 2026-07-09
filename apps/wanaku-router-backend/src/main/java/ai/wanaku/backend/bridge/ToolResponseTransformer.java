@@ -1,8 +1,8 @@
 package ai.wanaku.backend.bridge;
 
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.spec.McpSchema;
 
 public interface ToolResponseTransformer<T> {
 
-    ToolResponse transformReply(T reply);
+    McpSchema.CallToolResult transformReply(T reply);
 }

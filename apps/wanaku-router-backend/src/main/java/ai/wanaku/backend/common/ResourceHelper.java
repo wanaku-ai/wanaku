@@ -1,79 +1,59 @@
 package ai.wanaku.backend.common;
 
-import java.util.function.BiFunction;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
-/**
- * Helper class for dealing with resources
- */
 public final class ResourceHelper {
     private static final Logger LOG = Logger.getLogger(ResourceHelper.class);
 
     private ResourceHelper() {}
 
-    /**
-     * Expose a resource by applying the given async handler.
-     *
-     * @param resourceReference The reference to the resource being exposed
-     * @param resourceManager   The resource manager instance responsible for managing resources
-     * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
-     *                          and returns a Uni of ResourceResponse.
-     */
-    public static void expose(
-            ResourceReference resourceReference,
-            ResourceManager resourceManager,
-            BiFunction<ResourceManager.ResourceArguments, ResourceReference, Uni<ResourceResponse>> handler) {
-        expose(resourceReference, resourceManager, null, handler);
+    @FunctionalInterface
+    public interface ResourceHandler {
+        Uni<McpSchema.ReadResourceResult> read(
+                McpSchema.ReadResourceRequest request, String sessionId, ResourceReference mcpResource);
     }
 
-    /**
-     * Expose a resource by applying the given handler to the resource reference and
-     * resource manager, which returns a list of resource contents.
-     *
-     * @param resourceReference The reference to the resource being exposed
-     * @param resourceManager   The resource manager instance responsible for managing resources
-     * @param handler          A BiFunction that takes ResourceArguments and ResourceReference as input,
-     *                          and returns a List of ResourceContents. This handler will be applied to expose the resource.
-     */
+    public static void expose(ResourceReference resourceReference, McpSyncServer server, ResourceHandler handler) {
+        expose(resourceReference, server, null, handler);
+    }
+
     public static void expose(
-            ResourceReference resourceReference,
-            ResourceManager resourceManager,
-            Namespace namespace,
-            BiFunction<ResourceManager.ResourceArguments, ResourceReference, Uni<ResourceResponse>> handler) {
-        if (resourceManager.getResource(resourceReference.getLocation()) != null) {
-            throw EntityAlreadyExistsException.forName(resourceReference.getName());
-        }
+            ResourceReference resourceReference, McpSyncServer server, Namespace namespace, ResourceHandler handler) {
+
+        McpSchema.Resource resource = McpSchema.Resource.builder(
+                        resourceReference.getLocation(), resourceReference.getName())
+                .description(resourceReference.getDescription())
+                .mimeType(resourceReference.getMimeType())
+                .build();
+
+        McpServerFeatures.SyncResourceSpecification spec =
+                new McpServerFeatures.SyncResourceSpecification(resource, (exchange, request) -> {
+                    return handler.read(request, exchange.sessionId(), resourceReference)
+                            .await()
+                            .indefinitely();
+                });
 
         try {
-            String description = resourceReference.getDescription() != null ? resourceReference.getDescription() : "";
-            final ResourceManager.ResourceDefinition resourceDefinition = resourceManager
-                    .newResource(resourceReference.getName())
-                    .setUri(resourceReference.getLocation())
-                    .setMimeType(resourceReference.getMimeType())
-                    .setDescription(description)
-                    .setAsyncHandler(args -> handler.apply(args, resourceReference));
-
             if (namespace != null) {
                 LOG.debugf(
                         "Exposing resource %s in namespace %s",
                         resourceReference.getName(), resourceReference.getNamespace());
-                resourceDefinition.setServerName(namespace.getPath()).register();
             } else {
                 LOG.debugf("Exposing resource %s", resourceReference.getName());
-                resourceDefinition.register();
             }
+            server.addResource(spec);
         } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("already exists")) {
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
                 throw EntityAlreadyExistsException.forName(resourceReference.getName());
-            } else {
-                throw e;
             }
+            throw e;
         }
     }
 }

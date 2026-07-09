@@ -4,13 +4,12 @@ import jakarta.inject.Inject;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Vertx;
-import ai.wanaku.backend.bridge.transports.grpc.GrpcTransport;
 import ai.wanaku.backend.common.ToolCallEvent;
 import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceNotFoundException;
@@ -20,13 +19,6 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
-/**
- * A proxy class for invoking tools via gRPC.
- * <p>
- * This proxy is responsible for executing tool invocations. It delegates
- * gRPC transport operations to {@link GrpcTransport}, separating business
- * logic from transport concerns.
- */
 public class InvokerBridge implements ToolsBridge {
     private static final Logger LOG = Logger.getLogger(InvokerBridge.class);
     private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();
@@ -38,16 +30,21 @@ public class InvokerBridge implements ToolsBridge {
     private final Vertx vertx;
 
     static class WanakuToolContext {
-        ToolManager.ToolArguments arguments;
+        McpSchema.CallToolRequest callToolRequest;
+        String sessionId;
+        String requestId;
         ToolReference toolReference;
         ServiceTarget serviceTarget;
         ToolInvokeRequest request;
         ToolCallEvent startedEvent;
         Instant startTime;
 
-        static WanakuToolContext create(ToolManager.ToolArguments arguments, ToolReference toolReference) {
+        static WanakuToolContext create(
+                McpSchema.CallToolRequest callToolRequest, String sessionId, ToolReference toolReference) {
             WanakuToolContext context = new WanakuToolContext();
-            context.arguments = arguments;
+            context.callToolRequest = callToolRequest;
+            context.sessionId = sessionId;
+            context.requestId = UUID.randomUUID().toString();
             context.toolReference = toolReference;
             return context;
         }
@@ -66,7 +63,8 @@ public class InvokerBridge implements ToolsBridge {
     }
 
     @Override
-    public Uni<ToolResponse> execute(ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+    public Uni<McpSchema.CallToolResult> execute(
+            McpSchema.CallToolRequest callToolRequest, String sessionId, CallableReference toolReference) {
         if (!(toolReference instanceof ToolReference ref)) {
             LOG.errorf(
                     "Tool reference %s not supported",
@@ -76,27 +74,24 @@ public class InvokerBridge implements ToolsBridge {
                             "Only local tool call references should be invoked by this executor"));
         }
 
-        String requestId = toolArguments.requestId().asString();
-        String connectionId = toolArguments.connection().id();
-
         return Uni.createFrom()
-                .item(() -> WanakuToolContext.create(toolArguments, ref))
+                .item(() -> WanakuToolContext.create(callToolRequest, sessionId, ref))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                 .invoke(ctx -> {
                     if (vertx != null) {
-                        vertx.runOnContext(v -> RequestIdContext.setContext(requestId, connectionId));
+                        vertx.runOnContext(v -> RequestIdContext.setContext(ctx.requestId, ctx.sessionId));
                     } else {
-                        RequestIdContext.setContext(requestId, connectionId);
+                        RequestIdContext.setContext(ctx.requestId, ctx.sessionId);
                     }
                 })
                 .invoke(ctx -> RequestIdContext.setToolName(ref.getName()))
                 .invoke(this::resolveService)
                 .invoke(ctx -> {
-                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, toolArguments, requestId);
+                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, callToolRequest, ctx.requestId);
                     ctx.startTime = Instant.now();
                     if (eventNotifier != null) {
-                        ctx.startedEvent =
-                                eventNotifier.emitStartedEvent(toolArguments, ref, ctx.serviceTarget, ctx.request);
+                        ctx.startedEvent = eventNotifier.emitStartedEvent(
+                                callToolRequest, ctx.sessionId, ref, ctx.serviceTarget, ctx.request);
                     }
                 })
                 .chain(ctx -> transport
@@ -107,7 +102,11 @@ public class InvokerBridge implements ToolsBridge {
                             emitFailed(ctx, failure);
 
                             LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
-                            return ToolResponse.error(failure.getMessage());
+                            return McpSchema.CallToolResult.builder(java.util.List.of(
+                                            (McpSchema.Content) McpSchema.TextContent.builder(failure.getMessage())
+                                                    .build()))
+                                    .isError(true)
+                                    .build();
                         }))
                 .onItemOrFailure()
                 .invoke((item, failure) -> {
@@ -124,7 +123,7 @@ public class InvokerBridge implements ToolsBridge {
                 });
     }
 
-    private void emitCompleted(WanakuToolContext ctx, ToolResponse response) {
+    private void emitCompleted(WanakuToolContext ctx, McpSchema.CallToolResult response) {
         if (eventNotifier != null && ctx.startedEvent != null) {
             long duration = Duration.between(ctx.startTime, Instant.now()).toMillis();
             String content = response != null ? response.toString() : "";
@@ -147,7 +146,6 @@ public class InvokerBridge implements ToolsBridge {
     private WanakuToolContext resolveService(WanakuToolContext context) {
         context.serviceTarget = serviceResolver.resolve(context.toolReference.getType(), SERVICE_TYPE_TOOL_INVOKER);
         if (context.serviceTarget == null) {
-            // Code engines may also provide specialized tools
             context.serviceTarget =
                     serviceResolver.resolve(context.toolReference.getType(), SERVICE__TYPE_CODE_EXECUTION_ENGINE);
             if (context.serviceTarget == null) {
