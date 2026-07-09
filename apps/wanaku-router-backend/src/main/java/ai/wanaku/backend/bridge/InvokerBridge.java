@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import org.jboss.logging.Logger;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -32,6 +33,7 @@ public class InvokerBridge implements ToolsBridge {
     static class WanakuToolContext {
         McpSchema.CallToolRequest callToolRequest;
         String sessionId;
+        McpTransportContext transportContext;
         String requestId;
         ToolReference toolReference;
         ServiceTarget serviceTarget;
@@ -40,10 +42,14 @@ public class InvokerBridge implements ToolsBridge {
         Instant startTime;
 
         static WanakuToolContext create(
-                McpSchema.CallToolRequest callToolRequest, String sessionId, ToolReference toolReference) {
+                McpSchema.CallToolRequest callToolRequest,
+                String sessionId,
+                McpTransportContext transportContext,
+                ToolReference toolReference) {
             WanakuToolContext context = new WanakuToolContext();
             context.callToolRequest = callToolRequest;
             context.sessionId = sessionId;
+            context.transportContext = transportContext;
             context.requestId = UUID.randomUUID().toString();
             context.toolReference = toolReference;
             return context;
@@ -64,7 +70,10 @@ public class InvokerBridge implements ToolsBridge {
 
     @Override
     public Uni<McpSchema.CallToolResult> execute(
-            McpSchema.CallToolRequest callToolRequest, String sessionId, CallableReference toolReference) {
+            McpSchema.CallToolRequest callToolRequest,
+            String sessionId,
+            McpTransportContext transportContext,
+            CallableReference toolReference) {
         if (!(toolReference instanceof ToolReference ref)) {
             LOG.errorf(
                     "Tool reference %s not supported",
@@ -75,7 +84,7 @@ public class InvokerBridge implements ToolsBridge {
         }
 
         return Uni.createFrom()
-                .item(() -> WanakuToolContext.create(callToolRequest, sessionId, ref))
+                .item(() -> WanakuToolContext.create(callToolRequest, sessionId, transportContext, ref))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                 .invoke(ctx -> {
                     if (vertx != null) {
@@ -87,7 +96,8 @@ public class InvokerBridge implements ToolsBridge {
                 .invoke(ctx -> RequestIdContext.setToolName(ref.getName()))
                 .invoke(this::resolveService)
                 .invoke(ctx -> {
-                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(ref, callToolRequest, ctx.requestId);
+                    ctx.request = InvokerToolExecutor.buildToolInvokeRequest(
+                            ref, callToolRequest, ctx.requestId, ctx.transportContext);
                     ctx.startTime = Instant.now();
                     if (eventNotifier != null) {
                         ctx.startedEvent = eventNotifier.emitStartedEvent(

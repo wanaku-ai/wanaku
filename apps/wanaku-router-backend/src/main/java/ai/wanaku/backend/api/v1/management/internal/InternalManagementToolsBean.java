@@ -109,7 +109,7 @@ public class InternalManagementToolsBean {
                 toolReference,
                 server,
                 internalNamespace,
-                (callToolRequest, sessionId, ignored) -> handler.apply(callToolRequest.arguments()));
+                (callToolRequest, sessionId, transportContext, ignored) -> handler.apply(callToolRequest.arguments()));
     }
 
     private Uni<McpSchema.CallToolResult> jsonResponse(Supplier<Object> supplier) {

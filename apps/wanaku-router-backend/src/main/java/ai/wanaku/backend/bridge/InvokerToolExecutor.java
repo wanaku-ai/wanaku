@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
@@ -49,7 +50,10 @@ public final class InvokerToolExecutor {
      * @return a fully constructed ToolInvokeRequest
      */
     static ToolInvokeRequest buildToolInvokeRequest(
-            ToolReference toolReference, McpSchema.CallToolRequest callToolRequest, String requestId) {
+            ToolReference toolReference,
+            McpSchema.CallToolRequest callToolRequest,
+            String requestId,
+            McpTransportContext transportContext) {
 
         // Validate required parameters before processing
         validateRequiredParameters(toolReference, callToolRequest.arguments());
@@ -57,6 +61,9 @@ public final class InvokerToolExecutor {
         // Filter out metadata and auth args before converting to string map
         Map<String, Object> filteredArgs = filterOutReservedArgs(callToolRequest.arguments());
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
+
+        // Start with HTTP request headers from transport context (lowest priority)
+        Map<String, String> headers = extractHttpHeaders(transportContext);
 
         // Extract metadata headers from args (with prefix stripped)
         Map<String, String> metadataHeaders = extractMetadataHeaders(callToolRequest);
@@ -67,8 +74,8 @@ public final class InvokerToolExecutor {
         // Extract tool-defined headers from schema
         Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, callToolRequest);
 
-        // Merge headers: metadata first, then tool-defined, then auth (auth wins on conflict)
-        Map<String, String> headers = new HashMap<>(metadataHeaders);
+        // Merge in order of priority: HTTP headers < metadata < tool-defined < auth
+        headers.putAll(metadataHeaders);
         headers.putAll(toolDefinedHeaders);
         headers.putAll(authHeaders);
 
@@ -135,6 +142,25 @@ public final class InvokerToolExecutor {
      * @param args the original arguments map
      * @return a new map without reserved arguments
      */
+    @SuppressWarnings("unchecked")
+    static Map<String, String> extractHttpHeaders(McpTransportContext transportContext) {
+        if (transportContext == null) {
+            return new HashMap<>();
+        }
+        Object raw =
+                transportContext.get(ai.wanaku.backend.mcp.transport.VertxStreamableTransportProvider.HTTP_HEADERS_KEY);
+        if (raw instanceof Map<?, ?> map) {
+            Map<String, String> headers = new HashMap<>();
+            map.forEach((k, v) -> {
+                if (k instanceof String key && v instanceof String value) {
+                    headers.put(key, value);
+                }
+            });
+            return headers;
+        }
+        return new HashMap<>();
+    }
+
     static Map<String, Object> filterOutReservedArgs(Map<String, Object> args) {
         return args.entrySet().stream()
                 .filter(e -> e.getKey() == null

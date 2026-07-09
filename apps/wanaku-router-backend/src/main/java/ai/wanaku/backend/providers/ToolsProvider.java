@@ -40,7 +40,7 @@ public class ToolsProvider {
     @Produces
     ToolsBridge getToolsBridge() {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
-            return (callToolRequest, sessionId, toolReference) ->
+            return (callToolRequest, sessionId, transportContext, toolReference) ->
                     Uni.createFrom().nullItem();
         }
 
