@@ -2,6 +2,8 @@ package ai.wanaku.backend.bridge;
 
 import java.util.Objects;
 import java.util.UUID;
+import org.jboss.logging.Logger;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -43,7 +45,10 @@ public class ResourceAcquirerBridge implements ResourceBridge {
 
     @Override
     public Uni<McpSchema.ReadResourceResult> read(
-            McpSchema.ReadResourceRequest readRequest, String sessionId, ResourceReference mcpResource) {
+            McpSchema.ReadResourceRequest readRequest,
+            String sessionId,
+            McpTransportContext transportContext,
+            ResourceReference mcpResource) {
 
         return Uni.createFrom()
                 .item(() -> WanakuResourceContext.create(readRequest, sessionId, mcpResource))

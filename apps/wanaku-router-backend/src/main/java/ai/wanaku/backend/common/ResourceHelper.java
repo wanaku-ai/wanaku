@@ -1,6 +1,7 @@
 package ai.wanaku.backend.common;
 
 import org.jboss.logging.Logger;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -17,7 +18,10 @@ public final class ResourceHelper {
     @FunctionalInterface
     public interface ResourceHandler {
         Uni<McpSchema.ReadResourceResult> read(
-                McpSchema.ReadResourceRequest request, String sessionId, ResourceReference mcpResource);
+                McpSchema.ReadResourceRequest request,
+                String sessionId,
+                McpTransportContext transportContext,
+                ResourceReference mcpResource);
     }
 
     public static void expose(ResourceReference resourceReference, McpSyncServer server, ResourceHandler handler) {
@@ -35,7 +39,7 @@ public final class ResourceHelper {
 
         McpServerFeatures.SyncResourceSpecification spec =
                 new McpServerFeatures.SyncResourceSpecification(resource, (exchange, request) -> {
-                    return handler.read(request, exchange.sessionId(), resourceReference)
+                    return handler.read(request, exchange.sessionId(), exchange.transportContext(), resourceReference)
                             .await()
                             .indefinitely();
                 });

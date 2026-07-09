@@ -205,8 +205,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                     localReference,
                     server,
                     ns,
-                    (req, sessionId, ignored) ->
-                            mcpBridge.executeTool(forwardClient.address(), req, sessionId, reference));
+                    (req, sessionId, tc, ignored) ->
+                            mcpBridge.executeTool(forwardClient.address(), req, sessionId, tc, reference));
 
             reservedNames.add(localName);
             registeredToolNames.add(localName);
@@ -219,7 +219,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         for (ResourceReference reference : resourceReferences) {
             LOG.debugf("Exposing remote resource %s", reference.getName());
             ResourceHelper.expose(
-                    reference, server, ns, (req, sid, res) -> mcpBridge.read(forwardClient, req, sid, res));
+                    reference, server, ns, (req, sid, tc, res) -> mcpBridge.read(forwardClient, req, sid, tc, res));
         }
     }
 

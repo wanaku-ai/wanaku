@@ -19,7 +19,8 @@ public class TestProvider {
     @Priority(100)
     ToolsBridge toolsBridge() {
         LOG.infof("Creating test tools bridge");
-        return (callToolRequest, sessionId, toolReference) -> Uni.createFrom().nullItem();
+        return (callToolRequest, sessionId, transportContext, toolReference) ->
+                Uni.createFrom().nullItem();
     }
 
     @Produces

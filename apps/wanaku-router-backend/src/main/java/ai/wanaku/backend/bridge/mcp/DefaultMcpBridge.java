@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -72,6 +73,7 @@ public class DefaultMcpBridge implements McpBridge {
             String address,
             McpSchema.CallToolRequest callToolRequest,
             String sessionId,
+            McpTransportContext transportContext,
             CallableReference toolReference) {
         return Uni.createFrom()
                 .item(() -> doExecuteTool(address, callToolRequest, sessionId, toolReference))
@@ -144,6 +146,7 @@ public class DefaultMcpBridge implements McpBridge {
             ForwardClient forwardClient,
             McpSchema.ReadResourceRequest readRequest,
             String sessionId,
+            McpTransportContext transportContext,
             ResourceReference mcpResource) {
         return Uni.createFrom()
                 .item(() -> doRead(forwardClient, mcpResource))

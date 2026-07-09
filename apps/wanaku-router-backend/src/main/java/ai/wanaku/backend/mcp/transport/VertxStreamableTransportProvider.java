@@ -329,9 +329,16 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
         }
     }
 
+    public static final String HTTP_HEADERS_KEY = "wanaku.http.headers";
+
     private McpTransportContext extractTransportContext(HttpServerRequest request) {
         Map<String, Object> metadata = new java.util.HashMap<>();
-        request.headers().forEach(entry -> metadata.put(entry.getKey(), entry.getValue()));
+        Map<String, String> httpHeaders = new java.util.HashMap<>();
+        request.headers().forEach(entry -> {
+            metadata.put(entry.getKey(), entry.getValue());
+            httpHeaders.put(entry.getKey(), entry.getValue());
+        });
+        metadata.put(HTTP_HEADERS_KEY, httpHeaders);
         return McpTransportContext.create(metadata);
     }
 

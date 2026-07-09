@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -19,7 +20,10 @@ public class ToolsHelper {
     @FunctionalInterface
     public interface ToolHandler {
         Uni<McpSchema.CallToolResult> execute(
-                McpSchema.CallToolRequest request, String sessionId, CallableReference toolReference);
+                McpSchema.CallToolRequest request,
+                String sessionId,
+                McpTransportContext transportContext,
+                CallableReference toolReference);
     }
 
     private static boolean isRequired(CallableReference toolReference) {
@@ -51,7 +55,7 @@ public class ToolsHelper {
         McpServerFeatures.SyncToolSpecification spec = McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler((exchange, request) -> {
-                    return handler.execute(request, exchange.sessionId(), toolReference)
+                    return handler.execute(request, exchange.sessionId(), exchange.transportContext(), toolReference)
                             .await()
                             .indefinitely();
                 })

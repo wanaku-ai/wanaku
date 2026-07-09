@@ -62,7 +62,10 @@ public class ResourcesProvider {
             return new ResourceBridge() {
                 @Override
                 public Uni<McpSchema.ReadResourceResult> read(
-                        McpSchema.ReadResourceRequest readRequest, String sessionId, ResourceReference mcpResource) {
+                        McpSchema.ReadResourceRequest readRequest,
+                        String sessionId,
+                        io.modelcontextprotocol.common.McpTransportContext transportContext,
+                        ResourceReference mcpResource) {
                     return Uni.createFrom()
                             .item(McpSchema.ReadResourceResult.builder(List.of())
                                     .build());
