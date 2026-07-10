@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class McpServerRegistry {
     private static final Logger LOG = Logger.getLogger(McpServerRegistry.class);
 
+    private static final String DEFAULT_NAMESPACE = "default";
     private static final String INTERNAL_NAMESPACE = "wanaku-internal";
     private static final String PUBLIC_NAMESPACE = "public";
     private static final int NUM_NAMESPACES = 10;
@@ -40,6 +41,7 @@ public class McpServerRegistry {
 
     public McpServerRegistry() {
         List<String> names = new ArrayList<>();
+        names.add(DEFAULT_NAMESPACE);
         names.add(INTERNAL_NAMESPACE);
         for (int i = 0; i < NUM_NAMESPACES; i++) {
             names.add("ns-" + i);
@@ -50,7 +52,12 @@ public class McpServerRegistry {
 
     void init(@Observes @Priority(1) StartupEvent ev) {
         for (String namespace : namespaceNames) {
-            String path = "/" + namespace + "/mcp";
+            String path;
+            if (DEFAULT_NAMESPACE.equals(namespace)) {
+                path = "/mcp";
+            } else {
+                path = "/" + namespace + "/mcp";
+            }
             createServer(namespace, path);
         }
         LOG.infof("MCP Server Registry initialized with %d namespaces", servers.size());
@@ -87,6 +94,10 @@ public class McpServerRegistry {
             throw new IllegalArgumentException("No MCP server for namespace: " + namespace);
         }
         return server;
+    }
+
+    public McpSyncServer getDefaultServer() {
+        return getServer(DEFAULT_NAMESPACE);
     }
 
     public McpSyncServer getInternalServer() {
