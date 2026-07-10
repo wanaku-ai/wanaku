@@ -3008,7 +3008,7 @@ After created, then most of the work is to adjust the auto-generated `Delegate` 
 provide the returned response.
 
 In those cases, then you also need to write a class that leverages [Apache Camel's](http://camel.apache.org) `ProducerTemplate`
-and (or, sometimes, both) `ConsumerTemplate` to interact with the system you are implementing connectivity too.
+and (or, sometimes, both) `ConsumerTemplate` to interact with the system you are implementing connectivity to.
 
 ### Adding a New Mcp server Capability
 
