@@ -73,7 +73,8 @@ rules:
   - apiGroups: ["wanaku.ai"]
     resources: ["wanakurouters", "wanakurouters/status", "wanakurouters/finalizers",
                  "wanakucapabilities", "wanakucapabilities/status", "wanakucapabilities/finalizers",
-                 "wanakuservicecatalogs", "wanakuservicecatalogs/status", "wanakuservicecatalogs/finalizers"]
+                 "wanakuservicecatalogs", "wanakuservicecatalogs/status", "wanakuservicecatalogs/finalizers",
+                 "wanakucamelroutes", "wanakucamelroutes/status", "wanakucamelroutes/finalizers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   # Self subject access review (oc auth can-i)
