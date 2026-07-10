@@ -17,13 +17,13 @@ From the repository root:
 ./tests/plans/setup/create-service-account.sh
 
 # Save the token for CI or local use
-export WANAKU_TEST_TOKEN=$(oc create token wanaku-test-runner -n wanaku-test-infra --duration=8760h)
+export OPENSHIFT_SA_TOKEN=$(oc create token wanaku-test-runner -n wanaku-test-infra --duration=8760h)
 ```
 
 Then log in as the service account instead of your admin user:
 
 ```bash
-oc login <cluster-api-url> --token=${WANAKU_TEST_TOKEN}
+oc login <cluster-api-url> --token=${OPENSHIFT_SA_TOKEN}
 oc whoami
 # Expected: system:serviceaccount:wanaku-test-infra:wanaku-test-runner
 ```
