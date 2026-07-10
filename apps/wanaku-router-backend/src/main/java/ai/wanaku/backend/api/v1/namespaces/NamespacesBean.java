@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.backend.core.persistence.api.NamespaceRepository;
+import ai.wanaku.backend.mcp.McpServerRegistry;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.core.util.StringHelper;
 
@@ -40,6 +41,9 @@ public class NamespacesBean {
     @Inject
     WanakuRouterConfig wanakuRouterConfig;
 
+    @Inject
+    McpServerRegistry mcpServerRegistry;
+
     private NamespaceRepository namespaceRepository;
 
     private final int maxNamespaces = 10;
@@ -59,12 +63,15 @@ public class NamespacesBean {
                 namespace.setName(null);
                 markPreallocated(namespace);
 
-                namespaceRepository.persist(namespace);
-
+                Namespace persisted = namespaceRepository.persist(namespace);
+                ensureMcpServer(persisted);
                 LOG.infof("Created new namespace path %s", namespacePath);
             }
         } else {
             LOG.infof("This instance already has %d namespaces allocated", namespaceRepository.size());
+            for (Namespace ns : namespaceRepository.listAll()) {
+                ensureMcpServer(ns);
+            }
         }
 
         List<Namespace> publicList = namespaceRepository.findByName("public");
@@ -90,15 +97,20 @@ public class NamespacesBean {
                 LOG.debugf("Allocating namespace with path %s for %s", namespace.getPath(), name);
                 namespace.setName(name);
                 markAllocated(namespace);
-                return namespaceRepository.persist(namespace);
+                Namespace persisted = namespaceRepository.persist(namespace);
+                ensureMcpServer(persisted);
+                return persisted;
             } else {
                 LOG.debugf("Reusing namespace with path %s for %s", namespace.getPath(), name);
             }
 
+            ensureMcpServer(namespace);
             return namespace;
         }
 
-        return byName.getFirst();
+        Namespace existing = byName.getFirst();
+        ensureMcpServer(existing);
+        return existing;
     }
 
     public Namespace create(Namespace namespace) {
@@ -129,7 +141,9 @@ public class NamespacesBean {
             markAllocated(namespace);
         }
 
-        return namespaceRepository.persist(namespace);
+        Namespace persisted = namespaceRepository.persist(namespace);
+        ensureMcpServer(persisted);
+        return persisted;
     }
 
     public List<Namespace> list(String labelFilter) {
@@ -211,8 +225,13 @@ public class NamespacesBean {
             return false;
         }
 
+        String path = namespace.getPath();
         resetToUnallocated(namespace);
-        return namespaceRepository.update(id, namespace);
+        boolean updated = namespaceRepository.update(id, namespace);
+        if (updated && path != null) {
+            mcpServerRegistry.removeServer(path);
+        }
+        return updated;
     }
 
     public List<Namespace> listStale(long maxAgeSeconds, boolean unassignedOnly, boolean includeUnlabeled) {
@@ -233,6 +252,13 @@ public class NamespacesBean {
         }
         LOG.infof("Stale namespace cleanup complete: %d namespaces removed", removed);
         return removed;
+    }
+
+    private void ensureMcpServer(Namespace namespace) {
+        if (namespace.getPath() != null && !mcpServerRegistry.hasServer(namespace.getPath())) {
+            String basePath = "/" + namespace.getPath() + "/mcp";
+            mcpServerRegistry.createServerIfAbsent(namespace.getPath(), basePath);
+        }
     }
 
     private void markPreallocated(Namespace namespace) {

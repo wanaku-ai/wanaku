@@ -103,7 +103,7 @@ export const NamespacesPage: React.FC = () => {
       <h1 className="title">Namespaces</h1>
       <p className="description">
         Namespaces help organize and isolate tools and resources, preventing LLM context bloat and improving deployment efficiency.
-        Wanaku provides up to 10 namespace slots (ns-0 to ns-9) plus a default namespace for general use.
+        Create namespaces dynamically — each one gets its own MCP endpoint at /&lt;namespace-path&gt;/mcp.
         Each namespace acts as a separate logical container to ensure tools don't interfere with each other.
       </p>
       <div id="page-content">

@@ -7,9 +7,9 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
@@ -17,6 +17,7 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.quarkus.runtime.StartupEvent;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import ai.wanaku.backend.mcp.transport.VertxStreamableTransportProvider;
@@ -30,40 +31,28 @@ public class McpServerRegistry {
     private static final String DEFAULT_NAMESPACE = "default";
     private static final String INTERNAL_NAMESPACE = "wanaku-internal";
     private static final String PUBLIC_NAMESPACE = "public";
-    private static final int NUM_NAMESPACES = 10;
+    private static final Set<String> PROTECTED_NAMESPACES =
+            Set.of(DEFAULT_NAMESPACE, INTERNAL_NAMESPACE, PUBLIC_NAMESPACE);
 
     private final Map<String, McpSyncServer> servers = new ConcurrentHashMap<>();
     private final Map<String, VertxStreamableTransportProvider> transportProviders = new ConcurrentHashMap<>();
-    private final List<String> namespaceNames;
+    private final Map<String, List<Route>> namespaceRoutes = new ConcurrentHashMap<>();
 
     @Inject
     Router router;
 
-    public McpServerRegistry() {
-        List<String> names = new ArrayList<>();
-        names.add(DEFAULT_NAMESPACE);
-        names.add(INTERNAL_NAMESPACE);
-        for (int i = 0; i < NUM_NAMESPACES; i++) {
-            names.add("ns-" + i);
-        }
-        names.add(PUBLIC_NAMESPACE);
-        this.namespaceNames = Collections.unmodifiableList(names);
-    }
-
     void init(@Observes @Priority(1) StartupEvent ev) {
-        for (String namespace : namespaceNames) {
-            String path;
-            if (DEFAULT_NAMESPACE.equals(namespace)) {
-                path = "/mcp";
-            } else {
-                path = "/" + namespace + "/mcp";
-            }
-            createServer(namespace, path);
-        }
+        createServerIfAbsent(DEFAULT_NAMESPACE, "/mcp");
+        createServerIfAbsent(INTERNAL_NAMESPACE, "/" + INTERNAL_NAMESPACE + "/mcp");
+        createServerIfAbsent(PUBLIC_NAMESPACE, "/" + PUBLIC_NAMESPACE + "/mcp");
         LOG.infof("MCP Server Registry initialized with %d namespaces", servers.size());
     }
 
-    private void createServer(String namespace, String basePath) {
+    public synchronized void createServerIfAbsent(String namespace, String basePath) {
+        if (servers.containsKey(namespace)) {
+            return;
+        }
+
         JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new ObjectMapper());
         VertxStreamableTransportProvider transportProvider = new VertxStreamableTransportProvider(jsonMapper);
 
@@ -78,14 +67,51 @@ public class McpServerRegistry {
                         new McpSchema.ServerCapabilities.ToolCapabilities(true)))
                 .build();
 
-        router.route(basePath).handler(BodyHandler.create());
-        router.post(basePath).blockingHandler(transportProvider.postHandler(), false);
-        router.get(basePath).blockingHandler(transportProvider.getHandler(), false);
-        router.delete(basePath).blockingHandler(transportProvider.deleteHandler(), false);
+        List<Route> routes = new ArrayList<>();
+        routes.add(router.route(basePath).handler(BodyHandler.create()));
+        routes.add(router.post(basePath).blockingHandler(transportProvider.postHandler(), false));
+        routes.add(router.get(basePath).blockingHandler(transportProvider.getHandler(), false));
+        routes.add(router.delete(basePath).blockingHandler(transportProvider.deleteHandler(), false));
 
         servers.put(namespace, server);
         transportProviders.put(namespace, transportProvider);
-        LOG.debugf("Registered MCP server for namespace '%s' at path '%s'", namespace, basePath);
+        namespaceRoutes.put(namespace, routes);
+        LOG.infof("Registered MCP server for namespace '%s' at path '%s'", namespace, basePath);
+    }
+
+    public synchronized void removeServer(String namespace) {
+        if (PROTECTED_NAMESPACES.contains(namespace)) {
+            LOG.warnf("Refusing to remove protected namespace MCP server: %s", namespace);
+            return;
+        }
+
+        McpSyncServer server = servers.remove(namespace);
+        if (server != null) {
+            try {
+                server.close();
+            } catch (Exception e) {
+                LOG.debugf(e, "Error closing MCP server for namespace %s", namespace);
+            }
+        }
+
+        transportProviders.remove(namespace);
+
+        List<Route> routes = namespaceRoutes.remove(namespace);
+        if (routes != null) {
+            routes.forEach(route -> {
+                try {
+                    route.remove();
+                } catch (Exception e) {
+                    LOG.debugf(e, "Error removing route for namespace %s", namespace);
+                }
+            });
+        }
+
+        LOG.infof("Removed MCP server for namespace '%s'", namespace);
+    }
+
+    public boolean hasServer(String namespace) {
+        return servers.containsKey(namespace);
     }
 
     public McpSyncServer getServer(String namespace) {
@@ -117,10 +143,6 @@ public class McpServerRegistry {
         return getPublicServer();
     }
 
-    public List<String> getNamespaceNames() {
-        return namespaceNames;
-    }
-
     @PreDestroy
     void shutdown() {
         servers.values().forEach(server -> {
@@ -132,5 +154,6 @@ public class McpServerRegistry {
         });
         servers.clear();
         transportProviders.clear();
+        namespaceRoutes.clear();
     }
 }
