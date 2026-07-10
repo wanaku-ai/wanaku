@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           ref: wanaku-${{ github.event.inputs.currentDevelopmentVersion }}
 
-      - uses: graalvm/setup-graalvm@329c42c5f4c343bceb505f0b28cc8499bc2bf174 # v1.5.4
+      - uses: graalvm/setup-graalvm@8c5543b71f44568342e106336639979e94a8f6de # v1.6.1
         with:
           java-version: '21'
           distribution: 'graalvm'
@@ -41,7 +41,7 @@ jobs:
         run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Login to Container Registry
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
@@ -71,7 +71,7 @@ jobs:
           mvn --no-transfer-progress -Pdist -Dnative -DskipTests clean package
       - name: Run JReleaser
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
-        uses: jreleaser/release-action@97b5e2f0e845de2fe1dbbdf451ac6a21233fafff # v2
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # v2.5.0
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.currentDevelopmentVersion }}
@@ -81,7 +81,7 @@ jobs:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Run JReleaser (Cli - macOS)
         if: matrix.os != 'ubuntu-latest' && matrix.os != 'ubuntu-24.04-arm'
-        uses: jreleaser/release-action@97b5e2f0e845de2fe1dbbdf451ac6a21233fafff # v2
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # v2.5.0
         with:
           arguments: 'full-release --exclude-distribution=cli'
         env:
@@ -96,7 +96,7 @@ jobs:
 
       - name: JReleaser release output
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: jreleaser-release-${{ matrix.os }}
           path: |
@@ -107,10 +107,10 @@ jobs:
     needs: release-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Login to Container Registry
         if: github.repository == 'wanaku-ai/wanaku'
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
