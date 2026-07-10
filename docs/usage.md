@@ -797,7 +797,7 @@ For more details, see the [Configuration Guide](configurations.md#secret-encrypt
 
 Wanaku supports MCP via SSE (deprecated) or via Streamable HTTP.
 
-the MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
+The MCP endpoint exposed by Wanaku can be accessed on the path `/mcp/sse` of the host you are using (for instance, if running
 locally, that would mean `http://localhost:8080/mcp/sse`).
 
 The Streamable HTTP endpoint can be accessed on the path `/mcp/`.
