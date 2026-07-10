@@ -2940,7 +2940,7 @@ that capability service.
 For cases where the [Camel Integration Capability for Wanaku](https://wanaku.ai/docs/camel-integration-capability/) is
 not sufficient, users can create their own capability services.
 
-Why try to make it simple for users to create custom services that solve their particular need.
+We try to make it simple for users to create custom services that solve their particular needs.
 
 #### Creating a New Resource Provider
 
