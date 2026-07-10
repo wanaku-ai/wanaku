@@ -146,7 +146,9 @@ public class ServiceTemplateBean {
         DataStore existing = get(index.getName());
         if (existing != null) {
             LOG.debugf("Replacing existing template: %s", dataStore.getName());
-            dataStoreRepository.deleteById(existing.getId());
+            if (!dataStoreRepository.deleteById(existing.getId())) {
+                LOG.warnf("Failed to delete existing template before replace: %s", existing.getId());
+            }
         }
 
         return dataStoreRepository.persist(dataStore);

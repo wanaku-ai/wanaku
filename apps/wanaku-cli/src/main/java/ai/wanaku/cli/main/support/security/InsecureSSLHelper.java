@@ -23,20 +23,27 @@ public class InsecureSSLHelper {
 
     private static final X509ExtendedTrustManager[] TRUST_ALL = new X509ExtendedTrustManager[] {
         new X509ExtendedTrustManager() {
+            @Override
             public X509Certificate[] getAcceptedIssuers() {
                 return new X509Certificate[0];
             }
 
+            @Override
             public void checkClientTrusted(X509Certificate[] certs, String authType) {}
 
+            @Override
             public void checkServerTrusted(X509Certificate[] certs, String authType) {}
 
+            @Override
             public void checkClientTrusted(X509Certificate[] chain, String authType, java.net.Socket socket) {}
 
+            @Override
             public void checkServerTrusted(X509Certificate[] chain, String authType, java.net.Socket socket) {}
 
+            @Override
             public void checkClientTrusted(X509Certificate[] chain, String authType, javax.net.ssl.SSLEngine engine) {}
 
+            @Override
             public void checkServerTrusted(X509Certificate[] chain, String authType, javax.net.ssl.SSLEngine engine) {}
         }
     };

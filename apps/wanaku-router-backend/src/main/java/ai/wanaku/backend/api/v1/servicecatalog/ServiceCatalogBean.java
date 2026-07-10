@@ -121,7 +121,9 @@ public class ServiceCatalogBean {
         DataStore existing = get(dataStore.getName());
         if (existing != null) {
             LOG.debugf("Replacing existing catalog: %s", dataStore.getName());
-            dataStoreRepository.deleteById(existing.getId());
+            if (!dataStoreRepository.deleteById(existing.getId())) {
+                LOG.warnf("Failed to delete existing catalog before replace: %s", existing.getId());
+            }
         }
 
         return dataStoreRepository.persist(dataStore);

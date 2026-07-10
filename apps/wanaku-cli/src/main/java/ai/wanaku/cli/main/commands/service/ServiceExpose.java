@@ -178,7 +178,9 @@ public class ServiceExpose extends BaseCommand {
     private void generateToolRulesFile(File rulesFile, String systemName, List<String> routeIds) throws IOException {
         File parentDir = rulesFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs();
+            if (!parentDir.mkdirs()) {
+                throw new IOException("Failed to create directory: " + parentDir);
+            }
         }
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(rulesFile))) {
@@ -211,7 +213,9 @@ public class ServiceExpose extends BaseCommand {
             throws IOException {
         File parentDir = rulesFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs();
+            if (!parentDir.mkdirs()) {
+                throw new IOException("Failed to create directory: " + parentDir);
+            }
         }
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(rulesFile))) {

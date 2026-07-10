@@ -20,6 +20,7 @@ class GrpcResourceResponseTransformer implements ResourceResponseTransformer<Res
      * @param mcpResource the resource reference
      * @return a list of resource contents
      */
+    @Override
     public List<ResourceContents> transformReply(
             ResourceReply reply, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
         ProtocolStringList contentList = reply.getContentList();
