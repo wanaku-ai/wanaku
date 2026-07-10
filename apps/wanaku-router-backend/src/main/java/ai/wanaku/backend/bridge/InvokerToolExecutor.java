@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -142,6 +143,31 @@ public final class InvokerToolExecutor {
      * @param args the original arguments map
      * @return a new map without reserved arguments
      */
+    private static final Set<String> EXCLUDED_HTTP_HEADERS = Set.of(
+            "accept-encoding",
+            "host",
+            "connection",
+            "content-length",
+            "content-type",
+            "transfer-encoding",
+            "upgrade",
+            "via",
+            "te",
+            "trailer",
+            "keep-alive",
+            "proxy-authorization",
+            "proxy-authenticate",
+            "mcp-session-id",
+            "accept",
+            "origin",
+            "referer",
+            "sec-websocket-key",
+            "sec-websocket-version",
+            "sec-fetch-mode",
+            "sec-fetch-site",
+            "sec-fetch-dest",
+            "cache-control");
+
     @SuppressWarnings("unchecked")
     static Map<String, String> extractHttpHeaders(McpTransportContext transportContext) {
         if (transportContext == null) {
@@ -153,7 +179,9 @@ public final class InvokerToolExecutor {
             Map<String, String> headers = new HashMap<>();
             map.forEach((k, v) -> {
                 if (k instanceof String key && v instanceof String value) {
-                    headers.put(key, value);
+                    if (!EXCLUDED_HTTP_HEADERS.contains(key.toLowerCase())) {
+                        headers.put(key, value);
+                    }
                 }
             });
             return headers;
