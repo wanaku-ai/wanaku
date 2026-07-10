@@ -76,8 +76,8 @@ This produces `.tar.gz` archives under each module's `target/distributions/` dir
 
 ```bash
 tests/load/run-perf-test.sh \
-  --router-from apps/wanaku-router-backend/target/distributions/wanaku-router-backend-0.1.1-SNAPSHOT.tar.gz \
-  --capability-from capabilities/tools/wanaku-tool-performance-noop/target/distributions/wanaku-tool-performance-noop-0.1.1-SNAPSHOT.tar.gz \
+  --router-from apps/wanaku-router-backend/target/distributions/wanaku-router-backend-0.2.0-SNAPSHOT.tar.gz \
+  --capability-from capabilities/tools/wanaku-tool-performance-noop/target/distributions/wanaku-tool-performance-noop-0.2.0-SNAPSHOT.tar.gz \
   --suite tools-sse \
   --test-name my-run \
   --test-base-dir /tmp/perf-results
