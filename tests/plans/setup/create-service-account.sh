@@ -1,26 +1,26 @@
 #!/bin/bash
 set -e
 
-WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test}"
+WANAKU_SA_NAMESPACE="${WANAKU_SA_NAMESPACE:-wanaku-test-infra}"
 TOKEN_DURATION="${TOKEN_DURATION:-8760h}"
 
 echo "=== Wanaku Test Service Account Setup ==="
-echo "Namespace: ${WANAKU_NAMESPACE}"
+echo "Service account namespace: ${WANAKU_SA_NAMESPACE}"
 
-# 1. Create namespace if it doesn't exist
-if oc get namespace "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
-  echo "PASS: namespace ${WANAKU_NAMESPACE} already exists"
+# 1. Create the service account namespace if it doesn't exist
+if oc get namespace "${WANAKU_SA_NAMESPACE}" > /dev/null 2>&1; then
+  echo "PASS: namespace ${WANAKU_SA_NAMESPACE} already exists"
 else
-  oc new-project "${WANAKU_NAMESPACE}" --display-name="Wanaku Operator Test" 2>/dev/null \
-    || oc create namespace "${WANAKU_NAMESPACE}"
-  echo "PASS: namespace ${WANAKU_NAMESPACE} created"
+  oc new-project "${WANAKU_SA_NAMESPACE}" --display-name="Wanaku Test Infrastructure" 2>/dev/null \
+    || oc create namespace "${WANAKU_SA_NAMESPACE}"
+  echo "PASS: namespace ${WANAKU_SA_NAMESPACE} created"
 fi
 
 # 2. Create the ServiceAccount
-if oc get serviceaccount wanaku-test-runner -n "${WANAKU_NAMESPACE}" > /dev/null 2>&1; then
+if oc get serviceaccount wanaku-test-runner -n "${WANAKU_SA_NAMESPACE}" > /dev/null 2>&1; then
   echo "PASS: serviceaccount wanaku-test-runner already exists"
 else
-  oc create serviceaccount wanaku-test-runner -n "${WANAKU_NAMESPACE}"
+  oc create serviceaccount wanaku-test-runner -n "${WANAKU_SA_NAMESPACE}"
   echo "PASS: serviceaccount wanaku-test-runner created"
 fi
 
@@ -89,14 +89,14 @@ if oc get clusterrolebinding wanaku-test-runner > /dev/null 2>&1; then
 else
   oc create clusterrolebinding wanaku-test-runner \
     --clusterrole=wanaku-test-runner \
-    --serviceaccount="${WANAKU_NAMESPACE}:wanaku-test-runner"
+    --serviceaccount="${WANAKU_SA_NAMESPACE}:wanaku-test-runner"
   echo "PASS: clusterrolebinding wanaku-test-runner created"
 fi
 
 # 5. Generate a token
 echo ""
 echo "=== Service Account Token ==="
-TOKEN=$(oc create token wanaku-test-runner -n "${WANAKU_NAMESPACE}" --duration="${TOKEN_DURATION}")
+TOKEN=$(oc create token wanaku-test-runner -n "${WANAKU_SA_NAMESPACE}" --duration="${TOKEN_DURATION}")
 echo "${TOKEN}"
 echo ""
 echo "To log in as this service account:"
@@ -104,4 +104,4 @@ echo "  oc login <cluster-api-url> --token=<token-above>"
 echo ""
 echo "To verify:"
 echo "  oc whoami"
-echo "  # Expected: system:serviceaccount:${WANAKU_NAMESPACE}:wanaku-test-runner"
+echo "  # Expected: system:serviceaccount:${WANAKU_SA_NAMESPACE}:wanaku-test-runner"

@@ -92,6 +92,8 @@ echo "SKIP: CRD deletion (uncomment to enable)"
 
 ### 9. Delete the namespace (optional)
 
+The test service account lives in `wanaku-test-infra`, not in `${WANAKU_NAMESPACE}`, so deleting the test namespace does not affect the service account or its RBAC.
+
 ```bash
 # WARNING: This deletes everything in the namespace.
 # Uncomment the following line for a full cleanup:
