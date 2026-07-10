@@ -295,7 +295,11 @@ public class ToolsetReposBean {
             return false;
         }
         try {
-            int second = Integer.parseInt(host.split("\\.")[1]);
+            String[] octets = host.split("\\.");
+            if (octets.length < 2) {
+                return false;
+            }
+            int second = Integer.parseInt(octets[1]);
             return second >= 16 && second <= 31;
         } catch (Exception e) {
             return false;

@@ -161,12 +161,15 @@ public final class Matchers {
         }
 
         // Check if storage request matches
-        String desiredStorage =
-                desired.getSpec().getResources().getRequests().get("storage").toString();
-        String existingStorage =
-                existing.getSpec().getResources().getRequests().get("storage").toString();
+        Object desiredQuantity = desired.getSpec().getResources().getRequests().get("storage");
+        Object existingQuantity =
+                existing.getSpec().getResources().getRequests().get("storage");
 
-        return desiredStorage.equals(existingStorage)
+        if (desiredQuantity == null || existingQuantity == null) {
+            return Objects.equals(desiredQuantity, existingQuantity);
+        }
+
+        return desiredQuantity.toString().equals(existingQuantity.toString())
                 && desired.getSpec().getAccessModes().equals(existing.getSpec().getAccessModes());
     }
 }

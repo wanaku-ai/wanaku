@@ -149,7 +149,9 @@ public final class InvokerToolExecutor {
     private static String evalValue(Map.Entry<String, Property> entry, ToolManager.ToolArguments toolArguments) {
         if (entry.getValue() == null) {
             LOG.fatalf("Malformed value for key %s: null", entry.getKey());
-            return toolArguments.args().get(entry.getKey()).toString();
+            final Object fallback = toolArguments.args().get(entry.getKey());
+            requireNonNullValue(entry, fallback);
+            return fallback.toString();
         }
 
         if (entry.getValue().getValue() == null) {

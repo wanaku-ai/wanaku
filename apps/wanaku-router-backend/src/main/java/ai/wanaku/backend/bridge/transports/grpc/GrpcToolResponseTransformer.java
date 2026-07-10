@@ -16,6 +16,7 @@ class GrpcToolResponseTransformer implements ToolResponseTransformer<ToolInvokeR
      * @param reply the reply from the remote tool invocation
      * @return a ToolResponse containing the execution results
      */
+    @Override
     public ToolResponse transformReply(ToolInvokeReply reply) {
         ProtocolStringList contentList = reply.getContentList();
         List<TextContent> contents = new ArrayList<>(contentList.size());
