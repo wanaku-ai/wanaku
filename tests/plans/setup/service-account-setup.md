@@ -2,10 +2,11 @@
 
 Running operator test plans with your personal (admin) credentials is dangerous. This guide creates a dedicated service account with only the permissions the test plans require.
 
+The service account lives in a dedicated `wanaku-test-infra` namespace, separate from the `wanaku-test` namespace where tests run. This ensures the service account survives test cleanup and namespace deletion across test executions.
+
 ## Prerequisites
 
 - `oc` CLI logged in as a cluster admin (one-time setup)
-- The `wanaku-test` namespace (created by the test plans or manually)
 
 ## Quick Start
 
@@ -16,7 +17,7 @@ From the repository root:
 ./tests/plans/setup/create-service-account.sh
 
 # Save the token for CI or local use
-export WANAKU_TEST_TOKEN=$(oc create token wanaku-test-runner -n wanaku-test --duration=8760h)
+export WANAKU_TEST_TOKEN=$(oc create token wanaku-test-runner -n wanaku-test-infra --duration=8760h)
 ```
 
 Then log in as the service account instead of your admin user:
@@ -24,7 +25,7 @@ Then log in as the service account instead of your admin user:
 ```bash
 oc login <cluster-api-url> --token=${WANAKU_TEST_TOKEN}
 oc whoami
-# Expected: system:serviceaccount:wanaku-test:wanaku-test-runner
+# Expected: system:serviceaccount:wanaku-test-infra:wanaku-test-runner
 ```
 
 ## What the Service Account Can Do
@@ -45,7 +46,7 @@ The `create-service-account.sh` script prints a token valid for 1 year. For CI s
 To rotate the token:
 
 ```bash
-oc create token wanaku-test-runner -n wanaku-test --duration=8760h
+oc create token wanaku-test-runner -n wanaku-test-infra --duration=8760h
 ```
 
 ## Teardown
