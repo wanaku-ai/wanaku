@@ -1082,7 +1082,10 @@ wanaku admin users list
 wanaku admin users list --admin-username admin --admin-password admin
 
 # Create a new user (email, first-name, last-name are optional and default to username-based values)
-# By default, the email is marked as verified. Use --no-verified to leave it unverified.
+# By default, the email is marked as verified (equivalent to passing --verified).
+# Use --no-verified to leave it unverified, but note that emailVerified must be true
+# for OIDC login to succeed; otherwise Keycloak returns "account_not_fully_set_up"
+# and the CLI throws ServiceAuthException: Account is not fully set up.
 wanaku admin users add --admin-username admin --admin-password admin \
   --username alice --password secretpass \
   --email alice@example.com --first-name Alice --last-name Smith

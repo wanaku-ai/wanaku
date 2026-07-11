@@ -41,9 +41,8 @@ public class UsersAdd extends BaseAdminCommand {
     @CommandLine.Option(
             names = {"--verified"},
             description = "Mark the email address as verified (default: true)",
-            defaultValue = "true",
             negatable = true)
-    private boolean verified;
+    private boolean verified = true;
 
     public UsersAdd() {
         super();
