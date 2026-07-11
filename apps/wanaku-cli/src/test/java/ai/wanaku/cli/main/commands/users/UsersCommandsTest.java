@@ -1,5 +1,6 @@
 package ai.wanaku.cli.main.commands.users;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
@@ -39,6 +40,27 @@ class UsersCommandsTest {
     }
 
     // ---- Happy-path tests ----
+
+    @Test
+    void usersAddDefaultsEmailVerifiedToTrue() throws Exception {
+        UsersAdd cmd = new UsersAdd(adminClient);
+        int result = cmd.doCall(terminal, printer);
+        assertEquals(EXIT_OK, result);
+        verify(adminClient).createUser(any(), any(), any(), any(), any(), any(), eq(true));
+        verify(printer).printSuccessMessage(any());
+    }
+
+    @Test
+    void usersAddHonorsNoVerifiedFlag() throws Exception {
+        UsersAdd cmd = new UsersAdd(adminClient);
+        Field verifiedField = UsersAdd.class.getDeclaredField("verified");
+        verifiedField.setAccessible(true);
+        verifiedField.setBoolean(cmd, false);
+        int result = cmd.doCall(terminal, printer);
+        assertEquals(EXIT_OK, result);
+        verify(adminClient).createUser(any(), any(), any(), any(), any(), any(), eq(false));
+        verify(printer).printSuccessMessage(any());
+    }
 
     @Test
     void usersAddHappyPath() throws Exception {
