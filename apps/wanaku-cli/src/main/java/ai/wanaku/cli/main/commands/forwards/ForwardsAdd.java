@@ -3,11 +3,9 @@ package ai.wanaku.cli.main.commands.forwards;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jline.terminal.Terminal;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
@@ -64,16 +62,20 @@ public class ForwardsAdd extends BaseCommand {
     }
 
     private String resolveNamespaceId() throws Exception {
-        if (namespaceOptions.namespace != null && !namespaceOptions.namespace.isBlank()) {
+        if (namespaceOptions.namespace != null) {
             return namespaceOptions.namespace;
         }
 
-        NamespacesService namespacesService =
-                QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host)).build(NamespacesService.class);
+        NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
 
         try {
             WanakuResponse<List<Namespace>> response = namespacesService.list();
-            List<Namespace> matches = response.data().stream()
+            List<Namespace> data = response.data();
+            if (data == null) {
+                throw new IllegalStateException("No namespace data returned from server.");
+            }
+
+            List<Namespace> matches = data.stream()
                     .filter(n -> namespaceOptions.namespaceName.equals(n.getName()))
                     .collect(Collectors.toList());
 
