@@ -33,7 +33,7 @@ public class NamespaceRepositoryTest {
 
     @BeforeAll
     void setup() {
-        ((AbstractInfinispanRepository) namespaceRepository).deleteALl();
+        ((AbstractInfinispanRepository<?, ?>) namespaceRepository).deleteALl();
     }
 
     @DisplayName("Tests that preloading records create correct records")
