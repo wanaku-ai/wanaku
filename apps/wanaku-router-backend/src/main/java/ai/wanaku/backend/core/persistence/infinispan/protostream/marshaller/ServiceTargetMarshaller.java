@@ -28,9 +28,8 @@ public class ServiceTargetMarshaller implements MessageMarshaller<ServiceTarget>
         String languageType = reader.readString("languageType");
         String languageSubType = reader.readString("languageSubType");
 
-        ServiceTarget serviceTarget = new ServiceTarget(
+        return new ServiceTarget(
                 id, serviceName, host, port, serviceType, serviceSubType, languageName, languageType, languageSubType);
-        return serviceTarget;
     }
 
     @Override

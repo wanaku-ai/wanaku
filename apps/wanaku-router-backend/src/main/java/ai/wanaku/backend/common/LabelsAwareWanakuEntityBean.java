@@ -46,8 +46,7 @@ public abstract class LabelsAwareWanakuEntityBean<W extends LabelsAwareEntity<St
      */
     public int removeIf(String labelExpression) throws WanakuException {
         try {
-            int removed = ((LabelAwareInfinispanRepository) getRepository()).removeIf(labelExpression);
-            return removed;
+            return ((LabelAwareInfinispanRepository) getRepository()).removeIf(labelExpression);
         } catch (LabelExpressionParser.LabelExpressionParseException e) {
             throw new WanakuException(e.getMessage());
         }
