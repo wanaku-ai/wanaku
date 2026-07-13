@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,9 +85,7 @@ public class DeploymentInstructionsBean {
 
     private void addIfAuthEnabled(List<PlaceholderDefinition> placeholders, PlaceholderDefinition... defs) {
         if (!isNoAuth()) {
-            for (PlaceholderDefinition def : defs) {
-                placeholders.add(def);
-            }
+            placeholders.addAll(Arrays.asList(defs));
         }
     }
 
