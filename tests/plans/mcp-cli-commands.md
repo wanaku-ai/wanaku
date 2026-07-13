@@ -15,7 +15,7 @@ Every step except the initial `oc login` is fully automatable.
 
 | Tool | Minimum version | Verify command |
 |------|-----------------|----------------|
-| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 | `jq` | 1.6+ | `jq --version` |
 
 ### CLI invocation
@@ -383,7 +383,7 @@ The first `oc login` step is manual; everything else is automatable.
 |------|-----------------|----------------|
 | `oc` | 4.12+ | `oc version --client` |
 | `helm` | 3.x | `helm version --short` |
-| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 | `jq` | 1.6+ | `jq --version` |
 
 ### Environment variables

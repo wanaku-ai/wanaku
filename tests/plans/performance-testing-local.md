@@ -25,7 +25,7 @@ Every step is fully automatable.
 | `curl` | any | `curl --version` |
 | `k6` | 0.50+ (with xk6-mcp) | `k6 version` |
 | `python3` | 3.8+ | `python3 --version` |
-| `wanaku` | 0.1.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 
 ### k6 with xk6-mcp extension
 
@@ -35,7 +35,8 @@ The k6 binary must be compiled with the `xk6-mcp` extension. A standard k6 insta
 
 ```bash
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
-export WANAKU_VERSION="${WANAKU_VERSION:-0.1.0}"
+# WANAKU_VERSION is derived from the build output in Phase 1.
+# Override manually if needed: export WANAKU_VERSION="x.y.z"
 export K6_BIN="${K6_BIN:-$HOME/bin/k6}"
 export WANAKU_BIN="${WANAKU_BIN:-$HOME/bin/wanaku}"
 export JAVA_OPTS="${JAVA_OPTS:--XX:+UseNUMA -Xmx4G -Xms4G}"
@@ -121,7 +122,7 @@ fi
 ### Test 0.3: Verify environment variables
 
 ```bash
-for VAR_NAME in WANAKU_REPO_ROOT WANAKU_VERSION K6_BIN TEST_DURATION; do
+for VAR_NAME in WANAKU_REPO_ROOT K6_BIN TEST_DURATION; do
   eval "VAL=\${${VAR_NAME}}"
   if [ -z "${VAL}" ]; then
     echo "FAIL: ${VAR_NAME} is not set"
@@ -154,6 +155,13 @@ done
 ```bash
 cd "${WANAKU_REPO_ROOT}"
 mvn package -Pdist -DskipTests -T1C -q
+```
+
+**Derive `WANAKU_VERSION` from build output:**
+
+```bash
+export WANAKU_VERSION="${WANAKU_VERSION:-$(cat ${WANAKU_REPO_ROOT}/core/core-util/target/classes/version.txt)}"
+echo "WANAKU_VERSION=${WANAKU_VERSION}"
 ```
 
 **Verification:**

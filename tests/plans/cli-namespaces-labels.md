@@ -12,7 +12,7 @@ Every step is fully automatable.
 
 | Tool | Minimum version | Verify command |
 |------|-----------------|----------------|
-| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 | `jq` | 1.6+ | `jq --version` |
 | `java` | 21+ | `java -version` |
 | `mvn` | 3.9+ | `mvn -version` |
