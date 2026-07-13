@@ -42,9 +42,7 @@ final class ForageDependencyAppender {
         String existing = new String(entries.get(depsPath), StandardCharsets.UTF_8);
         Set<String> merged = new LinkedHashSet<>(parseDependenciesFile(existing));
 
-        for (String gav : forageGavs) {
-            merged.add(gav);
-        }
+        merged.addAll(forageGavs);
 
         entries.put(depsPath, formatDependencies(merged));
 
