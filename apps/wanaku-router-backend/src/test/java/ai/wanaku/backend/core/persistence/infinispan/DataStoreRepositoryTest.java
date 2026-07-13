@@ -37,7 +37,7 @@ public class DataStoreRepositoryTest {
 
     @BeforeAll
     void setup() {
-        ((AbstractInfinispanRepository) dataStoreRepository).deleteALl();
+        ((AbstractInfinispanRepository<?, ?>) dataStoreRepository).deleteALl();
     }
 
     @Order(1)
@@ -150,6 +150,6 @@ public class DataStoreRepositoryTest {
         assertEquals(2, found.size(), "Should find both data stores with the same name");
 
         // Cleanup
-        ((AbstractInfinispanRepository) dataStoreRepository).deleteALl();
+        ((AbstractInfinispanRepository<?, ?>) dataStoreRepository).deleteALl();
     }
 }

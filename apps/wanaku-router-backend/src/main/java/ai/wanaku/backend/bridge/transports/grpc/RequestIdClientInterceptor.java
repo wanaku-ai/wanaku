@@ -33,7 +33,7 @@ public class RequestIdClientInterceptor implements ClientInterceptor {
 
     static <ReqT, RespT> ClientCall<ReqT, RespT> withRequestId(ClientCall<ReqT, RespT> delegate, String requestId) {
         if (requestId != null && !requestId.isEmpty()) {
-            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(delegate) {
+            return new ForwardingClientCall.SimpleForwardingClientCall<>(delegate) {
                 @Override
                 public void start(Listener<RespT> responseListener, Metadata headers) {
                     headers.put(REQUEST_ID_KEY, requestId);
