@@ -80,34 +80,6 @@ class LabelHelperTest {
     }
 
     @Nested
-    class ValidateLabelExpressionTests {
-
-        @Test
-        void returnErrorWhenBothProvided() {
-            int result = LabelHelper.validateLabelExpression("id", "expr", "--id", printer);
-            assertEquals(BaseCommand.EXIT_ERROR, result);
-        }
-
-        @Test
-        void returnErrorWhenNeitherProvided() {
-            int result = LabelHelper.validateLabelExpression(null, null, "--id", printer);
-            assertEquals(BaseCommand.EXIT_ERROR, result);
-        }
-
-        @Test
-        void returnOkWhenOnlyIdentifierProvided() {
-            int result = LabelHelper.validateLabelExpression("id", null, "--id", printer);
-            assertEquals(BaseCommand.EXIT_OK, result);
-        }
-
-        @Test
-        void returnOkWhenOnlyExpressionProvided() {
-            int result = LabelHelper.validateLabelExpression(null, "expr", "--id", printer);
-            assertEquals(BaseCommand.EXIT_OK, result);
-        }
-    }
-
-    @Nested
     class AddLabelsToEntityTests {
 
         @Test

@@ -10,7 +10,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.CommandHelper;
-import ai.wanaku.cli.main.support.LabelHelper;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
 import picocli.CommandLine;
@@ -28,26 +28,8 @@ public class ResourcesRemove extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"--name"},
-            description = "A human-readable name for the resource. Cannot be used with --label-expression.",
-            arity = "0..1")
-    private String name;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = {
-                """
-            Remove resources matching a label filter expression. Supports logical operators for complex queries.",
-            For detailed information see the label expression manual page:
-            `wanaku man label-expression`
-            Note: Use --name to remove a single resource by name. The --label-expression,
-            option enables batch removal of multiple resources. Use with caution as this,
-            operation cannot be undone.
-            """
-            },
-            arity = "0..1")
-    private String labelExpression;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NameSelector selector;
 
     @CommandLine.Option(
             names = {"-y", "--assume-yes"},
@@ -60,12 +42,7 @@ public class ResourcesRemove extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         resourcesService = initAuthenticatedService(ResourcesService.class, host);
 
-        int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return removeByLabelExpression(terminal, printer);
         }
 
@@ -74,26 +51,28 @@ public class ResourcesRemove extends BaseCommand {
 
     private Integer removeByName(WanakuPrinter printer) throws IOException {
         try {
-            resourcesService.remove(name);
-            printer.printSuccessMessage("Successfully removed resource reference '" + name + "'");
+            resourcesService.remove(selector.name);
+            printer.printSuccessMessage("Successfully removed resource reference '" + selector.name + "'");
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Resource", name, printer);
+            return handleNotFound(ex, "Resource", selector.name, printer);
         }
         return EXIT_OK;
     }
 
     private Integer removeByLabelExpression(Terminal terminal, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<ResourceReference>> response = resourcesService.list(labelExpression);
+            WanakuResponse<List<ResourceReference>> response = resourcesService.list(selector.labelExpression);
             List<ResourceReference> matchingResources = response.data();
 
             if (matchingResources == null || matchingResources.isEmpty()) {
-                printer.printWarningMessage("No resources found matching label expression: " + labelExpression);
+                printer.printWarningMessage(
+                        "No resources found matching label expression: " + selector.labelExpression);
                 return EXIT_OK;
             }
 
             printer.printInfoMessage(String.format(
-                    "Found %d resource(s) matching label expression '%s'", matchingResources.size(), labelExpression));
+                    "Found %d resource(s) matching label expression '%s'",
+                    matchingResources.size(), selector.labelExpression));
 
             printer.printTable(matchingResources, "name", "type", "location", "labels");
 

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.support.IdSelector;
 import ai.wanaku.core.services.api.NamespacesService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ public class NamespacesLabelAddTest {
         command = new NamespacesLabelAdd();
         command.namespacesService = namespacesService;
         command.host = "http://localhost:8080";
+        command.selector = new IdSelector();
     }
 
     @Nested
@@ -56,7 +58,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.getById("test-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "test-id";
+            command.selector.id = "test-id";
             command.labels = List.of("env=production");
 
             // Act
@@ -79,7 +81,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.getById("test-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "test-id";
+            command.selector.id = "test-id";
             command.labels = List.of("env=production", "tier=backend", "version=2.0");
 
             // Act
@@ -99,7 +101,7 @@ public class NamespacesLabelAddTest {
         @DisplayName("Should reject invalid label format")
         void shouldRejectInvalidLabelFormat() throws Exception {
             // Arrange
-            command.id = "test-id";
+            command.selector.id = "test-id";
             command.labels = List.of("invalid-label-without-equals");
 
             // Act
@@ -120,7 +122,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.getById("test-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "test-id";
+            command.selector.id = "test-id";
             command.labels = List.of("config=key=value");
 
             // Act
@@ -148,7 +150,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "my-id";
+            command.selector.id = "my-id";
             command.labels = List.of("new=value");
 
             // Act
@@ -174,7 +176,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "my-id";
+            command.selector.id = "my-id";
             command.labels = List.of("env=production");
 
             // Act
@@ -193,7 +195,7 @@ public class NamespacesLabelAddTest {
             // Arrange
             when(namespacesService.getById("nonexistent")).thenReturn(new WanakuResponse<>(null));
 
-            command.id = "nonexistent";
+            command.selector.id = "nonexistent";
             command.labels = List.of("label=value");
 
             // Act
@@ -221,7 +223,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.list("category=internal")).thenReturn(listResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "category=internal";
+            command.selector.labelExpression = "category=internal";
             command.labels = List.of("migrated=true");
 
             // Act
@@ -240,7 +242,7 @@ public class NamespacesLabelAddTest {
 
             when(namespacesService.list("category=nonexistent")).thenReturn(listResponse);
 
-            command.labelExpression = "category=nonexistent";
+            command.selector.labelExpression = "category=nonexistent";
             command.labels = List.of("label=value");
 
             // Act
@@ -264,7 +266,7 @@ public class NamespacesLabelAddTest {
             when(namespacesService.update(anyString(), eq(namespace1))).thenReturn(new WanakuResponse<>());
             when(namespacesService.update(anyString(), eq(namespace2))).thenThrow(new WebApplicationException());
 
-            command.labelExpression = "category=test";
+            command.selector.labelExpression = "category=test";
             command.labels = List.of("label=value");
 
             // Act
@@ -273,43 +275,6 @@ public class NamespacesLabelAddTest {
             // Assert
             assertEquals(1, result); // EXIT_ERROR due to one failure
             verify(namespacesService, times(2)).update(anyString(), any(Namespace.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation Tests")
-    class ValidationTests {
-
-        @Test
-        @DisplayName("Should reject both id and label-expression")
-        void shouldRejectBothIdAndExpression() throws Exception {
-            // Arrange
-            command.id = "test-id";
-            command.labelExpression = "category=test";
-            command.labels = List.of("label=value");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(namespacesService, never()).getById(any());
-            verify(namespacesService, never()).list(any());
-        }
-
-        @Test
-        @DisplayName("Should reject neither id nor label-expression")
-        void shouldRejectNeitherIdNorExpression() throws Exception {
-            // Arrange
-            command.labels = List.of("label=value");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(namespacesService, never()).getById(any());
-            verify(namespacesService, never()).list(any());
         }
     }
 

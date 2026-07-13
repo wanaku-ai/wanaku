@@ -9,33 +9,38 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "token", description = "Manage API tokens")
 public class AuthToken extends BaseCommand {
 
-    @CommandLine.Option(
-            names = {"--set"},
-            description = "Set the API token")
-    private String setToken;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    TokenOperation operation;
 
-    @CommandLine.Option(
-            names = {"--get"},
-            description = "Get the current API token (masked)")
-    private boolean getToken;
+    static class TokenOperation {
+        @CommandLine.Option(
+                names = {"--set"},
+                description = "Set the API token")
+        String setToken;
 
-    @CommandLine.Option(
-            names = {"--clear"},
-            description = "Clear the API token")
-    private boolean clearToken;
+        @CommandLine.Option(
+                names = {"--get"},
+                description = "Get the current API token (masked)")
+        boolean getToken;
+
+        @CommandLine.Option(
+                names = {"--clear"},
+                description = "Clear the API token")
+        boolean clearToken;
+    }
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         AuthCredentialStore credentialStore = new AuthCredentialStore();
 
-        if (setToken != null) {
-            credentialStore.storeApiToken(setToken);
+        if (operation.setToken != null) {
+            credentialStore.storeApiToken(operation.setToken);
             credentialStore.storeAuthMode("token");
             printer.printSuccessMessage("API token has been set");
             return EXIT_OK;
         }
 
-        if (getToken) {
+        if (operation.getToken) {
             String apiToken = credentialStore.getApiToken();
             if (apiToken != null) {
                 String maskedToken = maskToken(apiToken);
@@ -46,19 +51,14 @@ public class AuthToken extends BaseCommand {
             return EXIT_OK;
         }
 
-        if (clearToken) {
-            String currentToken = credentialStore.getApiToken();
-            if (currentToken != null) {
-                credentialStore.storeApiToken("");
-                printer.printSuccessMessage("API token has been cleared");
-            } else {
-                printer.printInfoMessage("No API token was set");
-            }
-            return EXIT_OK;
+        String currentToken = credentialStore.getApiToken();
+        if (currentToken != null) {
+            credentialStore.storeApiToken("");
+            printer.printSuccessMessage("API token has been cleared");
+        } else {
+            printer.printInfoMessage("No API token was set");
         }
-
-        CommandLine.usage(this, System.out);
-        return EXIT_ERROR;
+        return EXIT_OK;
     }
 
     private String maskToken(String token) {

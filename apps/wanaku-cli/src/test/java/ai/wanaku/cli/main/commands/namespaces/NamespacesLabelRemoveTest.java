@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.support.IdSelector;
 import ai.wanaku.core.services.api.NamespacesService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ public class NamespacesLabelRemoveTest {
         command = new NamespacesLabelRemove();
         command.namespacesService = namespacesService;
         command.host = "http://localhost:8080";
+        command.selector = new IdSelector();
     }
 
     @Nested
@@ -57,7 +59,7 @@ public class NamespacesLabelRemoveTest {
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "my-id";
+            command.selector.id = "my-id";
             command.labels = List.of("env");
 
             // Act
@@ -84,7 +86,7 @@ public class NamespacesLabelRemoveTest {
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.id = "my-id";
+            command.selector.id = "my-id";
             command.labels = List.of("env", "version");
 
             // Act
@@ -108,7 +110,7 @@ public class NamespacesLabelRemoveTest {
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
 
-            command.id = "my-id";
+            command.selector.id = "my-id";
             command.labels = List.of("nonexistent");
 
             // Act
@@ -128,7 +130,7 @@ public class NamespacesLabelRemoveTest {
 
             when(namespacesService.getById("my-id")).thenReturn(getResponse);
 
-            command.id = "my-id";
+            command.selector.id = "my-id";
             command.labels = List.of("env");
 
             // Act
@@ -145,7 +147,7 @@ public class NamespacesLabelRemoveTest {
             // Arrange
             when(namespacesService.getById("nonexistent")).thenReturn(new WanakuResponse<>(null));
 
-            command.id = "nonexistent";
+            command.selector.id = "nonexistent";
             command.labels = List.of("label");
 
             // Act
@@ -173,7 +175,7 @@ public class NamespacesLabelRemoveTest {
             when(namespacesService.list("status=temp")).thenReturn(listResponse);
             when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "status=temp";
+            command.selector.labelExpression = "status=temp";
             command.labels = List.of("status");
 
             // Act
@@ -192,7 +194,7 @@ public class NamespacesLabelRemoveTest {
 
             when(namespacesService.list("category=nonexistent")).thenReturn(listResponse);
 
-            command.labelExpression = "category=nonexistent";
+            command.selector.labelExpression = "category=nonexistent";
             command.labels = List.of("label");
 
             // Act
@@ -216,7 +218,7 @@ public class NamespacesLabelRemoveTest {
             when(namespacesService.update(anyString(), eq(namespace1))).thenReturn(new WanakuResponse<>());
             when(namespacesService.update(anyString(), eq(namespace2))).thenThrow(new WebApplicationException());
 
-            command.labelExpression = "env=dev";
+            command.selector.labelExpression = "env=dev";
             command.labels = List.of("env");
 
             // Act
@@ -225,43 +227,6 @@ public class NamespacesLabelRemoveTest {
             // Assert
             assertEquals(1, result); // EXIT_ERROR due to one failure
             verify(namespacesService, times(2)).update(anyString(), any(Namespace.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation Tests")
-    class ValidationTests {
-
-        @Test
-        @DisplayName("Should reject both id and label-expression")
-        void shouldRejectBothIdAndExpression() throws Exception {
-            // Arrange
-            command.id = "test-id";
-            command.labelExpression = "category=test";
-            command.labels = List.of("label");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(namespacesService, never()).getById(any());
-            verify(namespacesService, never()).list(any());
-        }
-
-        @Test
-        @DisplayName("Should reject neither id nor label-expression")
-        void shouldRejectNeitherIdNorExpression() throws Exception {
-            // Arrange
-            command.labels = List.of("label");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(namespacesService, never()).getById(any());
-            verify(namespacesService, never()).list(any());
         }
     }
 

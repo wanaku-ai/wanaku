@@ -43,17 +43,24 @@ public abstract class BaseAdminCommand extends BaseCommand {
             defaultValue = DEFAULT_REALM)
     protected String realm;
 
-    @CommandLine.Option(
-            names = {"--admin-username"},
-            description = "Admin username for Keycloak (or set " + ENV_ADMIN_USERNAME + ")")
-    protected String adminUsername;
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "0..1")
+    protected AdminCredentials adminCredentials;
 
-    @CommandLine.Option(
-            names = {"--admin-password"},
-            description = "Admin password for Keycloak (or set " + ENV_ADMIN_PASSWORD + ")",
-            interactive = true,
-            arity = "0..1")
-    protected String adminPassword;
+    static class AdminCredentials {
+        @CommandLine.Option(
+                names = {"--admin-username"},
+                required = true,
+                description = "Admin username for Keycloak (or set " + ENV_ADMIN_USERNAME + ")")
+        String adminUsername;
+
+        @CommandLine.Option(
+                names = {"--admin-password"},
+                required = true,
+                description = "Admin password for Keycloak (or set " + ENV_ADMIN_PASSWORD + ")",
+                interactive = true,
+                arity = "0..1")
+        String adminPassword;
+    }
 
     private final KeycloakAdminClient adminClientOverride;
     private final EnvironmentProvider environmentProvider;
@@ -121,8 +128,10 @@ public abstract class BaseAdminCommand extends BaseCommand {
     }
 
     protected String resolveAdminUsername() {
-        if (adminUsername != null && !adminUsername.isBlank()) {
-            return adminUsername;
+        if (adminCredentials != null
+                && adminCredentials.adminUsername != null
+                && !adminCredentials.adminUsername.isBlank()) {
+            return adminCredentials.adminUsername;
         }
         String envValue = environmentProvider.get(ENV_ADMIN_USERNAME);
         if (envValue != null && !envValue.isBlank()) {
@@ -132,8 +141,10 @@ public abstract class BaseAdminCommand extends BaseCommand {
     }
 
     protected String resolveAdminPassword() {
-        if (adminPassword != null && !adminPassword.isBlank()) {
-            return adminPassword;
+        if (adminCredentials != null
+                && adminCredentials.adminPassword != null
+                && !adminCredentials.adminPassword.isBlank()) {
+            return adminCredentials.adminPassword;
         }
         String envValue = environmentProvider.get(ENV_ADMIN_PASSWORD);
         if (envValue != null && !envValue.isBlank()) {

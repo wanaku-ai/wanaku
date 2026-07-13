@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.core.services.api.ToolsService;
 
 import static ai.wanaku.test.assertions.WanakuAssertions.assertSuccessResponse;
@@ -43,6 +44,7 @@ public class ToolsLabelRemoveTest {
         command = new ToolsLabelRemove();
         command.toolsService = toolsService;
         command.host = "http://localhost:8080";
+        command.selector = new NameSelector();
     }
 
     @Nested
@@ -59,7 +61,7 @@ public class ToolsLabelRemoveTest {
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "my-tool";
+            command.selector.name = "my-tool";
             command.labelKeys = List.of("env");
 
             // Act
@@ -87,7 +89,7 @@ public class ToolsLabelRemoveTest {
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "my-tool";
+            command.selector.name = "my-tool";
             command.labelKeys = List.of("env", "version");
 
             // Act
@@ -112,7 +114,7 @@ public class ToolsLabelRemoveTest {
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
 
-            command.name = "my-tool";
+            command.selector.name = "my-tool";
             command.labelKeys = List.of("nonexistent");
 
             // Act
@@ -133,7 +135,7 @@ public class ToolsLabelRemoveTest {
 
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
 
-            command.name = "my-tool";
+            command.selector.name = "my-tool";
             command.labelKeys = List.of("env");
 
             // Act
@@ -151,7 +153,7 @@ public class ToolsLabelRemoveTest {
             // Arrange
             when(toolsService.getByName("nonexistent")).thenReturn(new WanakuResponse<>(null));
 
-            command.name = "nonexistent";
+            command.selector.name = "nonexistent";
             command.labelKeys = List.of("label");
 
             // Act
@@ -179,7 +181,7 @@ public class ToolsLabelRemoveTest {
             when(toolsService.list("status=deprecated")).thenReturn(listResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "status=deprecated";
+            command.selector.labelExpression = "status=deprecated";
             command.labelKeys = List.of("status");
 
             // Act
@@ -204,7 +206,7 @@ public class ToolsLabelRemoveTest {
             when(toolsService.list(anyString())).thenReturn(listResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "env=dev|status=active|tier=backend";
+            command.selector.labelExpression = "env=dev|status=active|tier=backend";
             command.labelKeys = List.of("status");
 
             // Act
@@ -224,7 +226,7 @@ public class ToolsLabelRemoveTest {
 
             when(toolsService.list("category=nonexistent")).thenReturn(listResponse);
 
-            command.labelExpression = "category=nonexistent";
+            command.selector.labelExpression = "category=nonexistent";
             command.labelKeys = List.of("label");
 
             // Act
@@ -249,7 +251,7 @@ public class ToolsLabelRemoveTest {
             when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(new WanakuResponse<>());
             when(toolsService.update(eq("tool2"), eq(tool2))).thenThrow(new WebApplicationException());
 
-            command.labelExpression = "env=dev";
+            command.selector.labelExpression = "env=dev";
             command.labelKeys = List.of("env");
 
             // Act
@@ -259,43 +261,6 @@ public class ToolsLabelRemoveTest {
             assertEquals(1, result); // EXIT_ERROR due to one failure
             assertSuccessResponse(listResponse);
             verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation Tests")
-    class ValidationTests {
-
-        @Test
-        @DisplayName("Should reject both name and label-expression")
-        void shouldRejectBothNameAndExpression() throws Exception {
-            // Arrange
-            command.name = "test-tool";
-            command.labelExpression = "category=test";
-            command.labelKeys = List.of("label");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(toolsService, never()).getByName(any());
-            verify(toolsService, never()).list(any());
-        }
-
-        @Test
-        @DisplayName("Should reject neither name nor label-expression")
-        void shouldRejectNeitherNameNorExpression() throws Exception {
-            // Arrange
-            command.labelKeys = List.of("label");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(toolsService, never()).getByName(any());
-            verify(toolsService, never()).list(any());
         }
     }
 
