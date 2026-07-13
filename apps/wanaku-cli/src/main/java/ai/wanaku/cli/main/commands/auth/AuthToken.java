@@ -51,12 +51,14 @@ public class AuthToken extends BaseCommand {
             return EXIT_OK;
         }
 
-        String currentToken = credentialStore.getApiToken();
-        if (currentToken != null) {
-            credentialStore.storeApiToken("");
-            printer.printSuccessMessage("API token has been cleared");
-        } else {
-            printer.printInfoMessage("No API token was set");
+        if (operation.clearToken) {
+            String currentToken = credentialStore.getApiToken();
+            if (currentToken != null) {
+                credentialStore.storeApiToken("");
+                printer.printSuccessMessage("API token has been cleared");
+            } else {
+                printer.printInfoMessage("No API token was set");
+            }
         }
         return EXIT_OK;
     }
