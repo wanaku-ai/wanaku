@@ -33,22 +33,6 @@ public final class LabelHelper {
         return labelMap;
     }
 
-    public static int validateLabelExpression(
-            String identifier, String labelExpression, String identifierOption, WanakuPrinter printer) {
-        if (identifier != null && labelExpression != null) {
-            printer.printErrorMessage(String.format(
-                    "Cannot specify both %s and --label-expression. Use one or the other.", identifierOption));
-            return BaseCommand.EXIT_ERROR;
-        }
-
-        if (identifier == null && labelExpression == null) {
-            printer.printErrorMessage(String.format("Must specify either %s or --label-expression.", identifierOption));
-            return BaseCommand.EXIT_ERROR;
-        }
-
-        return BaseCommand.EXIT_OK;
-    }
-
     public static <T extends LabelsAwareEntity<String>> int addLabelsToEntity(
             T entity,
             Map<String, String> labelsToAdd,

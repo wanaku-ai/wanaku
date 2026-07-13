@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.core.services.api.ToolsService;
 
 import static ai.wanaku.test.assertions.WanakuAssertions.assertSuccessResponse;
@@ -42,6 +43,7 @@ public class ToolsLabelAddTest {
         command = new ToolsLabelAdd();
         command.toolsService = toolsService;
         command.host = "http://localhost:8080";
+        command.selector = new NameSelector();
     }
 
     @Nested
@@ -58,7 +60,7 @@ public class ToolsLabelAddTest {
             when(toolsService.getByName("test-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "test-tool";
+            command.selector.name = "test-tool";
             command.labels = List.of("env=production");
 
             // Act
@@ -82,7 +84,7 @@ public class ToolsLabelAddTest {
             when(toolsService.getByName("test-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "test-tool";
+            command.selector.name = "test-tool";
             command.labels = List.of("env=production", "tier=backend", "version=2.0");
 
             // Act
@@ -103,7 +105,7 @@ public class ToolsLabelAddTest {
         @DisplayName("Should reject invalid label format")
         void shouldRejectInvalidLabelFormat() throws Exception {
             // Arrange
-            command.name = "test-tool";
+            command.selector.name = "test-tool";
             command.labels = List.of("invalid-label-without-equals");
 
             // Act
@@ -124,7 +126,7 @@ public class ToolsLabelAddTest {
             when(toolsService.getByName("test-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "test-tool";
+            command.selector.name = "test-tool";
             command.labels = List.of("config=key=value");
 
             // Act
@@ -153,7 +155,7 @@ public class ToolsLabelAddTest {
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "my-tool";
+            command.selector.name = "my-tool";
             command.labels = List.of("new=value");
 
             // Act
@@ -180,7 +182,7 @@ public class ToolsLabelAddTest {
             when(toolsService.getByName("my-tool")).thenReturn(getResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.name = "my-tool";
+            command.selector.name = "my-tool";
             command.labels = List.of("env=production");
 
             // Act
@@ -200,7 +202,7 @@ public class ToolsLabelAddTest {
             // Arrange
             when(toolsService.getByName("nonexistent")).thenReturn(new WanakuResponse<>(null));
 
-            command.name = "nonexistent";
+            command.selector.name = "nonexistent";
             command.labels = List.of("label=value");
 
             // Act
@@ -228,7 +230,7 @@ public class ToolsLabelAddTest {
             when(toolsService.list("category=weather")).thenReturn(listResponse);
             when(toolsService.update(anyString(), any(ToolReference.class))).thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "category=weather";
+            command.selector.labelExpression = "category=weather";
             command.labels = List.of("migrated=true");
 
             // Act
@@ -248,7 +250,7 @@ public class ToolsLabelAddTest {
 
             when(toolsService.list("category=nonexistent")).thenReturn(listResponse);
 
-            command.labelExpression = "category=nonexistent";
+            command.selector.labelExpression = "category=nonexistent";
             command.labels = List.of("label=value");
 
             // Act
@@ -273,7 +275,7 @@ public class ToolsLabelAddTest {
             when(toolsService.update(eq("tool1"), eq(tool1))).thenReturn(new WanakuResponse<>());
             when(toolsService.update(eq("tool2"), eq(tool2))).thenThrow(new WebApplicationException());
 
-            command.labelExpression = "category=test";
+            command.selector.labelExpression = "category=test";
             command.labels = List.of("label=value");
 
             // Act
@@ -283,43 +285,6 @@ public class ToolsLabelAddTest {
             assertEquals(1, result); // EXIT_ERROR due to one failure
             assertSuccessResponse(listResponse);
             verify(toolsService, times(2)).update(anyString(), any(ToolReference.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation Tests")
-    class ValidationTests {
-
-        @Test
-        @DisplayName("Should reject both name and label-expression")
-        void shouldRejectBothNameAndExpression() throws Exception {
-            // Arrange
-            command.name = "test-tool";
-            command.labelExpression = "category=test";
-            command.labels = List.of("label=value");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(toolsService, never()).getByName(any());
-            verify(toolsService, never()).list(any());
-        }
-
-        @Test
-        @DisplayName("Should reject neither name nor label-expression")
-        void shouldRejectNeitherNameNorExpression() throws Exception {
-            // Arrange
-            command.labels = List.of("label=value");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(toolsService, never()).getByName(any());
-            verify(toolsService, never()).list(any());
         }
     }
 

@@ -10,6 +10,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.LabelHelper;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
 import picocli.CommandLine;
@@ -50,10 +51,8 @@ public class ResourcesLabelAdd extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"-n", "--name"},
-            description = "Name of the resource to add labels to. Cannot be used with --label-expression.")
-    String name;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NameSelector selector;
 
     @CommandLine.Option(
             names = {"-l", "--label"},
@@ -61,11 +60,6 @@ public class ResourcesLabelAdd extends BaseCommand {
             required = true,
             arity = "1..*")
     List<String> labels;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = "Add labels to all resources matching this label expression. Cannot be used with --name.")
-    String labelExpression;
 
     ResourcesService resourcesService;
 
@@ -75,17 +69,12 @@ public class ResourcesLabelAdd extends BaseCommand {
             resourcesService = initAuthenticatedService(ResourcesService.class, host);
         }
 
-        int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
         Map<String, String> labelsToAdd = LabelHelper.parseLabels(labels, printer);
         if (labelsToAdd == null) {
             return EXIT_ERROR;
         }
 
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return addLabelsByExpression(labelsToAdd, printer);
         }
 
@@ -94,24 +83,29 @@ public class ResourcesLabelAdd extends BaseCommand {
 
     private Integer addLabelsByName(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<ResourceReference> response = resourcesService.getByName(name);
+            WanakuResponse<ResourceReference> response = resourcesService.getByName(selector.name);
             ResourceReference resource = response.data();
 
             if (resource == null) {
-                printer.printErrorMessage(String.format("Resource '%s' not found", name));
+                printer.printErrorMessage(String.format("Resource '%s' not found", selector.name));
                 return EXIT_ERROR;
             }
 
             return LabelHelper.addLabelsToEntity(
-                    resource, labelsToAdd, printer, r -> resourcesService.update(r.getName(), r), "resource", name);
+                    resource,
+                    labelsToAdd,
+                    printer,
+                    r -> resourcesService.update(r.getName(), r),
+                    "resource",
+                    selector.name);
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Resource", name, printer);
+            return handleNotFound(ex, "Resource", selector.name, printer);
         }
     }
 
     private Integer addLabelsByExpression(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<ResourceReference>> response = resourcesService.list(labelExpression);
+            WanakuResponse<List<ResourceReference>> response = resourcesService.list(selector.labelExpression);
             return LabelHelper.addLabelsByExpression(
                     response,
                     labelsToAdd,
@@ -119,7 +113,7 @@ public class ResourcesLabelAdd extends BaseCommand {
                     r -> resourcesService.update(r.getName(), r),
                     ResourceReference::getName,
                     "resource(s)",
-                    labelExpression);
+                    selector.labelExpression);
         } catch (WebApplicationException ex) {
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;

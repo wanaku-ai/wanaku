@@ -8,6 +8,7 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.IdSelector;
 import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
@@ -49,10 +50,8 @@ public class DataStoresLabelRemove extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"--id"},
-            description = "ID of the data store to remove labels from. Cannot be used with --label-expression.")
-    String id;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    IdSelector selector;
 
     @CommandLine.Option(
             names = {"-l", "--label"},
@@ -60,12 +59,6 @@ public class DataStoresLabelRemove extends BaseCommand {
             required = true,
             arity = "1..*")
     List<String> labelKeys;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description =
-                    "Remove labels from all data stores matching this label expression. Cannot be used with --id.")
-    String labelExpression;
 
     DataStoresService dataStoresService;
 
@@ -75,12 +68,7 @@ public class DataStoresLabelRemove extends BaseCommand {
             dataStoresService = initAuthenticatedService(DataStoresService.class, host);
         }
 
-        int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return removeLabelsByExpression(printer);
         }
 
@@ -89,24 +77,24 @@ public class DataStoresLabelRemove extends BaseCommand {
 
     private Integer removeLabelsById(WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<DataStore> response = dataStoresService.getById(id);
+            WanakuResponse<DataStore> response = dataStoresService.getById(selector.id);
             DataStore dataStore = response.data();
 
             if (dataStore == null) {
-                printer.printErrorMessage(String.format("Data store with ID '%s' not found", id));
+                printer.printErrorMessage(String.format("Data store with ID '%s' not found", selector.id));
                 return EXIT_ERROR;
             }
 
             return LabelHelper.removeLabelsFromEntity(
-                    dataStore, labelKeys, printer, dataStoresService::update, "data store", id);
+                    dataStore, labelKeys, printer, dataStoresService::update, "data store", selector.id);
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Data store", id, printer);
+            return handleNotFound(ex, "Data store", selector.id, printer);
         }
     }
 
     private Integer removeLabelsByExpression(WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<DataStore>> response = dataStoresService.list(labelExpression);
+            WanakuResponse<List<DataStore>> response = dataStoresService.list(selector.labelExpression);
             return LabelHelper.removeLabelsByExpression(
                     response,
                     labelKeys,
@@ -114,7 +102,7 @@ public class DataStoresLabelRemove extends BaseCommand {
                     dataStoresService::update,
                     DataStore::getId,
                     "data store(s)",
-                    labelExpression);
+                    selector.labelExpression);
         } catch (WebApplicationException ex) {
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;

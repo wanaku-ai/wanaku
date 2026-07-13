@@ -38,15 +38,20 @@ public abstract class BaseCommand implements Callable<Integer> {
             description = "Display the help and sub-commands")
     private boolean helpRequested = false;
 
-    @CommandLine.Option(
-            names = {"--token"},
-            description = "Override authentication token for this command")
-    protected String authTokenOverride;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+    protected AuthOptions authOptions;
 
-    @CommandLine.Option(
-            names = {"--no-auth"},
-            description = "Disable authentication for this command")
-    protected boolean noAuth = false;
+    static class AuthOptions {
+        @CommandLine.Option(
+                names = {"--token"},
+                description = "Override authentication token for this command")
+        String authTokenOverride;
+
+        @CommandLine.Option(
+                names = {"--no-auth"},
+                description = "Disable authentication for this command")
+        boolean noAuth = false;
+    }
 
     @CommandLine.Option(
             names = {"--insecure"},
@@ -86,8 +91,16 @@ public abstract class BaseCommand implements Callable<Integer> {
         return initService(clazz, host, null, false);
     }
 
+    protected String getAuthTokenOverride() {
+        return authOptions != null ? authOptions.authTokenOverride : null;
+    }
+
+    protected boolean isNoAuth() {
+        return authOptions != null && authOptions.noAuth;
+    }
+
     protected <T> T initAuthenticatedService(Class<T> clazz, String host) {
-        return initService(clazz, host, this.authTokenOverride, this.noAuth);
+        return initService(clazz, host, getAuthTokenOverride(), isNoAuth());
     }
 
     /**

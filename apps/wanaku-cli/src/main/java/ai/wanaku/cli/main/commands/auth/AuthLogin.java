@@ -16,26 +16,38 @@ public class AuthLogin extends BaseCommand {
     private static final String DEFAULT_CLIENT_ID = "admin-cli";
     private static final String DEFAULT_AUTH_MODE = "token";
 
-    @CommandLine.Option(
-            names = {"--api-token"},
-            description = "API token for authentication")
-    private String apiToken;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    AuthMode authMode;
+
+    static class AuthMode {
+        @CommandLine.Option(
+                names = {"--api-token"},
+                description = "API token for authentication")
+        String apiToken;
+
+        @CommandLine.ArgGroup(exclusive = false)
+        UserPassCredentials credentials;
+    }
+
+    static class UserPassCredentials {
+        @CommandLine.Option(
+                names = {"--username"},
+                required = true,
+                description = "Username for authentication")
+        String username;
+
+        @CommandLine.Option(
+                names = {"--password"},
+                required = true,
+                description = "Password for authentication",
+                interactive = true)
+        String password;
+    }
 
     @CommandLine.Option(
             names = {"--auth-server"},
             description = "Authentication server URL (Wanaku or Keycloak)")
     private String authServerUrl;
-
-    @CommandLine.Option(
-            names = {"--username"},
-            description = "Username for authentication")
-    private String username;
-
-    @CommandLine.Option(
-            names = {"--password"},
-            description = "Password for authentication",
-            interactive = true)
-    private String password;
 
     @CommandLine.Option(
             names = {"--realm"},
@@ -52,9 +64,8 @@ public class AuthLogin extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
         AuthCredentialStore credentialStore = new AuthCredentialStore();
 
-        // Handle direct API token authentication
-        if (apiToken != null) {
-            credentialStore.storeApiToken(apiToken);
+        if (authMode.apiToken != null) {
+            credentialStore.storeApiToken(authMode.apiToken);
             credentialStore.storeAuthMode(DEFAULT_AUTH_MODE);
 
             if (authServerUrl != null) {
@@ -65,42 +76,31 @@ public class AuthLogin extends BaseCommand {
             return EXIT_OK;
         }
 
-        // Handle username/password authentication
-        if (username != null && password != null) {
-            String serverUrl = authServerUrl != null ? authServerUrl : DEFAULT_AUTH_SERVER;
+        String serverUrl = authServerUrl != null ? authServerUrl : DEFAULT_AUTH_SERVER;
 
-            try {
-                printer.printInfoMessage("Authenticating with username and password...");
-                CustomSecurityServiceConfig config = new CustomSecurityServiceConfig();
-                config.setClientId(clientId);
-                config.setUsername(username);
-                config.setPassword(password);
-                config.setTokenEndpoint(TokenEndpoint.forDiscovery(serverUrl, realm));
-                ServiceAuthenticator serviceAuthenticator = new ServiceAuthenticator(config, insecure);
+        try {
+            printer.printInfoMessage("Authenticating with username and password...");
+            CustomSecurityServiceConfig config = new CustomSecurityServiceConfig();
+            config.setClientId(clientId);
+            config.setUsername(authMode.credentials.username);
+            config.setPassword(authMode.credentials.password);
+            config.setTokenEndpoint(TokenEndpoint.forDiscovery(serverUrl, realm));
+            ServiceAuthenticator serviceAuthenticator = new ServiceAuthenticator(config, insecure);
 
-                credentialStore.storeApiToken(serviceAuthenticator.currentValidAccessToken());
-                credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
-                credentialStore.storeTokenExpiry(serviceAuthenticator.getTokenExpiryEpochSeconds());
-                credentialStore.storeClientId(clientId);
-                credentialStore.storeRealm(realm != null && realm.isBlank() ? null : realm);
+            credentialStore.storeApiToken(serviceAuthenticator.currentValidAccessToken());
+            credentialStore.storeRefreshToken(serviceAuthenticator.currentValidRefreshToken());
+            credentialStore.storeTokenExpiry(serviceAuthenticator.getTokenExpiryEpochSeconds());
+            credentialStore.storeClientId(clientId);
+            credentialStore.storeRealm(realm != null && realm.isBlank() ? null : realm);
 
-                credentialStore.storeAuthMode("token");
-                credentialStore.storeAuthServerUrl(serverUrl);
+            credentialStore.storeAuthMode("token");
+            credentialStore.storeAuthServerUrl(serverUrl);
 
-                printer.printSuccessMessage("Successfully authenticated and stored credentials");
-                return EXIT_OK;
-            } catch (Exception e) {
-                printer.printErrorMessage("Authentication failed: " + e.getMessage());
-                return EXIT_ERROR;
-            }
+            printer.printSuccessMessage("Successfully authenticated and stored credentials");
+            return EXIT_OK;
+        } catch (Exception e) {
+            printer.printErrorMessage("Authentication failed: " + e.getMessage());
+            return EXIT_ERROR;
         }
-
-        // Interactive mode - show help
-        printer.printInfoMessage("Interactive login mode");
-        printer.printInfoMessage("To login with an API token, use: wanaku auth login --api-token <your-token>");
-        printer.printInfoMessage(
-                "To login with username/password, use: wanaku auth login --username <user> --password <pass>");
-
-        return EXIT_OK;
     }
 }

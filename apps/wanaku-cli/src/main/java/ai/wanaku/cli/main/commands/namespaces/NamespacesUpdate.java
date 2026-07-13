@@ -33,16 +33,21 @@ public class NamespacesUpdate extends BaseCommand {
     @CommandLine.Parameters(description = "The ID of the namespace to update", arity = "1")
     String id;
 
-    @CommandLine.Option(
-            names = {"--name"},
-            description = "Set the namespace name (omit for pre-allocated namespaces)",
-            arity = "0..1")
-    String name;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+    NameUpdate nameUpdate;
 
-    @CommandLine.Option(
-            names = {"--clear-name"},
-            description = "Clear the namespace name (mark as pre-allocated)")
-    boolean clearName;
+    static class NameUpdate {
+        @CommandLine.Option(
+                names = {"--name"},
+                description = "Set the namespace name (omit for pre-allocated namespaces)",
+                arity = "0..1")
+        String name;
+
+        @CommandLine.Option(
+                names = {"--clear-name"},
+                description = "Clear the namespace name (mark as pre-allocated)")
+        boolean clearName;
+    }
 
     @CommandLine.Option(
             names = {"--path"},
@@ -62,12 +67,7 @@ public class NamespacesUpdate extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         namespacesService = initAuthenticatedServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
-        if (clearName && name != null) {
-            printer.printErrorMessage("Cannot specify both --name and --clear-name.");
-            return EXIT_ERROR;
-        }
-
-        boolean hasUpdates = name != null || clearName || path != null || (labels != null && !labels.isEmpty());
+        boolean hasUpdates = nameUpdate != null || path != null || (labels != null && !labels.isEmpty());
         if (!hasUpdates) {
             printer.printErrorMessage("No updates specified. Use --name, --clear-name, --path, or --label.");
             return EXIT_ERROR;
@@ -82,11 +82,13 @@ public class NamespacesUpdate extends BaseCommand {
                 return EXIT_ERROR;
             }
 
-            if (clearName) {
-                namespace.setName(null);
-            } else if (name != null) {
-                String trimmed = name.trim();
-                namespace.setName(trimmed.isEmpty() ? null : trimmed);
+            if (nameUpdate != null) {
+                if (nameUpdate.clearName) {
+                    namespace.setName(null);
+                } else if (nameUpdate.name != null) {
+                    String trimmed = nameUpdate.name.trim();
+                    namespace.setName(trimmed.isEmpty() ? null : trimmed);
+                }
             }
 
             if (path != null) {

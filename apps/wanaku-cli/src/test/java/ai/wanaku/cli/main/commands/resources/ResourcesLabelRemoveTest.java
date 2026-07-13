@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.core.services.api.ResourcesService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ public class ResourcesLabelRemoveTest {
         command = new ResourcesLabelRemove();
         command.resourcesService = resourcesService;
         command.host = "http://localhost:8080";
+        command.selector = new NameSelector();
     }
 
     @Nested
@@ -56,7 +58,7 @@ public class ResourcesLabelRemoveTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.name = "my-resource";
+            command.selector.name = "my-resource";
             command.labelKeys = List.of("year");
 
             // Act
@@ -84,7 +86,7 @@ public class ResourcesLabelRemoveTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.name = "my-resource";
+            command.selector.name = "my-resource";
             command.labelKeys = List.of("year", "department");
 
             // Act
@@ -108,7 +110,7 @@ public class ResourcesLabelRemoveTest {
 
             when(resourcesService.getByName("my-resource")).thenReturn(getResponse);
 
-            command.name = "my-resource";
+            command.selector.name = "my-resource";
             command.labelKeys = List.of("nonexistent");
 
             // Act
@@ -125,7 +127,7 @@ public class ResourcesLabelRemoveTest {
             // Arrange
             when(resourcesService.getByName("nonexistent")).thenReturn(new WanakuResponse<>(null));
 
-            command.name = "nonexistent";
+            command.selector.name = "nonexistent";
             command.labelKeys = List.of("label");
 
             // Act
@@ -156,7 +158,7 @@ public class ResourcesLabelRemoveTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "status=archived";
+            command.selector.labelExpression = "status=archived";
             command.labelKeys = List.of("status");
 
             // Act
@@ -181,7 +183,7 @@ public class ResourcesLabelRemoveTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "category=data|status=active";
+            command.selector.labelExpression = "category=data|status=active";
             command.labelKeys = List.of("status");
 
             // Act
@@ -201,7 +203,7 @@ public class ResourcesLabelRemoveTest {
 
             when(resourcesService.list("category=nonexistent")).thenReturn(listResponse);
 
-            command.labelExpression = "category=nonexistent";
+            command.selector.labelExpression = "category=nonexistent";
             command.labelKeys = List.of("label");
 
             // Act
@@ -210,43 +212,6 @@ public class ResourcesLabelRemoveTest {
             // Assert
             assertEquals(0, result); // Success but no changes
             verify(resourcesService, never()).update(anyString(), any());
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation Tests")
-    class ValidationTests {
-
-        @Test
-        @DisplayName("Should reject both name and label-expression")
-        void shouldRejectBothNameAndExpression() throws Exception {
-            // Arrange
-            command.name = "test-resource";
-            command.labelExpression = "category=test";
-            command.labelKeys = List.of("label");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).getByName(any());
-            verify(resourcesService, never()).list(any());
-        }
-
-        @Test
-        @DisplayName("Should reject neither name nor label-expression")
-        void shouldRejectNeitherNameNorExpression() throws Exception {
-            // Arrange
-            command.labelKeys = List.of("label");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).getByName(any());
-            verify(resourcesService, never()).list(any());
         }
     }
 

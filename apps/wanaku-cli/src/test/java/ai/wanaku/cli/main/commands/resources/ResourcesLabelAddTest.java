@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.core.services.api.ResourcesService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ public class ResourcesLabelAddTest {
         command = new ResourcesLabelAdd();
         command.resourcesService = resourcesService;
         command.host = "http://localhost:8080";
+        command.selector = new NameSelector();
     }
 
     @Nested
@@ -54,7 +56,7 @@ public class ResourcesLabelAddTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.name = "test-resource";
+            command.selector.name = "test-resource";
             command.labels = List.of("category=finance");
 
             // Act
@@ -78,7 +80,7 @@ public class ResourcesLabelAddTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.name = "test-resource";
+            command.selector.name = "test-resource";
             command.labels = List.of("category=data", "year=2024", "department=sales");
 
             // Act
@@ -98,7 +100,7 @@ public class ResourcesLabelAddTest {
         @DisplayName("Should reject invalid label format")
         void shouldRejectInvalidLabelFormat() throws Exception {
             // Arrange
-            command.name = "test-resource";
+            command.selector.name = "test-resource";
             command.labels = List.of("invalid-label");
 
             // Act
@@ -125,7 +127,7 @@ public class ResourcesLabelAddTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.name = "my-resource";
+            command.selector.name = "my-resource";
             command.labels = List.of("new=value");
 
             // Act
@@ -152,7 +154,7 @@ public class ResourcesLabelAddTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.name = "my-resource";
+            command.selector.name = "my-resource";
             command.labels = List.of("year=2024");
 
             // Act
@@ -171,7 +173,7 @@ public class ResourcesLabelAddTest {
             // Arrange
             when(resourcesService.getByName("nonexistent")).thenReturn(new WanakuResponse<>(null));
 
-            command.name = "nonexistent";
+            command.selector.name = "nonexistent";
             command.labels = List.of("label=value");
 
             // Act
@@ -200,7 +202,7 @@ public class ResourcesLabelAddTest {
             when(resourcesService.update(anyString(), any(ResourceReference.class)))
                     .thenReturn(new WanakuResponse<>());
 
-            command.labelExpression = "category=data";
+            command.selector.labelExpression = "category=data";
             command.labels = List.of("migrated=true");
 
             // Act
@@ -219,7 +221,7 @@ public class ResourcesLabelAddTest {
 
             when(resourcesService.list("category=nonexistent")).thenReturn(listResponse);
 
-            command.labelExpression = "category=nonexistent";
+            command.selector.labelExpression = "category=nonexistent";
             command.labels = List.of("label=value");
 
             // Act
@@ -228,43 +230,6 @@ public class ResourcesLabelAddTest {
             // Assert
             assertEquals(0, result); // Success but no changes
             verify(resourcesService, never()).update(anyString(), any());
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation Tests")
-    class ValidationTests {
-
-        @Test
-        @DisplayName("Should reject both name and label-expression")
-        void shouldRejectBothNameAndExpression() throws Exception {
-            // Arrange
-            command.name = "test-resource";
-            command.labelExpression = "category=test";
-            command.labels = List.of("label=value");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).getByName(any());
-            verify(resourcesService, never()).list(any());
-        }
-
-        @Test
-        @DisplayName("Should reject neither name nor label-expression")
-        void shouldRejectNeitherNameNorExpression() throws Exception {
-            // Arrange
-            command.labels = List.of("label=value");
-
-            // Act
-            Integer result = command.doCall(null, createMockPrinter());
-
-            // Assert
-            assertEquals(1, result); // EXIT_ERROR
-            verify(resourcesService, never()).getByName(any());
-            verify(resourcesService, never()).list(any());
         }
     }
 

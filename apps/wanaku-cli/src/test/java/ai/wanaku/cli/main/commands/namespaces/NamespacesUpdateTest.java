@@ -50,7 +50,8 @@ public class NamespacesUpdateTest {
         when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
         command.id = "ns-1";
-        command.name = "new";
+        command.nameUpdate = new NamespacesUpdate.NameUpdate();
+        command.nameUpdate.name = "new";
         command.path = "ns-new";
         command.labels = Map.of("tier", "backend");
 
@@ -78,7 +79,8 @@ public class NamespacesUpdateTest {
         when(namespacesService.update(anyString(), any(Namespace.class))).thenReturn(new WanakuResponse<>());
 
         command.id = "ns-1";
-        command.clearName = true;
+        command.nameUpdate = new NamespacesUpdate.NameUpdate();
+        command.nameUpdate.clearName = true;
 
         Integer result = command.doCall(null, mock(WanakuPrinter.class));
 

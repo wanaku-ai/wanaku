@@ -73,8 +73,9 @@ class BaseAdminCommandTest {
         TestAdminCommand command = new TestAdminCommand(Map.of(
                 "WANAKU_ADMIN_USERNAME", "env-admin",
                 "WANAKU_ADMIN_PASSWORD", "env-pass"));
-        command.adminUsername = "cli-admin";
-        command.adminPassword = "cli-pass";
+        command.adminCredentials = new BaseAdminCommand.AdminCredentials();
+        command.adminCredentials.adminUsername = "cli-admin";
+        command.adminCredentials.adminPassword = "cli-pass";
 
         assertEquals("cli-admin", command.resolveUsernameForTest());
         assertEquals("cli-pass", command.resolvePasswordForTest());

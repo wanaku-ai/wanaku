@@ -10,6 +10,7 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.LabelHelper;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import picocli.CommandLine;
@@ -50,10 +51,8 @@ public class ToolsLabelAdd extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"-n", "--name"},
-            description = "Name of the tool to add labels to. Cannot be used with --label-expression.")
-    String name;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NameSelector selector;
 
     @CommandLine.Option(
             names = {"-l", "--label"},
@@ -61,11 +60,6 @@ public class ToolsLabelAdd extends BaseCommand {
             required = true,
             arity = "1..*")
     List<String> labels;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = "Add labels to all tools matching this label expression. Cannot be used with --name.")
-    String labelExpression;
 
     ToolsService toolsService;
 
@@ -75,17 +69,12 @@ public class ToolsLabelAdd extends BaseCommand {
             toolsService = initAuthenticatedService(ToolsService.class, host);
         }
 
-        int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
         Map<String, String> labelsToAdd = LabelHelper.parseLabels(labels, printer);
         if (labelsToAdd == null) {
             return EXIT_ERROR;
         }
 
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return addLabelsByExpression(labelsToAdd, printer);
         }
 
@@ -94,24 +83,24 @@ public class ToolsLabelAdd extends BaseCommand {
 
     private Integer addLabelsByName(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<ToolReference> response = toolsService.getByName(name);
+            WanakuResponse<ToolReference> response = toolsService.getByName(selector.name);
             ToolReference tool = response.data();
 
             if (tool == null) {
-                printer.printErrorMessage(String.format("Tool '%s' not found", name));
+                printer.printErrorMessage(String.format("Tool '%s' not found", selector.name));
                 return EXIT_ERROR;
             }
 
             return LabelHelper.addLabelsToEntity(
-                    tool, labelsToAdd, printer, t -> toolsService.update(t.getName(), t), "tool", name);
+                    tool, labelsToAdd, printer, t -> toolsService.update(t.getName(), t), "tool", selector.name);
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Tool", name, printer);
+            return handleNotFound(ex, "Tool", selector.name, printer);
         }
     }
 
     private Integer addLabelsByExpression(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<ToolReference>> response = toolsService.list(labelExpression);
+            WanakuResponse<List<ToolReference>> response = toolsService.list(selector.labelExpression);
             return LabelHelper.addLabelsByExpression(
                     response,
                     labelsToAdd,
@@ -119,7 +108,7 @@ public class ToolsLabelAdd extends BaseCommand {
                     t -> toolsService.update(t.getName(), t),
                     ToolReference::getName,
                     "tool(s)",
-                    labelExpression);
+                    selector.labelExpression);
         } catch (WebApplicationException ex) {
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;

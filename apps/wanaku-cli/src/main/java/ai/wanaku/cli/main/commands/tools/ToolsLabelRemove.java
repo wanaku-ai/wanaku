@@ -9,6 +9,7 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.LabelHelper;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import picocli.CommandLine;
@@ -49,10 +50,8 @@ public class ToolsLabelRemove extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"-n", "--name"},
-            description = "Name of the tool to remove labels from. Cannot be used with --label-expression.")
-    String name;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NameSelector selector;
 
     @CommandLine.Option(
             names = {"-l", "--label"},
@@ -60,11 +59,6 @@ public class ToolsLabelRemove extends BaseCommand {
             required = true,
             arity = "1..*")
     List<String> labelKeys;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = "Remove labels from all tools matching this label expression. Cannot be used with --name.")
-    String labelExpression;
 
     ToolsService toolsService;
 
@@ -74,12 +68,7 @@ public class ToolsLabelRemove extends BaseCommand {
             toolsService = initAuthenticatedService(ToolsService.class, host);
         }
 
-        int validationResult = LabelHelper.validateLabelExpression(name, labelExpression, "--name", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return removeLabelsByExpression(printer);
         }
 
@@ -88,24 +77,24 @@ public class ToolsLabelRemove extends BaseCommand {
 
     private Integer removeLabelsByName(WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<ToolReference> response = toolsService.getByName(name);
+            WanakuResponse<ToolReference> response = toolsService.getByName(selector.name);
             ToolReference tool = response.data();
 
             if (tool == null) {
-                printer.printErrorMessage(String.format("Tool '%s' not found", name));
+                printer.printErrorMessage(String.format("Tool '%s' not found", selector.name));
                 return EXIT_ERROR;
             }
 
             return LabelHelper.removeLabelsFromEntity(
-                    tool, labelKeys, printer, t -> toolsService.update(t.getName(), t), "tool", name);
+                    tool, labelKeys, printer, t -> toolsService.update(t.getName(), t), "tool", selector.name);
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Tool", name, printer);
+            return handleNotFound(ex, "Tool", selector.name, printer);
         }
     }
 
     private Integer removeLabelsByExpression(WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<ToolReference>> response = toolsService.list(labelExpression);
+            WanakuResponse<List<ToolReference>> response = toolsService.list(selector.labelExpression);
             return LabelHelper.removeLabelsByExpression(
                     response,
                     labelKeys,
@@ -113,7 +102,7 @@ public class ToolsLabelRemove extends BaseCommand {
                     t -> toolsService.update(t.getName(), t),
                     ToolReference::getName,
                     "tool(s)",
-                    labelExpression);
+                    selector.labelExpression);
         } catch (WebApplicationException ex) {
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;

@@ -10,11 +10,11 @@ import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.CommandHelper;
+import ai.wanaku.cli.main.support.NameSelector;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import picocli.CommandLine;
 
-import static ai.wanaku.cli.main.support.LabelHelper.validateLabelExpression;
 import static ai.wanaku.cli.main.support.ResponseHelper.commonResponseErrorHandler;
 import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
@@ -68,30 +68,13 @@ public class ToolsRemove extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"-n", "--name"},
-            description = "Name of the tool to remove. Cannot be used with --label-expression.")
-    private String name;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NameSelector selector;
 
     @CommandLine.Option(
             names = {"-y", "--assume-yes"},
             description = "automatically answer yes for all questions")
     private boolean assumeYes;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = {
-                """
-            Remove tools matching a label filter expression. Supports logical operators for complex queries.",
-            For detailed information see the label expression manual page:
-            `wanaku man label-expression`
-            Note: Use --name to remove a single tool by name. The --label-expression,
-            option enables batch removal of multiple tools. Use with caution as this,
-            operation cannot be undone.
-            """
-            },
-            arity = "0..1")
-    private String labelExpression;
 
     ToolsService toolsService;
 
@@ -99,12 +82,7 @@ public class ToolsRemove extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         toolsService = initAuthenticatedService(ToolsService.class, host);
 
-        int validationResult = validateLabelExpression(name, labelExpression, "--name", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return removeByLabelExpression(terminal, printer);
         }
 
@@ -113,26 +91,26 @@ public class ToolsRemove extends BaseCommand {
 
     private Integer removeByName(WanakuPrinter printer) throws IOException {
         try {
-            toolsService.remove(name);
-            printer.printSuccessMessage("Successfully removed tool reference '" + name + "'");
+            toolsService.remove(selector.name);
+            printer.printSuccessMessage("Successfully removed tool reference '" + selector.name + "'");
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Tool", name, printer);
+            return handleNotFound(ex, "Tool", selector.name, printer);
         }
         return EXIT_OK;
     }
 
     private Integer removeByLabelExpression(Terminal terminal, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<ToolReference>> response = toolsService.list(labelExpression);
+            WanakuResponse<List<ToolReference>> response = toolsService.list(selector.labelExpression);
             List<ToolReference> matchingTools = response.data();
 
             if (matchingTools == null || matchingTools.isEmpty()) {
-                printer.printWarningMessage("No tools found matching label expression: " + labelExpression);
+                printer.printWarningMessage("No tools found matching label expression: " + selector.labelExpression);
                 return EXIT_OK;
             }
 
             printer.printInfoMessage(String.format(
-                    "Found %d tool(s) matching label expression '%s'", matchingTools.size(), labelExpression));
+                    "Found %d tool(s) matching label expression '%s'", matchingTools.size(), selector.labelExpression));
 
             printer.printTable(matchingTools, "name", "type", "uri", "labels");
 
@@ -145,7 +123,7 @@ public class ToolsRemove extends BaseCommand {
             int removed = 0;
 
             if (continues) {
-                removed = toolsService.removeIf(labelExpression).data();
+                removed = toolsService.removeIf(selector.labelExpression).data();
             }
 
             printer.printInfoMessage(String.format("Removal complete: %d tools removed", removed));

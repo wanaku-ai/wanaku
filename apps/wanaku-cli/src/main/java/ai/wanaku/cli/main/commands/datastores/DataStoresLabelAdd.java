@@ -9,6 +9,7 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.IdSelector;
 import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.DataStoresService;
@@ -50,10 +51,8 @@ public class DataStoresLabelAdd extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"--id"},
-            description = "ID of the data store to add labels to. Cannot be used with --label-expression.")
-    String id;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    IdSelector selector;
 
     @CommandLine.Option(
             names = {"-l", "--label"},
@@ -61,11 +60,6 @@ public class DataStoresLabelAdd extends BaseCommand {
             required = true,
             arity = "1..*")
     List<String> labels;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = "Add labels to all data stores matching this label expression. Cannot be used with --id.")
-    String labelExpression;
 
     DataStoresService dataStoresService;
 
@@ -75,17 +69,12 @@ public class DataStoresLabelAdd extends BaseCommand {
             dataStoresService = initAuthenticatedService(DataStoresService.class, host);
         }
 
-        int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
         Map<String, String> labelsToAdd = LabelHelper.parseLabels(labels, printer);
         if (labelsToAdd == null) {
             return EXIT_ERROR;
         }
 
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return addLabelsByExpression(labelsToAdd, printer);
         }
 
@@ -94,24 +83,24 @@ public class DataStoresLabelAdd extends BaseCommand {
 
     private Integer addLabelsById(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<DataStore> response = dataStoresService.getById(id);
+            WanakuResponse<DataStore> response = dataStoresService.getById(selector.id);
             DataStore dataStore = response.data();
 
             if (dataStore == null) {
-                printer.printErrorMessage(String.format("Data store with ID '%s' not found", id));
+                printer.printErrorMessage(String.format("Data store with ID '%s' not found", selector.id));
                 return EXIT_ERROR;
             }
 
             return LabelHelper.addLabelsToEntity(
-                    dataStore, labelsToAdd, printer, dataStoresService::update, "data store", id);
+                    dataStore, labelsToAdd, printer, dataStoresService::update, "data store", selector.id);
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Data store", id, printer);
+            return handleNotFound(ex, "Data store", selector.id, printer);
         }
     }
 
     private Integer addLabelsByExpression(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<DataStore>> response = dataStoresService.list(labelExpression);
+            WanakuResponse<List<DataStore>> response = dataStoresService.list(selector.labelExpression);
             return LabelHelper.addLabelsByExpression(
                     response,
                     labelsToAdd,
@@ -119,7 +108,7 @@ public class DataStoresLabelAdd extends BaseCommand {
                     dataStoresService::update,
                     DataStore::getId,
                     "data store(s)",
-                    labelExpression);
+                    selector.labelExpression);
         } catch (WebApplicationException ex) {
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;

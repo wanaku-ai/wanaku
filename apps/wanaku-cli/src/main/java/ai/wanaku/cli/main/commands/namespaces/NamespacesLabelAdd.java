@@ -9,6 +9,7 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.IdSelector;
 import ai.wanaku.cli.main.support.LabelHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.NamespacesService;
@@ -50,10 +51,8 @@ public class NamespacesLabelAdd extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"-i", "--id"},
-            description = "ID of the namespace to add labels to. Cannot be used with --label-expression.")
-    String id;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    IdSelector selector;
 
     @CommandLine.Option(
             names = {"-l", "--label"},
@@ -61,11 +60,6 @@ public class NamespacesLabelAdd extends BaseCommand {
             required = true,
             arity = "1..*")
     List<String> labels;
-
-    @CommandLine.Option(
-            names = {"-e", "--label-expression"},
-            description = "Add labels to all namespaces matching this label expression. Cannot be used with --id.")
-    String labelExpression;
 
     NamespacesService namespacesService;
 
@@ -75,17 +69,12 @@ public class NamespacesLabelAdd extends BaseCommand {
             namespacesService = initAuthenticatedService(NamespacesService.class, host);
         }
 
-        int validationResult = LabelHelper.validateLabelExpression(id, labelExpression, "--id", printer);
-        if (validationResult != EXIT_OK) {
-            return validationResult;
-        }
-
         Map<String, String> labelsToAdd = LabelHelper.parseLabels(labels, printer);
         if (labelsToAdd == null) {
             return EXIT_ERROR;
         }
 
-        if (labelExpression != null) {
+        if (selector.labelExpression != null) {
             return addLabelsByExpression(labelsToAdd, printer);
         }
 
@@ -94,24 +83,29 @@ public class NamespacesLabelAdd extends BaseCommand {
 
     private Integer addLabelsById(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<Namespace> response = namespacesService.getById(id);
+            WanakuResponse<Namespace> response = namespacesService.getById(selector.id);
             Namespace namespace = response.data();
 
             if (namespace == null) {
-                printer.printErrorMessage(String.format("Namespace with ID '%s' not found", id));
+                printer.printErrorMessage(String.format("Namespace with ID '%s' not found", selector.id));
                 return EXIT_ERROR;
             }
 
             return LabelHelper.addLabelsToEntity(
-                    namespace, labelsToAdd, printer, n -> namespacesService.update(id, n), "namespace with ID", id);
+                    namespace,
+                    labelsToAdd,
+                    printer,
+                    n -> namespacesService.update(selector.id, n),
+                    "namespace with ID",
+                    selector.id);
         } catch (WebApplicationException ex) {
-            return handleNotFound(ex, "Namespace", id, printer);
+            return handleNotFound(ex, "Namespace", selector.id, printer);
         }
     }
 
     private Integer addLabelsByExpression(Map<String, String> labelsToAdd, WanakuPrinter printer) throws IOException {
         try {
-            WanakuResponse<List<Namespace>> response = namespacesService.list(labelExpression);
+            WanakuResponse<List<Namespace>> response = namespacesService.list(selector.labelExpression);
             return LabelHelper.addLabelsByExpression(
                     response,
                     labelsToAdd,
@@ -119,7 +113,7 @@ public class NamespacesLabelAdd extends BaseCommand {
                     n -> namespacesService.update(n.getId(), n),
                     Namespace::getId,
                     "namespace(s)",
-                    labelExpression);
+                    selector.labelExpression);
         } catch (WebApplicationException ex) {
             commonResponseErrorHandler(ex.getResponse());
             return EXIT_ERROR;
