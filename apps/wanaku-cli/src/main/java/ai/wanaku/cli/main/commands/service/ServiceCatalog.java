@@ -8,7 +8,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "catalog",
         description = "Manage service catalogs",
-        subcommands = {ServiceCatalogList.class})
+        subcommands = {ServiceCatalogList.class, ServiceCatalogRemove.class})
 public class ServiceCatalog extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {

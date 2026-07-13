@@ -238,6 +238,24 @@ This command:
 
 Once deployed, the service catalog appears in the Wanaku admin UI under the **Service Catalog** page.
 
+Use `wanaku service catalog list` to see currently deployed catalogs, and `wanaku service catalog remove` to delete one by name:
+
+```shell
+wanaku service catalog list --host=http://localhost:8080
+
+wanaku service catalog remove --host=http://localhost:8080 --name=my-catalog
+```
+
+### Step 6: Remove a Catalog
+
+Remove a deployed service catalog by name:
+
+```shell
+wanaku service catalog remove --name=my-catalog --host=http://localhost:8080
+```
+
+This sends a `DELETE` request to the router and removes the catalog and all its associated routes and rules. Use `wanaku service catalog list` to see currently deployed catalogs and their names.
+
 > [!TIP]
 > Use `wanaku service deploy` for quick iteration during development. Use the operator approach (below) for production deployments on Kubernetes.
 
