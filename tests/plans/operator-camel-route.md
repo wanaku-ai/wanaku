@@ -19,7 +19,7 @@ Every step is fully automatable.
 | `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 | `base64` | any (coreutils) | `base64 --version 2>/dev/null \|\| echo "available"` |
-| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 
 ### Prerequisite check script
 

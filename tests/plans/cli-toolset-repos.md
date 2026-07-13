@@ -14,7 +14,7 @@ Every step is fully automatable.
 
 | Tool | Minimum version | Verify command |
 |------|-----------------|----------------|
-| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 | `jq` | 1.6+ | `jq --version` |
 | `curl` | any | `curl --version` |
 

@@ -11,7 +11,7 @@ This test plan verifies the OpenTelemetry tracing, Micrometer metrics, and MCP r
 - Prometheus metrics endpoint on the router
 - End-to-end trace visibility in Jaeger UI
 
-The plan uses the `wanaku mcp` CLI commands from PR #1393 (installed locally) as the MCP client to drive requests.
+The plan uses the `wanaku mcp` CLI commands (built from source) as the MCP client to drive requests.
 
 Every step is fully automatable.
 
@@ -25,7 +25,7 @@ Every step is fully automatable.
 | `helm` | 3.x | `helm version --short` |
 | `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
-| `wanaku` | PR #1393 build | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 
 ### Prerequisite check script
 

@@ -23,7 +23,7 @@ Every step is fully automatable.
 | `curl` | any (health checks via `oc exec`) | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 | `base64` | any (coreutils) | `base64 --version 2>/dev/null \|\| echo "available"` |
-| `wanaku` | 0.2.0+ | `wanaku --version` |
+| `wanaku` | build from source | `wanaku --version` |
 | `zip` | any | `zip --version` |
 
 ### Prerequisite check script
