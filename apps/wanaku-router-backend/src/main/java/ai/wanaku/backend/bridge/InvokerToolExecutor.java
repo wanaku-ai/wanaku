@@ -83,10 +83,9 @@ public final class InvokerToolExecutor {
         Map<String, Property> inputSchema = toolReference.getInputSchema().getProperties();
 
         // extract headers parameter
-        Map<String, String> headers = inputSchema.entrySet().stream()
+        return inputSchema.entrySet().stream()
                 .filter(InvokerToolExecutor::extractProperties)
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> evalValue(e, toolArguments)));
-        return headers;
     }
 
     /**

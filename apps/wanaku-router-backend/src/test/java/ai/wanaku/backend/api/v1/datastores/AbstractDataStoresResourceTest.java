@@ -35,14 +35,13 @@ public abstract class AbstractDataStoresResourceTest extends WanakuRouterTest {
 
         Response response = given().headers(getHeaders()).body(dataStore).when().post("/api/v1/data-store");
         assertHttpStatus(response, 200);
-        String responseId = response.then()
+
+        testId = response.then()
                 .body("data.name", equalTo(TEST_NAME))
                 .body("data.data", equalTo(TEST_DATA))
                 .body("data.id", notNullValue())
                 .extract()
                 .path("data.id");
-
-        testId = responseId;
         LOG.infof("Created data store with ID: %s", testId);
     }
 

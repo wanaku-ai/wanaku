@@ -31,6 +31,10 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
 
         keycloakClient.createRealm(realmRepresentation);
 
+        return getConf();
+    }
+
+    private Map<String, String> getConf() {
         Map<String, String> conf = new HashMap<>();
         conf.put("wanaku.persistence.infinispan.base-folder", "target/wanaku/router");
         conf.put("wanaku.persistence.infinispan.file-store", "false");
@@ -43,7 +47,6 @@ public class WanakuKeycloakTestResource implements QuarkusTestResourceLifecycleM
 
         conf.put("quarkus.oidc.credentials.secret", "secret");
         conf.put("quarkus.oidc.client-id", "wanaku-service");
-
         return conf;
     }
 
