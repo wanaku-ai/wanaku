@@ -18,7 +18,7 @@ Every step is fully automatable.
 | `java` | 21+ | `java --version` |
 | `mvn` | 3.9+ | `mvn --version` |
 | `gh` | 2.x | `gh --version` |
-| `docker` | 20+ | `docker --version` |
+| `docker` or `podman` | 20+ | `docker --version` or `podman --version` |
 
 ### Prerequisite check script
 
@@ -28,7 +28,7 @@ set -e
 
 FAIL=0
 
-for CMD in curl jq java mvn gh docker; do
+for CMD in curl jq java mvn gh; do
   if ! command -v "${CMD}" > /dev/null 2>&1; then
     echo "FAIL: ${CMD} is not installed"
     FAIL=1
@@ -36,6 +36,22 @@ for CMD in curl jq java mvn gh docker; do
     echo "PASS: ${CMD} found at $(command -v ${CMD})"
   fi
 done
+
+# Accept either docker or podman
+CONTAINER_RUNTIME=""
+if command -v docker > /dev/null 2>&1; then
+  CONTAINER_RUNTIME="docker"
+elif command -v podman > /dev/null 2>&1; then
+  CONTAINER_RUNTIME="podman"
+fi
+
+if [ -z "${CONTAINER_RUNTIME}" ]; then
+  echo "FAIL: neither docker nor podman is installed"
+  FAIL=1
+else
+  echo "PASS: ${CONTAINER_RUNTIME} found at $(command -v ${CONTAINER_RUNTIME})"
+  export CONTAINER_RUNTIME
+fi
 
 JAVA_MAJOR=$(java --version 2>&1 | head -1 | sed 's/.*"\([0-9]*\)\..*/\1/')
 if [ "${JAVA_MAJOR}" -lt 21 ]; then
@@ -58,6 +74,9 @@ echo "PASS: all prerequisites met"
 ### Environment variables
 
 ```bash
+# Container runtime (auto-detected: docker or podman)
+export CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-}"
+
 # Template naming -- adapt these if the implementation uses different names
 export TEMPLATE_NAME="${TEMPLATE_NAME:-camel-qdrant-search-tool}"
 export SYSTEM_NAME="${SYSTEM_NAME:-qdrant-search}"
@@ -187,12 +206,12 @@ fi
 ### Qdrant Server Setup (required for Phase 6)
 
 Phase 6 sends a vectorized search query to a live Qdrant instance. The recommended approach
-is a **local Docker container**.
+is a **local container** (Docker or Podman).
 
-#### Option A: Local Docker (recommended)
+#### Option A: Local container (Docker or Podman)
 
 ```bash
-docker run -d --name qdrant-test \
+${CONTAINER_RUNTIME} run -d --name qdrant-test \
   -p "${QDRANT_REST_PORT}:6333" \
   -p "${QDRANT_GRPC_PORT}:6334" \
   qdrant/qdrant
@@ -745,7 +764,7 @@ if curl -sf "http://${QDRANT_HOST}:${QDRANT_REST_PORT}/healthz" > /dev/null 2>&1
   fi
 else
   echo "SKIP: Qdrant not running at ${QDRANT_HOST}:${QDRANT_REST_PORT}"
-  echo "  Start it with: docker run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant"
+  echo "  Start it with: ${CONTAINER_RUNTIME} run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant"
   PHASE6_SKIP=1
 fi
 
@@ -1011,7 +1030,7 @@ curl -sf -X DELETE "http://${QDRANT_HOST}:${QDRANT_REST_PORT}/collections/${QDRA
 ### Test 8.4: Stop Qdrant container
 
 ```bash
-docker stop qdrant-test > /dev/null 2>&1 && docker rm qdrant-test > /dev/null 2>&1 \
+${CONTAINER_RUNTIME} stop qdrant-test > /dev/null 2>&1 && ${CONTAINER_RUNTIME} rm qdrant-test > /dev/null 2>&1 \
   && echo "PASS: Qdrant container stopped and removed" \
   || echo "INFO: Qdrant container may not exist (external instance?)"
 ```
