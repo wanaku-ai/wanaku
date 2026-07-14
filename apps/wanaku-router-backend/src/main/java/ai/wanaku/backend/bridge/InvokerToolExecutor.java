@@ -207,9 +207,11 @@ public final class InvokerToolExecutor {
             return;
         }
 
+        Map<String, Object> safeArgs = args != null ? args : Map.of();
+
         List<String> missing = new ArrayList<>();
         for (String param : required) {
-            Object value = args.get(param);
+            Object value = safeArgs.get(param);
             if (value == null || (value instanceof String s && s.isBlank())) {
                 missing.add(param);
             }
