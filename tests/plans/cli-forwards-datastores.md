@@ -116,21 +116,21 @@ else
 fi
 ```
 
-### Test 2.5: Add a forward using --namespace-name instead of --namespace
+### Test 2.5: Add a forward using --namespace (name resolution)
 
-This verifies the `--namespace-name` flag by resolving the namespace name to its ID before registering the forward.
+This verifies the `--namespace` flag resolves the namespace name to its ID before registering the forward.
 
 ```bash
 wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name ns-name-test-forward \
   --service "http://localhost:9999/mcp/sse" \
-  --namespace-name public
+  --namespace public
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -eq 0 ]; then
-  echo "PASS: forward 'ns-name-test-forward' added using --namespace-name"
+  echo "PASS: forward 'ns-name-test-forward' added using --namespace"
 else
-  echo "FAIL: could not add forward with --namespace-name (exit code ${EXIT_CODE})"
+  echo "FAIL: could not add forward with --namespace (exit code ${EXIT_CODE})"
 fi
 
 # Clean up
@@ -139,19 +139,19 @@ wanaku forwards remove \
   --name ns-name-test-forward 2>/dev/null || true
 ```
 
-### Test 2.6: Verify --namespace-name with non-existent namespace name fails
+### Test 2.6: Verify --namespace with non-existent namespace name fails
 
 ```bash
 OUTPUT=$(wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name ns-name-invalid-test \
   --service "http://localhost:9999/mcp/sse" \
-  --namespace-name non-existent-namespace 2>&1)
+  --namespace non-existent-namespace 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
-  echo "PASS: add forward with non-existent --namespace-name rejected (exit code ${EXIT_CODE})"
+  echo "PASS: add forward with non-existent --namespace rejected (exit code ${EXIT_CODE})"
 else
-  echo "FAIL: add forward with non-existent --namespace-name should fail"
+  echo "FAIL: add forward with non-existent --namespace should fail"
   wanaku forwards remove --host "${WANAKU_ROUTER_URL}" --name ns-name-invalid-test 2>/dev/null || true
 fi
 ```
@@ -527,7 +527,7 @@ wanaku forwards add \
   --service "http://localhost:9999/mcp/sse" 2>&1
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
-  echo "PASS: forwards add without --namespace or --namespace-name rejected (exit code ${EXIT_CODE})"
+  echo "PASS: forwards add without --namespace or --namespace-id rejected (exit code ${EXIT_CODE})"
 else
   echo "FAIL: forwards add without a namespace identifier should fail"
   wanaku forwards remove --host "${WANAKU_ROUTER_URL}" --name negative-test-forward 2>/dev/null || true
@@ -669,7 +669,7 @@ fi
 |-------|---------|-----------|----------|
 | 0 | 0.1 | Prerequisites check | High |
 | 1 | 1.1 | Start local stack and verify connectivity | Critical |
-| 2 | 2.1-2.6 | Forward add, list, remove, verify gone, namespace-name | Critical |
+| 2 | 2.1-2.6 | Forward add, list, remove, verify gone, namespace resolution | Critical |
 | 3 | 3.1-3.4 | Forward refresh lifecycle | High |
 | 4 | 4.1-4.2 | Data store add from file | Critical |
 | 5 | 5.1-5.2 | Data store list and get with content verification | Critical |
