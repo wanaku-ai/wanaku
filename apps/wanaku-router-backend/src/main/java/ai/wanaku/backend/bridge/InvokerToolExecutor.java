@@ -1,11 +1,14 @@
 package ai.wanaku.backend.bridge;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
+import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
@@ -47,6 +50,9 @@ public final class InvokerToolExecutor {
      */
     static ToolInvokeRequest buildToolInvokeRequest(
             ToolReference toolReference, ToolManager.ToolArguments toolArguments, String requestId) {
+
+        // Validate required parameters before processing
+        validateRequiredParameters(toolReference, toolArguments.args());
 
         // Filter out metadata and auth args before converting to string map
         Map<String, Object> filteredArgs = filterOutReservedArgs(toolArguments.args());
@@ -178,6 +184,40 @@ public final class InvokerToolExecutor {
             throw new NullPointerException(
                     "Malformed value for key %s: neither a default value nor an argument were provided (null)"
                             .formatted(entry.getKey()));
+        }
+    }
+
+    /**
+     * Validates that all required parameters declared in the tool's input schema are present in the
+     * provided arguments. Throws an {@link IllegalArgumentException} if any required parameter is
+     * missing or has a null/blank value.
+     *
+     * @param toolReference the tool reference containing the input schema with required field declarations
+     * @param args the arguments provided by the caller
+     * @throws IllegalArgumentException if one or more required parameters are missing
+     */
+    static void validateRequiredParameters(ToolReference toolReference, Map<String, Object> args) {
+        InputSchema inputSchema = toolReference.getInputSchema();
+        if (inputSchema == null) {
+            return;
+        }
+
+        List<String> required = inputSchema.getRequired();
+        if (required == null || required.isEmpty()) {
+            return;
+        }
+
+        List<String> missing = new ArrayList<>();
+        for (String param : required) {
+            Object value = args.get(param);
+            if (value == null || (value instanceof String s && s.isBlank())) {
+                missing.add(param);
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Missing required parameter(s): %s".formatted(String.join(", ", missing)));
         }
     }
 

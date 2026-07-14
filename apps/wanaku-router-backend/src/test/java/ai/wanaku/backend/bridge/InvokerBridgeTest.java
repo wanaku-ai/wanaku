@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import io.quarkiverse.mcp.server.ToolManager;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
@@ -8,8 +9,10 @@ import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -327,5 +330,122 @@ class InvokerBridgeTest {
 
         assertEquals(1, metaHeaders.size());
         assertEquals("ctx-123", metaHeaders.get("contextId"));
+    }
+
+    @Test
+    void validateRequiredParameters_throwsWhenRequiredParamMissing() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of("query"));
+
+        Map<String, Object> args = Map.of();
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class, () -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+        assertTrue(ex.getMessage().contains("query"), "Error should name the missing parameter");
+    }
+
+    @Test
+    void validateRequiredParameters_throwsWhenRequiredParamIsBlank() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of("query"));
+
+        Map<String, Object> args = Map.of("query", "   ");
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class, () -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+        assertTrue(ex.getMessage().contains("query"));
+    }
+
+    @Test
+    void validateRequiredParameters_throwsWhenRequiredParamIsNull() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of("query"));
+
+        Map<String, Object> args = new HashMap<>();
+        args.put("query", null);
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class, () -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+        assertTrue(ex.getMessage().contains("query"));
+    }
+
+    @Test
+    void validateRequiredParameters_passesWhenAllRequiredPresent() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of("query"));
+
+        Map<String, Object> args = Map.of("query", "search term");
+
+        assertDoesNotThrow(() -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+    }
+
+    @Test
+    void validateRequiredParameters_passesWhenNoRequiredList() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        // required is null by default
+
+        Map<String, Object> args = Map.of();
+
+        assertDoesNotThrow(() -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+    }
+
+    @Test
+    void validateRequiredParameters_passesWhenRequiredListIsEmpty() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of());
+
+        Map<String, Object> args = Map.of();
+
+        assertDoesNotThrow(() -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+    }
+
+    @Test
+    void validateRequiredParameters_passesWhenInputSchemaIsNull() {
+        ToolReference ref = new ToolReference();
+        ref.setName("sample");
+        ref.setType("http");
+        ref.setUri("https://example.com");
+        // no input schema set
+
+        Map<String, Object> args = Map.of();
+
+        assertDoesNotThrow(() -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+    }
+
+    @Test
+    void validateRequiredParameters_reportsAllMissingParams() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+        props.put("format", prop(null, null, null));
+        props.put("limit", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of("query", "format", "limit"));
+
+        Map<String, Object> args = Map.of("format", "json");
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class, () -> InvokerToolExecutor.validateRequiredParameters(ref, args));
+        assertTrue(ex.getMessage().contains("query"), "Should report 'query' as missing");
+        assertTrue(ex.getMessage().contains("limit"), "Should report 'limit' as missing");
+        assertFalse(ex.getMessage().contains("format"), "Should NOT report 'format' (it was provided)");
     }
 }
