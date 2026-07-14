@@ -4,4 +4,8 @@ localDir="$(dirname $0)"
 installDir="$(dirname "${localDir}")"
 WANAKU_JAVA_OPTS="${WANAKU_JAVA_OPTS:-""}"
 
+if ! echo "${WANAKU_JAVA_OPTS}" | grep -q "add-opens"; then
+WANAKU_JAVA_OPTS="${WANAKU_JAVA_OPTS} --add-opens=java.base/java.lang=ALL-UNNAMED"
+fi
+
 java ${WANAKU_JAVA_OPTS} -jar "${installDir}"/quarkus-run.jar "$@"

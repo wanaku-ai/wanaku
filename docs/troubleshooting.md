@@ -373,6 +373,27 @@ quarkus.log.category."ai.wanaku".level=DEBUG
 
 ## System-Level Issues
 
+### Module access errors on Java 25
+
+**Symptoms:**
+
+- `wanaku --version` or any `wanaku` command fails immediately with `IllegalAccessError`, `InaccessibleObjectException`, or a stack trace mentioning `java.base/java.lang` module access
+- Running with `JAVA_TOOL_OPTIONS='--add-opens=java.base/java.lang=ALL-UNNAMED'` resolves the error
+
+**Why this happens:**
+
+Java 25 tightened strong encapsulation of internal JDK classes. Some dependencies used by Quarkus and the CLI attempt reflective access to `java.lang` internals that are no longer automatically open.
+
+**Fix:**
+
+The Wanaku CLI and router scripts already pass `--add-opens=java.base/java.lang=ALL-UNNAMED` by default on Java 25. If you run the JAR directly (e.g., `java -jar quarkus-run.jar`), add the option manually:
+
+```shell
+java --add-opens=java.base/java.lang=ALL-UNNAMED -jar quarkus-run.jar --version
+```
+
+If you still encounter module access errors for other packages, add the corresponding `--add-opens` or `--add-exports` flag. Report the full stack trace as a new issue so we can extend the launcher defaults.
+
 ### Infinispan data directory permissions in containers
 
 **Symptoms:**

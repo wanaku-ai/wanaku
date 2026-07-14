@@ -184,15 +184,23 @@ install_java() {
 
     cat > "${INSTALL_DIR}/wanaku" <<'WRAPPER'
 #!/bin/sh
+# --add-opens is included unconditionally so the installed wrapper works across
+# all supported Java versions (21+), including Java 25 which tightened
+# strong encapsulation of java.lang internals. The flag is idempotent on JVMs
+# where the package is already open.
 installDir="$(dirname "$0")/wanaku-java"
-exec java -jar "${installDir}/quarkus-run.jar" "$@"
+exec java --add-opens=java.base/java.lang=ALL-UNNAMED -jar "${installDir}/quarkus-run.jar" "$@"
 WRAPPER
     chmod 750 "${INSTALL_DIR}/wanaku"
 
     cat > "${INSTALL_DIR}/wanaku-cli" <<'WRAPPER'
 #!/bin/sh
+# --add-opens is included unconditionally so the installed wrapper works across
+# all supported Java versions (21+), including Java 25 which tightened
+# strong encapsulation of java.lang internals. The flag is idempotent on JVMs
+# where the package is already open.
 installDir="$(dirname "$0")/wanaku-java"
-exec java -jar "${installDir}/quarkus-run.jar" "$@"
+exec java --add-opens=java.base/java.lang=ALL-UNNAMED -jar "${installDir}/quarkus-run.jar" "$@"
 WRAPPER
     chmod 750 "${INSTALL_DIR}/wanaku-cli"
 }
