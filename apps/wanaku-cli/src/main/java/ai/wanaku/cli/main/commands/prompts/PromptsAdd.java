@@ -19,6 +19,7 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
+import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.PromptsService;
 import picocli.CommandLine;
@@ -42,12 +43,8 @@ public class PromptsAdd extends BaseCommand {
             required = true)
     private String name;
 
-    @CommandLine.Option(
-            names = {"-N", "--namespace"},
-            description = "The namespace associated with the prompt",
-            defaultValue = "",
-            required = true)
-    private String namespace;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
             names = {"-d", "--description"},
@@ -92,7 +89,7 @@ public class PromptsAdd extends BaseCommand {
         PromptReference promptReference = new PromptReference();
         promptReference.setName(name);
         promptReference.setDescription(description);
-        promptReference.setNamespace(namespace);
+        promptReference.setNamespace(namespaceOptions.getNamespaceValue());
 
         // Parse messages
         List<PromptMessage> promptMessages = new ArrayList<>();

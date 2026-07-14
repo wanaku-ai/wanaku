@@ -11,6 +11,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.io.ResourcePayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
+import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ResourcesService;
 import picocli.CommandLine;
@@ -66,12 +67,8 @@ public class ResourcesExpose extends BaseCommand {
             arity = "0..1")
     private String name;
 
-    @CommandLine.Option(
-            names = {"-N", "--namespace"},
-            description = "The namespace associated with the tool",
-            defaultValue = "",
-            required = true)
-    private String namespace;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
             names = {"--description"},
@@ -123,7 +120,7 @@ public class ResourcesExpose extends BaseCommand {
         resource.setName(name);
         resource.setDescription(description);
         resource.setMimeType(mimeType);
-        resource.setNamespace(namespace);
+        resource.setNamespace(namespaceOptions.getNamespaceValue());
         resource.setLabels(labels);
 
         ResourcePayload resourcePayload = new ResourcePayload();
