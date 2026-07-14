@@ -12,21 +12,14 @@ public class AuthToken extends BaseCommand {
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     TokenOperation operation;
 
-    @CommandLine.Option(
-            names = {"--unmask"},
-            description = "When used with --get, output the full unmasked token value")
-    boolean unmask;
-
     static class TokenOperation {
         @CommandLine.Option(
                 names = {"--set"},
                 description = "Set the API token")
         String setToken;
 
-        @CommandLine.Option(
-                names = {"--get"},
-                description = "Get the current API token (masked)")
-        boolean getToken;
+        @CommandLine.ArgGroup(exclusive = false)
+        GetOptions getOptions;
 
         @CommandLine.Option(
                 names = {"--clear"},
@@ -34,7 +27,20 @@ public class AuthToken extends BaseCommand {
         boolean clearToken;
     }
 
-    private AuthCredentialStore credentialStore;
+    static class GetOptions {
+        @CommandLine.Option(
+                names = {"--get"},
+                required = true,
+                description = "Get the current API token (masked by default)")
+        boolean getToken;
+
+        @CommandLine.Option(
+                names = {"--unmask"},
+                description = "Output the full unmasked token value")
+        boolean unmask;
+    }
+
+    private final AuthCredentialStore credentialStore;
 
     public AuthToken() {
         this(new AuthCredentialStore());
@@ -54,10 +60,10 @@ public class AuthToken extends BaseCommand {
             return EXIT_OK;
         }
 
-        if (operation.getToken) {
+        if (operation.getOptions != null) {
             String apiToken = credentialStore.getApiToken();
             if (apiToken != null) {
-                if (unmask) {
+                if (operation.getOptions.unmask) {
                     printer.printInfoMessage(apiToken);
                 } else {
                     String maskedToken = maskToken(apiToken);

@@ -85,8 +85,9 @@ class AuthCommandsTest {
 
         AuthToken authToken = new AuthToken(store);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getToken = true;
-        authToken.unmask = true;
+        authToken.operation.getOptions = new AuthToken.GetOptions();
+        authToken.operation.getOptions.getToken = true;
+        authToken.operation.getOptions.unmask = true;
 
         int result = authToken.doCall(terminal, printer);
 
