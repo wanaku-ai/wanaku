@@ -12,6 +12,11 @@ public class AuthToken extends BaseCommand {
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     TokenOperation operation;
 
+    @CommandLine.Option(
+            names = {"--unmask"},
+            description = "When used with --get, output the full unmasked token value")
+    boolean unmask;
+
     static class TokenOperation {
         @CommandLine.Option(
                 names = {"--set"},
@@ -29,9 +34,18 @@ public class AuthToken extends BaseCommand {
         boolean clearToken;
     }
 
+    private AuthCredentialStore credentialStore;
+
+    public AuthToken() {
+        this(new AuthCredentialStore());
+    }
+
+    public AuthToken(AuthCredentialStore credentialStore) {
+        this.credentialStore = credentialStore;
+    }
+
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
-        AuthCredentialStore credentialStore = new AuthCredentialStore();
 
         if (operation.setToken != null) {
             credentialStore.storeApiToken(operation.setToken);
@@ -43,8 +57,12 @@ public class AuthToken extends BaseCommand {
         if (operation.getToken) {
             String apiToken = credentialStore.getApiToken();
             if (apiToken != null) {
-                String maskedToken = maskToken(apiToken);
-                printer.printInfoMessage("Current API token: " + maskedToken);
+                if (unmask) {
+                    printer.printInfoMessage(apiToken);
+                } else {
+                    String maskedToken = maskToken(apiToken);
+                    printer.printInfoMessage("Current API token: " + maskedToken);
+                }
             } else {
                 printer.printInfoMessage("No API token is currently set");
             }

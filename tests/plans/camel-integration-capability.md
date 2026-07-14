@@ -78,18 +78,13 @@ export WANAKU_OIDC_CLIENT_SECRET="${WANAKU_OIDC_CLIENT_SECRET:-mypasswd}"
 
 Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the `wait_for_deletion` function.
 
-### Helper: obtain a Bearer token from Keycloak
+### Helper: obtain a Bearer token from the CLI
 
-For direct REST API queries against the router (bypassing the `wanaku` CLI), obtain a Bearer token from Keycloak using the external Keycloak URL. The Keycloak container image does not include `curl`, so the token request is made from the test runner, not from inside the pod.
+For direct REST API queries against the router (bypassing the `wanaku` CLI), retrieve the Bearer token stored by `wanaku auth login` (performed in Phase 3, Test 3.4 via [common/oidc-login-verification.md](common/oidc-login-verification.md)).
 
 ```bash
 get_router_token() {
-  curl -sf \
-    -d "client_id=wanaku-service" \
-    -d "client_secret=${WANAKU_OIDC_SECRET}" \
-    -d "grant_type=client_credentials" \
-    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token" \
-  | jq -r '.access_token'
+  wanaku auth token --get --unmask --plain 2>/dev/null
 }
 ```
 
