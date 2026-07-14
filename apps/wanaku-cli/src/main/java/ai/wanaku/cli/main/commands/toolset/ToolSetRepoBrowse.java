@@ -1,5 +1,7 @@
 package ai.wanaku.cli.main.commands.toolset;
 
+import jakarta.ws.rs.WebApplicationException;
+
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
@@ -9,6 +11,8 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsetReposService;
 import picocli.CommandLine;
+
+import static ai.wanaku.cli.main.support.ResponseHelper.handleNotFound;
 
 @CommandLine.Command(name = "browse", description = "Browse a toolset repository's catalog")
 public class ToolSetRepoBrowse extends BaseCommand {
@@ -26,7 +30,7 @@ public class ToolSetRepoBrowse extends BaseCommand {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+    public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ToolsetReposService service = initAuthenticatedService(ToolsetReposService.class, host);
 
         try {
@@ -48,6 +52,8 @@ public class ToolSetRepoBrowse extends BaseCommand {
                             String.format("  %-20s %s", toolset.get("name"), toolset.getOrDefault("description", "")));
                 }
             }
+        } catch (WebApplicationException ex) {
+            return handleNotFound(ex, "Repository", name, printer);
         } catch (Exception e) {
             printer.printErrorMessage(String.format("Failed to browse toolset repository: %s", e.getMessage()));
             return EXIT_ERROR;
