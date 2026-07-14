@@ -2371,10 +2371,10 @@ wanaku forwards add --service="http://your-mcp-server.com:8080/mcp/sse" --name m
 
 - `--service`: The URL of the external MCP server's SSE (Server-Sent Events) endpoint.
 - `--name`: A unique human-readable name for the forward, used for identification and management purposes.
-- `--namespace` (required): The namespace ID to associate the forward with. Use `wanaku namespace list` to find the ID.
-- `--namespace-name` (alternative to `--namespace`): The namespace name to use. The CLI will automatically resolve it to the corresponding ID.
+- `--namespace` / `-N` (required): The namespace name to associate the forward with (e.g., `public`, `default`). The CLI resolves the name to its UUID automatically.
+- `--namespace-id` (alternative to `--namespace`): The namespace UUID to use directly, for scripting or when the UUID is already known.
 
-Use `--namespace` if you already know the namespace UUID, or `--namespace-name` to specify the namespace by its human-readable name (e.g. `public`, `default`).
+Use `--namespace` for the common case (human-readable name), or `--namespace-id` when scripting with known UUIDs. These options are mutually exclusive.
 
 Once a forward is added, all tools and resources provided by the external MCP server will be mapped in the Wanaku instance.
 
@@ -2473,6 +2473,8 @@ In the example above, the *`meow-facts-3`* tool will be associated with the firs
 
 When you provide a namespace name like *`test`*, Wanaku automatically associates it with an available numerical slot from ns-0
 to ns-9.
+
+All commands that accept `--namespace` (`-N`) also support `--namespace-id` for passing the namespace UUID directly. These options are mutually exclusive. Use `--namespace-id` when scripting with known UUIDs.
 
 ### Checking Namespace Assignments
 
