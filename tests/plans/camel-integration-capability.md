@@ -80,21 +80,16 @@ Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the 
 
 ### Helper: obtain a Bearer token from Keycloak
 
-For direct REST API queries against the router (bypassing the `wanaku` CLI), obtain a Bearer token from Keycloak using `oc exec` into the Keycloak pod.
+For direct REST API queries against the router (bypassing the `wanaku` CLI), obtain a Bearer token from Keycloak using the external Keycloak URL. The Keycloak container image does not include `curl`, so the token request is made from the test runner, not from inside the pod.
 
 ```bash
 get_router_token() {
-  local KC_POD
-  KC_POD=$(oc get pods -l app=keycloak \
-    -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-  oc exec "${KC_POD}" -n "${WANAKU_NAMESPACE}" -- \
-    curl -sf \
-      -d "client_id=wanaku-service" \
-      -d "client_secret=${WANAKU_OIDC_CLIENT_SECRET}" \
-      -d "grant_type=client_credentials" \
-      "http://localhost:8080/realms/wanaku/protocol/openid-connect/token" \
-    | jq -r '.access_token'
+  curl -sf \
+    -d "client_id=wanaku-service" \
+    -d "client_secret=${WANAKU_OIDC_SECRET}" \
+    -d "grant_type=client_credentials" \
+    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token" \
+  | jq -r '.access_token'
 }
 ```
 
@@ -864,6 +859,10 @@ mkdir -p "${TEMP_DIR}/hello-system"
 
 cat > "${TEMP_DIR}/index.properties" <<'PROPS'
 catalog.name = hello-system
+catalog.description = Minimal hello-world catalog for CIC operator verification
+catalog.services = hello-system
+catalog.routes.hello-system = hello-system/hello-system.camel.yaml
+catalog.rules.hello-system = hello-system/hello-system.wanaku-rules.yaml
 PROPS
 
 cat > "${TEMP_DIR}/hello-system/hello-system.camel.yaml" <<'ROUTES'

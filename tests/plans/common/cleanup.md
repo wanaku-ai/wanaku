@@ -35,17 +35,24 @@ echo "routers-deleted=$?"
 ### 4. Wait for operator-managed resources to be cleaned up
 
 ```bash
-# Wait for operator-managed deployments to be garbage-collected (excludes the operator itself and keycloak)
+# Wait for operator-managed deployments to be garbage-collected (excludes the operator itself and keycloak).
+# Router deployments carry component=wanaku-router-backend.
+# Capability deployments carry component=<capability-name> (not a fixed label), so we poll
+# until no non-infra deployments remain.
 oc wait --for=delete deployment -l component=wanaku-router-backend -n "${WANAKU_NAMESPACE}" --timeout=60s 2>/dev/null || true
-oc wait --for=delete deployment -l component=wanaku-capability -n "${WANAKU_NAMESPACE}" --timeout=60s 2>/dev/null || true
 
-# Verify no operator-managed deployments remain (except the operator itself and keycloak)
-REMAINING=$(oc get deployments -n "${WANAKU_NAMESPACE}" \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' \
-  | grep -v -E "^(wanaku-operator|keycloak)$" | wc -l | tr -d ' ')
+# Poll until all operator-managed deployments are garbage-collected
+END=$((SECONDS + 60))
+while [ $SECONDS -lt $END ]; do
+  REMAINING=$(oc get deployments -n "${WANAKU_NAMESPACE}" \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' \
+    | grep -v -E "^(wanaku-operator|keycloak)$" | wc -l | tr -d ' ')
+  [ "${REMAINING}" = "0" ] && break
+  sleep 3
+done
 
 if [ "${REMAINING}" != "0" ]; then
-  echo "WARN: ${REMAINING} non-operator deployments still present"
+  echo "WARN: ${REMAINING} non-operator deployments still present after cleanup"
   oc get deployments -n "${WANAKU_NAMESPACE}" -o name
 else
   echo "PASS: operator-managed deployments cleaned up"
