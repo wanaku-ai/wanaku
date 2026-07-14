@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
@@ -30,11 +31,8 @@ public class ServiceExpose extends BaseCommand {
             arity = "0..1")
     private String path;
 
-    @CommandLine.Option(
-            names = {"--namespace"},
-            description = "Namespace for generated rules",
-            arity = "0..1")
-    private String namespace;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+    NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
             names = {"--type"},
@@ -194,8 +192,11 @@ public class ServiceExpose extends BaseCommand {
                 pw.println("        route:");
                 pw.println("          id: \"" + routeId + "\"");
                 pw.println("        description: \"Invoke route " + routeId + " in " + systemName + "\"");
-                if (namespace != null && !namespace.isBlank()) {
-                    pw.println("        namespace: \"" + namespace + "\"");
+                if (namespaceOptions != null) {
+                    String ns = namespaceOptions.getNamespaceValue();
+                    if (ns != null && !ns.isBlank()) {
+                        pw.println("        namespace: \"" + ns + "\"");
+                    }
                 }
                 pw.println("        properties:");
                 pw.println("          - name: wanaku_body");
@@ -232,8 +233,11 @@ public class ServiceExpose extends BaseCommand {
                 pw.println("        description: \"Resource from route " + routeId + " in " + systemName + "\"");
                 pw.println("        uri: \"" + resourceUri + "\"");
                 pw.println("        mimeType: \"" + mimeType + "\"");
-                if (namespace != null && !namespace.isBlank()) {
-                    pw.println("        namespace: \"" + namespace + "\"");
+                if (namespaceOptions != null) {
+                    String ns = namespaceOptions.getNamespaceValue();
+                    if (ns != null && !ns.isBlank()) {
+                        pw.println("        namespace: \"" + ns + "\"");
+                    }
                 }
             }
         }

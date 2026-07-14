@@ -17,6 +17,7 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.TextContent;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.PromptsService;
 import picocli.CommandLine;
@@ -40,10 +41,8 @@ public class PromptsEdit extends BaseCommand {
             required = true)
     private String name;
 
-    @CommandLine.Option(
-            names = {"-N", "--namespace"},
-            description = "The namespace associated with the prompt")
-    private String namespace;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+    NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
             names = {"-d", "--description"},
@@ -99,8 +98,11 @@ public class PromptsEdit extends BaseCommand {
         }
 
         // Update only the fields that were provided
-        if (namespace != null) {
-            existingPrompt.setNamespace(namespace);
+        if (namespaceOptions != null) {
+            String ns = namespaceOptions.getNamespaceValue();
+            if (ns != null) {
+                existingPrompt.setNamespace(ns);
+            }
         }
 
         if (description != null) {

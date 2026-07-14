@@ -7,6 +7,7 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.converter.URLConverter;
+import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.core.util.ToolsetIndexHelper;
@@ -25,11 +26,8 @@ public class ToolsImport extends BaseCommand {
             arity = "0..1")
     protected String host;
 
-    @CommandLine.Option(
-            names = {"-N", "--namespace"},
-            description = "Default namespace for tools that don't have one set",
-            arity = "0..1")
-    private String namespace;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+    NamespaceOptions namespaceOptions;
 
     @CommandLine.Parameters(
             description = "location to the toolset, can be a local path or an URL",
@@ -45,11 +43,14 @@ public class ToolsImport extends BaseCommand {
             List<ToolReference> toolReferences = ToolsetIndexHelper.loadToolsIndex(location);
 
             // Apply default namespace to tools that don't have one
-            if (namespace != null && !namespace.isEmpty()) {
-                for (ToolReference toolReference : toolReferences) {
-                    if (toolReference.getNamespace() == null
-                            || toolReference.getNamespace().isEmpty()) {
-                        toolReference.setNamespace(namespace);
+            if (namespaceOptions != null) {
+                String ns = namespaceOptions.getNamespaceValue();
+                if (ns != null && !ns.isEmpty()) {
+                    for (ToolReference toolReference : toolReferences) {
+                        if (toolReference.getNamespace() == null
+                                || toolReference.getNamespace().isEmpty()) {
+                            toolReference.setNamespace(ns);
+                        }
                     }
                 }
             }
