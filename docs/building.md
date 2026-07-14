@@ -6,6 +6,7 @@ Before running or deploying the Wanaku MCP Router, you need to build the project
 
 ## Prerequisites
 
+- Java 21 or later
 - [Apache Maven](https://maven.apache.org) 3.x is required to build and package the project.
 - For (experimental) native CLI builds, please follow the [Quarkus instructions on how to set up your environment](https://quarkus.io/guides/building-native-image).
 

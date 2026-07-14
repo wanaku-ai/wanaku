@@ -79,6 +79,7 @@ public class CliMain implements Callable<Integer>, QuarkusApplication {
     public Integer call() {
         if (versionRequested) {
             System.out.println("Wanaku CLI version " + VersionHelper.VERSION);
+            return BaseCommand.EXIT_OK;
         }
 
         CommandLine.usage(this, System.out);

@@ -60,7 +60,7 @@ Keycloak provides authentication and authorization for:
 
 **For development:**
 
-- Java 17 or later
+- Java 21 or later
 - Maven 3.x
 - Keycloak instance (optional — can run via Podman/Docker, or set `wanaku.http.auth=none`)
 

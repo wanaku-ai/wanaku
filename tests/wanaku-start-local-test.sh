@@ -1,2 +1,2 @@
 version=$(cat core/core-util/target/classes/version.txt)
-java -jar apps/wanaku-cli/target/quarkus-app/quarkus-run.jar start local --local-dist apps/wanaku-router-backend/target/distributions/wanaku-router-backend-${version}.zip --local-dist capabilities/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-${version}.zip
+JAVA_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED" java -jar apps/wanaku-cli/target/quarkus-app/quarkus-run.jar start local --local-dist apps/wanaku-router-backend/target/distributions/wanaku-router-backend-${version}.zip --local-dist capabilities/tools/wanaku-tool-service-http/target/distributions/wanaku-tool-service-http-${version}.zip

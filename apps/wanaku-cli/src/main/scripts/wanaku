@@ -7,4 +7,4 @@ if [ -x "${localDir}/wanaku-cli" ]; then
 fi
 
 installDir="$(dirname "${localDir}")"
-java -jar "${installDir}"/quarkus-run.jar "$@"
+exec java --add-opens=java.base/java.lang=ALL-UNNAMED -jar "${installDir}"/quarkus-run.jar "$@"
