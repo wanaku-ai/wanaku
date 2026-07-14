@@ -36,12 +36,14 @@ wanaku tools list -l "environment!=production"
 
 ### Logical Operators
 
+> **Note:** Logical keywords (`AND`, `OR`, `NOT`) are **case-sensitive** — only uppercase forms are recognized. Lowercase variants (`and`, `or`, `not`) are treated as identifiers.
+
 | Operator | Description | Example                             |
 |----------|-------------|-------------------------------------|
-| `&`      | Logical AND | `category=weather & version=2.0`    |
-| `\|`     | Logical OR  | `category=weather \| category=news` |
-| `!`      | Logical NOT | `!deprecated=true`                  |
-| `( )`    | Grouping    | `(a=1 \| b=2) & c=3`                |
+| `&` or `AND`| Logical AND | `category=weather AND version=2.0` |
+| `|` or `OR` | Logical OR  | `category=weather OR category=news`|
+| `!` or `NOT`| Logical NOT | `!deprecated=true` / `NOT deprecated=true` |
+| `( )` | Grouping | `(a=1 OR b=2) AND c=3` |
 
 ### Operator Precedence
 

@@ -16,22 +16,29 @@ import ai.wanaku.core.util.StringHelper;
  *   <li>"category=weather &amp; action=forecast"</li>
  *   <li>"category=weather &amp; !action=forecast"</li>
  *   <li>"(category=weather | category=news) &amp; !action=forecast"</li>
+ *   <li>"(category=weather OR category=news) AND !action=forecast"</li>
  * </ul>
  * <p>
  * Grammar:
  * <pre>
  * expression  ::= orExpr
- * orExpr      ::= andExpr ('|' andExpr)*
- * andExpr     ::= notExpr ('&amp;' notExpr)*
- * notExpr     ::= '!' notExpr | primary
+ * orExpr      ::= andExpr ('|' andExpr | 'OR' andExpr)*
+ * andExpr     ::= notExpr ('&amp;' notExpr | 'AND' notExpr)*
+ * notExpr     ::= '!' notExpr | 'NOT' notExpr | primary
  * primary     ::= '(' expression ')' | comparison
  * comparison  ::= IDENTIFIER '=' STRING | IDENTIFIER '!=' STRING
  * </pre>
+ * <p>
+ * Keywords (AND, OR, NOT) are recognized case-sensitively and may be adjacent
+ * to parentheses, e.g. {@code NOT(deprecated=true)} or {@code env=prod AND(tier=frontend)}.
  */
 public class LabelExpressionParser {
 
     private List<Token> tokens;
     private int position;
+    private static final String KEYWORD_AND = "AND";
+    private static final String KEYWORD_OR = "OR";
+    private static final String KEYWORD_NOT = "NOT";
 
     /**
      * Constructs a new LabelExpressionParser instance.
@@ -179,7 +186,9 @@ public class LabelExpressionParser {
                         break;
                     }
                 }
-                result.add(new Token(TokenType.IDENTIFIER, sb.toString()));
+                String text = sb.toString();
+                TokenType type = keywordTokenType(text, i, expression);
+                result.add(new Token(type != null ? type : TokenType.IDENTIFIER, text));
                 continue;
             }
 
@@ -255,6 +264,29 @@ public class LabelExpressionParser {
     }
 
     // Helper methods
+
+    private static boolean isKeywordBoundary(char c) {
+        return Character.isWhitespace(c) || c == '(' || c == ')';
+    }
+
+    private static TokenType keywordTokenType(String text, int nextPosition, String expression) {
+        if (!text.equals(KEYWORD_AND) && !text.equals(KEYWORD_OR) && !text.equals(KEYWORD_NOT)) {
+            return null;
+        }
+        int charBeforeIdx = nextPosition - text.length() - 1;
+        if (charBeforeIdx >= 0 && !isKeywordBoundary(expression.charAt(charBeforeIdx))) {
+            return null;
+        }
+        if (nextPosition < expression.length() && !isKeywordBoundary(expression.charAt(nextPosition))) {
+            return null;
+        }
+        return switch (text) {
+            case KEYWORD_AND -> TokenType.AND;
+            case KEYWORD_OR -> TokenType.OR;
+            case KEYWORD_NOT -> TokenType.NOT;
+            default -> null;
+        };
+    }
 
     private boolean match(TokenType type) {
         if (position >= tokens.size()) {
