@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.jline.terminal.Terminal;
+import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,7 @@ class ServiceExposeTest {
 
         ServiceExpose cmd = new ServiceExpose();
         setField(cmd, "path", tempDir.resolve("nsservice").toAbsolutePath().toString());
-        setField(cmd, "namespace", "production");
+        setField(cmd, "namespaceOptions", createNamespaceOptions("production"));
 
         Integer result = cmd.doCall(terminal, printer);
         assertEquals(0, result);
@@ -165,7 +166,7 @@ class ServiceExposeTest {
         ServiceExpose cmd = new ServiceExpose();
         setField(cmd, "path", tempDir.resolve("resns").toAbsolutePath().toString());
         setField(cmd, "type", "resource");
-        setField(cmd, "namespace", "staging");
+        setField(cmd, "namespaceOptions", createNamespaceOptions("staging"));
 
         Integer result = cmd.doCall(terminal, printer);
         assertEquals(0, result);
@@ -271,6 +272,12 @@ class ServiceExposeTest {
         try (FileWriter fw = new FileWriter(indexFile, StandardCharsets.UTF_8)) {
             props.store(fw, null);
         }
+    }
+
+    private NamespaceOptions createNamespaceOptions(String namespace) throws Exception {
+        NamespaceOptions options = new NamespaceOptions();
+        setField(options, "namespace", namespace);
+        return options;
     }
 
     private void setField(Object obj, String fieldName, Object value) throws Exception {
