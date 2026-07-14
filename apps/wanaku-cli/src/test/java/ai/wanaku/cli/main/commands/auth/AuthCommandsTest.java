@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.contains;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.verify;
 
 class AuthCommandsTest {
@@ -79,6 +79,22 @@ class AuthCommandsTest {
     }
 
     @Test
+    void emptyAuthTokenMessage() throws Exception {
+        AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
+        store.storeApiToken("");
+
+        AuthToken authToken = new AuthToken(store);
+        authToken.operation = new AuthToken.TokenOperation();
+        authToken.operation.getOptions = new AuthToken.GetOptions();
+        authToken.operation.getOptions.getToken = true;
+
+        int result = authToken.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        verify(printer).printInfoMessage("No API token is currently set");
+    }
+
+    @Test
     void authTokenGetUnmaskShouldOutputFullToken() throws Exception {
         AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
         store.storeApiToken("test-token-123456789");
@@ -109,5 +125,18 @@ class AuthCommandsTest {
         verify(printer).printInfoMessage("Mode: token");
         verify(printer).printInfoMessage(contains("API Token: test***6789"));
         verify(printer).printInfoMessage("Has Credentials: true");
+    }
+
+    @Test
+    void emptyAuthStatusMessage() throws Exception {
+        AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
+        store.storeApiToken("");
+        store.storeAuthMode("token");
+
+        AuthStatus authStatus = new AuthStatus(store);
+        int result = authStatus.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        verify(printer).printInfoMessage("No API token is currently set");
     }
 }

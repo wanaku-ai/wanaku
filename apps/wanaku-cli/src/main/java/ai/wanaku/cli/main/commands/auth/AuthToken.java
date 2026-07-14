@@ -4,6 +4,7 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.util.StringHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "token", description = "Manage API tokens")
@@ -62,7 +63,7 @@ public class AuthToken extends BaseCommand {
 
         if (operation.getOptions != null) {
             String apiToken = credentialStore.getApiToken();
-            if (apiToken != null) {
+            if (StringHelper.isNotEmpty(apiToken)) {
                 if (operation.getOptions.unmask) {
                     printer.printInfoMessage(apiToken);
                 } else {
