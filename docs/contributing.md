@@ -168,61 +168,6 @@ And run it:
 java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-## Running Archetype-Generated Capabilities Locally (No Authentication)
-
-When you scaffold a capability using `wanaku services create tool` or `wanaku services create resource`, the generated service includes OIDC authentication by default. If you're running against a local Wanaku router in `noauth` mode, the capability will fail to register because it tries to contact a Keycloak server that doesn't exist.
-
-You'll see errors like:
-
-```text
-Failed to acquire tokens from OpenId Connect Provider
-```
-
-### Workaround: Reaugment for No-Auth Mode
-
-To run an archetype-generated capability locally without authentication, you need to reaugment it first to disable OIDC, then start it normally.
-
-**Step 1: Reaugment the capability to disable OIDC**
-
-```shell
-java -Dquarkus.launch.rebuild=true -Dquarkus.oidc-client.enabled=false -jar target/quarkus-app/quarkus-run.jar
-```
-
-This rebuilds the augmentation layer with OIDC disabled. The process will exit after augmentation completes.
-
-**Step 2: Start the capability against your local router**
-
-```shell
-java -Dquarkus.http.port=9010 -Dwanaku.service.registration.uri=http://localhost:8080 -jar target/quarkus-app/quarkus-run.jar
-```
-
-Adjust the port (`9010`) and router URL (`http://localhost:8080`) as needed.
-
-### Why This Works
-
-Archetype-generated capabilities use the Wanaku SDK's `AuthConfigSource`, which dynamically sets `quarkus.oidc-client.enabled=false` when `WANAKU_HTTP_AUTH=none` is detected. However, this dynamic configuration only applies at runtime. The Quarkus augmentation phase (where build-time config is resolved) happens during `mvn package` and bakes OIDC as **enabled** into the application bytecode.
-
-When you run the capability without reaugmentation, Quarkus tries to initialize the OIDC client, contacts the configured Keycloak server (which doesn't exist locally), and fails before the runtime `AuthConfigSource` can disable it.
-
-Reaugmenting with `-Dquarkus.launch.rebuild=true -Dquarkus.oidc-client.enabled=false` forces Quarkus to rebuild the augmentation layer with OIDC explicitly disabled at build time, so the OIDC client extension never initializes.
-
-### Alternative: Use Environment Variables
-
-If you prefer not to reaugment, set `WANAKU_HTTP_AUTH=none` before building:
-
-```shell
-export WANAKU_HTTP_AUTH=none
-mvn clean package
-```
-
-Then start normally:
-
-```shell
-java -Dquarkus.http.port=9010 -Dwanaku.service.registration.uri=http://localhost:8080 -jar target/quarkus-app/quarkus-run.jar
-```
-
-This approach bakes the no-auth configuration into the build from the start, avoiding the need for reaugmentation.
-
 ## Building Containers
 
 You can also build containers using:
