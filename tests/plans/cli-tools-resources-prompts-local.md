@@ -109,7 +109,7 @@ echo "${OUTPUT}" | grep -q "test-http-tool" \
 ### Test 2.3: Show tool details
 
 ```bash
-OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" test-http-tool 2>&1)
+OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" --plain test-http-tool 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "FAIL: tools show failed (exit code ${EXIT_CODE})"
@@ -140,7 +140,7 @@ wanaku tools edit --host "${WANAKU_ROUTER_URL}" test-http-tool
 **Manual verification:** Change the description to "Updated description" in the editor, save and confirm.
 
 ```bash
-OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" test-http-tool 2>&1)
+OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" --plain test-http-tool 2>&1)
 echo "${OUTPUT}" | grep -q "Updated description" \
   && echo "PASS: description was updated via edit" \
   || echo "FAIL: description was not updated"
@@ -189,7 +189,7 @@ else
 fi
 
 # Verify env label is gone but tier remains
-OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" test-http-tool 2>&1)
+OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" --plain test-http-tool 2>&1)
 echo "${OUTPUT}" | grep -q "env=test" \
   && echo "FAIL: label 'env=test' still present after removal" \
   || echo "PASS: label 'env=test' confirmed removed"
@@ -382,7 +382,7 @@ echo "${OUTPUT}" | grep -q "test-resource" \
 ### Test 4.3: Show resource details
 
 ```bash
-OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" test-resource 2>&1)
+OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" --plain test-resource 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "FAIL: resources show failed (exit code ${EXIT_CODE})"
@@ -416,7 +416,7 @@ else
   echo "FAIL: could not add label to resource (exit code ${EXIT_CODE})"
 fi
 
-OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" test-resource 2>&1)
+OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" --plain test-resource 2>&1)
 echo "${OUTPUT}" | grep -q "env=test" \
   && echo "PASS: label 'env=test' visible in resource details" \
   || echo "FAIL: label 'env=test' not visible in resource details"
@@ -436,7 +436,7 @@ else
   echo "FAIL: could not remove label from resource (exit code ${EXIT_CODE})"
 fi
 
-OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" test-resource 2>&1)
+OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" --plain test-resource 2>&1)
 echo "${OUTPUT}" | grep -q "env=test" \
   && echo "FAIL: label 'env=test' still present after removal" \
   || echo "PASS: label 'env=test' confirmed removed"
@@ -651,7 +651,7 @@ wanaku tools remove --host "${WANAKU_ROUTER_URL}" --name duplicate-tool 2>/dev/n
 ### Test 7.2: Show non-existent tool should fail
 
 ```bash
-OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" non-existent-tool-99999 2>&1)
+OUTPUT=$(wanaku tools show --host "${WANAKU_ROUTER_URL}" --plain non-existent-tool-99999 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "PASS: show non-existent tool failed as expected (exit code ${EXIT_CODE})"
@@ -726,7 +726,7 @@ fi
 ### Test 7.7: Show non-existent resource should fail
 
 ```bash
-OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" non-existent-resource-99999 2>&1)
+OUTPUT=$(wanaku resources show --host "${WANAKU_ROUTER_URL}" --plain non-existent-resource-99999 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "PASS: show non-existent resource failed as expected (exit code ${EXIT_CODE})"
