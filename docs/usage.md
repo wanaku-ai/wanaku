@@ -604,6 +604,22 @@ java -Dwanaku.service.registration.uri=http://<wanaku-router-host>:8080 \
 > requires additional properties to connect to different systems.
 > Always consult the specific documentation for the capability you are using for more details.
 
+### Running Archetype-Generated Capabilities Locally (No Authentication)
+
+Capabilities scaffolded with `wanaku services create tool` or `wanaku services create resource` include OIDC authentication by default. When running against a local router in `noauth` mode, the capability fails at startup because it tries to contact a non-existent Keycloak server. To run locally without authentication, reaugment the capability to disable OIDC, then start it:
+
+```shell
+java -Dquarkus.launch.rebuild=true -Dquarkus.oidc-client.enabled=false -jar target/quarkus-app/quarkus-run.jar
+```
+
+Then start normally (adjust port and router URL as needed):
+
+```shell
+java -Dquarkus.http.port=9010 -Dwanaku.service.registration.uri=http://localhost:8080 -jar target/quarkus-app/quarkus-run.jar
+```
+
+This reaugmentation step is only needed once per build. The augmentation layer change persists until the next `mvn clean package`.
+
 #### Prerequisites
 
 Before deploying Wanaku on OpenShift, ensure you have:
