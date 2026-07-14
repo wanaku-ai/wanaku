@@ -19,6 +19,7 @@ Every step is fully automatable.
 | `curl` | any | `curl --version` |
 | `jq` | 1.6+ | `jq --version` |
 | `base64` | any (coreutils) | `base64 --version 2>/dev/null \|\| echo "available"` |
+| `wanaku` | build from source | `wanaku --version` |
 
 ### Prerequisite check script
 
@@ -28,7 +29,7 @@ set -e
 
 FAIL=0
 
-for CMD in oc helm curl jq base64; do
+for CMD in oc helm curl jq base64 wanaku; do
   if ! command -v "${CMD}" > /dev/null 2>&1; then
     echo "FAIL: ${CMD} is not installed"
     FAIL=1
@@ -724,17 +725,11 @@ else
 fi
 
 # Step 2: Authenticated request should be accepted
-# Note: The Keycloak container image does not include curl, so obtain the token
-# from outside the pod using the external Keycloak URL (set by keycloak-setup.md).
-NS_TOKEN=$(curl -sf \
-    -d "client_id=wanaku-service" \
-    -d "client_secret=${WANAKU_OIDC_SECRET}" \
-    -d "grant_type=client_credentials" \
-    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token" \
-  | jq -r '.access_token')
+# Retrieve the token stored by wanaku auth login (Phase 3, Test 3.9)
+NS_TOKEN=$(wanaku auth token --get --unmask --plain 2>/dev/null)
 
-if [ -z "${NS_TOKEN}" ] || [ "${NS_TOKEN}" = "null" ]; then
-  echo "FAIL: could not obtain token for namespace MCP test"
+if [ -z "${NS_TOKEN}" ]; then
+  echo "FAIL: could not obtain token for namespace MCP test (is wanaku auth login done?)"
 else
   AUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Accept: text/event-stream" \

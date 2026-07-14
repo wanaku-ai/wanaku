@@ -79,6 +79,22 @@ class AuthCommandsTest {
     }
 
     @Test
+    void authTokenGetUnmaskShouldOutputFullToken() throws Exception {
+        AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
+        store.storeApiToken("test-token-123456789");
+
+        AuthToken authToken = new AuthToken(store);
+        authToken.operation = new AuthToken.TokenOperation();
+        authToken.operation.getToken = true;
+        authToken.unmask = true;
+
+        int result = authToken.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        verify(printer).printInfoMessage("test-token-123456789");
+    }
+
+    @Test
     void authStatusShouldDisplayStatus() throws Exception {
         AuthCredentialStore store = new AuthCredentialStore(credentialsFile.toUri());
         store.storeApiToken("test-token-123456789");
