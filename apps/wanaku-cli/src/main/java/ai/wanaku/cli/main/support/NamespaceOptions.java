@@ -92,6 +92,11 @@ public class NamespaceOptions {
             return namespaceId;
         }
 
+        if (namespace == null || namespace.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Either --namespace or --namespace-id must be provided with a non-blank value.");
+        }
+
         try {
             WanakuResponse<List<Namespace>> response = namespacesService.list();
             List<Namespace> data = response.data();
