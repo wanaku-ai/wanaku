@@ -448,4 +448,17 @@ class InvokerBridgeTest {
         assertTrue(ex.getMessage().contains("limit"), "Should report 'limit' as missing");
         assertFalse(ex.getMessage().contains("format"), "Should NOT report 'format' (it was provided)");
     }
+
+    @Test
+    void validateRequiredParameters_throwsWhenArgsIsNull() {
+        Map<String, Property> props = new HashMap<>();
+        props.put("query", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.getInputSchema().setRequired(List.of("query"));
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class, () -> InvokerToolExecutor.validateRequiredParameters(ref, null));
+        assertTrue(ex.getMessage().contains("query"), "Should report 'query' as missing");
+    }
 }
