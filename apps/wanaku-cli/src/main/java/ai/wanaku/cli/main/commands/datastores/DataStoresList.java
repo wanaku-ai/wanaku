@@ -60,7 +60,7 @@ Note: If omitted, all data stores are listed. Label matching is case-sensitive.
             List<DataStore> dataStores = response.data();
 
             if (dataStores == null || dataStores.isEmpty()) {
-                printer.printInfoMessage("No data stores found.%n");
+                printer.printInfoMessage("No data stores found.");
                 return EXIT_OK;
             }
 

@@ -53,7 +53,7 @@ public class DataStoresAdd extends BaseCommand {
         try {
             fileBytes = Files.readAllBytes(Path.of(filePath));
         } catch (IOException e) {
-            printer.printErrorMessage(String.format("Failed to read file '%s': %s%n", filePath, e.getMessage()));
+            printer.printErrorMessage(String.format("Failed to read file '%s': %s", filePath, e.getMessage()));
             return EXIT_ERROR;
         }
 
@@ -81,7 +81,7 @@ public class DataStoresAdd extends BaseCommand {
             DataStore created = response.data();
 
             printer.printSuccessMessage(String.format(
-                    "Successfully added data store '%s' with ID: %s%n", created.getName(), created.getId()));
+                    "Successfully added data store '%s' with ID: %s", created.getName(), created.getId()));
 
             LOG.debugf("Created data store: %s", created);
         } catch (WebApplicationException ex) {

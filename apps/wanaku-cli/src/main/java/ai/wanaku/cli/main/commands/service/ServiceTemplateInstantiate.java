@@ -78,7 +78,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
                 if (kv.length == 2) {
                     propsMap.put(kv[0].trim(), kv[1].trim());
                 } else {
-                    printer.printErrorMessage(String.format("Invalid property format: '%s'%n", pair));
+                    printer.printErrorMessage(String.format("Invalid property format: '%s'", pair));
                     return null;
                 }
             }
@@ -100,7 +100,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
             if (kv.length == 2) {
                 propsMap.put(kv[0].trim(), kv[1].trim());
             } else {
-                printer.printErrorMessage(String.format("Invalid property format: '%s'%n", pair));
+                printer.printErrorMessage(String.format("Invalid property format: '%s'", pair));
                 return null;
             }
         }
@@ -118,7 +118,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
         }
 
         printer.printInfoMessage(
-                String.format("Instantiating template '%s' with %d properties...%n", name, propsMap.size()));
+                String.format("Instantiating template '%s' with %d properties...", name, propsMap.size()));
 
         try {
             ServiceTemplateService.TemplateInstantiationRequest request =
@@ -130,8 +130,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
 
             service.instantiate(request);
 
-            printer.printSuccessMessage(
-                    String.format("Service catalog created successfully from template '%s'%n", name));
+            printer.printSuccessMessage(String.format("Service catalog created successfully from template '%s'", name));
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
@@ -147,7 +146,7 @@ public class ServiceTemplateInstantiate extends BaseCommand {
 
     private void handleNotFoundTemplate(WanakuPrinter printer, String templateName) {
         printer.printErrorMessage(String.format(
-                "Error: template '%s' does not exist. Use 'wanaku service template list' to see available templates.%n",
+                "Error: template '%s' does not exist. Use 'wanaku service template list' to see available templates.",
                 templateName));
     }
 }

@@ -38,12 +38,12 @@ public class ServiceInit extends BaseCommand {
         // Create root directory
         File rootDir = new File(name);
         if (rootDir.exists()) {
-            printer.printErrorMessage(String.format("Directory '%s' already exists%n", name));
+            printer.printErrorMessage(String.format("Directory '%s' already exists", name));
             return EXIT_ERROR;
         }
 
         if (!rootDir.mkdirs()) {
-            printer.printErrorMessage(String.format("Failed to create directory '%s'%n", name));
+            printer.printErrorMessage(String.format("Failed to create directory '%s'", name));
             return EXIT_ERROR;
         }
 
@@ -51,7 +51,7 @@ public class ServiceInit extends BaseCommand {
         try {
             createIndexProperties(rootDir, systems);
         } catch (IOException e) {
-            printer.printErrorMessage(String.format("Failed to create index.properties: %s%n", e.getMessage()));
+            printer.printErrorMessage(String.format("Failed to create index.properties: %s", e.getMessage()));
             return EXIT_ERROR;
         }
 
@@ -66,20 +66,19 @@ public class ServiceInit extends BaseCommand {
                 createSystemFiles(rootDir, systemName);
             } catch (IOException e) {
                 printer.printErrorMessage(
-                        String.format("Failed to create files for system '%s': %s%n", systemName, e.getMessage()));
+                        String.format("Failed to create files for system '%s': %s", systemName, e.getMessage()));
                 return EXIT_ERROR;
             }
         }
 
-        printer.printSuccessMessage(String.format("Service catalog '%s' initialized successfully%n", name));
-        printer.printInfoMessage(String.format("Next steps:%n"));
+        printer.printSuccessMessage(String.format("Service catalog '%s' initialized successfully", name));
+        printer.printInfoMessage("Next steps:");
+        printer.printInfoMessage("  1. Edit the Camel route files (*.camel.yaml) with your integration routes");
+        printer.printInfoMessage(String.format("  2. Run 'wanaku service expose --path=%s' to generate rules", name));
         printer.printInfoMessage(
-                String.format("  1. Edit the Camel route files (*.camel.yaml) with your integration routes%n"));
-        printer.printInfoMessage(String.format("  2. Run 'wanaku service expose --path=%s' to generate rules%n", name));
+                String.format("  3. Run 'wanaku service package --path=%s' to create a deployable package", name));
         printer.printInfoMessage(
-                String.format("  3. Run 'wanaku service package --path=%s' to create a deployable package%n", name));
-        printer.printInfoMessage(
-                String.format("  4. Run 'wanaku service deploy --path=%s' to deploy the service%n", name));
+                String.format("  4. Run 'wanaku service deploy --path=%s' to deploy the service", name));
 
         return EXIT_OK;
     }
