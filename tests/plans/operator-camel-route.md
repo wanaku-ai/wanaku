@@ -74,21 +74,16 @@ Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the 
 
 ### Helper: obtain a Bearer token from Keycloak
 
-The router has OIDC auth enabled, so all API requests (even from inside the pod) require a Bearer token. This helper obtains a token from Keycloak using the `wanaku-service` client credentials. It uses `oc exec` into the Keycloak pod since the Keycloak route may not be accessible from outside the cluster.
+The router has OIDC auth enabled, so all API requests (even from inside the pod) require a Bearer token. This helper obtains a token from Keycloak using the `wanaku-service` client credentials. The token request is made from the test runner using the external Keycloak URL because the Keycloak container image does not include `curl`.
 
 ```bash
 get_router_token() {
-  local KC_POD
-  KC_POD=$(oc get pods -l app=keycloak \
-    -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-  oc exec "${KC_POD}" -n "${WANAKU_NAMESPACE}" -- \
-    curl -sf \
-      -d "client_id=wanaku-service" \
-      -d "client_secret=${WANAKU_OIDC_CLIENT_SECRET}" \
-      -d "grant_type=client_credentials" \
-      "http://localhost:8080/realms/wanaku/protocol/openid-connect/token" \
-    | jq -r '.access_token'
+  curl -sf \
+    -d "client_id=wanaku-service" \
+    -d "client_secret=${WANAKU_OIDC_SECRET}" \
+    -d "grant_type=client_credentials" \
+    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token" \
+  | jq -r '.access_token'
 }
 ```
 

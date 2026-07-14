@@ -724,15 +724,13 @@ else
 fi
 
 # Step 2: Authenticated request should be accepted
-KC_POD=$(oc get pods -l app=keycloak \
-  -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
-
-NS_TOKEN=$(oc exec "${KC_POD}" -n "${WANAKU_NAMESPACE}" -- \
-  curl -sf \
+# Note: The Keycloak container image does not include curl, so obtain the token
+# from outside the pod using the external Keycloak URL (set by keycloak-setup.md).
+NS_TOKEN=$(curl -sf \
     -d "client_id=wanaku-service" \
-    -d "client_secret=${WANAKU_OIDC_CLIENT_SECRET}" \
+    -d "client_secret=${WANAKU_OIDC_SECRET}" \
     -d "grant_type=client_credentials" \
-    "http://localhost:8080/realms/wanaku/protocol/openid-connect/token" \
+    "${KEYCLOAK_URL}/realms/wanaku/protocol/openid-connect/token" \
   | jq -r '.access_token')
 
 if [ -z "${NS_TOKEN}" ] || [ "${NS_TOKEN}" = "null" ]; then
