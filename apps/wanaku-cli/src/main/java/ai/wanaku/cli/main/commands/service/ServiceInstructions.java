@@ -45,17 +45,17 @@ public class ServiceInstructions extends BaseCommand {
             DeploymentInstructions instructions = response.data();
 
             if (instructions == null) {
-                printer.printErrorMessage("No deployment instructions returned%n");
+                printer.printErrorMessage("No deployment instructions returned");
                 return EXIT_ERROR;
             }
 
             printer.printInfoMessage(String.format(
-                    "Deployment instructions for '%s' (%s, %s)%n%n",
+                    "Deployment instructions for '%s' (%s, %s)",
                     instructions.catalogName(), instructions.catalogType(), instructions.deploymentModel()));
 
             for (SystemInstruction sys : instructions.systems()) {
                 if (!"all".equals(sys.systemName())) {
-                    printer.printInfoMessage(String.format("--- System: %s ---%n", sys.systemName()));
+                    printer.printInfoMessage(String.format("--- System: %s ---", sys.systemName()));
                 }
                 System.out.println(sys.instruction());
                 System.out.println();
@@ -63,11 +63,11 @@ public class ServiceInstructions extends BaseCommand {
 
             if (instructions.placeholders() != null
                     && !instructions.placeholders().isEmpty()) {
-                printer.printInfoMessage("Placeholders to fill:%n");
+                printer.printInfoMessage("Placeholders to fill:");
                 instructions
                         .placeholders()
                         .forEach(p -> printer.printInfoMessage(String.format(
-                                "  <%s> - %s%s%n",
+                                "  <%s> - %s%s",
                                 p.key(),
                                 p.description(),
                                 p.defaultValue() != null && !p.defaultValue().isEmpty()

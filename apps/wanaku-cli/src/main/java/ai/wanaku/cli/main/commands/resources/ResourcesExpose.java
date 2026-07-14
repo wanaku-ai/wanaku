@@ -154,7 +154,7 @@ public class ResourcesExpose extends BaseCommand {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
                 printer.printErrorMessage(String.format(
-                        "There is no resource provider capable of handling resources of type '%s'.%n"
+                        "There is no resource provider capable of handling resources of type '%s'. "
                                 + "Make sure a resource provider for this type is running and registered with the router.",
                         type));
             } else {

@@ -43,13 +43,13 @@ public class DataStoresRemove extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         // Validate that either id or name is provided, but not both
         if ((id == null || id.trim().isEmpty()) && (name == null || name.trim().isEmpty())) {
-            printer.printErrorMessage("Either --id or --name must be provided%n");
+            printer.printErrorMessage("Either --id or --name must be provided");
             CommandLine.usage(this, System.out);
             return EXIT_ERROR;
         }
 
         if (id != null && !id.trim().isEmpty() && name != null && !name.trim().isEmpty()) {
-            printer.printWarningMessage("Both --id and --name provided. Using --id only.%n");
+            printer.printWarningMessage("Both --id and --name provided. Using --id only.");
         }
 
         dataStoresService = initAuthenticatedService(DataStoresService.class, host);

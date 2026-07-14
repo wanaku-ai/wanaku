@@ -58,13 +58,13 @@ public class DataStoresGet extends BaseCommand {
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         // Validate that either id or name is provided
         if ((id == null || id.trim().isEmpty()) && (name == null || name.trim().isEmpty())) {
-            printer.printErrorMessage("Either --id or --name must be provided%n");
+            printer.printErrorMessage("Either --id or --name must be provided");
             return EXIT_ERROR;
         }
 
         // Prefer id if both are provided
         if (id != null && !id.trim().isEmpty() && name != null && !name.trim().isEmpty()) {
-            printer.printWarningMessage("Both --id and --name provided, using --id%n");
+            printer.printWarningMessage("Both --id and --name provided, using --id");
         }
 
         dataStoresService = initAuthenticatedService(DataStoresService.class, host);
@@ -83,13 +83,13 @@ public class DataStoresGet extends BaseCommand {
                 List<DataStore> dataStores = response.data();
 
                 if (dataStores == null || dataStores.isEmpty()) {
-                    printer.printErrorMessage(String.format("No data store found with name: %s%n", name));
+                    printer.printErrorMessage(String.format("No data store found with name: %s", name));
                     return EXIT_ERROR;
                 }
 
                 if (dataStores.size() > 1) {
                     printer.printWarningMessage(
-                            String.format("Multiple data stores found with name '%s', using the first one%n", name));
+                            String.format("Multiple data stores found with name '%s', using the first one", name));
                 }
 
                 dataStore = dataStores.get(0);
@@ -97,7 +97,7 @@ public class DataStoresGet extends BaseCommand {
             }
 
             if (dataStore == null) {
-                printer.printErrorMessage("Data store not found%n");
+                printer.printErrorMessage("Data store not found");
                 return EXIT_ERROR;
             }
 
@@ -106,7 +106,7 @@ public class DataStoresGet extends BaseCommand {
             try {
                 decodedData = Base64.getDecoder().decode(dataStore.getData());
             } catch (IllegalArgumentException e) {
-                printer.printErrorMessage(String.format("Failed to decode data: %s%n", e.getMessage()));
+                printer.printErrorMessage(String.format("Failed to decode data: %s", e.getMessage()));
                 return EXIT_ERROR;
             }
 
@@ -123,11 +123,11 @@ public class DataStoresGet extends BaseCommand {
             try {
                 Files.write(outputPath, decodedData);
                 printer.printSuccessMessage(String.format(
-                        "Successfully retrieved data store '%s' (ID: %s) and saved to: %s (%d bytes)%n",
+                        "Successfully retrieved data store '%s' (ID: %s) and saved to: %s (%d bytes)",
                         dataStore.getName(), dataStore.getId(), outputPath.toAbsolutePath(), decodedData.length));
             } catch (IOException e) {
                 printer.printErrorMessage(
-                        String.format("Failed to write to file '%s': %s%n", outputPath, e.getMessage()));
+                        String.format("Failed to write to file '%s': %s", outputPath, e.getMessage()));
                 return EXIT_ERROR;
             }
 

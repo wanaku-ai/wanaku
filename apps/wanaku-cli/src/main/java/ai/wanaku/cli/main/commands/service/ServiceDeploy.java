@@ -51,7 +51,7 @@ public class ServiceDeploy extends BaseCommand {
         File indexFile = new File(baseDir, "index.properties");
 
         if (!indexFile.exists()) {
-            printer.printErrorMessage(String.format("index.properties not found in '%s'%n", path));
+            printer.printErrorMessage(String.format("index.properties not found in '%s'", path));
             return EXIT_ERROR;
         }
 
@@ -63,13 +63,13 @@ public class ServiceDeploy extends BaseCommand {
 
         String catalogName = props.getProperty("catalog.name");
         if (catalogName == null || catalogName.isBlank()) {
-            printer.printErrorMessage("Missing required property 'catalog.name' in index.properties%n");
+            printer.printErrorMessage("Missing required property 'catalog.name' in index.properties");
             return EXIT_ERROR;
         }
 
         String servicesStr = props.getProperty("catalog.services");
         if (servicesStr == null || servicesStr.isBlank()) {
-            printer.printErrorMessage("Missing required property 'catalog.services' in index.properties%n");
+            printer.printErrorMessage("Missing required property 'catalog.services' in index.properties");
             return EXIT_ERROR;
         }
 
@@ -83,35 +83,33 @@ public class ServiceDeploy extends BaseCommand {
 
             String routesPath = props.getProperty("catalog.routes.%s".formatted(systemName));
             if (routesPath == null) {
-                printer.printErrorMessage(
-                        String.format("Missing 'catalog.routes.%s' in index.properties%n", systemName));
+                printer.printErrorMessage(String.format("Missing 'catalog.routes.%s' in index.properties", systemName));
                 return EXIT_ERROR;
             }
             if (!new File(baseDir, routesPath).exists()) {
-                printer.printErrorMessage(String.format("Route file not found: %s%n", routesPath));
+                printer.printErrorMessage(String.format("Route file not found: %s", routesPath));
                 return EXIT_ERROR;
             }
 
             String rulesPath = props.getProperty("catalog.rules." + systemName);
             if (rulesPath == null) {
-                printer.printErrorMessage(
-                        String.format("Missing 'catalog.rules.%s' in index.properties%n", systemName));
+                printer.printErrorMessage(String.format("Missing 'catalog.rules.%s' in index.properties", systemName));
                 return EXIT_ERROR;
             }
             if (!new File(baseDir, rulesPath).exists()) {
-                printer.printErrorMessage(String.format("Rules file not found: %s%n", rulesPath));
+                printer.printErrorMessage(String.format("Rules file not found: %s", rulesPath));
                 return EXIT_ERROR;
             }
         }
 
-        printer.printInfoMessage(String.format("Packaging service catalog '%s'...%n", catalogName));
+        printer.printInfoMessage(String.format("Packaging service catalog '%s'...", catalogName));
 
         // Create ZIP archive
         byte[] zipBytes;
         try {
             zipBytes = createZipArchive(baseDir);
         } catch (IOException e) {
-            printer.printErrorMessage(String.format("Failed to create ZIP archive: %s%n", e.getMessage()));
+            printer.printErrorMessage(String.format("Failed to create ZIP archive: %s", e.getMessage()));
             return EXIT_ERROR;
         }
 
@@ -119,7 +117,7 @@ public class ServiceDeploy extends BaseCommand {
         String base64Data = Base64.getEncoder().encodeToString(zipBytes);
         String zipName = catalogName + ".service.zip";
 
-        printer.printInfoMessage(String.format("Uploading '%s' (%d bytes)...%n", zipName, zipBytes.length));
+        printer.printInfoMessage(String.format("Uploading '%s' (%d bytes)...", zipName, zipBytes.length));
 
         // Upload via REST API
         DataStore dataStore = new DataStore();
@@ -130,12 +128,11 @@ public class ServiceDeploy extends BaseCommand {
             if (template) {
                 ServiceTemplateService service = initAuthenticatedService(ServiceTemplateService.class, host);
                 WanakuResponse<DataStore> response = service.deploy(dataStore);
-                printer.printSuccessMessage(
-                        String.format("Service template '%s' deployed successfully%n", catalogName));
+                printer.printSuccessMessage(String.format("Service template '%s' deployed successfully", catalogName));
             } else {
                 ServiceCatalogService service = initAuthenticatedService(ServiceCatalogService.class, host);
                 WanakuResponse<DataStore> response = service.deploy(dataStore);
-                printer.printSuccessMessage(String.format("Service catalog '%s' deployed successfully%n", catalogName));
+                printer.printSuccessMessage(String.format("Service catalog '%s' deployed successfully", catalogName));
             }
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

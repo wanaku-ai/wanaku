@@ -41,19 +41,19 @@ public final class ResponseHelper {
 
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
                 message = String.format(
-                        "The requested resource was not found: %s%s%n",
+                        "The requested resource was not found: %s%s",
                         response.getStatusInfo().getReasonPhrase(),
                         responseBody.isEmpty() ? "" : "\nDetails: " + responseBody);
                 printer.printErrorMessage(message);
             } else if (response.getStatus() == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
                 message = String.format(
-                        "The server was unable to handle the request: %s%s%n",
+                        "The server was unable to handle the request: %s%s",
                         response.getStatusInfo().getReasonPhrase(),
                         responseBody.isEmpty() ? "" : "\nDetails: " + responseBody);
                 printer.printErrorMessage(message);
             } else {
                 message = String.format(
-                        "Error (status: %d, reason: %s)%s%n",
+                        "Error (status: %d, reason: %s)%s",
                         response.getStatus(),
                         response.getStatusInfo().getReasonPhrase(),
                         responseBody.isEmpty() ? "" : "\nDetails: " + responseBody);

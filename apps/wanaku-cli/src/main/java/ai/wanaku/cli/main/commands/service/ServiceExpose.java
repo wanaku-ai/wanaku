@@ -65,7 +65,7 @@ public class ServiceExpose extends BaseCommand {
             mimeType = "application/octet-stream";
         }
         if (!"tool".equals(type) && !"resource".equals(type)) {
-            printer.printErrorMessage(String.format("Invalid type '%s': must be 'tool' or 'resource'%n", type));
+            printer.printErrorMessage(String.format("Invalid type '%s': must be 'tool' or 'resource'", type));
             return EXIT_ERROR;
         }
 
@@ -73,7 +73,7 @@ public class ServiceExpose extends BaseCommand {
         File indexFile = new File(baseDir, "index.properties");
 
         if (!indexFile.exists()) {
-            printer.printErrorMessage(String.format("index.properties not found in '%s'%n", path));
+            printer.printErrorMessage(String.format("index.properties not found in '%s'", path));
             return EXIT_ERROR;
         }
 
@@ -84,7 +84,7 @@ public class ServiceExpose extends BaseCommand {
 
         String servicesStr = props.getProperty("catalog.services");
         if (servicesStr == null || servicesStr.isBlank()) {
-            printer.printErrorMessage("No services defined in index.properties%n");
+            printer.printErrorMessage("No services defined in index.properties");
             return EXIT_ERROR;
         }
 
@@ -100,13 +100,13 @@ public class ServiceExpose extends BaseCommand {
             String routesPath = props.getProperty("catalog.routes." + systemName);
             if (routesPath == null) {
                 printer.printErrorMessage(
-                        String.format("No routes path defined for system '%s' in index.properties%n", systemName));
+                        String.format("No routes path defined for system '%s' in index.properties", systemName));
                 return EXIT_ERROR;
             }
 
             File routeFile = new File(baseDir, routesPath);
             if (!routeFile.exists()) {
-                printer.printErrorMessage(String.format("Route file not found: %s%n", routeFile.getPath()));
+                printer.printErrorMessage(String.format("Route file not found: %s", routeFile.getPath()));
                 return EXIT_ERROR;
             }
 
@@ -114,7 +114,7 @@ public class ServiceExpose extends BaseCommand {
             List<String> routeIds = extractRouteIds(routeFile);
             if (routeIds.isEmpty()) {
                 printer.printInfoMessage(
-                        String.format("No route IDs found in %s, skipping rules generation%n", routeFile.getPath()));
+                        String.format("No route IDs found in %s, skipping rules generation", routeFile.getPath()));
                 continue;
             }
 
@@ -132,12 +132,12 @@ public class ServiceExpose extends BaseCommand {
             }
 
             totalRoutes += routeIds.size();
-            printer.printInfoMessage(String.format(
-                    "Generated rules for system '%s': %d route(s) exposed%n", systemName, routeIds.size()));
+            printer.printInfoMessage(
+                    String.format("Generated rules for system '%s': %d route(s) exposed", systemName, routeIds.size()));
         }
 
         printer.printSuccessMessage(
-                String.format("Expose complete: %d route(s) across %d system(s)%n", totalRoutes, systems.length));
+                String.format("Expose complete: %d route(s) across %d system(s)", totalRoutes, systems.length));
         return EXIT_OK;
     }
 
