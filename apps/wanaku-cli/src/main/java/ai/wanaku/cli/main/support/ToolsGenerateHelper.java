@@ -28,12 +28,11 @@ import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.util.StringHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
-import static ai.wanaku.cli.main.support.StringHelper.isEmpty;
-import static ai.wanaku.cli.main.support.StringHelper.isNotEmpty;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
@@ -200,7 +199,7 @@ public class ToolsGenerateHelper {
                 .replaceAll("[^a-zA-Z0-9]+", "_"); // Replace non-alphanumeric chars with underscores
 
         // Combine method and path
-        if (isNotEmpty(cleanPath)) {
+        if (StringHelper.isNotEmpty(cleanPath)) {
             name = name + "_" + cleanPath;
         }
 
@@ -229,7 +228,7 @@ public class ToolsGenerateHelper {
 
         // Set basic properties
         String name = operation.getOperationId();
-        if (isEmpty(name)) {
+        if (StringHelper.isEmpty(name)) {
             name = generateToolNameFromPathAndMethod(path, method);
         }
         toolReference.setName(name);
@@ -274,7 +273,7 @@ public class ToolsGenerateHelper {
         return Optional.ofNullable(baseUrl).orElseGet(() -> Optional.ofNullable(operation.getServers())
                 .filter(CollectionsHelper::isNotEmpty)
                 .flatMap(servers -> servers.stream()
-                        .filter(server -> isNotEmpty(server.getUrl()))
+                        .filter(server -> StringHelper.isNotEmpty(server.getUrl()))
                         .findFirst()
                         .map(Server::getUrl))
                 .orElse(baseUrl));
@@ -392,7 +391,7 @@ public class ToolsGenerateHelper {
 
         if (CollectionsHelper.isNotEmpty(variables)) {
             variables = variables.entrySet().stream()
-                    .filter(e -> isNotEmpty(e.getKey()) && isNotEmpty(e.getValue()))
+                    .filter(e -> StringHelper.isNotEmpty(e.getKey()) && StringHelper.isNotEmpty(e.getValue()))
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             // Replace
@@ -416,7 +415,7 @@ public class ToolsGenerateHelper {
      * @throws Exception If the outputFile file cannot be created or written to
      */
     public static PrintWriter getOutputPrintWriter(String output) throws Exception {
-        if (isEmpty(output)) {
+        if (StringHelper.isEmpty(output)) {
             // Write to STDOUT
             return new PrintWriter(System.out);
         }

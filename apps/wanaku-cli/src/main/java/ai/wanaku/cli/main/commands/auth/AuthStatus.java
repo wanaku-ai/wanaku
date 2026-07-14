@@ -4,6 +4,7 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.util.StringHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "status", description = "Show current authentication status")
@@ -29,11 +30,11 @@ public class AuthStatus extends BaseCommand {
         printer.printInfoMessage("Mode: " + authMode);
 
         String apiToken = credentialStore.getApiToken();
-        if (apiToken != null) {
+        if (StringHelper.isNotEmpty(apiToken)) {
             String maskedToken = maskToken(apiToken);
             printer.printInfoMessage("API Token: " + maskedToken);
         } else {
-            printer.printInfoMessage("API Token: Not set");
+            printer.printInfoMessage("No API token is currently set");
         }
 
         String authServerUrl = credentialStore.getAuthServerUrl();

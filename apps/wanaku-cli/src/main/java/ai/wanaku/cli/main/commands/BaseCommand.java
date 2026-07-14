@@ -8,7 +8,6 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.cli.main.support.AuthenticationInterceptor;
 import ai.wanaku.cli.main.support.HttpUtil;
 import ai.wanaku.cli.main.support.WanakuPrinter;
-import ai.wanaku.cli.main.support.security.InsecureSSLHelper;
 import picocli.CommandLine;
 
 /**
@@ -129,7 +128,7 @@ public abstract class BaseCommand implements Callable<Integer> {
                     QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host));
 
             if (insecure) {
-                builder.trustAll(true).hostnameVerifier(InsecureSSLHelper.getInsecureHostnameVerifier());
+                builder.trustAll(true);
             }
 
             if (!noAuth) {

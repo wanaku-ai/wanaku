@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ai.wanaku.cli.main.support.security.TokenRefresher;
 import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
+import ai.wanaku.core.util.StringHelper;
 
 /**
  * A JAX-RS client request filter that automatically adds authentication headers
@@ -116,7 +117,7 @@ public class AuthenticationInterceptor implements ClientRequestFilter {
      */
     private String getValidAccessToken() {
         String apiToken = credentialStore.getApiToken();
-        if (apiToken == null || apiToken.trim().isEmpty()) {
+        if (StringHelper.isEmpty(apiToken)) {
             return null;
         }
 
