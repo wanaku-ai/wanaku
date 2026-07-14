@@ -351,4 +351,121 @@ class LabelExpressionParserTest {
         // Should not match entity with no labels
         assertFalse(predicate.test(new TestEntity("empty")));
     }
+
+    @Test
+    void testAndKeyword() throws Exception {
+        String expression = "env=prod AND tier=frontend";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "env", "prod", "tier", "frontend")));
+        assertFalse(predicate.test(createEntity("2", "env", "prod", "tier", "backend")));
+        assertFalse(predicate.test(createEntity("3", "env", "dev", "tier", "frontend")));
+    }
+
+    @Test
+    void testOrKeyword() throws Exception {
+        String expression = "category=weather OR category=news";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "category", "weather")));
+        assertTrue(predicate.test(createEntity("2", "category", "news")));
+        assertFalse(predicate.test(createEntity("3", "category", "sports")));
+    }
+
+    @Test
+    void testNotKeyword() throws Exception {
+        String expression = "NOT deprecated=true";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "status", "active")));
+        assertTrue(predicate.test(createEntity("2")));
+        assertFalse(predicate.test(createEntity("3", "deprecated", "true")));
+    }
+
+    @Test
+    void testMixedKeywordsAndSymbols() throws Exception {
+        String expression = "env=prod & tier=frontend OR tier=backend";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "env", "prod", "tier", "frontend")));
+        assertTrue(predicate.test(createEntity("2", "tier", "backend")));
+        assertFalse(predicate.test(createEntity("3", "env", "dev", "tier", "frontend")));
+    }
+
+    @Test
+    void testMultipleAndKeyword() throws Exception {
+        String expression = "a=1 AND b=2 AND c=3";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "a", "1", "b", "2", "c", "3")));
+        assertFalse(predicate.test(createEntity("2", "a", "1", "b", "2", "c", "4")));
+    }
+
+    @Test
+    void testMixedAndOrKeywords() throws Exception {
+        String expression = "a=1 AND b=2 OR c=3";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        // (a=1 AND b=2) OR c=3
+        assertTrue(predicate.test(createEntity("1", "a", "1", "b", "2")));
+        assertTrue(predicate.test(createEntity("2", "c", "3")));
+        assertFalse(predicate.test(createEntity("3", "a", "1", "b", "3", "c", "4")));
+    }
+
+    @Test
+    void testKeywordInParenthesizedExpression() throws Exception {
+        String expression = "(category=weather OR category=news) AND environment=production";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "category", "weather", "environment", "production")));
+        assertTrue(predicate.test(createEntity("2", "category", "news", "environment", "production")));
+        assertFalse(predicate.test(createEntity("3", "category", "weather", "environment", "staging")));
+    }
+
+    @Test
+    void testKeywordAsIdentifierValue() throws Exception {
+        String expression = "label=AND";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "label", "AND")));
+        assertFalse(predicate.test(createEntity("2", "label", "other")));
+    }
+
+    @Test
+    void testNotKeywordAdjacentToParenthesis() throws Exception {
+        String expression = "NOT(deprecated=true)";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "status", "active")));
+        assertFalse(predicate.test(createEntity("2", "deprecated", "true")));
+    }
+
+    @Test
+    void testAndKeywordAdjacentToParenthesis() throws Exception {
+        String expression = "env=prod AND(tier=frontend)";
+        Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(expression);
+
+        assertNotNull(predicate);
+
+        assertTrue(predicate.test(createEntity("1", "env", "prod", "tier", "frontend")));
+        assertFalse(predicate.test(createEntity("2", "env", "prod", "tier", "backend")));
+    }
 }
