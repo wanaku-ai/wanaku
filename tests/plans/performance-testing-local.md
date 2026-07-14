@@ -9,7 +9,7 @@ The plan supports two modes:
 1. **Single run** — build from the current branch, launch services, run k6, collect metrics.
 2. **Baseline comparison** — run the same tests against a CI-built baseline (main branch) and the current branch, then generate a Markdown comparison report highlighting regressions and improvements.
 
-Authentication is handled via Keycloak (podman). The router and all capabilities run locally as Java processes.
+Authentication is handled via Keycloak (Docker or Podman). The router and all capabilities run locally as Java processes.
 
 Every step is fully automatable.
 
@@ -21,11 +21,16 @@ Every step is fully automatable.
 |------|-----------------|----------------|
 | `java` | 21+ | `java -version` |
 | `mvn` | 3.9+ | `mvn -version` |
-| `podman` | 4.0+ | `podman --version` |
+| `docker` or `podman` | 20+ / 4.0+ | `docker --version` or `podman --version` |
 | `curl` | any | `curl --version` |
 | `k6` | 0.50+ (with xk6-mcp) | `k6 version` |
 | `python3` | 3.8+ | `python3 --version` |
 | `wanaku` | build from source | `wanaku --version` |
+
+### Container runtime detection
+
+Follow [common/container-runtime.md](common/container-runtime.md). After completion,
+`CONTAINER_RUNTIME` is set and exported.
 
 ### k6 with xk6-mcp extension
 
@@ -70,7 +75,7 @@ This plan is designed to run as a single session. Variables set in earlier phase
 ```bash
 FAIL=0
 
-for CMD in java mvn podman curl python3; do
+for CMD in java mvn curl python3; do
   if ! command -v "${CMD}" > /dev/null 2>&1; then
     echo "FAIL: ${CMD} is not installed"
     FAIL=1
@@ -240,10 +245,10 @@ If a keycloak container is already running, skip the start.
 export KEYCLOAK_HOST="${KEYCLOAK_HOST:-localhost}"
 export KEYCLOAK_URL="http://${KEYCLOAK_HOST}:8543"
 
-if podman ps --filter name=keycloak --format '{{.Names}}' 2>/dev/null | grep -q '^keycloak$'; then
+if ${CONTAINER_RUNTIME} ps --filter name=keycloak --format '{{.Names}}' 2>/dev/null | grep -q '^keycloak$'; then
   echo "PASS: Keycloak container already running"
 else
-  podman run -d --name keycloak --rm -p 0.0.0.0:8543:8080 \
+  ${CONTAINER_RUNTIME} run -d --name keycloak --rm -p 0.0.0.0:8543:8080 \
     -e KC_BOOTSTRAP_ADMIN_USERNAME="${KEYCLOAK_ADMIN_USER}" \
     -e KC_BOOTSTRAP_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASS}" \
     -v keycloak-dev:/opt/keycloak/data \
@@ -735,7 +740,7 @@ done
 ### Test 9.2: Stop Keycloak container
 
 ```bash
-podman stop keycloak 2>/dev/null || true
+${CONTAINER_RUNTIME} stop keycloak 2>/dev/null || true
 echo "PASS: Keycloak stopped (or was not running)"
 ```
 
