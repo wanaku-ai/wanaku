@@ -20,6 +20,11 @@ Every step is fully automatable.
 | `gh` | 2.x | `gh --version` |
 | `docker` or `podman` | 20+ | `docker --version` or `podman --version` |
 
+### Container runtime detection
+
+Follow [common/container-runtime.md](common/container-runtime.md). After completion,
+`CONTAINER_RUNTIME` is set and exported.
+
 ### Prerequisite check script
 
 ```bash
@@ -36,22 +41,6 @@ for CMD in curl jq java mvn gh; do
     echo "PASS: ${CMD} found at $(command -v ${CMD})"
   fi
 done
-
-# Accept either docker or podman
-CONTAINER_RUNTIME=""
-if command -v docker > /dev/null 2>&1; then
-  CONTAINER_RUNTIME="docker"
-elif command -v podman > /dev/null 2>&1; then
-  CONTAINER_RUNTIME="podman"
-fi
-
-if [ -z "${CONTAINER_RUNTIME}" ]; then
-  echo "FAIL: neither docker nor podman is installed"
-  FAIL=1
-else
-  echo "PASS: ${CONTAINER_RUNTIME} found at $(command -v ${CONTAINER_RUNTIME})"
-  export CONTAINER_RUNTIME
-fi
 
 JAVA_MAJOR=$(java --version 2>&1 | head -1 | sed 's/.*"\([0-9]*\)\..*/\1/')
 if [ "${JAVA_MAJOR}" -lt 21 ]; then
@@ -74,9 +63,6 @@ echo "PASS: all prerequisites met"
 ### Environment variables
 
 ```bash
-# Container runtime (auto-detected: docker or podman)
-export CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-}"
-
 # Template naming -- adapt these if the implementation uses different names
 export TEMPLATE_NAME="${TEMPLATE_NAME:-camel-qdrant-search-tool}"
 export SYSTEM_NAME="${SYSTEM_NAME:-qdrant-search}"
