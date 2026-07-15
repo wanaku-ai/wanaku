@@ -99,7 +99,7 @@ public class ToolsGenerate extends BaseCommand {
                 System.err.print("\n\nImporting toolset...");
                 int failures = importToolset(toolReferences, host);
                 if (failures > 0) {
-                    System.err.printf("Import completed with %d failure(s)%n", failures);
+                    printer.printErrorMessage(String.format("Import completed with %d failure(s)", failures));
                     return EXIT_ERROR;
                 }
                 System.err.print("Done.");
