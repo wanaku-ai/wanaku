@@ -1,4 +1,4 @@
-import React, {useEffect} from "react"
+import React from "react"
 import {ToolReference} from "../../models"
 import {
   DataTable,
@@ -21,8 +21,16 @@ interface ImportToolsetTableProps {
 
 export const ImportToolsetTable: React.FC<ImportToolsetTableProps> = ({ tools, selectedTools, onSelectionChange }) => {
   
-  function findTool(rowId: string) {
-    return tools.find(item => item.name === rowId)
+  function addTool(tool: ToolReference): void {
+    if (!selectedTools.includes(tool)) {
+      onSelectionChange([...selectedTools, tool])
+    }
+  }
+  
+  function removeTool(tool: ToolReference): void {
+    if (selectedTools.includes(tool)) {
+      onSelectionChange(selectedTools.filter(item => item !== tool))
+    }
   }
   
   return (
@@ -41,22 +49,29 @@ export const ImportToolsetTable: React.FC<ImportToolsetTableProps> = ({ tools, s
       headers,
       rows,
       selectedRows,
+      selectAll,
       getTableProps,
       getHeaderProps,
       getRowProps,
       getSelectionProps
     }) => {
-      
-      // synchronize row selection with parent component
-      useEffect(() => {
-        onSelectionChange(selectedRows.map(row => findTool(row.id)!))
-      }, [selectedRows])
-      
+
       return (
         <Table {...getTableProps()}>
           <TableHead>
             <TableRow>
-              <TableSelectAll {...getSelectionProps()} />
+              <TableSelectAll {...getSelectionProps()}
+                onSelect={() => {
+                  const isChecked = selectedRows.length === rows.length
+                  const isIndeterminate = selectedRows.length > 0 && selectedRows.length < rows.length
+                  if (isChecked || isIndeterminate) {
+                    onSelectionChange([])
+                  } else {
+                    onSelectionChange(tools)
+                  }
+                  selectAll()
+                }}
+              />
               {headers.map((header) => (
                 <TableHeader {...getHeaderProps({header})}>
                   {header.header}
@@ -69,7 +84,15 @@ export const ImportToolsetTable: React.FC<ImportToolsetTableProps> = ({ tools, s
               const tool = tools.find(item => item.name === row.id)!
               return (
                 <TableRow {...getRowProps({ row })} key={tool.name}>
-                  <TableSelectRow {...getSelectionProps({ row })} />
+                  <TableSelectRow {...getSelectionProps({ row })}
+                    onChange={value => {
+                      if (value) {
+                        addTool(tool)
+                      } else {
+                        removeTool(tool)
+                      }
+                    }}
+                  />
                   <TableCell>{tool.name}</TableCell>
                   <TableCell>{tool.description}</TableCell>
                 </TableRow>
