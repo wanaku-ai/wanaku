@@ -34,7 +34,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     void validateSpecReturnsInvalidWhenSpecIsNull() {
         WanakuCamelCodeExecutionEngine resource = new WanakuCamelCodeExecutionEngine();
         resource.setSpec(null);
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertFalse(result.valid);
         assertEquals("spec must be provided", result.errorMessage);
     }
@@ -43,7 +43,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     void validateSpecReturnsInvalidWhenRouterRefIsMissing() {
         WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setRouterRef(null);
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertFalse(result.valid);
         assertTrue(result.errorMessage.contains("routerRef"));
     }
@@ -52,7 +52,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     void validateSpecReturnsInvalidWhenLanguageNameIsMissing() {
         WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setLanguageName(null);
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertFalse(result.valid);
         assertTrue(result.errorMessage.contains("languageName"));
     }
@@ -61,7 +61,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     void validateSpecReturnsInvalidWhenEngineTypeIsMissing() {
         WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setEngineType(null);
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertFalse(result.valid);
         assertTrue(result.errorMessage.contains("engineType"));
     }
@@ -70,7 +70,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     void validateSpecReturnsInvalidWhenImageMissingInClusterMode() {
         WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setImage(null);
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertFalse(result.valid);
         assertTrue(result.errorMessage.contains("image"));
     }
@@ -79,7 +79,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     void validateSpecReturnsInvalidWhenRemoteHostMissing() {
         WanakuCamelCodeExecutionEngine resource = baseResource();
         resource.getSpec().setDeploymentMode("remote");
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertFalse(result.valid);
         assertTrue(result.errorMessage.contains("remote.host"));
     }
@@ -87,7 +87,7 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
     @Test
     void validateSpecReturnsValidForInCluster() {
         WanakuCamelCodeExecutionEngine resource = baseResource();
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertTrue(result.valid);
         assertNull(result.errorMessage);
     }
@@ -99,9 +99,31 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
         WanakuCamelCodeExecutionEngineSpec.RemoteSpec remote = new WanakuCamelCodeExecutionEngineSpec.RemoteSpec();
         remote.setHost("engine.example.com");
         resource.getSpec().setRemote(remote);
-        WanakuCamelCodeExecutionEngineReconciler.validateSpecResult result = reconciler.validateSpec(resource);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
         assertTrue(result.valid);
         assertNull(result.errorMessage);
+    }
+
+    @Test
+    void validateSpecReturnsInvalidForBadDeploymentMode() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
+        resource.getSpec().setDeploymentMode("invalid");
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("deploymentMode"));
+    }
+
+    @Test
+    void validateSpecReturnsInvalidForSecurityOverlap() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
+        WanakuCamelCodeExecutionEngineSpec.SecuritySpec securitySpec =
+                new WanakuCamelCodeExecutionEngineSpec.SecuritySpec();
+        securitySpec.setComponentAllowlist(List.of("component-a", "component-b"));
+        securitySpec.setComponentBlocklist(List.of("component-b"));
+        resource.getSpec().setSecurity(securitySpec);
+        WanakuCamelCodeExecutionEngineReconciler.ValidateSpecResult result = reconciler.validateSpec(resource);
+        assertFalse(result.valid);
+        assertTrue(result.errorMessage.contains("component"));
     }
 
     @Test

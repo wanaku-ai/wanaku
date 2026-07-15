@@ -1,6 +1,6 @@
-# WanakuCodeExecutionEngine CRD
+# WanakuCamelCodeExecutionEngine CRD
 
-The `WanakuCodeExecutionEngine` custom resource deploys and manages the Camel Code Execution Engine. It supports two deployment modes: **in-cluster** (the operator creates a Kubernetes Deployment) and **remote** (the operator creates an ExternalName service pointing to an existing engine endpoint).
+The `WanakuCamelCodeExecutionEngine` custom resource deploys and manages the Camel Code Execution Engine. It supports two deployment modes: **in-cluster** (the operator creates a Kubernetes Deployment) and **remote** (the operator creates an ExternalName service pointing to an existing engine endpoint).
 
 ## When to use in-cluster vs remote
 
@@ -193,7 +193,7 @@ spec:
 
 ```yaml
 apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuCodeExecutionEngine
+kind: WanakuCamelCodeExecutionEngine
 metadata:
   name: my-code-engine
 spec:
@@ -213,7 +213,7 @@ spec:
 
 ```yaml
 apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuCodeExecutionEngine
+kind: WanakuCamelCodeExecutionEngine
 metadata:
   name: my-remote-engine
 spec:
@@ -231,7 +231,7 @@ spec:
 
 ```yaml
 apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuCodeExecutionEngine
+kind: WanakuCamelCodeExecutionEngine
 metadata:
   name: my-cached-engine
 spec:

@@ -24,13 +24,13 @@ import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 
-import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.findCondition;
-import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.isRemoteDeploymentMode;
 import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeCodeExecutionEngineInternalService;
 import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment;
-import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.readyCondition;
 import static ai.wanaku.operator.util.Matchers.match;
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
+import static ai.wanaku.operator.util.OperatorUtil.findCondition;
+import static ai.wanaku.operator.util.OperatorUtil.isRemoteDeploymentMode;
+import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
 import static ai.wanaku.operator.util.OperatorUtil.validateCacheStrategy;
 import static ai.wanaku.operator.util.OperatorUtil.validateDeploymentMode;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
@@ -80,7 +80,7 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
                 "Starting code execution engine reconciliation for %s",
                 resource.getMetadata().getName());
 
-        validateSpecResult validation = validateSpec(resource);
+        ValidateSpecResult validation = validateSpec(resource);
         if (!validation.valid) {
             return setErrorStatus(resource, "ValidationError", validation.errorMessage);
         }
@@ -239,46 +239,54 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
                 port);
     }
 
-    static class validateSpecResult {
+    static class ValidateSpecResult {
         boolean valid;
         String errorMessage;
 
-        validateSpecResult(boolean valid, String errorMessage) {
+        ValidateSpecResult(boolean valid, String errorMessage) {
             this.valid = valid;
             this.errorMessage = errorMessage;
         }
     }
 
-    validateSpecResult validateSpec(WanakuCamelCodeExecutionEngine resource) {
+    ValidateSpecResult validateSpec(WanakuCamelCodeExecutionEngine resource) {
         final WanakuCamelCodeExecutionEngineSpec spec = resource.getSpec();
 
         if (spec == null) {
-            return new validateSpecResult(false, "spec must be provided");
+            return new ValidateSpecResult(false, "spec must be provided");
         }
         if (spec.getRouterRef() == null || spec.getRouterRef().isBlank()) {
-            return new validateSpecResult(false, "routerRef must be specified for the Camel Code Execution Engine");
+            return new ValidateSpecResult(false, "routerRef must be specified for the Camel Code Execution Engine");
         }
         if (spec.getLanguageName() == null || spec.getLanguageName().isBlank()) {
-            return new validateSpecResult(false, "languageName must be specified for the Camel Code Execution Engine");
+            return new ValidateSpecResult(false, "languageName must be specified for the Camel Code Execution Engine");
         }
         if (spec.getEngineType() == null || spec.getEngineType().isBlank()) {
-            return new validateSpecResult(false, "engineType must be specified for the Camel Code Execution Engine");
+            return new ValidateSpecResult(false, "engineType must be specified for the Camel Code Execution Engine");
         }
-        validateDeploymentMode(spec.getDeploymentMode());
+        try {
+            validateDeploymentMode(spec.getDeploymentMode());
+        } catch (WanakuException e) {
+            return new ValidateSpecResult(false, e.getMessage());
+        }
 
         if (isRemoteDeploymentMode(resource.getSpec())) {
             if (spec.getRemote() == null
                     || spec.getRemote().getHost() == null
                     || spec.getRemote().getHost().isBlank()) {
-                return new validateSpecResult(false, "remote.host must be specified when deploymentMode=remote");
+                return new ValidateSpecResult(false, "remote.host must be specified when deploymentMode=remote");
             }
         } else if (spec.getImage() == null || spec.getImage().isBlank()) {
-            return new validateSpecResult(false, "image must be specified when deploymentMode=in-cluster");
+            return new ValidateSpecResult(false, "image must be specified when deploymentMode=in-cluster");
         }
 
-        validateSecurityLists(spec.getSecurity());
-        validateCacheStrategy(spec.getDependencyCache());
-        return new validateSpecResult(true, null);
+        try {
+            validateSecurityLists(spec.getSecurity());
+            validateCacheStrategy(spec.getDependencyCache());
+        } catch (WanakuException e) {
+            return new ValidateSpecResult(false, e.getMessage());
+        }
+        return new ValidateSpecResult(true, null);
     }
 
     void validateSecurityLists(WanakuCamelCodeExecutionEngineSpec.SecuritySpec securitySpec) {
