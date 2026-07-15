@@ -25,6 +25,15 @@ spec:
   routerRef: my-router
 ```
 
+### `image` (optional)
+
+Container image used for the generated Camel Integration Capability deployment. If omitted, the operator uses `quay.io/wanaku/camel-integration-capability:latest`.
+
+```yaml
+spec:
+  image: quay.io/wanaku/camel-integration-capability:0.2.0
+```
+
 ### `route` (required)
 
 The Apache Camel route definition in YAML DSL. This is a free-form field that accepts any valid Camel YAML route structure.
