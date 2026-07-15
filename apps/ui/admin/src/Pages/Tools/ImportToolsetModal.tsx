@@ -9,7 +9,7 @@ import {
   TextArea,
   TextInput
 } from "@carbon/react"
-import React, {useRef, useState} from "react"
+import React, {useState} from "react"
 import {ToolReference} from "../../models"
 import {ToolParserError, Tools} from "./tools"
 import {ImportToolsetTable} from "./ImportToolsetTable"
@@ -37,11 +37,11 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
   const [contentSwitcherEnabled, setContentSwitcherEnabled] = useState(true)
   const [viewMode, setViewMode] = useState(VIEW_MODE_TABLE)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const selectedTools = useRef<ToolReference[]>([])
+  const [selectedTools, setSelectedTools] = useState<ToolReference[]>([])
 
   
-  function setSelectedTools(tools: ToolReference[]) {
-    selectedTools.current = tools
+  function selectTools(tools: ToolReference[]) {
+    setSelectedTools(tools)
     setToolsetJson(tools.length > 0 ? Tools.stringify(tools) : undefined)
   }
   
@@ -71,7 +71,7 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
     if (response.ok) {
       const tools = await response.json()
       setToolset(tools)
-      setSelectedTools(tools)
+      selectTools(tools)
     } else {
       throw new Error(`Error fetching toolset from ${toolsetUrl}: ${response.status}`)
     }
@@ -174,9 +174,9 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
             {viewMode === VIEW_MODE_TABLE && (
               <ImportToolsetTable
                 tools={toolset}
-                selectedTools={selectedTools.current}
+                selectedTools={selectedTools}
                 onSelectionChange={(tools: ToolReference[]) => {
-                  setSelectedTools(tools)
+                  selectTools(tools)
                 }}
               />
             )}
