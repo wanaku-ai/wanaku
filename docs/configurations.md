@@ -175,6 +175,67 @@ java -Dwanaku.http.auth=none -jar quarkus-run.jar
 
 See the [Usage Guide](usage.md#running-without-authentication) for end-to-end instructions.
 
+### Home Directory Resolution
+
+Wanaku uses a single home directory for all persistent data. The location is resolved by `WanakuHome` in the following
+precedence order:
+
+1. System property `wanaku.home`
+2. Environment variable `WANAKU_HOME`
+3. Default: `${user.home}/.wanaku`
+
+> [!IMPORTANT]
+> `wanaku.home` is a **Wanaku-native** property. It is resolved by the custom `WanakuHome` class, not directly by
+> Quarkus MicroProfile Config. This ensures consistent resolution across all components (CLI, router, capabilities)
+> regardless of Quarkus' own `${...}` placeholder handling.
+
+```properties
+# Set the Wanaku home directory (all components)
+wanaku.home=/path/to/custom/home
+```
+
+```shell
+# Or via environment variable (recommended for containers / wanaku start local)
+export WANAKU_HOME=/path/to/custom/home
+```
+
+```shell
+# Or via system property (direct router/capability start)
+java -Dwanaku.home=/path/to/custom/home -jar quarkus-run.jar
+```
+
+#### What is stored under the home directory?
+
+| Directory | Purpose |
+|-----------|---------|
+| `<home>/router/` | Infinispan data store (SoftIndexFileStore for tools, resources, namespaces) |
+| `<home>/local/` | CLI-extracted service instances (when using `wanaku start local`) |
+| `<home>/cache/` | CLI download cache for component ZIPs/JARs |
+| `<home>/local/logs/` | Log files for router and capability services (`wanaku-router.log`, `<service>.log`) |
+| `<home>/credentials` | CLI credential store (0600 permissions) |
+
+#### Behavior with `wanaku start local`
+
+When using `wanaku start local`, the CLI automatically:
+
+- Sets `WANAKU_HOME` as an environment variable in all spawned child processes (router, capabilities, standalone
+  services).
+- Passes `-Dwanaku.home=<resolved-path>` as a JVM argument to all Quarkus-based child processes (router, re-augmented
+  capabilities).
+
+This ensures all components write to the same resolved home directory without requiring manual configuration.
+
+#### Behavior with direct JVM start
+
+When starting the router or a capability directly with `java -jar`, the system property takes precedence over the
+environment variable. Set both to test precedence:
+
+```shell
+export WANAKU_HOME=/tmp/env-var-home
+java -Dwanaku.home=/tmp/sysprop-home -jar quarkus-run.jar
+# Uses /tmp/sysprop-home (system property wins)
+```
+
 ### Health Check
 
 These `wanaku.router.health-check.*` properties control the periodic health probing of registered capabilities.

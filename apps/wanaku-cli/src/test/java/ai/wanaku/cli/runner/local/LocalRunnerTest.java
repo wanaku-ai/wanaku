@@ -1,6 +1,7 @@
 package ai.wanaku.cli.runner.local;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -8,11 +9,13 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
+import ai.wanaku.core.util.WanakuHome;
 import com.sun.net.httpserver.HttpServer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -94,5 +97,21 @@ class LocalRunnerTest {
         Duration elapsed = Duration.ofNanos(System.nanoTime() - startedAt);
 
         assertTrue(elapsed.compareTo(Duration.ofSeconds(1)) < 0);
+    }
+
+    @Test
+    void runnerEnvironmentPropagatesWanakuHomeAsEnvVar() {
+        LocalRunner.LocalRunnerEnvironment env = new LocalRunner.LocalRunnerEnvironment();
+        assertEquals(WanakuHome.get(), env.serviceOptions().get("WANAKU_HOME"));
+    }
+
+    @Test
+    void wanakuHomeOptReturnsSystemPropertyFlag() throws Exception {
+        Method wanakuHomeOpt = LocalRunner.class.getDeclaredMethod("wanakuHomeOpt");
+        wanakuHomeOpt.setAccessible(true);
+
+        String resolvedHome = WanakuHome.get();
+        String expected = "-Dwanaku.home=" + resolvedHome;
+        assertEquals(expected, wanakuHomeOpt.invoke(null));
     }
 }
