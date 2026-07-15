@@ -22,7 +22,7 @@ spec:
               auth:
                 properties:
                   authProxy:
-                  type: "string"
+                    type: "string"
                   authRealm:
                     type: "string"
                   authServer:

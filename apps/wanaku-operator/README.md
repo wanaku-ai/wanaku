@@ -6,7 +6,7 @@ The operator currently manages:
 
 - `WanakuRouter`
 - `WanakuCapability`
-- `WanakuCodeExecutionEngine`
+- `WanakuCamelCodeExecutionEngine`
 
 Sample manifests are available under `samples/` for both in-cluster and remote code execution engine deployment modes.
 

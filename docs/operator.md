@@ -10,7 +10,7 @@ The Wanaku Operator manages four custom resource definitions (CRDs):
 - **WanakuCapability** — deploys capability services (HTTP tools, Camel integrations, etc.) and connects them to a router
 - **WanakuCamelRoute** — packages inline Camel routes into service catalogs and deploys them to a router
 - **WanakuServiceCatalog** — deploys packaged service catalogs (Camel routes + Wanaku rules) to a router
-- **WanakuCodeExecutionEngine** — deploys the Camel Code Execution Engine in-cluster or targets a remote engine endpoint
+- **WanakuCamelCodeExecutionEngine** — deploys the Camel Code Execution Engine in-cluster or targets a remote engine endpoint
 
 When you create these custom resources, the operator automatically provisions:
 
@@ -209,7 +209,7 @@ kubectl create configmap finance-catalog-data \
 > [!TIP]
 > See [Service Catalogs](usage.md#service-catalogs) and [Service Templates](service-templates.md) for details on creating and packaging catalogs.
 
-### WanakuCodeExecutionEngine (`wanaku.ai/v1alpha1`)
+### WanakuCamelCodeExecutionEngine (`wanaku.ai/v1alpha1`)
 
 Deploys the Camel Code Execution Engine. Supports two modes: **in-cluster** (Kubernetes Deployment) and **remote** (ExternalName service pointing to an existing endpoint).
 
@@ -250,7 +250,7 @@ Deploys the Camel Code Execution Engine. Supports two modes: **in-cluster** (Kub
 
 ```yaml
 apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuCodeExecutionEngine
+kind: WanakuCamelCodeExecutionEngine
 metadata:
   name: my-code-engine
 spec:
@@ -264,7 +264,7 @@ spec:
 
 ```yaml
 apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuCodeExecutionEngine
+kind: WanakuCamelCodeExecutionEngine
 metadata:
   name: my-remote-engine
 spec:
@@ -489,7 +489,7 @@ The operator's Helm chart exposes these key configuration options in `values.yam
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCapability` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelRoute` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuServiceCatalog` resources. |
-| `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCodeExecutionEngine` resources. |
+| `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelCodeExecutionEngine` resources. |
 
 **Example: customize operator image and watch all namespaces**
 

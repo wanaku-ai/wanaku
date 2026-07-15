@@ -1,5 +1,5 @@
 apiVersion: "wanaku.ai/v1alpha1"
-kind: WanakuCodeExecutionEngine
+kind: WanakuCamelCodeExecutionEngine
 metadata:
   name: camel-code-execution-engine
 spec:
