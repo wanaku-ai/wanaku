@@ -25,6 +25,7 @@ import ai.wanaku.cli.main.support.RuntimeConstants;
 import ai.wanaku.cli.main.support.WanakuCliConfig;
 import ai.wanaku.cli.main.support.ZipHelper;
 import ai.wanaku.core.util.VersionHelper;
+import ai.wanaku.core.util.WanakuHome;
 
 public class LocalRunner {
     private static final Logger LOG = Logger.getLogger(LocalRunner.class);
@@ -49,10 +50,16 @@ public class LocalRunner {
 
         public LocalRunnerEnvironment() {
             withAuthMode("none");
+            withWanakuHome(WanakuHome.get());
         }
 
         private LocalRunnerEnvironment withAuthMode(String authMode) {
             servicesOptions.put("WANAKU_HTTP_AUTH", authMode);
+            return this;
+        }
+
+        private LocalRunnerEnvironment withWanakuHome(String home) {
+            servicesOptions.put("WANAKU_HOME", home);
             return this;
         }
 
@@ -158,6 +165,7 @@ public class LocalRunner {
 
         reaugmentComponent(
                 RuntimeConstants.WANAKU_ROUTER_BACKEND,
+                wanakuHomeOpt(),
                 "-Dquarkus.oidc.enabled=false",
                 "-Dquarkus.oidc-proxy.enabled=false");
 
@@ -167,7 +175,7 @@ public class LocalRunner {
                     LOG.infof("Skipping re-augmentation for non-Quarkus component %s", component.getKey());
                     continue;
                 }
-                reaugmentComponent(component.getKey(), "-Dquarkus.oidc-client.enabled=false");
+                reaugmentComponent(component.getKey(), wanakuHomeOpt(), "-Dquarkus.oidc-client.enabled=false");
             }
         }
     }
@@ -263,6 +271,10 @@ public class LocalRunner {
         return first.compareTo(second) <= 0 ? first : second;
     }
 
+    private static String wanakuHomeOpt() {
+        return "-Dwanaku.home=" + WanakuHome.get();
+    }
+
     private static void startRouter(
             String component,
             String profileOpt,
@@ -274,7 +286,13 @@ public class LocalRunner {
         executorService.submit(() -> {
             try {
                 ProcessRunner.run(
-                        componentDir, environment.serviceOptions(), "java", profileOpt, "-jar", "quarkus-run.jar");
+                        componentDir,
+                        environment.serviceOptions(),
+                        "java",
+                        profileOpt,
+                        wanakuHomeOpt(),
+                        "-jar",
+                        "quarkus-run.jar");
             } catch (Exception e) {
                 LOG.errorf("Failed to start Wanaku Router Service: %s", e.getMessage(), e);
             } finally {
@@ -309,6 +327,7 @@ public class LocalRunner {
         File componentDir = quarkusAppDir(componentName);
         String grpcPortOpt = String.format("-Dquarkus.grpc.server.port=%d", grpcPort);
         String httpPortOpt = String.format("-Dquarkus.http.port=%d", grpcPort);
+        String wanakuHomeArg = wanakuHomeOpt();
 
         executorService.submit(() -> {
             try {
@@ -317,6 +336,7 @@ public class LocalRunner {
                         environment.serviceOptions(),
                         "java",
                         profileOpt,
+                        wanakuHomeArg,
                         grpcPortOpt,
                         httpPortOpt,
                         "-jar",
