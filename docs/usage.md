@@ -934,13 +934,24 @@ This command removes all authentication data from the local credentials file.
 
 #### Token Management
 
-Display the raw authentication token (useful for debugging or using with other tools):
+Manage the stored authentication token:
 
 ```shell
-wanaku auth token
+wanaku auth token --get
 ```
 
-This outputs the raw API token without masking.
+By default, `--get` masks the token value. Use `--unmask` to print the full token:
+
+```shell
+wanaku auth token --get --unmask
+```
+
+You can also set or clear the stored token directly:
+
+```shell
+wanaku auth token --set <token>
+wanaku auth token --clear
+```
 
 ### Using Authentication with Commands
 
@@ -3297,7 +3308,10 @@ This section provides solutions to common issues you may encounter while using W
 
    ```shell
    rm ~/.wanaku/credentials
-   wanaku auth login --url http://localhost:8080
+   wanaku auth login \
+     --auth-server http://localhost:8080 \
+     --username alice \
+     --password
    ```
 
 4. Verify the router can reach Keycloak:
@@ -3316,7 +3330,10 @@ This section provides solutions to common issues you may encounter while using W
 1. Re-authenticate with the router:
 
    ```shell
-   wanaku auth login --url http://localhost:8080
+   wanaku auth login \
+     --auth-server http://localhost:8080 \
+     --username alice \
+     --password
    ```
 
 2. Check token lifetime settings in Keycloak if tokens expire too quickly

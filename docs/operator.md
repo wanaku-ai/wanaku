@@ -8,6 +8,7 @@ The Wanaku Operator manages three custom resource definitions (CRDs):
 
 - **WanakuRouter** — deploys and configures the MCP router gateway
 - **WanakuCapability** — deploys capability services (HTTP tools, Camel integrations, etc.) and connects them to a router
+- **WanakuCamelRoute** — packages inline Camel routes into service catalogs and deploys them to a router
 - **WanakuServiceCatalog** — deploys packaged service catalogs (Camel routes + Wanaku rules) to a router
 
 When you create these custom resources, the operator automatically provisions:
@@ -46,7 +47,7 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --set operatorNamespace=wanaku
 ```
 
-The operator watches for `WanakuRouter`, `WanakuCapability`, and `WanakuServiceCatalog` resources in the namespace specified by `operatorNamespace`. By default, it watches only the namespace where it's installed (current-namespace scope).
+The operator watches for `WanakuRouter`, `WanakuCapability`, `WanakuCamelRoute`, and `WanakuServiceCatalog` resources in the namespace specified by `operatorNamespace`. By default, it watches only the namespace where it's installed (current-namespace scope).
 
 To watch all namespaces, override the environment variables during Helm install:
 
@@ -206,6 +207,12 @@ kubectl create configmap finance-catalog-data \
 > [!TIP]
 > See [Service Catalogs](usage.md#service-catalogs) and [Service Templates](service-templates.md) for details on creating and packaging catalogs.
 
+### WanakuCamelRoute (`wanaku.ai/v1alpha1`)
+
+Packages inline Camel routes and MCP metadata into a service catalog automatically, then deploys the resulting capability to a router.
+
+See the dedicated [WanakuCamelRoute CRD guide](camel-route-crd.md) for the full schema, examples, and troubleshooting notes.
+
 ## Deployment Examples
 
 ### Minimal Router + HTTP Capability
@@ -284,7 +291,7 @@ kubectl apply -f service-catalog.yaml -n wanaku
 **List all Wanaku resources:**
 
 ```shell
-kubectl get wanakurouter,wanakucapability,wanakuservicecatalog -n wanaku
+kubectl get wanakurouter,wanakucapability,wanakucamelroute,wanakuservicecatalog -n wanaku
 ```
 
 **Get detailed status:**
@@ -344,6 +351,7 @@ Delete the custom resources in reverse order (catalogs first, then capabilities,
 
 ```shell
 kubectl delete wanakuservicecatalog my-catalogs -n wanaku
+kubectl delete wanakucamelroute my-camel-route -n wanaku
 kubectl delete wanakucapability wanaku-capabilities -n wanaku
 kubectl delete wanakurouter wanaku-dev -n wanaku
 ```
@@ -363,7 +371,7 @@ helm uninstall wanaku-operator -n wanaku
 > kubectl delete wanakurouter --all -n wanaku
 > kubectl delete wanakucapability --all -n wanaku
 > kubectl delete wanakuservicecatalog --all -n wanaku
-> kubectl delete crd wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakuservicecatalogs.wanaku.ai
+> kubectl delete crd wanakurouters.wanaku.ai wanakucapabilities.wanaku.ai wanakucamelroutes.wanaku.ai wanakuservicecatalogs.wanaku.ai
 > ```
 
 ## Running Without Authentication
@@ -402,6 +410,7 @@ The operator's Helm chart exposes these key configuration options in `values.yam
 | `app.ports.http` | int | `8081` | HTTP port for operator's health and metrics endpoints. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuRouter` resources (`JOSDK_WATCH_CURRENT` = current namespace only, `JOSDK_ALL_NAMESPACES` = cluster-wide). |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCapability` resources. |
+| `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelRoute` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuServiceCatalog` resources. |
 
 **Example: customize operator image and watch all namespaces**
@@ -412,6 +421,7 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --set app.image=quay.io/myorg/wanaku-operator:1.0.0 \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES=JOSDK_ALL_NAMESPACES \
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES
 ```
 
