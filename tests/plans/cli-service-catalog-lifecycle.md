@@ -362,6 +362,44 @@ echo "${OUTPUT}" | grep -q "${TEST_CATALOG_NAME}" \
   || echo "FAIL: '${TEST_CATALOG_NAME}' not found in catalog list"
 ```
 
+### Test 7.3: Remove the test catalog by name
+
+```bash
+wanaku service catalog remove --host="${WANAKU_ROUTER_URL}" --name="${TEST_CATALOG_NAME}" 2>&1
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -eq 0 ]; then
+  echo "PASS: service catalog remove succeeded"
+else
+  echo "FAIL: service catalog remove failed (exit code ${EXIT_CODE})"
+  exit 1
+fi
+```
+
+### Test 7.4: Verify the catalog no longer appears in the list
+
+```bash
+OUTPUT=$(wanaku service catalog list --host="${WANAKU_ROUTER_URL}" --plain 2>&1)
+
+echo "${OUTPUT}" | grep -q "${TEST_CATALOG_NAME}" \
+  && echo "FAIL: '${TEST_CATALOG_NAME}' still found in catalog list after removal" \
+  || echo "PASS: '${TEST_CATALOG_NAME}' no longer in catalog list"
+```
+
+### Test 7.5: Re-deploy the test catalog for subsequent phases
+
+```bash
+wanaku service deploy --path="${CATALOG_DIR}" --host="${WANAKU_ROUTER_URL}"
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -eq 0 ]; then
+  echo "PASS: service re-deploy succeeded"
+else
+  echo "FAIL: service re-deploy failed (exit code ${EXIT_CODE})"
+  exit 1
+fi
+```
+
 ---
 
 ## Phase 8: Service Template -- List
@@ -641,23 +679,58 @@ else
 fi
 ```
 
+### Test 11.11: Catalog remove with missing --name should fail
+
+```bash
+wanaku service catalog remove --host="${WANAKU_ROUTER_URL}" 2>&1
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: catalog remove without --name rejected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: catalog remove without --name should fail"
+fi
+```
+
+### Test 11.12: Catalog remove with non-existent catalog should fail
+
+```bash
+wanaku service catalog remove --host="${WANAKU_ROUTER_URL}" --name="nonexistent-catalog-99999" 2>&1
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: catalog remove for non-existent catalog rejected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: catalog remove for non-existent catalog should fail"
+fi
+```
+
+### Test 11.13: Catalog remove with unreachable host should fail
+
+```bash
+wanaku service catalog remove --host="http://localhost:59999" --name="${TEST_CATALOG_NAME}" 2>&1
+EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -ne 0 ]; then
+  echo "PASS: catalog remove with unreachable host rejected (exit code ${EXIT_CODE})"
+else
+  echo "FAIL: catalog remove with unreachable host should fail"
+fi
+```
+
 ---
 
 ## Phase 12: Cleanup
 
-### Step 12.1: Remove deployed catalogs via REST API
-
-There is no CLI command for removing catalogs. Use curl to call the REST API directly (acceptable per guidelines for HTTP-level cleanup operations).
+### Step 12.1: Remove deployed catalogs via CLI
 
 ```bash
 # Remove the test catalog
-curl -s -o /dev/null -w "%{http_code}" \
-  -X DELETE "${WANAKU_ROUTER_URL}/api/v1/service-catalog/${TEST_CATALOG_NAME}" 2>/dev/null || true
+wanaku service catalog remove --host="${WANAKU_ROUTER_URL}" --name="${TEST_CATALOG_NAME}" 2>/dev/null || true
 echo "Removed catalog: ${TEST_CATALOG_NAME}"
 
 # Remove the instantiated activemq catalog (name may vary)
-curl -s -o /dev/null -w "%{http_code}" \
-  -X DELETE "${WANAKU_ROUTER_URL}/api/v1/service-catalog/activemq6-tool" 2>/dev/null || true
+wanaku service catalog remove --host="${WANAKU_ROUTER_URL}" --name="activemq6-tool" 2>/dev/null || true
 echo "Removed catalog: activemq6-tool (if present)"
 
 echo "PASS: catalog cleanup complete"
@@ -698,9 +771,9 @@ fi
 | 4 | 4.1-4.3 | Expose routes and generate rules | Critical |
 | 5 | 5.1-5.4 | Package into Base64-encoded ZIP | High |
 | 6 | 6.1 | Deploy to running router | Critical |
-| 7 | 7.1-7.2 | List and verify deployed catalog | Critical |
+| 7 | 7.1-7.5 | List, remove, verify removal, and re-deploy catalog | Critical |
 | 8 | 8.1-8.3 | List and filter service templates | High |
 | 9 | 9.1-9.2 | Instantiate template into catalog | High |
 | 10 | 10.1-10.3 | Deployment instructions (local and Kubernetes) | Medium |
-| 11 | 11.1-11.10 | Negative tests (missing args, bad paths, unreachable host) | High |
+| 11 | 11.1-11.13 | Negative tests (missing args, bad paths, unreachable host, catalog remove) | High |
 | 12 | 12.1-12.3 | Cleanup (catalogs, temp files, process) | Critical |
