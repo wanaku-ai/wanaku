@@ -31,10 +31,11 @@ public class ToolHelper {
      * @throws IllegalArgumentException if the host URI is invalid
      * @throws RuntimeException if there's an error connecting to or communicating with the service
      */
-    public static void importToolset(List<ToolReference> toolReferences, String host) throws IOException {
+    public static int importToolset(List<ToolReference> toolReferences, String host) throws IOException {
         ToolsService toolsService =
                 QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host)).build(ToolsService.class);
 
+        int failures = 0;
         for (var toolReference : toolReferences) {
             try {
                 WanakuResponse<ToolReference> ignored = toolsService.add(toolReference);
@@ -46,11 +47,15 @@ public class ToolHelper {
                             toolReference.getType(), response.getStatusInfo().getReasonPhrase());
 
                     System.exit(1);
+                } else if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
+                    System.err.printf("Skipping '%s': already exists%n", toolReference.getName());
                 } else {
                     commonResponseErrorHandler(response);
+                    failures++;
                 }
             }
         }
+        return failures;
     }
 
     /**
@@ -65,7 +70,7 @@ public class ToolHelper {
      * @throws RuntimeException if there's an error connecting to or communicating with the service
      * @see #importToolset(List, String)
      */
-    public static void importToolset(ToolReference toolReference, String host) throws IOException {
-        importToolset(List.of(toolReference), host);
+    public static int importToolset(ToolReference toolReference, String host) throws IOException {
+        return importToolset(List.of(toolReference), host);
     }
 }

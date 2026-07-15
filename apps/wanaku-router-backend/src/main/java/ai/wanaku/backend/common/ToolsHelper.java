@@ -85,8 +85,9 @@ public class ToolsHelper {
         }
 
         try {
+            String description = toolReference.getDescription() != null ? toolReference.getDescription() : "";
             ToolManager.ToolDefinition toolDefinition =
-                    toolManager.newTool(toolReference.getName()).setDescription(toolReference.getDescription());
+                    toolManager.newTool(toolReference.getName()).setDescription(description);
 
             final boolean required = isRequired(toolReference);
 

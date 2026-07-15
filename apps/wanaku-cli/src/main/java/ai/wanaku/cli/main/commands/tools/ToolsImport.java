@@ -54,7 +54,11 @@ public class ToolsImport extends BaseCommand {
                 }
             }
 
-            importToolset(toolReferences, host);
+            int failures = importToolset(toolReferences, host);
+            if (failures > 0) {
+                printer.printErrorMessage(String.format("Import completed with %d failure(s)", failures));
+                return EXIT_ERROR;
+            }
         } catch (Exception e) {
             printer.printErrorMessage(String.format("Failed to load tools index: %s", e.getMessage()));
             throw new RuntimeException(e);

@@ -51,11 +51,12 @@ public final class ResourceHelper {
         }
 
         try {
+            String description = resourceReference.getDescription() != null ? resourceReference.getDescription() : "";
             final ResourceManager.ResourceDefinition resourceDefinition = resourceManager
                     .newResource(resourceReference.getName())
                     .setUri(resourceReference.getLocation())
                     .setMimeType(resourceReference.getMimeType())
-                    .setDescription(resourceReference.getDescription())
+                    .setDescription(description)
                     .setAsyncHandler(args -> handler.apply(args, resourceReference));
 
             if (namespace != null) {
