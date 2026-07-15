@@ -31,7 +31,7 @@ Container image used for the generated Camel Integration Capability deployment. 
 
 ```yaml
 spec:
-  image: quay.io/wanaku/camel-integration-capability:0.2.0
+  image: quay.io/wanaku/camel-integration-capability:0.3.0
 ```
 
 ### `route` (required)
