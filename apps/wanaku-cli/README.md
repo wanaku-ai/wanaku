@@ -46,8 +46,18 @@ If you installed via `get-wanaku.sh`, the CLI is placed in `$HOME/bin` which may
 ## Basic Usage
 
 ```shell
-# Authenticate with router
-wanaku auth login --url http://localhost:8080
+# Authenticate with the router OIDC proxy
+wanaku auth login \
+  --auth-server http://localhost:8080 \
+  --username alice \
+  --password
+
+# Or authenticate directly against Keycloak
+wanaku auth login \
+  --auth-server http://keycloak-host \
+  --realm wanaku \
+  --username alice \
+  --password
 
 # List available tools
 wanaku tools list
