@@ -97,7 +97,11 @@ public class ToolsGenerate extends BaseCommand {
 
             if (importToolset) {
                 System.err.print("\n\nImporting toolset...");
-                importToolset(toolReferences, host);
+                int failures = importToolset(toolReferences, host);
+                if (failures > 0) {
+                    System.err.printf("Import completed with %d failure(s)%n", failures);
+                    return EXIT_ERROR;
+                }
                 System.err.print("Done.");
             }
         } catch (Exception e) {
