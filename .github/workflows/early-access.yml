@@ -88,3 +88,16 @@ jobs:
           path: |
             out/jreleaser/trace.log
             out/jreleaser/output.properties
+
+  dispatch-integration-tests:
+    needs: pre-release-build-linux
+    runs-on: ubuntu-latest
+    if: github.repository == 'wanaku-ai/wanaku' && secrets.TESTS_DISPATCH_TOKEN != ''
+    steps:
+      - name: Dispatch integration tests
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0
+        with:
+          token: ${{ secrets.TESTS_DISPATCH_TOKEN }}
+          repository: wanaku-ai/wanaku-tests
+          event-type: wanaku-build-completed
+          client-payload: '{"version": "${{ github.event.inputs.currentDevelopmentVersion }}", "sha": "${{ github.sha }}", "ref": "${{ github.ref_name }}"}'
