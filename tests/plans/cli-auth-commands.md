@@ -47,7 +47,8 @@ echo "PASS: all prerequisites met"
 
 ```bash
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
-export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test}"
+export WANAKU_TEST_RUN_ID="${WANAKU_TEST_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
+export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-auth-${WANAKU_TEST_RUN_ID}}"
 export KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 export KEYCLOAK_ADMIN_PASS="${KEYCLOAK_ADMIN_PASS:-admin}"
 export KEYCLOAK_URL="${KEYCLOAK_URL:-}"
@@ -65,7 +66,7 @@ export TEST_CLIENT_ID="${TEST_CLIENT_ID:-test-service-811}"
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WANAKU_REPO_ROOT` | `.` | Path to the wanaku repository root |
-| `WANAKU_NAMESPACE` | `wanaku-test` | OpenShift namespace for Keycloak deployment |
+| `WANAKU_NAMESPACE` | `wanaku-auth-<run-id>` | OpenShift namespace for Keycloak deployment |
 | `KEYCLOAK_ADMIN_USER` | `admin` | Keycloak admin username |
 | `KEYCLOAK_ADMIN_PASS` | `admin` | Keycloak admin password |
 | `KEYCLOAK_URL` | _(set by setup)_ | Keycloak URL (set after Keycloak deployment) |

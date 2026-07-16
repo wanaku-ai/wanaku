@@ -389,7 +389,8 @@ The first `oc login` step is manual; everything else is automatable.
 ### Environment variables
 
 ```bash
-export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-mcp-test}"
+export WANAKU_TEST_RUN_ID="${WANAKU_TEST_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
+export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-mcp-${WANAKU_TEST_RUN_ID}}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"

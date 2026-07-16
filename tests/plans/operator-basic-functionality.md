@@ -61,7 +61,8 @@ echo "PASS: all prerequisites met"
 Set these before running the plan. All image tags default to `latest` but can be overridden to test specific versions.
 
 ```bash
-export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test}"
+export WANAKU_TEST_RUN_ID="${WANAKU_TEST_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
+export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-test-${WANAKU_TEST_RUN_ID}}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"

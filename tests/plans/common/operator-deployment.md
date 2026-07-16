@@ -13,7 +13,7 @@ Reusable steps for installing the Wanaku operator on OpenShift using Helm.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `WANAKU_NAMESPACE` | Target namespace | `wanaku-test` |
+| `WANAKU_NAMESPACE` | Target namespace created for this run | `wanaku-test-20260716-043000` |
 | `WANAKU_REPO_ROOT` | Path to the wanaku repository root | `/path/to/wanaku` |
 | `WANAKU_OPERATOR_IMAGE` | Operator container image (optional override) | `quay.io/wanaku/wanaku-operator:latest` |
 

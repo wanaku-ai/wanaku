@@ -10,6 +10,8 @@ A test plan has three layers:
 2. **Common steps** (`tests/plans/common/*.md`) — reusable procedures shared across plans (Keycloak setup, namespace creation, cleanup).
 3. **Environment variables** — all configurable values declared upfront so the same plan works across versions and clusters.
 
+For OpenShift-based plans, the namespace/project name must default to a unique value per run so multiple plans can execute in the same cluster without colliding. If a shared namespace is required, it should be set explicitly by the operator of the test run.
+
 ## Phases, not scripts
 
 Organize tests into numbered phases that run sequentially. Each phase groups related assertions. This makes it easy to skip phases, resume after failure, or run a subset.
@@ -129,6 +131,7 @@ Use `--ignore-not-found=true` on all delete commands and `2>/dev/null || true` o
 ## Checklist for new plans
 
 - [ ] All configurable values are environment variables with defaults
+- [ ] OpenShift namespace/project defaults are unique per run, not shared cluster-wide
 - [ ] Common procedures reference shared docs, not inline copies
 - [ ] Every step has a PASS/FAIL assertion
 - [ ] No fixed `sleep` — use `oc wait`, `oc rollout status`, or polling
