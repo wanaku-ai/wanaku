@@ -34,7 +34,7 @@ public final class DiscoveryUtil {
     public static String resolveRegistrationAddress(String address) {
         if ("auto".equals(address)) {
             LOG.infof("Using announce address %s ", address);
-            address = DiscoveryUtil.resolveRegistrationAddress();
+            address = resolveRegistrationAddress();
         }
         return address;
     }
