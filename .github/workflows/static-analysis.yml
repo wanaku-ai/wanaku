@@ -1,0 +1,106 @@
+name: Static Analysis
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - '[0-9]*.[0-9]*.x'
+    paths-ignore:
+      - .github/**
+      - docs/**
+      - artwork/**
+      - README.md
+      - docker-*
+      - index.md
+      - jbang-catalog.json
+      - Makefile
+      - LICENSE
+      - CLAUDE.md
+      - CONTRIBUTING.md
+      - jreleaser.yml
+      - glama.json
+      - SECURITY.md
+      - get-wanaku.sh
+      - javadoc-warm.sh
+      - tests/plans/**
+      - .*
+
+permissions:
+  contents: read
+
+env:
+  PROJECTS: ${{ github.workspace }}
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Determine SDK ref
+      id: sdk-ref
+      shell: bash
+      run: |
+        BRANCH="${{ github.base_ref }}"
+        if git ls-remote --heads https://github.com/wanaku-ai/wanaku-capabilities-java-sdk.git "$BRANCH" | grep -q .; then
+          echo "ref=$BRANCH" >> $GITHUB_OUTPUT
+        else
+          echo "ref=main" >> $GITHUB_OUTPUT
+        fi
+    - name: Checkout Wanaku Capabilities SDK
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        repository: wanaku-ai/wanaku-capabilities-java-sdk
+        persist-credentials: false
+        ref: ${{ steps.sdk-ref.outputs.ref }}
+        path: wanaku-capabilities-java-sdk
+    - name: Set up JDK 21
+      uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+    - name: Build Wanaku Capabilities SDK
+      run: mvn --no-transfer-progress -DskipTests clean install
+      working-directory: ${{ github.workspace }}/wanaku-capabilities-java-sdk
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: Save PR number
+      run: echo "${{ github.event.pull_request.number }}" > pr-number.txt
+    - name: Upload PR number
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: pr-number
+        path: pr-number.txt
+    - name: Run PMD and SpotBugs
+      id: analysis
+      continue-on-error: true
+      run: mvn -B --no-transfer-progress verify -Pstatic-analysis -DskipTests --file pom.xml
+    - name: Generate Report
+      if: steps.analysis.outcome == 'failure'
+      run: python3 .github/scripts/generate-static-analysis-report.py
+    - name: Upload Analysis Report
+      if: steps.analysis.outcome == 'failure'
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: static-analysis-report
+        path: static-analysis-report.md
+        retention-days: 1
+        if-no-files-found: ignore
+    - name: Upload PMD Reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: pmd-reports
+        path: '**/target/pmd.xml'
+        retention-days: 14
+        if-no-files-found: ignore
+    - name: Upload SpotBugs Reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: spotbugs-reports
+        path: '**/target/spotbugsXml.xml'
+        retention-days: 14
+        if-no-files-found: ignore
+    - name: Fail if violations found
+      if: steps.analysis.outcome == 'failure'
+      run: exit 1
