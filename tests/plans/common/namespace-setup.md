@@ -6,15 +6,21 @@ Reusable steps for creating and configuring the test namespace on OpenShift.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `WANAKU_NAMESPACE` | Target namespace for all Wanaku resources | `wanaku-test` |
+| `WANAKU_NAMESPACE_PREFIX` | Prefix used to derive a per-run namespace when one is not provided | `wanaku-test` |
+| `WANAKU_TEST_RUN_ID` | Unique suffix for the namespace when one is not provided | `20260716-043000` |
+| `WANAKU_NAMESPACE` | Target namespace for all Wanaku resources | `wanaku-test-20260716-043000` |
 
 ## Steps
 
 ### 1. Export the namespace variable
 
 ```bash
-export WANAKU_NAMESPACE="wanaku-test"
+export WANAKU_TEST_RUN_ID="${WANAKU_TEST_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
+export WANAKU_NAMESPACE_PREFIX="${WANAKU_NAMESPACE_PREFIX:-wanaku-test}"
+export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-${WANAKU_NAMESPACE_PREFIX}-${WANAKU_TEST_RUN_ID}}"
 ```
+
+This keeps each test run isolated by default while still allowing callers to override `WANAKU_NAMESPACE` when they intentionally want to reuse a namespace.
 
 ### 2. Create the namespace (project)
 

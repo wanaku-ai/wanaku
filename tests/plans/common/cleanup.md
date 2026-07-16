@@ -4,7 +4,7 @@ Reusable steps for cleaning up all Wanaku test resources from OpenShift.
 
 ## Prerequisites
 
-- `WANAKU_NAMESPACE` environment variable set
+- `WANAKU_NAMESPACE` environment variable set to the namespace created for this test run
 
 ## Steps
 
@@ -92,7 +92,7 @@ echo "SKIP: CRD deletion (uncomment to enable)"
 
 ### 9. Delete the namespace (optional)
 
-The test service account lives in `wanaku-test-infra`, not in `${WANAKU_NAMESPACE}`, so deleting the test namespace does not affect the service account or its RBAC.
+The test service account lives in `wanaku-test-infra`, not in `${WANAKU_NAMESPACE}`, so deleting the test namespace does not affect the shared test infrastructure. Only delete the namespace when it was created for this specific run.
 
 ```bash
 # WARNING: This deletes everything in the namespace.
