@@ -15,7 +15,7 @@ Reusable steps for deploying and configuring Keycloak as the OIDC provider for W
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `WANAKU_NAMESPACE` | Target namespace created for this run | `wanaku-test-20260716-043000` |
+| `WANAKU_NAMESPACE` | Target namespace created for this run | `wanaku-test-<run-id>` |
 | `WANAKU_REPO_ROOT` | Path to the wanaku repository root | `.` |
 | `WANAKU_CLI` | Command to invoke the Wanaku CLI (see step 1) | `wanaku` |
 | `KEYCLOAK_ADMIN_USER` | Keycloak admin username | `admin` |

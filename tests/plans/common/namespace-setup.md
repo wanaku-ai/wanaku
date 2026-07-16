@@ -1,6 +1,7 @@
 # Common: Namespace Setup
 
 Reusable steps for creating and configuring the test namespace on OpenShift.
+Use this shared setup from each OpenShift plan instead of re-defining the namespace derivation inline.
 
 ## Variables
 
@@ -8,7 +9,7 @@ Reusable steps for creating and configuring the test namespace on OpenShift.
 |----------|-------------|---------|
 | `WANAKU_NAMESPACE_PREFIX` | Prefix used to derive a per-run namespace when one is not provided | `wanaku-test` |
 | `WANAKU_TEST_RUN_ID` | Unique suffix for the namespace when one is not provided | `20260716-043000` |
-| `WANAKU_NAMESPACE` | Target namespace for all Wanaku resources | `wanaku-test-20260716-043000` |
+| `WANAKU_NAMESPACE` | Target namespace for all Wanaku resources | `wanaku-test-<run-id>` |
 
 ## Steps
 
