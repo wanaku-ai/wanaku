@@ -2,7 +2,6 @@ package ai.wanaku.backend.bridge;
 
 import java.util.Objects;
 import java.util.UUID;
-import org.jboss.logging.Logger;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
