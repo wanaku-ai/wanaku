@@ -206,8 +206,7 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
         HttpServerResponse response = ctx.response();
         response.setChunked(true)
                 .putHeader("Content-Type", TEXT_EVENT_STREAM)
-                .putHeader("Cache-Control", "no-cache")
-                .putHeader("Connection", "keep-alive");
+                .putHeader("Cache-Control", "no-cache");
 
         VertxStreamableMcpSessionTransport sessionTransport =
                 new VertxStreamableMcpSessionTransport(sessionId, response);
@@ -251,8 +250,7 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
         HttpServerResponse response = ctx.response();
         response.setChunked(true)
                 .putHeader("Content-Type", TEXT_EVENT_STREAM)
-                .putHeader("Cache-Control", "no-cache")
-                .putHeader("Connection", "keep-alive");
+                .putHeader("Cache-Control", "no-cache");
 
         VertxStreamableMcpSessionTransport sessionTransport =
                 new VertxStreamableMcpSessionTransport(sessionId, response);

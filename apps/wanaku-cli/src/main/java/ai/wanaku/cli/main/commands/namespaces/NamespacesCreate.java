@@ -72,8 +72,8 @@ public class NamespacesCreate extends BaseCommand {
             Namespace created = response.data();
 
             if (created == null) {
-                printer.printErrorMessage("Namespace creation failed: empty response");
-                return EXIT_ERROR;
+                printer.printSuccessMessage("Namespace created");
+                return EXIT_OK;
             }
 
             printer.printSuccessMessage("Namespace created: " + created.getId());
