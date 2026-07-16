@@ -77,11 +77,9 @@ public class CompletionGenerate extends BaseCommand {
             if (outputFile != null) {
                 // Generate to file
                 File parentDir = outputFile.getParentFile();
-                if (parentDir != null && !parentDir.exists()) {
-                    if (!parentDir.mkdirs()) {
-                        printer.println("Error: Failed to create directory: " + parentDir);
-                        return EXIT_ERROR;
-                    }
+                if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
+                    printer.println("Error: Failed to create directory: " + parentDir);
+                    return EXIT_ERROR;
                 }
 
                 try (BufferedWriter writer = Files.newBufferedWriter(outputFile.toPath(), StandardCharsets.UTF_8)) {

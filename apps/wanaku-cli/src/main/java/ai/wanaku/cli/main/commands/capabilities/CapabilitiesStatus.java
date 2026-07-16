@@ -9,13 +9,12 @@ import ai.wanaku.cli.main.support.CapabilitiesHelper.PrintableCapability;
 import ai.wanaku.cli.main.support.CapabilitiesHelper.StatusSummary;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.CapabilitiesService;
+import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
-import static ai.wanaku.cli.main.support.CapabilitiesHelper.computeStatusSummary;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapabilities;
 import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
 
 /**
  * CLI command for checking the availability status of registered capabilities.
@@ -42,13 +41,13 @@ import static picocli.CommandLine.Option;
 @Command(name = "status", description = "Show the availability status of registered capabilities")
 public class CapabilitiesStatus extends BaseCommand {
 
-    @Option(
+    @CommandLine.Option(
             names = {"--host"},
             description = "The API host URL (default: http://localhost:8080)",
             defaultValue = "http://localhost:8080")
     private String host;
 
-    @Option(
+    @CommandLine.Option(
             names = {"--filter"},
             description = "Filter by health status: healthy, unhealthy, down, or pending (default: show all)")
     private String filter;
@@ -65,7 +64,7 @@ public class CapabilitiesStatus extends BaseCommand {
             return EXIT_OK;
         }
 
-        StatusSummary summary = computeStatusSummary(capabilities);
+        StatusSummary summary = CapabilitiesHelper.computeStatusSummary(capabilities);
 
         // Print summary
         printer.printInfoMessage("Capability Health Status Summary:");

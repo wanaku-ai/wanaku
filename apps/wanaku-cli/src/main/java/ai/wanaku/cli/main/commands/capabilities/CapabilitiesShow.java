@@ -15,16 +15,13 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.CapabilitiesHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.CapabilitiesService;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapability;
 import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
-import static picocli.CommandLine.Parameters;
 
 /**
  * Command implementation for displaying detailed information about specific service capabilities.
@@ -73,7 +70,7 @@ public class CapabilitiesShow extends BaseCommand {
      * The API host URL for connecting to the targets service.
      * Defaults to localhost:8080 if not specified.
      */
-    @Option(
+    @CommandLine.Option(
             names = {"--host"},
             description = "The API host URL (default: " + DEFAULT_HOST + ")",
             defaultValue = DEFAULT_HOST)
@@ -83,7 +80,9 @@ public class CapabilitiesShow extends BaseCommand {
      * The service name to show capability details for.
      * Must be exactly one service name (e.g., "http", "sqs", "file").
      */
-    @Parameters(description = "The service name to show details for (e.g., http, sqs, file)", arity = "1..1")
+    @CommandLine.Parameters(
+            description = "The service name to show details for (e.g., http, sqs, file)",
+            arity = "1..1")
     private String service;
 
     /**

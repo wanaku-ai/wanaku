@@ -77,7 +77,6 @@ public class DataStoresGet extends BaseCommand {
             if (id != null && !id.trim().isEmpty()) {
                 WanakuResponse<DataStore> response = dataStoresService.getById(id);
                 dataStore = response.data();
-                fileName = dataStore.getName();
             } else {
                 WanakuResponse<List<DataStore>> response = dataStoresService.getByName(name);
                 List<DataStore> dataStores = response.data();
@@ -93,13 +92,14 @@ public class DataStoresGet extends BaseCommand {
                 }
 
                 dataStore = dataStores.get(0);
-                fileName = dataStore.getName();
             }
 
             if (dataStore == null) {
                 printer.printErrorMessage("Data store not found");
                 return EXIT_ERROR;
             }
+
+            fileName = dataStore.getName();
 
             // Decode Base64 data
             byte[] decodedData;

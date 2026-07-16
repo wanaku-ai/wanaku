@@ -58,19 +58,19 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
 
             // Handle specific exception types with user-friendly messages
             if (ex instanceof ProcessingException && ex.getCause() instanceof ConnectException) {
-                handleConnectException((ConnectException) ex.getCause(), printer, parseResult);
+                handleConnectException(printer, parseResult);
             } else if (ex instanceof ConnectException) {
-                handleConnectException((ConnectException) ex, printer, parseResult);
+                handleConnectException(printer, parseResult);
             } else if (ex instanceof ProcessingException && ex.getCause() instanceof UnknownHostException) {
                 handleUnknownHostException((UnknownHostException) ex.getCause(), printer);
             } else if (ex instanceof UnknownHostException) {
                 handleUnknownHostException((UnknownHostException) ex, printer);
             } else if (ex instanceof ProcessingException && ex.getCause() instanceof SocketTimeoutException) {
-                handleSocketTimeoutException((SocketTimeoutException) ex.getCause(), printer, parseResult);
+                handleSocketTimeoutException(printer, parseResult);
             } else if (ex instanceof SocketTimeoutException) {
-                handleSocketTimeoutException((SocketTimeoutException) ex, printer, parseResult);
+                handleSocketTimeoutException(printer, parseResult);
             } else if (ex instanceof WebApplicationException) {
-                handleWebApplicationException((WebApplicationException) ex, printer);
+                handleWebApplicationException((WebApplicationException) ex);
             } else if (ex instanceof ProcessingException) {
                 handleProcessingException((ProcessingException) ex, printer);
             } else {
@@ -85,7 +85,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
         }
     }
 
-    private void handleConnectException(ConnectException ex, WanakuPrinter printer, ParseResult parseResult) {
+    private void handleConnectException(WanakuPrinter printer, ParseResult parseResult) {
         String host = extractHostOption(parseResult);
         String message = "Unable to connect to Wanaku service" + (host != null ? " at " + host : "")
                 + "\n\nPossible causes:\n"
@@ -104,8 +104,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
         printer.printErrorMessage(message);
     }
 
-    private void handleSocketTimeoutException(
-            SocketTimeoutException ex, WanakuPrinter printer, ParseResult parseResult) {
+    private void handleSocketTimeoutException(WanakuPrinter printer, ParseResult parseResult) {
         String host = extractHostOption(parseResult);
         String message = "Request timed out" + (host != null ? " connecting to " + host : "")
                 + "\n\nPossible causes:\n"
@@ -115,7 +114,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
         printer.printErrorMessage(message);
     }
 
-    private void handleWebApplicationException(WebApplicationException ex, WanakuPrinter printer) throws IOException {
+    private void handleWebApplicationException(WebApplicationException ex) throws IOException {
         // Delegate to existing handler
         ResponseHelper.commonResponseErrorHandler(ex.getResponse());
     }
@@ -172,7 +171,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
                 }
                 current = current.hasSubcommand() ? current.subcommand() : null;
             }
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             // Ignore and return false if unable to check the flag
         }
         return false;
@@ -189,7 +188,7 @@ public class WanakuExceptionHandler implements IExecutionExceptionHandler {
             if (parseResult.hasMatchedOption("--host")) {
                 return parseResult.matchedOption("--host").getValue();
             }
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             // Ignore and return null if unable to extract host
         }
         return null;

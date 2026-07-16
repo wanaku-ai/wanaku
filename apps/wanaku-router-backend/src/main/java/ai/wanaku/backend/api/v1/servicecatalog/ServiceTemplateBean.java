@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -311,7 +312,7 @@ public class ServiceTemplateBean {
         }
 
         Properties indexProps = new Properties();
-        indexProps.load(new StringReader(new String(indexBytes)));
+        indexProps.load(new StringReader(new String(indexBytes, StandardCharsets.UTF_8)));
 
         for (String system : index.getServiceNames()) {
             indexProps.remove("catalog.properties." + system);
@@ -332,7 +333,7 @@ public class ServiceTemplateBean {
 
         StringWriter indexWriter = new StringWriter();
         indexProps.store(indexWriter, null);
-        entries.put("index.properties", indexWriter.toString().getBytes());
+        entries.put("index.properties", indexWriter.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     private void applyUserProperties(
@@ -343,7 +344,7 @@ public class ServiceTemplateBean {
             if (propertiesPath != null) {
                 byte[] propsBytes = entries.get(propertiesPath);
                 Properties props = new Properties();
-                props.load(new StringReader(new String(propsBytes)));
+                props.load(new StringReader(new String(propsBytes, StandardCharsets.UTF_8)));
 
                 for (Map.Entry<String, String> userEntry : userProperties.entrySet()) {
                     if (props.containsKey(userEntry.getKey())) {
@@ -353,7 +354,7 @@ public class ServiceTemplateBean {
 
                 StringWriter propsWriter = new StringWriter();
                 props.store(propsWriter, null);
-                entries.put(propertiesPath, propsWriter.toString().getBytes());
+                entries.put(propertiesPath, propsWriter.toString().getBytes(StandardCharsets.UTF_8));
             }
         }
     }

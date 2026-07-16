@@ -13,7 +13,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.ServiceCatalogService;
@@ -127,11 +126,11 @@ public class ServiceDeploy extends BaseCommand {
         try {
             if (template) {
                 ServiceTemplateService service = initAuthenticatedService(ServiceTemplateService.class, host);
-                WanakuResponse<DataStore> response = service.deploy(dataStore);
+                service.deploy(dataStore);
                 printer.printSuccessMessage(String.format("Service template '%s' deployed successfully", catalogName));
             } else {
                 ServiceCatalogService service = initAuthenticatedService(ServiceCatalogService.class, host);
-                WanakuResponse<DataStore> response = service.deploy(dataStore);
+                service.deploy(dataStore);
                 printer.printSuccessMessage(String.format("Service catalog '%s' deployed successfully", catalogName));
             }
         } catch (WebApplicationException ex) {

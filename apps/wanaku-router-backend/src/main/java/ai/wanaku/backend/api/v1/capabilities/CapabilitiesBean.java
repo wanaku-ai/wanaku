@@ -43,26 +43,17 @@ public class CapabilitiesBean {
         return serviceRegistry.getEntries();
     }
 
-    private List<ServiceTarget> toolList(String labelFilter) {
-        List<ServiceTarget> tools = serviceRegistry.getEntries(SERVICE_TYPE_TOOL_INVOKER);
-        return filterByLabels(tools, labelFilter);
-    }
-
     public List<ServiceTarget> toolList() {
-        return toolList(null);
-    }
-
-    public List<ServiceTarget> resourcesList(String labelFilter) {
-        List<ServiceTarget> resources = serviceRegistry.getEntries(SERVICE_TYPE_RESOURCE_PROVIDER);
-        return filterByLabels(resources, labelFilter);
+        List<ServiceTarget> tools = serviceRegistry.getEntries(SERVICE_TYPE_TOOL_INVOKER);
+        return filterByLabels(tools);
     }
 
     public List<ServiceTarget> resourcesList() {
-        return resourcesList(null);
+        List<ServiceTarget> resources = serviceRegistry.getEntries(SERVICE_TYPE_RESOURCE_PROVIDER);
+        return filterByLabels(resources);
     }
 
-    private List<ServiceTarget> filterByLabels(List<ServiceTarget> serviceTargets, String labelFilter) {
-        // Label filtering is not supported for capabilities
+    private List<ServiceTarget> filterByLabels(List<ServiceTarget> serviceTargets) {
         return serviceTargets;
     }
 

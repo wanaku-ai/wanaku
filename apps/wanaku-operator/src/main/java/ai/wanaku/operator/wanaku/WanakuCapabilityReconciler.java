@@ -11,6 +11,7 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
+import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
@@ -21,18 +22,13 @@ import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.operator.util.CapabilityResourceFactory;
 import ai.wanaku.operator.util.OperatorConstants;
+import ai.wanaku.operator.util.OperatorUtil;
 
-import static ai.wanaku.operator.util.CapabilityResourceFactory.createVolumeClaimName;
-import static ai.wanaku.operator.util.CapabilityResourceFactory.makeCapabilityInternalService;
-import static ai.wanaku.operator.util.CapabilityResourceFactory.makeDesiredCiCCapabilityDeployment;
-import static ai.wanaku.operator.util.CapabilityResourceFactory.makeDesiredWanakuCapabilityDeployment;
 import static ai.wanaku.operator.util.Matchers.match;
-import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
-import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
-@ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-capability")
+@ControllerConfiguration(
+        informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE),
+        name = "wanaku-capability")
 @CSVMetadata(displayName = "Wanaku Capability operator", description = "Deploys and manages Wanaku Capabilities")
 @RBACRule(
         apiGroups = "",
@@ -93,9 +89,10 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
 
         deployCapabilities(resource, context, namespace);
         final WanakuCapabilityStatus status = new WanakuCapabilityStatus();
-        final Condition previousReadyCondition = findCondition(
-                resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
-        status.setConditions(List.of(readyCondition(
+        final Condition previousReadyCondition = OperatorUtil.findCondition(
+                resource.getStatus() != null ? resource.getStatus().getConditions() : null,
+                OperatorUtil.READY_CONDITION);
+        status.setConditions(List.of(OperatorUtil.readyCondition(
                 resource.getMetadata().getGeneration(),
                 previousReadyCondition,
                 "WanakuCapability deployment is ready")));
@@ -121,10 +118,12 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
             Deployment desiredDeployment;
 
             if (capabilitiesSpec.getType() == null) {
-                desiredDeployment = makeDesiredWanakuCapabilityDeployment(resource, context, capabilitiesSpec);
+                desiredDeployment = CapabilityResourceFactory.makeDesiredWanakuCapabilityDeployment(
+                        resource, context, capabilitiesSpec);
             } else {
                 if (OperatorConstants.CAMEL_INTEGRATION_CAPABILITY_TYPE.equals(capabilitiesSpec.getType())) {
-                    desiredDeployment = makeDesiredCiCCapabilityDeployment(resource, context, capabilitiesSpec);
+                    desiredDeployment = CapabilityResourceFactory.makeDesiredCiCCapabilityDeployment(
+                            resource, context, capabilitiesSpec);
                 } else {
                     LOG.errorf("Invalid capability type: %s", capabilitiesSpec.getType());
                     throw new WanakuException("Invalid capability type: %s".formatted(capabilitiesSpec.getType()));
@@ -149,7 +148,8 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
             }
 
             // Create the internal service for the capability
-            final Service desiredService = makeCapabilityInternalService(resource, capabilitiesSpec);
+            final Service desiredService =
+                    CapabilityResourceFactory.makeCapabilityInternalService(resource, capabilitiesSpec);
 
             Service existingService = kubernetesClient
                     .services()
@@ -175,11 +175,13 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
         PersistentVolumeClaim existingServicesVolume = kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
-                .withName(createVolumeClaimName(serviceName))
+                .withName(CapabilityResourceFactory.createVolumeClaimName(serviceName))
                 .get();
 
         if (!match(servicesVolumePVC, existingServicesVolume)) {
-            LOG.infof("Creating or updating PVC %s in %s", createVolumeClaimName(serviceName), namespace);
+            LOG.infof(
+                    "Creating or updating PVC %s in %s",
+                    CapabilityResourceFactory.createVolumeClaimName(serviceName), namespace);
             kubernetesClient
                     .persistentVolumeClaims()
                     .inNamespace(namespace)

@@ -265,9 +265,10 @@ public class ToolsetReposBean {
      * @param url the URL to validate
      * @throws WanakuException if the URL is invalid or points to a restricted address
      */
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     static void validateUrl(String url) throws WanakuException {
         try {
-            java.net.URI uri = java.net.URI.create(url);
+            URI uri = URI.create(url);
             String scheme = uri.getScheme();
             if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) {
                 throw new WanakuException("Only http and https URLs are allowed");

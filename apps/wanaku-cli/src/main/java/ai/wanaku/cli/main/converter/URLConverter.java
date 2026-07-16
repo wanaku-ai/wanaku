@@ -17,8 +17,8 @@ public class URLConverter implements CommandLine.ITypeConverter<URL> {
     public URL convert(String value) throws Exception {
         try {
             return URI.create(value).toURL();
-        } catch (Exception e) {
-            // so it's not an URL, maybe a local path?
+        } catch (Exception ignored) {
+            // not a URL, try as local path
         }
         // try if is a local path
         return new File(value).toURI().toURL();

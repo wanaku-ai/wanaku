@@ -35,7 +35,7 @@ public final class ResponseHelper {
                 if (response.hasEntity()) {
                     responseBody = response.readEntity(String.class);
                 }
-            } catch (Exception e) {
+            } catch (Exception ignored) {
                 // Ignore if we can't read the body
             }
 

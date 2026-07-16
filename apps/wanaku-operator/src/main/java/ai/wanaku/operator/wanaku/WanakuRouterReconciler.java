@@ -15,6 +15,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
+import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
@@ -23,20 +24,12 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.operator.util.OperatorUtil;
 import ai.wanaku.operator.util.RouterResourceFactory;
 
 import static ai.wanaku.operator.util.Matchers.match;
-import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
-import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
-import static ai.wanaku.operator.util.RouterResourceFactory.ROUTER_VOLUME_CLAIM;
-import static ai.wanaku.operator.util.RouterResourceFactory.makeDesiredRouterBackendDeployment;
-import static ai.wanaku.operator.util.RouterResourceFactory.makeRouterExternalService;
-import static ai.wanaku.operator.util.RouterResourceFactory.makeRouterIngress;
-import static ai.wanaku.operator.util.RouterResourceFactory.makeRouterInternalService;
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
-@ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-router")
+@ControllerConfiguration(informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE), name = "wanaku-router")
 @CSVMetadata(displayName = "Wanaku Router operator", description = "Deploys and manages the Wanaku Router")
 @RBACRule(
         apiGroups = "",
@@ -114,9 +107,10 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
         final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
         deployRouter(resource, context, namespace, wanakuStatus);
-        final Condition previousReadyCondition = findCondition(
-                resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
-        wanakuStatus.setConditions(List.of(readyCondition(
+        final Condition previousReadyCondition = OperatorUtil.findCondition(
+                resource.getStatus() != null ? resource.getStatus().getConditions() : null,
+                OperatorUtil.READY_CONDITION);
+        wanakuStatus.setConditions(List.of(OperatorUtil.readyCondition(
                 resource.getMetadata().getGeneration(), previousReadyCondition, "WanakuRouter deployment is ready")));
 
         resource.setStatus(wanakuStatus);
@@ -132,7 +126,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         createRouterPVCs(resource, namespace);
 
         // Create the internal service (cluster IP)
-        final Service desiredExternalService = makeRouterInternalService(resource);
+        final Service desiredExternalService = RouterResourceFactory.makeRouterInternalService(resource);
         Service existingExternalService = kubernetesClient
                 .services()
                 .inNamespace(namespace)
@@ -166,7 +160,8 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         wanakuStatus.setStreamableEndpoint("%s://%s/mcp/".formatted(SCHEME, host));
 
         // Create the router deployment
-        final Deployment desiredDeployment = makeDesiredRouterBackendDeployment(resource, context, host);
+        final Deployment desiredDeployment =
+                RouterResourceFactory.makeDesiredRouterBackendDeployment(resource, context, host);
 
         Deployment existingDeployment = kubernetesClient
                 .apps()
@@ -192,7 +187,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
     private static String createRouteAndGetHost(
             WanakuRouter resource, String namespace, OpenShiftClient openShiftClient) {
-        final Route desiredRoute = makeRouterExternalService(resource);
+        final Route desiredRoute = RouterResourceFactory.makeRouterExternalService(resource);
         Route existingRoute;
         try {
             existingRoute = openShiftClient
@@ -247,7 +242,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         }
 
         String host = ingressSpec.getHost();
-        final Ingress desiredIngress = makeRouterIngress(resource, host);
+        final Ingress desiredIngress = RouterResourceFactory.makeRouterIngress(resource, host);
 
         // Get existing ingress - returns null if not found
         Ingress existingIngress = kubernetesClient
@@ -285,7 +280,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         PersistentVolumeClaim existingServicesVolume = kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
-                .withName(ROUTER_VOLUME_CLAIM)
+                .withName(RouterResourceFactory.ROUTER_VOLUME_CLAIM)
                 .get();
 
         if (!match(servicesVolumePVC, existingServicesVolume)) {

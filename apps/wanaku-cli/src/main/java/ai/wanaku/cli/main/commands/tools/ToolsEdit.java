@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.commands.tools;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -149,7 +150,7 @@ public class ToolsEdit extends BaseCommand {
         Path tempFile = Files.createTempFile(TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX);
         ConfigurationPath configPath = ConfigurationPath.fromClasspath(NANO_CONFIG_FILE);
         Path root = tempFile.getParent();
-        Files.write(tempFile, toolString.getBytes());
+        Files.write(tempFile, toolString.getBytes(StandardCharsets.UTF_8));
         Options options = Options.compile(Nano.usage()).parse(new String[0]);
         Nano nano = new Nano(terminal, root, options, configPath);
         nano.title = "Edit Tool " + toolName;
@@ -227,9 +228,9 @@ public class ToolsEdit extends BaseCommand {
                         description = description.substring(0, truncateTo) + TRUNCATE_INDICATOR;
                     }
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    PrintStream ps = new PrintStream(baos);
+                    PrintStream ps = new PrintStream(baos, false, StandardCharsets.UTF_8);
                     ps.printf("%-" + nameColumnWidth + "s %-" + descriptionColumnWidth + "s%n", name, description);
-                    return new Item(item.getId(), baos.toString());
+                    return new Item(item.getId(), baos.toString(StandardCharsets.UTF_8));
                 })
                 .toList();
     }

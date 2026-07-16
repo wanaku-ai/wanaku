@@ -15,7 +15,6 @@ import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference.PromptArgument;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.TextContent;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.PromptPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
@@ -120,7 +119,7 @@ public class PromptsAdd extends BaseCommand {
         promptsService = initAuthenticatedService(PromptsService.class, host);
 
         try {
-            WanakuResponse<PromptReference> data = promptsService.addWithPayload(promptPayload);
+            promptsService.addWithPayload(promptPayload);
             printer.printSuccessMessage("Successfully added prompt '" + name + "'");
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();

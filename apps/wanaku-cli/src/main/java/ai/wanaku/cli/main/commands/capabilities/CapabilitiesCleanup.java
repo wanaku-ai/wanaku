@@ -107,7 +107,7 @@ public class CapabilitiesCleanup extends BaseCommand {
                     staleCapabilities.size(), maxAgeDays, inactiveOnly ? " (inactive only)" : ""));
 
             // Print table
-            printStaleCapabilitiesTable(staleCapabilities, printer);
+            printStaleCapabilitiesTable(staleCapabilities);
 
             // Confirm removal
             boolean continueCleanup = true;
@@ -146,8 +146,7 @@ public class CapabilitiesCleanup extends BaseCommand {
         return msg.toString();
     }
 
-    private void printStaleCapabilitiesTable(List<StaleCapabilityInfo> capabilities, WanakuPrinter printer)
-            throws IOException {
+    private void printStaleCapabilitiesTable(List<StaleCapabilityInfo> capabilities) throws IOException {
         // Format: id | serviceName | serviceType | host:port | status | lastSeen
         String[][] tableData = new String[capabilities.size() + 1][];
 
@@ -165,10 +164,10 @@ public class CapabilitiesCleanup extends BaseCommand {
             };
         }
 
-        printSimpleTable(tableData, printer);
+        printSimpleTable(tableData);
     }
 
-    private void printSimpleTable(String[][] data, WanakuPrinter printer) {
+    private void printSimpleTable(String[][] data) {
         if (data.length == 0) return;
 
         // Calculate column widths

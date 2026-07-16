@@ -293,7 +293,7 @@ public class AuthCredentialStore {
             // Create atomically with owner-only permissions: no exists()-then-create() race.
             Files.createFile(path, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
             return;
-        } catch (FileAlreadyExistsException e) {
+        } catch (FileAlreadyExistsException ignored) {
             // Already present: fall through and re-assert the restricted permissions below.
         } catch (UnsupportedOperationException e) {
             // Non-POSIX filesystem (e.g. Windows): create if needed, then restrict best-effort below.
@@ -314,19 +314,21 @@ public class AuthCredentialStore {
     private static void restrictPermissions(Path path, String posixPermissions) {
         try {
             Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(posixPermissions));
-            return;
-        } catch (UnsupportedOperationException | IOException e) {
+        } catch (UnsupportedOperationException | IOException ignored) {
             // Non-POSIX filesystem (e.g. Windows): best-effort owner-only via java.io.File. These
             // calls can legitimately return false on such platforms (e.g. Windows cannot revoke
             // read for "everyone"), so we surface a warning rather than failing the command.
             boolean ownerExecutable =
                     PosixFilePermissions.fromString(posixPermissions).contains(PosixFilePermission.OWNER_EXECUTE);
             File file = path.toFile();
-            boolean restricted = file.setReadable(false, false)
-                    & file.setReadable(true, true)
-                    & file.setWritable(false, false)
-                    & file.setWritable(true, true)
-                    & (!ownerExecutable || (file.setExecutable(false, false) & file.setExecutable(true, true)));
+            boolean restricted = file.setReadable(false, false);
+            restricted = file.setReadable(true, true) && restricted;
+            restricted = file.setWritable(false, false) && restricted;
+            restricted = file.setWritable(true, true) && restricted;
+            if (ownerExecutable) {
+                restricted = file.setExecutable(false, false) && restricted;
+                restricted = file.setExecutable(true, true) && restricted;
+            }
             if (!restricted) {
                 LOG.warnf(
                         "Could not fully restrict permissions on %s; it may be accessible to other users "

@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
@@ -70,7 +71,8 @@ public class CapabilitiesWatch extends BaseCommand {
 
             printer.printSuccessMessage("Connected. Watching for capability events...\n");
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body()))) {
+            try (BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
                 String eventType = null;
                 String eventId = null;
                 StringBuilder dataBuilder = new StringBuilder();
@@ -86,14 +88,11 @@ public class CapabilitiesWatch extends BaseCommand {
                             dataBuilder.append("\n");
                         }
                         dataBuilder.append(line.substring("data:".length()).trim());
-                    } else if (line.isEmpty()) {
-                        // Empty line marks end of event
-                        if (eventType != null || !dataBuilder.isEmpty()) {
-                            printEvent(printer, eventType, eventId, dataBuilder.toString());
-                            eventType = null;
-                            eventId = null;
-                            dataBuilder.setLength(0);
-                        }
+                    } else if (line.isEmpty() && (eventType != null || !dataBuilder.isEmpty())) {
+                        printEvent(printer, eventType, eventId, dataBuilder.toString());
+                        eventType = null;
+                        eventId = null;
+                        dataBuilder.setLength(0);
                     }
                 }
             }

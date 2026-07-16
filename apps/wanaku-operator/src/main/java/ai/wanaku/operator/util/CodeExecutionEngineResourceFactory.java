@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -28,8 +27,6 @@ import ai.wanaku.operator.wanaku.WanakuCamelCodeExecutionEngineSpec;
  * {@link RouterResourceFactory} and {@link CapabilityResourceFactory}.
  */
 public final class CodeExecutionEngineResourceFactory {
-
-    private static final Logger LOG = Logger.getLogger(CodeExecutionEngineResourceFactory.class);
 
     public static final String CAMEL_CODE_EXECUTION_ENGINE_DEPLOYMENT_FILE =
             "camel-code-execution-engine-deployment.yaml";
@@ -78,7 +75,7 @@ public final class CodeExecutionEngineResourceFactory {
                 service.getSpec().getSelector().clear();
             }
             if (service.getMetadata().getAnnotations() == null) {
-                service.getMetadata().setAnnotations(new java.util.HashMap<>());
+                service.getMetadata().setAnnotations(new HashMap<>());
             }
             service.getMetadata().getAnnotations().put("wanaku.ai/remote-scheme", scheme);
         } else {

@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.support;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,7 +14,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -28,17 +31,14 @@ import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.util.ReservedPropertyNames;
 import ai.wanaku.core.util.StringHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.cli.main.support.FileHelper.cannotWriteToDirectory;
 import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_COOKIE;
-import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
-import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class ToolsGenerateHelper {
 
@@ -82,7 +82,7 @@ public class ToolsGenerateHelper {
     public static String determineBaseUrl(
             OpenAPI openAPI, String serverUrl, Integer serverIndex, Map<String, String> serverVariables) {
         // If serverUrl is specified, use it
-        if (isNotBlank(serverUrl)) {
+        if (StringUtils.isNotBlank(serverUrl)) {
             return serverUrl;
         }
 
@@ -158,7 +158,7 @@ public class ToolsGenerateHelper {
         // prefer local server definition to the global one
         if (pathItem.getServers() != null
                 && !pathItem.getServers().isEmpty()
-                && isNotBlank(pathItem.getServers().getFirst().getUrl())) {
+                && StringUtils.isNotBlank(pathItem.getServers().getFirst().getUrl())) {
             pathBaseUrl = pathItem.getServers().getFirst().getUrl();
         }
 
@@ -287,7 +287,7 @@ public class ToolsGenerateHelper {
      */
     public static void addHttpMethodProperty(InputSchema inputSchema, String method) {
         Property property = new Property();
-        property.setTarget(TARGET_HEADER);
+        property.setTarget(ReservedPropertyNames.TARGET_HEADER);
         property.setType("string");
         property.setScope(SCOPE_SERVICE);
         property.setDescription("HTTP method to use when call the service.");
@@ -348,8 +348,8 @@ public class ToolsGenerateHelper {
 
         // Set target based on parameter location
         switch (parameter.getIn()) {
-            case "header" -> property.setTarget(TARGET_HEADER);
-            case "cookie" -> property.setTarget(TARGET_COOKIE);
+            case "header" -> property.setTarget(ReservedPropertyNames.TARGET_HEADER);
+            case "cookie" -> property.setTarget(ReservedPropertyNames.TARGET_COOKIE);
                 // Other cases (query, path) don't need special handling
         }
 
@@ -387,12 +387,12 @@ public class ToolsGenerateHelper {
 
         Map<String, String> replacements = server.getVariables().entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), e.getValue().getDefault()))
-                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (CollectionsHelper.isNotEmpty(variables)) {
             variables = variables.entrySet().stream()
                     .filter(e -> StringHelper.isNotEmpty(e.getKey()) && StringHelper.isNotEmpty(e.getValue()))
-                    .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             // Replace
             replacements.putAll(variables);
@@ -417,7 +417,7 @@ public class ToolsGenerateHelper {
     public static PrintWriter getOutputPrintWriter(String output) throws Exception {
         if (StringHelper.isEmpty(output)) {
             // Write to STDOUT
-            return new PrintWriter(System.out);
+            return new PrintWriter(new java.io.OutputStreamWriter(System.out, StandardCharsets.UTF_8));
         }
 
         Path outputPath = Paths.get(output);
@@ -447,7 +447,7 @@ public class ToolsGenerateHelper {
         }
 
         try {
-            return new PrintWriter(new FileWriter(outputPath.toString()));
+            return new PrintWriter(new FileWriter(outputPath.toString(), StandardCharsets.UTF_8));
         } catch (IOException e) {
             String errorMessage = "Could not open outputFile file " + output + " :" + e.getMessage();
             LOG.error(errorMessage);

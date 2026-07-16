@@ -1,7 +1,6 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.Objects;
-import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ResourceManager;
 import io.quarkiverse.mcp.server.ResourceResponse;
 import io.smallrye.mutiny.Uni;
@@ -24,7 +23,6 @@ import ai.wanaku.core.exchange.v1.ResourceRequest;
  * concerns to the transport layer.
  */
 public class ResourceAcquirerBridge implements ResourceBridge {
-    private static final Logger LOG = Logger.getLogger(ResourceAcquirerBridge.class);
     private static final String EMPTY_ARGUMENT = "";
     private static final String SERVICE_TYPE_RESOURCE_PROVIDER = ServiceType.RESOURCE_PROVIDER.asValue();
 

@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
+import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
@@ -50,9 +51,10 @@ import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
 import static ai.wanaku.operator.util.OperatorUtil.getRouterBaseUrl;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
-@ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-camel-route")
+@ControllerConfiguration(
+        informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE),
+        name = "wanaku-camel-route")
 @CSVMetadata(
         displayName = "Wanaku Camel Route operator",
         description = "Deploys and manages Wanaku Camel Routes as service catalogs")
