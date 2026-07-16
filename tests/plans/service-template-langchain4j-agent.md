@@ -64,7 +64,7 @@ export ROUTE_ID="${ROUTE_ID:-langchain4j-agent-chat}"
 
 # Router
 export WANAKU_HOST="${WANAKU_HOST:-http://localhost:8080}"
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp}"
 
 # LLM backend configuration (required for Phase 6 end-to-end)
 # These values are passed to the template instantiation API as properties.

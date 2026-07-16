@@ -43,20 +43,20 @@ Do **not** assign the full command to a single variable (e.g., `WANAKU_CLI="java
 ```bash
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_URL="${WANAKU_ROUTER_URL:-http://localhost:8080}"
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp}"
 ```
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WANAKU_REPO_ROOT` | `.` | Path to the Wanaku repository root |
 | `WANAKU_ROUTER_URL` | `http://localhost:8080` | Router base URL (no trailing slash) |
-| `MCP_SERVER_URI` | `http://localhost:8080/public/mcp/sse` | MCP SSE endpoint for direct MCP commands |
+| `MCP_SERVER_URI` | `http://localhost:8080/public/mcp` | MCP Streamable HTTP endpoint for direct MCP commands |
 
 ### Known limitations for local testing
 
 - **No resource providers in `wanaku start local`:** The local start command only supports tool services (`service-http`). Resource providers are not available locally. Resource tests are limited to verifying the list command returns successfully.
 - **Prompts are not backed by providers:** Prompts are stored in the router and do not require a downstream provider. They can be added, listed, and removed locally.
-- **MCP SSE path:** The public MCP endpoint is `/public/mcp/sse` (not `/mcp`). Using a wrong path will return connection errors.
+- **MCP Streamable HTTP path:** The public MCP endpoint is `/public/mcp` (not `/mcp`). Using a wrong path will return connection errors.
 
 ---
 

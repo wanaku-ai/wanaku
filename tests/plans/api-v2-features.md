@@ -28,7 +28,7 @@ Every step except the initial build is fully automatable.
 ```bash
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_URL="${WANAKU_ROUTER_URL:-http://localhost:8080}"
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp}"
 export V2_BASE="${WANAKU_ROUTER_URL}/api/v2"
 ```
 

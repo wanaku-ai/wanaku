@@ -664,25 +664,25 @@ oc delete wanakuservicecatalog wanaku-bad-service-catalog -n "${WANAKU_NAMESPACE
 
 ## Phase 7: Smoke Test - Full Flow
 
-### Test 7.1: Verify the MCP SSE endpoint is accessible
+### Test 7.1: Verify the MCP Streamable HTTP endpoint is accessible
 
 ```bash
 ROUTER_HOST=$(oc get route wanaku-test-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
-MCP_SSE_URL="http://${ROUTER_HOST}/mcp/sse"
+MCP_URL="http://${ROUTER_HOST}/mcp"
 
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
   -H "Accept: text/event-stream" \
   --max-time 5 \
-  "${MCP_SSE_URL}" 2>/dev/null || echo "000")
+  "${MCP_URL}" 2>/dev/null || echo "000")
 
 # SSE endpoint should return 200 (streaming) or a valid HTTP response
 # A timeout (000) while connected is normal for SSE since it streams indefinitely
 echo "mcp-sse-http-code=${HTTP_CODE}"
 if [ "${HTTP_CODE}" = "000" ] || [ "${HTTP_CODE}" = "200" ] || [ "${HTTP_CODE}" = "401" ]; then
-  echo "PASS: MCP SSE endpoint is reachable (HTTP ${HTTP_CODE})"
+  echo "PASS: MCP Streamable HTTP endpoint is reachable (HTTP ${HTTP_CODE})"
   # 401 is expected when auth is enabled and no token is provided
 else
-  echo "FAIL: unexpected response from MCP SSE endpoint (HTTP ${HTTP_CODE})"
+  echo "FAIL: unexpected response from MCP Streamable HTTP endpoint (HTTP ${HTTP_CODE})"
 fi
 ```
 
@@ -707,22 +707,22 @@ else
 fi
 ```
 
-### Test 7.3: Verify namespace MCP SSE endpoint requires authentication and is reachable
+### Test 7.3: Verify namespace MCP Streamable HTTP endpoint requires authentication and is reachable
 
-**Description:** The namespace-scoped MCP endpoints (`/ns-{N}/mcp/sse`) use a dynamic OIDC tenant resolver (`NamespaceTenantConfigResolver`). Verify that unauthenticated requests are rejected (HTTP 401) and authenticated requests are accepted. This covers the fix for [#1430](https://github.com/wanaku-ai/wanaku/issues/1430).
+**Description:** The namespace-scoped MCP endpoints (`/ns-{N}/mcp`) use a dynamic OIDC tenant resolver (`NamespaceTenantConfigResolver`). Verify that unauthenticated requests are rejected (HTTP 401) and authenticated requests are accepted. This covers the fix for [#1430](https://github.com/wanaku-ai/wanaku/issues/1430).
 
 ```bash
-NS_MCP_SSE_URL="http://${ROUTER_HOST}/ns-0/mcp/sse"
+NS_MCP_URL="http://${ROUTER_HOST}/ns-0/mcp"
 
 # Step 1: Unauthenticated request should return 401
 UNAUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
   -H "Accept: text/event-stream" \
   --max-time 5 \
-  "${NS_MCP_SSE_URL}" 2>/dev/null || echo "000")
+  "${NS_MCP_URL}" 2>/dev/null || echo "000")
 
 echo "ns-0-mcp-sse-unauth=${UNAUTH_CODE}"
 if [ "${UNAUTH_CODE}" = "401" ]; then
-  echo "PASS: namespace MCP SSE returns 401 without token"
+  echo "PASS: namespace MCP Streamable HTTP returns 401 without token"
 else
   echo "FAIL: expected 401, got HTTP ${UNAUTH_CODE}"
 fi
@@ -738,14 +738,14 @@ else
     -H "Accept: text/event-stream" \
     -H "Authorization: Bearer ${NS_TOKEN}" \
     --max-time 5 \
-    "${NS_MCP_SSE_URL}" 2>/dev/null || echo "000")
+    "${NS_MCP_URL}" 2>/dev/null || echo "000")
 
   echo "ns-0-mcp-sse-auth=${AUTH_CODE}"
   # 200 = streaming, 000 = SSE timeout (normal for streaming endpoints)
   if [ "${AUTH_CODE}" = "200" ] || [ "${AUTH_CODE}" = "000" ]; then
-    echo "PASS: namespace MCP SSE accepts authenticated request (HTTP ${AUTH_CODE})"
+    echo "PASS: namespace MCP Streamable HTTP accepts authenticated request (HTTP ${AUTH_CODE})"
   else
-    echo "FAIL: unexpected response from namespace MCP SSE with token (HTTP ${AUTH_CODE})"
+    echo "FAIL: unexpected response from namespace MCP Streamable HTTP with token (HTTP ${AUTH_CODE})"
   fi
 fi
 ```
