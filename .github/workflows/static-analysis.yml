@@ -6,7 +6,6 @@ on:
       - "main"
       - '[0-9]*.[0-9]*.x'
     paths-ignore:
-      - .github/**
       - docs/**
       - artwork/**
       - README.md
@@ -27,9 +26,6 @@ on:
 
 permissions:
   contents: read
-
-env:
-  PROJECTS: ${{ github.workspace }}
 
 jobs:
   static-analysis:
@@ -76,7 +72,9 @@ jobs:
       run: mvn -B --no-transfer-progress verify -Pstatic-analysis -DskipTests --file pom.xml
     - name: Generate Report
       if: steps.analysis.outcome == 'failure'
-      run: python3 .github/scripts/generate-static-analysis-report.py
+      run: |
+        pip install --quiet defusedxml
+        python3 .github/scripts/generate-static-analysis-report.py
     - name: Upload Analysis Report
       if: steps.analysis.outcome == 'failure'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
