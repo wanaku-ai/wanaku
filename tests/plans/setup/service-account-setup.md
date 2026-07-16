@@ -2,7 +2,7 @@
 
 Running operator test plans with your personal (admin) credentials is dangerous. This guide creates a dedicated service account with only the permissions the test plans require.
 
-The service account lives in a dedicated `wanaku-test-infra` namespace, separate from the `wanaku-test` namespace where tests run. This ensures the service account survives test cleanup and namespace deletion across test executions.
+The service account lives in a shared `wanaku-test-infra` namespace, separate from the per-run namespace where each test plan executes. This keeps the test infrastructure stable while allowing multiple plans to reuse the same cluster without sharing a test namespace.
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ oc whoami
 
 ## Token Management
 
-The `create-service-account.sh` script prints a token valid for 1 year. For CI systems, store it as a secret (e.g., GitHub Actions `OPENSHIFT_SA_TOKEN`).
+The `create-service-account.sh` script prints a token valid for 1 year. For CI systems, store it as a secret (e.g., GitHub Actions `OPENSHIFT_SA_TOKEN`). Reuse the same service-account namespace across runs unless you intentionally want to recreate the infrastructure.
 
 To rotate the token:
 
