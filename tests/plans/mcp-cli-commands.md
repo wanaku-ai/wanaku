@@ -389,13 +389,13 @@ The first `oc login` step is manual; everything else is automatable.
 ### Environment variables
 
 ```bash
-export WANAKU_TEST_RUN_ID="${WANAKU_TEST_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
-export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-mcp-${WANAKU_TEST_RUN_ID}}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
 export WANAKU_PROVIDER_STATIC_FILE_IMAGE="${WANAKU_PROVIDER_STATIC_FILE_IMAGE:-quay.io/wanaku/wanaku-provider-performance-static-file:latest}"
 ```
+
+Follow [common/namespace-setup.md](common/namespace-setup.md) before Part 2 to derive a unique `WANAKU_NAMESPACE` for the OpenShift environment.
 
 ### Helper: wait for resource deletion
 

@@ -65,14 +65,14 @@ echo "PASS: all prerequisites met"
 ### Environment variables
 
 ```bash
-export WANAKU_TEST_RUN_ID="${WANAKU_TEST_RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
-export WANAKU_NAMESPACE="${WANAKU_NAMESPACE:-wanaku-observability-${WANAKU_TEST_RUN_ID}}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
 export OTEL_COLLECTOR_IMAGE="${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.127.0}"
 export JAEGER_IMAGE="${JAEGER_IMAGE:-jaegertracing/jaeger:latest}"
 ```
+
+Follow [common/namespace-setup.md](common/namespace-setup.md) before Phase 1 to derive a unique `WANAKU_NAMESPACE` for this run.
 
 ### Helper: wait for resource deletion
 
