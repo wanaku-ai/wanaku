@@ -73,7 +73,7 @@ jobs:
     - name: Generate Report
       if: steps.analysis.outcome == 'failure'
       run: |
-        pip install --quiet defusedxml
+        python -m pip install --quiet defusedxml==0.7.1
         python3 .github/scripts/generate-static-analysis-report.py
     - name: Upload Analysis Report
       if: steps.analysis.outcome == 'failure'
