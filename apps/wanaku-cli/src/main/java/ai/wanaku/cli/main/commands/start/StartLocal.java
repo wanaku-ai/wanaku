@@ -162,6 +162,7 @@ public class StartLocal extends StartBase {
                 return EXIT_OK;
             }
         }
+        printer.printWarningMessage("Authentication is disabled in local mode");
         startWanaku();
         return EXIT_OK;
     }
