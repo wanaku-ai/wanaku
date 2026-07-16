@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
+import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
@@ -37,9 +38,10 @@ import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
 import static ai.wanaku.operator.util.OperatorUtil.getRouterBaseUrl;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
-@ControllerConfiguration(informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE), name = "wanaku-service-catalog")
+@ControllerConfiguration(
+        informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE),
+        name = "wanaku-service-catalog")
 @CSVMetadata(
         displayName = "Wanaku Service Catalog operator",
         description = "Deploys and manages Wanaku Service Catalogs")

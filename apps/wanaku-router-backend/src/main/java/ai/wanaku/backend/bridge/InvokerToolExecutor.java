@@ -13,11 +13,11 @@ import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 import ai.wanaku.core.util.CollectionsHelper;
+import ai.wanaku.core.util.ReservedPropertyNames;
 
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.AUTH_PREFIX;
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.BODY;
 import static ai.wanaku.capabilities.sdk.api.util.ReservedArgumentNames.METADATA_PREFIX;
-import static ai.wanaku.core.util.ReservedPropertyNames.SCOPE_SERVICE;
 import static ai.wanaku.core.util.ReservedPropertyNames.TARGET_HEADER;
 
 /**
@@ -148,7 +148,7 @@ public final class InvokerToolExecutor {
                 && property.getTarget() != null
                 && property.getScope() != null
                 && property.getTarget().equals(TARGET_HEADER)
-                && property.getScope().equals(SCOPE_SERVICE);
+                && property.getScope().equals(ReservedPropertyNames.SCOPE_SERVICE);
     }
 
     private static String evalValue(Map.Entry<String, Property> entry, ToolManager.ToolArguments toolArguments) {

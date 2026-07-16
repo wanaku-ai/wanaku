@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -103,7 +104,7 @@ public class ServicePackage extends BaseCommand {
         }
 
         File outputFile = new File(outputPath);
-        try (FileWriter writer = new FileWriter(outputFile)) {
+        try (FileWriter writer = new FileWriter(outputFile, StandardCharsets.UTF_8)) {
             writer.write(base64Data);
         }
 

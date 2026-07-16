@@ -172,9 +172,4 @@ public class ServiceCatalogBean {
         }
         return false;
     }
-
-    private boolean isCatalog(DataStore ds) {
-        Map<String, String> labels = ds.getLabels();
-        return labels != null && LABEL_TYPE_VALUE.equals(labels.get(LABEL_TYPE_KEY));
-    }
 }

@@ -94,12 +94,9 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     @Override
     public ActivityRecord getStates(String id) {
         final ActivityRecord record = activityRecordRepository.findById(id);
-        if (record != null) {
-            if (record.getStates() == null) {
-                // The service registered but has never updated its state or pinged the router
-                final ServiceState serviceState = ServiceState.newMissingInAction();
-                updateLastState(id, serviceState);
-            }
+        if (record != null && record.getStates() == null) {
+            final ServiceState serviceState = ServiceState.newMissingInAction();
+            updateLastState(id, serviceState);
         }
 
         return record;

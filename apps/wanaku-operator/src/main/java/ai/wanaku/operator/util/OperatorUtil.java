@@ -137,7 +137,7 @@ public final class OperatorUtil {
      */
     public static String resolveImagePullPolicy(String componentPolicy, String globalPolicy) {
         String resolved =
-                componentPolicy != null ? componentPolicy : (globalPolicy != null ? globalPolicy : DEFAULT_PULL_POLICY);
+                componentPolicy != null ? componentPolicy : globalPolicy != null ? globalPolicy : DEFAULT_PULL_POLICY;
 
         if (!VALID_PULL_POLICIES.contains(resolved)) {
             LOG.warnf("Invalid imagePullPolicy '%s', using default '%s'", resolved, DEFAULT_PULL_POLICY);

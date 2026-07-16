@@ -10,7 +10,6 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
-import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.capabilities.sdk.api.types.io.ToolPayload;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
@@ -155,8 +154,7 @@ public class ToolsAdd extends BaseCommand {
         toolsService = initAuthenticatedService(ToolsService.class, host);
 
         try {
-            WanakuResponse<ToolReference> data = toolsService.addWithPayload(toolPayload);
-
+            toolsService.addWithPayload(toolPayload);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {

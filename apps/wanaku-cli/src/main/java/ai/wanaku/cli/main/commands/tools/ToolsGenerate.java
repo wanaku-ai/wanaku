@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.converter.URLConverter;
+import ai.wanaku.cli.main.support.ToolsGenerateHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import picocli.CommandLine;
 
@@ -17,7 +18,6 @@ import static ai.wanaku.cli.main.support.ToolHelper.importToolset;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.determineBaseUrl;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.generateToolReferences;
 import static ai.wanaku.cli.main.support.ToolsGenerateHelper.loadAndResolveOpenAPI;
-import static ai.wanaku.cli.main.support.ToolsGenerateHelper.writeOutput;
 
 @CommandLine.Command(name = "generate", description = "generate tools from an OpenApi specification")
 public class ToolsGenerate extends BaseCommand {
@@ -93,7 +93,7 @@ public class ToolsGenerate extends BaseCommand {
             // Generate tool references
             List<ToolReference> toolReferences = generateToolReferences(openAPI, baseUrl, labels);
             // Write output
-            writeOutput(toolReferences, outputFile);
+            ToolsGenerateHelper.writeOutput(toolReferences, outputFile);
 
             if (importToolset) {
                 System.err.print("\n\nImporting toolset...");

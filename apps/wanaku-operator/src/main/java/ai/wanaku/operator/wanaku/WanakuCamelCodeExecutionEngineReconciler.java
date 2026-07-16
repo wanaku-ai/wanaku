@@ -15,6 +15,7 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Replaceable;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
+import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
@@ -23,20 +24,14 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.operator.util.OperatorUtil;
 
 import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeCodeExecutionEngineInternalService;
 import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment;
 import static ai.wanaku.operator.util.Matchers.match;
-import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
-import static ai.wanaku.operator.util.OperatorUtil.findCondition;
-import static ai.wanaku.operator.util.OperatorUtil.isRemoteDeploymentMode;
-import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
-import static ai.wanaku.operator.util.OperatorUtil.validateCacheStrategy;
-import static ai.wanaku.operator.util.OperatorUtil.validateDeploymentMode;
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(
-        informer = @Informer(namespaces = WATCH_CURRENT_NAMESPACE),
+        informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE),
         name = "camel-code-execution-engine")
 @CSVMetadata(
         displayName = "Camel Code Execution Engine operator",
@@ -86,7 +81,7 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
         }
 
         final String namespace = resource.getMetadata().getNamespace();
-        final boolean remote = isRemoteDeploymentMode(resource.getSpec());
+        final boolean remote = OperatorUtil.isRemoteDeploymentMode(resource.getSpec());
         final String serviceName = resource.getMetadata().getName();
         final String routerRef = resource.getSpec().getRouterRef();
 
@@ -151,10 +146,11 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
         status.setActiveRoutes(List.of(buildRouteIdentifier(resource)));
         status.setHealthChecks(List.of(buildHealthCheck(resource, remote, serviceName, namespace)));
 
-        final Condition previousReadyCondition = findCondition(
-                resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
+        final Condition previousReadyCondition = OperatorUtil.findCondition(
+                resource.getStatus() != null ? resource.getStatus().getConditions() : null,
+                OperatorUtil.READY_CONDITION);
 
-        status.setConditions(List.of(readyCondition(
+        status.setConditions(List.of(OperatorUtil.readyCondition(
                 resource.getMetadata().getGeneration(),
                 previousReadyCondition,
                 "Camel Code Execution Engine is ready")));
@@ -215,7 +211,7 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
 
         Integer port = resource.getSpec().getPort() != null ? resource.getSpec().getPort() : 9190;
 
-        if (isRemoteDeploymentMode(resource.getSpec())) {
+        if (OperatorUtil.isRemoteDeploymentMode(resource.getSpec())) {
             String path = resource.getSpec().getRemote().getPath();
             String normalizedPath = path != null && !path.isBlank() ? (path.startsWith("/") ? path : "/" + path) : "";
             Integer remotePort = resource.getSpec().getRemote().getPort() != null
@@ -265,12 +261,12 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
             return new ValidateSpecResult(false, "engineType must be specified for the Camel Code Execution Engine");
         }
         try {
-            validateDeploymentMode(spec.getDeploymentMode());
+            OperatorUtil.validateDeploymentMode(spec.getDeploymentMode());
         } catch (WanakuException e) {
             return new ValidateSpecResult(false, e.getMessage());
         }
 
-        if (isRemoteDeploymentMode(resource.getSpec())) {
+        if (OperatorUtil.isRemoteDeploymentMode(resource.getSpec())) {
             if (spec.getRemote() == null
                     || spec.getRemote().getHost() == null
                     || spec.getRemote().getHost().isBlank()) {
@@ -282,7 +278,7 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
 
         try {
             validateSecurityLists(spec.getSecurity());
-            validateCacheStrategy(spec.getDependencyCache());
+            OperatorUtil.validateCacheStrategy(spec.getDependencyCache());
         } catch (WanakuException e) {
             return new ValidateSpecResult(false, e.getMessage());
         }
@@ -322,7 +318,7 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
 
         WanakuCamelCodeExecutionEngineStatus status = new WanakuCamelCodeExecutionEngineStatus();
         Condition condition = new ConditionBuilder()
-                .withType(READY_CONDITION)
+                .withType(OperatorUtil.READY_CONDITION)
                 .withStatus("False")
                 .withObservedGeneration(resource.getMetadata().getGeneration())
                 .withLastTransitionTime(OffsetDateTime.now(ZoneOffset.UTC).toString())

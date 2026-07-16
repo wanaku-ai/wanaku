@@ -105,7 +105,6 @@ public class MarkdownRenderer {
         private List<List<String>> tableRows = new ArrayList<>();
         private List<String> currentRow = new ArrayList<>();
         private StringBuilder currentCell = new StringBuilder();
-        private boolean inTableHeader = false;
         private boolean inTable = false;
 
         @Override
@@ -268,9 +267,7 @@ public class MarkdownRenderer {
         }
 
         public void visit(TableHead tableHead) {
-            inTableHeader = true;
             visitChildren(tableHead);
-            inTableHeader = false;
         }
 
         public void visit(TableBody tableBody) {

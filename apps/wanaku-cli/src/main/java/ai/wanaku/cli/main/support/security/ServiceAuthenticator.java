@@ -15,8 +15,6 @@ import com.nimbusds.oauth2.sdk.ResourceOwnerPasswordCredentialsGrant;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.TokenResponse;
-import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.id.ClientID;
@@ -135,20 +133,6 @@ public class ServiceAuthenticator {
         } catch (IOException e) {
             throw new ServiceAuthException("I/O error while resolving token endpoint URI: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * Creates client authentication for OAuth2 requests.
-     *
-     * @param config The security service configuration containing client credentials.
-     * @return The client authentication object.
-     */
-    private static ClientAuthentication getClientAuthentication(SecurityServiceConfig config) {
-        // The credentials to authenticate the client at the token endpoint
-
-        ClientID clientID = new ClientID(config.getClientId());
-        Secret clientSecret = new Secret(config.getSecret());
-        return new ClientSecretBasic(clientID, clientSecret);
     }
 
     /**

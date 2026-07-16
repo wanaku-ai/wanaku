@@ -5,12 +5,12 @@ import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.services.api.CapabilitiesService;
+import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.API_TIMEOUT;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.fetchAndMergeCapabilities;
 import static ai.wanaku.cli.main.support.CapabilitiesHelper.printCapabilities;
 import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
 
 /**
  * Command-line interface for listing all service capabilities in the Wanaku system.
@@ -64,13 +64,13 @@ public class CapabilitiesList extends BaseCommand {
      *   <li>http://192.168.1.100:9090</li>
      * </ul>
      */
-    @Option(
+    @CommandLine.Option(
             names = {"--host"},
             description = "The API host URL (default: http://localhost:8080)",
             defaultValue = "http://localhost:8080")
     private String host;
 
-    @Option(
+    @CommandLine.Option(
             names = {"-e", "--label-expression"},
             description = {
                 """

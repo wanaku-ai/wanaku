@@ -1,12 +1,10 @@
 package ai.wanaku.cli.main.commands.start;
 
 import java.util.List;
-import org.jboss.logging.Logger;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import picocli.CommandLine;
 
 public abstract class StartBase extends BaseCommand {
-    private static final Logger LOG = Logger.getLogger(StartBase.class);
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     ExclusiveOptions exclusive;

@@ -42,7 +42,7 @@ public final class CamelQueryHelper {
      */
     public static String safeLog(String value) {
         if (value.contains("RAW(")) {
-            return CamelQueryHelper.replaceRawValue(value, "xxxx");
+            return replaceRawValue(value, "xxxx");
         } else {
             return value;
         }

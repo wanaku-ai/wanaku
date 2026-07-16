@@ -33,7 +33,6 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 @ApplicationScoped
 @Path("/api/v1/chat")
@@ -65,12 +64,12 @@ public class LlmChatResource {
     public Response getModelSuggestions(@PathParam("llm") String llm) {
         String llmCapitalized = llm.substring(0, 1).toUpperCase() + llm.substring(1);
         if (!llmSupport.getSupportedLlms().contains(llmCapitalized)) {
-            return Response.status(NOT_FOUND)
+            return Response.status(Response.Status.NOT_FOUND)
                     .entity("%s is not supported".formatted(llm))
                     .build();
         }
         if (!allowlist.contains(llmCapitalized)) {
-            return Response.status(NOT_FOUND)
+            return Response.status(Response.Status.NOT_FOUND)
                     .entity("%s is not allowed".formatted(llm))
                     .build();
         }
