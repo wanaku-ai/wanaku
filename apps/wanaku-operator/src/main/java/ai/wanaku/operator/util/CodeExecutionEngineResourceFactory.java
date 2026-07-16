@@ -294,7 +294,13 @@ public final class CodeExecutionEngineResourceFactory {
         if (cacheSpec.getEnabled() != null) {
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_DEPENDENCY_CACHE_STRATEGY)
-                    .withValue(Boolean.TRUE.equals(cacheSpec.getEnabled()) ? cacheSpec.getStrategy() : "disabled")
+                    .withValue(
+                            Boolean.TRUE.equals(cacheSpec.getEnabled())
+                                    ? (cacheSpec.getStrategy() != null
+                                                    && !cacheSpec.getStrategy().isBlank()
+                                            ? cacheSpec.getStrategy()
+                                            : "inmemory")
+                                    : "disabled")
                     .build());
         } else if (cacheSpec.getStrategy() != null) {
             envVars.add(new EnvVarBuilder()
