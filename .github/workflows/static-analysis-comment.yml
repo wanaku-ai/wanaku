@@ -1,0 +1,57 @@
+name: Post Static Analysis Comment
+
+on:
+  workflow_run:
+    workflows: ["Static Analysis"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+
+    steps:
+    - name: Download PR Number
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh run download "${{ github.event.workflow_run.id }}" -n pr-number -R "${{ github.repository }}"
+    - name: Download Report
+      id: report
+      continue-on-error: true
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh run download "${{ github.event.workflow_run.id }}" -n static-analysis-report -R "${{ github.repository }}"
+    - name: Post or Update PR Comment
+      if: steps.report.outcome == 'success'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        PR_NUMBER=$(cat pr-number.txt)
+        MARKER="<!-- static-analysis-report -->"
+        EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+          --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" | head -1)
+        if [ -n "$EXISTING" ]; then
+          gh api "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+            -X PATCH -F "body=@static-analysis-report.md"
+        else
+          gh pr comment "${PR_NUMBER}" -R "${{ github.repository }}" --body-file static-analysis-report.md
+        fi
+    - name: Remove Outdated Comment
+      if: steps.report.outcome == 'failure' && github.event.workflow_run.conclusion == 'success'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if [ ! -f pr-number.txt ]; then
+          exit 0
+        fi
+        PR_NUMBER=$(cat pr-number.txt)
+        MARKER="<!-- static-analysis-report -->"
+        EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+          --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" | head -1)
+        if [ -n "$EXISTING" ]; then
+          gh api "repos/${{ github.repository }}/issues/comments/${EXISTING}" -X DELETE
+        fi
