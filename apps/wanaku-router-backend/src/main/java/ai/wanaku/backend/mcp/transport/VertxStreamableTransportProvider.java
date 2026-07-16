@@ -127,7 +127,7 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
                         return;
                     }
 
-                    handleInitialize(ctx, jsonrpcRequest, transportContext);
+                    handleInitialize(ctx, jsonrpcRequest);
                     return;
                 }
 
@@ -170,8 +170,7 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
         }
     }
 
-    private void handleInitialize(
-            RoutingContext ctx, McpSchema.JSONRPCRequest jsonrpcRequest, McpTransportContext transportContext) {
+    private void handleInitialize(RoutingContext ctx, McpSchema.JSONRPCRequest jsonrpcRequest) {
         McpStreamableServerSession.McpStreamableServerSessionInit init = null;
         try {
             McpSchema.InitializeRequest initializeRequest =

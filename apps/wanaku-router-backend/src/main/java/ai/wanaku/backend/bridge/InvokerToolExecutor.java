@@ -178,10 +178,9 @@ public final class InvokerToolExecutor {
         if (raw instanceof Map<?, ?> map) {
             Map<String, String> headers = new HashMap<>();
             map.forEach((k, v) -> {
-                if (k instanceof String key && v instanceof String value) {
-                    if (!EXCLUDED_HTTP_HEADERS.contains(key.toLowerCase())) {
-                        headers.put(key, value);
-                    }
+                if (k instanceof String key && v instanceof String value
+                        && !EXCLUDED_HTTP_HEADERS.contains(key.toLowerCase())) {
+                    headers.put(key, value);
                 }
             });
             return headers;

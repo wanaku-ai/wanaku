@@ -154,7 +154,7 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     private void removeToolFromServer(String name, ToolReference ref) {
-        if (ref != null && !ai.wanaku.core.util.StringHelper.isEmpty(ref.getNamespace())) {
+        if (ref != null && !StringHelper.isEmpty(ref.getNamespace())) {
             try {
                 Namespace ns = namespacesBean.getById(ref.getNamespace());
                 if (ns != null) {

@@ -26,19 +26,6 @@ public class ToolsHelper {
                 CallableReference toolReference);
     }
 
-    private static boolean isRequired(CallableReference toolReference) {
-        InputSchema inputSchema = toolReference.getInputSchema();
-        if (inputSchema == null) {
-            return false;
-        }
-
-        List<String> requiredList = inputSchema.getRequired();
-        if (requiredList != null) {
-            return requiredList.contains(toolReference.getName());
-        }
-        return false;
-    }
-
     public static void registerTool(CallableReference toolReference, McpSyncServer server, ToolHandler handler) {
         registerTool(toolReference, server, null, handler);
     }
