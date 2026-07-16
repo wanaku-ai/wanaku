@@ -60,7 +60,13 @@ public class ToolsGenerateHelper {
         options.setResolve(true);
         options.setResolveFully(true);
 
-        OpenAPI openAPI = new OpenAPIV3Parser().read(specLocation, null, options);
+        OpenAPI openAPI;
+        try {
+            openAPI = new OpenAPIV3Parser().read(specLocation, null, options);
+        } catch (Exception e) {
+            LOG.trace("Failed to parse OpenAPI specification", e);
+            return null;
+        }
 
         if (openAPI != null) {
             new ResolverFully().resolveFully(openAPI);

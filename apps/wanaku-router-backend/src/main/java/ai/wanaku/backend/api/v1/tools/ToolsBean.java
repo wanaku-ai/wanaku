@@ -58,6 +58,11 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     public ToolReference add(ToolReference toolReference) {
+        List<ToolReference> existing = toolReferenceRepository.findByName(toolReference.getName());
+        if (!existing.isEmpty()) {
+            throw EntityAlreadyExistsException.forName(toolReference.getName());
+        }
+
         registerTool(toolReference);
         return toolReferenceRepository.persist(toolReference);
     }
