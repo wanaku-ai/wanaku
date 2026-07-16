@@ -276,6 +276,10 @@
                     <configuration>
                         <targetJdk>21</targetJdk>
                         <linkXRef>false</linkXRef>
+                        <excludeRoots>
+                            <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+                            <excludeRoot>${project.build.directory}/generated-test-sources</excludeRoot>
+                        </excludeRoots>
                     </configuration>
                     <executions>
                         <execution>
@@ -292,6 +296,7 @@
                     <configuration>
                         <effort>Default</effort>
                         <threshold>High</threshold>
+                        <excludeFilterFile>parent/src/main/resources/spotbugs-exclude.xml</excludeFilterFile>
                     </configuration>
                     <executions>
                         <execution>
