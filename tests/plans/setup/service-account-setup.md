@@ -4,6 +4,8 @@ Running operator test plans with your personal (admin) credentials is dangerous.
 
 The service account lives in a shared `wanaku-test-infra` namespace, separate from the per-run namespace where each test plan executes. This keeps the test infrastructure stable while allowing multiple plans to reuse the same cluster without sharing a test namespace.
 
+No permission change is needed for that split: the service account already has cluster-scoped access to create and delete per-run namespaces/projects, plus the namespaced permissions the plans use inside those namespaces.
+
 ## Prerequisites
 
 - `oc` CLI logged in as a cluster admin (one-time setup)
