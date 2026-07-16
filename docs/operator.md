@@ -4,7 +4,7 @@ This guide covers deploying and managing Wanaku using the Kubernetes Operator. T
 
 ## Overview
 
-The Wanaku Operator manages four custom resource definitions (CRDs):
+The Wanaku Operator manages the following custom resource definitions (CRDs):
 
 - **WanakuRouter** — deploys and configures the MCP router gateway
 - **WanakuCapability** — deploys capability services (HTTP tools, Camel integrations, etc.) and connects them to a router
@@ -58,7 +58,7 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_ROUTER_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES \
-  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
 ```
 
 ### 3. Verify the Operator
@@ -489,7 +489,7 @@ The operator's Helm chart exposes these key configuration options in `values.yam
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCapability` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelRoute` resources. |
 | `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuServiceCatalog` resources. |
-| `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelCodeExecutionEngine` resources. |
+| `app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES` | string | `JOSDK_WATCH_CURRENT` | Watch scope for `WanakuCamelCodeExecutionEngine` resources. |
 
 **Example: customize operator image and watch all namespaces**
 
@@ -501,7 +501,7 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES=JOSDK_ALL_NAMESPACES \
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_SERVICE_CATALOG_NAMESPACES=JOSDK_ALL_NAMESPACES \
-  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
+  --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
 ```
 
 ## Troubleshooting
