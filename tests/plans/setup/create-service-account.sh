@@ -74,7 +74,8 @@ rules:
     resources: ["wanakurouters", "wanakurouters/status", "wanakurouters/finalizers",
                  "wanakucapabilities", "wanakucapabilities/status", "wanakucapabilities/finalizers",
                  "wanakuservicecatalogs", "wanakuservicecatalogs/status", "wanakuservicecatalogs/finalizers",
-                 "wanakucamelroutes", "wanakucamelroutes/status", "wanakucamelroutes/finalizers"]
+                 "wanakucamelroutes", "wanakucamelroutes/status", "wanakucamelroutes/finalizers",
+                 "wanakucamelcodeexecutionengines", "wanakucamelcodeexecutionengines/status", "wanakucamelcodeexecutionengines/finalizers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   # Self subject access review (oc auth can-i)
