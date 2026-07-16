@@ -92,10 +92,13 @@ jobs:
   dispatch-integration-tests:
     needs: pre-release-build-linux
     runs-on: ubuntu-latest
-    if: github.repository == 'wanaku-ai/wanaku' && secrets.TESTS_DISPATCH_TOKEN != ''
+    if: github.repository == 'wanaku-ai/wanaku'
     steps:
       - name: Dispatch integration tests
+        if: env.DISPATCH_TOKEN != ''
         uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0
+        env:
+          DISPATCH_TOKEN: ${{ secrets.TESTS_DISPATCH_TOKEN }}
         with:
           token: ${{ secrets.TESTS_DISPATCH_TOKEN }}
           repository: wanaku-ai/wanaku-tests
