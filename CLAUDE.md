@@ -7,7 +7,6 @@ Last updated: 2026-07-02
 - Think before you write
 - Don't create abstractions unnecessarily.
 - Simplicity is important: focus on the minimum code required to achieve the result.
-- Always run the static code analyzer profile before submitting work
 
 ## Active Technologies
 
@@ -101,6 +100,7 @@ make install
 - Major features should have tests
 - Major features should have documentation
 - Tests should be meaningful
+- No code quality degradation after running the static code analyzer
 
 # Community Engagement
 
