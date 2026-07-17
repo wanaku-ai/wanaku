@@ -82,13 +82,22 @@ Defines a Wanaku router instance.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `spec.auth.authServer` | string | No | `""` | Keycloak server address (format: `http://address`). Leave empty if running without auth. |
-| `spec.auth.authProxy` | string | No | `""` | OIDC proxy address. Use `"auto"` to enable Wanaku's built-in OIDC proxy, or set to Keycloak's address. Empty defaults to Keycloak's address. |
 | `spec.auth.authRealm` | string | No | `"wanaku"` | Keycloak realm name. |
+| `spec.auth.authProxy` | string | No | `""` | OIDC proxy address. Use `"auto"` to enable the built-in OIDC proxy, or set to Keycloak's address directly. Empty inherits Keycloak's address. |
 | `spec.imagePullPolicy` | string | No | `"IfNotPresent"` | Global image pull policy for all operator-managed deployments (`Always`, `IfNotPresent`, `Never`). |
 | `spec.ingress.host` | string | No | `""` | Ingress hostname for Kubernetes clusters. OpenShift auto-generates Routes; set this only on vanilla Kubernetes. |
 | `spec.router.image` | string | No | `quay.io/wanaku/wanaku-router-backend:latest` | Router container image. |
 | `spec.router.env` | list | No | `[]` | List of `{name, value}` environment variables for the router (e.g., to set `wanaku.http.auth=none`). |
 | `spec.router.imagePullPolicy` | string | No | inherits `spec.imagePullPolicy` | Override pull policy for router pod only. |
+
+The status section reports:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status.host` | string | External hostname assigned to the router (from OpenShift Route or Ingress). |
+| `status.sseEndpoint` | string | SSE stream endpoint URL. |
+| `status.streamableEndpoint` | string | Streamable HTTP endpoint URL. |
+| `status.conditions` | list | Standard Kubernetes condition array (each entry: `status`, `reason`, `message`, `lastTransitionTime`, `observedGeneration`). |
 
 **Example (minimal, with Keycloak):**
 
@@ -216,6 +225,7 @@ Deploys the Camel Code Execution Engine. Supports two modes: **in-cluster** (Kub
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `spec.auth.authServer` | string | No | `""` | Keycloak server address (format: `http://address`). |
+| `spec.auth.authProxy` | string | No | `""` | OIDC proxy address. Use `"auto"` to enable the built-in proxy. Empty inherits `authServer`. |
 | `spec.auth.authRealm` | string | No | `"wanaku"` | Keycloak realm name. |
 | `spec.secrets.oidcCredentialsSecret` | string | No | `""` | OIDC client secret. |
 | `spec.routerRef` | string | **Yes** | — | Name of the `WanakuRouter` CR this engine registers with. |
@@ -245,6 +255,16 @@ Deploys the Camel Code Execution Engine. Supports two modes: **in-cluster** (Kub
 | `spec.resources.memoryLimit` | string | No | `""` | Memory limit (e.g., `"256Mi"`). |
 | `spec.imagePullPolicy` | string | No | `"IfNotPresent"` | Image pull policy. |
 | `spec.env` | list | No | `[]` | Additional environment variables. |
+
+**Status fields** (read-only — populated by the operator):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status.deploymentState` | string | Operator reconciliation state (e.g., `REMOTE_READY`, error states). |
+| `status.serviceUrl` | string | Final service URL of the engine (in-cluster) or the resolved remote URL. |
+| `status.activeRoutes` | list of string | Route IDs currently running inside the engine. |
+| `status.healthChecks[]` | list of object | Per-check results. Each entry: `name` (string), `status` (string), `message` (string), `timestamp` (string, ISO-8601). |
+| `status.conditions` | list of object | Standard Kubernetes condition array. Each entry: `status` (string), `reason` (string), `message` (string), `lastTransitionTime` (string), `observedGeneration` (int). |
 
 **Example (in-cluster):**
 
@@ -283,9 +303,82 @@ spec:
 
 ### WanakuCamelRoute (`wanaku.ai/v1alpha1`)
 
-Packages inline Camel routes and MCP metadata into a service catalog automatically, then deploys the resulting capability to a router.
+Packages inline Camel routes and MCP metadata in a single CR, then deploys the resulting capability to a router. The reconciler builds a Base64 ZIP and pushes it via the router's REST API, and also provisions a dedicated Deployment + Service for the Camel Integration Capability instance.
 
-See the dedicated [WanakuCamelRoute CRD guide](camel-route-crd.md) for the full schema, examples, and troubleshooting notes.
+> [!NOTE]
+> Use `spec.route` to hold the raw Camel route definition (XML or YAML — validates as opaque JSON). Use `spec.mcp` to declare which routes become visible MCP tools and resources. See the dedicated [WanakuCamelRoute CRD guide](camel-route-crd.md) for a walkthrough with end-to-end examples.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `spec.routerRef` | string | **Yes** | — | Name of the `WanakuRouter` CR to deploy to. Must exist in the same namespace. |
+| `spec.image` | string | No | `quay.io/wanaku/camel-integration-capability:latest` | Container image for the CIC sidecar created by this CR. Override to pin a specific version. |
+| `spec.route` | object (opaque) | No | — | Raw Camel route definition (YAML or XML). The CRD schema sets `x-kubernetes-preserve-unknown-fields: true` so any structure passes validation. |
+| `spec.mcp` | object | No | — | MCP exposure configuration. |
+| `spec.mcp.tools[]` | list | No | — | Tools exposed to agents. Each entry: `name`, `routeId` (must match the Camel route `id`), `description`, `properties[]`. The inner `properties[]` fields are `name`, `type`, `description`, `required`. |
+| `spec.mcp.resources[]` | list | No | — | Resources exposed to agents. Each entry: `name`, `routeId`, `description`, `uri`, `mimeType`. |
+| `spec.mcp.properties` | map\<string,string\> | No | — | Template variable substitutions applied when packaging the catalog (key → value replaces `${key}` in the route). |
+| `spec.properties` | map\<string,string\> | No | — | Arbitrary key/value pairs forwarded by the operator (no effect on runtime, available for downstream tooling or annotations). |
+
+**Status fields** (read-only — populated by the operator):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status.conditions` | list of object | Standard Kubernetes condition array. |
+| `status.deployedCatalogName` | string | Name of the catalog pushed to the router. |
+| `status.registeredTools` | list of string | Tool names successfully registered with the router. |
+| `status.registeredResources` | list of string | Resource names successfully registered with the router. |
+
+**Shared type: `spec.mcp.tools[].properties[]`**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **Yes** | Parameter name as seen by the agent (e.g., `employeeId`). |
+| `type` | string | No | MCP tool parameter type (`string`, `int`, `boolean`, etc.). |
+| `description` | string | No | Human-readable description shown to the agent. |
+| `required` | bool | No | Whether the agent must supply this parameter. |
+
+**Example — Tavily search tool:**
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCamelRoute
+metadata:
+  name: tavily-search
+  labels:
+    app: wanaku-search
+spec:
+  routerRef: wanaku-dev
+  image: quay.io/wanaku/camel-integration-capability:0.1.3
+  route: |
+    - route:
+        id: tavily-search
+        from:
+          uri: "direct:tavily-search"
+        steps:
+          - setHeader:
+              constant: GET
+              name: CamelHttpMethod
+          - toD:
+              uri: "https://api.tavily.com/search?query=${header.query}"
+  mcp:
+    tools:
+      - name: tavily_search
+        routeId: tavily-search
+        description: "Search the web using Tavily"
+        properties:
+          - name: query
+            type: string
+            description: The search query
+            required: true
+  properties:
+    TAVILY_API_KEY: "<from-secret>"
+```
+
+> [!IMPORTANT]
+> `spec.route` is opaque to the CRD validator (no nested schema is enforced). If your YAML fails validation, suspect an encoding or indentation issue — the correct field is `spec.route`, not `spec.route.id`. Run `kubectl apply --dry-run=server` to get the precise rejection message.
+>
+> [!NOTE]
+> The dedicated [WanakuCamelRoute CRD guide](camel-route-crd.md) provides a deeper dive on Camel endpoint patterns, header mapping, parameter passing, and packaging workflows.
 
 ## Deployment Examples
 
@@ -351,11 +444,130 @@ wanaku service package --path=employee-system -o employee-system.b64
 kubectl create configmap employee-catalog-data --from-file=catalog.zip=employee-system.b64 -n wanaku
 ```
 
-Then apply the CRs:
+Then apply:
 
 ```shell
 kubectl apply -f router.yaml -n wanaku
 kubectl apply -f service-catalog.yaml -n wanaku
+```
+
+## Common Deployment Patterns
+
+### Resource Limits for Router and Capabilities
+
+JVM-based containers can OOMKill without explicit requests. Set resource requests and limits using `spec.router.resources.*` (router) or `spec.dependencyCache.resources.*` (CIC). For standard HTTP capabilities, pass `JAVA_OPTS` via `env`:
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuRouter
+metadata:
+  name: wanaku-router
+spec:
+  auth:
+    authServer: http://keycloak:8080
+  router:
+    image: quay.io/wanaku/wanaku-router-backend:0.1.3
+    env:
+      - name: JAVA_OPTS
+        value: "-Xmx512m -XX:MaxDirectMemorySize=256m"
+```
+
+For the Camel Code Execution Engine, use the dedicated `resources` block (Kubernetes-native):
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCamelCodeExecutionEngine
+metadata:
+  name: code-engine
+spec:
+  routerRef: wanaku-router
+  deploymentMode: in-cluster
+  languageName: yaml
+  image: quay.io/wanaku/camel-code-execution-engine:latest
+  resources:
+    cpuRequest: "200m"
+    memoryRequest: "512Mi"
+    cpuLimit: "1"
+    memoryLimit: "1Gi"
+```
+
+> [!TIP]
+> Setting values in both Quarkus `quarkus.kubernetes.resources` (application config) and K8s resource requests (environment variable or CR field) is redundant — the operator uses the CR fields you supply. The operator constructs the Deployment's `resources.requests` and `resources.limits` from these values; if both are empty, the Deployment has no resource constraints (Kubernetes uses the namespace `LimitRange`, if defined).
+
+### High-Availability (HA) Replicas
+
+The operator currently creates Deployments with a single replica. For HA you must manually scale after creation:
+
+```shell
+kubectl scale deployment wanaku-dev --replicas=2 -n wanaku
+kubectl scale deployment wanaku-http --replicas=2 -n wanaku
+```
+
+> [!NOTE]
+> Scaled replicas share the same `Service`, so capabilities discover routers via the ClusterIP. The operator does not yet reconcile replica counts from a CR field — plan to manage replication in your GitOps pipeline until this feature is added.
+
+### Referencing Secrets and Configuring OIDC Credentials
+
+The `spec.secrets.oidcCredentialsSecret` field references a Kubernetes `Secret` by name. The Secret must live in the same namespace as the `WanakuCapability` or `WanakuCamelCodeExecutionEngine`:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wanaku-oidc-secret
+  namespace: wanaku
+type: Opaque
+data:
+  client-secret: <base64-of-your-keycloak-client-secret>
+```
+
+Then reference it:
+
+```yaml
+spec:
+  secrets:
+    oidcCredentialsSecret: wanaku-oidc-secret
+```
+
+> [!IMPORTANT]
+> The `client-secret` key in the Secret **must** be named `client-secret` (lowercase, hyphenated). The operator reads this key verbatim — different names cause a reconciliation error.
+
+### Annotations on Operator-Managed Resources
+
+`spec.annotations` (top-level on the CR) passes arbitrary key/value pairs to the operator-managed Deployment and Service. Use this to add sidecar injection markers, prometheus scraping annotations, or pod security labels:
+
+```yaml
+spec:
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    sidecar.istio.io/inject: "true"
+```
+
+### DeploymentMode for the Code Execution Engine (in-cluster vs remote)
+
+The `WanakuCamelCodeExecutionEngine` CR supports two modes:
+
+- **`in-cluster` (default):** the operator provisions a K8s Deployment and Service from `spec.image`.
+- **`remote`:** the operator provisions an `ExternalName` Service pointing to the existing endpoint described in `spec.remote`. No Deployment is created.
+
+Use `remote` when your code engine is already deployed (e.g., a managed Kafka Connect cluster, a separate Camel runtime, or legacy VMs):
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuCamelCodeExecutionEngine
+metadata:
+  name: external-yaml-engine
+spec:
+  routerRef: wanaku-dev
+  deploymentMode: remote
+  engineType: camel
+  languageName: yaml
+  remote:
+    host: camel-engine.internal.example.com
+    port: 9190
+    scheme: http
+    path: /mcp
 ```
 
 ## Lifecycle Operations
@@ -681,6 +893,27 @@ kubectl get configmap wanaku-http-config -n wanaku
 
 > [!WARNING]
 > Do **not** manually edit operator-managed resources (deployments, services, etc.). The operator reconciles them continuously and will overwrite manual changes. Always edit the custom resource instead.
+
+### Troubleshooting CRD validation errors
+
+When `kubectl apply` rejects a CR before the operator ever sees it, the problem is purely in the YAML shape. Common culprits and fixes:
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `Forbidden: spec.router: Invalid value` | `spec.router` or `spec.capabilities` passed at the top level of the wrong CR kind | `router` belongs on `WanakuRouter`; `capabilities` belongs on `WanakuCapability`. Do not mix them. |
+| `no matches for kind "WanakuRouter" in version "wanaku.ai/v1alpha1"` | CRDs not installed | Re-run `helm install` (or `kubectl apply` the CRD YAMLs) and verify with `kubectl get crd wanakurouters.wanaku.ai`. |
+| `Forbidden: updates to statefulset spec are not allowed` | Editing an operator-managed Deployment directly | Delete and re-create via `kubectl apply -f <your-cr>`. The operator rebuilds the Deployment from the CR. |
+| `Object field is immutable` (e.g. `spec.auth`) on an existing CR | Auth block changed after first reconcile | Delete and recreate the CR (or delete the operator-managed Deployment so it gets rebuilt). |
+| `unable to recognize ""` or `error converting YAML` — blank value | Trailing space on a key, or scalar placed where object is expected (e.g. `authProxy: "auto" # with a trailing tab`) | Run the file through `yamllint` and re-apply with `--dry-run=server`. |
+| CRD accepted but CR stays in `NotReady` indefinitely | Router not reachable / OIDC secret wrong / `routerRef` typo | Run `kubectl describe <cr> -n <ns>`; check operator logs (`kubectl logs -l app=wanaku-operator -n <ns>`); confirm the referenced router exists and is in `Ready` condition. |
+
+**Quick diagnosis loop:**
+
+```shell
+kubectl apply --dry-run=server -f my-cr.yaml -n wanaku
+kubectl describe wanakurouter wanaku-router -n wanaku
+kubectl logs -l app=wanaku-operator -n wanaku --tail=100
+```
 
 ## Next Steps
 
