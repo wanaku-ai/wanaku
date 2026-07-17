@@ -6,6 +6,7 @@ This rule file contains build tools, commands, and code style constraints for th
 - **Build command:** `mvn verify`
 - **Test command:** `mvn verify`
 - **Test with coverage command:** `mvn verify -Pcoverage`
+- **Run the static code analyzer:** `mvn -B --no-transfer-progress verify -Pstatic-analysis -DskipTests --file pom.xml`
 - **Format command:** `mvn verify` (auto-formats during build)
 - **Module-specific build:** no (run from root)
 - **Parallelized Maven:** yes
