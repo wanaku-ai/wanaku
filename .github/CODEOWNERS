@@ -16,12 +16,6 @@
 # Capabilities
 /capabilities/ @wanaku-ai/maintainers
 
-# UI
-/ui/ @wanaku-ai/maintainers-ui
-
-# Operator
-/apps/wanaku-operator/ @wanaku-ai/maintainers
-
 # Documentation
 /docs/ @wanaku-ai/maintainers
 
