@@ -63,7 +63,7 @@ class AuthConfigSourceTest {
         Map<String, String> props = configSource.getProperties();
         assertNotNull(props);
         assertEquals("false", props.get("quarkus.oidc.enabled"));
-        assertEquals("false", props.get("quarkus.oidc-proxy.enabled"));
+        assertEquals("false", props.get("wanaku.oidc-proxy.enabled"));
         assertEquals("false", props.get("quarkus.oidc.discovery-enabled"));
         assertEquals("false", props.get("quarkus.oidc.resource-metadata.enabled"));
         assertEquals("false", props.get("quarkus.oidc.mcp.enabled"));
@@ -83,7 +83,7 @@ class AuthConfigSourceTest {
     void getValue_returnsNoAuthValue_whenAuthSetToNone() {
         System.setProperty(AUTH_PROPERTY, "none");
         assertEquals("false", configSource.getValue("quarkus.oidc.enabled"));
-        assertEquals("false", configSource.getValue("quarkus.oidc-proxy.enabled"));
+        assertEquals("false", configSource.getValue("wanaku.oidc-proxy.enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.discovery-enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.resource-metadata.enabled"));
         assertEquals("false", configSource.getValue("quarkus.oidc.mcp.enabled"));

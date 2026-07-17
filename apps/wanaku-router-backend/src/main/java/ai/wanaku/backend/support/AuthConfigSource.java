@@ -72,7 +72,7 @@ public class AuthConfigSource implements ConfigSource {
             props.put("quarkus.oidc.mcp.enabled", "false");
             props.put("quarkus.oidc.mcp.discovery-enabled", "false");
             props.put("quarkus.oidc.mcp.resource-metadata.enabled", "false");
-            props.put("quarkus.oidc-proxy.enabled", "false");
+            props.put("wanaku.oidc-proxy.enabled", "false");
             props.put("quarkus.http.auth.permission.authenticated.policy", "permit");
             props.put("quarkus.http.auth.permission.mcp-authenticated.policy", "permit");
             props.put("quarkus.http.auth.permission.web.policy", "permit");

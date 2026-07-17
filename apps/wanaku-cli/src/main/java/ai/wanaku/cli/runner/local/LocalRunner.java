@@ -167,7 +167,7 @@ public class LocalRunner {
                 RuntimeConstants.WANAKU_ROUTER_BACKEND,
                 wanakuHomeOpt(),
                 "-Dquarkus.oidc.enabled=false",
-                "-Dquarkus.oidc-proxy.enabled=false");
+                "-Dwanaku.oidc-proxy.enabled=false");
 
         for (Map.Entry<String, String> component : components.entrySet()) {
             if (isEnabled(services, component)) {

@@ -26,7 +26,7 @@ public class NamespaceTenantConfigResolver implements TenantConfigResolver {
     @ConfigProperty(name = "auth.proxy")
     String authProxy;
 
-    @ConfigProperty(name = "quarkus.oidc-proxy.root-path", defaultValue = "/q/oidc")
+    @ConfigProperty(name = "wanaku.oidc-proxy.root-path", defaultValue = "/q/oidc")
     String oidcProxyRootPath;
 
     @Override

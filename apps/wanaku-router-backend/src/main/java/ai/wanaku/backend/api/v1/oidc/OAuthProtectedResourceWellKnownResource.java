@@ -19,7 +19,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @Produces(MediaType.APPLICATION_JSON)
 public class OAuthProtectedResourceWellKnownResource {
 
-    @ConfigProperty(name = "quarkus.oidc-proxy.root-path", defaultValue = "/q/oidc")
+    @ConfigProperty(name = "wanaku.oidc-proxy.root-path", defaultValue = "/q/oidc")
     String oidcProxyRootPath;
 
     @Context

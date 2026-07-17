@@ -112,7 +112,7 @@ jobs:
       run: >
         java -Dquarkus.launch.rebuild=true
         -Dquarkus.oidc.enabled=false
-        -Dquarkus.oidc-proxy.enabled=false
+        -Dwanaku.oidc-proxy.enabled=false
         -jar apps/wanaku-router-backend/target/quarkus-app/quarkus-run.jar
 
     - name: Start Router Backend

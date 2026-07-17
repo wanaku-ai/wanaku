@@ -180,11 +180,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-keycloak-authorization</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.oidc-proxy</groupId>
-            <artifactId>quarkus-oidc-proxy</artifactId>
-            <version>${quarkus-oidc-proxy.version}</version>
-        </dependency>
+        <!-- quarkus-oidc-proxy removed: its OidcProxy constructor NPEs when the
+             OIDC provider is unavailable at startup (wanaku-ai/wanaku#1593).
+             WanakuOidcProxy replaces it with lazy, null-safe initialization. -->
 
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>

@@ -14,7 +14,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @Path("/.well-known")
 @Produces(MediaType.APPLICATION_JSON)
 public class OAuthAuthorizationServerWellKnownResource {
-    @ConfigProperty(name = "quarkus.oidc-proxy.root-path", defaultValue = "/q/oidc")
+    @ConfigProperty(name = "wanaku.oidc-proxy.root-path", defaultValue = "/q/oidc")
     String oidcProxyRootPath;
 
     @ConfigProperty(name = "auth.proxy", defaultValue = "http://localhost:8080")
