@@ -10,6 +10,8 @@
 # Apps
 /apps/ @wanaku-ai/maintainers
 /apps/ui/ @wanaku-ai/maintainers-ui
+# Operator
+/apps/wanaku-operator/ @wanaku-ai/maintainers-operator
 
 # Capabilities
 /capabilities/ @wanaku-ai/maintainers
