@@ -82,7 +82,7 @@
         <annotations-api.version>6.0.53</annotations-api.version>
         <quarkus-operator-sdk.version>7.7.4</quarkus-operator-sdk.version>
         <quarkus-helm.version>1.4.1</quarkus-helm.version>
-        <wanaku-capabilities-sdk.version>0.2.0-SNAPSHOT</wanaku-capabilities-sdk.version>
+        <wanaku-capabilities-sdk.version>0.3.0-SNAPSHOT</wanaku-capabilities-sdk.version>
         <forage.version>1.5.0</forage.version>
         <commonmark.version>0.29.0</commonmark.version>
         <oauth2-oidc-sdk.version>11.37.2</oauth2-oidc-sdk.version>
