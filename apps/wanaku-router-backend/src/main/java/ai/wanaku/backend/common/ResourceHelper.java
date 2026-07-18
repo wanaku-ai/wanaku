@@ -39,20 +39,9 @@ public final class ResourceHelper {
 
         McpServerFeatures.SyncResourceSpecification spec =
                 new McpServerFeatures.SyncResourceSpecification(resource, (exchange, request) -> {
-                    try {
-                        return handler.read(
-                                        request, exchange.sessionId(), exchange.transportContext(), resourceReference)
-                                .await()
-                                .indefinitely();
-                    } catch (Exception e) {
-                        LOG.debugf(e, "Resource handler error for %s", resourceReference.getName());
-                        return McpSchema.ReadResourceResult.builder(
-                                        java.util.List.of(new McpSchema.TextResourceContents(
-                                                request.uri(),
-                                                "text/plain",
-                                                e.getMessage() != null ? e.getMessage() : "Internal error")))
-                                .build();
-                    }
+                    return handler.read(request, exchange.sessionId(), exchange.transportContext(), resourceReference)
+                            .await()
+                            .indefinitely();
                 });
 
         try {
