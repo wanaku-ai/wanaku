@@ -117,16 +117,6 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
 
                 if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
                         && jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
-
-                    if (accept == null || !accept.contains(TEXT_EVENT_STREAM) || !accept.contains(APPLICATION_JSON)) {
-                        sendMcpError(
-                                ctx,
-                                400,
-                                McpSchema.ErrorCodes.INVALID_REQUEST,
-                                "Accept header must include text/event-stream and application/json");
-                        return;
-                    }
-
                     handleInitialize(ctx, jsonrpcRequest);
                     return;
                 }
