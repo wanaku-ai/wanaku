@@ -65,6 +65,7 @@ public class McpServerRegistry {
                         new McpSchema.ServerCapabilities.PromptCapabilities(true),
                         new McpSchema.ServerCapabilities.ResourceCapabilities(true, true),
                         new McpSchema.ServerCapabilities.ToolCapabilities(true)))
+                .validateToolInputs(false)
                 .build();
 
         String pathWithSlash = basePath.endsWith("/") ? basePath : basePath + "/";
