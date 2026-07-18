@@ -56,31 +56,33 @@ public final class InvokerToolExecutor {
             String requestId,
             McpTransportContext transportContext) {
 
+        Map<String, Object> args = callToolRequest.arguments() != null ? callToolRequest.arguments() : Map.of();
+
         // Validate required parameters before processing
-        validateRequiredParameters(toolReference, callToolRequest.arguments());
+        validateRequiredParameters(toolReference, args);
 
         // Filter out metadata and auth args before converting to string map
-        Map<String, Object> filteredArgs = filterOutReservedArgs(callToolRequest.arguments());
+        Map<String, Object> filteredArgs = filterOutReservedArgs(args);
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
 
         // Start with HTTP request headers from transport context (lowest priority)
         Map<String, String> headers = extractHttpHeaders(transportContext);
 
         // Extract metadata headers from args (with prefix stripped)
-        Map<String, String> metadataHeaders = extractMetadataHeaders(callToolRequest);
+        Map<String, String> metadataHeaders = extractPrefixedHeaders(args, METADATA_PREFIX);
 
         // Extract auth headers from args (with prefix stripped)
-        Map<String, String> authHeaders = extractAuthHeaders(callToolRequest);
+        Map<String, String> authHeaders = extractPrefixedHeaders(args, AUTH_PREFIX);
 
         // Extract tool-defined headers from schema
-        Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, callToolRequest);
+        Map<String, String> toolDefinedHeaders = extractHeaders(toolReference, args);
 
         // Merge in order of priority: HTTP headers < metadata < tool-defined < auth
         headers.putAll(metadataHeaders);
         headers.putAll(toolDefinedHeaders);
         headers.putAll(authHeaders);
 
-        String body = extractBody(toolReference, callToolRequest);
+        String body = extractBody(toolReference, args);
 
         return ToolInvokeRequest.newBuilder()
                 .setBody(body)
@@ -93,13 +95,13 @@ public final class InvokerToolExecutor {
                 .build();
     }
 
-    static Map<String, String> extractHeaders(ToolReference toolReference, McpSchema.CallToolRequest callToolRequest) {
+    static Map<String, String> extractHeaders(ToolReference toolReference, Map<String, Object> args) {
         Map<String, Property> inputSchema = toolReference.getInputSchema().getProperties();
 
         // extract headers parameter
         return inputSchema.entrySet().stream()
                 .filter(InvokerToolExecutor::extractProperties)
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> evalValue(e, callToolRequest)));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> evalValue(e, args)));
     }
 
     /**
@@ -111,7 +113,8 @@ public final class InvokerToolExecutor {
      * @return a map of header names (with prefix stripped) to their values
      */
     static Map<String, String> extractMetadataHeaders(McpSchema.CallToolRequest callToolRequest) {
-        return extractPrefixedHeaders(callToolRequest, METADATA_PREFIX);
+        Map<String, Object> args = callToolRequest.arguments() != null ? callToolRequest.arguments() : Map.of();
+        return extractPrefixedHeaders(args, METADATA_PREFIX);
     }
 
     /**
@@ -124,12 +127,12 @@ public final class InvokerToolExecutor {
      * @return a map of header names (with prefix stripped) to their values
      */
     static Map<String, String> extractAuthHeaders(McpSchema.CallToolRequest callToolRequest) {
-        return extractPrefixedHeaders(callToolRequest, AUTH_PREFIX);
+        Map<String, Object> args = callToolRequest.arguments() != null ? callToolRequest.arguments() : Map.of();
+        return extractPrefixedHeaders(args, AUTH_PREFIX);
     }
 
-    private static Map<String, String> extractPrefixedHeaders(
-            McpSchema.CallToolRequest callToolRequest, String prefix) {
-        return callToolRequest.arguments().entrySet().stream()
+    private static Map<String, String> extractPrefixedHeaders(Map<String, Object> args, String prefix) {
+        return args.entrySet().stream()
                 .filter(e -> e.getKey() != null && e.getKey().startsWith(prefix))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(e -> e.getKey().substring(prefix.length()), e -> e.getValue()
@@ -206,22 +209,22 @@ public final class InvokerToolExecutor {
                 && property.getScope().equals(ReservedPropertyNames.SCOPE_SERVICE);
     }
 
-    private static String evalValue(Map.Entry<String, Property> entry, McpSchema.CallToolRequest callToolRequest) {
+    private static String evalValue(Map.Entry<String, Property> entry, Map<String, Object> args) {
         if (entry.getValue() == null) {
             LOG.fatalf("Malformed value for key %s: null", entry.getKey());
-            final Object fallback = callToolRequest.arguments().get(entry.getKey());
+            final Object fallback = args.get(entry.getKey());
             requireNonNullValue(entry, fallback);
             return fallback.toString();
         }
 
         if (entry.getValue().getValue() == null) {
-            final Object valueFromArgument = callToolRequest.arguments().get(entry.getKey());
+            final Object valueFromArgument = args.get(entry.getKey());
             requireNonNullValue(entry, valueFromArgument);
 
             return valueFromArgument.toString();
         }
 
-        final Object valueFromArgument = callToolRequest.arguments().get(entry.getKey());
+        final Object valueFromArgument = args.get(entry.getKey());
         if (valueFromArgument != null) {
             LOG.warnf(
                     "Overriding default value for configuration %s with the one provided by the tool", entry.getKey());
@@ -269,20 +272,14 @@ public final class InvokerToolExecutor {
         }
     }
 
-    private static String extractBody(ToolReference toolReference, McpSchema.CallToolRequest callToolRequest) {
-        // First, check if the tool specification defines it as having a body
+    private static String extractBody(ToolReference toolReference, Map<String, Object> args) {
         Map<String, Property> properties = toolReference.getInputSchema().getProperties();
         Property bodyProp = properties.get(BODY);
         if (bodyProp == null) {
-            // If the tool does not specify a body, then return an empty string
             return EMPTY_BODY;
         }
 
-        // If there is a body defined, then get it from the arguments from the LLM
-        String body = (String) callToolRequest.arguments().get(BODY);
-        // If the LLM does not provide a body, then return an empty string
+        String body = (String) args.get(BODY);
         return Objects.requireNonNullElse(body, EMPTY_BODY);
-
-        // Use the body provided by the LLM
     }
 }
