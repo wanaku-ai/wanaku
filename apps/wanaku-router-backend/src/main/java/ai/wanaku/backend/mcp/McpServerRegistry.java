@@ -67,11 +67,16 @@ public class McpServerRegistry {
                         new McpSchema.ServerCapabilities.ToolCapabilities(true)))
                 .build();
 
+        String pathWithSlash = basePath.endsWith("/") ? basePath : basePath + "/";
         List<Route> routes = new ArrayList<>();
         routes.add(router.route(basePath).handler(BodyHandler.create()));
+        routes.add(router.route(pathWithSlash).handler(BodyHandler.create()));
         routes.add(router.post(basePath).blockingHandler(transportProvider.postHandler(), false));
+        routes.add(router.post(pathWithSlash).blockingHandler(transportProvider.postHandler(), false));
         routes.add(router.get(basePath).blockingHandler(transportProvider.getHandler(), false));
+        routes.add(router.get(pathWithSlash).blockingHandler(transportProvider.getHandler(), false));
         routes.add(router.delete(basePath).blockingHandler(transportProvider.deleteHandler(), false));
+        routes.add(router.delete(pathWithSlash).blockingHandler(transportProvider.deleteHandler(), false));
 
         servers.put(namespace, server);
         transportProviders.put(namespace, transportProvider);
