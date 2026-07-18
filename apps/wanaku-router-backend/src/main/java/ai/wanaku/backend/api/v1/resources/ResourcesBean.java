@@ -53,6 +53,10 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     }
 
     public ResourceReference expose(ResourceReference mcpResource) {
+        List<ResourceReference> existing = resourceReferenceRepository.findByName(mcpResource.getName());
+        if (!existing.isEmpty()) {
+            throw EntityAlreadyExistsException.forName(mcpResource.getName());
+        }
         doExposeResource(mcpResource);
         return resourceReferenceRepository.persist(mcpResource);
     }
