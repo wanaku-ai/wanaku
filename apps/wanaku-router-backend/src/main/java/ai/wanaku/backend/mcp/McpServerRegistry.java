@@ -42,9 +42,9 @@ public class McpServerRegistry {
     Router router;
 
     void init(@Observes @Priority(1) StartupEvent ev) {
-        createServerIfAbsent(DEFAULT_NAMESPACE, "/mcp");
         createServerIfAbsent(INTERNAL_NAMESPACE, "/" + INTERNAL_NAMESPACE + "/mcp");
         createServerIfAbsent(PUBLIC_NAMESPACE, "/" + PUBLIC_NAMESPACE + "/mcp");
+        addAlias(DEFAULT_NAMESPACE, PUBLIC_NAMESPACE, "/mcp");
         LOG.infof("MCP Server Registry initialized with %d namespaces", servers.size());
     }
 
@@ -82,6 +82,29 @@ public class McpServerRegistry {
         transportProviders.put(namespace, transportProvider);
         namespaceRoutes.put(namespace, routes);
         LOG.infof("Registered MCP server for namespace '%s' at path '%s'", namespace, basePath);
+    }
+
+    private synchronized void addAlias(String alias, String targetNamespace, String basePath) {
+        VertxStreamableTransportProvider targetProvider = transportProviders.get(targetNamespace);
+        McpSyncServer targetServer = servers.get(targetNamespace);
+        if (targetProvider == null || targetServer == null) {
+            throw new IllegalStateException("Target namespace not found: " + targetNamespace);
+        }
+
+        String pathWithSlash = basePath.endsWith("/") ? basePath : basePath + "/";
+        List<Route> routes = new ArrayList<>();
+        routes.add(router.route(basePath).handler(BodyHandler.create()));
+        routes.add(router.route(pathWithSlash).handler(BodyHandler.create()));
+        routes.add(router.post(basePath).blockingHandler(targetProvider.postHandler(), false));
+        routes.add(router.post(pathWithSlash).blockingHandler(targetProvider.postHandler(), false));
+        routes.add(router.get(basePath).blockingHandler(targetProvider.getHandler(), false));
+        routes.add(router.get(pathWithSlash).blockingHandler(targetProvider.getHandler(), false));
+        routes.add(router.delete(basePath).blockingHandler(targetProvider.deleteHandler(), false));
+        routes.add(router.delete(pathWithSlash).blockingHandler(targetProvider.deleteHandler(), false));
+
+        servers.put(alias, targetServer);
+        namespaceRoutes.put(alias, routes);
+        LOG.infof("Registered alias '%s' at path '%s' -> namespace '%s'", alias, basePath, targetNamespace);
     }
 
     public synchronized void removeServer(String namespace) {
