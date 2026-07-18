@@ -118,6 +118,7 @@ public class InvokerBridge implements ToolsBridge {
                                                                     ? failure.getMessage()
                                                                     : "Tool execution failed")
                                                     .build()))
+                                    .isError(true)
                                     .build();
                         }))
                 .onItemOrFailure()
