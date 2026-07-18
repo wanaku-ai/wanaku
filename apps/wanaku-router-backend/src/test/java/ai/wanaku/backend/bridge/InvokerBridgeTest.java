@@ -50,7 +50,8 @@ class InvokerBridgeTest {
         ToolReference ref = buildToolReference(props);
 
         McpSchema.CallToolRequest request = mockCallToolRequest(Map.of());
-        Map<String, String> headers = InvokerToolExecutor.extractHeaders(ref, request);
+        Map<String, String> headers =
+                InvokerToolExecutor.extractHeaders(ref, request.arguments() != null ? request.arguments() : Map.of());
 
         assertEquals(2, headers.size(), "Should only include header+service entries");
         assertEquals("abc-123", headers.get("X-Request-ID"));
@@ -71,7 +72,8 @@ class InvokerBridgeTest {
         ToolReference ref = buildToolReference(props);
 
         McpSchema.CallToolRequest request = mockCallToolRequest(Map.of());
-        Map<String, String> headers = InvokerToolExecutor.extractHeaders(ref, request);
+        Map<String, String> headers =
+                InvokerToolExecutor.extractHeaders(ref, request.arguments() != null ? request.arguments() : Map.of());
 
         assertEquals(1, headers.size());
         assertEquals("xyz", headers.get("X-Request-ID"));
@@ -87,7 +89,8 @@ class InvokerBridgeTest {
         ToolReference ref = buildToolReference(props);
 
         McpSchema.CallToolRequest request = mockCallToolRequest(Map.of());
-        Map<String, String> headers = InvokerToolExecutor.extractHeaders(ref, request);
+        Map<String, String> headers =
+                InvokerToolExecutor.extractHeaders(ref, request.arguments() != null ? request.arguments() : Map.of());
         assertTrue(headers.isEmpty());
     }
 
@@ -101,7 +104,8 @@ class InvokerBridgeTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 NullPointerException.class,
-                () -> InvokerToolExecutor.extractHeaders(ref, request),
+                () -> InvokerToolExecutor.extractHeaders(
+                        ref, request.arguments() != null ? request.arguments() : Map.of()),
                 "Should throw NPE when property value is null and argument is not provided");
     }
 
@@ -113,7 +117,8 @@ class InvokerBridgeTest {
         ToolReference ref = buildToolReference(props);
         McpSchema.CallToolRequest request = mockCallToolRequest(Map.of("X-API-Key", "123"));
 
-        final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, request);
+        final Map<String, String> stringStringMap =
+                InvokerToolExecutor.extractHeaders(ref, request.arguments() != null ? request.arguments() : Map.of());
         assertEquals("123", stringStringMap.get("X-API-Key"));
     }
 
@@ -125,7 +130,8 @@ class InvokerBridgeTest {
         ToolReference ref = buildToolReference(props);
         McpSchema.CallToolRequest request = mockCallToolRequest(Map.of());
 
-        final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, request);
+        final Map<String, String> stringStringMap =
+                InvokerToolExecutor.extractHeaders(ref, request.arguments() != null ? request.arguments() : Map.of());
         assertEquals("abc", stringStringMap.get("X-API-Key"));
     }
 
@@ -137,7 +143,8 @@ class InvokerBridgeTest {
         ToolReference ref = buildToolReference(props);
         McpSchema.CallToolRequest request = mockCallToolRequest(Map.of("X-API-Key", "123"));
 
-        final Map<String, String> stringStringMap = InvokerToolExecutor.extractHeaders(ref, request);
+        final Map<String, String> stringStringMap =
+                InvokerToolExecutor.extractHeaders(ref, request.arguments() != null ? request.arguments() : Map.of());
         assertEquals("123", stringStringMap.get("X-API-Key"));
     }
 
