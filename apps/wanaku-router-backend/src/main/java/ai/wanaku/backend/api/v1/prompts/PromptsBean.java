@@ -49,6 +49,11 @@ public class PromptsBean extends AbstractBean<PromptReference> {
     }
 
     public PromptReference add(PromptReference promptReference) {
+        java.util.List<PromptReference> existing = promptReferenceRepository.findByName(promptReference.getName());
+        if (!existing.isEmpty()) {
+            throw ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException.forName(
+                    promptReference.getName());
+        }
         registerPrompt(promptReference);
         return promptReferenceRepository.persist(promptReference);
     }

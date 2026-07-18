@@ -42,9 +42,20 @@ public class ToolsHelper {
         McpServerFeatures.SyncToolSpecification spec = McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler((exchange, request) -> {
-                    return handler.execute(request, exchange.sessionId(), exchange.transportContext(), toolReference)
-                            .await()
-                            .indefinitely();
+                    try {
+                        return handler.execute(
+                                        request, exchange.sessionId(), exchange.transportContext(), toolReference)
+                                .await()
+                                .indefinitely();
+                    } catch (Exception e) {
+                        LOG.debugf(e, "Tool handler error for %s", toolReference.getName());
+                        return McpSchema.CallToolResult.builder(
+                                        java.util.List.of((McpSchema.Content) McpSchema.TextContent.builder(
+                                                        e.getMessage() != null ? e.getMessage() : "Internal error")
+                                                .build()))
+                                .isError(true)
+                                .build();
+                    }
                 })
                 .build();
 
