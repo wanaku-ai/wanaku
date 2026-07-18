@@ -56,7 +56,7 @@ public class ToolsAdd extends BaseCommand {
             required = true)
     private String name;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(

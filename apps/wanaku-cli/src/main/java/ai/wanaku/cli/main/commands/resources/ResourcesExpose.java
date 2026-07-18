@@ -68,7 +68,7 @@ public class ResourcesExpose extends BaseCommand {
             arity = "0..1")
     private String name;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
