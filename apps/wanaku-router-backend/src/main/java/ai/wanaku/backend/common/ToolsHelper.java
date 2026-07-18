@@ -74,7 +74,7 @@ public class ToolsHelper {
             Map<String, Object> propsMap = new LinkedHashMap<>();
             inputSchema.getProperties().forEach((key, property) -> {
                 Map<String, Object> propDef = new LinkedHashMap<>();
-                propDef.put("type", property.getType() != null ? property.getType() : "string");
+                propDef.put("type", normalizeJsonSchemaType(property.getType()));
                 if (property.getDescription() != null) {
                     propDef.put("description", property.getDescription());
                 }
@@ -89,5 +89,17 @@ public class ToolsHelper {
         }
 
         return schemaMap;
+    }
+
+    private static String normalizeJsonSchemaType(String type) {
+        if (type == null) {
+            return "string";
+        }
+        return switch (type.toLowerCase()) {
+            case "int" -> "integer";
+            case "bool" -> "boolean";
+            case "float", "double" -> "number";
+            default -> type;
+        };
     }
 }
