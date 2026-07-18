@@ -51,9 +51,10 @@ public class ToolsHelper {
                         LOG.debugf(e, "Tool handler error for %s", toolReference.getName());
                         return McpSchema.CallToolResult.builder(
                                         java.util.List.of((McpSchema.Content) McpSchema.TextContent.builder(
-                                                        e.getMessage() != null ? e.getMessage() : "Internal error")
+                                                        e.getMessage() != null
+                                                                ? e.getMessage()
+                                                                : "Tool execution failed")
                                                 .build()))
-                                .isError(true)
                                 .build();
                     }
                 })
