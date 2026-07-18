@@ -67,7 +67,7 @@ public class ResourcesExpose extends BaseCommand {
             arity = "0..1")
     private String name;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
@@ -120,7 +120,7 @@ public class ResourcesExpose extends BaseCommand {
         resource.setName(name);
         resource.setDescription(description);
         resource.setMimeType(mimeType);
-        resource.setNamespace(namespaceOptions.getNamespaceValue());
+        resource.setNamespace(namespaceOptions != null ? namespaceOptions.getNamespaceValue() : null);
         resource.setLabels(labels);
 
         ResourcePayload resourcePayload = new ResourcePayload();

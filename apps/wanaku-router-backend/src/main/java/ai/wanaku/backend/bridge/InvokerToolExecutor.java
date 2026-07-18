@@ -58,9 +58,6 @@ public final class InvokerToolExecutor {
 
         Map<String, Object> args = callToolRequest.arguments() != null ? callToolRequest.arguments() : Map.of();
 
-        // Validate required parameters before processing
-        validateRequiredParameters(toolReference, args);
-
         // Filter out metadata and auth args before converting to string map
         Map<String, Object> filteredArgs = filterOutReservedArgs(args);
         Map<String, String> argumentsMap = CollectionsHelper.toStringStringMap(filteredArgs);
