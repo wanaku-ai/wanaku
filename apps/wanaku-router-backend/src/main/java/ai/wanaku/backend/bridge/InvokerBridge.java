@@ -112,10 +112,12 @@ public class InvokerBridge implements ToolsBridge {
                             emitFailed(ctx, failure);
 
                             LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
-                            return McpSchema.CallToolResult.builder(java.util.List.of(
-                                            (McpSchema.Content) McpSchema.TextContent.builder(failure.getMessage())
+                            return McpSchema.CallToolResult.builder(
+                                            java.util.List.of((McpSchema.Content) McpSchema.TextContent.builder(
+                                                            failure.getMessage() != null
+                                                                    ? failure.getMessage()
+                                                                    : "Tool execution failed")
                                                     .build()))
-                                    .isError(true)
                                     .build();
                         }))
                 .onItemOrFailure()
