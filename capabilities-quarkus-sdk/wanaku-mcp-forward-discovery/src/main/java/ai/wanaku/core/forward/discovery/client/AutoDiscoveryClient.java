@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.core.services.api.ForwardRequest;
 import ai.wanaku.core.services.api.ForwardsService;
 
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
@@ -39,24 +39,24 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
         try {
             lock.lock();
 
-            ForwardReference reference = new ForwardReference();
-            reference.setName(name);
-            reference.setNamespace(namespace);
+            ForwardRequest request = new ForwardRequest();
+            request.setName(name);
+            request.setNamespace(namespace);
 
             String actualAnnounceAddress = resolveRegistrationAddress(announceAddress);
 
-            reference.setAddress(actualAnnounceAddress);
+            request.setAddress(actualAnnounceAddress);
 
             final ForwardsService forwardsService = newService();
             try {
-                forwardsService.addForward(reference);
+                forwardsService.addForward(request);
                 registered.set(true);
-                LOG.debugf("The service %s successfully registered.", reference.getName());
+                LOG.debugf("The service %s successfully registered.", request.getName());
             } catch (WebApplicationException ex) {
                 if (LOG.isTraceEnabled()) {
-                    LOG.errorf(ex, "Unable to register forward service %s", reference.getName());
+                    LOG.errorf(ex, "Unable to register forward service %s", request.getName());
                 } else {
-                    LOG.errorf("Unable to register forward service %s", reference.getName());
+                    LOG.errorf("Unable to register forward service %s", request.getName());
                 }
             }
         } finally {

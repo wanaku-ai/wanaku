@@ -1,4 +1,5 @@
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ForwardReferenceSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ForwardRootsSchema
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.NamespaceSchema
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.PropertySchema
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ServiceStateSchema

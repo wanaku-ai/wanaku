@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { CodeExecutionRequestEnvironment } from "./codeExecutionRequestEnvironment";
-import type { CodeExecutionRequestMetadata } from "./codeExecutionRequestMetadata";
+import type { CodeExecutionRequestEnvironment } from './codeExecutionRequestEnvironment';
+import type { CodeExecutionRequestMetadata } from './codeExecutionRequestMetadata';
 
 export interface CodeExecutionRequest {
   code?: string;

@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { ToolReferenceLabels } from "./toolReferenceLabels";
-import type { InputSchema } from "./inputSchema";
+import type { ToolReferenceLabels } from './toolReferenceLabels';
+import type { InputSchema } from './inputSchema';
 
 export interface ToolReference {
   labels?: ToolReferenceLabels;

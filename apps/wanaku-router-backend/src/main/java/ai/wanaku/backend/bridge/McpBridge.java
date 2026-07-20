@@ -10,6 +10,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
+import dev.langchain4j.mcp.client.McpRoot;
 
 /**
  * Bridge interface for interacting with remote MCP servers via the langchain4j MCP client.
@@ -22,7 +23,10 @@ public interface McpBridge {
     List<RemoteToolReference> listTools(ForwardClient forwardClient) throws ServiceUnavailableException;
 
     Uni<ToolResponse> executeTool(
-            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference);
+            String address,
+            List<McpRoot> roots,
+            ToolManager.ToolArguments toolArguments,
+            CallableReference toolReference);
 
     List<ResourceReference> listResources(ForwardClient forwardClient) throws ServiceUnavailableException;
 

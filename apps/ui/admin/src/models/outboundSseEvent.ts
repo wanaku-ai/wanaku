@@ -4,9 +4,9 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { OutboundSseEventType } from "./outboundSseEventType";
-import type { OutboundSseEventGenericType } from "./outboundSseEventGenericType";
-import type { MediaType } from "./mediaType";
+import type { OutboundSseEventType } from './outboundSseEventType';
+import type { OutboundSseEventGenericType } from './outboundSseEventGenericType';
+import type { MediaType } from './mediaType';
 
 export interface OutboundSseEvent {
   id?: string;

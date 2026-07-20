@@ -33,6 +33,7 @@ import dev.langchain4j.mcp.client.McpException;
 import dev.langchain4j.mcp.client.McpReadResourceResult;
 import dev.langchain4j.mcp.client.McpResource;
 import dev.langchain4j.mcp.client.McpResourceContents;
+import dev.langchain4j.mcp.client.McpRoot;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
@@ -80,14 +81,20 @@ public class DefaultMcpBridge implements McpBridge {
 
     @Override
     public Uni<ToolResponse> executeTool(
-            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+            String address,
+            List<McpRoot> roots,
+            ToolManager.ToolArguments toolArguments,
+            CallableReference toolReference) {
         return Uni.createFrom()
-                .item(() -> doExecuteTool(address, toolArguments, toolReference))
+                .item(() -> doExecuteTool(address, roots, toolArguments, toolReference))
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor());
     }
 
     private ToolResponse doExecuteTool(
-            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference) {
+            String address,
+            List<McpRoot> roots,
+            ToolManager.ToolArguments toolArguments,
+            CallableReference toolReference) {
         LOG.infof(
                 "Calling tool on behalf of connection %s",
                 toolArguments.connection().id());
@@ -100,7 +107,7 @@ public class DefaultMcpBridge implements McpBridge {
                     .arguments(serializeArguments(toolArguments.args()))
                     .build();
 
-            try (var mcpClient = ClientUtil.createClient(address)) {
+            try (var mcpClient = ClientUtil.createClient(address, roots)) {
                 ToolExecutionResult result = mcpClient.executeTool(request);
                 if (result.isError()) {
                     return ToolResponse.error(result.resultText());

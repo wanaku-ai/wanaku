@@ -8,9 +8,9 @@ import java.net.URI;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.core.forward.discovery.client.ForwardDiscoveryCallback;
 import ai.wanaku.core.forward.discovery.client.ForwardRegistrationManager;
+import ai.wanaku.core.services.api.ForwardRequest;
 import ai.wanaku.core.services.api.ForwardsService;
 
 public class MockMcpCallbackProducer {
@@ -35,17 +35,17 @@ public class MockMcpCallbackProducer {
                 .baseUri(URI.create(registrationUri))
                 .build(ForwardsService.class);
 
-        final ForwardReference forwardReference = new ForwardReference();
+        final ForwardRequest forwardRequest = new ForwardRequest();
 
         return new ForwardDiscoveryCallback() {
             @Override
             public void onRegistration(ForwardRegistrationManager manager) {
-                forwardReference.setName(serviceName);
-                forwardReference.setNamespace(namespace);
-                forwardReference.setAddress(forwardAddress);
+                forwardRequest.setName(serviceName);
+                forwardRequest.setNamespace(namespace);
+                forwardRequest.setAddress(forwardAddress);
 
                 try {
-                    forwardsService.addForward(forwardReference);
+                    forwardsService.addForward(forwardRequest);
                     LOG.infof("Successfully registered mock MCP server as forward: %s", serviceName);
                 } catch (WebApplicationException e) {
                     LOG.warn("Failed to register mock MCP server as forward", e);
@@ -55,7 +55,7 @@ public class MockMcpCallbackProducer {
             @Override
             public void onDeregistration(ForwardRegistrationManager manager) {
                 try {
-                    forwardsService.removeForward(forwardReference.getName());
+                    forwardsService.removeForward(forwardRequest.getName());
                     LOG.infof("Successfully deregistered mock MCP server forward: %s", serviceName);
                 } catch (WebApplicationException e) {
                     LOG.warn("Failed to deregister mock MCP server forward", e);

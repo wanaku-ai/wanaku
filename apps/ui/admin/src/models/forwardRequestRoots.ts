@@ -5,6 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type DeleteApiV1ToolsParams = {
-labelExpression?: string;
-};
+export type ForwardRequestRoots = {[key: string]: string};

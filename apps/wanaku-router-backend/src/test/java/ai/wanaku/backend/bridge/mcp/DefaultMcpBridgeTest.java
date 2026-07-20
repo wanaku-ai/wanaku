@@ -25,7 +25,7 @@ class DefaultMcpBridgeTest {
         McpClient client = mock(McpClient.class);
         when(client.listResources())
                 .thenThrow(new McpException(DefaultMcpBridge.JSON_RPC_METHOD_NOT_FOUND, "Method not found"));
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         List<ResourceReference> result = bridge.listResources(forwardClient);
 
@@ -36,7 +36,7 @@ class DefaultMcpBridgeTest {
     void listResources_returnsResources_whenServerSupportsResources() {
         McpClient client = mock(McpClient.class);
         when(client.listResources()).thenReturn(Collections.emptyList());
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         List<ResourceReference> result = bridge.listResources(forwardClient);
 
@@ -47,7 +47,7 @@ class DefaultMcpBridgeTest {
     void listResources_throwsServiceUnavailableException_whenServerUnreachable() {
         McpClient client = mock(McpClient.class);
         when(client.listResources()).thenThrow(new McpException(-32600, "Invalid request"));
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         ServiceUnavailableException thrown = assertThrows(
                 ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException.class,
@@ -60,7 +60,7 @@ class DefaultMcpBridgeTest {
     void listResources_throwsServiceUnavailableException_whenServerReturnsOtherRpcErrors() {
         McpClient client = mock(McpClient.class);
         when(client.listResources()).thenThrow(new McpException(-32600, "Invalid params"));
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         assertThrows(ServiceUnavailableException.class, () -> bridge.listResources(forwardClient));
     }
@@ -69,7 +69,7 @@ class DefaultMcpBridgeTest {
     void listResources_throwsServiceUnavailableException_whenIoError() {
         McpClient client = mock(McpClient.class);
         when(client.listResources()).thenThrow(new RuntimeException("Connection refused"));
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         assertThrows(ServiceUnavailableException.class, () -> bridge.listResources(forwardClient));
     }
@@ -79,7 +79,7 @@ class DefaultMcpBridgeTest {
         McpClient client = mock(McpClient.class);
         when(client.listTools())
                 .thenThrow(new McpException(DefaultMcpBridge.JSON_RPC_METHOD_NOT_FOUND, "Method not found"));
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         List<RemoteToolReference> result = bridge.listTools(forwardClient);
 
@@ -90,7 +90,7 @@ class DefaultMcpBridgeTest {
     void listTools_throwsServiceUnavailableException_whenServerUnreachable() {
         McpClient client = mock(McpClient.class);
         when(client.listTools()).thenThrow(new McpException(-32603, "Internal error"));
-        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", client);
+        ForwardClient forwardClient = new ForwardClient("http://localhost:9090", null, client);
 
         assertThrows(ServiceUnavailableException.class, () -> bridge.listTools(forwardClient));
     }

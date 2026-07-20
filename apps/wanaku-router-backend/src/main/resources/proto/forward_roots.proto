@@ -1,0 +1,8 @@
+syntax = "proto3";
+package ai.wanaku.backend.bridge;
+
+// Stores MCP root configurations for a forward reference.
+message ForwardRoots {
+  string forwardName = 1;
+  map<string, string> roots = 2;
+}

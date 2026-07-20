@@ -6,6 +6,6 @@
  */
 
 export type GetApiV1DataStoreParams = {
-  labelFilter?: string;
-  name?: string;
+labelFilter?: string;
+name?: string;
 };

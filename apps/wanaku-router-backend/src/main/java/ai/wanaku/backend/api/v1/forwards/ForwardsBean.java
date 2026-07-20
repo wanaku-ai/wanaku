@@ -7,6 +7,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ForwardClient;
 import ai.wanaku.backend.bridge.ForwardRegistry;
+import ai.wanaku.backend.bridge.ForwardRoots;
 import ai.wanaku.backend.bridge.McpBridge;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
@@ -28,6 +30,7 @@ import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.backend.core.persistence.infinispan.InfinispanForwardRootsRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
@@ -40,6 +43,7 @@ import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.util.StringHelper;
+import dev.langchain4j.mcp.client.McpRoot;
 
 @ApplicationScoped
 public class ForwardsBean extends AbstractBean<ForwardReference> {
@@ -66,6 +70,9 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     @Inject
     McpBridge mcpBridge;
 
+    @Inject
+    InfinispanForwardRootsRepository forwardRootsRepository;
+
     private ForwardReferenceRepository forwardReferenceRepository;
 
     @PostConstruct
@@ -82,7 +89,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             return false;
         }
 
-        try (var forwardClient = ForwardClient.newClient(address)) {
+        List<McpRoot> roots = forwardRegistry.getRoots(nameNamespacePair);
+        try (var forwardClient = ForwardClient.newClient(address, roots)) {
             removeRemoteTools(nameNamespacePair, forwardClient);
             removeRemoteResources(forwardClient);
         } finally {
@@ -137,11 +145,14 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             LOG.warnf("Failed to remove tools and resources references for %s", forwardReference.getName());
         }
 
+        // Remove persisted roots
+        forwardRootsRepository.remove(forwardReference.getName());
+
         // Remove from the repository
         return removeByName(forwardReference.getName());
     }
 
-    public void forward(ForwardReference forwardReference) {
+    public void forward(ForwardReference forwardReference, Map<String, String> roots) {
         try {
             // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
             final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReference.getName());
@@ -149,9 +160,11 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                 throw EntityAlreadyExistsException.forName(forwardReference.getName());
             }
 
-            registerForward(forwardReference);
+            List<McpRoot> mcpRoots = toMcpRoots(roots);
+            registerForward(forwardReference, mcpRoots);
 
             forwardReferenceRepository.persist(forwardReference);
+            persistRoots(forwardReference.getName(), roots);
         } catch (WanakuException e) {
             throw e;
         } catch (Exception e) {
@@ -159,7 +172,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         }
     }
 
-    private void registerForward(ForwardReference forwardReference) {
+    private void registerForward(ForwardReference forwardReference, List<McpRoot> roots) {
         Namespace ns;
 
         if (StringHelper.isEmpty(forwardReference.getNamespace())) {
@@ -177,7 +190,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         String address = forwardReference.getAddress();
 
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
-        executeForwardRegistration(forwardReference, nameNamespacePair, address, locallyRegisteredTools, ns);
+        executeForwardRegistration(forwardReference, nameNamespacePair, address, roots, locallyRegisteredTools, ns);
     }
 
     private void registerTools(
@@ -186,6 +199,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             List<RemoteToolReference> locallyRegisteredTools,
             Namespace ns)
             throws ServiceUnavailableException {
+        List<McpRoot> capturedRoots = forwardClient.roots();
         Set<String> reservedNames = new HashSet<>();
         for (RemoteToolReference reference : mcpBridge.listTools(forwardClient)) {
             String remoteName = reference.getName();
@@ -206,7 +220,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                     localReference,
                     toolManager,
                     ns,
-                    (args, ignored) -> mcpBridge.executeTool(forwardClient.address(), args, reference));
+                    (args, ignored) -> mcpBridge.executeTool(forwardClient.address(), capturedRoots, args, reference));
 
             reservedNames.add(localName);
             locallyRegisteredTools.add(localReference);
@@ -242,14 +256,16 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             ForwardReference forwardReference,
             NameNamespacePair nameNamespacePair,
             String address,
+            List<McpRoot> roots,
             List<RemoteToolReference> locallyRegisteredTools,
             Namespace ns) {
-        try (var forwardClient = ForwardClient.newClient(address)) {
+        try (var forwardClient = ForwardClient.newClient(address, roots)) {
             registerResources(forwardClient, ns);
             registerTools(forwardClient, forwardReference, locallyRegisteredTools, ns);
 
             registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
             forwardRegistry.link(nameNamespacePair, forwardClient.address());
+            forwardRegistry.storeRoots(nameNamespacePair, roots);
         } catch (WanakuException e) {
             cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
 
@@ -263,8 +279,10 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
     public List<ResourceReference> listAllResources() {
         List<ResourceReference> references = new ArrayList<>();
-        for (String address : forwardRegistry.clients().values()) {
-            try (var client = ForwardClient.newClient(address)) {
+        for (Map.Entry<NameNamespacePair, String> entry :
+                forwardRegistry.clients().entrySet()) {
+            List<McpRoot> roots = forwardRegistry.getRoots(entry.getKey());
+            try (var client = ForwardClient.newClient(entry.getValue(), roots)) {
                 references.addAll(mcpBridge.listResources(client));
             }
         }
@@ -306,7 +324,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     void loadForwards(@Observes StartupEvent event) {
         for (ForwardReference forwardReference : forwardReferenceRepository.listAll()) {
             try {
-                registerForward(forwardReference);
+                List<McpRoot> roots = loadPersistedRoots(forwardReference.getName());
+                registerForward(forwardReference, roots);
             } catch (EntityAlreadyExistsException e) {
                 LOG.errorf(
                         "Tried to register a tool named %s during startup, but it already exists",
@@ -343,7 +362,33 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         removeLinkedEntries(forwardReference);
 
         // Re-register with fresh data from remote server
-        registerForward(forwardReference);
+        List<McpRoot> roots = loadPersistedRoots(forwardReference.getName());
+        registerForward(forwardReference, roots);
+    }
+
+    /**
+     * Converts a map of root name-to-URI pairs into a list of {@link McpRoot} objects.
+     */
+    static List<McpRoot> toMcpRoots(Map<String, String> roots) {
+        if (roots == null || roots.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roots.entrySet().stream()
+                .map(e -> new McpRoot(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    private void persistRoots(String forwardName, Map<String, String> roots) {
+        if (roots != null && !roots.isEmpty()) {
+            forwardRootsRepository.store(new ForwardRoots(forwardName, roots));
+        }
+    }
+
+    private List<McpRoot> loadPersistedRoots(String forwardName) {
+        return forwardRootsRepository
+                .findByName(forwardName)
+                .map(fr -> toMcpRoots(fr.getRoots()))
+                .orElse(Collections.emptyList());
     }
 
     @Override

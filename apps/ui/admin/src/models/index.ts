@@ -168,3 +168,5 @@ export * from "./wanakuResponseSystemStatistics";
 export * from "./wanakuResponseToolCallRecord";
 export * from "./wanakuResponseToolReference";
 export * from "./wanakuResponseVoid";
+export * from './forwardRequest';
+export * from './forwardRequestRoots';

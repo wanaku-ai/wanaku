@@ -2,10 +2,13 @@ package ai.wanaku.backend.bridge;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
+import dev.langchain4j.mcp.client.McpRoot;
 
 /**
  * Registry for managing MCP forward clients.
@@ -19,6 +22,7 @@ public class ForwardRegistry {
     private static final Logger LOG = Logger.getLogger(ForwardRegistry.class);
 
     private final Map<NameNamespacePair, String> clients = new ConcurrentHashMap<>();
+    private final Map<NameNamespacePair, List<McpRoot>> rootsMap = new ConcurrentHashMap<>();
 
     /**
      * Links a forward client to a service identifier.
@@ -47,6 +51,7 @@ public class ForwardRegistry {
      */
     public void unlink(NameNamespacePair service) {
         clients.remove(service);
+        rootsMap.remove(service);
     }
 
     /**
@@ -61,6 +66,28 @@ public class ForwardRegistry {
      */
     public String getClientAddress(NameNamespacePair service) {
         return clients.get(service);
+    }
+
+    /**
+     * Stores the MCP roots associated with a service identifier.
+     *
+     * @param service the service identifier (name and namespace pair)
+     * @param roots   the MCP roots to store
+     */
+    public void storeRoots(NameNamespacePair service, List<McpRoot> roots) {
+        if (roots != null && !roots.isEmpty()) {
+            rootsMap.put(service, List.copyOf(roots));
+        }
+    }
+
+    /**
+     * Retrieves the MCP roots associated with a service identifier.
+     *
+     * @param service the service identifier (name and namespace pair)
+     * @return the MCP roots, or an empty list if none are configured
+     */
+    public List<McpRoot> getRoots(NameNamespacePair service) {
+        return rootsMap.getOrDefault(service, Collections.emptyList());
     }
 
     /**

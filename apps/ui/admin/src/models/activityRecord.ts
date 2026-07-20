@@ -4,9 +4,9 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { Instant } from "./instant";
-import type { HealthStatus } from "./healthStatus";
-import type { ServiceState } from "./serviceState";
+import type { Instant } from './instant';
+import type { HealthStatus } from './healthStatus';
+import type { ServiceState } from './serviceState';
 
 export interface ActivityRecord {
   id?: string;

@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { WanakuError } from "./wanakuError";
+import type { WanakuError } from './wanakuError';
 
 export interface WanakuResponseInteger {
   error?: WanakuError;
