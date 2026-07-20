@@ -1,8 +1,0 @@
-syntax = "proto3";
-package ai.wanaku.backend.bridge;
-
-// Stores root directory URIs associated with a forward reference.
-message ForwardRoots {
-  string name = 1;
-  repeated string rootUris = 2;
-}

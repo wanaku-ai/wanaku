@@ -21,19 +21,19 @@ import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ForwardClient;
 import ai.wanaku.backend.bridge.ForwardRegistry;
-import ai.wanaku.backend.bridge.ForwardRoots;
 import ai.wanaku.backend.bridge.McpBridge;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
+import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
-import ai.wanaku.backend.core.persistence.api.ForwardRootsRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
@@ -64,7 +64,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     Instance<ForwardReferenceRepository> forwardReferenceRepositoryInstance;
 
     @Inject
-    Instance<ForwardRootsRepository> forwardRootsRepositoryInstance;
+    Instance<DataStoreRepository> dataStoreRepositoryInstance;
 
     @Inject
     ForwardRegistry forwardRegistry;
@@ -72,13 +72,15 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     @Inject
     McpBridge mcpBridge;
 
+    private static final String ROOTS_KEY_PREFIX = "forward-roots:";
+
     private ForwardReferenceRepository forwardReferenceRepository;
-    private ForwardRootsRepository forwardRootsRepository;
+    private DataStoreRepository dataStoreRepository;
 
     @PostConstruct
     void init() {
         forwardReferenceRepository = forwardReferenceRepositoryInstance.get();
-        forwardRootsRepository = forwardRootsRepositoryInstance.get();
+        dataStoreRepository = dataStoreRepositoryInstance.get();
     }
 
     private boolean removeLinkedEntries(ForwardReference forwardReference) {
@@ -380,21 +382,24 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
     private void persistRoots(String forwardName, List<String> rootUris) {
         if (rootUris != null && !rootUris.isEmpty()) {
-            ForwardRoots forwardRoots = new ForwardRoots(forwardName, rootUris);
-            forwardRootsRepository.persist(forwardRoots);
+            DataStore entry = new DataStore();
+            entry.setId(ROOTS_KEY_PREFIX + forwardName);
+            entry.setName(ROOTS_KEY_PREFIX + forwardName);
+            entry.setData(String.join(",", rootUris));
+            dataStoreRepository.persist(entry);
         }
     }
 
     private List<McpRoot> loadPersistedRoots(String forwardName) {
-        ForwardRoots forwardRoots = forwardRootsRepository.findById(forwardName);
-        if (forwardRoots != null) {
-            return toMcpRoots(forwardRoots.getRootUris());
+        DataStore entry = dataStoreRepository.findById(ROOTS_KEY_PREFIX + forwardName);
+        if (entry != null && entry.getData() != null && !entry.getData().isEmpty()) {
+            return toMcpRoots(List.of(entry.getData().split(",")));
         }
         return null;
     }
 
     private void deletePersistedRoots(String forwardName) {
-        forwardRootsRepository.deleteById(forwardName);
+        dataStoreRepository.deleteById(ROOTS_KEY_PREFIX + forwardName);
     }
 
     @Override
