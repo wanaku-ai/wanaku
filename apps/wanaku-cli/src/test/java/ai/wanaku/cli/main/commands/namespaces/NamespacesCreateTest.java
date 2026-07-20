@@ -80,4 +80,25 @@ public class NamespacesCreateTest {
         Namespace submitted = captor.getValue();
         assertNull(submitted.getName());
     }
+
+    @Test
+    @DisplayName("Should create pre-allocated namespace when name is omitted")
+    void shouldCreatePreallocatedNamespaceWhenNameOmitted() throws Exception {
+        Namespace created = new Namespace();
+        created.setId("ns-3");
+        created.setPath("ns-no-name");
+
+        when(namespacesService.create(any(Namespace.class))).thenReturn(new WanakuResponse<>(created));
+
+        command.path = "ns-no-name";
+        command.name = null;
+
+        Integer result = command.doCall(null, mock(WanakuPrinter.class));
+
+        assertEquals(0, result);
+        ArgumentCaptor<Namespace> captor = ArgumentCaptor.forClass(Namespace.class);
+        verify(namespacesService).create(captor.capture());
+        Namespace submitted = captor.getValue();
+        assertNull(submitted.getName());
+    }
 }
