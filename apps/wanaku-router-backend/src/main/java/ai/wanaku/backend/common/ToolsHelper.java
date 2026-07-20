@@ -50,7 +50,7 @@ public class ToolsHelper {
                     } catch (Exception e) {
                         LOG.debugf(e, "Tool handler error for %s", toolReference.getName());
                         return McpSchema.CallToolResult.builder(
-                                        java.util.List.of((McpSchema.Content) McpSchema.TextContent.builder(
+                                        List.of((McpSchema.Content) McpSchema.TextContent.builder(
                                                         e.getMessage() != null
                                                                 ? e.getMessage()
                                                                 : "Tool execution failed")
