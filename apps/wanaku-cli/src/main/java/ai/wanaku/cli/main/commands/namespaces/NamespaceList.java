@@ -3,11 +3,9 @@ package ai.wanaku.cli.main.commands.namespaces;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jline.terminal.Terminal;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -36,7 +34,7 @@ For detailed information see the label expression manual page:
 Note: If omitted, all namespaces are listed. Label matching is case-sensitive.
 """
             })
-    private String labelExpression;
+    String labelExpression;
 
     NamespacesService namespacesService;
 
@@ -76,15 +74,16 @@ Note: If omitted, all namespaces are listed. Label matching is case-sensitive.
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
-        namespacesService =
-                QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(host)).build(NamespacesService.class);
+        namespacesService = initAuthenticatedServiceIfNeeded(namespacesService, NamespacesService.class, host);
 
         try {
             WanakuResponse<List<Namespace>> response = namespacesService.list(labelExpression);
             List<AddressableNamespace> list =
                     response.data().stream().map(this::convertToAddressable).collect(Collectors.toList());
 
-            list.add(AddressableNamespace.defaultNs(host));
+            if (labelExpression == null || labelExpression.isBlank()) {
+                list.add(AddressableNamespace.defaultNs(host));
+            }
 
             printer.printTable(list, "id", "name", "path", "labels");
         } catch (WebApplicationException ex) {
