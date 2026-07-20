@@ -5,6 +5,7 @@ import java.util.Map;
 import org.jline.terminal.Terminal;
 import io.vertx.core.json.JsonObject;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.McpErrorHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -61,7 +62,7 @@ public class McpTool extends BaseCommand {
             System.out.println(result.resultText());
             return EXIT_OK;
         } catch (Exception e) {
-            printer.printErrorMessage(e.getMessage());
+            printer.printErrorMessage(McpErrorHelper.friendlyMessage(e, uri));
             return EXIT_ERROR;
         }
     }
