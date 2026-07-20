@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
+import ai.wanaku.cli.main.support.McpErrorHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.mcp.client.McpClient;
@@ -62,7 +63,7 @@ public class McpPrompt extends BaseCommand {
 
             return EXIT_OK;
         } catch (Exception e) {
-            printer.printErrorMessage(e.getMessage());
+            printer.printErrorMessage(McpErrorHelper.friendlyMessage(e, uri));
             return EXIT_ERROR;
         }
     }

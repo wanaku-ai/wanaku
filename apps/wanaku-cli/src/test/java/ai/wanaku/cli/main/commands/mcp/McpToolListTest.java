@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -90,6 +91,25 @@ class McpToolListTest {
 
         assertEquals(BaseCommand.EXIT_ERROR, result);
         verify(printer).printErrorMessage("connection refused");
+    }
+
+    @Test
+    @DisplayName("Should show user-friendly message for wrapped ConnectException")
+    void shouldShowFriendlyMessageForConnectException() throws Exception {
+        java.net.ConnectException cause = new java.net.ConnectException("Connection refused");
+        RuntimeException ex = new RuntimeException("java.net.ConnectException: Connection refused", cause);
+        when(mcpClient.listTools()).thenThrow(ex);
+
+        WanakuPrinter printer = mock(WanakuPrinter.class);
+        Integer result = command.doCall(null, printer);
+
+        assertEquals(BaseCommand.EXIT_ERROR, result);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(printer).printErrorMessage(captor.capture());
+        String message = captor.getValue();
+        assertTrue(message.contains("Connection refused"));
+        assertTrue(message.contains("http://localhost:3001/mcp"));
+        assertTrue(message.contains("MCP server is not running"));
     }
 
     @Test
