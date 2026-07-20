@@ -2,6 +2,7 @@ package ai.wanaku.cli.main.support;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
@@ -111,6 +112,21 @@ class WanakuPrinterPlainModeTest {
 
         String output = outputStream.toString();
         assertTrue(output.contains("Available service templates:"), "Info message must appear in plain-mode output");
+    }
+
+    @Test
+    void printAsMapHandlesNullValues() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", "ns-123");
+        data.put("name", null);
+        data.put("path", "my-path");
+
+        printer.printAsMap(data, "id", "name", "path");
+
+        String output = outputStream.toString();
+        assertFalse(output.isBlank(), "Map output with null values must not be blank");
+        assertTrue(output.contains("ns-123"), "Output must contain non-null value 'ns-123'");
+        assertTrue(output.contains("my-path"), "Output must contain non-null value 'my-path'");
     }
 
     @Test
