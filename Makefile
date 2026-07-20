@@ -71,4 +71,4 @@ load-test: test-resources test-tools
 	$(WANAKU_CLI_CMD) targets tools list
 
 early-builds:
-	gh workflow run early-access -f currentDevelopmentVersion=$$(cat core/core-util/target/classes/version.txt)
+	gh workflow run early-access --ref $$(git rev-parse --abbrev-ref HEAD) -f currentDevelopmentVersion=$$(cat core/core-util/target/classes/version.txt)
