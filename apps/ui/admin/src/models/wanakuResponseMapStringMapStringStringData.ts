@@ -5,6 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type WanakuResponseMapStringMapStringStringData = {
-  [key: string]: { [key: string]: string };
-};
+export type WanakuResponseMapStringMapStringStringData = {[key: string]: {[key: string]: string}};

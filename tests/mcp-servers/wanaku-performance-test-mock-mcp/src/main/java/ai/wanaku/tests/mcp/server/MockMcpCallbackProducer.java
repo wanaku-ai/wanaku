@@ -11,6 +11,7 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.core.forward.discovery.client.ForwardDiscoveryCallback;
 import ai.wanaku.core.forward.discovery.client.ForwardRegistrationManager;
+import ai.wanaku.core.services.api.ForwardRequest;
 import ai.wanaku.core.services.api.ForwardsService;
 
 public class MockMcpCallbackProducer {
@@ -45,7 +46,7 @@ public class MockMcpCallbackProducer {
                 forwardReference.setAddress(forwardAddress);
 
                 try {
-                    forwardsService.addForward(forwardReference);
+                    forwardsService.addForward(new ForwardRequest(forwardReference, null));
                     LOG.infof("Successfully registered mock MCP server as forward: %s", serviceName);
                 } catch (WebApplicationException e) {
                     LOG.warn("Failed to register mock MCP server as forward", e);

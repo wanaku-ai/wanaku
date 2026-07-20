@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { WanakuError } from "./wanakuError";
-import type { Namespace } from "./namespace";
+import type { WanakuError } from './wanakuError';
+import type { Namespace } from './namespace';
 
 export interface WanakuResponseNamespace {
   error?: WanakuError;

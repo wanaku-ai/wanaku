@@ -6,5 +6,5 @@
  */
 
 export type GetApiV1ServiceTemplateDownloadParams = {
-  name?: string;
+name?: string;
 };

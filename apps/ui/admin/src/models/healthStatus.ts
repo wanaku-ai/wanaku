@@ -5,12 +5,13 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type HealthStatus = (typeof HealthStatus)[keyof typeof HealthStatus];
+export type HealthStatus = typeof HealthStatus[keyof typeof HealthStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const HealthStatus = {
-  PENDING: "PENDING",
-  HEALTHY: "HEALTHY",
-  UNHEALTHY: "UNHEALTHY",
-  DOWN: "DOWN",
+  PENDING: 'PENDING',
+  HEALTHY: 'HEALTHY',
+  UNHEALTHY: 'UNHEALTHY',
+  DOWN: 'DOWN',
 } as const;

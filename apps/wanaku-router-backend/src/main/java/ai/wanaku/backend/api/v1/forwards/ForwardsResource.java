@@ -16,6 +16,7 @@ import java.util.List;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.core.services.api.ForwardRequest;
 import ai.wanaku.core.util.StringHelper;
 
 @ApplicationScoped
@@ -27,8 +28,8 @@ public class ForwardsResource {
     ForwardsBean forwardsBean;
 
     @POST
-    public WanakuResponse<Void> addForward(ForwardReference reference) {
-        forwardsBean.forward(reference);
+    public WanakuResponse<Void> addForward(ForwardRequest request) {
+        forwardsBean.forward(request.getForwardReference(), request.getRoots());
         return new WanakuResponse<>();
     }
 

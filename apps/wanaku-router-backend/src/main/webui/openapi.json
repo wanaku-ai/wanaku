@@ -211,6 +211,20 @@
           }
         }
       },
+      "ForwardRequest" : {
+        "type" : "object",
+        "properties" : {
+          "forwardReference" : {
+            "$ref" : "#/components/schemas/ForwardReference"
+          },
+          "roots" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
       "HealthStatus" : {
         "type" : "string",
         "enum" : [ "PENDING", "HEALTHY", "UNHEALTHY", "DOWN" ]
@@ -1603,7 +1617,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ForwardReference"
+                "$ref" : "#/components/schemas/ForwardRequest"
               }
             }
           },

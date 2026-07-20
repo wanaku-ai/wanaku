@@ -1,6 +1,7 @@
 package ai.wanaku.backend.bridge.mcp;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.JsonObject;
 import ai.wanaku.backend.bridge.ForwardClient;
+import ai.wanaku.backend.bridge.ForwardRegistry;
 import ai.wanaku.backend.bridge.McpBridge;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -33,6 +35,7 @@ import dev.langchain4j.mcp.client.McpException;
 import dev.langchain4j.mcp.client.McpReadResourceResult;
 import dev.langchain4j.mcp.client.McpResource;
 import dev.langchain4j.mcp.client.McpResourceContents;
+import dev.langchain4j.mcp.client.McpRoot;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
@@ -47,6 +50,9 @@ public class DefaultMcpBridge implements McpBridge {
     static final int JSON_RPC_METHOD_NOT_FOUND = -32601;
 
     private static final Logger LOG = Logger.getLogger(DefaultMcpBridge.class);
+
+    @Inject
+    ForwardRegistry forwardRegistry;
 
     private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
 
@@ -100,7 +106,8 @@ public class DefaultMcpBridge implements McpBridge {
                     .arguments(serializeArguments(toolArguments.args()))
                     .build();
 
-            try (var mcpClient = ClientUtil.createClient(address)) {
+            List<McpRoot> roots = forwardRegistry.getRootsByAddress(address);
+            try (var mcpClient = ClientUtil.createClient(address, roots)) {
                 ToolExecutionResult result = mcpClient.executeTool(request);
                 if (result.isError()) {
                     return ToolResponse.error(result.resultText());

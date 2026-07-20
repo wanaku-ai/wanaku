@@ -3,11 +3,13 @@ package ai.wanaku.cli.main.commands.forwards;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.List;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.ForwardRequest;
 import ai.wanaku.core.services.api.ForwardsService;
 import ai.wanaku.core.services.api.NamespacesService;
 import picocli.CommandLine;
@@ -40,6 +42,12 @@ public class ForwardsAdd extends BaseCommand {
             arity = "0..1")
     protected String service;
 
+    @Option(
+            names = {"--roots"},
+            description = "Comma-separated list of root directory URIs for MCP servers that require roots/list",
+            arity = "0..1")
+    protected String roots;
+
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     NamespaceOptions namespaceOptions;
 
@@ -55,13 +63,22 @@ public class ForwardsAdd extends BaseCommand {
         reference.setAddress(service);
         reference.setNamespace(namespaceId);
 
+        ForwardRequest request = new ForwardRequest(reference, parseRoots());
+
         try {
-            forwardsService.addForward(reference);
+            forwardsService.addForward(request);
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);
             return EXIT_ERROR;
         }
         return EXIT_OK;
+    }
+
+    private List<String> parseRoots() {
+        if (roots == null || roots.isBlank()) {
+            return null;
+        }
+        return List.of(roots.split(","));
     }
 }

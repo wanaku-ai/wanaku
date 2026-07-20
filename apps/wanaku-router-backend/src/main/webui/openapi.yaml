@@ -149,6 +149,15 @@ components:
           type: string
         namespace:
           type: string
+    ForwardRequest:
+      type: object
+      properties:
+        forwardReference:
+          $ref: "#/components/schemas/ForwardReference"
+        roots:
+          type: array
+          items:
+            type: string
     HealthStatus:
       type: string
       enum:
@@ -1077,7 +1086,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ForwardReference"
+              $ref: "#/components/schemas/ForwardRequest"
         required: true
       responses:
         "200":

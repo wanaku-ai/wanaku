@@ -6,6 +6,6 @@
  */
 
 export type GetApiV1ServiceCatalogInstructionsParams = {
-  model?: string;
-  name?: string;
+model?: string;
+name?: string;
 };

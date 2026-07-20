@@ -6,5 +6,5 @@
  */
 
 export type GetApiV1NamespacesParams = {
-  labelFilter?: string;
+labelFilter?: string;
 };

@@ -4,10 +4,9 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { WanakuError } from './wanakuError';
 import type { ForwardReference } from './forwardReference';
 
-export interface WanakuResponseListForwardReference {
-  error?: WanakuError;
-  data?: ForwardReference[];
+export interface ForwardRequest {
+  forwardReference?: ForwardReference;
+  roots?: string[];
 }

@@ -30,15 +30,17 @@ public interface ForwardsService {
      * Registers a new forward reference in the system.
      * <p>
      * A forward reference configures the router to proxy requests for specific
-     * capabilities to a remote server or service.
+     * capabilities to a remote server or service. The request may optionally include
+     * root directory URIs required by upstream MCP servers that use the {@code roots/list}
+     * capability.
      *
-     * @param reference the forward reference to register
+     * @param request the forward request containing the reference and optional roots
      * @return a {@link WanakuResponse} indicating the result of the add operation
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    WanakuResponse<Void> addForward(ForwardReference reference);
+    WanakuResponse<Void> addForward(ForwardRequest request);
 
     /**
      * Removes a forward reference from the system.

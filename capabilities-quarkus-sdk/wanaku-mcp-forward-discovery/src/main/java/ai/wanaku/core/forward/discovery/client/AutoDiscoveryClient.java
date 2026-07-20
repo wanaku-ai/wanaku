@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
+import ai.wanaku.core.services.api.ForwardRequest;
 import ai.wanaku.core.services.api.ForwardsService;
 
 import static ai.wanaku.core.util.discovery.DiscoveryUtil.resolveRegistrationAddress;
@@ -49,7 +50,7 @@ public class AutoDiscoveryClient implements ForwardDiscoveryClient {
 
             final ForwardsService forwardsService = newService();
             try {
-                forwardsService.addForward(reference);
+                forwardsService.addForward(new ForwardRequest(reference, null));
                 registered.set(true);
                 LOG.debugf("The service %s successfully registered.", reference.getName());
             } catch (WebApplicationException ex) {

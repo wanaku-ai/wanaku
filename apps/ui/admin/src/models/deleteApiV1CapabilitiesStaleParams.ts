@@ -6,6 +6,6 @@
  */
 
 export type DeleteApiV1CapabilitiesStaleParams = {
-  inactiveOnly?: boolean;
-  maxAgeSeconds?: number;
+inactiveOnly?: boolean;
+maxAgeSeconds?: number;
 };

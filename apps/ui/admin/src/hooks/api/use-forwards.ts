@@ -9,7 +9,7 @@ import {
   deleteApiV1ForwardsName,
   deleteApiV1ForwardsNameResponse
 } from "../../api/wanaku-router-api";
-import { ForwardReference } from "../../models";
+import { ForwardReference, ForwardRequest } from "../../models";
 
 // Simple in-memory cache for Client Components
 let forwardsCache: {
@@ -46,10 +46,12 @@ export const clearForwardsCache = () => {
 
 export const addForward = async (
   forwardReference: ForwardReference,
+  roots?: string[] | null,
   options?: RequestInit
 ): Promise<postApiV1ForwardsResponse> => {
   clearForwardsCache();
-  return postApiV1Forwards(forwardReference, options);
+  const request: ForwardRequest = { forwardReference, roots: roots ?? undefined };
+  return postApiV1Forwards(request, options);
 };
 
 export const updateForward = async (
