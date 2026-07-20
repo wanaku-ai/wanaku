@@ -81,7 +81,8 @@ public class ToolsHelper {
             BiFunction<ToolManager.ToolArguments, CallableReference, Uni<ToolResponse>> handler) {
 
         if (toolManager.getTool(toolReference.getName()) != null) {
-            throw EntityAlreadyExistsException.forName(toolReference.getName());
+            LOG.infof("Replacing stale tool registration for %s", toolReference.getName());
+            toolManager.removeTool(toolReference.getName());
         }
 
         try {
