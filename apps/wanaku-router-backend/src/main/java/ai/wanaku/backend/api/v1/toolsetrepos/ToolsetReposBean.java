@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.core.persistence.api.DataStoreRepository;
+import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -149,7 +150,7 @@ public class ToolsetReposBean {
             throws WanakuException {
         DataStore ds = findByName(name);
         if (ds == null) {
-            throw new WanakuException("Toolset repository not found: %s".formatted(name));
+            throw new ResourceNotFoundException("Toolset repository not found: %s".formatted(name));
         }
 
         if (url != null && !url.isBlank()) {
@@ -206,7 +207,7 @@ public class ToolsetReposBean {
     public Map<String, Object> browse(String name) throws WanakuException {
         DataStore ds = findByName(name);
         if (ds == null) {
-            throw new WanakuException("Toolset repository not found: %s".formatted(name));
+            throw new ResourceNotFoundException("Toolset repository not found: %s".formatted(name));
         }
 
         String url = resolveBaseUrl(ds);
@@ -242,7 +243,7 @@ public class ToolsetReposBean {
     public List<ToolReference> fetchToolset(String name, String toolsetName) throws WanakuException {
         DataStore ds = findByName(name);
         if (ds == null) {
-            throw new WanakuException("Toolset repository not found: %s".formatted(name));
+            throw new ResourceNotFoundException("Toolset repository not found: %s".formatted(name));
         }
 
         validateToolsetName(toolsetName);
