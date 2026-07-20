@@ -3,6 +3,7 @@ package ai.wanaku.cli.main.commands.forwards;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.List;
 import org.jline.terminal.Terminal;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.cli.main.commands.BaseCommand;
@@ -40,6 +41,13 @@ public class ForwardsAdd extends BaseCommand {
             arity = "0..1")
     protected String service;
 
+    @Option(
+            names = {"--root"},
+            description = "Root URI(s) to advertise to the upstream MCP server (e.g., file:///path/to/dir). "
+                    + "Required by servers like the filesystem server.",
+            arity = "0..*")
+    protected List<String> roots;
+
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     NamespaceOptions namespaceOptions;
 
@@ -56,7 +64,11 @@ public class ForwardsAdd extends BaseCommand {
         reference.setNamespace(namespaceId);
 
         try {
-            forwardsService.addForward(reference);
+            if (roots != null && !roots.isEmpty()) {
+                forwardsService.addForwardWithRoots(reference, roots);
+            } else {
+                forwardsService.addForward(reference);
+            }
         } catch (WebApplicationException ex) {
             Response response = ex.getResponse();
             commonResponseErrorHandler(response);

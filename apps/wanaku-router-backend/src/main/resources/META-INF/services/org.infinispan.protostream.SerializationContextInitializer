@@ -14,3 +14,4 @@ ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ServiceTargetSc
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ActivityRecordSchema
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.CodeExecutionTaskSchema
 ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ToolCallRecordSchema
+ai.wanaku.backend.core.persistence.infinispan.protostream.schema.ForwardRootsSchema

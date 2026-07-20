@@ -13,9 +13,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
+import ai.wanaku.core.services.api.ForwardWithRootsRequest;
 import ai.wanaku.core.util.StringHelper;
 
 @ApplicationScoped
@@ -29,6 +31,19 @@ public class ForwardsResource {
     @POST
     public WanakuResponse<Void> addForward(ForwardReference reference) {
         forwardsBean.forward(reference);
+        return new WanakuResponse<>();
+    }
+
+    @Path("/with-roots")
+    @POST
+    public WanakuResponse<Void> addForwardWithRoots(ForwardWithRootsRequest request) {
+        List<ForwardRequest.RootEntry> rootEntries = null;
+        if (request.getRoots() != null) {
+            rootEntries = request.getRoots().stream()
+                    .map(r -> new ForwardRequest.RootEntry(r.getUri(), r.getName()))
+                    .collect(Collectors.toList());
+        }
+        forwardsBean.forward(request.getForward(), rootEntries);
         return new WanakuResponse<>();
     }
 

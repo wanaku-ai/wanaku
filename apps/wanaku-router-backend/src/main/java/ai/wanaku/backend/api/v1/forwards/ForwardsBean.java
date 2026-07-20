@@ -21,12 +21,15 @@ import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.bridge.ForwardClient;
 import ai.wanaku.backend.bridge.ForwardRegistry;
+import ai.wanaku.backend.bridge.ForwardRootEntry;
+import ai.wanaku.backend.bridge.ForwardRoots;
 import ai.wanaku.backend.bridge.McpBridge;
 import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
+import ai.wanaku.backend.core.persistence.api.ForwardRootsRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
@@ -40,6 +43,7 @@ import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
 import ai.wanaku.core.util.StringHelper;
+import dev.langchain4j.mcp.client.McpRoot;
 
 @ApplicationScoped
 public class ForwardsBean extends AbstractBean<ForwardReference> {
@@ -61,16 +65,21 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     Instance<ForwardReferenceRepository> forwardReferenceRepositoryInstance;
 
     @Inject
+    Instance<ForwardRootsRepository> forwardRootsRepositoryInstance;
+
+    @Inject
     ForwardRegistry forwardRegistry;
 
     @Inject
     McpBridge mcpBridge;
 
     private ForwardReferenceRepository forwardReferenceRepository;
+    private ForwardRootsRepository forwardRootsRepository;
 
     @PostConstruct
     void init() {
         forwardReferenceRepository = forwardReferenceRepositoryInstance.get();
+        forwardRootsRepository = forwardRootsRepositoryInstance.get();
     }
 
     private boolean removeLinkedEntries(ForwardReference forwardReference) {
@@ -82,7 +91,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             return false;
         }
 
-        try (var forwardClient = ForwardClient.newClient(address)) {
+        List<McpRoot> roots = forwardRegistry.getRoots(nameNamespacePair);
+        try (var forwardClient = ForwardClient.newClient(address, roots)) {
             removeRemoteTools(nameNamespacePair, forwardClient);
             removeRemoteResources(forwardClient);
         } finally {
@@ -137,11 +147,18 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             LOG.warnf("Failed to remove tools and resources references for %s", forwardReference.getName());
         }
 
+        // Remove persisted roots
+        removePersistedRoots(forwardReference.getName());
+
         // Remove from the repository
         return removeByName(forwardReference.getName());
     }
 
     public void forward(ForwardReference forwardReference) {
+        forward(forwardReference, null);
+    }
+
+    public void forward(ForwardReference forwardReference, List<ForwardRequest.RootEntry> rootEntries) {
         try {
             // The input record is incomplete (i.e.: missing the ID, so we lookup the full record on the repository).
             final List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReference.getName());
@@ -149,9 +166,11 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
                 throw EntityAlreadyExistsException.forName(forwardReference.getName());
             }
 
-            registerForward(forwardReference);
+            List<McpRoot> mcpRoots = toMcpRoots(rootEntries);
+            registerForward(forwardReference, mcpRoots);
 
             forwardReferenceRepository.persist(forwardReference);
+            persistRoots(forwardReference.getName(), rootEntries);
         } catch (WanakuException e) {
             throw e;
         } catch (Exception e) {
@@ -160,6 +179,11 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     }
 
     private void registerForward(ForwardReference forwardReference) {
+        List<McpRoot> mcpRoots = loadPersistedRoots(forwardReference.getName());
+        registerForward(forwardReference, mcpRoots);
+    }
+
+    private void registerForward(ForwardReference forwardReference, List<McpRoot> mcpRoots) {
         Namespace ns;
 
         if (StringHelper.isEmpty(forwardReference.getNamespace())) {
@@ -177,7 +201,7 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
         String address = forwardReference.getAddress();
 
         final List<RemoteToolReference> locallyRegisteredTools = new ArrayList<>();
-        executeForwardRegistration(forwardReference, nameNamespacePair, address, locallyRegisteredTools, ns);
+        executeForwardRegistration(forwardReference, nameNamespacePair, address, locallyRegisteredTools, ns, mcpRoots);
     }
 
     private void registerTools(
@@ -243,13 +267,14 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
             NameNamespacePair nameNamespacePair,
             String address,
             List<RemoteToolReference> locallyRegisteredTools,
-            Namespace ns) {
-        try (var forwardClient = ForwardClient.newClient(address)) {
+            Namespace ns,
+            List<McpRoot> mcpRoots) {
+        try (var forwardClient = ForwardClient.newClient(address, mcpRoots)) {
             registerResources(forwardClient, ns);
             registerTools(forwardClient, forwardReference, locallyRegisteredTools, ns);
 
             registeredRemoteToolsByForward.put(nameNamespacePair, List.copyOf(locallyRegisteredTools));
-            forwardRegistry.link(nameNamespacePair, forwardClient.address());
+            forwardRegistry.link(nameNamespacePair, forwardClient.address(), mcpRoots);
         } catch (WanakuException e) {
             cleanupPartiallyRegistered(locallyRegisteredTools, nameNamespacePair);
 
@@ -263,8 +288,10 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
     public List<ResourceReference> listAllResources() {
         List<ResourceReference> references = new ArrayList<>();
-        for (String address : forwardRegistry.clients().values()) {
-            try (var client = ForwardClient.newClient(address)) {
+        for (Map.Entry<NameNamespacePair, String> entry :
+                forwardRegistry.clients().entrySet()) {
+            List<McpRoot> roots = forwardRegistry.getRoots(entry.getKey());
+            try (var client = ForwardClient.newClient(entry.getValue(), roots)) {
                 references.addAll(mcpBridge.listResources(client));
             }
         }
@@ -344,6 +371,45 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
 
         // Re-register with fresh data from remote server
         registerForward(forwardReference);
+    }
+
+    private static List<McpRoot> toMcpRoots(List<ForwardRequest.RootEntry> rootEntries) {
+        if (rootEntries == null || rootEntries.isEmpty()) {
+            return List.of();
+        }
+        return rootEntries.stream()
+                .map(e -> new McpRoot(e.getName(), e.getUri()))
+                .collect(Collectors.toList());
+    }
+
+    private void persistRoots(String forwardName, List<ForwardRequest.RootEntry> rootEntries) {
+        if (rootEntries == null || rootEntries.isEmpty()) {
+            return;
+        }
+
+        ForwardRoots forwardRoots = new ForwardRoots();
+        forwardRoots.setForwardName(forwardName);
+        forwardRoots.setRoots(rootEntries.stream()
+                .map(e -> new ForwardRootEntry(e.getUri(), e.getName()))
+                .collect(Collectors.toList()));
+        forwardRootsRepository.persist(forwardRoots);
+    }
+
+    private List<McpRoot> loadPersistedRoots(String forwardName) {
+        List<ForwardRoots> stored = forwardRootsRepository.findByForwardName(forwardName);
+        if (stored.isEmpty()) {
+            return List.of();
+        }
+        return stored.getFirst().getRoots().stream()
+                .map(e -> new McpRoot(e.getName(), e.getUri()))
+                .collect(Collectors.toList());
+    }
+
+    private void removePersistedRoots(String forwardName) {
+        List<ForwardRoots> stored = forwardRootsRepository.findByForwardName(forwardName);
+        for (ForwardRoots roots : stored) {
+            forwardRootsRepository.deleteById(roots.getId());
+        }
     }
 
     @Override

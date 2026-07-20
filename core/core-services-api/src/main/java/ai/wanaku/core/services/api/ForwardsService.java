@@ -12,6 +12,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
 import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 
@@ -104,4 +105,38 @@ public interface ForwardsService {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Void> refreshForward(@PathParam("name") String name);
+
+    /**
+     * Registers a new forward reference with MCP roots configuration.
+     * <p>
+     * The roots are directories or resources that the upstream MCP server is allowed to access.
+     * Some servers (e.g., the filesystem server) require at least one root and will refuse to
+     * operate if the client returns an empty roots list.
+     *
+     * @param request the forward reference with roots configuration
+     * @return a {@link WanakuResponse} indicating the result of the add operation
+     */
+    @Path("/with-roots")
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    WanakuResponse<Void> addForwardWithRoots(ForwardWithRootsRequest request);
+
+    /**
+     * Convenience method to register a forward with roots specified as URI strings.
+     *
+     * @param reference the forward reference to register
+     * @param rootUris  the list of root URIs to advertise to the upstream server
+     * @return a {@link WanakuResponse} indicating the result of the add operation
+     */
+    default WanakuResponse<Void> addForwardWithRoots(ForwardReference reference, List<String> rootUris) {
+        ForwardWithRootsRequest request = new ForwardWithRootsRequest();
+        request.setForward(reference);
+        if (rootUris != null) {
+            request.setRoots(rootUris.stream()
+                    .map(uri -> new ForwardWithRootsRequest.RootEntry(uri, null))
+                    .collect(Collectors.toList()));
+        }
+        return addForwardWithRoots(request);
+    }
 }

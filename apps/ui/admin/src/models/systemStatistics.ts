@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { CapabilityStatistics } from "./capabilityStatistics";
+import type { CapabilityStatistics } from './capabilityStatistics';
 
 export interface SystemStatistics {
   toolsCount?: number;

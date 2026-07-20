@@ -1,0 +1,15 @@
+syntax = "proto3";
+package ai.wanaku.backend.bridge;
+
+// Represents a single MCP root entry with URI and optional name.
+message ForwardRootEntry {
+  string uri = 1;
+  string name = 2;
+}
+
+// Stores the list of MCP roots configured for a forward reference.
+message ForwardRoots {
+  string id = 1;
+  string forwardName = 2;
+  repeated ForwardRootEntry roots = 3;
+}

@@ -1,8 +1,10 @@
 package ai.wanaku.backend.bridge;
 
+import java.util.List;
 import io.quarkus.logging.Log;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.mcp.client.McpClient;
+import dev.langchain4j.mcp.client.McpRoot;
 
 /**
  * Pairs an MCP server address with a cached {@link McpClient} connection.
@@ -34,6 +36,23 @@ public record ForwardClient(String address, McpClient client) implements AutoClo
      */
     public static ForwardClient newClient(String address) {
         return new ForwardClient(address, ClientUtil.createClient(address));
+    }
+
+    /**
+     * Creates a new ForwardClient with a fresh MCP client connection and configured roots.
+     * <p>
+     * This factory method initializes a new {@link McpClient} using
+     * {@link ClientUtil#createClient(String, List)} and wraps it with the provided address.
+     * The roots are advertised to the upstream MCP server when it sends a {@code roots/list}
+     * request, which is required by servers like the filesystem server.
+     *
+     * @param address the remote MCP server address to connect to
+     * @param roots   the list of MCP roots to advertise to the upstream server, may be null or empty
+     * @return a new ForwardClient instance with an initialized client
+     * @throws IllegalArgumentException if the address is invalid or unsupported
+     */
+    public static ForwardClient newClient(String address, List<McpRoot> roots) {
+        return new ForwardClient(address, ClientUtil.createClient(address, roots));
     }
 
     @Override

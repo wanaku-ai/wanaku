@@ -1,6 +1,7 @@
 package ai.wanaku.core.mcp.client;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -8,6 +9,7 @@ import io.opentelemetry.context.Context;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.McpHeadersSupplier;
+import dev.langchain4j.mcp.client.McpRoot;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
@@ -15,18 +17,30 @@ import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 public class ClientUtil {
 
     public static McpClient createClient(String address) {
-        return createClient(address, (McpHeadersSupplier) null);
+        return createClient(address, (McpHeadersSupplier) null, null);
+    }
+
+    public static McpClient createClient(String address, List<McpRoot> roots) {
+        return createClient(address, (McpHeadersSupplier) null, roots);
     }
 
     public static McpClient createClient(String address, String token) {
+        return createClient(address, token, null);
+    }
+
+    public static McpClient createClient(String address, String token, List<McpRoot> roots) {
         String normalizedToken = token != null ? token.trim() : null;
         McpHeadersSupplier tokenHeaders = (normalizedToken != null && !normalizedToken.isEmpty())
                 ? callContext -> Map.of("Authorization", "Bearer " + normalizedToken)
                 : null;
-        return createClient(address, tokenHeaders);
+        return createClient(address, tokenHeaders, roots);
     }
 
     public static McpClient createClient(String address, McpHeadersSupplier headersSupplier) {
+        return createClient(address, headersSupplier, null);
+    }
+
+    public static McpClient createClient(String address, McpHeadersSupplier headersSupplier, List<McpRoot> roots) {
         McpTransport transport;
         McpHeadersSupplier combinedHeaders = combineHeaders(headersSupplier);
 
@@ -46,7 +60,11 @@ public class ClientUtil {
             transport = builder.build();
         }
 
-        return new DefaultMcpClient.Builder().transport(transport).build();
+        DefaultMcpClient.Builder clientBuilder = new DefaultMcpClient.Builder().transport(transport);
+        if (roots != null && !roots.isEmpty()) {
+            clientBuilder.roots(roots);
+        }
+        return clientBuilder.build();
     }
 
     private static McpHeadersSupplier combineHeaders(McpHeadersSupplier extraHeaders) {

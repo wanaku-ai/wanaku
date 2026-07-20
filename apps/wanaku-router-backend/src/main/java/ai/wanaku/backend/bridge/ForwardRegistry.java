@@ -2,10 +2,12 @@ package ai.wanaku.backend.bridge;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.api.types.NameNamespacePair;
+import dev.langchain4j.mcp.client.McpRoot;
 
 /**
  * Registry for managing MCP forward clients.
@@ -19,6 +21,7 @@ public class ForwardRegistry {
     private static final Logger LOG = Logger.getLogger(ForwardRegistry.class);
 
     private final Map<NameNamespacePair, String> clients = new ConcurrentHashMap<>();
+    private final Map<NameNamespacePair, List<McpRoot>> rootsByForward = new ConcurrentHashMap<>();
 
     /**
      * Links a forward client to a service identifier.
@@ -36,6 +39,20 @@ public class ForwardRegistry {
     }
 
     /**
+     * Links a forward client to a service identifier with configured roots.
+     *
+     * @param service the service identifier (name and namespace pair)
+     * @param forwardClientAddress the forward client address to register
+     * @param roots the list of MCP roots for this forward, may be null or empty
+     */
+    public void link(NameNamespacePair service, String forwardClientAddress, List<McpRoot> roots) {
+        clients.put(service, forwardClientAddress);
+        if (roots != null && !roots.isEmpty()) {
+            rootsByForward.put(service, List.copyOf(roots));
+        }
+    }
+
+    /**
      * Unlinks and closes a forward client address associated with a service identifier.
      * <p>
      * Removes the address associated with the given {@link NameNamespacePair}
@@ -47,6 +64,7 @@ public class ForwardRegistry {
      */
     public void unlink(NameNamespacePair service) {
         clients.remove(service);
+        rootsByForward.remove(service);
     }
 
     /**
@@ -61,6 +79,31 @@ public class ForwardRegistry {
      */
     public String getClientAddress(NameNamespacePair service) {
         return clients.get(service);
+    }
+
+    /**
+     * Retrieves the MCP roots configured for a service identifier.
+     *
+     * @param service the service identifier (name and namespace pair)
+     * @return the list of MCP roots, or {@code null} if none configured
+     */
+    public List<McpRoot> getRoots(NameNamespacePair service) {
+        return rootsByForward.get(service);
+    }
+
+    /**
+     * Retrieves the MCP roots configured for a forward address.
+     *
+     * @param address the forward address to look up roots for
+     * @return the list of MCP roots, or {@code null} if none configured
+     */
+    public List<McpRoot> getRootsByAddress(String address) {
+        for (Map.Entry<NameNamespacePair, String> entry : clients.entrySet()) {
+            if (address.equals(entry.getValue())) {
+                return rootsByForward.get(entry.getKey());
+            }
+        }
+        return null;
     }
 
     /**

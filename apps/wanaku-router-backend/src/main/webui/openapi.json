@@ -211,6 +211,20 @@
           }
         }
       },
+      "ForwardWithRootsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "forward" : {
+            "$ref" : "#/components/schemas/ForwardReference"
+          },
+          "roots" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RootEntry"
+            }
+          }
+        }
+      },
       "HealthStatus" : {
         "type" : "string",
         "enum" : [ "PENDING", "HEALTHY", "UNHEALTHY", "DOWN" ]
@@ -514,6 +528,17 @@
             "type" : "string"
           },
           "namespace" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RootEntry" : {
+        "type" : "object",
+        "properties" : {
+          "uri" : {
+            "type" : "string"
+          },
+          "name" : {
             "type" : "string"
           }
         }
@@ -1625,6 +1650,37 @@
           }
         },
         "summary" : "Add Forward",
+        "tags" : [ "Forwards Resource" ]
+      }
+    },
+    "/api/v1/forwards/with-roots" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForwardWithRootsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WanakuResponseVoid"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add Forward With Roots",
         "tags" : [ "Forwards Resource" ]
       }
     },
