@@ -2,6 +2,7 @@ package ai.wanaku.cli.main.support;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jline.terminal.Terminal;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,6 +105,23 @@ class WanakuPrinterPlainModeTest {
         assertFalse(output.isBlank(), "Plain-mode map output must not be blank");
         assertTrue(output.contains("my-capability"), "Output must contain value 'my-capability'");
         assertTrue(output.contains("localhost"), "Output must contain value 'localhost'");
+    }
+
+    @Test
+    void printAsMapHandlesNullValues() {
+        // Simulates a Namespace with null name (pre-allocated, no --name flag)
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", "ns-uuid-123");
+        data.put("name", null);
+        data.put("path", "cleanup-target");
+
+        assertDoesNotThrow(
+                () -> printer.printAsMap(data, "id", "name", "path"),
+                "printAsMap must not throw when map values are null");
+
+        String output = outputStream.toString();
+        assertTrue(output.contains("ns-uuid-123"), "Output must contain non-null value 'ns-uuid-123'");
+        assertTrue(output.contains("cleanup-target"), "Output must contain non-null value 'cleanup-target'");
     }
 
     @Test
