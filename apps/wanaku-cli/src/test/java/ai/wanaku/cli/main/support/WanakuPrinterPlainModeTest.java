@@ -122,6 +122,9 @@ class WanakuPrinterPlainModeTest {
         String output = outputStream.toString();
         assertTrue(output.contains("ns-uuid-123"), "Output must contain non-null value 'ns-uuid-123'");
         assertTrue(output.contains("cleanup-target"), "Output must contain non-null value 'cleanup-target'");
+        // Null values are rendered as empty strings (Objects.toString(value, ""))
+        // so "name" key should appear followed by a tab but no "null" literal
+        assertFalse(output.contains("name\tnull"), "Null value must not be rendered as literal 'null'");
     }
 
     @Test
