@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -92,6 +93,24 @@ class McpToolTest {
 
         assertEquals(BaseCommand.EXIT_ERROR, result);
         verify(printer).printErrorMessage("connection refused");
+    }
+
+    @Test
+    @DisplayName("Should show user-friendly message for invalid URI")
+    void shouldShowFriendlyMessageForInvalidUri() throws Exception {
+        command.uri = "not-a-valid-uri";
+        when(mcpClient.executeTool(any(ToolExecutionRequest.class)))
+                .thenThrow(new IllegalArgumentException("URI with undefined scheme"));
+
+        WanakuPrinter printer = mock(WanakuPrinter.class);
+        Integer result = command.doCall(null, printer);
+
+        assertEquals(BaseCommand.EXIT_ERROR, result);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(printer).printErrorMessage(captor.capture());
+        String message = captor.getValue();
+        assertTrue(message.contains("Invalid URI"));
+        assertTrue(message.contains("not-a-valid-uri"));
     }
 
     @Test
