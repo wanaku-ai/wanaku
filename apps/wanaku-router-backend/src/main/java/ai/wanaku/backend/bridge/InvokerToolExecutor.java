@@ -136,9 +136,9 @@ public final class InvokerToolExecutor {
      */
     static Map<String, Object> filterOutReservedArgs(Map<String, Object> args) {
         return args.entrySet().stream()
-                .filter(e -> e.getKey() == null
-                        || (!e.getKey().startsWith(METADATA_PREFIX)
-                                && !e.getKey().startsWith(AUTH_PREFIX)))
+                .filter(e -> e.getKey() != null
+                        && !e.getKey().startsWith(METADATA_PREFIX)
+                        && !e.getKey().startsWith(AUTH_PREFIX))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

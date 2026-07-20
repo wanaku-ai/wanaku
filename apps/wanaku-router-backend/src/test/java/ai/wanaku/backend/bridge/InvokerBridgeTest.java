@@ -271,6 +271,19 @@ class InvokerBridgeTest {
     }
 
     @Test
+    void filterOutReservedArgs_filtersOutNullKeys() {
+        Map<String, Object> args = new HashMap<>();
+        args.put(null, "nullKeyValue");
+        args.put("regularArg", "value");
+
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutReservedArgs(args);
+
+        assertEquals(1, filtered.size());
+        assertEquals("value", filtered.get("regularArg"));
+        assertFalse(filtered.containsKey(null), "Null keys must be filtered out");
+    }
+
+    @Test
     void extractAuthHeaders_extractsPrefixedArgsAndStripsPrefix() {
         final ToolManager.ToolArguments toolArguments = mockToolArguments();
         Map<String, Object> args = new HashMap<>();

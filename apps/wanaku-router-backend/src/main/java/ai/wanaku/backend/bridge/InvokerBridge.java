@@ -109,6 +109,11 @@ public class InvokerBridge implements ToolsBridge {
                             LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
                             return ToolResponse.error(failure.getMessage());
                         }))
+                .onFailure()
+                .recoverWithItem(failure -> {
+                    LOG.debugf(failure, "Pre-invocation failure: %s", failure.getMessage());
+                    return ToolResponse.error(failure.getMessage());
+                })
                 .onItemOrFailure()
                 .invoke((item, failure) -> {
                     if (vertx != null) {
