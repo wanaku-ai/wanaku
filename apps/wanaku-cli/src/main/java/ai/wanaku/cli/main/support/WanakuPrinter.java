@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.util.stream.Collectors.toMap;
 import static org.jline.console.Printer.TableRows.EVEN;
 
 /**
@@ -309,9 +308,13 @@ public class WanakuPrinter extends DefaultPrinter {
         Map<String, Object> map = convertToMap(object);
         if (keys != null && keys.length > 0) {
             Set<String> keySet = Set.of(keys);
-            map = map.entrySet().stream()
-                    .filter(entry -> keySet.contains(entry.getKey()))
-                    .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, Object> filtered = new HashMap<>();
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                if (keySet.contains(entry.getKey())) {
+                    filtered.put(entry.getKey(), entry.getValue());
+                }
+            }
+            map = filtered;
         }
 
         try {
