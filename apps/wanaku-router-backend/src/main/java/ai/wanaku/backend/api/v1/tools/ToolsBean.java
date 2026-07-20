@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.jboss.logging.Logger;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.runtime.StartupEvent;
@@ -57,8 +58,25 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     public ToolReference add(ToolReference toolReference) {
-        // then registers the tool with the tool manager
-        registerTool(toolReference);
+        try {
+            // then registers the tool with the tool manager
+            registerTool(toolReference);
+        } catch (EntityAlreadyExistsException e) {
+            // If a tool with the same name exists from a different service type,
+            // it is stale (left over from a previously stopped capability instance).
+            // Replace it so the new handler points to the live service.
+            ToolReference existing = getByName(toolReference.getName());
+            if (existing != null && !Objects.equals(existing.getType(), toolReference.getType())) {
+                LOG.infof(
+                        "Replacing stale tool %s (was type %s, now %s)",
+                        toolReference.getName(), existing.getType(), toolReference.getType());
+                toolManager.removeTool(toolReference.getName());
+                removeByName(toolReference.getName());
+                registerTool(toolReference);
+            } else {
+                throw e;
+            }
+        }
 
         // if all goes well, persist the tool, so it can be loaded back when restarting
         return toolReferenceRepository.persist(toolReference);
