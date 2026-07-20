@@ -29,6 +29,7 @@ import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
 import ai.wanaku.backend.core.persistence.api.ForwardReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
+import ai.wanaku.capabilities.sdk.api.exceptions.ResourceNotFoundException;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.ForwardReference;
@@ -332,7 +333,8 @@ public class ForwardsBean extends AbstractBean<ForwardReference> {
     public void refresh(ForwardReference forwardReferenceHint) {
         List<ForwardReference> references = forwardReferenceRepository.findByName(forwardReferenceHint.getName());
         if (references.isEmpty()) {
-            throw new WanakuException("Forward reference not found: %s".formatted(forwardReferenceHint.getName()));
+            throw new ResourceNotFoundException(
+                    "Forward reference not found: %s".formatted(forwardReferenceHint.getName()));
         }
 
         ForwardReference forwardReference = references.getFirst();
