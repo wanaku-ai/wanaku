@@ -55,9 +55,4 @@ public class InfinispanPersistenceConfiguration {
     ToolCallRecordRepository toolCallRecordRepository() {
         return new InfinispanToolCallRecordRepository(cacheManager, configuration);
     }
-
-    @Produces
-    InfinispanForwardRootsRepository forwardRootsRepository() {
-        return new InfinispanForwardRootsRepository(cacheManager, configuration);
-    }
 }

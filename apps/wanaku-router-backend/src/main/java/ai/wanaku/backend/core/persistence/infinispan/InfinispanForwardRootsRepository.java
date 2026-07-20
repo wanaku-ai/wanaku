@@ -1,30 +1,41 @@
 package ai.wanaku.backend.core.persistence.infinispan;
 
+import jakarta.inject.Singleton;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import org.infinispan.Cache;
-import org.infinispan.configuration.cache.Configuration;
-import org.infinispan.manager.EmbeddedCacheManager;
+import org.jboss.logging.Logger;
 import ai.wanaku.backend.bridge.ForwardRoots;
+import ai.wanaku.core.util.WanakuHome;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Infinispan-based repository for persisting {@link ForwardRoots} entries.
+ * File-based repository for persisting {@link ForwardRoots} entries.
  * <p>
  * Each entry is keyed by forward name and stores the root name-to-URI mappings
  * that the MCP client should advertise to the upstream server.
+ * <p>
+ * Entries are persisted as a JSON file under the Wanaku home directory.
  */
+@Singleton
 public class InfinispanForwardRootsRepository {
-    private static final String CACHE_NAME = "forwardRoots";
+    private static final Logger LOG = Logger.getLogger(InfinispanForwardRootsRepository.class);
+    private static final String FILE_NAME = "forward-roots.json";
 
-    private final EmbeddedCacheManager cacheManager;
+    private final Map<String, ForwardRoots> cache = new ConcurrentHashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Path filePath;
 
-    public InfinispanForwardRootsRepository(EmbeddedCacheManager cacheManager, Configuration configuration) {
-        this.cacheManager = cacheManager;
-
-        if (cacheManager.getCacheConfiguration(CACHE_NAME) == null) {
-            cacheManager.defineConfiguration(CACHE_NAME, configuration);
-        }
+    public InfinispanForwardRootsRepository() {
+        this.filePath = Path.of(WanakuHome.get(), "router", FILE_NAME);
+        loadFromDisk();
     }
 
     /**
@@ -38,8 +49,8 @@ public class InfinispanForwardRootsRepository {
         }
         try {
             lock.lock();
-            Cache<String, ForwardRoots> cache = cacheManager.getCache(CACHE_NAME);
             cache.put(forwardRoots.getForwardName(), forwardRoots);
+            persistToDisk();
         } finally {
             lock.unlock();
         }
@@ -55,7 +66,6 @@ public class InfinispanForwardRootsRepository {
         if (forwardName == null) {
             return Optional.empty();
         }
-        Cache<String, ForwardRoots> cache = cacheManager.getCache(CACHE_NAME);
         return Optional.ofNullable(cache.get(forwardName));
     }
 
@@ -69,7 +79,39 @@ public class InfinispanForwardRootsRepository {
         if (forwardName == null) {
             return false;
         }
-        Cache<String, ForwardRoots> cache = cacheManager.getCache(CACHE_NAME);
-        return cache.remove(forwardName) != null;
+        try {
+            lock.lock();
+            boolean removed = cache.remove(forwardName) != null;
+            if (removed) {
+                persistToDisk();
+            }
+            return removed;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void loadFromDisk() {
+        if (!Files.exists(filePath)) {
+            return;
+        }
+        try {
+            Map<String, ForwardRoots> loaded =
+                    objectMapper.readValue(filePath.toFile(), new TypeReference<Map<String, ForwardRoots>>() {});
+            if (loaded != null) {
+                cache.putAll(loaded);
+            }
+        } catch (IOException e) {
+            LOG.warnf("Failed to load forward roots from %s: %s", filePath, e.getMessage());
+        }
+    }
+
+    private void persistToDisk() {
+        try {
+            Files.createDirectories(filePath.getParent());
+            objectMapper.writeValue(filePath.toFile(), cache);
+        } catch (IOException e) {
+            LOG.warnf("Failed to persist forward roots to %s: %s", filePath, e.getMessage());
+        }
     }
 }
