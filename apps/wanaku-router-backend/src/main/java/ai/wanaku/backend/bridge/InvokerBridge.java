@@ -128,11 +128,6 @@ public class InvokerBridge implements ToolsBridge {
                     } else {
                         RequestIdContext.clear();
                     }
-                })
-                .onFailure()
-                .recoverWithItem(failure -> {
-                    LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
-                    return ToolResponse.error(failure.getMessage());
                 });
     }
 

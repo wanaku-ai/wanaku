@@ -102,7 +102,6 @@ public class VertxStreamableTransportProvider implements McpStreamableServerTran
         }
 
         HttpServerRequest request = ctx.request();
-        String accept = request.getHeader("Accept");
 
         {
             String body = ctx.body().asString();

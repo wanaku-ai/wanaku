@@ -19,6 +19,7 @@ import ai.wanaku.backend.core.mcp.common.resolvers.PromptsResolver;
 import ai.wanaku.backend.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
 import ai.wanaku.backend.mcp.McpServerRegistry;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
@@ -49,10 +50,9 @@ public class PromptsBean extends AbstractBean<PromptReference> {
     }
 
     public PromptReference add(PromptReference promptReference) {
-        java.util.List<PromptReference> existing = promptReferenceRepository.findByName(promptReference.getName());
+        List<PromptReference> existing = promptReferenceRepository.findByName(promptReference.getName());
         if (!existing.isEmpty()) {
-            throw ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException.forName(
-                    promptReference.getName());
+            throw EntityAlreadyExistsException.forName(promptReference.getName());
         }
         registerPrompt(promptReference);
         return promptReferenceRepository.persist(promptReference);
