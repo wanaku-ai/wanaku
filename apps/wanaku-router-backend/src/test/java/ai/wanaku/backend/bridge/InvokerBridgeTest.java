@@ -3,7 +3,12 @@ package ai.wanaku.backend.bridge;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import io.quarkiverse.mcp.server.McpConnection;
+import io.quarkiverse.mcp.server.RequestId;
+import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolManager;
+import io.quarkiverse.mcp.server.ToolResponse;
+import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Property;
 import ai.wanaku.capabilities.sdk.api.types.ToolReference;
@@ -12,8 +17,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -460,5 +467,42 @@ class InvokerBridgeTest {
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class, () -> InvokerToolExecutor.validateRequiredParameters(ref, null));
         assertTrue(ex.getMessage().contains("query"), "Should report 'query' as missing");
+    }
+
+    @Test
+    void execute_returnsErrorResponseOnValidationFailure() {
+        // Set up a tool reference with a required parameter
+        Map<String, Property> props = new HashMap<>();
+        props.put("city", prop(null, null, null));
+
+        ToolReference ref = buildToolReference(props);
+        ref.setType("http");
+        ref.getInputSchema().setRequired(List.of("city"));
+
+        // Mock ToolArguments with empty args (missing required 'city')
+        ToolManager.ToolArguments toolArguments = mock(ToolManager.ToolArguments.class);
+        when(toolArguments.args()).thenReturn(Map.of());
+        McpConnection connection = mock(McpConnection.class);
+        when(connection.id()).thenReturn("test-connection");
+        when(toolArguments.connection()).thenReturn(connection);
+        when(toolArguments.requestId()).thenReturn(new RequestId("test-request-1"));
+
+        // Mock dependencies -- ServiceResolver must return a non-null target
+        // so we get past resolveService and into buildToolInvokeRequest
+        ServiceResolver serviceResolver = mock(ServiceResolver.class);
+        when(serviceResolver.resolve(anyString(), anyString()))
+                .thenReturn(mock(ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget.class));
+
+        WanakuBridgeTransport transport = mock(WanakuBridgeTransport.class);
+
+        InvokerBridge bridge = new InvokerBridge(serviceResolver, transport, null, null);
+
+        // Execute should return ToolResponse.error instead of propagating the exception
+        ToolResponse response = bridge.execute(toolArguments, ref).await().indefinitely();
+
+        assertNotNull(response, "Response should not be null");
+        assertTrue(response.isError(), "Response should be an error");
+        TextContent textContent = response.firstContent().asText();
+        assertTrue(textContent.text().contains("city"), "Error message should mention the missing parameter 'city'");
     }
 }
