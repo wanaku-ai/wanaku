@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -121,12 +122,15 @@ class WanakuPrinterPlainModeTest {
         data.put("name", null);
         data.put("path", "my-path");
 
-        printer.printAsMap(data, "id", "name", "path");
+        assertDoesNotThrow(
+                () -> printer.printAsMap(data, "id", "name", "path"),
+                "printAsMap must not throw when map values are null");
 
         String output = outputStream.toString();
         assertFalse(output.isBlank(), "Map output with null values must not be blank");
         assertTrue(output.contains("ns-123"), "Output must contain non-null value 'ns-123'");
         assertTrue(output.contains("my-path"), "Output must contain non-null value 'my-path'");
+        assertFalse(output.contains("name\tnull"), "Null value must not be rendered as literal 'null'");
     }
 
     @Test
