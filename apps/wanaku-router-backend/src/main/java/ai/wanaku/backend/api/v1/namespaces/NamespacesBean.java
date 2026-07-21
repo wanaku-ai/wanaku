@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.backend.core.persistence.api.NamespaceRepository;
@@ -26,6 +27,12 @@ public class NamespacesBean {
     private static final String LABEL_ALLOCATED_AT = "wanaku.io/allocated-at";
     private static final String LABEL_EXPIRES_AT = "wanaku.io/expires-at";
     private static final Set<String> PROTECTED_NAMESPACES = Set.of("default", "public", "wanaku-internal");
+
+    /**
+     * Pattern for valid namespace names and paths: must start with an alphanumeric character,
+     * followed by zero or more alphanumeric characters or dashes.
+     */
+    private static final Pattern VALID_NAMESPACE_PATTERN = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9-]*$");
 
     @Inject
     Instance<NamespaceRepository> namespaceRepositoryInstance;
@@ -72,6 +79,8 @@ public class NamespacesBean {
     }
 
     public Namespace alocateNamespace(String name) {
+        validateNamespaceValue(name, "name");
+
         List<Namespace> byName = namespaceRepository.findByName(name);
         if (byName.isEmpty()) {
             final List<Namespace> namespaces = namespaceRepository.findFirstAvailable(name);
@@ -106,6 +115,9 @@ public class NamespacesBean {
         if (namespace.getName() != null && StringHelper.isBlank(namespace.getName())) {
             namespace.setName(null);
         }
+
+        validateNamespaceValue(namespace.getPath(), "path");
+        validateNamespaceValue(namespace.getName(), "name");
 
         if (isProtectedNamespaceName(namespace.getName()) || isProtectedNamespaceName(namespace.getPath())) {
             throw new IllegalArgumentException("Reserved namespace names cannot be created");
@@ -165,6 +177,9 @@ public class NamespacesBean {
         if (namespace == null) {
             return false;
         }
+
+        validateNamespaceValue(namespace.getPath(), "path");
+        validateNamespaceValue(namespace.getName(), "name");
 
         Namespace existingNamespace = namespaceRepository.findById(id);
         if (existingNamespace == null) {
@@ -272,6 +287,27 @@ public class NamespacesBean {
 
     private boolean isProtectedNamespace(Namespace namespace) {
         return isProtectedNamespaceName(namespace.getName()) || isProtectedNamespaceName(namespace.getPath());
+    }
+
+    /**
+     * Validates that a namespace value (name or path) contains only alphanumeric characters and dashes,
+     * and starts with an alphanumeric character. Null values are accepted (e.g., preallocated namespaces
+     * have null names).
+     *
+     * @param value the value to validate
+     * @param fieldName the field name for the error message (e.g., "name" or "path")
+     * @throws IllegalArgumentException if the value contains invalid characters
+     */
+    private void validateNamespaceValue(String value, String fieldName) {
+        if (value == null) {
+            return;
+        }
+
+        if (!VALID_NAMESPACE_PATTERN.matcher(value).matches()) {
+            throw new IllegalArgumentException(
+                    "Invalid namespace %s: '%s'. Only alphanumeric characters and dashes are allowed, and it must start with an alphanumeric character"
+                            .formatted(fieldName, value));
+        }
     }
 
     private boolean isProtectedNamespaceName(String value) {
