@@ -103,6 +103,45 @@ wanaku auth login \
 wanaku tools list --no-auth
 ```
 
+### CLI commands fail with: An error occurred: Failed to communicate with Keycloak
+
+**Symptoms:**
+
+- `wanaku` CLI commands fail to communicate with Keycloak
+
+Example:
+
+```shell
+An error occurred: Failed to communicate with Keycloak at https://127.0.0.1:8543
+
+Run with --verbose flag for more details
+
+```
+
+If you set `--verbose` and then shows the cause as:
+
+```shell
+sun.security.validator.ValidatorException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+```
+
+**Why this happens:**
+
+The security code (JSSE) in wanaku-cli doesn't recognize the certificate that serves the Keycloak HTTPS endpoint.
+
+**Fix:**
+
+You have two options:
+
+- You can skip the certificate checks in wanaku-cli by using the `--insecure` parameter. In this case, it will show a warning `WARNING: TLS certificate verification is disabled. This is insecure and should only be used for development.`.
+
+- You can use the CA that signed the Keycloak HTTPS endpoint, by either importing it into the default Java truststore `$JAVA_HOME/lib/security/cacerts` or have a particular keystore file and use the `-Djavax.net.ssl.trustStore` and `-Djavax.net.ssl.trustStorePassword` parameters to refer to this custom truststore.
+
+NOTE: You can set these `-D` to the wanaku-cli as in this example:
+
+```shell
+java "-Djavax.net.ssl.trustStore=my-truststore.p12" "-Djavax.net.ssl.trustStorePassword=changeit" -jar quarkus-run.jar  admin credentials show --admin-username=admin --admin-password=admin --keycloak-url=https://keycloak.192.168.49.2.nip.io --show-secret --client-id wanaku-service
+```
+
 ### Token issuer mismatch causes 401 on OpenShift / Kubernetes
 
 **Symptoms:**
