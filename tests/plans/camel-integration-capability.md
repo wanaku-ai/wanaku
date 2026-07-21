@@ -1495,6 +1495,7 @@ UNEXPECTED_ERRORS=$(oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" \
   | grep -iv "non-existent-router" \
   | grep -iv "Failed to remove service catalog" \
   | grep -iv "this-configmap-does-not-exist" \
+  | grep -v "\-XX:" \
   | wc -l | tr -d ' ')
 
 echo "unexpected-error-count=${UNEXPECTED_ERRORS}"
@@ -1510,6 +1511,7 @@ if [ "${UNEXPECTED_ERRORS}" -gt 0 ]; then
     | grep -iv "non-existent-router" \
     | grep -iv "Failed to remove service catalog" \
     | grep -iv "this-configmap-does-not-exist" \
+    | grep -v "\-XX:" \
     | tail -10
 else
   echo "PASS: no unexpected errors in operator logs"
