@@ -97,6 +97,12 @@ public class NamespacesBean {
             throw new IllegalArgumentException("Namespace cannot be null");
         }
 
+        // Path must be provided
+        if (namespace.getPath() == null || StringHelper.isBlank(namespace.getPath())) {
+            throw new IllegalArgumentException("Path cannot be null");
+        }
+
+        // Name can be null if we are resetting/de-allocating the NS
         if (namespace.getName() != null && StringHelper.isBlank(namespace.getName())) {
             namespace.setName(null);
         }
