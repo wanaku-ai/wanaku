@@ -52,7 +52,8 @@ public final class CapabilityResourceFactory {
         LOG.infof("Creating services-volume PVC for deployment: %s", deploymentName);
         pvc.getMetadata().setName(createVolumeClaimName(serviceName));
         pvc.getMetadata().setNamespace(ns);
-        pvc.getMetadata().getLabels().put("app", deploymentName);
+        pvc.getMetadata().getLabels().put("app", serviceName);
+        pvc.getMetadata().getLabels().put("app.kubernetes.io/part-of", deploymentName);
         pvc.getMetadata().getLabels().put("component", "wanaku-services-storage");
 
         pvc.addOwnerReference(resource);
@@ -133,11 +134,12 @@ public final class CapabilityResourceFactory {
         LOG.infof("Creating internal service for capability: %s", serviceName);
         service.getMetadata().setName(serviceName);
         service.getMetadata().setNamespace(ns);
-        service.getMetadata().getLabels().put("app", parentName);
+        service.getMetadata().getLabels().put("app", serviceName);
+        service.getMetadata().getLabels().put("app.kubernetes.io/part-of", parentName);
         service.getMetadata().getLabels().put("component", serviceName);
 
         ServiceSpec serviceSpec2 = service.getSpec();
-        serviceSpec2.setSelector(Map.of("app", parentName, "component", serviceName));
+        serviceSpec2.setSelector(Map.of("app", serviceName));
 
         service.addOwnerReference(resource);
 
@@ -156,14 +158,15 @@ public final class CapabilityResourceFactory {
 
         desiredDeployment.getMetadata().setName(serviceName);
         desiredDeployment.getMetadata().setNamespace(ns);
-        desiredDeployment.getMetadata().getLabels().put("app", parentName);
+        desiredDeployment.getMetadata().getLabels().put("app", serviceName);
+        desiredDeployment.getMetadata().getLabels().put("app.kubernetes.io/part-of", parentName);
         desiredDeployment.getMetadata().getLabels().put("component", serviceName);
 
         final DeploymentSpec deploymentSpec = desiredDeployment.getSpec();
 
-        deploymentSpec.getSelector().getMatchLabels().put("app", parentName);
-        deploymentSpec.getSelector().getMatchLabels().put("component", serviceName);
-        deploymentSpec.getTemplate().getMetadata().getLabels().put("app", parentName);
+        deploymentSpec.getSelector().getMatchLabels().put("app", serviceName);
+        deploymentSpec.getTemplate().getMetadata().getLabels().put("app", serviceName);
+        deploymentSpec.getTemplate().getMetadata().getLabels().put("app.kubernetes.io/part-of", parentName);
         deploymentSpec.getTemplate().getMetadata().getLabels().put("component", serviceName);
         deploymentSpec
                 .getTemplate()
