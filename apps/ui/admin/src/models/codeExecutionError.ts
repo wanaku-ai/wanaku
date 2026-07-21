@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { CodeExecutionErrorDetails } from "./codeExecutionErrorDetails";
+import type { CodeExecutionErrorDetails } from './codeExecutionErrorDetails';
 
 export interface CodeExecutionError {
   error?: string;

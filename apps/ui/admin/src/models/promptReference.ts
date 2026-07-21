@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { PromptMessage } from "./promptMessage";
-import type { PromptArgument } from "./promptArgument";
+import type { PromptMessage } from './promptMessage';
+import type { PromptArgument } from './promptArgument';
 
 export interface PromptReference {
   id?: string;

@@ -141,6 +141,34 @@ public abstract class AbstractNamespacesResourceTest extends WanakuRouterTest {
 
     @Order(6)
     @Test
+    public void testCreateNamespaceRejectsInvalidPath() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("/invalid-namespace");
+
+        given().headers(getHeaders())
+                .body(namespace)
+                .when()
+                .post("/api/v1/namespaces")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
+    @Order(7)
+    @Test
+    public void testCreateNamespaceRejectsSpecialCharacters() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("invalid namespace!");
+
+        given().headers(getHeaders())
+                .body(namespace)
+                .when()
+                .post("/api/v1/namespaces")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
+    @Order(8)
+    @Test
     public void testStaleNamespaceCleanup() {
         Namespace namespace = new Namespace();
         stalePath = "test-stale-ns-" + System.currentTimeMillis();

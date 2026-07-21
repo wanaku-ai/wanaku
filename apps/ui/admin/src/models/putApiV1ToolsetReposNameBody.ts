@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type PutApiV1ToolsetReposNameBody = { [key: string]: string };
+export type PutApiV1ToolsetReposNameBody = {[key: string]: string};

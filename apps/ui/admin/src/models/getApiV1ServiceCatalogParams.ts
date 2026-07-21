@@ -6,5 +6,5 @@
  */
 
 export type GetApiV1ServiceCatalogParams = {
-  search?: string;
+search?: string;
 };
