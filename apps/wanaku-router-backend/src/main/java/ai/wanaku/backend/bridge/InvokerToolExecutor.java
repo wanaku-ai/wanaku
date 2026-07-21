@@ -135,6 +135,9 @@ public final class InvokerToolExecutor {
      * @return a new map without reserved arguments
      */
     static Map<String, Object> filterOutReservedArgs(Map<String, Object> args) {
+        if (args == null) {
+            return Map.of();
+        }
         return args.entrySet().stream()
                 .filter(e -> e.getKey() != null
                         && !e.getKey().startsWith(METADATA_PREFIX)

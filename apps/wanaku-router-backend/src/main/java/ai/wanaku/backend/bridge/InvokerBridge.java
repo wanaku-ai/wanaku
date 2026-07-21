@@ -109,7 +109,8 @@ public class InvokerBridge implements ToolsBridge {
                             LOG.debugf(failure, "Handling failure: %s", failure.getMessage());
                             return ToolResponse.error(failure.getMessage());
                         }))
-                .onFailure()
+                .onFailure(failure ->
+                        failure instanceof IllegalArgumentException || failure instanceof ServiceNotFoundException)
                 .recoverWithItem(failure -> {
                     LOG.debugf(failure, "Pre-invocation failure: %s", failure.getMessage());
                     return ToolResponse.error(failure.getMessage());

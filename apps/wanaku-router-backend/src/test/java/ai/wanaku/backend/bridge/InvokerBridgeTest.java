@@ -271,6 +271,13 @@ class InvokerBridgeTest {
     }
 
     @Test
+    void filterOutReservedArgs_returnsEmptyMapWhenArgsIsNull() {
+        Map<String, Object> filtered = InvokerToolExecutor.filterOutReservedArgs(null);
+
+        assertTrue(filtered.isEmpty(), "Null args should return an empty map");
+    }
+
+    @Test
     void filterOutReservedArgs_filtersOutNullKeys() {
         Map<String, Object> args = new HashMap<>();
         args.put(null, "nullKeyValue");
