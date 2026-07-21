@@ -357,6 +357,19 @@ Verify the installation:
 wanaku --version
 ```
 
+### Handling HTTPS connections
+
+Wanaku CLI may connect to either Keycloak or Wanaku MCP server, if their HTTP endpoints are protected by a server certificate (TLS) you may choose to skip the certificate checks or use the CA (Certificate Authority) that issued them on the wanaku-cli so the client can check the server certificate.
+
+1. In wanaku-cli you can skip the checks by using the `--insecure` parameter, and it's going to print a warning message about it.
+2. You can use the CA that signed the Keycloak HTTPS endpoint, by either importing it into the default Java truststore `$JAVA_HOME/lib/security/cacerts` or have a particular keystore file and use the `-Djavax.net.ssl.trustStore` and `-Djavax.net.ssl.trustStorePassword` parameters to refer to this custom truststore.
+
+NOTE: You can set these `-D` to the wanaku-cli as in this example:
+
+```shell
+java "-Djavax.net.ssl.trustStore=my-truststore.p12" "-Djavax.net.ssl.trustStorePassword=changeit" -jar quarkus-run.jar  admin credentials show --admin-username=admin --admin-password=admin --keycloak-url=https://keycloak.192.168.49.2.nip.io --show-secret --client-id wanaku-service
+```
+
 ## Installing and Running the Router
 
 There are three ways to run the router. They work similarly, with the distinction that some of them may come with more
