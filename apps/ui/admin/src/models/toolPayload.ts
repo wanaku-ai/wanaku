@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { ToolReference } from "./toolReference";
+import type { ToolReference } from './toolReference';
 
 export interface ToolPayload {
   toolReference?: ToolReference;

@@ -6,5 +6,5 @@
  */
 
 export type DeleteApiV1ToolsParams = {
-  labelExpression?: string;
+labelExpression?: string;
 };

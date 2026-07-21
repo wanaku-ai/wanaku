@@ -16,6 +16,7 @@ import static ai.wanaku.test.assertions.WanakuAssertions.assertNamespaceExists;
 
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @QuarkusTest
 @TestProfile(NoOidcTestProfile.class)
@@ -244,5 +245,87 @@ public class NamespacesBeanTest {
         assertThat(resetNamespace.getPath()).isEqualTo(created.getPath());
         assertThat(resetNamespace.getName()).isNull();
         assertThat(resetNamespace.getLabels()).containsEntry("wanaku.io/preallocated", "true");
+    }
+
+    @Test
+    void testCreateNamespaceWithLeadingSlashPathIsRejected() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("/my-namespace");
+        namespace.setName("my-namespace");
+
+        assertThatThrownBy(() -> namespacesBean.create(namespace))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid namespace path");
+    }
+
+    @Test
+    void testCreateNamespaceWithSpecialCharsInNameIsRejected() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("valid-path");
+        namespace.setName("my namespace!");
+
+        assertThatThrownBy(() -> namespacesBean.create(namespace))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid namespace name");
+    }
+
+    @Test
+    void testCreateNamespaceWithSpecialCharsInPathIsRejected() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("my/namespace");
+
+        assertThatThrownBy(() -> namespacesBean.create(namespace))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid namespace path");
+    }
+
+    @Test
+    void testCreateNamespaceWithDashStartIsRejected() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("-starts-with-dash");
+
+        assertThatThrownBy(() -> namespacesBean.create(namespace))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid namespace path");
+    }
+
+    @Test
+    void testCreateNamespaceWithValidNameSucceeds() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("valid-namespace-123");
+        namespace.setName("my-Valid-Name");
+
+        Namespace created = namespacesBean.create(namespace);
+
+        assertThat(created).isNotNull();
+        assertThat(created.getPath()).isEqualTo("valid-namespace-123");
+        assertThat(created.getName()).isEqualTo("my-Valid-Name");
+    }
+
+    @Test
+    void testCreateNamespaceWithNullNameIsAllowed() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("preallocated-path-" + System.currentTimeMillis());
+
+        Namespace created = namespacesBean.create(namespace);
+
+        assertThat(created).isNotNull();
+        assertThat(created.getName()).isNull();
+    }
+
+    @Test
+    void testUpdateNamespaceWithInvalidNameIsRejected() {
+        Namespace namespace = new Namespace();
+        namespace.setPath("update-test-" + System.currentTimeMillis());
+        namespace.setName("update-test");
+        Namespace created = namespacesBean.create(namespace);
+
+        Namespace updated = new Namespace();
+        updated.setPath(created.getPath());
+        updated.setName("/invalid-name");
+
+        assertThatThrownBy(() -> namespacesBean.update(created.getId(), updated))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid namespace name");
     }
 }

@@ -6,5 +6,5 @@
  */
 
 export type DeleteApiV1DataStoreParams = {
-  name?: string;
+name?: string;
 };

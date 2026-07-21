@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.WanakuRouterConfig;
 import ai.wanaku.backend.core.persistence.api.NamespaceRepository;
@@ -26,6 +27,7 @@ public class NamespacesBean {
     private static final String LABEL_ALLOCATED_AT = "wanaku.io/allocated-at";
     private static final String LABEL_EXPIRES_AT = "wanaku.io/expires-at";
     private static final Set<String> PROTECTED_NAMESPACES = Set.of("default", "public", "wanaku-internal");
+    private static final Pattern VALID_NAMESPACE_NAME = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9-]*$");
 
     @Inject
     Instance<NamespaceRepository> namespaceRepositoryInstance;
@@ -101,6 +103,9 @@ public class NamespacesBean {
             namespace.setName(null);
         }
 
+        validateNamespaceName(namespace.getName(), "name");
+        validateNamespaceName(namespace.getPath(), "path");
+
         if (isProtectedNamespaceName(namespace.getName()) || isProtectedNamespaceName(namespace.getPath())) {
             throw new IllegalArgumentException("Reserved namespace names cannot be created");
         }
@@ -159,6 +164,9 @@ public class NamespacesBean {
         if (namespace == null) {
             return false;
         }
+
+        validateNamespaceName(namespace.getName(), "name");
+        validateNamespaceName(namespace.getPath(), "path");
 
         Namespace existingNamespace = namespaceRepository.findById(id);
         if (existingNamespace == null) {
@@ -262,6 +270,18 @@ public class NamespacesBean {
         }
 
         return includeUnlabeled;
+    }
+
+    private void validateNamespaceName(String value, String fieldName) {
+        if (value == null) {
+            return;
+        }
+        if (!VALID_NAMESPACE_NAME.matcher(value).matches()) {
+            throw new IllegalArgumentException(String.format(
+                    "Invalid namespace %s '%s': must contain only alphanumeric characters and dashes, "
+                            + "and must start with an alphanumeric character",
+                    fieldName, value));
+        }
     }
 
     private boolean isProtectedNamespace(Namespace namespace) {

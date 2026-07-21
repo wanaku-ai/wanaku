@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { DataStoreLabels } from "./dataStoreLabels";
+import type { DataStoreLabels } from './dataStoreLabels';
 
 export interface DataStore {
   labels?: DataStoreLabels;
