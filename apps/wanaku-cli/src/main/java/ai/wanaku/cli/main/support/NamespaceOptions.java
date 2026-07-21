@@ -33,7 +33,7 @@ public class NamespaceOptions {
             "No namespace matched '%s'. Use 'wanaku namespace list' to see available namespaces.";
 
     @Option(
-            names = {"-N", "--namespace"},
+            names = {"-N", "--namespace", "--namespace-name"},
             description = "The namespace name associated with this entity")
     String namespace;
 
