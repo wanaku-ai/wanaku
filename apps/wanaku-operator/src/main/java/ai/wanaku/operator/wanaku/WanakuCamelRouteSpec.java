@@ -9,6 +9,7 @@ public class WanakuCamelRouteSpec {
 
     private String routerRef;
     private String image;
+    private String imagePullPolicy;
     private JsonNode route;
     private McpSpec mcp;
     private Map<String, String> properties;
@@ -27,6 +28,14 @@ public class WanakuCamelRouteSpec {
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public String getImagePullPolicy() {
+        return imagePullPolicy;
+    }
+
+    public void setImagePullPolicy(String imagePullPolicy) {
+        this.imagePullPolicy = imagePullPolicy;
     }
 
     public JsonNode getRoute() {
