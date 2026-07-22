@@ -28,19 +28,8 @@ public class AuthToken extends BaseCommand {
                 description = "Set the API token")
         String setToken;
 
-        @CommandLine.ArgGroup(exclusive = false)
-        GetOptions getOptions;
-
-        @CommandLine.Option(
-                names = {"--clear"},
-                description = "Clear the API token")
-        boolean clearToken;
-    }
-
-    static class GetOptions {
         @CommandLine.Option(
                 names = {"--get"},
-                required = true,
                 description = "Get the current API token (masked by default)")
         boolean getToken;
 
@@ -48,6 +37,11 @@ public class AuthToken extends BaseCommand {
                 names = {"--unmask"},
                 description = "Output the full unmasked token value")
         boolean unmask;
+
+        @CommandLine.Option(
+                names = {"--clear"},
+                description = "Clear the API token")
+        boolean clearToken;
     }
 
     private final AuthCredentialStore credentialStore;
@@ -76,10 +70,10 @@ public class AuthToken extends BaseCommand {
             return EXIT_OK;
         }
 
-        if (operation.getOptions != null) {
+        if (operation.getToken) {
             String apiToken = getValidAccessToken(printer);
             if (StringHelper.isNotEmpty(apiToken)) {
-                if (operation.getOptions.unmask) {
+                if (operation.unmask) {
                     printer.printInfoMessage(apiToken);
                 } else {
                     String maskedToken = maskToken(apiToken);
