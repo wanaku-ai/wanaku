@@ -38,6 +38,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.common.annotation.Blocking;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
@@ -94,6 +95,7 @@ import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
             RBACVerbs.PATCH,
             RBACVerbs.DELETE
         })
+@Blocking
 public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>, Cleaner<WanakuCamelRoute> {
     private static final Logger LOG = Logger.getLogger(WanakuCamelRouteReconciler.class);
 
