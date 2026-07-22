@@ -433,6 +433,14 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
                 .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_SERVICE_CATALOG_SYSTEM)
                 .withValue(crName)
                 .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_ROUTES_PATH)
+                .withValue(crName)
+                .build());
+        envVars.add(new EnvVarBuilder()
+                .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_ROUTES_RULES)
+                .withValue(crName)
+                .build());
 
         if (OperatorSecurityConfig.isAuthEnabled(authSpec)) {
             String realm = authSpec.getAuthRealm();
