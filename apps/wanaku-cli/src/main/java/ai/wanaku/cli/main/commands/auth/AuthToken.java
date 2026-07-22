@@ -115,10 +115,8 @@ public class AuthToken extends BaseCommand {
             return null;
         }
 
-        if (isTokenExpiredOrExpiring()) {
-            if (tryRefreshToken(printer)) {
-                apiToken = credentialStore.getApiToken();
-            }
+        if (isTokenExpiredOrExpiring() && tryRefreshToken(printer)) {
+            apiToken = credentialStore.getApiToken();
         }
 
         return apiToken;
