@@ -346,7 +346,7 @@ metadata:
     app: wanaku-search
 spec:
   routerRef: wanaku-dev
-  image: quay.io/wanaku/camel-integration-capability:0.1.3
+  image: quay.io/wanaku/camel-integration-capability:0.2.0
   route: |
     - route:
         id: tavily-search
@@ -464,7 +464,7 @@ spec:
   auth:
     authServer: http://keycloak:8080
   router:
-    image: quay.io/wanaku/wanaku-router-backend:0.1.3
+    image: quay.io/wanaku/wanaku-router-backend:0.2.0
     env:
       - name: JAVA_OPTS
         value: "-Xmx512m -XX:MaxDirectMemorySize=256m"
