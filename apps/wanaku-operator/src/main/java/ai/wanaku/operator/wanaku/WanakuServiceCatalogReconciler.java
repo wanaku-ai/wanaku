@@ -49,12 +49,14 @@ import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
         apiGroups = "",
         resources = {"configmaps"},
         verbs = {RBACVerbs.GET, RBACVerbs.LIST, RBACVerbs.WATCH})
+@RBACRule(
+        apiGroups = "",
+        resources = {"secrets"},
+        verbs = {RBACVerbs.GET, RBACVerbs.LIST, RBACVerbs.WATCH})
 public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceCatalog>, Cleaner<WanakuServiceCatalog> {
     private static final Logger LOG = Logger.getLogger(WanakuServiceCatalogReconciler.class);
 
     private static final String CATALOG_DATA_KEY = "catalog.zip";
-
-    private ServiceAuthenticator serviceAuthenticator;
 
     private volatile ServiceCatalogService cachedClient;
     private volatile String cachedBaseUri;
@@ -253,10 +255,10 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
 
         if (OperatorSecurityConfig.isAuthEnabled(authSpec)) {
-            if (serviceAuthenticator == null) {
-                serviceAuthenticator = new ServiceAuthenticator(new OperatorSecurityConfig(authSpec));
-            }
-            builder.register(new BearerTokenFilter(serviceAuthenticator));
+            OperatorSecurityConfig config =
+                    new OperatorSecurityConfig(authSpec, kubernetesClient, kubernetesClient.getNamespace());
+            ServiceAuthenticator authenticator = new ServiceAuthenticator(config);
+            builder.register(new BearerTokenFilter(authenticator));
         }
 
         cachedClient = builder.build(ServiceCatalogService.class);

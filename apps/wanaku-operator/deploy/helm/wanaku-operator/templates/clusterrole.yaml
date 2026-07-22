@@ -158,6 +158,14 @@ rules:
       - update
       - patch
       - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -273,6 +281,7 @@ rules:
       - ""
     resources:
       - configmaps
+      - secrets
     verbs:
       - get
       - list
