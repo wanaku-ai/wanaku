@@ -1206,25 +1206,6 @@ paths:
       summary: Deregister
       tags:
       - Discovery Resource
-  /api/v1/management/discovery/heartbeats:
-    post:
-      deprecated: true
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: string
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WanakuResponseVoid"
-      summary: Ping
-      tags:
-      - Discovery Resource
   /api/v1/management/info/version:
     get:
       responses:

@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { ResourceReference } from "./resourceReference";
+import type { ResourceReference } from './resourceReference';
 
 export interface ResourcePayload {
   resourceReference?: ResourceReference;

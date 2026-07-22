@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type CodeExecutionRequestEnvironment = { [key: string]: string };
+export type CodeExecutionRequestEnvironment = {[key: string]: string};

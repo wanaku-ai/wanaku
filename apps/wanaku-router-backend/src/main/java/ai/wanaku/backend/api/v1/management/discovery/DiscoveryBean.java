@@ -35,10 +35,6 @@ public class DiscoveryBean {
         serviceRegistry.deregister(target);
     }
 
-    public void ping(String id) {
-        serviceRegistry.ping(id);
-    }
-
     public void updateState(String id, ServiceState state) {
         serviceRegistry.updateLastState(id, state);
     }

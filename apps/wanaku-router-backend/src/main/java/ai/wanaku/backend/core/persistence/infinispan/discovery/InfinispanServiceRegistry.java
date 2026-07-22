@@ -45,10 +45,6 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
                 capabilitiesRepository.listAll().size());
     }
 
-    private static void updatePing(ActivityRecord e) {
-        e.setLastSeen(Instant.now());
-    }
-
     @Override
     public ServiceTarget register(ServiceTarget serviceTarget) {
         ServiceTarget persisted = capabilitiesRepository.persist(serviceTarget);
@@ -128,14 +124,6 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
     }
 
     @Override
-    public void ping(String id) {
-        LOG.tracef("Service %s has pinged", id);
-        if (!activityRecordRepository.update(id, InfinispanServiceRegistry::updatePing)) {
-            LOG.warn("No records were updated during ping");
-        }
-    }
-
-    @Override
     public void updateHealthStatus(String id, HealthStatus healthStatus) {
         LOG.infof("Updating health status for capability %s to %s", id, healthStatus.asValue());
         activityRecordRepository.update(id, e -> {
@@ -198,7 +186,7 @@ public class InfinispanServiceRegistry implements ServiceRegistry {
             ActivityRecord activityRecord = activityRecordRepository.findById(serviceTarget.getId());
 
             if (activityRecord == null) {
-                // No activity record means it was never pinged - consider it stale
+                // No activity record means it was never seen - consider it stale
                 staleCapabilities.add(new StaleCapability(serviceTarget, null));
                 continue;
             }

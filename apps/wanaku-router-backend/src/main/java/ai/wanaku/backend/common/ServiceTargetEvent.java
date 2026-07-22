@@ -21,11 +21,6 @@ public class ServiceTargetEvent {
         this.serviceState = serviceState;
     }
 
-    private ServiceTargetEvent(String id) {
-        this.eventType = EventType.PING;
-        this.id = id;
-    }
-
     public static ServiceTargetEvent register(ServiceTarget serviceTarget) {
         return new ServiceTargetEvent(EventType.REGISTER, serviceTarget);
     }
@@ -36,10 +31,6 @@ public class ServiceTargetEvent {
 
     public static ServiceTargetEvent update(String id, ServiceState serviceState) {
         return new ServiceTargetEvent(EventType.UPDATE, id, serviceState);
-    }
-
-    public static ServiceTargetEvent ping(String id) {
-        return new ServiceTargetEvent(id);
     }
 
     public static ServiceTargetEvent healthCheck(ServiceTarget serviceTarget) {

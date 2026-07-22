@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { SystemInstruction } from "./systemInstruction";
-import type { PlaceholderDefinition } from "./placeholderDefinition";
+import type { SystemInstruction } from './systemInstruction';
+import type { PlaceholderDefinition } from './placeholderDefinition';
 
 export interface DeploymentInstructions {
   catalogName?: string;

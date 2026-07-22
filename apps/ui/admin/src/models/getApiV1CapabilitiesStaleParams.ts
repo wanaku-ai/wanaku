@@ -6,6 +6,6 @@
  */
 
 export type GetApiV1CapabilitiesStaleParams = {
-  inactiveOnly?: boolean;
-  maxAgeSeconds?: number;
+inactiveOnly?: boolean;
+maxAgeSeconds?: number;
 };

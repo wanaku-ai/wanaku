@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { PromptReference } from "./promptReference";
+import type { PromptReference } from './promptReference';
 
 export interface PromptPayload {
   promptReference?: PromptReference;

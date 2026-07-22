@@ -33,7 +33,6 @@ import static ai.wanaku.core.capabilities.common.ServicesHelper.waitAndRetry;
  * Key responsibilities include:
  * <ul>
  *   <li>Registering services with the discovery service</li>
- *   <li>Maintaining service health status through ping operations</li>
  *   <li>Reporting operation success and failure states</li>
  *   <li>Persisting service identity to survive restarts</li>
  *   <li>Implementing retry logic with configurable wait periods</li>

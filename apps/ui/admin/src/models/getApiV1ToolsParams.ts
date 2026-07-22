@@ -6,5 +6,5 @@
  */
 
 export type GetApiV1ToolsParams = {
-  labelFilter?: string;
+labelFilter?: string;
 };

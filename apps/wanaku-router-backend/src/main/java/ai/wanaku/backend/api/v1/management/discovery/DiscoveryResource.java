@@ -55,19 +55,6 @@ public class DiscoveryResource {
         return new WanakuResponse<>();
     }
 
-    @Path("/heartbeats")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Deprecated
-    public WanakuResponse<Void> ping(String id) {
-        LOG.tracef("Service %s is pinging", id);
-        discoveryBean.ping(id);
-        emitEvent(ServiceTargetEvent.ping(id));
-
-        return new WanakuResponse<>();
-    }
-
     private void emitEvent(ServiceTargetEvent event) {
         boolean hasRequests = serviceTargetEventEmitter.hasRequests();
         if (hasRequests) {
