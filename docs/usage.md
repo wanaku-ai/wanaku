@@ -988,13 +988,22 @@ wanaku tools list --no-auth
 
 ### Credential Storage
 
-Authentication credentials are stored in:
+By default, credentials are stored in:
 
 ```text
 ~/.wanaku/credentials
 ```
 
-This file is a Java properties file containing:
+You can override this path with the `WANAKU_CREDENTIALS` environment variable to isolate credentials across contexts or concurrent sessions:
+
+```shell
+export WANAKU_CREDENTIALS=/tmp/my-isolated-credentials
+wanaku auth login --api-token <token>
+```
+
+This is useful when running multiple test plans or sessions in parallel, as it prevents token overwrites that would otherwise occur in the shared global file.
+
+The credentials file is a Java properties file containing:
 
 - `api.token`: The API bearer token
 - `refresh.token`: OAuth2 refresh token (when applicable)
