@@ -19,7 +19,7 @@ public class AuthToken extends BaseCommand {
      */
     private static final long REFRESH_BUFFER_SECONDS = 30;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
     TokenOperation operation;
 
     static class TokenOperation {
@@ -62,6 +62,17 @@ public class AuthToken extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+        int count =
+                (operation.setToken != null ? 1 : 0) + (operation.getToken ? 1 : 0) + (operation.clearToken ? 1 : 0);
+        if (count > 1) {
+            printer.printErrorMessage("Only one of --set, --get, or --clear may be specified");
+            return EXIT_ERROR;
+        }
+
+        if (operation.unmask && !operation.getToken) {
+            printer.printErrorMessage("--unmask can only be used with --get");
+            return EXIT_ERROR;
+        }
 
         if (operation.setToken != null) {
             credentialStore.storeApiToken(operation.setToken);

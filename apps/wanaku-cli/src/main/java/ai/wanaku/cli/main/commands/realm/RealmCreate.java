@@ -39,7 +39,11 @@ public class RealmCreate extends BaseAdminCommand {
             String realmJson = Files.readString(Path.of(config));
             KeycloakAdminClient client = createAdminClient();
             client.importRealm(realmJson);
+            String serviceClientSecret = client.getClientSecret("wanaku", "wanaku-service");
             printer.printSuccessMessage("Realm imported successfully from " + config);
+            if (serviceClientSecret != null) {
+                printer.printInfoMessage("wanaku-service client secret: " + serviceClientSecret);
+            }
             return EXIT_OK;
         } catch (IOException e) {
             printer.printErrorMessage("Failed to read configuration file '" + config + "': " + e.getMessage());
