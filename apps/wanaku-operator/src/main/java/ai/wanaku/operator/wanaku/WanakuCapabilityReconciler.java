@@ -2,9 +2,12 @@ package ai.wanaku.operator.wanaku;
 
 import jakarta.inject.Inject;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -66,28 +69,38 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
                 "Starting capability reconciliation for %s",
                 resource.getMetadata().getName());
 
-        final String namespace = resource.getMetadata().getNamespace();
+        try {
+            final String namespace = resource.getMetadata().getNamespace();
 
-        final String routerRef = resource.getSpec().getRouterRef();
-        if (routerRef == null || routerRef.isBlank()) {
-            throw new WanakuException(
-                    "routerRef must be specified in the WanakuCapability spec to indicate which WanakuRouter to register with.");
+            final String routerRef = resource.getSpec().getRouterRef();
+            if (routerRef == null || routerRef.isBlank()) {
+                return setErrorStatus(
+                        resource,
+                        "ValidationError",
+                        "routerRef must be specified in the WanakuCapability spec to indicate which WanakuRouter to register with.");
+            }
+
+            // Verify the referenced WanakuRouter exists
+            WanakuRouter router = kubernetesClient
+                    .resources(WanakuRouter.class)
+                    .inNamespace(namespace)
+                    .withName(routerRef)
+                    .get();
+            if (router == null) {
+                return setErrorStatus(
+                        resource,
+                        "ValidationError",
+                        String.format(
+                                "Referenced WanakuRouter '%s' not found in namespace '%s'. "
+                                        + "Ensure the WanakuRouter resource is created before the WanakuCapability.",
+                                routerRef, namespace));
+            }
+
+            deployCapabilities(resource, context, namespace);
+        } catch (RuntimeException e) {
+            return setErrorStatus(resource, "ReconciliationError", e.getMessage());
         }
 
-        // Verify the referenced WanakuRouter exists
-        WanakuRouter router = kubernetesClient
-                .resources(WanakuRouter.class)
-                .inNamespace(namespace)
-                .withName(routerRef)
-                .get();
-        if (router == null) {
-            throw new WanakuException(String.format(
-                    "Referenced WanakuRouter '%s' not found in namespace '%s'. "
-                            + "Ensure the WanakuRouter resource is created before the WanakuCapability.",
-                    routerRef, namespace));
-        }
-
-        deployCapabilities(resource, context, namespace);
         final WanakuCapabilityStatus status = new WanakuCapabilityStatus();
         final Condition previousReadyCondition = OperatorUtil.findCondition(
                 resource.getStatus() != null ? resource.getStatus().getConditions() : null,
@@ -188,5 +201,23 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
                     .resource(servicesVolumePVC)
                     .createOr(Replaceable::update);
         }
+    }
+
+    private UpdateControl<WanakuCapability> setErrorStatus(WanakuCapability resource, String reason, String message) {
+        LOG.warnf("WanakuCapability '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+
+        WanakuCapabilityStatus status = new WanakuCapabilityStatus();
+        Condition condition = new ConditionBuilder()
+                .withType(OperatorUtil.READY_CONDITION)
+                .withStatus(OperatorUtil.CONDITION_STATUS_FALSE)
+                .withObservedGeneration(resource.getMetadata().getGeneration())
+                .withLastTransitionTime(OffsetDateTime.now(ZoneOffset.UTC).toString())
+                .withReason(reason)
+                .withMessage(message)
+                .build();
+
+        status.setConditions(List.of(condition));
+        resource.setStatus(status);
+        return UpdateControl.patchStatus(resource);
     }
 }
