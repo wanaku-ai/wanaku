@@ -16,7 +16,7 @@ git push origin 0.2.x
 
 ```shell
 export RELEASE_BRANCH=0.2.x
-export PREVIOUS_VERSION=0.1.0
+export PREVIOUS_VERSION=0.1.3
 export CURRENT_DEVELOPMENT_VERSION=0.2.0
 export NEXT_DEVELOPMENT_VERSION=0.2.1
 ```
