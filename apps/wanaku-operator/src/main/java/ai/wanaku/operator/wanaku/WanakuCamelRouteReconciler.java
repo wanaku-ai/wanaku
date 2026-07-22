@@ -51,6 +51,8 @@ import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
 import static ai.wanaku.operator.util.OperatorUtil.getRouterBaseUrl;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
+import static ai.wanaku.operator.util.OperatorUtil.resolveImagePullPolicy;
+import static ai.wanaku.operator.util.OperatorUtil.validateImageAllowed;
 
 @ControllerConfiguration(
         informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE),
@@ -162,6 +164,12 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
                     resource,
                     "DeploymentError",
                     "Failed to package CamelRoute '%s': %s".formatted(catalogName, e.getMessage()));
+        }
+
+        try {
+            validateImageAllowed(resource.getSpec().getImage());
+        } catch (IllegalArgumentException e) {
+            return setErrorStatus(resource, "ValidationError", e.getMessage());
         }
 
         try {
@@ -408,7 +416,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         Container container = spec.getTemplate().getSpec().getContainers().getFirst();
         container.setName(cicName);
         container.setImage(resource.getSpec().getImage());
-        container.setImagePullPolicy("Always");
+        container.setImagePullPolicy(resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
         container.setEnv(buildCicEnvVars(crName, routerBaseUrl, authSpec));
 
         deployment.addOwnerReference(resource);

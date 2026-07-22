@@ -19,6 +19,8 @@ spec:
             properties:
               image:
                 type: "string"
+              imagePullPolicy:
+                type: "string"
               mcp:
                 properties:
                   resources:
