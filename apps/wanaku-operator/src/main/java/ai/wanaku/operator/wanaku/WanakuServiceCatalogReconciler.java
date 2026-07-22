@@ -28,6 +28,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.common.annotation.Blocking;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
@@ -49,6 +50,7 @@ import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
         apiGroups = "",
         resources = {"configmaps"},
         verbs = {RBACVerbs.GET, RBACVerbs.LIST, RBACVerbs.WATCH})
+@Blocking
 public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceCatalog>, Cleaner<WanakuServiceCatalog> {
     private static final Logger LOG = Logger.getLogger(WanakuServiceCatalogReconciler.class);
 
