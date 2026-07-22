@@ -38,6 +38,8 @@ spec:
                 secretKeyRef:
                   key: client-secret
                   name: {{ .Values.app.oidc.secretName }}
+            - name: WANAKU_OIDC_SECRET_NAME
+              value: {{ .Values.app.oidc.secretName }}
             - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES
               value: {{ .Values.app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES | quote }}
             - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAMEL_ROUTE_NAMESPACES

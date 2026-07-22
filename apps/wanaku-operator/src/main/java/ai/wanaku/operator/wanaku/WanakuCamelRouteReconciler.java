@@ -95,10 +95,12 @@ import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
             RBACVerbs.PATCH,
             RBACVerbs.DELETE
         })
+@RBACRule(
+        apiGroups = "",
+        resources = {"secrets"},
+        verbs = {RBACVerbs.GET, RBACVerbs.LIST, RBACVerbs.WATCH})
 public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>, Cleaner<WanakuCamelRoute> {
     private static final Logger LOG = Logger.getLogger(WanakuCamelRouteReconciler.class);
-
-    private ServiceAuthenticator serviceAuthenticator;
 
     private volatile ServiceCatalogService cachedClient;
     private volatile String cachedBaseUri;
@@ -283,10 +285,10 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
 
         if (OperatorSecurityConfig.isAuthEnabled(authSpec)) {
-            if (serviceAuthenticator == null) {
-                serviceAuthenticator = new ServiceAuthenticator(new OperatorSecurityConfig(authSpec));
-            }
-            builder.register(new BearerTokenFilter(serviceAuthenticator));
+            OperatorSecurityConfig config =
+                    new OperatorSecurityConfig(authSpec, kubernetesClient, kubernetesClient.getNamespace());
+            ServiceAuthenticator authenticator = new ServiceAuthenticator(config);
+            builder.register(new BearerTokenFilter(authenticator));
         }
 
         cachedClient = builder.build(ServiceCatalogService.class);
@@ -422,7 +424,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         deployment.addOwnerReference(resource);
     }
 
-    private static List<EnvVar> buildCicEnvVars(String crName, String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+    private List<EnvVar> buildCicEnvVars(String crName, String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
         List<EnvVar> envVars = new ArrayList<>();
 
         envVars.add(new EnvVarBuilder()
@@ -463,13 +465,15 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
             if (realm == null || realm.isBlank()) {
                 realm = EnvironmentVariables.DEFAULT_AUTH_REALM;
             }
+            OperatorSecurityConfig config =
+                    new OperatorSecurityConfig(authSpec, kubernetesClient, kubernetesClient.getNamespace());
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_TOKEN_ENDPOINT)
                     .withValue(authSpec.getAuthServer() + "/realms/" + realm)
                     .build());
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_SECRET)
-                    .withValue(OperatorSecurityConfig.resolveClientSecret())
+                    .withValue(config.getSecret())
                     .build());
             envVars.add(new EnvVarBuilder()
                     .withName(EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_ID)
