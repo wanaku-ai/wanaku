@@ -1,14 +1,23 @@
 package ai.wanaku.cli.main.commands.auth;
 
+import java.time.Instant;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.cli.main.support.security.TokenRefresher;
+import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
 import ai.wanaku.core.util.StringHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "token", description = "Manage API tokens")
 public class AuthToken extends BaseCommand {
+
+    /**
+     * Buffer time in seconds before token expiry to trigger refresh.
+     * Tokens will be refreshed when they are within this many seconds of expiring.
+     */
+    private static final long REFRESH_BUFFER_SECONDS = 30;
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     TokenOperation operation;
@@ -42,13 +51,19 @@ public class AuthToken extends BaseCommand {
     }
 
     private final AuthCredentialStore credentialStore;
+    private final TokenRefresher tokenRefresher;
 
     public AuthToken() {
-        this(new AuthCredentialStore());
+        this(new AuthCredentialStore(), null);
     }
 
     public AuthToken(AuthCredentialStore credentialStore) {
+        this(credentialStore, null);
+    }
+
+    AuthToken(AuthCredentialStore credentialStore, TokenRefresher tokenRefresher) {
         this.credentialStore = credentialStore;
+        this.tokenRefresher = tokenRefresher;
     }
 
     @Override
@@ -62,7 +77,7 @@ public class AuthToken extends BaseCommand {
         }
 
         if (operation.getOptions != null) {
-            String apiToken = credentialStore.getApiToken();
+            String apiToken = getValidAccessToken(printer);
             if (StringHelper.isNotEmpty(apiToken)) {
                 if (operation.getOptions.unmask) {
                     printer.printInfoMessage(apiToken);
@@ -86,6 +101,85 @@ public class AuthToken extends BaseCommand {
             }
         }
         return EXIT_OK;
+    }
+
+    /**
+     * Gets a valid access token, refreshing it if it is expired or about to expire.
+     *
+     * @param printer the printer for warning messages
+     * @return a valid access token, or null if unavailable
+     */
+    private String getValidAccessToken(WanakuPrinter printer) {
+        String apiToken = credentialStore.getApiToken();
+        if (StringHelper.isEmpty(apiToken)) {
+            return null;
+        }
+
+        if (isTokenExpiredOrExpiring()) {
+            if (tryRefreshToken(printer)) {
+                apiToken = credentialStore.getApiToken();
+            }
+        }
+
+        return apiToken;
+    }
+
+    /**
+     * Checks if the stored token is expired or about to expire.
+     *
+     * @return true if the token needs to be refreshed
+     */
+    private boolean isTokenExpiredOrExpiring() {
+        long expiryEpochSeconds = credentialStore.getTokenExpiry();
+        if (expiryEpochSeconds == 0) {
+            // No expiry stored - might be a token from before this feature
+            return false;
+        }
+
+        long currentEpochSeconds = Instant.now().getEpochSecond();
+        long secondsUntilExpiry = expiryEpochSeconds - currentEpochSeconds;
+
+        return secondsUntilExpiry <= REFRESH_BUFFER_SECONDS;
+    }
+
+    /**
+     * Attempts to refresh the access token using the stored refresh token.
+     *
+     * @param printer the printer for warning messages
+     * @return true if refresh was successful, false otherwise
+     */
+    private boolean tryRefreshToken(WanakuPrinter printer) {
+        String refreshToken = credentialStore.getRefreshToken();
+        String authServerUrl = credentialStore.getAuthServerUrl();
+        String clientId = credentialStore.getClientId();
+
+        if (StringHelper.isEmpty(refreshToken)) {
+            return false;
+        }
+
+        if (StringHelper.isEmpty(authServerUrl)) {
+            return false;
+        }
+
+        if (StringHelper.isEmpty(clientId)) {
+            clientId = "admin-cli";
+        }
+
+        String realm = credentialStore.getRealm();
+
+        try {
+            TokenRefresher refresher = tokenRefresher != null ? tokenRefresher : new TokenRefresher(insecure);
+            RefreshResult result = refresher.refresh(refreshToken, authServerUrl, clientId, realm);
+
+            credentialStore.storeApiToken(result.getAccessToken());
+            credentialStore.storeRefreshToken(result.getRefreshToken());
+            credentialStore.storeTokenExpiry(result.getExpiryEpochSeconds());
+
+            return true;
+        } catch (TokenRefresher.TokenRefreshException e) {
+            printer.printWarningMessage("Token refresh failed, returning existing token: " + e.getMessage());
+            return false;
+        }
     }
 
     private String maskToken(String token) {

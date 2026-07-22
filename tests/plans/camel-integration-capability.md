@@ -83,9 +83,39 @@ Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the 
 
 For direct REST API queries against the router (bypassing the `wanaku` CLI), retrieve the Bearer token stored by `wanaku auth login` (performed in Phase 3, Test 3.4 via [common/oidc-login-verification.md](common/oidc-login-verification.md)).
 
+The `wanaku auth token --get` command automatically refreshes expired tokens using the stored refresh token. If the refresh token has also expired, `ensure_valid_token` re-authenticates from scratch.
+
 ```bash
 get_router_token() {
   wanaku auth token --get --unmask --plain 2>/dev/null
+}
+```
+
+### Helper: ensure a valid OIDC token is available
+
+Call this before phases that use `get_router_token()` or `wanaku` CLI commands to prevent 401 errors from expired tokens. The `wanaku auth token --get` command auto-refreshes, but if the refresh token itself has expired, a full re-login is performed.
+
+```bash
+ensure_valid_token() {
+  local TOKEN
+  TOKEN=$(get_router_token)
+  if [ -n "${TOKEN}" ] && [ "${TOKEN}" != "null" ]; then
+    return 0
+  fi
+
+  echo "INFO: token refresh failed, performing full re-login"
+  echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+    --auth-server "${WANAKU_ROUTER_URL}" \
+    --username "${WANAKU_TEST_USER}" \
+    --password \
+    --plain 2>&1
+
+  TOKEN=$(get_router_token)
+  if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+    echo "FAIL: unable to obtain a valid token after re-login"
+    return 1
+  fi
+  return 0
 }
 ```
 
@@ -463,6 +493,8 @@ fi
 ### Test 4.10: Verify catalog exists in router
 
 ```bash
+ensure_valid_token
+
 CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data' > /dev/null 2>&1; then
@@ -485,6 +517,7 @@ fi
 **Description:** After the operator deploys the catalog and starts the CIC, the sends-greeting tool should appear in the router's tool list.
 
 ```bash
+ensure_valid_token
 start_port_forward
 
 MAX_RETRIES=12
@@ -534,6 +567,7 @@ oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Successfully deplo
 **Description:** Use the `wanaku tools list` command to confirm the sends-greeting tool is registered.
 
 ```bash
+ensure_valid_token
 start_port_forward
 
 TOOLS_OUTPUT=$(wanaku tools list --host "${WANAKU_HOST}" --plain 2>&1)
@@ -769,6 +803,7 @@ echo "promote-cic-service-exists=$?"
 ### Test 6.6: Verify both tools are registered in router
 
 ```bash
+ensure_valid_token
 start_port_forward
 
 MAX_RETRIES=12
@@ -801,6 +836,8 @@ stop_port_forward
 ### Test 6.7: Verify resource is registered in router
 
 ```bash
+ensure_valid_token
+
 RESOURCES_RESPONSE=$(query_router_api /api/v1/resources)
 echo "Router resources:"
 echo "${RESOURCES_RESPONSE}"
@@ -959,6 +996,8 @@ fi
 ### Test 7.5: Verify catalog deployed to router via REST API
 
 ```bash
+ensure_valid_token
+
 CATALOG_RESPONSE=$(query_router_api /api/v1/service-catalog)
 
 if echo "${CATALOG_RESPONSE}" | jq -e '.data[] | select(.name == "hello-system")' > /dev/null 2>&1; then
