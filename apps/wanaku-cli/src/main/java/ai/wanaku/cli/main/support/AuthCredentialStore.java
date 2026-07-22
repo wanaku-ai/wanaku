@@ -38,6 +38,10 @@ public class AuthCredentialStore {
     }
 
     private static String getDefaultCredentialsFile() {
+        String envOverride = System.getenv("WANAKU_CREDENTIALS");
+        if (envOverride != null && !envOverride.isBlank()) {
+            return envOverride.trim();
+        }
         return WanakuHome.get() + File.separator + "credentials";
     }
 
