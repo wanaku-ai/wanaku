@@ -4,6 +4,8 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
+import dev.langchain4j.exception.ToolArgumentsException;
+import dev.langchain4j.exception.ToolExecutionException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -122,5 +124,34 @@ class McpErrorHelperTest {
         assertTrue(message.contains("Possible causes"));
         assertFalse(message.contains("ExecutionException"));
         assertFalse(message.contains("RuntimeException"));
+    }
+
+    @Test
+    @DisplayName("Should produce friendly message for ToolArgumentsException with invalid tool name")
+    void shouldHandleToolArgumentsExceptionForInvalidTool() {
+        ToolArgumentsException ex = new ToolArgumentsException("Invalid tool name: nonexistent", -32602);
+        String message = McpErrorHelper.friendlyToolCallMessage(ex, "nonexistent");
+
+        assertTrue(message.contains("Invalid tool name"));
+        assertTrue(message.contains("Tool name is not registered"));
+    }
+
+    @Test
+    @DisplayName("Should produce friendly message for ToolExecutionException")
+    void shouldHandleToolExecutionException() {
+        ToolExecutionException ex = new ToolExecutionException("tool failed");
+        String message = McpErrorHelper.friendlyToolCallMessage(ex, "my-tool");
+
+        assertTrue(message.contains("tool failed"));
+    }
+
+    @Test
+    @DisplayName("Should produce friendly message for ToolExecutionException with null message")
+    void shouldHandleToolExecutionExceptionWithNullMessage() {
+        ToolExecutionException ex = new ToolExecutionException((String) null);
+        String message = McpErrorHelper.friendlyToolCallMessage(ex, "my-tool");
+
+        assertTrue(message.contains("Tool call failed"));
+        assertTrue(message.contains("my-tool"));
     }
 }

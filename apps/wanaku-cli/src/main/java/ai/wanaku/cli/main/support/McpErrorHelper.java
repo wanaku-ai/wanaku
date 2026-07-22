@@ -3,6 +3,8 @@ package ai.wanaku.cli.main.support;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import dev.langchain4j.exception.ToolArgumentsException;
+import dev.langchain4j.exception.ToolExecutionException;
 
 /**
  * Translates MCP client exceptions into user-friendly error messages.
@@ -16,6 +18,52 @@ import java.net.UnknownHostException;
 public final class McpErrorHelper {
 
     private McpErrorHelper() {}
+
+    /**
+     * Produces a user-friendly error message for a tool-call failure.
+     *
+     * <p>Handles MCP-specific exceptions that carry structured error information
+     * (error codes, tool names) and produces actionable messages.</p>
+     *
+     * @param ex the tool execution exception (either {@code ToolExecutionException}
+     *           or {@code ToolArgumentsException})
+     * @param toolName the name of the tool that was being called (may be null)
+     * @return a user-friendly error message
+     */
+    public static String friendlyToolCallMessage(ToolExecutionException ex, String toolName) {
+        return buildToolCallMessage(ex.getMessage(), ex.errorCode(), toolName);
+    }
+
+    /**
+     * Produces a user-friendly error message for a tool-arguments failure.
+     *
+     * @param ex the tool arguments exception
+     * @param toolName the name of the tool that was being called (may be null)
+     * @return a user-friendly error message
+     */
+    public static String friendlyToolCallMessage(ToolArgumentsException ex, String toolName) {
+        return buildToolCallMessage(ex.getMessage(), ex.errorCode(), toolName);
+    }
+
+    private static String buildToolCallMessage(String message, Integer errorCode, String toolName) {
+        StringBuilder sb = new StringBuilder();
+
+        if (message != null && !message.isBlank()) {
+            sb.append(message);
+        } else if (toolName != null) {
+            sb.append("Tool call failed: ").append(toolName);
+        } else {
+            sb.append("Tool call failed");
+        }
+
+        if (errorCode != null && errorCode == -32602) {
+            sb.append("\n\nPossible causes:\n");
+            sb.append("  - Tool name is not registered on the MCP server\n");
+            sb.append("  - Invalid tool arguments");
+        }
+
+        return sb.toString();
+    }
 
     /**
      * Produces a user-friendly error message for the given exception and

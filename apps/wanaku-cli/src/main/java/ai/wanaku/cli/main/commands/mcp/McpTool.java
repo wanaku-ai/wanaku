@@ -9,6 +9,8 @@ import ai.wanaku.cli.main.support.McpErrorHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.exception.ToolArgumentsException;
+import dev.langchain4j.exception.ToolExecutionException;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 import picocli.CommandLine;
@@ -61,6 +63,12 @@ public class McpTool extends BaseCommand {
 
             System.out.println(result.resultText());
             return EXIT_OK;
+        } catch (ToolArgumentsException e) {
+            printer.printErrorMessage(McpErrorHelper.friendlyToolCallMessage(e, name));
+            return EXIT_ERROR;
+        } catch (ToolExecutionException e) {
+            printer.printErrorMessage(McpErrorHelper.friendlyToolCallMessage(e, name));
+            return EXIT_ERROR;
         } catch (Exception e) {
             printer.printErrorMessage(McpErrorHelper.friendlyMessage(e, uri));
             return EXIT_ERROR;
