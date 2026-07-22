@@ -46,13 +46,12 @@ import ai.wanaku.operator.util.CamelRoutePackager;
 import ai.wanaku.operator.util.CapabilityResourceFactory;
 import ai.wanaku.operator.util.EnvironmentVariables;
 import ai.wanaku.operator.util.OperatorSecurityConfig;
+import ai.wanaku.operator.util.OperatorUtil;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
 import static ai.wanaku.operator.util.OperatorUtil.findCondition;
 import static ai.wanaku.operator.util.OperatorUtil.getRouterBaseUrl;
 import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
-import static ai.wanaku.operator.util.OperatorUtil.resolveImagePullPolicy;
-import static ai.wanaku.operator.util.OperatorUtil.validateImageAllowed;
 
 @ControllerConfiguration(
         informer = @Informer(namespaces = Constants.WATCH_CURRENT_NAMESPACE),
@@ -167,7 +166,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         }
 
         try {
-            validateImageAllowed(resource.getSpec().getImage());
+            OperatorUtil.validateImageAllowed(resource.getSpec().getImage());
         } catch (IllegalArgumentException e) {
             return setErrorStatus(resource, "ValidationError", e.getMessage());
         }
@@ -416,7 +415,8 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         Container container = spec.getTemplate().getSpec().getContainers().getFirst();
         container.setName(cicName);
         container.setImage(resource.getSpec().getImage());
-        container.setImagePullPolicy(resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
+        container.setImagePullPolicy(
+                OperatorUtil.resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
         container.setEnv(buildCicEnvVars(crName, routerBaseUrl, authSpec));
 
         deployment.addOwnerReference(resource);
