@@ -8,6 +8,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.McpErrorHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.mcp.client.ClientUtil;
+import dev.langchain4j.exception.LangChain4jException;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.McpGetPromptResult;
 import dev.langchain4j.mcp.client.McpPromptMessage;
@@ -62,6 +63,13 @@ public class McpPrompt extends BaseCommand {
             }
 
             return EXIT_OK;
+        } catch (LangChain4jException e) {
+            String message = e.getMessage();
+            if (message == null || message.isBlank()) {
+                message = "Prompt call failed: " + name;
+            }
+            printer.printErrorMessage(message);
+            return EXIT_ERROR;
         } catch (Exception e) {
             printer.printErrorMessage(McpErrorHelper.friendlyMessage(e, uri));
             return EXIT_ERROR;

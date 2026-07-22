@@ -8,6 +8,8 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.core.mcp.client.ClientUtil;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.exception.ToolArgumentsException;
+import dev.langchain4j.exception.ToolExecutionException;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 import picocli.CommandLine;
@@ -143,6 +145,35 @@ class McpToolTest {
         Integer result = command.doCall(null, printer);
         assertEquals(BaseCommand.EXIT_ERROR, result);
         verify(printer).printErrorMessage("Missing required option: --name");
+    }
+
+    @Test
+    @DisplayName("Should return error on ToolArgumentsException for invalid tool name")
+    void shouldReturnErrorOnToolArgumentsException() throws Exception {
+        when(mcpClient.executeTool(any(ToolExecutionRequest.class)))
+                .thenThrow(new ToolArgumentsException("Invalid tool name: nonexistent", -32602));
+
+        WanakuPrinter printer = mock(WanakuPrinter.class);
+        Integer result = command.doCall(null, printer);
+
+        assertEquals(BaseCommand.EXIT_ERROR, result);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(printer).printErrorMessage(captor.capture());
+        String message = captor.getValue();
+        assertTrue(message.contains("Invalid tool name"));
+    }
+
+    @Test
+    @DisplayName("Should return error on ToolExecutionException")
+    void shouldReturnErrorOnToolExecutionException() throws Exception {
+        when(mcpClient.executeTool(any(ToolExecutionRequest.class)))
+                .thenThrow(new ToolExecutionException("Tool execution failed", -32603));
+
+        WanakuPrinter printer = mock(WanakuPrinter.class);
+        Integer result = command.doCall(null, printer);
+
+        assertEquals(BaseCommand.EXIT_ERROR, result);
+        verify(printer).printErrorMessage(any(String.class));
     }
 
     @Test
