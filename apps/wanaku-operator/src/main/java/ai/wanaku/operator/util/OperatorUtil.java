@@ -32,6 +32,7 @@ public final class OperatorUtil {
     private static final Logger LOG = Logger.getLogger(OperatorUtil.class);
     public static final String READY_CONDITION = "Ready";
     public static final String CONDITION_STATUS_TRUE = "True";
+    public static final String CONDITION_STATUS_FALSE = "False";
     public static final String CONDITION_REASON_READY = "ReconciliationSucceeded";
 
     public static final String DEFAULT_PULL_POLICY = "IfNotPresent";
