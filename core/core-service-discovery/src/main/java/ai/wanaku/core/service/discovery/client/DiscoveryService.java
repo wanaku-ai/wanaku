@@ -30,10 +30,4 @@ public interface DiscoveryService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     WanakuResponse<Void> updateState(@PathParam("id") String id, ServiceState serviceState);
-
-    @Path("/heartbeats")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<Void> ping(String id);
 }

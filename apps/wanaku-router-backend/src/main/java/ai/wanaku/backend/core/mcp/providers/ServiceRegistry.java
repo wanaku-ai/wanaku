@@ -79,12 +79,6 @@ public interface ServiceRegistry {
     void updateLastState(String id, ServiceState state);
 
     /**
-     * Register a ping from a service
-     * @param id the service ID
-     */
-    void ping(String id);
-
-    /**
      * Update the health status of a service
      * @param id the service ID
      * @param status the new health status

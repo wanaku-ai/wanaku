@@ -78,11 +78,6 @@ class TestServiceConfig implements WanakuServiceConfig {
             public String announceAddress() {
                 return "auto";
             }
-
-            @Override
-            public boolean pingEnabled() {
-                return false;
-            }
         };
     }
 }

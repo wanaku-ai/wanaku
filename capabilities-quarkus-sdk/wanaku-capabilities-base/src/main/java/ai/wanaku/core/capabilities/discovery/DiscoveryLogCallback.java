@@ -10,11 +10,7 @@ class DiscoveryLogCallback implements DiscoveryCallback {
 
     @Override
     public void onPing(RegistrationManager manager, ServiceTarget target, int status) {
-        if (status != 200) {
-            LOG.warnf("Pinging router failed with status %d", status);
-        } else {
-            LOG.tracef("Pinging router completed successfully");
-        }
+        // No-op: periodic ping has been removed; the router's PeriodicHealthCheckService handles health monitoring
     }
 
     @Override
