@@ -108,7 +108,7 @@ class AuthTokenTest {
     }
 
     @Test
-    void shouldReturnExistingTokenWhenRefreshFails() throws Exception {
+    void shouldReturnNullWhenRefreshFails() throws Exception {
         String oldToken = "old-token";
         String refreshToken = "my-refresh-token";
         String authServerUrl = "http://localhost:8080";
@@ -135,12 +135,16 @@ class AuthTokenTest {
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
             WanakuPrinter printer = new WanakuPrinter(null, terminal);
-            authToken.doCall(terminal, printer);
+            Integer exitCode = authToken.doCall(terminal, printer);
+            assertEquals(0, exitCode);
         } finally {
             WanakuPrinter.setPlainMode(false);
         }
 
-        // Should still have old token as fallback
+        // The expired token is still in the credential store (not cleared), but
+        // getValidAccessToken returns null so the CLI outputs "No API token is
+        // currently set" instead of the expired token. This lets the test plan's
+        // ensure_valid_token helper detect the failure and perform a full re-login.
         assertEquals(oldToken, credentialStore.getApiToken());
     }
 
