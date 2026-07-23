@@ -40,9 +40,6 @@ public class PerformanceNoopDelegate extends AbstractToolDelegate {
             final ToolReference toolReference = new ToolReference();
 
             @Override
-            public void onPing(RegistrationManager registrationManager, ServiceTarget serviceTarget, int i) {}
-
-            @Override
             public void onRegistration(RegistrationManager registrationManager, ServiceTarget serviceTarget) {
                 toolReference.setName("test-tool");
                 toolReference.setType(config.name());

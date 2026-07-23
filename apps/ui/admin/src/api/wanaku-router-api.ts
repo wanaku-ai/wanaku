@@ -990,41 +990,6 @@ export const deleteApiV1ManagementDiscovery = async (
 };
 
 /**
- * @deprecated
- * @summary Ping
- */
-export type postApiV1ManagementDiscoveryHeartbeatsResponse200 = {
-  data: WanakuResponseVoid;
-  status: 200;
-};
-
-export type postApiV1ManagementDiscoveryHeartbeatsResponseSuccess =
-  postApiV1ManagementDiscoveryHeartbeatsResponse200 & {
-    headers: Headers;
-  };
-export type postApiV1ManagementDiscoveryHeartbeatsResponse =
-  postApiV1ManagementDiscoveryHeartbeatsResponseSuccess;
-
-export const getPostApiV1ManagementDiscoveryHeartbeatsUrl = () => {
-  return `/api/v1/management/discovery/heartbeats`;
-};
-
-export const postApiV1ManagementDiscoveryHeartbeats = async (
-  postApiV1ManagementDiscoveryHeartbeatsBody: string,
-  options?: RequestInit,
-): Promise<postApiV1ManagementDiscoveryHeartbeatsResponse> => {
-  return customFetch<postApiV1ManagementDiscoveryHeartbeatsResponse>(
-    getPostApiV1ManagementDiscoveryHeartbeatsUrl(),
-    {
-      ...options,
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(postApiV1ManagementDiscoveryHeartbeatsBody),
-    },
-  );
-};
-
-/**
  * @summary Version
  */
 export type getApiV1ManagementInfoVersionResponse200 = {

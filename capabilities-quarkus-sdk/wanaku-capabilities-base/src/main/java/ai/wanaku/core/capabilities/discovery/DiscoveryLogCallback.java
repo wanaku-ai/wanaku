@@ -9,11 +9,6 @@ class DiscoveryLogCallback implements DiscoveryCallback {
     private static final Logger LOG = Logger.getLogger(DiscoveryLogCallback.class);
 
     @Override
-    public void onPing(RegistrationManager manager, ServiceTarget target, int status) {
-        // No-op: periodic ping has been removed; the router's PeriodicHealthCheckService handles health monitoring
-    }
-
-    @Override
     public void onRegistration(RegistrationManager manager, ServiceTarget target) {
         LOG.infof("The service %s successfully registered with ID %s.", target.getServiceName(), target.getId());
     }

@@ -41,9 +41,6 @@ public class PerformanceFileResourceDelegate extends AbstractResourceDelegate {
             final ResourceReference resourceReference = new ResourceReference();
 
             @Override
-            public void onPing(RegistrationManager registrationManager, ServiceTarget serviceTarget, int i) {}
-
-            @Override
             public void onRegistration(RegistrationManager registrationManager, ServiceTarget serviceTarget) {
                 resourceReference.setName("in-memory-file for testing");
                 resourceReference.setType(config.name());
