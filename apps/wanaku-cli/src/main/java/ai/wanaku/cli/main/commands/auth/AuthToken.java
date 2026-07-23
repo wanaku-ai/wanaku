@@ -105,9 +105,12 @@ public class AuthToken extends BaseCommand {
 
     /**
      * Gets a valid access token, refreshing it if it is expired or about to expire.
+     * Returns null when the token is expired and cannot be refreshed, so that callers
+     * (such as the test plan's {@code ensure_valid_token} helper) can detect the failure
+     * and perform a full re-login instead of sending an expired token.
      *
      * @param printer the printer for warning messages
-     * @return a valid access token, or null if unavailable
+     * @return a valid access token, or null if unavailable or expired beyond recovery
      */
     private String getValidAccessToken(WanakuPrinter printer) {
         String apiToken = credentialStore.getApiToken();
@@ -115,8 +118,12 @@ public class AuthToken extends BaseCommand {
             return null;
         }
 
-        if (isTokenExpiredOrExpiring() && tryRefreshToken(printer)) {
-            apiToken = credentialStore.getApiToken();
+        if (isTokenExpiredOrExpiring()) {
+            if (tryRefreshToken(printer)) {
+                apiToken = credentialStore.getApiToken();
+            } else {
+                return null;
+            }
         }
 
         return apiToken;
