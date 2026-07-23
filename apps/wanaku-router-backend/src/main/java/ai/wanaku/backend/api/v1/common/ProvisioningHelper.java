@@ -51,9 +51,13 @@ public final class ProvisioningHelper {
         ProvisioningReference provisioningReference = provisionerBridge.provision(
                 referenceName, payload.getConfigurationData(), payload.getSecretsData(), service);
 
-        uriSetter.accept(
-                provisioningReference.configurationURI().toString(),
-                provisioningReference.secretsURI().toString());
+        String configURI = provisioningReference.configurationURI() != null
+                ? provisioningReference.configurationURI().toString()
+                : "";
+        String secretsURI = provisioningReference.secretsURI() != null
+                ? provisioningReference.secretsURI().toString()
+                : "";
+        uriSetter.accept(configURI, secretsURI);
 
         return provisioningReference;
     }
