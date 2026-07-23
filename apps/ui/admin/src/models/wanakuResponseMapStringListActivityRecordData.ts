@@ -4,6 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { ActivityRecord } from './activityRecord';
+import type { ActivityRecord } from "./activityRecord";
 
-export type WanakuResponseMapStringListActivityRecordData = {[key: string]: ActivityRecord[]};
+export type WanakuResponseMapStringListActivityRecordData = {
+  [key: string]: ActivityRecord[];
+};

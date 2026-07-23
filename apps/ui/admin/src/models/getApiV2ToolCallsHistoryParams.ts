@@ -6,6 +6,6 @@
  */
 
 export type GetApiV2ToolCallsHistoryParams = {
-connectionId?: string;
-toolName?: string;
+  connectionId?: string;
+  toolName?: string;
 };

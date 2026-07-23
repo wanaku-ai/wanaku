@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { WanakuError } from './wanakuError';
-import type { ToolCallRecord } from './toolCallRecord';
+import type { WanakuError } from "./wanakuError";
+import type { ToolCallRecord } from "./toolCallRecord";
 
 export interface WanakuResponseListToolCallRecord {
   error?: WanakuError;

@@ -4,6 +4,6 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { Property } from './property';
+import type { Property } from "./property";
 
-export type InputSchemaProperties = {[key: string]: Property};
+export type InputSchemaProperties = { [key: string]: Property };

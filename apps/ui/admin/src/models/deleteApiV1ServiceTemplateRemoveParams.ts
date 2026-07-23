@@ -6,5 +6,5 @@
  */
 
 export type DeleteApiV1ServiceTemplateRemoveParams = {
-name?: string;
+  name?: string;
 };

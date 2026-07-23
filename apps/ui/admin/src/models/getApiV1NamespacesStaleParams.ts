@@ -6,7 +6,7 @@
  */
 
 export type GetApiV1NamespacesStaleParams = {
-includeUnlabeled?: boolean;
-maxAgeSeconds?: number;
-unassignedOnly?: boolean;
+  includeUnlabeled?: boolean;
+  maxAgeSeconds?: number;
+  unassignedOnly?: boolean;
 };

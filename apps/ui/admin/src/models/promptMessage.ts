@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { PromptContent } from './promptContent';
+import type { PromptContent } from "./promptContent";
 
 export interface PromptMessage {
   role?: string;

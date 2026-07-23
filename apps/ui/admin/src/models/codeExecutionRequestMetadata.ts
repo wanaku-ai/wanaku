@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type CodeExecutionRequestMetadata = {[key: string]: unknown};
+export type CodeExecutionRequestMetadata = { [key: string]: unknown };

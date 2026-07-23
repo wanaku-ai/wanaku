@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { NamespaceLabels } from './namespaceLabels';
+import type { NamespaceLabels } from "./namespaceLabels";
 
 export interface Namespace {
   labels?: NamespaceLabels;
