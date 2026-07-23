@@ -1,9 +1,11 @@
 package ai.wanaku.cli.main.commands.auth;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.security.TokenRefresher;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -215,6 +218,43 @@ class AuthTokenTest {
 
         verify(mockRefresher, never()).refresh(any(), any(), any(), any());
         assertEquals(token, credentialStore.getApiToken());
+    }
+
+    @Test
+    void shouldOutputTokenToWriterInPlainMode() throws Exception {
+        String token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test-payload.signature";
+
+        credentialStore.storeApiToken(token);
+        credentialStore.storeAuthMode("token");
+        // Token expires in 5 minutes (not expired)
+        credentialStore.storeTokenExpiry(Instant.now().getEpochSecond() + 300);
+
+        TokenRefresher mockRefresher = mock(TokenRefresher.class);
+
+        AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
+        authToken.operation = new AuthToken.TokenOperation();
+        authToken.operation.getOptions = new AuthToken.GetOptions();
+        authToken.operation.getOptions.getToken = true;
+        authToken.operation.getOptions.unmask = true;
+
+        // Simulate what BaseCommand.call() does in plain mode: create a terminal
+        // with system(false) + explicit streams so output is capturable.
+        WanakuPrinter.setPlainMode(true);
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        try (Terminal terminal = TerminalBuilder.builder()
+                .system(false)
+                .streams(System.in, captured)
+                .jni(false)
+                .color(false)
+                .build()) {
+            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            authToken.doCall(terminal, printer);
+        } finally {
+            WanakuPrinter.setPlainMode(false);
+        }
+
+        String output = captured.toString().trim();
+        assertTrue(output.contains(token), "Plain-mode output must contain the full token value, got: " + output);
     }
 
     @Test

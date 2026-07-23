@@ -2,6 +2,7 @@ package ai.wanaku.cli.main.support;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
@@ -228,7 +229,9 @@ public class AuthCredentialStore {
         try {
             Path credentialsPath = Paths.get(credentialsUri);
             if (Files.exists(credentialsPath)) {
-                props.load(Files.newInputStream(credentialsPath));
+                try (InputStream in = Files.newInputStream(credentialsPath)) {
+                    props.load(in);
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to load credentials", e);

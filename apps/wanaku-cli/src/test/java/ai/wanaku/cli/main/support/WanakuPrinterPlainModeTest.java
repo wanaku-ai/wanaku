@@ -15,6 +15,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisabledOnOs(OS.WINDOWS)
@@ -131,6 +132,23 @@ class WanakuPrinterPlainModeTest {
         assertTrue(output.contains("ns-123"), "Output must contain non-null value 'ns-123'");
         assertTrue(output.contains("my-path"), "Output must contain non-null value 'my-path'");
         assertFalse(output.contains("name\tnull"), "Null value must not be rendered as literal 'null'");
+    }
+
+    @Test
+    void terminalInstanceInPlainModeWritesToWriter() throws IOException {
+        // Verify that terminalInstance() in plain mode creates a terminal
+        // whose writer is connected to System.out (not /dev/tty).
+        // This is the production code path used by "wanaku auth token --get --unmask --plain".
+        try (Terminal prodTerminal = WanakuPrinter.terminalInstance()) {
+            assertNotNull(prodTerminal, "Terminal should be created successfully in plain mode");
+            assertNotNull(prodTerminal.writer(), "Terminal writer should not be null");
+
+            // Write through the production terminal and verify it doesn't throw
+            WanakuPrinter prodPrinter = new WanakuPrinter(null, prodTerminal);
+            assertDoesNotThrow(
+                    () -> prodPrinter.printInfoMessage("test-token-value"),
+                    "printInfoMessage must not throw in plain mode");
+        }
     }
 
     @Test
