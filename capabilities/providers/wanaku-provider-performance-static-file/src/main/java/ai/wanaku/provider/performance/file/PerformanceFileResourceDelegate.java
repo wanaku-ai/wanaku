@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.NonNull;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import ai.wanaku.capabilities.sdk.api.discovery.DiscoveryCallback;
 import ai.wanaku.capabilities.sdk.api.discovery.RegistrationManager;
@@ -41,7 +42,8 @@ public class PerformanceFileResourceDelegate extends AbstractResourceDelegate {
             final ResourceReference resourceReference = new ResourceReference();
 
             @Override
-            public void onRegistration(RegistrationManager registrationManager, ServiceTarget serviceTarget) {
+            public void onRegistration(
+                    @NonNull RegistrationManager registrationManager, @NonNull ServiceTarget serviceTarget) {
                 resourceReference.setName("in-memory-file for testing");
                 resourceReference.setType(config.name());
                 resourceReference.setId(config.name());
@@ -57,7 +59,8 @@ public class PerformanceFileResourceDelegate extends AbstractResourceDelegate {
             }
 
             @Override
-            public void onDeregistration(RegistrationManager registrationManager, ServiceTarget serviceTarget, int i) {
+            public void onDeregistration(
+                    @NonNull RegistrationManager registrationManager, @NonNull ServiceTarget serviceTarget, int i) {
                 try {
                     resourcesService.remove(resourceReference.getLocation());
                 } catch (WebApplicationException e) {
