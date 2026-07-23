@@ -11,14 +11,12 @@ This guide covers how to test your Wanaku capabilities locally before deploying,
 
 ## What You Will Need
 
-- **Wanaku CLI** installed (download from [releases page](https://github.com/wanaku-ai/wanaku/releases/tag/v0.1.3))
+- **Wanaku CLI** installed (download from [releases page](https://github.com/wanaku-ai/wanaku/releases/tag/v0.2.0))
 - **Java 21 or later**
 - **Maven 3.9+** (for running integration tests)
-- **Docker** or **Podman**(for Testcontainers-based tests)
+- **Docker** or **Podman** (for Testcontainers-based tests)
 - Completed [Getting Started with Wanaku](../1.01-your-first-tool/README.md) (demo 1.01)
 - Completed [Introduction to Capabilities](../2.01-introduction-to-capabilities/README.md) (demo 2.01)
-
----
 
 ## Part 1: Testing Tools Locally Before Deploying
 
@@ -69,21 +67,18 @@ name namespace type uri labels
 free-currency-conversion-tool default http https://economia.awesomeapi.com.br/last/{parameter.value('fromCurrency')}-{parameter.value('toCurrency')} {}
 ```
 
----
-
 ## Part 2: Mocking the Wanaku Router for Unit Tests
 
-When writing unit tests for your capability code, you don't need a running Wanaku router. Instead, mock the gRPC interfaces and test your tool logic in isolation.
+When writing unit tests for your capability code, you don't need a running Wanaku router. Instead, use the gRPC stubs directly and test your tool logic in isolation.
 
-### Using the Wanaku SDK Test Utilities
+### Setting Up Test Dependencies
 
-The Wanaku Capabilities Java SDK provides test utilities. Add the test dependency:
+Projects generated from the capabilities archetype (see [demo 4.01](../4.01-plain-java-capability/README.md)) already have the gRPC exchange classes (`ToolInvokeRequest`, `ToolInvokeReply`, and the other classes under `ai.wanaku.core.exchange.v1`) on the classpath through the Wanaku Capabilities Java SDK. You only need JUnit 5 with test scope, if your project does not already declare it:
 
 ```xml
 <dependency>
-    <groupId>ai.wanaku.sdk</groupId>
-    <artifactId>capabilities-sdk-test</artifactId>
-    <version>${WANAKU_VERSION}</version>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
     <scope>test</scope>
 </dependency>
 ```
@@ -97,7 +92,6 @@ package ai.test;
 
 import ai.wanaku.core.exchange.v1.ToolInvokeReply;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
-import ai.wanaku.core.exchange.v1.ToolInvokerGrpc;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.Test;
 
@@ -170,8 +164,6 @@ class MyToolTest {
 }
 ```
 
----
-
 ## Part 3: Integration Test Patterns
 
 For end-to-end testing, the [wanaku-tests](https://github.com/wanaku-ai/wanaku-tests) project provides a comprehensive integration test framework.
@@ -185,7 +177,7 @@ cd <WANAKU_TESTS_REPO_PATH>
 ./artifacts/download.sh
 ```
 
-Run all tests, replacing placeholders with values for your environment (CLI version should match your Wanaku release, e.g. `v0.1.3`):
+Run all tests, replacing placeholders with values for your environment (CLI version should match your Wanaku release, e.g. `v0.2.0`):
 
 ```shell
 mvn clean install -Dwanaku.test.cli.path=<wanaku-tests-repo-path>/artifacts/wanaku-cli-<wanaku-cli-version>/quarkus-run.jar
@@ -251,8 +243,6 @@ String config = TestFixtures.load("simple-tool/routes.camel.yaml")
     .toString();
 ```
 
----
-
 ## Part 4: Validating Service Catalog Deployment
 
 After deploying a service catalog, validate that it works correctly.
@@ -260,14 +250,15 @@ After deploying a service catalog, validate that it works correctly.
 ### Step 1: Verify Deployment via CLI
 
 ```shell
-wanaku service list
+wanaku service catalog list
 ```
 
 You should see your catalog listed:
 
 ```text
-name services status
-demo-catalog 2 deployed
+Available service catalogs:
+name         description
+demo-catalog Demo catalog with book tools
 ```
 
 ### Step 2: Verify Tools Are Registered
@@ -320,7 +311,8 @@ Look for:
 
 Inspect the generated `.wanaku-rules.yaml` to ensure tools are correctly mapped.
 
-> **Note on YAML structure:** the `mcp.tools` section uses a **list of single-key maps**, where each list item's key is the tool's name. This is the format produced by the Wanaku CLI and consumed by the router.
+> [!NOTE]
+> The `mcp.tools` section uses a **list of single-key maps**, where each list item's key is the tool's name. This is the format produced by the Wanaku CLI and consumed by the router.
 
 ```yaml
 mcp:
@@ -342,9 +334,9 @@ Verify:
 - Input schemas match expected parameters
 - Descriptions are meaningful
 
----
-
 ## Common Testing Scenarios
+
+The examples below are pseudocode sketches, not compilable tests. Helper methods such as `assertErrorResponse`, `invokeTool`, and `executor` stand in for your own test utilities — adapt them to the invocation pattern shown in Part 2.
 
 ### Testing Tool Input Validation
 
@@ -390,15 +382,13 @@ void shouldHandleConcurrentInvocations() throws InterruptedException {
 }
 ```
 
----
-
 ## Troubleshooting
 
 ### Tools Not Appearing After Deployment
 
 - Refresh the Admin UI (hard refresh: Ctrl+Shift+R)
 - Check the Wanaku router logs in the terminal running `wanaku start local`
-- Verify the service catalog was deployed: `wanaku service list`
+- Verify the service catalog was deployed: `wanaku service catalog list`
 
 ### Camel Route Fails with "Component Not Found"
 
