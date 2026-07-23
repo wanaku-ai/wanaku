@@ -14,8 +14,8 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
  * A provider of a base exception mapper that converts exceptions to standardized responses.
  * <p>
  * This is the catch-all mapper for exceptions not handled by more specific mappers.
- * It includes the actual exception message in the response so that clients receive
- * actionable diagnostic information instead of a generic error.
+ * It returns a generic error message to avoid leaking internal implementation details;
+ * the full exception message and stack trace are logged server-side for diagnostics.
  */
 @Provider
 public class BaseExceptionMapper implements ExceptionMapper<Exception> {
@@ -31,13 +31,8 @@ public class BaseExceptionMapper implements ExceptionMapper<Exception> {
     public Response toResponse(Exception e) {
         LOG.error(e.getMessage(), e);
 
-        String message = e.getMessage();
-        if (message == null || message.isBlank()) {
-            message = FALLBACK_MESSAGE;
-        }
-
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new WanakuResponse<Void>(message))
+                .entity(new WanakuResponse<Void>(FALLBACK_MESSAGE))
                 .build();
     }
 }

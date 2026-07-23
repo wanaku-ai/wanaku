@@ -53,10 +53,10 @@ public final class ProvisioningHelper {
 
         String configURI = provisioningReference.configurationURI() != null
                 ? provisioningReference.configurationURI().toString()
-                : "";
+                : null;
         String secretsURI = provisioningReference.secretsURI() != null
                 ? provisioningReference.secretsURI().toString()
-                : "";
+                : null;
         uriSetter.accept(configURI, secretsURI);
 
         return provisioningReference;
