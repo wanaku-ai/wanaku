@@ -13,8 +13,19 @@ The default test path below uses the router OIDC proxy; for direct Keycloak auth
 - WanakuRouter CR created and Ready
 - `WANAKU_ROUTER_URL` environment variable set (e.g. `http://<router-route-host>`)
 - `WANAKU_TEST_USER` and `WANAKU_TEST_PASS` environment variables set
+- `WANAKU_TEST_RUN_ID` set (derived automatically by [namespace-setup.md](namespace-setup.md))
 
 ## Steps
+
+### 0. Isolate credential storage for this test run
+
+Concurrent test runs must not share the same credentials file. Derive a unique path
+from `WANAKU_TEST_RUN_ID` so that each run writes to its own file.
+
+```bash
+export WANAKU_CREDENTIALS="${WANAKU_CREDENTIALS:-${TMPDIR:-/tmp}/wanaku-credentials-${WANAKU_TEST_RUN_ID:-$$}}"
+echo "Using isolated credentials file: ${WANAKU_CREDENTIALS}"
+```
 
 ### 1. Verify the OIDC login works
 

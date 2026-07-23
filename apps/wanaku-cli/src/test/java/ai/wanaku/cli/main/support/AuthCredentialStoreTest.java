@@ -194,6 +194,36 @@ class AuthCredentialStoreTest {
                 "Credentials directory must not be accessible by group or others");
     }
 
+    @Test
+    void shouldUseSystemPropertyForCredentialsFile() {
+        Path customPath = tempDir.resolve("sysprop-credentials");
+        System.setProperty(AuthCredentialStore.CREDENTIALS_FILE_SYS_PROP, customPath.toString());
+        try {
+            AuthCredentialStore store = new AuthCredentialStore();
+            store.storeApiToken("sysprop-test-token");
+
+            assertEquals("sysprop-test-token", store.getApiToken());
+            assertTrue(customPath.toFile().exists(), "Credentials file should exist at custom path");
+        } finally {
+            System.clearProperty(AuthCredentialStore.CREDENTIALS_FILE_SYS_PROP);
+        }
+    }
+
+    @Test
+    void concurrentTestRunsShouldUseIsolatedFiles() {
+        Path file1 = tempDir.resolve("run-1-credentials");
+        Path file2 = tempDir.resolve("run-2-credentials");
+
+        AuthCredentialStore store1 = new AuthCredentialStore(file1.toUri());
+        AuthCredentialStore store2 = new AuthCredentialStore(file2.toUri());
+
+        store1.storeApiToken("token-for-run-1");
+        store2.storeApiToken("token-for-run-2");
+
+        assertEquals("token-for-run-1", store1.getApiToken(), "Run 1 should have its own token");
+        assertEquals("token-for-run-2", store2.getApiToken(), "Run 2 should have its own token");
+    }
+
     private static void assumePosixFileSystem() {
         Assumptions.assumeTrue(
                 FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),

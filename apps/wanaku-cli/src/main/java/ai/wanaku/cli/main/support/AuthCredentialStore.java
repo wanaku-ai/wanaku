@@ -2,12 +2,14 @@ package ai.wanaku.cli.main.support;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Properties;
@@ -31,6 +33,14 @@ public class AuthCredentialStore {
     private static final String CLIENT_ID_KEY = "client.id";
     private static final String REALM_KEY = "auth.realm";
 
+    /**
+     * System property that, when set, overrides the default credentials file path. This allows
+     * Quarkus configuration ({@code wanaku.cli.auth.credentials-file}) or a JVM flag
+     * ({@code -Dwanaku.cli.auth.credentials-file=...}) to isolate credential storage per
+     * process, preventing contention when multiple CLI invocations run concurrently.
+     */
+    static final String CREDENTIALS_FILE_SYS_PROP = "wanaku.cli.auth.credentials-file";
+
     private final URI credentialsUri;
 
     public AuthCredentialStore() {
@@ -42,6 +52,12 @@ public class AuthCredentialStore {
         if (envOverride != null && !envOverride.isBlank()) {
             return envOverride.trim();
         }
+
+        String sysPropOverride = System.getProperty(CREDENTIALS_FILE_SYS_PROP);
+        if (sysPropOverride != null && !sysPropOverride.isBlank()) {
+            return sysPropOverride.trim();
+        }
+
         return WanakuHome.get() + File.separator + "credentials";
     }
 
@@ -228,7 +244,12 @@ public class AuthCredentialStore {
         try {
             Path credentialsPath = Paths.get(credentialsUri);
             if (Files.exists(credentialsPath)) {
-                props.load(Files.newInputStream(credentialsPath));
+                // Use a shared (read) lock so concurrent readers do not block each other
+                // but writers are excluded while the read is in progress.
+                try (FileChannel channel = FileChannel.open(credentialsPath, StandardOpenOption.READ);
+                        FileLock ignored = channel.lock(0, Long.MAX_VALUE, true)) {
+                    props.load(java.nio.channels.Channels.newInputStream(channel));
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to load credentials", e);
@@ -242,10 +263,19 @@ public class AuthCredentialStore {
             if (!Files.exists(credentialsPath)) {
                 return;
             }
-            Properties props = loadProperties();
-            props.remove(key);
-            try (OutputStream out = Files.newOutputStream(credentialsPath)) {
-                props.store(out, "Wanaku CLI Authentication Credentials");
+
+            ensureSecureFile(credentialsPath);
+            // Use file locking to prevent concurrent processes from corrupting the properties file.
+            try (FileChannel channel =
+                            FileChannel.open(credentialsPath, StandardOpenOption.READ, StandardOpenOption.WRITE);
+                    FileLock ignored = channel.lock()) {
+                Properties props = new Properties();
+                props.load(java.nio.channels.Channels.newInputStream(channel));
+                props.remove(key);
+                channel.truncate(0);
+                channel.position(0);
+                props.store(
+                        java.nio.channels.Channels.newOutputStream(channel), "Wanaku CLI Authentication Credentials");
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to clear credential: " + key, e);
@@ -255,15 +285,22 @@ public class AuthCredentialStore {
     private void storeCredential(String key, String value) {
         try {
             Path credentialsPath = Paths.get(credentialsUri);
-            Properties props = loadProperties();
-
-            props.setProperty(key, value);
 
             // Make sure the file exists with owner-only permissions BEFORE writing secrets to it,
             // so access and refresh tokens are never momentarily world-readable.
             ensureSecureFile(credentialsPath);
-            try (OutputStream out = Files.newOutputStream(credentialsPath)) {
-                props.store(out, "Wanaku CLI Authentication Credentials");
+
+            // Use file locking to prevent concurrent processes from corrupting the properties file.
+            try (FileChannel channel =
+                            FileChannel.open(credentialsPath, StandardOpenOption.READ, StandardOpenOption.WRITE);
+                    FileLock ignored = channel.lock()) {
+                Properties props = new Properties();
+                props.load(java.nio.channels.Channels.newInputStream(channel));
+                props.setProperty(key, value);
+                channel.truncate(0);
+                channel.position(0);
+                props.store(
+                        java.nio.channels.Channels.newOutputStream(channel), "Wanaku CLI Authentication Credentials");
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to store credential: " + key, e);
