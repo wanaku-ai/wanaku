@@ -264,7 +264,9 @@
                     --initialize-at-run-time=org.jline.nativ.Kernel32$MENU_EVENT_RECORD,
                     --initialize-at-run-time=org.jline.nativ.JLineLibrary,
                     --initialize-at-run-time=com.nimbusds.oauth2.sdk.http.HTTPRequest,
-                    -H:ReflectionConfigurationFiles=reflection-config.json,
+		    --initialize-at-run-time=org.jline.nativ.CLibrary$Termios,
+		    --initialize-at-run-time=org.jline.nativ.CLibrary$WinSize,
+			-H:ReflectionConfigurationFiles=reflection-config.json,
                     -H:IncludeResourceBundles=consoleui_messages,
                     -H:ResourceConfigurationFiles=resources-config.json
                 </quarkus.native.additional-build-args>
