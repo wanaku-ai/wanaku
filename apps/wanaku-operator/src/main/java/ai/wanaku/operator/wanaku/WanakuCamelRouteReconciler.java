@@ -7,6 +7,7 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -187,6 +188,22 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         status.setDeployedCatalogName(catalogName);
         status.setRegisteredTools(extractToolNames(resource.getSpec()));
         status.setRegisteredResources(extractResourceNames(resource.getSpec()));
+
+        if (!isCicReady(crName + "-cic", namespace)) {
+            LOG.infof("CIC instance '%s-cic' is not yet ready, rescheduling reconciliation", crName);
+            Condition condition = new ConditionBuilder()
+                    .withType(READY_CONDITION)
+                    .withStatus("False")
+                    .withObservedGeneration(resource.getMetadata().getGeneration())
+                    .withLastTransitionTime(OffsetDateTime.now(ZoneOffset.UTC).toString())
+                    .withReason("CICNotReady")
+                    .withMessage("Waiting for CIC instance to become ready")
+                    .build();
+            status.setConditions(List.of(condition));
+            resource.setStatus(status);
+            return UpdateControl.patchStatus(resource).rescheduleAfter(Duration.ofSeconds(5));
+        }
+
         final Condition previousReadyCondition = findCondition(
                 resource.getStatus() != null ? resource.getStatus().getConditions() : null, READY_CONDITION);
         status.setConditions(List.of(readyCondition(
@@ -307,6 +324,24 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         public void filter(ClientRequestContext requestContext) {
             requestContext.getHeaders().putSingle("Authorization", "Bearer " + authenticator.currentValidAccessToken());
         }
+    }
+
+    private boolean isCicReady(String cicName, String namespace) {
+        Deployment cicDeployment = kubernetesClient
+                .apps()
+                .deployments()
+                .inNamespace(namespace)
+                .withName(cicName)
+                .get();
+        return isDeploymentReady(cicDeployment);
+    }
+
+    static boolean isDeploymentReady(Deployment deployment) {
+        if (deployment == null || deployment.getStatus() == null) {
+            return false;
+        }
+        Integer readyReplicas = deployment.getStatus().getReadyReplicas();
+        return readyReplicas != null && readyReplicas > 0;
     }
 
     private static final int CIC_GRPC_PORT = 9190;
