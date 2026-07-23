@@ -20,7 +20,7 @@ type: Opaque
 stringData:
   client-id: "wanaku-service"
   client-secret: "<rotate-me-regularly>"
-  token-endpoint: "https://keycloak.example.com/realms/production/"
+  auth-server-url: "https://keycloak.example.com/realms/production"
 ```
 
 **Best Practices:**
@@ -65,15 +65,12 @@ env:
 
 ### Wanaku CLI Credentials
 
-When using `wanaku` CLI commands that require admin access:
-
-- Use `--plain` flag only in trusted environments
-- Prefer environment variables for credentials:
+When using `wanaku` CLI commands that require admin access, prefer environment variables for credentials:
 
 ```bash
 export WANAKU_ADMIN_USERNAME=admin
 export WANAKU_ADMIN_PASSWORD=secure-password
-wanaku realm create --config wanaku-config.json
+wanaku admin realm create --config wanaku-config.json
 ```
 
 ## Network Policies for gRPC Traffic
@@ -291,13 +288,16 @@ Key events logged:
 
 ### gRPC Access Logs
 
-Enable gRPC access logging on capability services to track tool invocations:
+By default, Wanaku capability services serve gRPC through the main HTTP server (`quarkus.grpc.server.use-separate-server=false`), so the HTTP access log also records gRPC calls. Enable it to track tool invocations:
 
 ```properties
 # In capability service application.properties
-quarkus.grpc.server.access-log.enabled=true
-quarkus.grpc.server.access-log.pattern=%{remote-address}i %{method}m %{path}p %{status}s %{duration}D
+quarkus.http.access-log.enabled=true
+quarkus.http.access-log.pattern=combined
 ```
+
+> [!NOTE]
+> If you run gRPC on a separate server (`quarkus.grpc.server.use-separate-server=true`), the HTTP access log does not capture gRPC traffic — rely on application-level logging instead.
 
 ### Kubernetes Audit Policy
 
