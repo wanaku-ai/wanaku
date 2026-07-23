@@ -189,8 +189,9 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         status.setRegisteredTools(extractToolNames(resource.getSpec()));
         status.setRegisteredResources(extractResourceNames(resource.getSpec()));
 
-        if (!isCicReady(crName + "-cic", namespace)) {
-            LOG.infof("CIC instance '%s-cic' is not yet ready, rescheduling reconciliation", crName);
+        final String cicName = crName + "-cic";
+        if (!isCicReady(cicName, namespace)) {
+            LOG.infof("CIC instance '%s' is not yet ready, rescheduling reconciliation", cicName);
             Condition condition = new ConditionBuilder()
                     .withType(READY_CONDITION)
                     .withStatus("False")
@@ -326,7 +327,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         }
     }
 
-    private boolean isCicReady(String cicName, String namespace) {
+    boolean isCicReady(String cicName, String namespace) {
         Deployment cicDeployment = kubernetesClient
                 .apps()
                 .deployments()
