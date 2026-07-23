@@ -5,15 +5,15 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type CodeExecutionStatus = typeof CodeExecutionStatus[keyof typeof CodeExecutionStatus];
-
+export type CodeExecutionStatus =
+  (typeof CodeExecutionStatus)[keyof typeof CodeExecutionStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CodeExecutionStatus = {
-  PENDING: 'PENDING',
-  RUNNING: 'RUNNING',
-  COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED',
-  CANCELLED: 'CANCELLED',
-  TIMEOUT: 'TIMEOUT',
+  PENDING: "PENDING",
+  RUNNING: "RUNNING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+  CANCELLED: "CANCELLED",
+  TIMEOUT: "TIMEOUT",
 } as const;

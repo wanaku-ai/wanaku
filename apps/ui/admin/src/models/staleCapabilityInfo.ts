@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { Instant } from './instant';
+import type { Instant } from "./instant";
 
 export interface StaleCapabilityInfo {
   id?: string;

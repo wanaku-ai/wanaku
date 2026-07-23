@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { MediaTypeParameters } from './mediaTypeParameters';
+import type { MediaTypeParameters } from "./mediaTypeParameters";
 
 export interface MediaType {
   type?: string;

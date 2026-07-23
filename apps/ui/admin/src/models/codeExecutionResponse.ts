@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { CodeExecutionStatus } from './codeExecutionStatus';
+import type { CodeExecutionStatus } from "./codeExecutionStatus";
 
 export interface CodeExecutionResponse {
   taskId?: string;

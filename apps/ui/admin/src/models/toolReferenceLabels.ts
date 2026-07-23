@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type ToolReferenceLabels = {[key: string]: string};
+export type ToolReferenceLabels = { [key: string]: string };

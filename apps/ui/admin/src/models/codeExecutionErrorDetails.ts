@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type CodeExecutionErrorDetails = {[key: string]: string};
+export type CodeExecutionErrorDetails = { [key: string]: string };

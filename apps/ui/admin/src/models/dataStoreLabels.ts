@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type DataStoreLabels = {[key: string]: string};
+export type DataStoreLabels = { [key: string]: string };

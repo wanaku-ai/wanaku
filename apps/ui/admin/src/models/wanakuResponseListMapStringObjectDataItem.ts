@@ -5,4 +5,6 @@
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
 
-export type WanakuResponseListMapStringObjectDataItem = {[key: string]: unknown};
+export type WanakuResponseListMapStringObjectDataItem = {
+  [key: string]: unknown;
+};

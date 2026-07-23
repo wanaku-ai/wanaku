@@ -6,5 +6,5 @@
  */
 
 export type GetApiV1ForwardsParams = {
-labelFilter?: string;
+  labelFilter?: string;
 };

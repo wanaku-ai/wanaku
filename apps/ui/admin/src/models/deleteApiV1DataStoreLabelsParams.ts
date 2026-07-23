@@ -6,5 +6,5 @@
  */
 
 export type DeleteApiV1DataStoreLabelsParams = {
-labelExpression?: string;
+  labelExpression?: string;
 };

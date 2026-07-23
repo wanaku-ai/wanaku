@@ -4,8 +4,8 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { WanakuError } from './wanakuError';
-import type { WanakuResponseMapStringObjectData } from './wanakuResponseMapStringObjectData';
+import type { WanakuError } from "./wanakuError";
+import type { WanakuResponseMapStringObjectData } from "./wanakuResponseMapStringObjectData";
 
 export interface WanakuResponseMapStringObject {
   error?: WanakuError;

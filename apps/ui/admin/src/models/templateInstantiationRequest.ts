@@ -4,7 +4,7 @@
  * wanaku-router-backend API
  * OpenAPI spec version: 0.3.0-SNAPSHOT
  */
-import type { TemplateInstantiationRequestProperties } from './templateInstantiationRequestProperties';
+import type { TemplateInstantiationRequestProperties } from "./templateInstantiationRequestProperties";
 
 export interface TemplateInstantiationRequest {
   templateName?: string;
