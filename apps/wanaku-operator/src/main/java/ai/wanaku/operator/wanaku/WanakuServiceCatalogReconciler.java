@@ -28,7 +28,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import io.smallrye.common.annotation.Blocking;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
@@ -50,13 +49,15 @@ import static ai.wanaku.operator.util.OperatorUtil.readyCondition;
         apiGroups = "",
         resources = {"configmaps"},
         verbs = {RBACVerbs.GET, RBACVerbs.LIST, RBACVerbs.WATCH})
-@Blocking
 public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceCatalog>, Cleaner<WanakuServiceCatalog> {
     private static final Logger LOG = Logger.getLogger(WanakuServiceCatalogReconciler.class);
 
     private static final String CATALOG_DATA_KEY = "catalog.zip";
 
     private ServiceAuthenticator serviceAuthenticator;
+
+    private volatile ServiceCatalogService cachedClient;
+    private volatile String cachedBaseUri;
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -226,7 +227,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         dataStore.setData(data);
 
         try {
-            ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
+            ServiceCatalogService service = getOrCreateClient(routerBaseUrl, authSpec);
             service.deploy(dataStore);
         } catch (WebApplicationException e) {
             throw new WanakuException(
@@ -240,34 +241,39 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
     }
 
     private void removeServiceCatalog(String routerBaseUrl, WanakuTypes.AuthSpec authSpec, String name) {
-        ServiceCatalogService service = createServiceCatalogClient(routerBaseUrl, authSpec);
+        ServiceCatalogService service = getOrCreateClient(routerBaseUrl, authSpec);
         service.remove(name);
     }
 
-    private ServiceCatalogService createServiceCatalogClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+    private ServiceCatalogService getOrCreateClient(String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+        if (cachedClient != null && routerBaseUrl.equals(cachedBaseUri)) {
+            return cachedClient;
+        }
+
         QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(routerBaseUrl));
 
         if (OperatorSecurityConfig.isAuthEnabled(authSpec)) {
             if (serviceAuthenticator == null) {
                 serviceAuthenticator = new ServiceAuthenticator(new OperatorSecurityConfig(authSpec));
             }
-            String token = serviceAuthenticator.currentValidAccessToken();
-            builder.register(new BearerTokenFilter(token));
+            builder.register(new BearerTokenFilter(serviceAuthenticator));
         }
 
-        return builder.build(ServiceCatalogService.class);
+        cachedClient = builder.build(ServiceCatalogService.class);
+        cachedBaseUri = routerBaseUrl;
+        return cachedClient;
     }
 
     private static class BearerTokenFilter implements ClientRequestFilter {
-        private final String token;
+        private final ServiceAuthenticator authenticator;
 
-        BearerTokenFilter(String token) {
-            this.token = token;
+        BearerTokenFilter(ServiceAuthenticator authenticator) {
+            this.authenticator = authenticator;
         }
 
         @Override
         public void filter(ClientRequestContext requestContext) {
-            requestContext.getHeaders().putSingle("Authorization", "Bearer " + token);
+            requestContext.getHeaders().putSingle("Authorization", "Bearer " + authenticator.currentValidAccessToken());
         }
     }
 }
