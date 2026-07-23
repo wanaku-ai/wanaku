@@ -9,6 +9,11 @@ import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.RemoteToolReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
+/**
+ * Bridge interface for interacting with remote MCP servers via the langchain4j MCP client.
+ * Provides operations for listing and invoking tools, and for listing and reading resources
+ * on remote MCP servers.
+ */
 public interface McpBridge {
 
     List<RemoteToolReference> listTools(ForwardClient forwardClient) throws ServiceUnavailableException;

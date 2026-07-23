@@ -20,6 +20,12 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.exchange.v1.ToolInvokeRequest;
 
+/**
+ * A proxy class for invoking tools via gRPC.
+ * This proxy is responsible for executing tool invocations by delegating
+ * gRPC transport operations to the configured transport, separating business
+ * logic from transport concerns.
+ */
 public class InvokerBridge implements ToolsBridge {
     private static final Logger LOG = Logger.getLogger(InvokerBridge.class);
     private static final String SERVICE_TYPE_TOOL_INVOKER = ServiceType.TOOL_INVOKER.asValue();

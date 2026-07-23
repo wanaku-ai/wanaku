@@ -14,6 +14,10 @@ import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
+/**
+ * Helper class for registering prompts with MCP servers and converting
+ * prompt content between Wanaku and MCP protocol formats.
+ */
 public final class PromptHelper {
     private static final Logger LOG = Logger.getLogger(PromptHelper.class);
 
