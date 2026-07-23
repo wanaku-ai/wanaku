@@ -10,11 +10,18 @@ import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
+/**
+ * Helper class for exposing resources on MCP servers.
+ */
 public final class ResourceHelper {
     private static final Logger LOG = Logger.getLogger(ResourceHelper.class);
 
     private ResourceHelper() {}
 
+    /**
+     * Functional interface for resource read handlers that receive the MCP transport context
+     * with HTTP request headers from the originating client connection.
+     */
     @FunctionalInterface
     public interface ResourceHandler {
         Uni<McpSchema.ReadResourceResult> read(

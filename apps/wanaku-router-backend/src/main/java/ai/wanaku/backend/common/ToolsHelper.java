@@ -14,9 +14,16 @@ import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 
+/**
+ * Helper class for registering tools with MCP servers.
+ */
 public class ToolsHelper {
     private static final Logger LOG = Logger.getLogger(ToolsHelper.class);
 
+    /**
+     * Functional interface for tool execution handlers that receive the MCP transport context
+     * with HTTP request headers from the originating client connection.
+     */
     @FunctionalInterface
     public interface ToolHandler {
         Uni<McpSchema.CallToolResult> execute(

@@ -35,6 +35,10 @@ import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 
+/**
+ * Default implementation of {@link McpBridge} that interacts with remote MCP servers
+ * via the langchain4j MCP client.
+ */
 @ApplicationScoped
 public class DefaultMcpBridge implements McpBridge {
     static final int JSON_RPC_METHOD_NOT_FOUND = -32601;

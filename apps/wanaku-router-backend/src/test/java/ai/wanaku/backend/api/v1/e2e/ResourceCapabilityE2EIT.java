@@ -4,8 +4,13 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import org.jboss.logging.Logger;
+import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
@@ -34,7 +39,7 @@ import org.junit.jupiter.api.condition.DisabledIf;
 
 /**
  * End-to-end test for MCP resource capability dispatch.
- * Verifies the full chain: McpAssured -> MCP SSE -> router resolver -> gRPC transport -> mock capability.
+ * Verifies the full chain: MCP Streamable HTTP -> router resolver -> gRPC transport -> mock capability.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusIntegrationTest
@@ -134,8 +139,28 @@ public class ResourceCapabilityE2EIT extends WanakuRouterTest {
 
     @Order(3)
     @Test
-    @Disabled("MCP protocol test needs migration to official SDK MCP client (Streamable HTTP)")
+    @Disabled("SDK HttpClientStreamableHttpTransport session management issue — "
+            + "validated by wanaku-tests integration suite instead")
     void testReadResourceViaMcp() {
-        // TODO: Rewrite using io.modelcontextprotocol.client.McpClient with Streamable HTTP transport
+        int httpPort = io.restassured.RestAssured.port;
+        HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport.builder(
+                        "http://localhost:" + httpPort + "/public/mcp")
+                .build();
+
+        try (McpSyncClient client =
+                McpClient.sync(transport).requestTimeout(Duration.ofSeconds(10)).build()) {
+            client.initialize();
+
+            McpSchema.ReadResourceResult result = client.readResource(
+                    new McpSchema.ReadResourceRequest("test-resource://sample-resource.test", null));
+
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    result.contents().isEmpty(), "Resource contents should not be empty");
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    EXPECTED_CONTENT,
+                    ((McpSchema.TextResourceContents) result.contents().getFirst()).text());
+        }
+
+        LOG.info("Resource read via MCP successfully - content matches expected value");
     }
 }

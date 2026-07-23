@@ -24,6 +24,13 @@ import ai.wanaku.backend.mcp.transport.VertxStreamableTransportProvider;
 import ai.wanaku.core.util.VersionHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * CDI bean managing per-namespace MCP server instances.
+ * Each namespace gets its own {@link McpSyncServer} with dedicated Vert.x HTTP routes
+ * at {@code /<namespace-path>/mcp}. Protected namespaces (default, wanaku-internal, public)
+ * are created at startup; additional namespaces are created dynamically via
+ * {@link #createServerIfAbsent(String, String)}.
+ */
 @ApplicationScoped
 public class McpServerRegistry {
     private static final Logger LOG = Logger.getLogger(McpServerRegistry.class);

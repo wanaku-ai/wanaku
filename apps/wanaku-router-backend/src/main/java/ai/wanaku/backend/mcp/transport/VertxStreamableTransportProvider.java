@@ -20,6 +20,13 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import reactor.core.publisher.Mono;
 
+/**
+ * Vert.x implementation of the MCP Streamable HTTP transport provider.
+ * Handles POST (JSON-RPC messages), GET (SSE listening streams), and DELETE (session termination)
+ * requests on a configurable MCP endpoint path. Each client session is tracked via the
+ * {@code mcp-session-id} header. HTTP request headers are captured into
+ * {@link McpTransportContext} for downstream use by tool and resource handlers.
+ */
 public class VertxStreamableTransportProvider implements McpStreamableServerTransportProvider {
     private static final Logger LOG = Logger.getLogger(VertxStreamableTransportProvider.class);
 

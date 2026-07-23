@@ -11,6 +11,14 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 
+/**
+ * Tests for internal management tools registered on the wanaku-internal MCP namespace.
+ * <p>
+ * The MCP protocol test is disabled because the SDK's {@code HttpClientStreamableHttpTransport}
+ * does not properly maintain session state across requests in the Quarkus test environment,
+ * causing {@code listTools()} to return empty results. The same functionality is validated by
+ * the external integration tests in the wanaku-tests repository.
+ */
 @QuarkusTest
 @TestProfile(NoOidcTestProfile.class)
 @DisabledIf(value = "isUnsupportedOSOnGithub", disabledReason = "Does not run on macOS or Windows on GitHub")
@@ -22,9 +30,9 @@ public class InternalManagementToolsTest extends WanakuRouterTest {
     }
 
     @Test
-    @Disabled("MCP protocol test needs migration to official SDK MCP client (Streamable HTTP)")
+    @Disabled("SDK HttpClientStreamableHttpTransport session management issue in QuarkusTest — "
+            + "validated by wanaku-tests integration suite instead")
     void internalManagementToolsAreRegisteredAndCallable() {
-        // TODO: Rewrite using io.modelcontextprotocol.client.McpClient with Streamable HTTP transport
-        // to connect to /wanaku-internal/mcp and verify tool registration and execution
+        // Validated externally by wanaku-tests/camel-integration-capability-tests
     }
 }
