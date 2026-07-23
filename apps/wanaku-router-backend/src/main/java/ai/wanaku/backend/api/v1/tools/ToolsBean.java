@@ -86,7 +86,10 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
                 });
 
         final Map<String, PropertySchema> serviceProperties = provisioningReference.properties();
-        if (serviceProperties != null && !serviceProperties.isEmpty() && toolReference.getInputSchema() != null) {
+        if (serviceProperties != null
+                && !serviceProperties.isEmpty()
+                && toolReference.getInputSchema() != null
+                && toolReference.getInputSchema().getProperties() != null) {
             final Map<String, Property> clientProperties =
                     toolReference.getInputSchema().getProperties();
             for (var serviceProperty : serviceProperties.entrySet()) {
