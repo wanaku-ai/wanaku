@@ -35,7 +35,11 @@ public class ToolsHelper {
     }
 
     private static Class<?> toType(Property property) {
-        return switch (property.getType().toLowerCase()) {
+        String type = property.getType();
+        if (type == null || type.isBlank()) {
+            return String.class;
+        }
+        return switch (type.toLowerCase()) {
             case "string" -> String.class;
             case "int", "integer" -> Integer.class;
             case "boolean" -> Boolean.class;
