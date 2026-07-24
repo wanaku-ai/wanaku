@@ -1,125 +1,124 @@
 package ai.wanaku.backend.common;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.Map;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
 import ai.wanaku.capabilities.sdk.api.types.InputSchema;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
-import ai.wanaku.capabilities.sdk.api.types.Property;
 
 /**
- * Helper class for dealing with tools
+ * Helper class for registering tools with MCP servers.
  */
 public class ToolsHelper {
     private static final Logger LOG = Logger.getLogger(ToolsHelper.class);
 
-    private static boolean isRequired(CallableReference toolReference) {
-        boolean required = false;
-
-        InputSchema inputSchema = toolReference.getInputSchema();
-        if (inputSchema == null) {
-            return false;
-        }
-
-        List<String> requiredList = inputSchema.getRequired();
-
-        if (requiredList != null) {
-            required = requiredList.contains(toolReference.getName());
-        }
-        return required;
-    }
-
-    private static Class<?> toType(Property property) {
-        String type = property.getType();
-        if (type == null || type.isBlank()) {
-            return String.class;
-        }
-        return switch (type.toLowerCase()) {
-            case "string" -> String.class;
-            case "int", "integer" -> Integer.class;
-            case "boolean" -> Boolean.class;
-            case "number" -> Number.class;
-            default -> Object.class;
-        };
-    }
-
-    private static void addArgument(
-            String key, Property value, ToolManager.ToolDefinition toolDefinition, boolean required) {
-        Class<?> type = toType(value);
-        toolDefinition.addArgument(key, value.getDescription(), required, type);
-    }
-
     /**
-     * Registers a tool with the given tool manager using an async handler.
-     *
-     * @param toolReference The reference to the tool being registered
-     * @param toolManager   The tool manager instance responsible for managing tools
-     * @param handler       A BiFunction that takes ToolArguments and CallableReference as input,
-     *                      and returns a Uni of ToolResponse.
+     * Functional interface for tool execution handlers that receive the MCP transport context
+     * with HTTP request headers from the originating client connection.
      */
-    public static void registerTool(
-            CallableReference toolReference,
-            ToolManager toolManager,
-            BiFunction<ToolManager.ToolArguments, CallableReference, Uni<ToolResponse>> handler) {
-        registerTool(toolReference, toolManager, null, handler);
+    @FunctionalInterface
+    public interface ToolHandler {
+        Uni<McpSchema.CallToolResult> execute(
+                McpSchema.CallToolRequest request,
+                String sessionId,
+                McpTransportContext transportContext,
+                CallableReference toolReference);
     }
 
-    /**
-     * Registers a tool with the given tool manager using an async handler.
-     *
-     * @param toolReference The reference to the tool being registered
-     * @param toolManager   The tool manager instance responsible for managing tools
-     * @param namespace     The namespace to use for registering the tool
-     * @param handler       A BiFunction that takes ToolArguments and CallableReference as input,
-     *                      and returns a Uni of ToolResponse.
-     */
-    public static void registerTool(
-            CallableReference toolReference,
-            ToolManager toolManager,
-            Namespace namespace,
-            BiFunction<ToolManager.ToolArguments, CallableReference, Uni<ToolResponse>> handler) {
+    public static void registerTool(CallableReference toolReference, McpSyncServer server, ToolHandler handler) {
+        registerTool(toolReference, server, null, handler);
+    }
 
-        if (toolManager.getTool(toolReference.getName()) != null) {
-            throw EntityAlreadyExistsException.forName(toolReference.getName());
-        }
+    public static void registerTool(
+            CallableReference toolReference, McpSyncServer server, Namespace namespace, ToolHandler handler) {
+
+        Map<String, Object> schemaMap = buildInputSchema(toolReference);
+
+        McpSchema.Tool tool = McpSchema.Tool.builder(toolReference.getName(), schemaMap)
+                .description(toolReference.getDescription())
+                .build();
+
+        McpServerFeatures.SyncToolSpecification spec = McpServerFeatures.SyncToolSpecification.builder()
+                .tool(tool)
+                .callHandler((exchange, request) -> {
+                    try {
+                        return handler.execute(
+                                        request, exchange.sessionId(), exchange.transportContext(), toolReference)
+                                .await()
+                                .indefinitely();
+                    } catch (Exception e) {
+                        LOG.debugf(e, "Tool handler error for %s", toolReference.getName());
+                        return McpSchema.CallToolResult.builder(
+                                        List.of((McpSchema.Content) McpSchema.TextContent.builder(
+                                                        e.getMessage() != null
+                                                                ? e.getMessage()
+                                                                : "Tool execution failed")
+                                                .build()))
+                                .build();
+                    }
+                })
+                .build();
 
         try {
-            String description = toolReference.getDescription() != null ? toolReference.getDescription() : "";
-            ToolManager.ToolDefinition toolDefinition =
-                    toolManager.newTool(toolReference.getName()).setDescription(description);
-
-            final boolean required = isRequired(toolReference);
-
-            InputSchema inputSchema = toolReference.getInputSchema();
-            if (inputSchema != null) {
-                inputSchema.getProperties().forEach((key, value) -> addArgument(key, value, toolDefinition, required));
-            }
-
             if (namespace != null) {
                 LOG.debugf(
                         "Registering tool %s in namespace %s with path %s",
                         toolReference.getName(), namespace.getName(), namespace.getPath());
-                toolDefinition
-                        .setServerName(namespace.getPath())
-                        .setAsyncHandler(ta -> handler.apply(ta, toolReference))
-                        .register();
             } else {
                 LOG.debugf("Registering tool %s", toolReference.getName());
-                toolDefinition
-                        .setAsyncHandler(ta -> handler.apply(ta, toolReference))
-                        .register();
             }
+            server.addTool(spec);
         } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("already exists")) {
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
                 throw EntityAlreadyExistsException.forName(toolReference.getName());
-            } else {
-                throw e;
+            }
+            throw e;
+        }
+    }
+
+    private static Map<String, Object> buildInputSchema(CallableReference toolReference) {
+        Map<String, Object> schemaMap = new LinkedHashMap<>();
+        schemaMap.put("type", "object");
+
+        InputSchema inputSchema = toolReference.getInputSchema();
+        if (inputSchema != null && inputSchema.getProperties() != null) {
+            Map<String, Object> propsMap = new LinkedHashMap<>();
+            inputSchema.getProperties().forEach((key, property) -> {
+                Map<String, Object> propDef = new LinkedHashMap<>();
+                propDef.put("type", normalizeJsonSchemaType(property.getType()));
+                if (property.getDescription() != null) {
+                    propDef.put("description", property.getDescription());
+                }
+                propsMap.put(key, propDef);
+            });
+            schemaMap.put("properties", propsMap);
+
+            List<String> required = inputSchema.getRequired();
+            if (required != null && !required.isEmpty()) {
+                schemaMap.put("required", required);
             }
         }
+
+        return schemaMap;
+    }
+
+    private static String normalizeJsonSchemaType(String type) {
+        if (type == null) {
+            return "string";
+        }
+        return switch (type.toLowerCase()) {
+            case "int" -> "integer";
+            case "bool" -> "boolean";
+            case "float", "double" -> "number";
+            default -> type;
+        };
     }
 }

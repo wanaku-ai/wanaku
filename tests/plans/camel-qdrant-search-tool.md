@@ -70,7 +70,7 @@ export ROUTE_ID="${ROUTE_ID:-qdrant-similarity-search}"
 
 # Router
 export WANAKU_HOST="${WANAKU_HOST:-http://localhost:8080}"
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp}"
 
 # Qdrant server configuration
 # The gRPC port (6334) is used by camel-qdrant; the REST API port (6333) is
@@ -95,7 +95,7 @@ export TEMPLATE_BASE_DIR="${TEMPLATE_BASE_DIR:-services/service-templates/src/ma
 | `SYSTEM_NAME` | `qdrant-search` | Service system name within the template |
 | `ROUTE_ID` | `qdrant-similarity-search` | Camel route ID and MCP tool name |
 | `WANAKU_HOST` | `http://localhost:8080` | Router base URL |
-| `MCP_SERVER_URI` | `http://localhost:8080/public/mcp/sse` | MCP SSE endpoint |
+| `MCP_SERVER_URI` | `http://localhost:8080/public/mcp` | MCP Streamable HTTP endpoint |
 | `QDRANT_HOST` | `localhost` | Qdrant gRPC host |
 | `QDRANT_GRPC_PORT` | `6334` | Qdrant gRPC port (used by camel-qdrant) |
 | `QDRANT_REST_PORT` | `6333` | Qdrant REST API port (used for test data seeding) |

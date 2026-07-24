@@ -55,7 +55,7 @@ public class ToolsAdd extends BaseCommand {
             required = true)
     private String name;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     NamespaceOptions namespaceOptions;
 
     @CommandLine.Option(
@@ -121,7 +121,7 @@ public class ToolsAdd extends BaseCommand {
         toolReference.setDescription(description);
         toolReference.setUri(uri);
         toolReference.setType(type);
-        toolReference.setNamespace(namespaceOptions.getNamespaceValue());
+        toolReference.setNamespace(namespaceOptions != null ? namespaceOptions.getNamespaceValue() : null);
         toolReference.setLabels(labels);
 
         InputSchema inputSchema = new InputSchema();

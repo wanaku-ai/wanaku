@@ -1,10 +1,8 @@
 package ai.wanaku.backend.bridge;
 
 import java.util.List;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
-import io.quarkiverse.mcp.server.ToolManager;
-import io.quarkiverse.mcp.server.ToolResponse;
+import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.capabilities.sdk.api.exceptions.ServiceUnavailableException;
 import ai.wanaku.capabilities.sdk.api.types.CallableReference;
@@ -13,7 +11,6 @@ import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 /**
  * Bridge interface for interacting with remote MCP servers via the langchain4j MCP client.
- * <p>
  * Provides operations for listing and invoking tools, and for listing and reading resources
  * on remote MCP servers.
  */
@@ -21,11 +18,19 @@ public interface McpBridge {
 
     List<RemoteToolReference> listTools(ForwardClient forwardClient) throws ServiceUnavailableException;
 
-    Uni<ToolResponse> executeTool(
-            String address, ToolManager.ToolArguments toolArguments, CallableReference toolReference);
+    Uni<McpSchema.CallToolResult> executeTool(
+            String address,
+            McpSchema.CallToolRequest callToolRequest,
+            String sessionId,
+            McpTransportContext transportContext,
+            CallableReference toolReference);
 
     List<ResourceReference> listResources(ForwardClient forwardClient) throws ServiceUnavailableException;
 
-    Uni<ResourceResponse> read(
-            ForwardClient forwardClient, ResourceManager.ResourceArguments arguments, ResourceReference mcpResource);
+    Uni<McpSchema.ReadResourceResult> read(
+            ForwardClient forwardClient,
+            McpSchema.ReadResourceRequest readRequest,
+            String sessionId,
+            McpTransportContext transportContext,
+            ResourceReference mcpResource);
 }

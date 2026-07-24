@@ -40,15 +40,18 @@ public class ForwardsAdd extends BaseCommand {
             arity = "0..1")
     protected String service;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     NamespaceOptions namespaceOptions;
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         ForwardsService forwardsService = initAuthenticatedService(ForwardsService.class, host);
 
-        NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
-        String namespaceId = namespaceOptions.resolveNamespaceId(namespacesService);
+        String namespaceId = null;
+        if (namespaceOptions != null) {
+            NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
+            namespaceId = namespaceOptions.resolveNamespaceId(namespacesService);
+        }
 
         ForwardReference reference = new ForwardReference();
         reference.setName(name);

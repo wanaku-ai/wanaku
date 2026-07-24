@@ -314,7 +314,7 @@ public class WanakuPrinter extends DefaultPrinter {
             Set<String> keySet = Set.of(keys);
             Map<String, Object> filtered = new HashMap<>();
             for (Map.Entry<String, Object> entry : map.entrySet()) {
-                if (keySet.contains(entry.getKey())) {
+                if (keySet.contains(entry.getKey()) && entry.getValue() != null) {
                     filtered.put(entry.getKey(), entry.getValue());
                 }
             }

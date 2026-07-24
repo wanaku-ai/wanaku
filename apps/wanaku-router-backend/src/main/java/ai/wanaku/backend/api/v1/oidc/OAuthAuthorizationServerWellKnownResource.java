@@ -25,17 +25,15 @@ public class OAuthAuthorizationServerWellKnownResource {
     @GET
     @Path("/oauth-authorization-server")
     public Response getAuthorizationServerMetadata() {
-        return forwardToOpenIdConfiguration();
+        String issuerOverride = stripTrailingSlash(authProxy) + oidcProxyRootPath;
+        return forwarder.forward(proxyBaseUri(), oidcProxyRootPath, issuerOverride);
     }
 
     @GET
-    @Path("/oauth-authorization-server/{tenant}")
-    public Response getAuthorizationServerMetadataForTenant(@PathParam("tenant") String tenant) {
-        return forwardToOpenIdConfiguration();
-    }
-
-    private Response forwardToOpenIdConfiguration() {
-        return forwarder.forward(proxyBaseUri(), oidcProxyRootPath);
+    @Path("/oauth-authorization-server/{path: .+}")
+    public Response getAuthorizationServerMetadataForPath(@PathParam("path") String path) {
+        String issuerOverride = stripTrailingSlash(authProxy) + oidcProxyRootPath;
+        return forwarder.forward(proxyBaseUri(), oidcProxyRootPath, issuerOverride);
     }
 
     /**
@@ -49,5 +47,12 @@ public class OAuthAuthorizationServerWellKnownResource {
     URI proxyBaseUri() {
         String base = (authProxy != null && !authProxy.isBlank()) ? authProxy.trim() : "http://localhost:8080";
         return URI.create(base.endsWith("/") ? base : base + "/");
+    }
+
+    private static String stripTrailingSlash(String url) {
+        if (url != null && url.endsWith("/")) {
+            return url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 }

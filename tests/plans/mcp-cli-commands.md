@@ -32,7 +32,7 @@ Do **not** assign the full command to a single variable (e.g., `WANAKU_CLI="java
 ### Environment variables
 
 ```bash
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp}"
 ```
 
 ### MCP server setup
@@ -60,7 +60,7 @@ curl -sf http://localhost:8080/q/health/ready > /dev/null && echo "READY" || ech
 
 - **No resource providers in `wanaku start local`:** The local start command only supports tool services (`service-http`, `service-exec`, etc.). Resource providers (like `performancestaticfile`) are not available locally. Resource read tests (Phase 12) require a deployed environment.
 - **Prompts are not registered by default:** No prompt providers ship with the base installation. Prompt list/get tests will return empty results locally.
-- **MCP SSE path:** The public MCP endpoint is `/public/mcp/sse` (not `/mcp`). Using a wrong path will return connection errors.
+- **MCP Streamable HTTP path:** The public MCP endpoint is `/public/mcp` (not `/mcp`). Using a wrong path will return connection errors.
 
 ---
 
@@ -547,14 +547,14 @@ echo "PASS: static file provider pod is ready"
 ```bash
 export WANAKU_ROUTER_HOST=$(oc get route wanaku-mcp-test-router -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
 export WANAKU_ROUTER_URL="http://${WANAKU_ROUTER_HOST}"
-export WANAKU_MCP_SSE_URI="${WANAKU_ROUTER_URL}/public/mcp/sse"
+export WANAKU_MCP_URI="${WANAKU_ROUTER_URL}/public/mcp"
 
 if [ -z "${WANAKU_ROUTER_HOST}" ]; then
   echo "FAIL: could not retrieve router host from route"
   exit 1
 fi
 echo "PASS: router URL is ${WANAKU_ROUTER_URL}"
-echo "PASS: MCP SSE URI is ${WANAKU_MCP_SSE_URI}"
+echo "PASS: MCP URI is ${WANAKU_MCP_URI}"
 ```
 
 ### Step 8.8: Wait for router health
@@ -649,10 +649,10 @@ echo "${TOOLS_OUTPUT}" | grep -q "meow-facts" \
 
 ## Phase 10: List Tools via MCP CLI
 
-### Test 10.1: List tools via MCP SSE endpoint
+### Test 10.1: List tools via MCP Streamable HTTP endpoint
 
 ```bash
-OUTPUT=$(wanaku mcp tool list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+OUTPUT=$(wanaku mcp tool list --uri "${WANAKU_MCP_URI}" --plain 2>&1)
 EXIT_CODE=$?
 
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -683,7 +683,7 @@ echo "${OUTPUT}" | grep -q "meow-facts" \
 
 ```bash
 OUTPUT=$(wanaku mcp tool \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --name free-currency-conversion-api \
   --param firstCurrency=USD \
   --param secondCurrency=EUR \
@@ -710,7 +710,7 @@ echo "${OUTPUT}" | grep -qi "USD" \
 
 ```bash
 OUTPUT=$(wanaku mcp tool \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --name free-currency-conversion-api \
   --param firstCurrency=EUR \
   --param secondCurrency=BRL \
@@ -734,7 +734,7 @@ echo "${OUTPUT}" | grep -qi "EUR" \
 
 ```bash
 OUTPUT=$(wanaku mcp tool \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --name meow-facts \
   --param count=2 \
   --plain 2>&1)
@@ -762,7 +762,7 @@ fi
 
 ```bash
 OUTPUT=$(wanaku mcp tool \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --name free-currency-conversion-api \
   --param firstCurrency=USD \
   --plain 2>&1)
@@ -815,10 +815,10 @@ echo "${RESOURCES_OUTPUT}" | grep -q "test-static-resource" \
   || echo "FAIL: test-static-resource not found"
 ```
 
-### Test 12.3: List resources via MCP SSE endpoint
+### Test 12.3: List resources via MCP Streamable HTTP endpoint
 
 ```bash
-OUTPUT=$(wanaku mcp resource list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+OUTPUT=$(wanaku mcp resource list --uri "${WANAKU_MCP_URI}" --plain 2>&1)
 EXIT_CODE=$?
 
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -841,7 +841,7 @@ echo "${OUTPUT}" | grep -q "test-static-resource" \
 
 ```bash
 OUTPUT=$(wanaku mcp resource \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --resource-uri "performancestaticfile://test-file.txt" \
   --plain 2>&1)
 EXIT_CODE=$?
@@ -863,7 +863,7 @@ echo "${OUTPUT}" | grep -q "1234567890" \
 
 ```bash
 OUTPUT=$(wanaku mcp resource \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --resource-uri "performancestaticfile://does-not-exist.txt" \
   --plain 2>&1)
 EXIT_CODE=$?
@@ -880,10 +880,10 @@ fi
 
 ## Phase 13: List Prompts via MCP CLI
 
-### Test 13.1: List prompts via MCP SSE endpoint
+### Test 13.1: List prompts via MCP Streamable HTTP endpoint
 
 ```bash
-OUTPUT=$(wanaku mcp prompt list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+OUTPUT=$(wanaku mcp prompt list --uri "${WANAKU_MCP_URI}" --plain 2>&1)
 EXIT_CODE=$?
 
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -949,7 +949,7 @@ Follow [common/cleanup.md](common/cleanup.md) for remaining teardown (Keycloak, 
 | 7 | 7.1-7.2 | OpenShift login (MANUAL) | Critical | 2 |
 | 8 | 8.1-8.8 | Stack deployment (operator, router, capability) | Critical | 2 |
 | 9 | 9.1-9.3 | Register real HTTP tools | Critical | 2 |
-| 10 | 10.1 | List tools via MCP SSE endpoint | Critical | 2 |
+| 10 | 10.1 | List tools via MCP Streamable HTTP endpoint | Critical | 2 |
 | 11 | 11.1-11.4 | Invoke real tools (currency, cat facts, missing param) | Critical | 2 |
 | 12 | 12.1-12.5 | Register, list, and read resources via MCP endpoint | Critical | 2 |
 | 13 | 13.1 | List prompts via MCP endpoint | High | 2 |

@@ -40,7 +40,7 @@ Do **not** assign the full command to a single variable (e.g., `WANAKU_CLI="java
 ```bash
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_URL="${WANAKU_ROUTER_URL:-http://localhost:8080}"
-export WANAKU_MCP_SSE_URI="${WANAKU_MCP_SSE_URI:-${WANAKU_ROUTER_URL}/public/mcp/sse}"
+export WANAKU_MCP_URI="${WANAKU_MCP_URI:-${WANAKU_ROUTER_URL}/public/mcp}"
 export TOOL_HTTP_PORT="${TOOL_HTTP_PORT:-9010}"
 export CAMEL_TOOL_HTTP_PORT="${CAMEL_TOOL_HTTP_PORT:-9011}"
 ```
@@ -357,7 +357,7 @@ echo "${OUTPUT}" | grep -q "e2e-lifecycle-tool" \
 ### Test 5.3: Verify the tool is visible via MCP
 
 ```bash
-OUTPUT=$(wanaku mcp tool list --uri "${WANAKU_MCP_SSE_URI}" --plain 2>&1)
+OUTPUT=$(wanaku mcp tool list --uri "${WANAKU_MCP_URI}" --plain 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "FAIL: mcp tool list failed (exit code ${EXIT_CODE})"
@@ -375,7 +375,7 @@ The default archetype tool may not return meaningful data, but the call should s
 
 ```bash
 OUTPUT=$(wanaku mcp tool \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --name e2e-lifecycle-tool \
   --param input=hello \
   --plain 2>&1)
@@ -395,7 +395,7 @@ fi
 
 ```bash
 OUTPUT=$(wanaku mcp tool \
-  --uri "${WANAKU_MCP_SSE_URI}" \
+  --uri "${WANAKU_MCP_URI}" \
   --name e2e-lifecycle-tool \
   --plain 2>&1)
 EXIT_CODE=$?
