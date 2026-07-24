@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import org.jline.terminal.Terminal;
 import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import picocli.CommandLine;
 
 import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_OK;
 
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.verify;
 
@@ -85,8 +87,7 @@ class AuthCommandsTest {
 
         AuthToken authToken = new AuthToken(store);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
+        authToken.operation.getToken = true;
 
         int result = authToken.doCall(terminal, printer);
 
@@ -101,9 +102,8 @@ class AuthCommandsTest {
 
         AuthToken authToken = new AuthToken(store);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         int result = authToken.doCall(terminal, printer);
 
@@ -138,5 +138,15 @@ class AuthCommandsTest {
 
         assertEquals(EXIT_OK, result);
         verify(printer).printInfoMessage("No API token is currently set");
+    }
+
+    @Test
+    void picocliShouldParseGetUnmaskFlags() {
+        AuthToken authToken = new AuthToken(new AuthCredentialStore(credentialsFile.toUri()));
+        CommandLine cmd = new CommandLine(authToken);
+        cmd.parseArgs("--get", "--unmask", "--plain");
+
+        assertTrue(authToken.operation.getToken, "--get should be true");
+        assertTrue(authToken.operation.unmask, "--unmask should be true");
     }
 }

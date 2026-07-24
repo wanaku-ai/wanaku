@@ -19,7 +19,7 @@ public class AuthToken extends BaseCommand {
      */
     private static final long REFRESH_BUFFER_SECONDS = 30;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
     TokenOperation operation;
 
     static class TokenOperation {
@@ -28,19 +28,8 @@ public class AuthToken extends BaseCommand {
                 description = "Set the API token")
         String setToken;
 
-        @CommandLine.ArgGroup(exclusive = false)
-        GetOptions getOptions;
-
-        @CommandLine.Option(
-                names = {"--clear"},
-                description = "Clear the API token")
-        boolean clearToken;
-    }
-
-    static class GetOptions {
         @CommandLine.Option(
                 names = {"--get"},
-                required = true,
                 description = "Get the current API token (masked by default)")
         boolean getToken;
 
@@ -48,6 +37,11 @@ public class AuthToken extends BaseCommand {
                 names = {"--unmask"},
                 description = "Output the full unmasked token value")
         boolean unmask;
+
+        @CommandLine.Option(
+                names = {"--clear"},
+                description = "Clear the API token")
+        boolean clearToken;
     }
 
     private final AuthCredentialStore credentialStore;
@@ -68,6 +62,17 @@ public class AuthToken extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) {
+        int count =
+                (operation.setToken != null ? 1 : 0) + (operation.getToken ? 1 : 0) + (operation.clearToken ? 1 : 0);
+        if (count > 1) {
+            printer.printErrorMessage("Only one of --set, --get, or --clear may be specified");
+            return EXIT_ERROR;
+        }
+
+        if (operation.unmask && !operation.getToken) {
+            printer.printErrorMessage("--unmask can only be used with --get");
+            return EXIT_ERROR;
+        }
 
         if (operation.setToken != null) {
             credentialStore.storeApiToken(operation.setToken);
@@ -76,10 +81,10 @@ public class AuthToken extends BaseCommand {
             return EXIT_OK;
         }
 
-        if (operation.getOptions != null) {
+        if (operation.getToken) {
             String apiToken = getValidAccessToken(printer);
             if (StringHelper.isNotEmpty(apiToken)) {
-                if (operation.getOptions.unmask) {
+                if (operation.unmask) {
                     printer.printInfoMessage(apiToken);
                 } else {
                     String maskedToken = maskToken(apiToken);

@@ -8,6 +8,7 @@ import ai.wanaku.cli.main.support.AuthCredentialStore;
 import ai.wanaku.cli.main.support.WanakuPrinter;
 import ai.wanaku.cli.main.support.security.TokenRefresher;
 import ai.wanaku.cli.main.support.security.TokenRefresher.RefreshResult;
+import picocli.CommandLine;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -61,9 +63,8 @@ class AuthTokenTest {
 
         AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
@@ -91,9 +92,8 @@ class AuthTokenTest {
 
         AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
@@ -128,9 +128,8 @@ class AuthTokenTest {
 
         AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
@@ -173,9 +172,8 @@ class AuthTokenTest {
 
         AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
@@ -201,9 +199,8 @@ class AuthTokenTest {
 
         AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
@@ -240,9 +237,8 @@ class AuthTokenTest {
 
         AuthToken authToken = new AuthToken(credentialStore, mockRefresher);
         authToken.operation = new AuthToken.TokenOperation();
-        authToken.operation.getOptions = new AuthToken.GetOptions();
-        authToken.operation.getOptions.getToken = true;
-        authToken.operation.getOptions.unmask = true;
+        authToken.operation.getToken = true;
+        authToken.operation.unmask = true;
 
         WanakuPrinter.setPlainMode(true);
         try (Terminal terminal = WanakuPrinter.terminalInstance()) {
@@ -254,5 +250,45 @@ class AuthTokenTest {
 
         verify(mockRefresher).refresh(refreshToken, authServerUrl, clientId, null);
         assertEquals(newToken, credentialStore.getApiToken());
+    }
+
+    @Test
+    void shouldParseGetAndUnmaskFlags() {
+        AuthToken authToken = new AuthToken(credentialStore, null);
+        new CommandLine(authToken).parseArgs("--get", "--unmask");
+
+        assertTrue(authToken.operation.getToken);
+        assertTrue(authToken.operation.unmask);
+    }
+
+    @Test
+    void shouldRejectConflictingOperations() throws Exception {
+        AuthToken authToken = new AuthToken(credentialStore, null);
+        authToken.operation = new AuthToken.TokenOperation();
+        authToken.operation.getToken = true;
+        authToken.operation.clearToken = true;
+
+        WanakuPrinter.setPlainMode(true);
+        try (Terminal terminal = WanakuPrinter.terminalInstance()) {
+            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            assertEquals(AuthToken.EXIT_ERROR, authToken.doCall(terminal, printer));
+        } finally {
+            WanakuPrinter.setPlainMode(false);
+        }
+    }
+
+    @Test
+    void shouldRejectUnmaskWithoutGet() throws Exception {
+        AuthToken authToken = new AuthToken(credentialStore, null);
+        authToken.operation = new AuthToken.TokenOperation();
+        authToken.operation.unmask = true;
+
+        WanakuPrinter.setPlainMode(true);
+        try (Terminal terminal = WanakuPrinter.terminalInstance()) {
+            WanakuPrinter printer = new WanakuPrinter(null, terminal);
+            assertEquals(AuthToken.EXIT_ERROR, authToken.doCall(terminal, printer));
+        } finally {
+            WanakuPrinter.setPlainMode(false);
+        }
     }
 }
