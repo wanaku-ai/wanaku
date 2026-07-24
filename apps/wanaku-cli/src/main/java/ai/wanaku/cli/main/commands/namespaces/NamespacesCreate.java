@@ -71,7 +71,8 @@ public class NamespacesCreate extends BaseCommand {
             WanakuResponse<Namespace> response = namespacesService.create(namespace);
 
             if (response.error() != null) {
-                printer.printErrorMessage("Failed to create namespace: " + response.error().message());
+                printer.printErrorMessage(
+                        "Failed to create namespace: " + response.error().message());
                 return EXIT_ERROR;
             }
 
