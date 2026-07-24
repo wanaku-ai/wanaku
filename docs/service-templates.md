@@ -255,7 +255,7 @@ A template for creating a Kafka-backed MCP tool with manual request/reply correl
 
 The request route sets a `wanakuCorrelationId` header from the Camel exchange id, and the response route uses that same header to match the reply to the original request.
 
-### `aws-sqs-tool`
+A template for creating an AWS SQS-backed MCP tool with manual request/reply correlation. Since SQS is a one-way messaging service, the template uses two queues:
 
 A template for creating an AWS SQS-backed MCP tool with manual request/reply correlation, Since SQS is a one-way messaging service, the template uses two queues:
 
