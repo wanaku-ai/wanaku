@@ -51,6 +51,8 @@ export KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 export KEYCLOAK_ADMIN_PASS="${KEYCLOAK_ADMIN_PASS:-admin}"
 export KEYCLOAK_REALM="${KEYCLOAK_REALM:-wanaku}"
 export ROUTER_HOST="${ROUTER_HOST:-${KEYCLOAK_HOST}}"
+# Isolate credentials per test run to avoid contention (see #1697)
+export WANAKU_CREDENTIALS="${WANAKU_CREDENTIALS:-/tmp/wanaku-creds-perf-$$}"
 export VU_LEVELS="${VU_LEVELS:-1 10 500 1000 2000 30000}"
 export TEST_DURATION="${TEST_DURATION:-30s}"
 export TEST_BASE_DIR="${TEST_BASE_DIR:-$HOME/perf-results}"

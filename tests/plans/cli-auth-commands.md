@@ -54,7 +54,9 @@ export WANAKU_ROUTER_URL="${WANAKU_ROUTER_URL:-}"
 export WANAKU_TEST_USER="${WANAKU_TEST_USER:-alice}"
 export WANAKU_TEST_PASS="${WANAKU_TEST_PASS:-secretpass}"
 export WANAKU_REALM="${WANAKU_REALM:-wanaku}"
-export CREDENTIALS_FILE="${CREDENTIALS_FILE:-${HOME}/.wanaku/credentials}"
+# Isolate credentials per test run to avoid contention (see #1697)
+export WANAKU_CREDENTIALS="${WANAKU_CREDENTIALS:-/tmp/wanaku-creds-auth-$$}"
+export CREDENTIALS_FILE="${WANAKU_CREDENTIALS}"
 export TEST_USERNAME="${TEST_USERNAME:-testuser-811}"
 export TEST_PASSWORD="${TEST_PASSWORD:-TestPass123}"
 export TEST_EMAIL="${TEST_EMAIL:-testuser811@example.com}"
@@ -74,7 +76,8 @@ Follow [common/namespace-setup.md](common/namespace-setup.md) before Phase 1 to 
 | `WANAKU_TEST_USER` | `alice` | Username for auth login tests (created by keycloak-setup.md) |
 | `WANAKU_TEST_PASS` | `secretpass` | Password for auth login tests |
 | `WANAKU_REALM` | `wanaku` | Keycloak realm name for direct login tests |
-| `CREDENTIALS_FILE` | `~/.wanaku/credentials` | Path to the CLI credentials file (Java Properties format) |
+| `WANAKU_CREDENTIALS` | `/tmp/wanaku-creds-auth-$$` | Isolated credentials file path (see [#1697](https://github.com/wanaku-ai/wanaku/issues/1697)) |
+| `CREDENTIALS_FILE` | `${WANAKU_CREDENTIALS}` | Alias for direct file access in test assertions |
 | `TEST_USERNAME` | `testuser-811` | Username for test user CRUD operations |
 | `TEST_PASSWORD` | `TestPass123` | Password for test user creation |
 | `TEST_EMAIL` | `testuser811@example.com` | Email for test user creation |

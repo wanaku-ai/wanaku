@@ -70,6 +70,8 @@ export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
 export OTEL_COLLECTOR_IMAGE="${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.127.0}"
 export JAEGER_IMAGE="${JAEGER_IMAGE:-jaegertracing/jaeger:latest}"
+# Isolate credentials per test run to avoid contention (see #1697)
+export WANAKU_CREDENTIALS="${WANAKU_CREDENTIALS:-/tmp/wanaku-creds-${WANAKU_NAMESPACE}}"
 ```
 
 Follow [common/namespace-setup.md](common/namespace-setup.md) before Phase 1 to derive a unique `WANAKU_NAMESPACE` for this run.
