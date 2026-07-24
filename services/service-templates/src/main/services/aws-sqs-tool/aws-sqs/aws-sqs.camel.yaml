@@ -1,0 +1,86 @@
+- route:
+    id: aws-sqs-request-reply
+    description: Send an AWS SQS request and wait for the correlated reply
+    from:
+      uri: direct:wanaku
+      steps:
+        - setExchangePattern:
+            pattern: InOut
+        - setProperty:
+            name: wanakuCorrelationId
+            expression:
+              simple:
+                expression: "${exchangeId}"
+        - setHeader:
+            name: wanakuCorrelationId
+            expression:
+              simple:
+                expression: "${exchangeProperty.wanakuCorrelationId}"
+        - log:
+            message: "Sending AWS SQS request with correlation id ${header.wanakuCorrelationId}"
+        - to:
+            uri: aws2-sqs:{{aws.sqs.request.queue}}
+            parameters:
+              region: "{{aws.sqs.region}}"
+              accessKey: "{{aws.sqs.accessKey}}"
+              secretKey: "{{aws.sqs.secretKey}}"
+        - pollEnrich:
+            timeout: "{{aws.sqs.reply.timeout-ms}}"
+            expression:
+              simple:
+                expression: "seda:aws-sqs-replies"
+        - choice:
+            when:
+              - simple: "${header.wanakuSqsReplyReceived} != 'true'"
+                steps:
+                  - log:
+                      message: "AWS SQS reply timed out after {{aws.sqs.reply.timeout-ms}} ms for correlation id ${exchangeProperty.wanakuCorrelationId}"
+                  - throwException:
+                      exceptionType: java.util.concurrent.TimeoutException
+                      message: "AWS SQS reply timed out after {{aws.sqs.reply.timeout-ms}} ms for correlation id ${exchangeProperty.wanakuCorrelationId}"
+              - simple: "${exchangeProperty.wanakuCorrelationId} != ${header.wanakuReplyCorrelationId}"
+                steps:
+                  - log:
+                      message: "AWS SQS reply correlation mismatch for ${exchangeProperty.wanakuCorrelationId}: received ${header.wanakuReplyCorrelationId}"
+                  - throwException:
+                      exceptionType: java.lang.IllegalStateException
+                      message: "AWS SQS reply correlation mismatch for ${exchangeProperty.wanakuCorrelationId}"
+            otherwise:
+              steps:
+                - log:
+                    message: "Received AWS SQS reply for ${exchangeProperty.wanakuCorrelationId}: ${body}"
+
+- route:
+    id: aws-sqs-response-reply
+    description: Correlate AWS SQS replies back to the waiting request
+    from:
+      uri: aws2-sqs:{{aws.sqs.response.queue}}
+      parameters:
+        region: "{{aws.sqs.region}}"
+        accessKey: "{{aws.sqs.accessKey}}"
+        secretKey: "{{aws.sqs.secretKey}}"
+        messageAttributeNames: All
+        waitTimeSeconds: 20
+      steps:
+        - filter:
+            simple: "${header.wanakuCorrelationId} != null"
+            steps:
+              - log:
+                  message: "Routing AWS SQS reply for ${header.wanakuCorrelationId}"
+              - setHeader:
+                  name: wanakuReplyCorrelationId
+                  expression:
+                    simple:
+                      expression: "${header.wanakuCorrelationId}"
+              - setHeader:
+                  name: wanakuSqsReplyReceived
+                  expression:
+                    simple:
+                      expression: "true"
+              - to:
+                  uri: seda:aws-sqs-replies
+        - filter:
+            simple: "${header.wanakuCorrelationId} == null"
+            steps:
+              - log:
+                  message: "Dropping AWS SQS reply without correlation id: ${body}"
