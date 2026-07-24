@@ -255,6 +255,24 @@ A template for creating a Kafka-backed MCP tool with manual request/reply correl
 
 The request route sets a `wanakuCorrelationId` header from the Camel exchange id, and the response route uses that same header to match the reply to the original request.
 
+### `aws-sqs-tool`
+
+A template for creating an AWS SQS-backed MCP tool with manual request/reply correlation, Since SQS is a one-way messaging service, the template uses two queues:
+
+- A request route that sends a message to the request queue
+- A response route that consumes the response queue and forwards correlated replies back to the waiting request
+
+**Parameters:**
+
+- `aws.sqs.region`: AWS region (e.g., `us-east-1`)
+- `aws.sqs.accessKey`: AWS access key
+- `aws.sqs.secretKey`: AWS secret key
+- `aws.sqs.request.queue`: Queue used for outbound requests
+- `aws.sqs.response.queue`: Queue used for correlated replies
+- `aws.sqs.reply.timeout-ms`: How long to wait for a reply before failing, in milliseconds
+
+The request route sets a `wanakuCorrelationId` header, which the SQS component transfers as a message attribute. The service consuming the request queue must copy the `wanakuCorrelationId` message attribute from the request to its reply so the response route can match the reply to the original request.
+
 ### `github-pullrequest-source-tool`
 
 A template for creating a GitHub Pull Request tool service. This template allows agents to fetch pull request information on demand from a specified repository.

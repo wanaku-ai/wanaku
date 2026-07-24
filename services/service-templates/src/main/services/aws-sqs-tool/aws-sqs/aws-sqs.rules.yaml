@@ -1,0 +1,11 @@
+mcp:
+  tools:
+    - send-message-to-aws-sqs:
+        route:
+          id: "aws-sqs-request-reply"
+        description: "{{tool.description}}"
+        properties:
+          - name: wanaku_body
+            type: string
+            description: The message to send to AWS SQS
+            required: true
