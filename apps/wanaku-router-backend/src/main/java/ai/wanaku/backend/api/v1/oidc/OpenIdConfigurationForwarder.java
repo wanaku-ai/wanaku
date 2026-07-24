@@ -9,9 +9,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.jboss.logging.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class OpenIdConfigurationForwarder {
     private static final Logger LOG = Logger.getLogger(OpenIdConfigurationForwarder.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final HttpClient httpClient;
 
@@ -20,6 +23,10 @@ public class OpenIdConfigurationForwarder {
     }
 
     public Response forward(URI baseUri, String oidcProxyRootPath) {
+        return forward(baseUri, oidcProxyRootPath, null);
+    }
+
+    public Response forward(URI baseUri, String oidcProxyRootPath, String issuerOverride) {
         URI target = resolveTarget(baseUri, oidcProxyRootPath);
         HttpRequest request = HttpRequest.newBuilder(target).GET().build();
 
@@ -27,7 +34,11 @@ public class OpenIdConfigurationForwarder {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return Response.ok(response.body(), MediaType.APPLICATION_JSON).build();
+                String body = response.body();
+                if (issuerOverride != null) {
+                    body = rewriteIssuer(body, issuerOverride);
+                }
+                return Response.ok(body, MediaType.APPLICATION_JSON).build();
             }
 
             LOG.warnf("OIDC metadata request to %s returned %d", target, response.statusCode());
@@ -42,6 +53,17 @@ public class OpenIdConfigurationForwarder {
         } catch (IOException e) {
             LOG.errorf(e, "Failed to fetch OIDC metadata from %s", target);
             return Response.status(Response.Status.BAD_GATEWAY).build();
+        }
+    }
+
+    private static String rewriteIssuer(String json, String issuerOverride) {
+        try {
+            ObjectNode node = (ObjectNode) MAPPER.readTree(json);
+            node.put("issuer", issuerOverride);
+            return MAPPER.writeValueAsString(node);
+        } catch (Exception e) {
+            LOG.debugf(e, "Failed to rewrite issuer in OIDC metadata, returning original");
+            return json;
         }
     }
 
