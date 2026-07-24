@@ -25,6 +25,8 @@ spec:
                 - "Always"
                 - "IfNotPresent"
                 - "Never"
+              imageTag:
+                type: "string"
               mcp:
                 properties:
                   resources:

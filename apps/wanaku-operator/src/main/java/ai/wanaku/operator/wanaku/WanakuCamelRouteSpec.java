@@ -5,10 +5,12 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class WanakuCamelRouteSpec {
-    private static final String DEFAULT_CIC_IMAGE = "quay.io/wanaku/camel-integration-capability:latest";
+    static final String DEFAULT_CIC_IMAGE_REPO = "quay.io/wanaku/camel-integration-capability";
+    static final String DEFAULT_CIC_IMAGE_TAG = "latest";
 
     private String routerRef;
     private String image;
+    private String imageTag;
     private String imagePullPolicy;
     private JsonNode route;
     private McpSpec mcp;
@@ -22,12 +24,32 @@ public class WanakuCamelRouteSpec {
         this.routerRef = routerRef;
     }
 
+    /**
+     * Returns the CIC container image to use. Resolution order:
+     * <ol>
+     *   <li>If {@code image} is explicitly set, return it as-is (full override).</li>
+     *   <li>If only {@code imageTag} is set, combine the default repository with the tag.</li>
+     *   <li>Otherwise, return the default image with the {@code latest} tag.</li>
+     * </ol>
+     */
     public String getImage() {
-        return (image != null && !image.isBlank()) ? image : DEFAULT_CIC_IMAGE;
+        if (image != null && !image.isBlank()) {
+            return image;
+        }
+        String tag = (imageTag != null && !imageTag.isBlank()) ? imageTag : DEFAULT_CIC_IMAGE_TAG;
+        return DEFAULT_CIC_IMAGE_REPO + ":" + tag;
     }
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public String getImageTag() {
+        return imageTag;
+    }
+
+    public void setImageTag(String imageTag) {
+        this.imageTag = imageTag;
     }
 
     public String getImagePullPolicy() {
