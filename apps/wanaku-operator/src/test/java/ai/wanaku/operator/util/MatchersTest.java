@@ -1,5 +1,6 @@
 package ai.wanaku.operator.util;
 
+import java.util.List;
 import java.util.Map;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -86,6 +87,70 @@ class MatchersTest {
         assertFalse(Matchers.match(desired, existing));
     }
 
+    @Test
+    void testMatchIngressWhenIngressClassNameDiffers() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        desired.getSpec().setIngressClassName("nginx");
+        Ingress existing = createIngress("test-ingress", "example.com", "backend-service");
+        existing.getSpec().setIngressClassName("traefik");
+        assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchIngressWhenIngressClassNameMatches() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        desired.getSpec().setIngressClassName("nginx");
+        Ingress existing = createIngress("test-ingress", "example.com", "backend-service");
+        existing.getSpec().setIngressClassName("nginx");
+        assertTrue(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchIngressWhenTlsSecretNameDiffers() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        desired.getSpec()
+                .setTls(List.of(new io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder()
+                        .withSecretName("new-tls-secret")
+                        .withHosts("example.com")
+                        .build()));
+        Ingress existing = createIngress("test-ingress", "example.com", "backend-service");
+        existing.getSpec()
+                .setTls(List.of(new io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder()
+                        .withSecretName("old-tls-secret")
+                        .withHosts("example.com")
+                        .build()));
+        assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchIngressWhenTlsAddedToExisting() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        desired.getSpec()
+                .setTls(List.of(new io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder()
+                        .withSecretName("wanaku-tls")
+                        .withHosts("example.com")
+                        .build()));
+        Ingress existing = createIngress("test-ingress", "example.com", "backend-service");
+        assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchIngressWhenTlsSecretMatches() {
+        Ingress desired = createIngress("test-ingress", "example.com", "backend-service");
+        desired.getSpec()
+                .setTls(List.of(new io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder()
+                        .withSecretName("wanaku-tls")
+                        .withHosts("example.com")
+                        .build()));
+        Ingress existing = createIngress("test-ingress", "example.com", "backend-service");
+        existing.getSpec()
+                .setTls(List.of(new io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder()
+                        .withSecretName("wanaku-tls")
+                        .withHosts("example.com")
+                        .build()));
+        assertTrue(Matchers.match(desired, existing));
+    }
+
     // ---- Route tests ----
 
     @Test
@@ -113,6 +178,76 @@ class MatchersTest {
                 .build();
 
         assertTrue(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchRouteWhenTlsTerminationDiffers() {
+        Route desired = new RouteBuilder()
+                .withNewMetadata()
+                .withName("test-route")
+                .endMetadata()
+                .withNewSpec()
+                .withNewTls()
+                .withTermination("edge")
+                .endTls()
+                .endSpec()
+                .build();
+        Route existing = new RouteBuilder()
+                .withNewMetadata()
+                .withName("test-route")
+                .endMetadata()
+                .withNewSpec()
+                .withNewTls()
+                .withTermination("passthrough")
+                .endTls()
+                .endSpec()
+                .build();
+        assertFalse(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchRouteWhenTlsTerminationMatches() {
+        Route desired = new RouteBuilder()
+                .withNewMetadata()
+                .withName("test-route")
+                .endMetadata()
+                .withNewSpec()
+                .withNewTls()
+                .withTermination("edge")
+                .endTls()
+                .endSpec()
+                .build();
+        Route existing = new RouteBuilder()
+                .withNewMetadata()
+                .withName("test-route")
+                .endMetadata()
+                .withNewSpec()
+                .withNewTls()
+                .withTermination("edge")
+                .endTls()
+                .endSpec()
+                .build();
+        assertTrue(Matchers.match(desired, existing));
+    }
+
+    @Test
+    void testMatchRouteWhenTlsAddedToExisting() {
+        Route desired = new RouteBuilder()
+                .withNewMetadata()
+                .withName("test-route")
+                .endMetadata()
+                .withNewSpec()
+                .withNewTls()
+                .withTermination("edge")
+                .endTls()
+                .endSpec()
+                .build();
+        Route existing = new RouteBuilder()
+                .withNewMetadata()
+                .withName("test-route")
+                .endMetadata()
+                .build();
+        assertFalse(Matchers.match(desired, existing));
     }
 
     // ---- Job helpers & tests ----

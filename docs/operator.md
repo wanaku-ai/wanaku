@@ -75,6 +75,61 @@ kubectl logs -n wanaku -l app=wanaku-operator
 
 ## CRD Reference
 
+### Environment Variables
+
+Any CR that produces a Deployment supports annotation-based environment variable injection. Annotate
+the CR with the prefix `env.wanaku.ai/` to add or override environment variables in the managed
+container at reconciliation time.
+
+**Rules:**
+
+- The annotation key after the prefix becomes the environment variable name.
+- The annotation value becomes the environment variable value.
+- Annotation-derived variables override any same-name variables computed by the operator (including
+  variables from templates and from `spec.*.env` fields).
+- All annotations without this prefix are ignored for env injection.
+
+**Supported CRDs:** `WanakuRouter`, `WanakuCapability` (applied to all capability Deployments),
+`WanakuCamelCodeExecutionEngine`, `WanakuCamelRoute` (applied to the CIC Deployment).
+`WanakuServiceCatalog` is excluded because it does not produce a Deployment.
+
+**Example** — adding a new variable and overriding a template default on a `WanakuRouter`:
+
+```yaml
+apiVersion: "wanaku.ai/v1alpha1"
+kind: WanakuRouter
+metadata:
+  name: wanaku-dev
+  annotations:
+    env.wanaku.ai/MY_CUSTOM_VAR: "hello"
+    env.wanaku.ai/QUARKUS_TLS_TRUST_ALL: "false"   # overrides the template default
+spec:
+  auth:
+    authServer: http://keycloak:8080
+```
+
+The generated Deployment will contain:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - env:
+            - name: MY_CUSTOM_VAR
+              value: "hello"
+            - name: QUARKUS_TLS_TRUST_ALL
+              value: "false"
+            # ... other operator-managed variables
+```
+
+> [!NOTE]
+> This mechanism is for runtime tuning only. For structured, first-class configuration fields
+> (such as auth server, image, or resource limits) use the dedicated `spec` fields of each CRD.
+> See also [Annotations on Operator-Managed Resources](#annotations-on-operator-managed-resources)
+> for `spec.annotations`, which propagates annotations to the Deployment and Service objects
+> themselves (distinct from this env-injection feature).
+
 ### WanakuRouter (`wanaku.ai/v1alpha1`)
 
 Defines a Wanaku router instance.
@@ -85,10 +140,24 @@ Defines a Wanaku router instance.
 | `spec.auth.authRealm` | string | No | `"wanaku"` | Keycloak realm name. |
 | `spec.auth.authProxy` | string | No | `""` | OIDC proxy address. Use `"auto"` to enable the built-in OIDC proxy, or set to Keycloak's address directly. Empty inherits Keycloak's address. |
 | `spec.imagePullPolicy` | string | No | `"IfNotPresent"` | Global image pull policy for all operator-managed deployments (`Always`, `IfNotPresent`, `Never`). |
-| `spec.ingress.host` | string | No | `""` | Ingress hostname for Kubernetes clusters. OpenShift auto-generates Routes; set this only on vanilla Kubernetes. |
+| `spec.exposure.host` | string | No | `""` | External hostname. Required when `spec.exposure.type: ingress` (mapped to `spec.rules[0].host` on the Ingress object). Ignored for `type: route` — OpenShift auto-assigns the host from the cluster router domain. Unused for `type: none`. |
+| `spec.exposure.type` | string | No | `none` | Controls which external-access resource the operator creates. `route` — creates an OpenShift Route (`route.openshift.io/v1`); only valid on OpenShift clusters; the host is auto-assigned by the cluster router. `ingress` — creates a Kubernetes Ingress (`networking.k8s.io/v1`); `spec.exposure.host` is required. `none` (default) — no external resource is created; only the internal ClusterIP service is available. |
+| `spec.exposure.ingressClassName` | string | No | `""` | Ingress controller class name (e.g. `nginx`, `haproxy`). Mapped to `spec.ingressClassName` on the Ingress object. Only used when `type: ingress`. |
+| `spec.exposure.annotations` | map | No | `{}` | Arbitrary annotations merged onto the Ingress metadata. Useful for controller-specific behaviour (e.g. `nginx.ingress.kubernetes.io/ssl-redirect: "true"`). Only used when `type: ingress`. |
+| `spec.exposure.tls.termination` | string | No | `edge` | TLS termination mode for OpenShift Routes. `edge` — TLS terminates at the cluster router, plain HTTP to the pod (default when `spec.exposure.tls` is absent). `passthrough` — TLS is passed through unchanged to the pod. `reencrypt` — TLS terminates at the cluster router then re-encrypts to the pod. Must be set when `spec.exposure.tls` is present, or TLS configuration is skipped. Not used by Ingress. |
+| `spec.exposure.tls.insecureEdgeTerminationPolicy` | string | No | `Redirect` | How the Route handles plain-HTTP requests. `Redirect` (default when `spec.exposure.tls` is absent) — redirects HTTP to HTTPS. `Allow` — serves both HTTP and HTTPS. `None` — blocks plain HTTP. Only applicable to OpenShift Routes; ignored for Ingress. |
+| `spec.exposure.tls.secretName` | string | No | `""` | Name of a pre-existing `kubernetes.io/tls` Secret. For Ingress: set as `spec.tls[].secretName`; `spec.exposure.host` is automatically added to `spec.tls[].hosts`. For OpenShift Routes: not used — provide inline certificate fields instead. |
+| `spec.exposure.tls.certificate` | string | No | `""` | PEM-encoded TLS certificate inlined into the OpenShift Route TLSConfig. Only used when `type: route`. Use `secretName` for Kubernetes Ingress. |
+| `spec.exposure.tls.key` | string | No | `""` | PEM-encoded TLS private key inlined into the OpenShift Route TLSConfig. Only used when `type: route`. |
+| `spec.exposure.tls.caCertificate` | string | No | `""` | PEM-encoded CA certificate used to verify the route certificate. Only used when `type: route`. |
+| `spec.exposure.tls.destinationCACertificate` | string | No | `""` | PEM-encoded CA certificate used to verify the backend pod's certificate when `termination: reencrypt`. Only used when `type: route`. |
 | `spec.router.image` | string | No | `quay.io/wanaku/wanaku-router-backend:latest` | Router container image. |
 | `spec.router.env` | list | No | `[]` | List of `{name, value}` environment variables for the router (e.g., to set `wanaku.http.auth=none`). |
 | `spec.router.imagePullPolicy` | string | No | inherits `spec.imagePullPolicy` | Override pull policy for router pod only. |
+
+> [!NOTE]
+> **Route TLS defaults**: when `spec.exposure.type: route` and `spec.exposure.tls` is omitted, the operator automatically applies `termination: edge` and `insecureEdgeTerminationPolicy: Redirect` — the Route is HTTPS-only with HTTP redirected.
+> **Ingress TLS**: only `spec.exposure.tls.secretName` is used for Ingress; inline certificate fields (`certificate`, `key`, `caCertificate`, `destinationCACertificate`) and Route-specific fields (`termination`, `insecureEdgeTerminationPolicy`) are silently ignored for `type: ingress`.
 
 The status section reports:
 
@@ -851,7 +920,7 @@ kubectl get route -n wanaku
 kubectl describe route wanaku-dev -n wanaku
 ```
 
-Routes are auto-generated. If missing, check if the WanakuRouter has `spec.ingress.host` set (it should be empty on OpenShift).
+Routes are auto-generated. If missing, check if the WanakuRouter has `spec.exposure.host` set (it should be empty on OpenShift).
 
 **Kubernetes (Ingress):**
 
@@ -860,11 +929,11 @@ kubectl get ingress -n wanaku
 kubectl describe ingress wanaku-dev -n wanaku
 ```
 
-On vanilla Kubernetes, you **must** set `spec.ingress.host` in the `WanakuRouter` CR:
+On vanilla Kubernetes, you **must** set `spec.exposure.host` in the `WanakuRouter` CR:
 
 ```yaml
 spec:
-  ingress:
+  exposure:
     host: wanaku.example.com
 ```
 

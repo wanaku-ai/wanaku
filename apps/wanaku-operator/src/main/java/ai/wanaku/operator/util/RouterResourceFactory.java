@@ -1,5 +1,6 @@
 package ai.wanaku.operator.util;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,13 +14,18 @@ import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressTLS;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.TLSConfig;
 import io.javaoperatorsdk.operator.ReconcilerUtilsInternal;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
+import ai.wanaku.core.util.StringHelper;
 import ai.wanaku.operator.wanaku.WanakuRouter;
 import ai.wanaku.operator.wanaku.WanakuRouterReconciler;
 import ai.wanaku.operator.wanaku.WanakuRouterSpec;
 import ai.wanaku.operator.wanaku.WanakuTypes;
+import ai.wanaku.operator.wanaku.WanakuTypes.InsecureEdgeTerminationPolicy;
+import ai.wanaku.operator.wanaku.WanakuTypes.TlsTermination;
 
 /**
  * Factory for creating Kubernetes resources related to WanakuRouter deployments.
@@ -135,9 +141,45 @@ public final class RouterResourceFactory {
         route.getMetadata().getLabels().put("component", "wanaku-router-backend");
         route.getSpec().getTo().setName("internal-" + deploymentName);
 
+        applyRouteTls(route, resource.getSpec().getExposure());
         route.addOwnerReference(resource);
 
         return route;
+    }
+
+    private static void applyRouteTls(Route route, WanakuTypes.ExposureSpec ingressSpec) {
+        if (ingressSpec == null) {
+            return;
+        }
+        TLSConfig tlsConfig = new TLSConfig();
+        if (ingressSpec.getTls() == null) {
+            tlsConfig.setTermination(TlsTermination.EDGE.toValue());
+            tlsConfig.setInsecureEdgeTerminationPolicy(InsecureEdgeTerminationPolicy.REDIRECT.toValue());
+
+        } else {
+            WanakuTypes.TlsSpec tlsSpec = ingressSpec.getTls();
+            if (tlsSpec.getTermination() == null) {
+                return;
+            }
+            tlsConfig.setTermination(tlsSpec.getTermination().toValue());
+            if (StringHelper.isNotEmpty(tlsSpec.getCertificate())) {
+                tlsConfig.setCertificate(tlsSpec.getCertificate());
+            }
+            if (StringHelper.isNotEmpty(tlsSpec.getKey())) {
+                tlsConfig.setKey(tlsSpec.getKey());
+            }
+            if (StringHelper.isNotEmpty(tlsSpec.getCaCertificate())) {
+                tlsConfig.setCaCertificate(tlsSpec.getCaCertificate());
+            }
+            if (StringHelper.isNotEmpty(tlsSpec.getDestinationCACertificate())) {
+                tlsConfig.setDestinationCACertificate(tlsSpec.getDestinationCACertificate());
+            }
+            if (tlsSpec.getInsecureEdgeTerminationPolicy() != null) {
+                tlsConfig.setInsecureEdgeTerminationPolicy(
+                        tlsSpec.getInsecureEdgeTerminationPolicy().toValue());
+            }
+        }
+        route.getSpec().setTls(tlsConfig);
     }
 
     /**
@@ -160,7 +202,6 @@ public final class RouterResourceFactory {
         ingress.getMetadata().getLabels().put("app", routerName(deploymentName));
         ingress.getMetadata().getLabels().put("component", "wanaku-router-backend");
 
-        // Set the host and backend service
         ingress.getSpec().getRules().getFirst().setHost(host);
         ingress.getSpec()
                 .getRules()
@@ -172,9 +213,35 @@ public final class RouterResourceFactory {
                 .getService()
                 .setName("internal-" + deploymentName);
 
+        applyIngressExtras(ingress, resource.getSpec().getExposure(), host);
         ingress.addOwnerReference(resource);
 
         return ingress;
+    }
+
+    private static void applyIngressExtras(Ingress ingress, WanakuTypes.ExposureSpec exposureSpec, String host) {
+        if (exposureSpec == null) {
+            return;
+        }
+        if (StringHelper.isNotEmpty(exposureSpec.getIngressClassName())) {
+            ingress.getSpec().setIngressClassName(exposureSpec.getIngressClassName());
+        }
+        if (exposureSpec.getAnnotations() != null
+                && !exposureSpec.getAnnotations().isEmpty()) {
+            Map<String, String> merged = new HashMap<>();
+            if (ingress.getMetadata().getAnnotations() != null) {
+                merged.putAll(ingress.getMetadata().getAnnotations());
+            }
+            merged.putAll(exposureSpec.getAnnotations());
+            ingress.getMetadata().setAnnotations(merged);
+        }
+        IngressTLS ingressTls = new IngressTLS();
+        ingressTls.setHosts(List.of(host));
+        if (exposureSpec.getTls() != null
+                && StringHelper.isNotEmpty(exposureSpec.getTls().getSecretName())) {
+            ingressTls.setSecretName(exposureSpec.getTls().getSecretName());
+        }
+        ingress.getSpec().setTls(List.of(ingressTls));
     }
 
     /**
@@ -217,8 +284,7 @@ public final class RouterResourceFactory {
 
             String authProxy = authSpec.getAuthProxy();
             if ("auto".equals(authProxy)) {
-                // TODO: needs to support https
-                authProxy = String.format("http://%s", host);
+                authProxy = "https://" + host;
             } else {
                 if (authProxy == null) {
                     authProxy = authServer;
@@ -280,6 +346,10 @@ public final class RouterResourceFactory {
                 envVars.add(templateVar);
             }
         }
+
+        // Annotation-derived vars are applied last so they override everything else
+        EnvironmentVariableHelper.applyAnnotationEnvVars(
+                envVars, resource.getMetadata().getAnnotations());
 
         service.setEnv(envVars);
     }

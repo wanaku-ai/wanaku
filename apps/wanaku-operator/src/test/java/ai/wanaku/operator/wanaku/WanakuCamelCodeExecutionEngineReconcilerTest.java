@@ -1,7 +1,11 @@
 package ai.wanaku.operator.wanaku;
 
 import java.util.List;
+import java.util.Map;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.operator.util.CodeExecutionEngineResourceFactory;
 import ai.wanaku.operator.util.OperatorUtil;
 
 import org.junit.jupiter.api.Test;
@@ -223,5 +227,42 @@ class WanakuCamelCodeExecutionEngineReconcilerTest {
         securitySpec.setComponentAllowlist(List.of());
         securitySpec.setComponentBlocklist(null);
         assertDoesNotThrow(() -> reconciler.validateSecurityLists(securitySpec));
+    }
+
+    // ── Annotation env var tests ──────────────────────────────────────────────
+
+    @Test
+    void annotationEnvVarAddsNewVarToEngineDeployment() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
+        resource.getMetadata().setAnnotations(Map.of("env.wanaku.ai/MY_INJECTED_VAR", "injected"));
+
+        Deployment deployment =
+                CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+
+        assertEquals("injected", getEnvValue(deployment, "MY_INJECTED_VAR"));
+    }
+
+    @Test
+    void annotationEnvVarOverridesComputedVarInEngineDeployment() {
+        WanakuCamelCodeExecutionEngine resource = baseResource();
+        // "LANGUAGE_NAME" is the actual env var name (EnvironmentVariables.CAMEL_CODE_EXECUTION_ENGINE_LANGUAGE_NAME)
+        resource.getMetadata().setAnnotations(Map.of("env.wanaku.ai/LANGUAGE_NAME", "groovy"));
+
+        Deployment deployment =
+                CodeExecutionEngineResourceFactory.makeDesiredCamelCodeExecutionEngineDeployment(resource, null);
+
+        assertEquals("groovy", getEnvValue(deployment, "LANGUAGE_NAME"));
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    private static String getEnvValue(Deployment deployment, String envName) {
+        return deployment.getSpec().getTemplate().getSpec().getContainers().stream()
+                .findFirst()
+                .flatMap(c -> c.getEnv().stream()
+                        .filter(e -> e.getName().equals(envName))
+                        .findFirst())
+                .map(EnvVar::getValue)
+                .orElse(null);
     }
 }

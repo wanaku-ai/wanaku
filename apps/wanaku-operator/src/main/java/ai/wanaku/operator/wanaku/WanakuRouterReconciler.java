@@ -2,9 +2,13 @@ package ai.wanaku.operator.wanaku;
 
 import jakarta.inject.Inject;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.jboss.logging.Logger;
+import io.fabric8.kubernetes.api.model.APIGroup;
 import io.fabric8.kubernetes.api.model.Condition;
+import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -23,7 +27,7 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
-import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.core.util.StringHelper;
 import ai.wanaku.operator.util.OperatorUtil;
 import ai.wanaku.operator.util.RouterResourceFactory;
 
@@ -93,7 +97,6 @@ import static ai.wanaku.operator.util.Matchers.match;
         })
 public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
     private static final Logger LOG = Logger.getLogger(WanakuRouterReconciler.class);
-    public static final String SCHEME = "http";
 
     @Inject
     KubernetesClient kubernetesClient;
@@ -103,10 +106,25 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
         LOG.infof(
                 "Starting router reconciliation for %s", resource.getMetadata().getName());
 
-        final String namespace = resource.getMetadata().getNamespace();
+        ValidateSpecResult validation = validateSpec(resource);
+        if (!validation.valid) {
+            return setErrorStatus(resource, "ValidationError", validation.errorMessage);
+        }
 
+        WanakuTypes.ExposureSpec exposureSpec = resource.getSpec().getExposure();
+        if (exposureSpec != null && exposureSpec.getType() == WanakuTypes.ExposureType.ROUTE && !isOpenShiftCluster()) {
+            LOG.errorf(
+                    "WanakuRouter '%s' requests type=Route but the cluster does not have the"
+                            + " OpenShift Route API (route.openshift.io)",
+                    resource.getMetadata().getName());
+            return setErrorStatus(
+                    resource, "ValidationError", "spec.exposure.type is Route but this is not an OpenShift cluster");
+        }
+
+        final String namespace = resource.getMetadata().getNamespace();
         final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
         deployRouter(resource, context, namespace, wanakuStatus);
+
         final Condition previousReadyCondition = OperatorUtil.findCondition(
                 resource.getStatus() != null ? resource.getStatus().getConditions() : null,
                 OperatorUtil.READY_CONDITION);
@@ -114,75 +132,70 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
                 resource.getMetadata().getGeneration(), previousReadyCondition, "WanakuRouter deployment is ready")));
 
         resource.setStatus(wanakuStatus);
-
         return UpdateControl.patchStatus(resource);
     }
 
     private void deployRouter(
-            WanakuRouter resource, Context<WanakuRouter> context, String namespace, WanakuRouterStatus wanakuStatus)
-            throws WanakuException {
+            WanakuRouter resource, Context<WanakuRouter> context, String namespace, WanakuRouterStatus wanakuStatus) {
 
-        // Create PVCs first, before creating the deployment
         createRouterPVCs(resource, namespace);
 
-        // Create the internal service (cluster IP)
-        final Service desiredExternalService = RouterResourceFactory.makeRouterInternalService(resource);
-        Service existingExternalService = kubernetesClient
+        final Service desiredInternalService = RouterResourceFactory.makeRouterInternalService(resource);
+        Service existingInternalService = kubernetesClient
                 .services()
                 .inNamespace(namespace)
-                .withName(desiredExternalService.getMetadata().getName())
+                .withName(desiredInternalService.getMetadata().getName())
                 .get();
-        if (!match(desiredExternalService, existingExternalService)) {
-            String ns = resource.getMetadata().getNamespace();
+        if (!match(desiredInternalService, existingInternalService)) {
             LOG.infof(
                     "Creating or updating Service %s in %s",
-                    desiredExternalService.getMetadata().getName(), ns);
-
+                    desiredInternalService.getMetadata().getName(), namespace);
             kubernetesClient
                     .services()
-                    .inNamespace(ns)
-                    .resource(desiredExternalService)
+                    .inNamespace(namespace)
+                    .resource(desiredInternalService)
                     .createOr(Replaceable::update);
         }
 
-        // Create the external service - use OpenShift Route if available, otherwise Kubernetes Ingress
-        String host;
-        if (isOpenShiftCluster()) {
-            LOG.info("OpenShift cluster detected, using Route for external access");
-            final OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
-            host = createRouteAndGetHost(resource, namespace, openShiftClient);
-        } else {
-            LOG.info("Kubernetes cluster detected, using Ingress for external access");
-            host = createIngressAndGetHost(resource, namespace);
-        }
-        wanakuStatus.setHost("%s://%s".formatted(SCHEME, host));
-        wanakuStatus.setSseEndpoint("%s://%s/mcp/sse".formatted(SCHEME, host));
-        wanakuStatus.setStreamableEndpoint("%s://%s/mcp/".formatted(SCHEME, host));
+        String host = reconcileExternalAccess(resource, namespace);
 
-        // Create the router deployment
+        wanakuStatus.setHost("https://" + host);
+        wanakuStatus.setSseEndpoint("https://%s/mcp/sse".formatted(host));
+        wanakuStatus.setStreamableEndpoint("https://%s/mcp/".formatted(host));
+
         final Deployment desiredDeployment =
                 RouterResourceFactory.makeDesiredRouterBackendDeployment(resource, context, host);
-
         Deployment existingDeployment = kubernetesClient
                 .apps()
                 .deployments()
                 .inNamespace(namespace)
                 .withName(desiredDeployment.getMetadata().getName())
                 .get();
-
         if (!match(desiredDeployment, existingDeployment)) {
-            String ns = resource.getMetadata().getNamespace();
             LOG.infof(
                     "Creating or updating Deployment %s in %s",
-                    desiredDeployment.getMetadata().getName(), ns);
-
+                    desiredDeployment.getMetadata().getName(), namespace);
             kubernetesClient
                     .apps()
                     .deployments()
-                    .inNamespace(ns)
+                    .inNamespace(namespace)
                     .resource(desiredDeployment)
                     .createOr(Replaceable::update);
         }
+    }
+
+    private String reconcileExternalAccess(WanakuRouter resource, String namespace) {
+        WanakuTypes.ExposureSpec exposureSpec = resource.getSpec().getExposure();
+        if (exposureSpec == null
+                || exposureSpec.getType() == null
+                || exposureSpec.getType() == WanakuTypes.ExposureType.NONE) {
+            return "internal-" + resource.getMetadata().getName();
+        }
+        if (exposureSpec.getType() == WanakuTypes.ExposureType.ROUTE) {
+            OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
+            return createRouteAndGetHost(resource, namespace, openShiftClient);
+        }
+        return createIngressAndGetHost(resource, namespace);
     }
 
     private static String createRouteAndGetHost(
@@ -200,14 +213,12 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
             existingRoute = null;
         }
         if (!match(desiredRoute, existingRoute)) {
-            String ns = resource.getMetadata().getNamespace();
             LOG.infof(
-                    "Creating or updating Service %s in %s",
-                    desiredRoute.getMetadata().getName(), ns);
-
+                    "Creating or updating Route %s in %s",
+                    desiredRoute.getMetadata().getName(), namespace);
             final Route created = openShiftClient
                     .routes()
-                    .inNamespace(ns)
+                    .inNamespace(namespace)
                     .resource(desiredRoute)
                     .createOr(Replaceable::update);
             final List<RouteIngress> routeIngresses = created.getStatus().getIngress();
@@ -217,13 +228,11 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
                     return ingress.getHost();
                 }
             }
-
             final Route refreshedRoute = openShiftClient
                     .routes()
                     .inNamespace(namespace)
                     .withName(desiredRoute.getMetadata().getName())
                     .get();
-
             return refreshedRoute.getStatus().getIngress().getFirst().getHost();
         } else {
             return existingRoute.getStatus().getIngress().getFirst().getHost();
@@ -231,20 +240,8 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
     }
 
     private String createIngressAndGetHost(WanakuRouter resource, String namespace) {
-        // Get host from spec - required for Kubernetes Ingress
-        WanakuTypes.IngressSpec ingressSpec = resource.getSpec().getIngress();
-        if (ingressSpec == null
-                || ingressSpec.getHost() == null
-                || ingressSpec.getHost().isBlank()) {
-            throw new WanakuException(
-                    "Ingress host must be specified in spec.ingress.host when deploying on Kubernetes. "
-                            + "OpenShift clusters auto-generate the host via Routes.");
-        }
-
-        String host = ingressSpec.getHost();
+        String host = resource.getSpec().getExposure().getHost();
         final Ingress desiredIngress = RouterResourceFactory.makeRouterIngress(resource, host);
-
-        // Get existing ingress - returns null if not found
         Ingress existingIngress = kubernetesClient
                 .network()
                 .v1()
@@ -252,12 +249,10 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
                 .inNamespace(namespace)
                 .withName(desiredIngress.getMetadata().getName())
                 .get();
-
         if (!match(desiredIngress, existingIngress)) {
             LOG.infof(
                     "Creating or updating Ingress %s in %s",
                     desiredIngress.getMetadata().getName(), namespace);
-
             kubernetesClient
                     .network()
                     .v1()
@@ -266,23 +261,26 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
                     .resource(desiredIngress)
                     .createOr(Replaceable::update);
         }
-
         return host;
     }
 
     private boolean isOpenShiftCluster() {
-        return kubernetesClient.supports("route.openshift.io/v1", "Route");
+        try {
+            APIGroup apiGroup = kubernetesClient.getApiGroup("route.openshift.io");
+            return apiGroup != null;
+        } catch (RuntimeException e) {
+            LOG.warn("Failed to detect OpenShift cluster.", e);
+            return false;
+        }
     }
 
     private void createRouterPVCs(WanakuRouter resource, String namespace) {
-        // Create services-volume PVC
         final PersistentVolumeClaim servicesVolumePVC = RouterResourceFactory.makeRouterVolumePVC(resource);
         PersistentVolumeClaim existingServicesVolume = kubernetesClient
                 .persistentVolumeClaims()
                 .inNamespace(namespace)
                 .withName(RouterResourceFactory.ROUTER_VOLUME_CLAIM)
                 .get();
-
         if (!match(servicesVolumePVC, existingServicesVolume)) {
             LOG.infof("Creating or updating PVC route-volume-claim in %s", namespace);
             kubernetesClient
@@ -291,5 +289,55 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
                     .resource(servicesVolumePVC)
                     .createOr(Replaceable::update);
         }
+    }
+
+    private UpdateControl<WanakuRouter> setErrorStatus(WanakuRouter resource, String reason, String message) {
+        LOG.warnf("WanakuRouter '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+        WanakuRouterStatus status = new WanakuRouterStatus();
+        Condition condition = new ConditionBuilder()
+                .withType(OperatorUtil.READY_CONDITION)
+                .withStatus("False")
+                .withObservedGeneration(resource.getMetadata().getGeneration())
+                .withLastTransitionTime(OffsetDateTime.now(ZoneOffset.UTC).toString())
+                .withReason(reason)
+                .withMessage(message)
+                .build();
+        status.setConditions(List.of(condition));
+        resource.setStatus(status);
+        return UpdateControl.patchStatus(resource);
+    }
+
+    static class ValidateSpecResult {
+        final boolean valid;
+        final String errorMessage;
+
+        ValidateSpecResult(boolean valid, String errorMessage) {
+            this.valid = valid;
+            this.errorMessage = errorMessage;
+        }
+
+        static final ValidateSpecResult OK = new ValidateSpecResult(true, null);
+
+        static ValidateSpecResult invalid(String message) {
+            return new ValidateSpecResult(false, message);
+        }
+    }
+
+    ValidateSpecResult validateSpec(WanakuRouter resource) {
+        WanakuTypes.ExposureSpec exposureSpec =
+                resource.getSpec() != null ? resource.getSpec().getExposure() : null;
+
+        if (exposureSpec == null
+                || exposureSpec.getType() == null
+                || exposureSpec.getType() == WanakuTypes.ExposureType.NONE) {
+            return ValidateSpecResult.OK;
+        }
+
+        if (exposureSpec.getType() == WanakuTypes.ExposureType.INGRESS
+                && StringHelper.isBlank(exposureSpec.getHost())) {
+            return ValidateSpecResult.invalid("spec.exposure.host is required when spec.exposure.type is Ingress");
+        }
+
+        return ValidateSpecResult.OK;
     }
 }

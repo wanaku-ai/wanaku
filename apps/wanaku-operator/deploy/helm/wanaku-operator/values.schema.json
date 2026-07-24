@@ -49,6 +49,9 @@
           "description" : "The container image to use.",
           "type" : "string"
         },
+        "replicas" : {
+          "type" : "integer"
+        },
         "podSecurityContext" : {
           "type" : "object",
           "properties" : {
@@ -69,6 +72,9 @@
         "envs" : {
           "type" : "object",
           "properties" : {
+            "QUARKUS_OPERATOR_SDK_CONTROLLERS_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES" : {
+              "type" : "string"
+            },
             "QUARKUS_OPERATOR_SDK_CONTROLLERS_WANAKU_CAPABILITY_NAMESPACES" : {
               "type" : "string"
             },

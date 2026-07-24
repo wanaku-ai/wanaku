@@ -1,8 +1,12 @@
 package ai.wanaku.operator.util;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import ai.wanaku.core.util.StringHelper;
 import ai.wanaku.operator.wanaku.WanakuCapability;
 import ai.wanaku.operator.wanaku.WanakuCapabilitySpec;
 import ai.wanaku.operator.wanaku.WanakuTypes;
@@ -16,7 +20,64 @@ import ai.wanaku.operator.wanaku.WanakuTypes;
  */
 public final class EnvironmentVariableHelper {
 
+    static final String ANNOTATION_ENV_PREFIX = "env.wanaku.ai/";
+
+    /**
+     * Pattern for valid POSIX/Kubernetes environment variable names:
+     * must start with a letter or underscore, followed by letters, digits, or underscores.
+     */
+    static final Pattern ENV_VAR_NAME_PATTERN = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+
     private EnvironmentVariableHelper() {}
+
+    /**
+     * Extracts environment variables from CR metadata annotations.
+     *
+     * <p>Any annotation whose key starts with {@code env.wanaku.ai/} is promoted to an
+     * environment variable. The prefix is stripped to form the variable name; the annotation
+     * value becomes the variable value. Annotation-derived variables are intended to be merged
+     * last so they override any same-name variables set by the reconciler.</p>
+     *
+     * @param annotations the CR metadata annotations (may be null or empty)
+     * @return a mutable list of {@link EnvVar} objects; never null
+     */
+    public static List<EnvVar> extractAnnotationEnvVars(Map<String, String> annotations) {
+        List<EnvVar> result = new ArrayList<>();
+        if (annotations == null || annotations.isEmpty()) {
+            return result;
+        }
+        for (Map.Entry<String, String> entry : annotations.entrySet()) {
+            if (entry.getKey().startsWith(ANNOTATION_ENV_PREFIX)) {
+                String name = entry.getKey().substring(ANNOTATION_ENV_PREFIX.length());
+                if (StringHelper.isBlank(name)
+                        || !ENV_VAR_NAME_PATTERN.matcher(name).matches()) {
+                    continue;
+                }
+                result.add(new EnvVarBuilder()
+                        .withName(name)
+                        .withValue(entry.getValue())
+                        .build());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Merges annotation-derived env vars into an existing list, with annotation vars taking
+     * precedence. Any existing var whose name matches an annotation var is removed before
+     * the annotation vars are appended.
+     *
+     * @param envVars the mutable base list (modified in place)
+     * @param annotations the CR metadata annotations (may be null or empty)
+     */
+    public static void applyAnnotationEnvVars(List<EnvVar> envVars, Map<String, String> annotations) {
+        List<EnvVar> fromAnnotations = extractAnnotationEnvVars(annotations);
+        if (fromAnnotations.isEmpty()) {
+            return;
+        }
+        fromAnnotations.forEach(a -> envVars.removeIf(e -> e.getName().equals(a.getName())));
+        envVars.addAll(fromAnnotations);
+    }
 
     /**
      * Computes environment variables for Wanaku-native capability deployments.
@@ -38,7 +99,7 @@ public final class EnvironmentVariableHelper {
                     EnvironmentVariables.WANAKU_SERVICE_REGISTRATION_URI,
                     EnvironmentVariables.QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET);
         } else {
-            envVars = new java.util.ArrayList<>();
+            envVars = new ArrayList<>();
         }
 
         addCustomVars(capabilitiesSpec.getEnv(), envVars);
@@ -68,7 +129,7 @@ public final class EnvironmentVariableHelper {
                     EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_REGISTRATION_URL,
                     EnvironmentVariables.CAMEL_INTEGRATION_CAPABILITY_CLIENT_SECRET);
         } else {
-            envVars = new java.util.ArrayList<>();
+            envVars = new ArrayList<>();
         }
 
         envVars.add(new EnvVarBuilder()
@@ -132,7 +193,7 @@ public final class EnvironmentVariableHelper {
                 .withValue(oidcSecret)
                 .build();
 
-        List<EnvVar> envVars = new java.util.ArrayList<>();
+        List<EnvVar> envVars = new ArrayList<>();
         envVars.add(authServerEnv);
         envVars.add(registrationUriEnv);
         envVars.add(oidcSecretEnv);

@@ -45,6 +45,7 @@ import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
 import ai.wanaku.core.services.api.ServiceCatalogService;
 import ai.wanaku.operator.util.CamelRoutePackager;
 import ai.wanaku.operator.util.CapabilityResourceFactory;
+import ai.wanaku.operator.util.EnvironmentVariableHelper;
 import ai.wanaku.operator.util.EnvironmentVariables;
 import ai.wanaku.operator.util.OperatorSecurityConfig;
 import ai.wanaku.operator.util.OperatorUtil;
@@ -414,7 +415,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         kubernetesClient.services().inNamespace(namespace).resource(service).createOr(Replaceable::update);
     }
 
-    private void configureCicDeployment(
+    void configureCicDeployment(
             Deployment deployment,
             WanakuCamelRoute resource,
             String crName,
@@ -455,12 +456,16 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         container.setImage(resource.getSpec().getImage());
         container.setImagePullPolicy(
                 OperatorUtil.resolveImagePullPolicy(resource.getSpec().getImagePullPolicy(), null));
-        container.setEnv(buildCicEnvVars(crName, routerBaseUrl, authSpec));
+        List<EnvVar> cicEnvVars = buildCicEnvVars(crName, routerBaseUrl, authSpec);
+        // Annotation-derived vars are applied last so they override everything else
+        EnvironmentVariableHelper.applyAnnotationEnvVars(
+                cicEnvVars, resource.getMetadata().getAnnotations());
+        container.setEnv(cicEnvVars);
 
         deployment.addOwnerReference(resource);
     }
 
-    private List<EnvVar> buildCicEnvVars(String crName, String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
+    List<EnvVar> buildCicEnvVars(String crName, String routerBaseUrl, WanakuTypes.AuthSpec authSpec) {
         List<EnvVar> envVars = new ArrayList<>();
 
         envVars.add(new EnvVarBuilder()

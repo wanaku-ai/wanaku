@@ -112,7 +112,20 @@ public final class Matchers {
             return false;
         }
 
-        return desiredRoute.getFullResourceName().equals(existingRoute.getFullResourceName());
+        if (!desiredRoute.getFullResourceName().equals(existingRoute.getFullResourceName())) {
+            return false;
+        }
+
+        // Compare TLS termination
+        String desiredTermination =
+                desiredRoute.getSpec() != null && desiredRoute.getSpec().getTls() != null
+                        ? desiredRoute.getSpec().getTls().getTermination()
+                        : null;
+        String existingTermination =
+                existingRoute.getSpec() != null && existingRoute.getSpec().getTls() != null
+                        ? existingRoute.getSpec().getTls().getTermination()
+                        : null;
+        return Objects.equals(desiredTermination, existingTermination);
     }
 
     public static boolean match(Ingress desired, Ingress existing) {
@@ -120,8 +133,13 @@ public final class Matchers {
             return false;
         }
 
-        // Compare name
         if (!desired.getMetadata().getName().equals(existing.getMetadata().getName())) {
+            return false;
+        }
+
+        // Compare ingressClassName
+        if (!Objects.equals(
+                desired.getSpec().getIngressClassName(), existing.getSpec().getIngressClassName())) {
             return false;
         }
 
@@ -151,8 +169,20 @@ public final class Matchers {
                 .getBackend()
                 .getService()
                 .getName();
+        if (!Objects.equals(desiredBackend, existingBackend)) {
+            return false;
+        }
 
-        return Objects.equals(desiredBackend, existingBackend);
+        // Compare TLS secret name
+        String desiredTlsSecret = desired.getSpec().getTls() != null
+                        && !desired.getSpec().getTls().isEmpty()
+                ? desired.getSpec().getTls().getFirst().getSecretName()
+                : null;
+        String existingTlsSecret = existing.getSpec().getTls() != null
+                        && !existing.getSpec().getTls().isEmpty()
+                ? existing.getSpec().getTls().getFirst().getSecretName()
+                : null;
+        return Objects.equals(desiredTlsSecret, existingTlsSecret);
     }
 
     public static boolean match(PersistentVolumeClaim desired, PersistentVolumeClaim existing) {
