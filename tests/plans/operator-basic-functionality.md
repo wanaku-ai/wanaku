@@ -64,6 +64,8 @@ Set these before running the plan. All image tags default to `latest` but can be
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 export WANAKU_ROUTER_IMAGE="${WANAKU_ROUTER_IMAGE:-quay.io/wanaku/wanaku-router-backend:latest}"
 export WANAKU_CAPABILITY_HTTP_IMAGE="${WANAKU_CAPABILITY_HTTP_IMAGE:-quay.io/wanaku/wanaku-tool-service-http:latest}"
+# Isolate credentials per test run to avoid contention (see #1697)
+export WANAKU_CREDENTIALS="${WANAKU_CREDENTIALS:-/tmp/wanaku-creds-${WANAKU_NAMESPACE}}"
 ```
 
 Follow [common/namespace-setup.md](common/namespace-setup.md) before Phase 1 to derive a unique `WANAKU_NAMESPACE` for this run.

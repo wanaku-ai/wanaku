@@ -44,6 +44,8 @@ export WANAKU_ROUTER_URL="${WANAKU_ROUTER_URL:-http://localhost:8080}"
 export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
 export CUSTOM_HOME_DIR="${CUSTOM_HOME_DIR:-/tmp/wanaku-test-home-$$}"
 export CUSTOM_HOME_DIR_SYSPROP="${CUSTOM_HOME_DIR_SYSPROP:-/tmp/wanaku-test-sysprop-$$}"
+# Isolate credentials per test run to avoid contention (see #1697)
+export WANAKU_CREDENTIALS="${WANAKU_CREDENTIALS:-/tmp/wanaku-creds-home-$$}"
 ```
 
 | Variable | Default | Description |

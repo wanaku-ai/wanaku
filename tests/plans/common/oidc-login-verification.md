@@ -13,6 +13,7 @@ The default test path below uses the router OIDC proxy; for direct Keycloak auth
 - WanakuRouter CR created and Ready
 - `WANAKU_ROUTER_URL` environment variable set (e.g. `http://<router-route-host>`)
 - `WANAKU_TEST_USER` and `WANAKU_TEST_PASS` environment variables set
+- `WANAKU_CREDENTIALS` exported to a per-run path (see [#1697](https://github.com/wanaku-ai/wanaku/issues/1697)) to isolate credential storage across concurrent test runs
 
 ## Steps
 
