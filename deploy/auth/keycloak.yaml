@@ -35,8 +35,13 @@ spec:
               value: "KEYCLOAK_HOST"
             - name: KC_HOSTNAME_STRICT
               value: "false"
+            - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+              value: "true"
+            - name: KC_HOSTNAME_DEBUG
+              value: "true"
           args:
             - "start-dev"
+            - "--verbose"
           volumeMounts:
             - name: keycloak-data
               mountPath: /opt/keycloak/data

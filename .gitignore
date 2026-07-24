@@ -51,6 +51,7 @@ build/
 
 plan
 .claude/worktrees
+.claude/plans
 .claude/settings.local.json
 working-data/
 .bob/

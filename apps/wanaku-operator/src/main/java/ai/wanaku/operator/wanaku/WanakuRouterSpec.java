@@ -5,7 +5,7 @@ import java.util.List;
 public class WanakuRouterSpec {
     private WanakuTypes.AuthSpec auth;
     private String imagePullPolicy;
-    private WanakuTypes.IngressSpec ingress;
+    private WanakuTypes.ExposureSpec exposure;
     private RouterSpec router;
 
     public WanakuTypes.AuthSpec getAuth() {
@@ -24,12 +24,12 @@ public class WanakuRouterSpec {
         this.imagePullPolicy = imagePullPolicy;
     }
 
-    public WanakuTypes.IngressSpec getIngress() {
-        return ingress;
+    public WanakuTypes.ExposureSpec getExposure() {
+        return exposure;
     }
 
-    public void setIngress(WanakuTypes.IngressSpec ingress) {
-        this.ingress = ingress;
+    public void setExposure(WanakuTypes.ExposureSpec exposure) {
+        this.exposure = exposure;
     }
 
     public RouterSpec getRouter() {

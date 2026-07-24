@@ -249,6 +249,9 @@ public final class CodeExecutionEngineResourceFactory {
         addCacheEnvVars(resource.getSpec().getDependencyCache(), envVars);
         addRemoteEnvVars(resource.getSpec().getRemote(), envVars);
         EnvironmentVariableHelper.addCustomVars(resource.getSpec().getEnv(), envVars);
+        // Annotation-derived vars are applied last so they override everything else
+        EnvironmentVariableHelper.applyAnnotationEnvVars(
+                envVars, resource.getMetadata().getAnnotations());
         return envVars;
     }
 

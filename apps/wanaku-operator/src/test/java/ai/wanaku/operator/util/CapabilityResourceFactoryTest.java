@@ -1,5 +1,7 @@
 package ai.wanaku.operator.util;
 
+import java.util.Map;
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -125,6 +127,41 @@ class CapabilityResourceFactoryTest {
         assertServiceLabel(service, "app.kubernetes.io/part-of", "wanaku-capabilities");
     }
 
+    // ── Annotation env var tests ──────────────────────────────────────────────
+
+    @Test
+    void wanakuCapabilityAnnotationEnvVarOverridesTemplateVar() {
+        WanakuCapability cr = makeCapability("wanaku-capabilities");
+        cr.getMetadata().setAnnotations(Map.of("env.wanaku.ai/QUARKUS_TLS_TRUST_ALL", "false"));
+        WanakuCapabilitySpec.CapabilitiesSpec entry = makeCapabilityEntry("my-capability");
+
+        Deployment deployment = CapabilityResourceFactory.makeDesiredWanakuCapabilityDeployment(cr, null, entry);
+
+        assertEquals("false", getEnvValue(deployment, "my-capability", "QUARKUS_TLS_TRUST_ALL"));
+    }
+
+    @Test
+    void wanakuCapabilityAnnotationEnvVarAddsNewVar() {
+        WanakuCapability cr = makeCapability("wanaku-capabilities");
+        cr.getMetadata().setAnnotations(Map.of("env.wanaku.ai/MY_INJECTED_VAR", "injected"));
+        WanakuCapabilitySpec.CapabilitiesSpec entry = makeCapabilityEntry("my-capability");
+
+        Deployment deployment = CapabilityResourceFactory.makeDesiredWanakuCapabilityDeployment(cr, null, entry);
+
+        assertEquals("injected", getEnvValue(deployment, "my-capability", "MY_INJECTED_VAR"));
+    }
+
+    @Test
+    void cicCapabilityAnnotationEnvVarAddsNewVar() {
+        WanakuCapability cr = makeCapability("wanaku-capabilities");
+        cr.getMetadata().setAnnotations(Map.of("env.wanaku.ai/MY_INJECTED_VAR", "injected"));
+        WanakuCapabilitySpec.CapabilitiesSpec entry = makeCiCCapabilityEntry("my-cic");
+
+        Deployment deployment = CapabilityResourceFactory.makeDesiredCiCCapabilityDeployment(cr, null, entry);
+
+        assertEquals("injected", getEnvValue(deployment, "my-cic", "MY_INJECTED_VAR"));
+    }
+
     @Test
     void pvcUsesCapabilityNameAsAppLabel() {
         WanakuCapability cr = makeCapability("wanaku-capabilities");
@@ -133,5 +170,17 @@ class CapabilityResourceFactoryTest {
 
         assertMetadataLabel(pvc, "app", "cic-catalog-test");
         assertMetadataLabel(pvc, "app.kubernetes.io/part-of", "wanaku-capabilities");
+    }
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    private static String getEnvValue(Deployment deployment, String containerName, String envName) {
+        return deployment.getSpec().getTemplate().getSpec().getContainers().stream()
+                .filter(c -> c.getName().equals(containerName))
+                .findFirst()
+                .flatMap(c -> c.getEnv().stream()
+                        .filter(e -> e.getName().equals(envName))
+                        .findFirst())
+                .map(EnvVar::getValue)
+                .orElse(null);
     }
 }

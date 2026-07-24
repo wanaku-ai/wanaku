@@ -225,6 +225,10 @@ public final class CapabilityResourceFactory {
             }
         }
 
+        // Annotation-derived vars are applied last so they override everything else
+        EnvironmentVariableHelper.applyAnnotationEnvVars(
+                userDefinedVars, resource.getMetadata().getAnnotations());
+
         service.setEnv(userDefinedVars);
     }
 }

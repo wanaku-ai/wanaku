@@ -328,29 +328,26 @@ Requirements:
 eval $(minikube docker-env)
 ```
 
-1. Log in with podman:
+1. Build the container image from wanaku-router-backend, wanaku-operator, wanaku-tool-service-http and wanaku-tool-service-exec.
 
 ```shell
-podman login -u $(oc whoami) -p $(oc whoami -t) --tls-verify=false $REGISTRY
+mvn -ntp -Dquarkus.container-image.build=true -Dquarkus.container-image.push=false -DskipTests package -pl :wanaku-operator,:wanaku-router-backend,:wanaku-tool-service-http,:wanaku-tool-service-exec
 ```
 
-1. Build the container image from wanaku-router-backend:
-
-```shell
-mvn -Dquarkus.container-image.build=true -Dquarkus.container-image.push=false -DskipTests package -f apps/wanaku-router-backend
-```
-
-If everything went well, you should see the container being pushed to the registry:
+If everything went well, you should see the container is pushed to the registry:
 
 ```shell
 [io.quarkus.container.image.jib.deployment.JibProcessor] Created container image quay.io/wanaku/wanaku-router-backend (sha256:3d3ad35a4c6f3bc04c07388fb52f6b0caabae7d35c8d3cc217f40f589f6bbcd3)
 ```
 
 Note that as the minikube registry docker is exposed, the image is already available in the registry once the container build finishes.
-You can look with the cli: `docker images|grep wanaku`.
+You can look with the cli: `docker images --format=table|grep wanaku`.
 
 ```shell
-quay.io/wanaku/wanaku-router-backend:latest       895e595bb4f6        537MB             0B
+quay.io/wanaku/wanaku-operator            latest         fadfce7976a5   4 hours ago     463MB
+quay.io/wanaku/wanaku-router-backend      latest         8cc535c47cad   4 hours ago     535MB
+quay.io/wanaku/wanaku-tool-service-http   latest         bd540b6eb9fd   14 hours ago    509MB
+quay.io/wanaku/wanaku-tool-service-exec   latest         cd20d5df77dd   14 hours ago    489MB
 ```
 
 1. Deploy to Minikube
@@ -359,17 +356,26 @@ quay.io/wanaku/wanaku-router-backend:latest       895e595bb4f6        537MB     
 ./deploy/deploy-to-dev-env.sh
 ```
 
-### Building for CRC
+NOTE: You can customize some environment variables:
+
+- `NAMESPACE`: The Kubernetes namespace to install services (default:  `wanaku`)
+- `WANAKU_ADMIN_USERNAME`: Keycloak admin user (default:  `admin`)
+- `WANAKU_ADMIN_PASSWORD`: Keycloak admin password (default:  `admin`)
+- `WANAKU_INGRESS_HOST`: The ingress host (default `wanaku.$(minikube ip).nip.io}`)
+- `WANAKU_OPERATOR_IMAGE`: Wanaku operator image (default:  `quay.io/wanaku/wanaku-operator:latest`)
+- `WANAKU_ROUTER_IMAGE`: Wanaku router backend image (default:  `quay.io/wanaku/wanaku-router-backend:latest`)
+
+### Building for OpenShift
 
 Requirements:
 
-- CRC must be started.
+- OpenShift or CRC must be available.
 - podman
 - Keycloak already installed and the `wanaku` configuration is created.
 - Set the current namespace to wanaku: `kubectl config set-context --current --namespace=wanaku`.
 - `oc` cli.
 
-1. The internal registry should be exposed, assign to REGISTRY environment variable.
+1. The internal registry should be exposed, assign to REGISTRY environment variable. Check the OpenShift documentation on how to [expose the default registry manually](<https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/registry/securing-exposing-registry#registry-exposing-default-registry-manually_securing-exposing-registry>
 
 ```shell
 REGISTRY="$(kubectl get route/default-route -n openshift-image-registry -o=jsonpath='{.spec.host}')"
@@ -381,26 +387,36 @@ REGISTRY="$(kubectl get route/default-route -n openshift-image-registry -o=jsonp
 podman login -u $(oc whoami) -p $(oc whoami -t) --tls-verify=false $REGISTRY
 ```
 
-1. Build the container image from wanaku-router-backend:
+1. Build all container images
 
 ```shell
-mvn -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -DskipTests package -f apps/wanaku-router-backend -Dquarkus.container-image.registry=$REGISTRY -Dquarkus.container-image.insecure=true
+mvn -ntp -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -DskipTests package -Dquarkus.container-image.registry=$REGISTRY -Dquarkus.container-image.insecure=true -Dopenshift -pl :wanaku-operator,:wanaku-router-backend,:wanaku-tool-service-http,:wanaku-tool-service-exec
 ```
 
-If everything went well, you should see the container being pushed to the registry:
+The `-Dopenshift` activates the maven profile to set the quarkus-openshift dependencies.
+
+If everything goes well, you should see the container being pushed to the registry:
 
 ```shell
 [io.quarkus.container.image.jib.deployment.JibProcessor] Pushed container image default-route-openshift-image-registry.apps-crc.testing/wanaku/wanaku-router-backend (sha256:a5d17a6d1bc1f7f0d2992872d37e5b00b444c9ab567a1ad97303acbb763ae132)
 ```
 
-1. Deploy to CRC:
+1. Deploy to OpenShift:
 
-The default image url is in `apps/wanaku-operator/deploy/helm/wanaku-operator/values.yaml`, but we shoud override it with the environment variable `WANAKU_IMAGE`, you should get the correct url from the `imagestream.image.openshift.io/wanaku-router-backend` resource.
+The default image URL is `quay.io/wanaku/wanaku-operator:latest` set in `apps/wanaku-operator/deploy/helm/wanaku-operator/values.yaml`, but we should override it with the environment variable `WANAKU_OPERATOR_IMAGE`, you should get the correct URL from the `is/wanaku-operator` resource.
 The default username/password is `admin/admin`, you can override it with the environment variable `WANAKU_ADMIN_USERNAME` and `WANAKU_ADMIN_PASSWORD`.
 
 ```shell
-export WANAKU_IMAGE=$(oc get imagestream.image.openshift.io/wanaku-router-backend  -ojsonpath='{.status.dockerImageRepository}')":latest"
+export WANAKU_OPERATOR_IMAGE=$(oc get is/wanaku-operator  -ojsonpath='{.status.dockerImageRepository}')":latest"
+export WANAKU_ROUTER_IMAGE=$(oc get is/wanaku-router-backend  -ojsonpath='{.status.dockerImageRepository}')":latest"
 ./deploy/deploy-to-dev-env.sh
+```
+
+The script should print the Keycloak and Wanaku HTTPS URLs at the end:
+
+```shell
+[INFO]  Keycloak URL:  https://keycloak-wanaku.apps-crc.testing
+[INFO]  Wanaku URL  :  https://wanaku-ci-dev-wanaku.apps-crc.testing
 ```
 
 ## Release Guide

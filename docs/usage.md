@@ -127,7 +127,10 @@ This will create all the necessary resources for Keycloak to run.
 > Before applying, review the files and be sure to change the default admin password for security.
 
 ```shell
-kubectl apply -f deploy/auth/keycloak.yaml
+NS=$(kubectl config view --minify -o jsonpath='{..namespace}')
+DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+KC_HOST="keycloak-$NS.$DOMAIN"
+cat deploy/auth/keycloak.yaml | sed "s/KEYCLOAK_HOST/https:\/\/$KC_HOST/"| kubectl create -f -
 ```
 
 Expose the Keycloak service outside the cluster.
@@ -145,40 +148,6 @@ cat deploy/auth/keycloak-ingress.yaml | sed "s/KEYCLOAK_HOST/keycloak.$(minikube
 ```shell
 kubectl apply -f deploy/auth/keycloak-router.yaml
 ```
-
-#### Setting KC_HOSTNAME (required for external access)
-
-After exposing Keycloak, you **must** set the `KC_HOSTNAME` environment variable on the Keycloak deployment to match the
-external route or ingress host. Without this, tokens obtained via the external URL will have a different issuer than what
-the Wanaku router expects, causing all authenticated requests to fail with HTTP 401.
-
-- OpenShift
-
-```shell
-KEYCLOAK_HOST=$(kubectl get route keycloak -o jsonpath='{.spec.host}')
-kubectl set env deployment/keycloak \
-  KC_HOSTNAME="${KEYCLOAK_HOST}" \
-  KC_HOSTNAME_STRICT=false
-```
-
-- Minikube
-
-```shell
-KEYCLOAK_HOST=$(kubectl get ingress keycloak -o jsonpath='{.spec.rules[0].host}')
-kubectl set env deployment/keycloak \
-  KC_HOSTNAME="${KEYCLOAK_HOST}" \
-  KC_HOSTNAME_STRICT=false
-```
-
-Wait for the rollout to complete before proceeding:
-
-```shell
-kubectl rollout status deployment/keycloak --timeout=300s
-```
-
-> [!NOTE]
-> The `deploy/auth/keycloak.yaml` manifest includes a `KEYCLOAK_HOST` placeholder for `KC_HOSTNAME`. If you prefer to set
-> the hostname before deploying, replace the placeholder with your actual hostname in the manifest and skip this step.
 
 ### Importing the Wanaku Realm Configuration (via Wanaku CLI)
 
@@ -521,8 +490,8 @@ without the operator. You can use the Helm chart directly:
    helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
    ```
 
-2. Create and apply a `WanakuRouter` custom resource for your environment (see [`deploy/openshift/wanaku-router.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/wanaku-router.yaml) for an example)
-3. Create and apply a `WanakuCapability` custom resource for your capabilities (see [`deploy/openshift/wanaku-capabilities.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/openshift/wanaku-capabilities.yaml) for an example)
+2. Create and apply a `WanakuRouter` custom resource for your environment (see [`deploy/kubernetes/wanaku-router.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/kubernetes/wanaku-router.yaml) for an example)
+3. Create and apply a `WanakuCapability` custom resource for your capabilities (see [`deploy/kubernetes/wanaku-capabilities.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/kubernetes/wanaku-capabilities.yaml) for an example)
 
 ### Configuring the Wanaku MCP Router
 
@@ -659,11 +628,11 @@ Then install the operator and apply the custom resources with your OIDC configur
 helm install wanaku-operator apps/wanaku-operator/deploy/helm/wanaku-operator --namespace <your-namespace>
 
 sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
-     deploy/openshift/wanaku-router.yaml | kubectl apply -f -
+     deploy/kubernetes/wanaku-router.yaml | kubectl apply -f -
 
 sed -e "s/oidc-url-replace/<your-keycloak-url>/g" \
     -e "s/replace-me-with-the-client-credentials-secret/<your-client-secret>/g" \
-     deploy/openshift/wanaku-capabilities.yaml | kubectl apply -f -
+     deploy/kubernetes/wanaku-capabilities.yaml | kubectl apply -f -
 ```
 
 #### Environment Configuration

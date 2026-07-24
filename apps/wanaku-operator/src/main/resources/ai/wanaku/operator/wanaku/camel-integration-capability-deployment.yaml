@@ -47,7 +47,7 @@ spec:
           value: "wanaku-service"
         - name: CLIENT_SECRET
           value: ""
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 5
           tcpSocket:

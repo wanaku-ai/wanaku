@@ -24,7 +24,7 @@ spec:
         - name: QUARKUS_OIDC_CLIENT_CREDENTIALS_SECRET
           value: ""
         image: ""
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: wanaku-capability
         securityContext:
           allowPrivilegeEscalation: false

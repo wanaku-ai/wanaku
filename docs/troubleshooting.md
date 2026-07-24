@@ -163,18 +163,40 @@ Set `KC_HOSTNAME` on the Keycloak deployment to match the external route or ingr
 KEYCLOAK_HOST=$(oc get route keycloak -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.host}')
 oc set env deployment/keycloak \
   KC_HOSTNAME="${KEYCLOAK_HOST}" \
-  KC_HOSTNAME_STRICT=false \
   -n "${WANAKU_NAMESPACE}"
 
 # Kubernetes (use the Ingress host instead)
 KEYCLOAK_HOST=$(kubectl get ingress keycloak -n "${WANAKU_NAMESPACE}" -o jsonpath='{.spec.rules[0].host}')
 kubectl set env deployment/keycloak \
   KC_HOSTNAME="${KEYCLOAK_HOST}" \
-  KC_HOSTNAME_STRICT=false \
   -n "${WANAKU_NAMESPACE}"
 ```
 
 The `deploy/auth/keycloak.yaml` manifest includes a `KEYCLOAK_HOST` placeholder for `KC_HOSTNAME` — replace it with your actual hostname before applying. See also the [Keycloak setup test plan](../tests/plans/common/keycloak-setup.md) for the full automated procedure.
+
+### Browser shows "502 Bad Gateway" after sign in from Keycloak
+
+**Symptoms:**
+
+When you access Wanaku web console with authentication enabled, it redirects to Keycloak for authentication, then after you input the username and password, it redirects back to Wanaku with the `502 Bad Gateway` error in the browser page.
+If you are using nginx as loadbalancer you can verify if it logs this message `upstream sent too big header while reading response header from upstream`.
+
+```shell
+kubectl -n ingress-nginx logs deploy/ingress-nginx-controller|grep upstream
+```
+
+**Why this happens:**
+
+Nginx `proxy-buffer-size` [defaults to 4k or 8k](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffer_size), so you have to increase it.
+
+**Fix:**
+
+You have to change the nginx configuration to a larger buffer size.
+There is this patch command to change the configuration value. In this example it increases the value to 16k.
+
+```shell
+kubectl -n ingress-nginx patch cm/ingress-nginx-controller --type=merge -p '{"data": {"proxy-buffer-size": "16k"}}'
+```
 
 ## Capability Service Registration
 

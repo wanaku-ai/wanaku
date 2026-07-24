@@ -21,10 +21,6 @@ spec:
                 type: "string"
               imagePullPolicy:
                 type: "string"
-                enum:
-                - "Always"
-                - "IfNotPresent"
-                - "Never"
               imageTag:
                 type: "string"
               mcp:

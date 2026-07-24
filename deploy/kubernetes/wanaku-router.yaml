@@ -2,11 +2,18 @@ apiVersion: "wanaku.ai/v1alpha1"
 kind: WanakuRouter
 metadata:
   name: wanaku-ci-dev
+  annotations:
+    # env.wanaku.ai/QUARKUS_TLS_TRUST_ALL: "false"
 spec:
   auth:
     authServer: oidc-url-replace
     # Address of the proxy (could be the same as the auth server - default) or "auto" (for using Wanaku as the proxy via OIDC proxy)
     authProxy: "auto"
+  exposure:
+    type: ingress
+    host: replace-wanaku-ingress-host
+    # tls:
+    #   secretName: wanaku-tls
   router:
     image: wanaku-image-replace
     imagePullPolicy: Always
