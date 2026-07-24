@@ -1,0 +1,52 @@
+needs-review:
+  - changed-files:
+      - any-glob-to-any-file:
+          - core/**
+          - apps/**
+          - apps/wanaku-router-backend/**
+          - capabilities/**
+          - capabilities-quarkus-sdk/**
+          - archetypes/**
+          - docs/**
+          - '**/*.md'
+          - services/**
+
+needs-test:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/wanaku-cli/**
+          - apps/wanaku-router-backend/**
+          - capabilities-quarkus-sdk/**
+          - capabilities/tools/wanaku-tool-service-http/**
+
+needs-e2e-test:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/wanaku-operator/**
+
+UI:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/ui/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - '**/*.adoc'
+          - '**/*.md'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+
+services:
+  - changed-files:
+      - any-glob-to-any-file:
+          - services/**
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/pom.xml'
