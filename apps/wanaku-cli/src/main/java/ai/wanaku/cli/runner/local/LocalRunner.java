@@ -2,6 +2,7 @@ package ai.wanaku.cli.runner.local;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,6 +20,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import ai.wanaku.capabilities.sdk.common.ProcessRunner;
+import ai.wanaku.cli.main.support.DownloadProgressBar;
+import ai.wanaku.cli.main.support.DownloadProgressListener;
 import ai.wanaku.cli.main.support.Downloader;
 import ai.wanaku.cli.main.support.HttpUtil;
 import ai.wanaku.cli.main.support.RuntimeConstants;
@@ -37,6 +40,7 @@ public class LocalRunner {
     private final WanakuCliConfig config;
     private final HttpClient httpClient;
     private final URI routerReadinessUri;
+    private final PrintWriter outputWriter;
     private int activeServices = 0;
 
     public static class LocalRunnerEnvironment {
@@ -140,15 +144,30 @@ public class LocalRunner {
     private final LocalRunnerEnvironment environment;
 
     public LocalRunner(WanakuCliConfig config, LocalRunnerEnvironment environment, boolean insecure) {
-        this(config, environment, HttpUtil.newHttpClient(insecure), DEFAULT_ROUTER_READINESS_URI);
+        this(config, environment, HttpUtil.newHttpClient(insecure), DEFAULT_ROUTER_READINESS_URI, null);
+    }
+
+    public LocalRunner(
+            WanakuCliConfig config, LocalRunnerEnvironment environment, boolean insecure, PrintWriter outputWriter) {
+        this(config, environment, HttpUtil.newHttpClient(insecure), DEFAULT_ROUTER_READINESS_URI, outputWriter);
     }
 
     LocalRunner(
             WanakuCliConfig config, LocalRunnerEnvironment environment, HttpClient httpClient, URI routerReadinessUri) {
+        this(config, environment, httpClient, routerReadinessUri, null);
+    }
+
+    LocalRunner(
+            WanakuCliConfig config,
+            LocalRunnerEnvironment environment,
+            HttpClient httpClient,
+            URI routerReadinessUri,
+            PrintWriter outputWriter) {
         this.config = config;
         this.environment = environment;
         this.httpClient = httpClient;
         this.routerReadinessUri = routerReadinessUri;
+        this.outputWriter = outputWriter;
     }
 
     public void start(List<String> services) throws IOException {
@@ -427,7 +446,19 @@ public class LocalRunner {
 
             LOG.infof("Downloading %s", componentName);
             LOG.debugf("Download URL: %s", downloadUrl);
-            downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir);
+
+            DownloadProgressBar progressBar = null;
+            DownloadProgressListener listener = null;
+            if (outputWriter != null) {
+                progressBar = new DownloadProgressBar(componentName, outputWriter);
+                listener = progressBar;
+            }
+
+            downloadedFile = Downloader.downloadFile(downloadUrl, destinationDir, listener);
+
+            if (progressBar != null) {
+                progressBar.finish();
+            }
         }
 
         if (isJarArtifact(downloadedFile.getName())) {
