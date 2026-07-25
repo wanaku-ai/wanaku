@@ -41,8 +41,8 @@ class NamespaceListTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    @DisplayName("Should include default namespace when no label filter is specified")
-    void shouldIncludeDefaultNamespaceWithoutFilter() throws Exception {
+    @DisplayName("Should list namespaces from backend without adding synthetic default")
+    void shouldListNamespacesWithoutSyntheticDefault() throws Exception {
         Namespace ns = new Namespace();
         ns.setId("ns-1");
         ns.setPath("my-ns");
@@ -58,7 +58,7 @@ class NamespaceListTest {
         ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
         verify(printer).printTable(captor.capture(), eq("id"), eq("name"), eq("path"), eq("labels"));
         List<?> printed = captor.getValue();
-        assertEquals(2, printed.size(), "Should contain the namespace plus the default entry");
+        assertEquals(1, printed.size(), "Should contain only the namespace from the backend");
     }
 
     @SuppressWarnings("unchecked")
@@ -108,9 +108,9 @@ class NamespaceListTest {
     }
 
     @Test
-    @DisplayName("Should include default namespace when label expression is a blank string")
+    @DisplayName("Should list namespaces from backend when label expression is blank")
     @SuppressWarnings("unchecked")
-    void shouldIncludeDefaultNamespaceWhenLabelExpressionBlank() throws Exception {
+    void shouldListNamespacesWhenLabelExpressionBlank() throws Exception {
         Namespace ns = new Namespace();
         ns.setId("ns-1");
         ns.setPath("ns-team");
@@ -129,6 +129,6 @@ class NamespaceListTest {
         verify(printer).printTable(captor.capture(), eq("id"), eq("name"), eq("path"), eq("labels"));
 
         List<?> printed = captor.getValue();
-        assertEquals(2, printed.size(), "Blank expression means no filter, so default namespace should be included");
+        assertEquals(1, printed.size(), "Should contain only the namespace from the backend");
     }
 }
