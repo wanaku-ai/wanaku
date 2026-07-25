@@ -13,6 +13,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.NamespacesService;
 import ai.wanaku.core.services.api.ResourcesService;
 import picocli.CommandLine;
 
@@ -114,13 +115,16 @@ public class ResourcesExpose extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
         resourcesService = initAuthenticatedService(ResourcesService.class, host);
+        NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
+        String namespaceName = namespaceOptions.resolveNamespaceName(namespacesService);
+
         ResourceReference resource = new ResourceReference();
         resource.setLocation(location);
         resource.setType(type);
         resource.setName(name);
         resource.setDescription(description);
         resource.setMimeType(mimeType);
-        resource.setNamespace(namespaceOptions.getNamespaceValue());
+        resource.setNamespace(namespaceName);
         resource.setLabels(labels);
 
         ResourcePayload resourcePayload = new ResourcePayload();
