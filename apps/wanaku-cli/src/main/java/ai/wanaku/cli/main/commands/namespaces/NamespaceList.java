@@ -60,16 +60,6 @@ Note: If omitted, all namespaces are listed. Label matching is case-sensitive.
 
             return ret;
         }
-
-        public static AddressableNamespace defaultNs(String host) {
-            AddressableNamespace ret = new AddressableNamespace();
-            ret.setId("<default>");
-            ret.setPath("");
-            ret.setName("");
-            ret.host = host;
-
-            return ret;
-        }
     }
 
     @Override
@@ -80,10 +70,6 @@ Note: If omitted, all namespaces are listed. Label matching is case-sensitive.
             WanakuResponse<List<Namespace>> response = namespacesService.list(labelExpression);
             List<AddressableNamespace> list =
                     response.data().stream().map(this::convertToAddressable).collect(Collectors.toList());
-
-            if (labelExpression == null || labelExpression.isBlank()) {
-                list.add(AddressableNamespace.defaultNs(host));
-            }
 
             printer.printTable(list, "id", "name", "path", "labels");
         } catch (WebApplicationException ex) {
