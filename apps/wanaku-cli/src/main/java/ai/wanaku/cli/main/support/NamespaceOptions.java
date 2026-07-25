@@ -121,4 +121,51 @@ public class NamespaceOptions {
             throw ex;
         }
     }
+
+    /**
+     * Resolves the namespace to its human-readable name.
+     * <p>
+     * If {@code --namespace} was provided, returns the name directly.
+     * If {@code --namespace-id} was provided, queries the server to look up the name by UUID.
+     * </p>
+     * <p>
+     * This method should be used by commands whose backends resolve namespaces by name
+     * (e.g., tools, prompts, resources) rather than by ID (e.g., forwards).
+     * </p>
+     *
+     * @param namespacesService the service to use for looking up namespace by ID
+     * @return the namespace name
+     * @throws Exception if the lookup fails or no matching namespace is found
+     */
+    public String resolveNamespaceName(NamespacesService namespacesService) throws Exception {
+        if (namespace != null) {
+            return namespace;
+        }
+
+        if (namespaceId == null || namespaceId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Either --namespace or --namespace-id must be provided with a non-blank value.");
+        }
+
+        try {
+            WanakuResponse<Namespace> response = namespacesService.getById(namespaceId);
+            Namespace ns = response.data();
+            if (ns == null) {
+                throw new IllegalArgumentException(
+                        "No namespace found with ID '%s'. Use 'wanaku namespaces list' to see available namespaces."
+                                .formatted(namespaceId));
+            }
+
+            String name = ns.getName();
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException(
+                        "Namespace with ID '%s' has no name assigned. Use --namespace with a name instead, or assign a name to the namespace first."
+                                .formatted(namespaceId));
+            }
+            return name;
+        } catch (WebApplicationException ex) {
+            commonResponseErrorHandler(ex.getResponse());
+            throw ex;
+        }
+    }
 }

@@ -19,6 +19,7 @@ import ai.wanaku.capabilities.sdk.api.types.WanakuResponse;
 import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.NamespacesService;
 import ai.wanaku.core.services.api.PromptsService;
 import picocli.CommandLine;
 
@@ -99,7 +100,8 @@ public class PromptsEdit extends BaseCommand {
 
         // Update only the fields that were provided
         if (namespaceOptions != null) {
-            String ns = namespaceOptions.getNamespaceValue();
+            NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
+            String ns = namespaceOptions.resolveNamespaceName(namespacesService);
             if (ns != null) {
                 existingPrompt.setNamespace(ns);
             }
