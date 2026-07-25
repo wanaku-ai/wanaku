@@ -785,6 +785,74 @@ helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator 
   --set app.envs.QUARKUS_OPERATOR_SDK_CONTROLLERS_CAMEL_CODE_EXECUTION_ENGINE_NAMESPACES=JOSDK_ALL_NAMESPACES
 ```
 
+## Monitoring
+
+The operator exposes metrics in Prometheus format at `/metrics` on the operator's HTTP port (`8081` by default).
+
+### Available Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `wanaku_router_reconciliations_total` | counter | Total number of `WanakuRouter` reconciliations. |
+| `wanaku_router_reconciliation_errors_total` | counter | Total number of failed `WanakuRouter` reconciliations. |
+| `wanaku_router_instances` | gauge | Number of `WanakuRouter` instances in the operator namespace. |
+| `wanaku_router_ready_instances` | gauge | Number of `WanakuRouter` instances whose `Ready` condition is `True`. |
+| `wanaku_toolservice_instances` | gauge | Number of `WanakuCapability` (tool service) instances in the operator namespace. |
+
+In addition to the Wanaku-specific metrics, the endpoint also exposes the standard
+[Java Operator SDK metrics](https://javaoperatorsdk.io/docs/features/#micrometer-implementation)
+(reconciliation timings, event counts, retries per controller) and JVM/HTTP metrics provided by Quarkus.
+
+**Quick check with port-forward:**
+
+```shell
+kubectl port-forward deployment/wanaku-operator 8081:8081 --namespace wanaku
+curl -s http://localhost:8081/metrics | grep wanaku_
+```
+
+### Prometheus ServiceMonitor
+
+On clusters running the Prometheus Operator (including OpenShift with user workload monitoring enabled),
+the Helm chart can create a `ServiceMonitor` that scrapes the operator metrics endpoint:
+
+```shell
+helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
+  --namespace wanaku \
+  --set app.metrics.serviceMonitor.enabled=true
+```
+
+| Value | Type | Default | Description |
+|-------|------|---------|-------------|
+| `app.metrics.serviceMonitor.enabled` | boolean | `false` | Create a `ServiceMonitor` for the operator metrics endpoint. |
+| `app.metrics.serviceMonitor.interval` | string | `30s` | Scrape interval for the `ServiceMonitor`. |
+
+> [!NOTE]
+> On OpenShift, enable [monitoring for user-defined projects](https://docs.openshift.com/container-platform/latest/observability/monitoring/enabling-monitoring-for-user-defined-projects.html)
+> so the cluster Prometheus picks up the `ServiceMonitor`.
+
+### Grafana Dashboard
+
+The Helm chart ships a Grafana dashboard with panels for all operator metrics
+(router/tool service instance counts, reconciliation and error rates). There are two ways to use it:
+
+**Automatic provisioning (Grafana sidecar).** If Grafana runs with the dashboard sidecar
+(the default in [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)),
+the chart can create a ConfigMap labeled `grafana_dashboard: "1"` that the sidecar discovers and loads automatically:
+
+```shell
+helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
+  --namespace wanaku \
+  --set app.metrics.serviceMonitor.enabled=true \
+  --set app.metrics.grafanaDashboard.enabled=true
+```
+
+**Manual import.** Import `apps/wanaku-operator/deploy/helm/wanaku-operator/dashboards/wanaku-operator-dashboard.json`
+in the Grafana UI (Dashboards → New → Import) and select your Prometheus data source.
+
+| Value | Type | Default | Description |
+|-------|------|---------|-------------|
+| `app.metrics.grafanaDashboard.enabled` | boolean | `false` | Create a ConfigMap with the operator Grafana dashboard, discoverable by the Grafana sidecar. |
+
 ## Troubleshooting
 
 ### Operator pod not starting

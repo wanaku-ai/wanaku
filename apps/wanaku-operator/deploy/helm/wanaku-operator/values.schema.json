@@ -208,6 +208,33 @@
               "type" : "string"
             }
           }
+        },
+        "metrics" : {
+          "type" : "object",
+          "properties" : {
+            "grafanaDashboard" : {
+              "type" : "object",
+              "properties" : {
+                "enabled" : {
+                  "description" : "Create a ConfigMap with the operator Grafana dashboard, discoverable by the Grafana sidecar.",
+                  "type" : "boolean"
+                }
+              }
+            },
+            "serviceMonitor" : {
+              "type" : "object",
+              "properties" : {
+                "enabled" : {
+                  "description" : "Create a Prometheus ServiceMonitor for the operator metrics endpoint.",
+                  "type" : "boolean"
+                },
+                "interval" : {
+                  "description" : "Scrape interval for the ServiceMonitor.",
+                  "type" : "string"
+                }
+              }
+            }
+          }
         }
       }
     }
