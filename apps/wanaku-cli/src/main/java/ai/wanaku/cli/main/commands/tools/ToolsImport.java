@@ -9,6 +9,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.converter.URLConverter;
 import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.NamespacesService;
 import ai.wanaku.core.services.api.ToolsService;
 import ai.wanaku.core.util.ToolsetIndexHelper;
 import picocli.CommandLine;
@@ -44,7 +45,8 @@ public class ToolsImport extends BaseCommand {
 
             // Apply default namespace to tools that don't have one
             if (namespaceOptions != null) {
-                String ns = namespaceOptions.getNamespaceValue();
+                NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
+                String ns = namespaceOptions.resolveNamespaceName(namespacesService);
                 if (ns != null && !ns.isEmpty()) {
                     for (ToolReference toolReference : toolReferences) {
                         if (toolReference.getNamespace() == null
