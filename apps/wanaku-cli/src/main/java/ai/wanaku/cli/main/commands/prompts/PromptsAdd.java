@@ -20,6 +20,7 @@ import ai.wanaku.cli.main.commands.BaseCommand;
 import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.NamespacesService;
 import ai.wanaku.core.services.api.PromptsService;
 import picocli.CommandLine;
 
@@ -85,10 +86,13 @@ public class PromptsAdd extends BaseCommand {
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
 
+        NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
+        String namespaceName = namespaceOptions.resolveNamespaceName(namespacesService);
+
         PromptReference promptReference = new PromptReference();
         promptReference.setName(name);
         promptReference.setDescription(description);
-        promptReference.setNamespace(namespaceOptions.getNamespaceValue());
+        promptReference.setNamespace(namespaceName);
 
         // Parse messages
         List<PromptMessage> promptMessages = new ArrayList<>();

@@ -16,6 +16,7 @@ import ai.wanaku.cli.main.support.FileHelper;
 import ai.wanaku.cli.main.support.NamespaceOptions;
 import ai.wanaku.cli.main.support.PropertyHelper;
 import ai.wanaku.cli.main.support.WanakuPrinter;
+import ai.wanaku.core.services.api.NamespacesService;
 import ai.wanaku.core.services.api.ToolsService;
 import picocli.CommandLine;
 
@@ -115,13 +116,15 @@ public class ToolsAdd extends BaseCommand {
 
     @Override
     public Integer doCall(Terminal terminal, WanakuPrinter printer) throws Exception {
+        NamespacesService namespacesService = initAuthenticatedService(NamespacesService.class, host);
+        String namespaceName = namespaceOptions.resolveNamespaceName(namespacesService);
 
         ToolReference toolReference = new ToolReference();
         toolReference.setName(name);
         toolReference.setDescription(description);
         toolReference.setUri(uri);
         toolReference.setType(type);
-        toolReference.setNamespace(namespaceOptions.getNamespaceValue());
+        toolReference.setNamespace(namespaceName);
         toolReference.setLabels(labels);
 
         InputSchema inputSchema = new InputSchema();
