@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,8 @@ public class StartLocal extends StartBase {
 
     private static final String CAMEL_INTEGRATION = "camel-integration";
 
+    private PrintWriter outputWriter;
+
     @Override
     protected void startWanaku() {
         List<String> services;
@@ -114,7 +117,7 @@ public class StartLocal extends StartBase {
 
         environment.withFailFast(failFast);
 
-        LocalRunner localRunner = new LocalRunner(config, environment, insecure);
+        LocalRunner localRunner = new LocalRunner(config, environment, insecure, outputWriter);
         try {
             localRunner.start(services);
         } catch (WanakuException | IOException e) {
@@ -163,6 +166,7 @@ public class StartLocal extends StartBase {
             }
         }
         printer.printWarningMessage("Authentication is disabled in local mode");
+        this.outputWriter = terminal.writer();
         startWanaku();
         return EXIT_OK;
     }
