@@ -36,9 +36,8 @@ public class NamespaceListTest {
     }
 
     @Test
-    @DisplayName("Should include default namespace when no label expression is set")
-    @SuppressWarnings("unchecked")
-    void shouldIncludeDefaultNamespaceWhenNoLabelExpression() throws Exception {
+    @DisplayName("Should list namespaces from backend without adding synthetic default")
+    void shouldListNamespacesWithoutSyntheticDefault() throws Exception {
         Namespace ns = new Namespace();
         ns.setId("ns-1");
         ns.setPath("ns-team");
@@ -55,7 +54,7 @@ public class NamespaceListTest {
         verify(printer).printTable(captor.capture(), eq("id"), eq("name"), eq("path"), eq("labels"));
 
         List<?> printed = captor.getValue();
-        assertEquals(2, printed.size(), "Should contain the namespace plus the default namespace");
+        assertEquals(1, printed.size(), "Should contain only the namespace from the backend");
     }
 
     @Test
@@ -85,9 +84,9 @@ public class NamespaceListTest {
     }
 
     @Test
-    @DisplayName("Should exclude default namespace when label expression is a blank string")
+    @DisplayName("Should list namespaces from backend when label expression is blank")
     @SuppressWarnings("unchecked")
-    void shouldExcludeDefaultNamespaceWhenLabelExpressionBlank() throws Exception {
+    void shouldListNamespacesWhenLabelExpressionBlank() throws Exception {
         Namespace ns = new Namespace();
         ns.setId("ns-1");
         ns.setPath("ns-team");
@@ -106,9 +105,6 @@ public class NamespaceListTest {
         verify(printer).printTable(captor.capture(), eq("id"), eq("name"), eq("path"), eq("labels"));
 
         List<?> printed = captor.getValue();
-        // A blank label expression is effectively "no filter", so the default namespace should be excluded
-        // since the backend treats blank as "list all" and the client should not add a synthetic default
-        // Actually, blank means "no filter active" so default SHOULD be included
-        assertEquals(2, printed.size(), "Blank expression means no filter, so default namespace should be included");
+        assertEquals(1, printed.size(), "Should contain only the namespace from the backend");
     }
 }
