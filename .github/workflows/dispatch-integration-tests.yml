@@ -61,7 +61,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.INTEGRATION_APP_ID }}
+          client-id: ${{ secrets.INTEGRATION_APP_CLIENT_ID }}
           private-key: ${{ secrets.INTEGRATION_APP_PRIVATE_KEY }}
           owner: wanaku-ai
           repositories: wanaku-tests
