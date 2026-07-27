@@ -4,11 +4,9 @@ on:
   issue_comment:
     types: [created]
 
-# Least-privilege defaults. issues:write is the minimum addition needed
-# so the GITHUB_TOKEN can add a reaction to the triggering comment.
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
   issues: write
 
 concurrency:
