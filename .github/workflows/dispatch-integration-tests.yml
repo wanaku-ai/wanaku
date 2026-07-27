@@ -20,7 +20,7 @@ jobs:
     if: >-
       github.repository == 'wanaku-ai/wanaku'
       && github.event.issue.pull_request
-      && contains(github.event.comment.body, '@wanaku-integration-tests test this')
+      && contains(github.event.comment.body, '/test-integration')
     steps:
       - name: Check commenter permission
         env:
