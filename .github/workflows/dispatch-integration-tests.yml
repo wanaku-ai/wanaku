@@ -49,8 +49,8 @@ jobs:
             --repo "${{ github.repository }}" \
             --json headRefName,headRepository)
           HEAD_REF=$(echo "$PR_JSON" | jq -r '.headRefName')
-          HEAD_REPO=$(echo "$PR_JSON" | jq -r '.headRepository.owner.login + "/" + .headRepository.name')
-          if [[ -z "$HEAD_REF" || "$HEAD_REPO" == "/" || -z "$HEAD_REPO" ]]; then
+          HEAD_REPO=$(echo "$PR_JSON" | jq -r '.headRepository.nameWithOwner')
+          if [[ -z "$HEAD_REF" || -z "$HEAD_REPO" || "$HEAD_REPO" == "null" ]]; then
             echo "::error::Could not resolve PR head reference (fork may have been deleted)"
             exit 1
           fi
