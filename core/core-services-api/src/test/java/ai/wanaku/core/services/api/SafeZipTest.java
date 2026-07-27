@@ -27,6 +27,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SafeZipTest {
 
@@ -42,6 +43,28 @@ class SafeZipTest {
         int tooLong = (int) (SafeZip.MAX_ARCHIVE_BYTES / 3 * 4) + 8;
         String b64 = "A".repeat(tooLong);
         assertThrows(WanakuException.class, () -> SafeZip.decodeArchive(b64));
+    }
+
+    @Test
+    void decodeArchiveAcceptsBase64WithNewlines() throws Exception {
+        byte[] data = "hello world".getBytes();
+        String encoded = Base64.getEncoder().encodeToString(data);
+        // Simulate line-wrapped base64 output (e.g. from 'base64' command with default 76-char wrapping)
+        String withNewlines = encoded + "\n";
+        assertArrayEquals(data, SafeZip.decodeArchive(withNewlines));
+    }
+
+    @Test
+    void decodeArchiveAcceptsBase64WithMimeLineWrapping() throws Exception {
+        // Create data large enough to produce multi-line base64 output (>76 chars)
+        byte[] data = new byte[100];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte) i;
+        }
+        // MIME encoder inserts \r\n every 76 chars, simulating default base64 command output
+        String encoded = Base64.getMimeEncoder().encodeToString(data);
+        assertTrue(encoded.contains("\r\n"), "MIME-encoded string should contain line breaks");
+        assertArrayEquals(data, SafeZip.decodeArchive(encoded));
     }
 
     @Test

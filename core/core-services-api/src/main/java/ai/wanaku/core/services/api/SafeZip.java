@@ -54,14 +54,16 @@ public final class SafeZip {
         if (base64Data == null) {
             throw new WanakuException("Missing archive data");
         }
+        // Strip whitespace that standard base64 encoders may insert (RFC 2045 line wrapping)
+        String cleaned = base64Data.replaceAll("\\s", "");
         // A Base64 string decodes to ~3/4 of its length; reject early, before allocating.
-        long approxDecoded = (long) (base64Data.length() / 4) * 3;
+        long approxDecoded = (long) (cleaned.length() / 4) * 3;
         if (approxDecoded > MAX_ARCHIVE_BYTES) {
             throw new WanakuException(
                     "Archive exceeds the maximum allowed size of %d bytes".formatted(MAX_ARCHIVE_BYTES));
         }
         try {
-            return Base64.getDecoder().decode(base64Data);
+            return Base64.getDecoder().decode(cleaned);
         } catch (IllegalArgumentException e) {
             throw new WanakuException("Invalid Base64 data: " + e.getMessage());
         }
