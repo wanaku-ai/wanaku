@@ -112,7 +112,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
     @Override
     public UpdateControl<WanakuCamelRoute> reconcile(WanakuCamelRoute resource, Context<WanakuCamelRoute> context) {
         String crName = resource.getMetadata().getName();
-        LOG.infof("Starting CamelRoute reconciliation for %s", crName);
+        LOG.infof("Starting camel route reconciliation for %s", crName);
 
         final String namespace = resource.getMetadata().getNamespace();
 
@@ -179,10 +179,10 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
         } catch (WanakuException e) {
             return setErrorStatus(resource, "DeploymentError", e.getMessage());
         }
-        LOG.infof("Successfully deployed CamelRoute '%s' as service catalog", catalogName);
+        LOG.infof("Successfully deployed camel route '%s' as service catalog", catalogName);
 
         deployCicInstance(resource, crName, namespace, routerBaseUrl, authSpec);
-        LOG.infof("CIC instance deployed for CamelRoute '%s'", crName);
+        LOG.infof("CIC instance deployed for camel route '%s'", crName);
 
         final WanakuCamelRouteStatus status = new WanakuCamelRouteStatus();
         status.setDeployedCatalogName(catalogName);
@@ -218,7 +218,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
 
     @Override
     public DeleteControl cleanup(WanakuCamelRoute resource, Context<WanakuCamelRoute> context) {
-        LOG.infof("Cleaning up CamelRoute for %s", resource.getMetadata().getName());
+        LOG.infof("Cleaning up camel route for %s", resource.getMetadata().getName());
 
         final String routerRef = resource.getSpec().getRouterRef();
         if (routerRef == null || routerRef.isBlank()) {

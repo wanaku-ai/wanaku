@@ -551,11 +551,11 @@ stop_port_forward
 OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
-oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Starting CamelRoute reconciliation for cic-hello-world" && \
+oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Starting camel route reconciliation for" && \
   echo "PASS: reconciliation start logged" || \
   echo "FAIL: reconciliation start not found in operator logs"
 
-oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Successfully deployed CamelRoute 'cic-hello-world'" && \
+oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Successfully deployed camel route 'cic-hello-world'" && \
   echo "PASS: successful deployment logged" || \
   echo "FAIL: successful deployment not found in operator logs"
 ```
