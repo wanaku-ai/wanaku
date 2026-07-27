@@ -86,7 +86,7 @@
         <forage.version>1.5.0</forage.version>
         <commonmark.version>0.29.0</commonmark.version>
         <oauth2-oidc-sdk.version>11.37.2</oauth2-oidc-sdk.version>
-        <operator-framework.version>5.3.4</operator-framework.version>
+        <operator-framework.version>5.5.0</operator-framework.version>
         <palantir-format.version>2.71.0</palantir-format.version>
 
         <nodejs.version>v22.18.0</nodejs.version>
