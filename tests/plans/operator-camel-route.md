@@ -420,11 +420,11 @@ fi
 OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
-oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Starting CamelRoute reconciliation for test-greeting-tool" && \
+oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Starting camel route reconciliation for test-greeting-tool" && \
   echo "PASS: reconciliation start logged" || \
   echo "FAIL: reconciliation start not found in operator logs"
 
-oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Successfully deployed CamelRoute 'test-greeting-tool'" && \
+oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Successfully deployed camel route 'test-greeting-tool'" && \
   echo "PASS: successful deployment logged" || \
   echo "FAIL: successful deployment not found in operator logs"
 ```
@@ -823,7 +823,7 @@ OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
 
 # Count reconciliation entries for the patched CR — should be more than 1
 RECON_COUNT=$(oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" \
-  | grep -c "Starting CamelRoute reconciliation for test-greeting-tool" || echo "0")
+  | grep -c "Starting camel route reconciliation for test-greeting-tool" || echo "0")
 echo "reconciliation-count=${RECON_COUNT}"
 
 if [ "${RECON_COUNT}" -ge 2 ]; then
@@ -1156,7 +1156,7 @@ OPERATOR_POD=$(oc get pods -l app.kubernetes.io/name=wanaku-operator \
   -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
 
 for CR_NAME in test-greeting-tool test-info-resource test-combined-cr; do
-  oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Cleaning up CamelRoute for ${CR_NAME}" && \
+  oc logs "${OPERATOR_POD}" -n "${WANAKU_NAMESPACE}" | grep -q "Cleaning up camel route for ${CR_NAME}" && \
     echo "PASS: cleanup logged for ${CR_NAME}" || \
     echo "FAIL: cleanup not logged for ${CR_NAME}"
 done
