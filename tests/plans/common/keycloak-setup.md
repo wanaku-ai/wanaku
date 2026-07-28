@@ -20,7 +20,7 @@ Reusable steps for deploying and configuring Keycloak as the OIDC provider for W
 | `WANAKU_CLI` | Command to invoke the Wanaku CLI (see step 1) | `wanaku` |
 | `KEYCLOAK_ADMIN_USER` | Keycloak admin username | `admin` |
 | `KEYCLOAK_ADMIN_PASS` | Keycloak admin password | `admin` |
-| `KEYCLOAK_IMAGE` | Keycloak container image | `quay.io/keycloak/keycloak:26.6.1` |
+| `KEYCLOAK_IMAGE` | Keycloak container image | `quay.io/keycloak/keycloak:26.7` |
 
 ## Steps
 
@@ -29,7 +29,7 @@ Reusable steps for deploying and configuring Keycloak as the OIDC provider for W
 ```bash
 export KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 export KEYCLOAK_ADMIN_PASS="${KEYCLOAK_ADMIN_PASS:-admin}"
-export KEYCLOAK_IMAGE="${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.6.1}"
+export KEYCLOAK_IMAGE="${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.7}"
 export WANAKU_REPO_ROOT="${WANAKU_REPO_ROOT:-.}"
 
 # Option A: use the installed CLI
