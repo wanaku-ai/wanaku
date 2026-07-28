@@ -57,6 +57,7 @@ public class NamespaceTenantConfigResolver implements TenantConfigResolver {
                 .tenantId(tenantId)
                 .token()
                 .audience("wanaku-mcp-client")
+                .allowJwtIntrospection(false)
                 .end()
                 .resourceMetadata()
                 .enabled()

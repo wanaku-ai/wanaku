@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -111,6 +112,15 @@ class NamespaceTenantConfigResolverTest {
         assertEquals(
                 "http://localhost:8080/q/oidc",
                 config.resourceMetadata().authorizationServer().orElse(null));
+    }
+
+    @Test
+    void disablesJwtIntrospection() {
+        RoutingContext ctx = mockContext("/ns-0/mcp/sse");
+        OidcTenantConfig config = resolver.resolve(ctx, null).await().indefinitely();
+
+        assertNotNull(config);
+        assertFalse(config.token().allowJwtIntrospection());
     }
 
     @Test
