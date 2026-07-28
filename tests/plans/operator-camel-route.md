@@ -79,15 +79,45 @@ Follow [common/wait-for-deletion.md](common/wait-for-deletion.md) to define the 
 
 The router has OIDC auth enabled, so all API requests (even from inside the pod) require a Bearer token. This helper retrieves the token stored by `wanaku auth login` (performed in Phase 3, Test 3.4 via [common/oidc-login-verification.md](common/oidc-login-verification.md)). The `--unmask` flag outputs the full token value for use in `curl` headers.
 
+The `wanaku auth token --get` command automatically refreshes expired tokens using the stored refresh token. If the refresh token has also expired, `ensure_valid_token` re-authenticates from scratch.
+
 ```bash
 get_router_token() {
   wanaku auth token --get --unmask --plain 2>/dev/null
 }
 ```
 
+### Helper: ensure a valid OIDC token is available
+
+Call this before phases that use `get_router_token()` or `wanaku` CLI commands to prevent 401 errors from expired tokens. The `wanaku auth token --get` command auto-refreshes, but if the refresh token itself has expired, a full re-login is performed.
+
+```bash
+ensure_valid_token() {
+  local TOKEN
+  TOKEN=$(get_router_token)
+  if [ -n "${TOKEN}" ] && [ "${TOKEN}" != "null" ]; then
+    return 0
+  fi
+
+  echo "INFO: token refresh failed, performing full re-login"
+  echo "${WANAKU_TEST_PASS}" | ${WANAKU_CLI:-wanaku} auth login \
+    --auth-server "${WANAKU_ROUTER_URL}" \
+    --username "${WANAKU_TEST_USER}" \
+    --password \
+    --plain 2>&1
+
+  TOKEN=$(get_router_token)
+  if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+    echo "FAIL: unable to obtain a valid token after re-login"
+    return 1
+  fi
+  return 0
+}
+```
+
 ### Helper: query router REST API via oc exec
 
-Uses `oc exec` into the router pod with a Bearer token obtained from Keycloak. Health endpoints (`/q/health/*`) do not require auth and are queried without a token.
+Uses `oc exec` into the router pod with a Bearer token obtained from Keycloak. Health endpoints (`/q/health/*`) do not require auth and are queried without a token. Calls `ensure_valid_token` before each request to prevent 401 errors from expired tokens.
 
 ```bash
 query_router_api() {
@@ -95,6 +125,8 @@ query_router_api() {
   local ROUTER_POD
   ROUTER_POD=$(oc get pods -l app=wanaku-test-router-mcp-router \
     -n "${WANAKU_NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')
+
+  ensure_valid_token || return 1
 
   local TOKEN
   TOKEN=$(get_router_token)
