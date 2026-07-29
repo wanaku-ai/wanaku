@@ -13,9 +13,12 @@ import static ai.wanaku.cli.main.commands.BaseCommand.EXIT_OK;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.doNothing;
@@ -86,5 +89,57 @@ class RealmCommandsTest {
 
         assertEquals(EXIT_ERROR, result);
         verify(printer).printErrorMessage(contains("deploy/auth/wanaku-config.json"));
+    }
+
+    @Test
+    void resolvePropertyPlaceholdersShouldUseDefaultWhenEnvNotSet() {
+        String input = "{\"secret\": \"${WANAKU_TEST_NOT_SET_12345:mypasswd}\"}";
+        String result = RealmCreate.resolvePropertyPlaceholders(input);
+        assertEquals("{\"secret\": \"mypasswd\"}", result);
+    }
+
+    @Test
+    void resolvePropertyPlaceholdersShouldLeaveLocalizationKeysUntouched() {
+        String input = "{\"name\": \"${client_account}\", \"desc\": \"${role_uma_authorization}\"}";
+        String result = RealmCreate.resolvePropertyPlaceholders(input);
+        assertEquals(input, result, "Keycloak localization keys (without colon default) must not be changed");
+    }
+
+    @Test
+    void resolvePropertyPlaceholdersShouldHandleMultiplePlaceholders() {
+        String input = "{\"a\": \"${NOT_SET_A_12345:valA}\", \"b\": \"${NOT_SET_B_12345:valB}\"}";
+        String result = RealmCreate.resolvePropertyPlaceholders(input);
+        assertEquals("{\"a\": \"valA\", \"b\": \"valB\"}", result);
+    }
+
+    @Test
+    void resolvePropertyPlaceholdersShouldHandleEmptyDefault() {
+        String input = "{\"secret\": \"${NOT_SET_EMPTY_12345:}\"}";
+        String result = RealmCreate.resolvePropertyPlaceholders(input);
+        assertEquals("{\"secret\": \"\"}", result);
+    }
+
+    @Test
+    void resolvePropertyPlaceholdersShouldPreservePlainText() {
+        String input = "{\"realm\": \"wanaku\", \"enabled\": true}";
+        String result = RealmCreate.resolvePropertyPlaceholders(input);
+        assertEquals(input, result);
+    }
+
+    @Test
+    void realmCreateShouldResolvePlaceholdersBeforeImport() throws Exception {
+        Path configFile = tempDir.resolve("realm-with-placeholders.json");
+        Files.writeString(configFile, "{\"secret\": \"${WANAKU_TEST_NOT_SET_67890:resolved_secret}\"}");
+        doNothing().when(adminClient).importRealm(any());
+
+        RealmCreate cmd = new RealmCreate(adminClient, configFile.toString());
+        int result = cmd.doCall(terminal, printer);
+
+        assertEquals(EXIT_OK, result);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(adminClient).importRealm(captor.capture());
+        String importedJson = captor.getValue();
+        assertFalse(importedJson.contains("${"), "Placeholders should be resolved before import");
+        assertTrue(importedJson.contains("resolved_secret"), "Default value should be substituted");
     }
 }
