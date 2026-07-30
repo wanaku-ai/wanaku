@@ -77,15 +77,24 @@ impl GrpcPool {
         let channel = self.get_or_connect(address).await?;
         let mut client = ToolInvokerClient::new(channel);
 
-        let request = tonic::Request::new(ToolInvokeRequest {
-            uri,
+        let grpc_request = ToolInvokeRequest {
+            uri: uri.clone(),
             body: String::new(),
-            arguments,
+            arguments: arguments.clone(),
             configuration_uri: String::new(),
             secrets_uri: String::new(),
             headers: HashMap::new(),
             request_id: String::new(),
-        });
+        };
+
+        tracing::debug!(
+            address = %address,
+            uri = %uri,
+            arguments = ?arguments,
+            "sending ToolInvokeRequest via gRPC"
+        );
+
+        let request = tonic::Request::new(grpc_request);
 
         let response = client.invoke_tool(request).await?;
         Ok(response.into_inner().content)

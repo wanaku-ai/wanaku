@@ -133,6 +133,12 @@ impl HttpFilter for ToolCallFilter {
 
         let parsed = parse_body(body);
 
+        tracing::debug!(
+            tool = %tool_name,
+            arguments = ?parsed.arguments,
+            "parsed tools/call request body"
+        );
+
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {
             Some(r) => r,
             None => {
@@ -142,7 +148,15 @@ impl HttpFilter for ToolCallFilter {
         };
 
         let tool = match registry.get_tool(&tool_name) {
-            Some(t) => t,
+            Some(t) => {
+                tracing::debug!(
+                    tool = %t.name,
+                    uri = %t.uri,
+                    type_ = %t.type_,
+                    "resolved tool from registry"
+                );
+                t
+            }
             None => {
                 warn!(tool = %tool_name, "tool not found in registry");
                 return Ok(json_rpc_error(
