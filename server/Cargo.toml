@@ -1,0 +1,33 @@
+[package]
+name = "wanaku-praxis-proxy"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "wanaku_praxis"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wanaku-praxis"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+praxis-ai-filters = { workspace = true }
+praxis-core = { workspace = true }
+praxis-filter = { workspace = true }
+praxis-protocol = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync", "time", "fs"] }
+tracing = { workspace = true }
+wanaku-praxis-apis = { workspace = true }
+wanaku-praxis-filters = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.31.3", default-features = false, features = ["process", "signal", "user"] }
+tikv-jemallocator = "0.7.0"

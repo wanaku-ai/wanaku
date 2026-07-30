@@ -1,6 +1,48 @@
-[package]
-name = "wanaku-praxis"
+[workspace]
+resolver = "3"
+members = [
+    "apis",
+    "filters",
+    "server",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.96"
+license = "Apache-2.0"
 
-[dependencies]
+[workspace.dependencies]
+async-trait = "0.1.89"
+bytes = "1.12.0"
+dashmap = "6.2.1"
+http = "1.4.2"
+prost = "0.13"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_yaml = { package = "yaml_serde", version = "0.10.4" }
+thiserror = "2.0"
+tokio = { version = "1", features = ["macros", "rt"] }
+tonic = "0.13"
+tracing = "0.1.44"
+
+praxis-core = { version = "0.4.1", package = "praxis-proxy-core", features = ["callout"] }
+praxis-filter = { version = "0.4.1", package = "praxis-proxy-filter" }
+praxis-protocol = { version = "0.4.1", package = "praxis-proxy-protocol" }
+praxis-proxy = { version = "0.4.1", package = "praxis-proxy" }
+
+praxis-ai-apis = { path = "../praxis-ai/apis", default-features = false }
+praxis-ai-filters = { path = "../praxis-ai/filters", default-features = false }
+
+wanaku-praxis-apis = { version = "0.1.0", path = "apis" }
+wanaku-praxis-filters = { version = "0.1.0", path = "filters" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unused_imports = "deny"
+unused_variables = "deny"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"

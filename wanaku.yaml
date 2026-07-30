@@ -1,0 +1,18 @@
+tools:
+  - name: "example-tool"
+    type: "product-catalog"
+    uri: "product-catalog://some-product-catalog-tool"
+    description: "Product catalog tool"
+    input_schema:
+      type: object
+      properties:
+        url:
+          type: string
+          description: "Target URL"
+      required:
+        - url
+
+services:
+  - name: "product-catalog"
+    address: "localhost:9191"
+    service_type: "tool-invoker"
