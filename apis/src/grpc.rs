@@ -77,9 +77,12 @@ impl GrpcPool {
         let channel = self.get_or_connect(address).await?;
         let mut client = ToolInvokerClient::new(channel);
 
+        let default_body = String::new();
+        let body = arguments.get(crate::WANAKU_BODY_ARG).unwrap_or(&default_body);
+
         let grpc_request = ToolInvokeRequest {
             uri: uri.clone(),
-            body: String::new(),
+            body: body.clone(),
             arguments: arguments.clone(),
             configuration_uri: String::new(),
             secrets_uri: String::new(),
