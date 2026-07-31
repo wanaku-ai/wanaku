@@ -1,5 +1,7 @@
 # Wanaku - A MCP Router that connects everything
 
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fwanaku-ai%2Fwanaku.svg)](https://mcptoplist.com/server/glama%2Fwanaku-ai%2Fwanaku)
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Build](https://img.shields.io/github/actions/workflow/status/wanaku-ai/wanaku/main-build.yml?branch=main)](https://github.com/wanaku-ai/wanaku/actions)
 [![Release](https://img.shields.io/github/v/release/wanaku-ai/wanaku)](https://github.com/wanaku-ai/wanaku/releases)
