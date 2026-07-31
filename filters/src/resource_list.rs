@@ -4,12 +4,13 @@ use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
 use tracing::trace;
+use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
 
-pub struct McpInitFilter {
+pub struct ResourceListFilter {
     max_body_bytes: usize,
 }
 
-impl McpInitFilter {
+impl ResourceListFilter {
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
         let max_body_bytes = config
             .get("max_body_bytes")
@@ -21,9 +22,9 @@ impl McpInitFilter {
 }
 
 #[async_trait]
-impl HttpFilter for McpInitFilter {
+impl HttpFilter for ResourceListFilter {
     fn name(&self) -> &'static str {
-        "wanaku_mcp_init"
+        "wanaku_resource_list"
     }
 
     fn request_body_access(&self) -> BodyAccess {
@@ -55,65 +56,49 @@ impl HttpFilter for McpInitFilter {
             None => return Ok(FilterAction::Continue),
         };
 
-        match method {
-            "initialize" => self.handle_initialize(body),
-            "notifications/initialized" => Self::handle_notification(),
-            "ping" => Self::handle_ping(body),
-            _ => Ok(FilterAction::Continue),
+        if method != "resources/list" {
+            return Ok(FilterAction::Continue);
         }
-    }
-}
 
-impl McpInitFilter {
-    fn handle_initialize(&self, body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
-        trace!("handling MCP initialize");
+        trace!("handling MCP resources/list request");
 
-        let json_rpc_id = extract_id(body);
+        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
+            Some(r) => r,
+            None => {
+                tracing::error!("InMemoryRegistry not found in request extensions");
+                return Ok(FilterAction::Continue);
+            }
+        };
+
+        let resources = registry.list_resources();
+        let mcp_resources: Vec<serde_json::Value> = resources
+            .iter()
+            .map(|r| {
+                serde_json::json!({
+                    "uri": r.location,
+                    "name": r.name,
+                    "description": r.description,
+                    "mimeType": r.mime_type,
+                })
+            })
+            .collect();
+
+        let json_rpc_id = extract_json_rpc_id_from_body(body);
+
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": json_rpc_id,
             "result": {
-                "protocolVersion": "2025-03-26",
-                "capabilities": {
-                    "tools": {
-                        "listChanged": false
-                    },
-                    "resources": {
-                        "listChanged": false
-                    }
-                },
-                "serverInfo": {
-                    "name": "wanaku-praxis",
-                    "version": "0.1.0"
-                }
+                "resources": mcp_resources,
             }
         });
 
         let response_body = Bytes::from(response.to_string());
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))
     }
-
-    fn handle_notification() -> Result<FilterAction, FilterError> {
-        trace!("handling MCP notification");
-        Ok(FilterAction::Reject(crate::response::empty_accepted()))
-    }
-
-    fn handle_ping(body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
-        trace!("handling MCP ping");
-
-        let json_rpc_id = extract_id(body);
-        let response = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": json_rpc_id,
-            "result": {}
-        });
-
-        let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(response_body)))
-    }
 }
 
-fn extract_id(body: &Option<Bytes>) -> serde_json::Value {
+fn extract_json_rpc_id_from_body(body: &Option<Bytes>) -> serde_json::Value {
     body.as_ref()
         .and_then(|b| serde_json::from_slice::<serde_json::Value>(b).ok())
         .and_then(|v| v.get("id").cloned())

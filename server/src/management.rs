@@ -4,7 +4,9 @@ use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 use tracing::{info, warn};
 
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
+use wanaku_praxis_apis::registry::{
+    InMemoryRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
+};
 
 const MAX_BODY_BYTES: usize = 1_048_576;
 
@@ -46,6 +48,34 @@ fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum ResourceRoute {
+    List,
+    GetByName(String),
+    Create,
+    Delete(String),
+    NotFound,
+}
+
+fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute {
+    let suffix = match path.strip_prefix("/api/v1/resources") {
+        Some(s) => s,
+        None => return ResourceRoute::NotFound,
+    };
+
+    let name = suffix
+        .strip_prefix('/')
+        .filter(|s| !s.is_empty());
+
+    match (method, name) {
+        ("GET", None) => ResourceRoute::List,
+        ("GET", Some(n)) => ResourceRoute::GetByName(n.to_owned()),
+        ("POST", None | Some("payloads")) => ResourceRoute::Create,
+        ("DELETE", Some(n)) => ResourceRoute::Delete(n.to_owned()),
+        _ => ResourceRoute::NotFound,
+    }
+}
+
 #[async_trait]
 impl ServeHttp for WanakuManagementService {
     async fn response(&self, http_session: &mut ServerSession) -> Response<Vec<u8>> {
@@ -54,32 +84,46 @@ impl ServeHttp for WanakuManagementService {
 
         tracing::debug!(%method, %path, "management API request");
 
-        match resolve_tool_route(&method, &path) {
-            ToolRoute::List => handle_list(&self.registry),
-            ToolRoute::GetByName(name) => handle_get(&self.registry, &name),
-            ToolRoute::Create => match read_body(http_session).await {
-                Ok(body) => handle_create(&self.registry, &body),
+        let tool_route = resolve_tool_route(&method, &path);
+        if tool_route != ToolRoute::NotFound {
+            return match tool_route {
+                ToolRoute::List => handle_tool_list(&self.registry),
+                ToolRoute::GetByName(name) => handle_tool_get(&self.registry, &name),
+                ToolRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_tool_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                ToolRoute::Delete(name) => handle_tool_delete(&self.registry, &name),
+                ToolRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        match resolve_resource_route(&method, &path) {
+            ResourceRoute::List => handle_resource_list(&self.registry),
+            ResourceRoute::GetByName(name) => handle_resource_get(&self.registry, &name),
+            ResourceRoute::Create => match read_body(http_session).await {
+                Ok(body) => handle_resource_create(&self.registry, &body),
                 Err(resp) => resp,
             },
-            ToolRoute::Delete(name) => handle_delete(&self.registry, &name),
-            ToolRoute::NotFound => json_err(404, "not found"),
+            ResourceRoute::Delete(name) => handle_resource_delete(&self.registry, &name),
+            ResourceRoute::NotFound => json_err(404, "not found"),
         }
     }
 }
 
-fn handle_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let tools = registry.list_tools();
     json_ok(&serde_json::json!(tools))
 }
 
-fn handle_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_tool(name) {
         Some(tool) => json_ok(&serde_json::json!(tool)),
         None => json_err(404, &format!("tool not found: {name}")),
     }
 }
 
-fn handle_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "tool create request body");
     let tool: ToolEntry = match serde_json::from_str(body) {
         Ok(t) => t,
@@ -95,12 +139,49 @@ fn handle_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
     json_ok(&response)
 }
 
-fn handle_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     if registry.remove_tool(name) {
         info!(tool = %name, "removed tool via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
         json_err(404, &format!("tool not found: {name}"))
+    }
+}
+
+fn handle_resource_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let resources = registry.list_resources();
+    json_ok(&serde_json::json!(resources))
+}
+
+fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    match registry.get_resource(name) {
+        Some(resource) => json_ok(&serde_json::json!(resource)),
+        None => json_err(404, &format!("resource not found: {name}")),
+    }
+}
+
+fn handle_resource_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+    tracing::debug!(body = %body, "resource create request body");
+    let resource: ResourceEntry = match serde_json::from_str(body) {
+        Ok(r) => r,
+        Err(e) => {
+            warn!(error = %e, "invalid resource JSON");
+            return json_err(400, &format!("invalid resource JSON: {e}"));
+        }
+    };
+
+    info!(resource = %resource.name, "registered resource via management API");
+    let response = serde_json::json!(&resource);
+    registry.register_resource(resource);
+    json_ok(&response)
+}
+
+fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    if registry.remove_resource(name) {
+        info!(resource = %name, "removed resource via management API");
+        json_ok(&serde_json::json!({"removed": name}))
+    } else {
+        json_err(404, &format!("resource not found: {name}"))
     }
 }
 
@@ -193,5 +274,36 @@ mod tests {
     #[test]
     fn route_delete_without_name() {
         assert_eq!(resolve_tool_route("DELETE", "/api/v1/tools"), ToolRoute::NotFound);
+    }
+
+    #[test]
+    fn resource_route_list() {
+        assert_eq!(resolve_resource_route("GET", "/api/v1/resources"), ResourceRoute::List);
+    }
+
+    #[test]
+    fn resource_route_get_by_name() {
+        assert_eq!(
+            resolve_resource_route("GET", "/api/v1/resources/my-res"),
+            ResourceRoute::GetByName("my-res".to_owned())
+        );
+    }
+
+    #[test]
+    fn resource_route_create() {
+        assert_eq!(resolve_resource_route("POST", "/api/v1/resources"), ResourceRoute::Create);
+    }
+
+    #[test]
+    fn resource_route_create_payloads() {
+        assert_eq!(resolve_resource_route("POST", "/api/v1/resources/payloads"), ResourceRoute::Create);
+    }
+
+    #[test]
+    fn resource_route_delete() {
+        assert_eq!(
+            resolve_resource_route("DELETE", "/api/v1/resources/my-res"),
+            ResourceRoute::Delete("my-res".to_owned())
+        );
     }
 }

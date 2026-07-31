@@ -4,12 +4,18 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use tonic::transport::Channel;
 
-pub mod proto {
+pub mod tool_proto {
     tonic::include_proto!("ai.wanaku.tool.v1");
 }
 
-pub use proto::tool_invoker_client::ToolInvokerClient;
-pub use proto::{ToolInvokeReply, ToolInvokeRequest};
+pub mod resource_proto {
+    tonic::include_proto!("ai.wanaku.resource.v1");
+}
+
+pub use tool_proto::tool_invoker_client::ToolInvokerClient;
+pub use tool_proto::{ToolInvokeReply, ToolInvokeRequest};
+pub use resource_proto::resource_acquirer_client::ResourceAcquirerClient;
+pub use resource_proto::{ResourceReply, ResourceRequest};
 
 #[derive(Debug, thiserror::Error)]
 pub enum GrpcError {
@@ -100,6 +106,39 @@ impl GrpcPool {
         let request = tonic::Request::new(grpc_request);
 
         let response = client.invoke_tool(request).await?;
+        Ok(response.into_inner().content)
+    }
+
+    pub async fn acquire_resource(
+        &self,
+        address: &str,
+        location: String,
+        type_: String,
+        name: String,
+    ) -> Result<Vec<String>, GrpcError> {
+        let channel = self.get_or_connect(address).await?;
+        let mut client = ResourceAcquirerClient::new(channel);
+
+        let grpc_request = ResourceRequest {
+            location: location.clone(),
+            r#type: type_.clone(),
+            name: name.clone(),
+            params: HashMap::new(),
+            configuration_uri: String::new(),
+            secrets_uri: String::new(),
+            request_id: String::new(),
+        };
+
+        tracing::debug!(
+            address = %address,
+            location = %location,
+            r#type = %type_,
+            name = %name,
+            "sending ResourceRequest via gRPC"
+        );
+
+        let request = tonic::Request::new(grpc_request);
+        let response = client.resource_acquire(request).await?;
         Ok(response.into_inner().content)
     }
 }

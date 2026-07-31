@@ -41,4 +41,12 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
         @register registry,
         http "wanaku_tool_call" => wanaku_praxis_filters::ToolCallFilter::from_config
     );
+    praxis_filter::register_filters!(
+        @register registry,
+        http "wanaku_resource_list" => wanaku_praxis_filters::ResourceListFilter::from_config
+    );
+    praxis_filter::register_filters!(
+        @register registry,
+        http "wanaku_resource_read" => wanaku_praxis_filters::ResourceReadFilter::from_config
+    );
 }

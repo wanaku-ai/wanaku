@@ -26,6 +26,28 @@ pub struct ToolEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceEntry {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    pub location: String,
+    #[serde(rename = "type")]
+    pub type_: String,
+    #[serde(default, alias = "mimeType")]
+    pub mime_type: String,
+    #[serde(default)]
+    pub labels: HashMap<String, String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "configurationURI")]
+    pub configuration_uri: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "secretsURI")]
+    pub secrets_uri: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceEntry {
     pub name: String,
     pub address: String,
@@ -51,6 +73,13 @@ pub trait ToolRegistry: Send + Sync {
     fn remove_tool(&self, name: &str) -> bool;
 }
 
+pub trait ResourceRegistry: Send + Sync {
+    fn list_resources(&self) -> Vec<ResourceEntry>;
+    fn get_resource(&self, name: &str) -> Option<ResourceEntry>;
+    fn register_resource(&self, resource: ResourceEntry);
+    fn remove_resource(&self, name: &str) -> bool;
+}
+
 pub trait ServiceRegistry: Send + Sync {
     fn resolve_service(
         &self,
@@ -69,6 +98,7 @@ fn service_key(name: &str, service_type: &str) -> String {
 #[derive(Clone)]
 pub struct InMemoryRegistry {
     tools: Arc<DashMap<String, ToolEntry>>,
+    resources: Arc<DashMap<String, ResourceEntry>>,
     services: Arc<DashMap<String, ServiceEntry>>,
 }
 
@@ -76,6 +106,7 @@ impl InMemoryRegistry {
     pub fn new() -> Self {
         Self {
             tools: Arc::new(DashMap::new()),
+            resources: Arc::new(DashMap::new()),
             services: Arc::new(DashMap::new()),
         }
     }
@@ -102,6 +133,24 @@ impl ToolRegistry for InMemoryRegistry {
 
     fn remove_tool(&self, name: &str) -> bool {
         self.tools.remove(name).is_some()
+    }
+}
+
+impl ResourceRegistry for InMemoryRegistry {
+    fn list_resources(&self) -> Vec<ResourceEntry> {
+        self.resources.iter().map(|entry| entry.value().clone()).collect()
+    }
+
+    fn get_resource(&self, name: &str) -> Option<ResourceEntry> {
+        self.resources.get(name).map(|entry| entry.value().clone())
+    }
+
+    fn register_resource(&self, resource: ResourceEntry) {
+        self.resources.insert(resource.name.clone(), resource);
+    }
+
+    fn remove_resource(&self, name: &str) -> bool {
+        self.resources.remove(name).is_some()
     }
 }
 
@@ -143,6 +192,21 @@ mod tests {
             uri: "camel:http://example.com".to_owned(),
             type_: "http".to_owned(),
             input_schema: serde_json::json!({"type": "object"}),
+            labels: HashMap::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
+        }
+    }
+
+    fn sample_resource() -> ResourceEntry {
+        ResourceEntry {
+            name: "test-resource".to_owned(),
+            description: "A test resource".to_owned(),
+            location: "/tmp/test.txt".to_owned(),
+            type_: "file".to_owned(),
+            mime_type: "text/plain".to_owned(),
             labels: HashMap::new(),
             id: None,
             namespace: None,
@@ -205,6 +269,32 @@ mod tests {
         let registry = InMemoryRegistry::new();
         let result = registry.resolve_service("nonexistent", "tool-invoker");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn register_and_list_resources() {
+        let registry = InMemoryRegistry::new();
+        registry.register_resource(sample_resource());
+        let resources = registry.list_resources();
+        assert_eq!(resources.len(), 1);
+        assert_eq!(resources[0].name, "test-resource");
+    }
+
+    #[test]
+    fn get_resource_by_name() {
+        let registry = InMemoryRegistry::new();
+        registry.register_resource(sample_resource());
+        let res = registry.get_resource("test-resource");
+        assert!(res.is_some());
+        assert_eq!(res.as_ref().map(|r| r.location.as_str()), Some("/tmp/test.txt"));
+    }
+
+    #[test]
+    fn remove_resource() {
+        let registry = InMemoryRegistry::new();
+        registry.register_resource(sample_resource());
+        assert!(registry.remove_resource("test-resource"));
+        assert!(registry.get_resource("test-resource").is_none());
     }
 
     #[test]
