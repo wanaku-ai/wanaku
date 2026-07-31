@@ -48,6 +48,38 @@ pub struct ResourceEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PromptArgument {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub required: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PromptMessage {
+    pub role: String,
+    pub content: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PromptEntry {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub arguments: Vec<PromptArgument>,
+    #[serde(default)]
+    pub messages: Vec<PromptMessage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "configurationURI")]
+    pub configuration_uri: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceEntry {
     pub name: String,
     pub address: String,
@@ -86,6 +118,15 @@ pub trait ResourceRegistry: Send + Sync {
     fn remove_resource(&self, name: &str) -> bool;
 }
 
+pub trait PromptRegistry: Send + Sync {
+    fn list_prompts(&self) -> Vec<PromptEntry>;
+    fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry>;
+    fn get_prompt(&self, name: &str) -> Option<PromptEntry>;
+    fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
+    fn register_prompt(&self, prompt: PromptEntry);
+    fn remove_prompt(&self, name: &str) -> bool;
+}
+
 pub trait ServiceRegistry: Send + Sync {
     fn resolve_service(
         &self,
@@ -105,6 +146,7 @@ fn service_key(name: &str, service_type: &str) -> String {
 pub struct InMemoryRegistry {
     tools: Arc<DashMap<String, ToolEntry>>,
     resources: Arc<DashMap<String, ResourceEntry>>,
+    prompts: Arc<DashMap<String, PromptEntry>>,
     services: Arc<DashMap<String, ServiceEntry>>,
 }
 
@@ -113,6 +155,7 @@ impl InMemoryRegistry {
         Self {
             tools: Arc::new(DashMap::new()),
             resources: Arc::new(DashMap::new()),
+            prompts: Arc::new(DashMap::new()),
             services: Arc::new(DashMap::new()),
         }
     }
@@ -197,6 +240,42 @@ impl ResourceRegistry for InMemoryRegistry {
 
     fn remove_resource(&self, name: &str) -> bool {
         self.resources.remove(name).is_some()
+    }
+}
+
+impl PromptRegistry for InMemoryRegistry {
+    fn list_prompts(&self) -> Vec<PromptEntry> {
+        self.prompts.iter().map(|entry| entry.value().clone()).collect()
+    }
+
+    fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry> {
+        self.prompts
+            .iter()
+            .filter(|entry| effective_namespace(&entry.value().namespace) == namespace)
+            .map(|entry| entry.value().clone())
+            .collect()
+    }
+
+    fn get_prompt(&self, name: &str) -> Option<PromptEntry> {
+        self.prompts.get(name).map(|entry| entry.value().clone())
+    }
+
+    fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry> {
+        self.prompts
+            .get(name)
+            .map(|entry| entry.value().clone())
+            .filter(|prompt| effective_namespace(&prompt.namespace) == namespace)
+    }
+
+    fn register_prompt(&self, mut prompt: PromptEntry) {
+        if prompt.namespace.is_none() {
+            prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+        }
+        self.prompts.insert(prompt.name.clone(), prompt);
+    }
+
+    fn remove_prompt(&self, name: &str) -> bool {
+        self.prompts.remove(name).is_some()
     }
 }
 

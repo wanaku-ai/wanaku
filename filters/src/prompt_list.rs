@@ -4,12 +4,13 @@ use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
 use tracing::trace;
+use wanaku_praxis_apis::registry::{InMemoryRegistry, PromptRegistry};
 
-pub struct McpInitFilter {
+pub struct PromptListFilter {
     max_body_bytes: usize,
 }
 
-impl McpInitFilter {
+impl PromptListFilter {
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
         let max_body_bytes = config
             .get("max_body_bytes")
@@ -21,9 +22,9 @@ impl McpInitFilter {
 }
 
 #[async_trait]
-impl HttpFilter for McpInitFilter {
+impl HttpFilter for PromptListFilter {
     fn name(&self) -> &'static str {
-        "wanaku_mcp_init"
+        "wanaku_prompt_list"
     }
 
     fn request_body_access(&self) -> BodyAccess {
@@ -55,68 +56,64 @@ impl HttpFilter for McpInitFilter {
             None => return Ok(FilterAction::Continue),
         };
 
-        match method {
-            "initialize" => self.handle_initialize(body),
-            "notifications/initialized" => Self::handle_notification(),
-            "ping" => Self::handle_ping(body),
-            _ => Ok(FilterAction::Continue),
+        if method != "prompts/list" {
+            return Ok(FilterAction::Continue);
         }
-    }
-}
 
-impl McpInitFilter {
-    fn handle_initialize(&self, body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
-        trace!("handling MCP initialize");
+        let namespace = ctx
+            .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
 
-        let json_rpc_id = extract_id(body);
+        trace!(namespace = %namespace, "handling MCP prompts/list request");
+
+        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
+            Some(r) => r,
+            None => {
+                tracing::error!("InMemoryRegistry not found in request extensions");
+                return Ok(FilterAction::Continue);
+            }
+        };
+
+        let prompts = registry.list_prompts_in_namespace(namespace);
+        let mcp_prompts: Vec<serde_json::Value> = prompts
+            .iter()
+            .map(|p| {
+                let args: Vec<serde_json::Value> = p
+                    .arguments
+                    .iter()
+                    .map(|a| {
+                        serde_json::json!({
+                            "name": a.name,
+                            "description": a.description,
+                            "required": a.required,
+                        })
+                    })
+                    .collect();
+
+                serde_json::json!({
+                    "name": p.name,
+                    "description": p.description,
+                    "arguments": args,
+                })
+            })
+            .collect();
+
+        let json_rpc_id = extract_json_rpc_id_from_body(body);
+
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": json_rpc_id,
             "result": {
-                "protocolVersion": "2025-03-26",
-                "capabilities": {
-                    "tools": {
-                        "listChanged": false
-                    },
-                    "resources": {
-                        "listChanged": false
-                    },
-                    "prompts": {
-                        "listChanged": false
-                    }
-                },
-                "serverInfo": {
-                    "name": "wanaku-praxis",
-                    "version": "0.1.0"
-                }
+                "prompts": mcp_prompts,
             }
         });
 
         let response_body = Bytes::from(response.to_string());
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))
     }
-
-    fn handle_notification() -> Result<FilterAction, FilterError> {
-        trace!("handling MCP notification");
-        Ok(FilterAction::Reject(crate::response::empty_accepted()))
-    }
-
-    fn handle_ping(body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
-        trace!("handling MCP ping");
-
-        let json_rpc_id = extract_id(body);
-        let response = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": json_rpc_id,
-            "result": {}
-        });
-
-        let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(response_body)))
-    }
 }
 
-fn extract_id(body: &Option<Bytes>) -> serde_json::Value {
+fn extract_json_rpc_id_from_body(body: &Option<Bytes>) -> serde_json::Value {
     body.as_ref()
         .and_then(|b| serde_json::from_slice::<serde_json::Value>(b).ok())
         .and_then(|v| v.get("id").cloned())

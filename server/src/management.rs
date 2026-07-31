@@ -5,7 +5,8 @@ use pingora_core::protocols::http::ServerSession;
 use tracing::{info, warn};
 
 use wanaku_praxis_apis::registry::{
-    InMemoryRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
+    InMemoryRegistry, PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
+    ToolRegistry,
 };
 
 const MAX_BODY_BYTES: usize = 1_048_576;
@@ -76,6 +77,34 @@ fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum PromptRoute {
+    List,
+    GetByName(String),
+    Create,
+    Delete(String),
+    NotFound,
+}
+
+fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
+    let suffix = match path.strip_prefix("/api/v1/prompts") {
+        Some(s) => s,
+        None => return PromptRoute::NotFound,
+    };
+
+    let name = suffix
+        .strip_prefix('/')
+        .filter(|s| !s.is_empty());
+
+    match (method, name) {
+        ("GET", None) => PromptRoute::List,
+        ("GET", Some(n)) => PromptRoute::GetByName(n.to_owned()),
+        ("POST", None | Some("payloads")) => PromptRoute::Create,
+        ("DELETE", Some(n)) => PromptRoute::Delete(n.to_owned()),
+        _ => PromptRoute::NotFound,
+    }
+}
+
 #[async_trait]
 impl ServeHttp for WanakuManagementService {
     async fn response(&self, http_session: &mut ServerSession) -> Response<Vec<u8>> {
@@ -98,15 +127,29 @@ impl ServeHttp for WanakuManagementService {
             };
         }
 
-        match resolve_resource_route(&method, &path) {
-            ResourceRoute::List => handle_resource_list(&self.registry),
-            ResourceRoute::GetByName(name) => handle_resource_get(&self.registry, &name),
-            ResourceRoute::Create => match read_body(http_session).await {
-                Ok(body) => handle_resource_create(&self.registry, &body),
+        let resource_route = resolve_resource_route(&method, &path);
+        if resource_route != ResourceRoute::NotFound {
+            return match resource_route {
+                ResourceRoute::List => handle_resource_list(&self.registry),
+                ResourceRoute::GetByName(name) => handle_resource_get(&self.registry, &name),
+                ResourceRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_resource_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                ResourceRoute::Delete(name) => handle_resource_delete(&self.registry, &name),
+                ResourceRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        match resolve_prompt_route(&method, &path) {
+            PromptRoute::List => handle_prompt_list(&self.registry),
+            PromptRoute::GetByName(name) => handle_prompt_get(&self.registry, &name),
+            PromptRoute::Create => match read_body(http_session).await {
+                Ok(body) => handle_prompt_create(&self.registry, &body),
                 Err(resp) => resp,
             },
-            ResourceRoute::Delete(name) => handle_resource_delete(&self.registry, &name),
-            ResourceRoute::NotFound => json_err(404, "not found"),
+            PromptRoute::Delete(name) => handle_prompt_delete(&self.registry, &name),
+            PromptRoute::NotFound => json_err(404, "not found"),
         }
     }
 }
@@ -182,6 +225,43 @@ fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) -> Response<V
         json_ok(&serde_json::json!({"removed": name}))
     } else {
         json_err(404, &format!("resource not found: {name}"))
+    }
+}
+
+fn handle_prompt_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let prompts = registry.list_prompts();
+    json_ok(&serde_json::json!(prompts))
+}
+
+fn handle_prompt_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    match registry.get_prompt(name) {
+        Some(prompt) => json_ok(&serde_json::json!(prompt)),
+        None => json_err(404, &format!("prompt not found: {name}")),
+    }
+}
+
+fn handle_prompt_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+    tracing::debug!(body = %body, "prompt create request body");
+    let prompt: PromptEntry = match serde_json::from_str(body) {
+        Ok(p) => p,
+        Err(e) => {
+            warn!(error = %e, "invalid prompt JSON");
+            return json_err(400, &format!("invalid prompt JSON: {e}"));
+        }
+    };
+
+    info!(prompt = %prompt.name, "registered prompt via management API");
+    let response = serde_json::json!(&prompt);
+    registry.register_prompt(prompt);
+    json_ok(&response)
+}
+
+fn handle_prompt_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    if registry.remove_prompt(name) {
+        info!(prompt = %name, "removed prompt via management API");
+        json_ok(&serde_json::json!({"removed": name}))
+    } else {
+        json_err(404, &format!("prompt not found: {name}"))
     }
 }
 

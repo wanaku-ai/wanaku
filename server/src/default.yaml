@@ -18,6 +18,8 @@ filter_chains:
       - filter: wanaku_tool_call
       - filter: wanaku_resource_list
       - filter: wanaku_resource_read
+      - filter: wanaku_prompt_list
+      - filter: wanaku_prompt_get
       - filter: static_response
         status: 200
         headers:

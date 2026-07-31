@@ -53,4 +53,12 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
         @register registry,
         http "wanaku_resource_read" => wanaku_praxis_filters::ResourceReadFilter::from_config
     );
+    praxis_filter::register_filters!(
+        @register registry,
+        http "wanaku_prompt_list" => wanaku_praxis_filters::PromptListFilter::from_config
+    );
+    praxis_filter::register_filters!(
+        @register registry,
+        http "wanaku_prompt_get" => wanaku_praxis_filters::PromptGetFilter::from_config
+    );
 }
