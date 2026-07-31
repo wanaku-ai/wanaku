@@ -3,7 +3,6 @@ use bytes::Bytes;
 use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
-use tracing::trace;
 use wanaku_praxis_apis::registry::DEFAULT_NAMESPACE;
 
 pub const NAMESPACE_METADATA_KEY: &str = "wanaku.namespace";
@@ -69,7 +68,7 @@ impl HttpFilter for NamespaceFilter {
         let path = ctx.request.uri.path();
         let namespace = extract_namespace(path);
 
-        trace!(namespace = %namespace, path = %path, "resolved namespace from path");
+        tracing::debug!(namespace = %namespace, path = %path, "resolved namespace from path");
         ctx.set_metadata(NAMESPACE_METADATA_KEY, namespace);
 
         Ok(FilterAction::Continue)

@@ -5,8 +5,9 @@ use pingora_core::protocols::http::ServerSession;
 use tracing::{info, warn};
 
 use wanaku_praxis_apis::registry::{
-    InMemoryRegistry, PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
-    ToolRegistry,
+    ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
+    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
+    MCP_FORWARD_TYPE,
 };
 
 const MAX_BODY_BYTES: usize = 1_048_576;
@@ -105,6 +106,70 @@ fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum ForwardRoute {
+    List,
+    GetByName(String),
+    Create,
+    Delete(String),
+    Refresh(String),
+    NotFound,
+}
+
+fn resolve_forward_route(method: &str, path: &str) -> ForwardRoute {
+    let suffix = match path.strip_prefix("/api/v1/forwards") {
+        Some(s) => s,
+        None => return ForwardRoute::NotFound,
+    };
+
+    let name = suffix
+        .strip_prefix('/')
+        .filter(|s| !s.is_empty());
+
+    match (method, name) {
+        ("GET", None) => ForwardRoute::List,
+        ("GET", Some(n)) => ForwardRoute::GetByName(n.to_owned()),
+        ("POST", None) => ForwardRoute::Create,
+        ("DELETE", Some(n)) if !n.contains('/') => ForwardRoute::Delete(n.to_owned()),
+        ("POST", Some(n)) => {
+            if let Some(name) = n.strip_suffix("/refreshes") {
+                ForwardRoute::Refresh(name.to_owned())
+            } else {
+                ForwardRoute::NotFound
+            }
+        }
+        _ => ForwardRoute::NotFound,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum NamespaceRoute {
+    List,
+    GetByName(String),
+    Create,
+    Delete(String),
+    NotFound,
+}
+
+fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRoute {
+    let suffix = match path.strip_prefix("/api/v1/namespaces") {
+        Some(s) => s,
+        None => return NamespaceRoute::NotFound,
+    };
+
+    let name = suffix
+        .strip_prefix('/')
+        .filter(|s| !s.is_empty());
+
+    match (method, name) {
+        ("GET", None) => NamespaceRoute::List,
+        ("GET", Some(n)) => NamespaceRoute::GetByName(n.to_owned()),
+        ("POST", None) => NamespaceRoute::Create,
+        ("DELETE", Some(n)) => NamespaceRoute::Delete(n.to_owned()),
+        _ => NamespaceRoute::NotFound,
+    }
+}
+
 #[async_trait]
 impl ServeHttp for WanakuManagementService {
     async fn response(&self, http_session: &mut ServerSession) -> Response<Vec<u8>> {
@@ -141,15 +206,44 @@ impl ServeHttp for WanakuManagementService {
             };
         }
 
-        match resolve_prompt_route(&method, &path) {
-            PromptRoute::List => handle_prompt_list(&self.registry),
-            PromptRoute::GetByName(name) => handle_prompt_get(&self.registry, &name),
-            PromptRoute::Create => match read_body(http_session).await {
-                Ok(body) => handle_prompt_create(&self.registry, &body),
+        let prompt_route = resolve_prompt_route(&method, &path);
+        if prompt_route != PromptRoute::NotFound {
+            return match prompt_route {
+                PromptRoute::List => handle_prompt_list(&self.registry),
+                PromptRoute::GetByName(name) => handle_prompt_get(&self.registry, &name),
+                PromptRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_prompt_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                PromptRoute::Delete(name) => handle_prompt_delete(&self.registry, &name),
+                PromptRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        let ns_route = resolve_namespace_route(&method, &path);
+        if ns_route != NamespaceRoute::NotFound {
+            return match ns_route {
+                NamespaceRoute::List => handle_namespace_list(&self.registry),
+                NamespaceRoute::GetByName(name) => handle_namespace_get(&self.registry, &name),
+                NamespaceRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_namespace_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                NamespaceRoute::Delete(name) => handle_namespace_delete(&self.registry, &name),
+                NamespaceRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        match resolve_forward_route(&method, &path) {
+            ForwardRoute::List => handle_forward_list(&self.registry),
+            ForwardRoute::GetByName(name) => handle_forward_get(&self.registry, &name),
+            ForwardRoute::Create => match read_body(http_session).await {
+                Ok(body) => handle_forward_create(&self.registry, &body).await,
                 Err(resp) => resp,
             },
-            PromptRoute::Delete(name) => handle_prompt_delete(&self.registry, &name),
-            PromptRoute::NotFound => json_err(404, "not found"),
+            ForwardRoute::Delete(name) => handle_forward_delete(&self.registry, &name),
+            ForwardRoute::Refresh(name) => handle_forward_refresh(&self.registry, &name).await,
+            ForwardRoute::NotFound => json_err(404, "not found"),
         }
     }
 }
@@ -262,6 +356,159 @@ fn handle_prompt_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec
         json_ok(&serde_json::json!({"removed": name}))
     } else {
         json_err(404, &format!("prompt not found: {name}"))
+    }
+}
+
+fn handle_namespace_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let namespaces = registry.list_namespaces();
+    json_ok(&serde_json::json!(namespaces))
+}
+
+fn handle_namespace_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    match registry.get_namespace(name) {
+        Some(ns) => json_ok(&serde_json::json!(ns)),
+        None => json_err(404, &format!("namespace not found: {name}")),
+    }
+}
+
+fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+    let namespace: NamespaceEntry = match serde_json::from_str(body) {
+        Ok(n) => n,
+        Err(e) => {
+            warn!(error = %e, "invalid namespace JSON");
+            return json_err(400, &format!("invalid namespace JSON: {e}"));
+        }
+    };
+
+    info!(namespace = %namespace.name, "registered namespace via management API");
+    let response = serde_json::json!(&namespace);
+    registry.register_namespace(namespace);
+    json_ok(&response)
+}
+
+fn handle_namespace_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    if registry.remove_namespace(name) {
+        info!(namespace = %name, "removed namespace via management API");
+        json_ok(&serde_json::json!({"removed": name}))
+    } else {
+        json_err(404, &format!("namespace not found: {name}"))
+    }
+}
+
+fn handle_forward_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let forwards = registry.list_forwards();
+    json_ok(&serde_json::json!(forwards))
+}
+
+fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    match registry.get_forward(name) {
+        Some(forward) => json_ok(&serde_json::json!(forward)),
+        None => json_err(404, &format!("forward not found: {name}")),
+    }
+}
+
+async fn handle_forward_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+    tracing::debug!(body = %body, "forward create request body");
+    let forward: ForwardEntry = match serde_json::from_str(body) {
+        Ok(f) => f,
+        Err(e) => {
+            warn!(error = %e, "invalid forward JSON");
+            return json_err(400, &format!("invalid forward JSON: {e}"));
+        }
+    };
+
+    info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
+    registry.register_forward(forward.clone());
+
+    let count = discover_tools_from_forward(registry, &forward).await;
+
+    json_ok(&serde_json::json!({
+        "forward": &forward,
+        "tools_discovered": count,
+    }))
+}
+
+fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    let forward = registry.get_forward(name);
+
+    if !registry.remove_forward(name) {
+        return json_err(404, &format!("forward not found: {name}"));
+    }
+
+    if let Some(fwd) = forward {
+        remove_forwarded_tools(registry, &fwd.address);
+    }
+
+    info!(forward = %name, "removed forward via management API");
+    json_ok(&serde_json::json!({"removed": name}))
+}
+
+async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    let forward = match registry.get_forward(name) {
+        Some(f) => f,
+        None => return json_err(404, &format!("forward not found: {name}")),
+    };
+
+    remove_forwarded_tools(registry, &forward.address);
+    let count = discover_tools_from_forward(registry, &forward).await;
+
+    info!(forward = %name, tools_discovered = count, "refreshed forward");
+    json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": count}))
+}
+
+async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+    let tools = match wanaku_praxis_apis::mcp_client::list_tools(&forward.address).await {
+        Ok(t) => t,
+        Err(e) => {
+            warn!(forward = %forward.name, error = %e, "failed to discover tools from forward");
+            return 0;
+        }
+    };
+
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+    let count = tools.len();
+
+    for tool_json in &tools {
+        let name = tool_json.get("name").and_then(|n| n.as_str()).unwrap_or_default();
+        let description = tool_json
+            .get("description")
+            .and_then(|d| d.as_str())
+            .unwrap_or_default();
+        let input_schema = tool_json
+            .get("inputSchema")
+            .cloned()
+            .unwrap_or(serde_json::json!({"type": "object"}));
+
+        let tool = ToolEntry {
+            name: name.to_owned(),
+            description: description.to_owned(),
+            uri: forward.address.clone(),
+            type_: MCP_FORWARD_TYPE.to_owned(),
+            input_schema,
+            labels: std::collections::HashMap::new(),
+            id: None,
+            namespace: Some(namespace.to_owned()),
+            configuration_uri: None,
+            secrets_uri: None,
+        };
+
+        info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
+        registry.register_tool(tool);
+    }
+
+    count
+}
+
+fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
+    let forwarded: Vec<String> = registry
+        .list_tools()
+        .iter()
+        .filter(|t| t.type_ == MCP_FORWARD_TYPE && t.uri == address)
+        .map(|t| t.name.clone())
+        .collect();
+
+    for name in &forwarded {
+        registry.remove_tool(name);
     }
 }
 

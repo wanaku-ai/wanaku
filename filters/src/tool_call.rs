@@ -7,13 +7,56 @@ use praxis_filter::{
 };
 use tracing::{trace, warn};
 use wanaku_praxis_apis::grpc::GrpcPool;
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ServiceRegistry, ToolRegistry};
+use wanaku_praxis_apis::registry::{InMemoryRegistry, ServiceRegistry, ToolEntry, ToolRegistry};
 
 pub struct ToolCallFilter {
     max_body_bytes: usize,
 }
 
 impl ToolCallFilter {
+    async fn handle_forwarded_call(
+        &self,
+        tool: &ToolEntry,
+        tool_name: &str,
+        parsed: &ParsedBody,
+    ) -> Result<FilterAction, FilterError> {
+        trace!(tool = %tool_name, uri = %tool.uri, "forwarding tools/call to remote MCP server");
+
+        let arguments = serde_json::Value::Object(
+            parsed
+                .arguments
+                .iter()
+                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+                .collect(),
+        );
+
+        match wanaku_praxis_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
+            Ok(content) => {
+                let mcp_content: Vec<serde_json::Value> = content
+                    .iter()
+                    .map(|text| serde_json::json!({"type": "text", "text": text}))
+                    .collect();
+
+                let response = serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": parsed.id,
+                    "result": {"content": mcp_content}
+                });
+
+                let response_body = Bytes::from(response.to_string());
+                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+            }
+            Err(e) => {
+                warn!(tool = %tool_name, error = %e, "MCP forward call failed");
+                Ok(json_rpc_error(
+                    &parsed.id,
+                    -32603,
+                    &format!("forwarded tool call failed: {e}"),
+                ))
+            }
+        }
+    }
+
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
         let max_body_bytes = config
             .get("max_body_bytes")
@@ -170,6 +213,10 @@ impl HttpFilter for ToolCallFilter {
                 ));
             }
         };
+
+        if tool.type_ == wanaku_praxis_apis::registry::MCP_FORWARD_TYPE {
+            return self.handle_forwarded_call(&tool, &tool_name, &parsed).await;
+        }
 
         let service = match registry.resolve_service(&tool.type_, "tool-invoker") {
             Ok(s) => s,

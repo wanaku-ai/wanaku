@@ -98,6 +98,27 @@ pub enum RegistryError {
     },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForwardEntry {
+    pub name: String,
+    pub address: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NamespaceEntry {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub name: String,
+    #[serde(default)]
+    pub path: String,
+    #[serde(default)]
+    pub labels: HashMap<String, String>,
+}
+
+pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
+
 pub const DEFAULT_NAMESPACE: &str = "default";
 
 pub trait ToolRegistry: Send + Sync {
@@ -127,6 +148,20 @@ pub trait PromptRegistry: Send + Sync {
     fn remove_prompt(&self, name: &str) -> bool;
 }
 
+pub trait NamespaceRegistry: Send + Sync {
+    fn list_namespaces(&self) -> Vec<NamespaceEntry>;
+    fn get_namespace(&self, name: &str) -> Option<NamespaceEntry>;
+    fn register_namespace(&self, namespace: NamespaceEntry);
+    fn remove_namespace(&self, name: &str) -> bool;
+}
+
+pub trait ForwardRegistry: Send + Sync {
+    fn list_forwards(&self) -> Vec<ForwardEntry>;
+    fn get_forward(&self, name: &str) -> Option<ForwardEntry>;
+    fn register_forward(&self, forward: ForwardEntry);
+    fn remove_forward(&self, name: &str) -> bool;
+}
+
 pub trait ServiceRegistry: Send + Sync {
     fn resolve_service(
         &self,
@@ -147,6 +182,8 @@ pub struct InMemoryRegistry {
     tools: Arc<DashMap<String, ToolEntry>>,
     resources: Arc<DashMap<String, ResourceEntry>>,
     prompts: Arc<DashMap<String, PromptEntry>>,
+    forwards: Arc<DashMap<String, ForwardEntry>>,
+    namespaces: Arc<DashMap<String, NamespaceEntry>>,
     services: Arc<DashMap<String, ServiceEntry>>,
 }
 
@@ -156,6 +193,8 @@ impl InMemoryRegistry {
             tools: Arc::new(DashMap::new()),
             resources: Arc::new(DashMap::new()),
             prompts: Arc::new(DashMap::new()),
+            forwards: Arc::new(DashMap::new()),
+            namespaces: Arc::new(DashMap::new()),
             services: Arc::new(DashMap::new()),
         }
     }
@@ -276,6 +315,45 @@ impl PromptRegistry for InMemoryRegistry {
 
     fn remove_prompt(&self, name: &str) -> bool {
         self.prompts.remove(name).is_some()
+    }
+}
+
+impl NamespaceRegistry for InMemoryRegistry {
+    fn list_namespaces(&self) -> Vec<NamespaceEntry> {
+        self.namespaces.iter().map(|entry| entry.value().clone()).collect()
+    }
+
+    fn get_namespace(&self, name: &str) -> Option<NamespaceEntry> {
+        self.namespaces.get(name).map(|entry| entry.value().clone())
+    }
+
+    fn register_namespace(&self, mut namespace: NamespaceEntry) {
+        if namespace.id.is_none() {
+            namespace.id = Some(namespace.name.clone());
+        }
+        self.namespaces.insert(namespace.name.clone(), namespace);
+    }
+
+    fn remove_namespace(&self, name: &str) -> bool {
+        self.namespaces.remove(name).is_some()
+    }
+}
+
+impl ForwardRegistry for InMemoryRegistry {
+    fn list_forwards(&self) -> Vec<ForwardEntry> {
+        self.forwards.iter().map(|entry| entry.value().clone()).collect()
+    }
+
+    fn get_forward(&self, name: &str) -> Option<ForwardEntry> {
+        self.forwards.get(name).map(|entry| entry.value().clone())
+    }
+
+    fn register_forward(&self, forward: ForwardEntry) {
+        self.forwards.insert(forward.name.clone(), forward);
+    }
+
+    fn remove_forward(&self, name: &str) -> bool {
+        self.forwards.remove(name).is_some()
     }
 }
 

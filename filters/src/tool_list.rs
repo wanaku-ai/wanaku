@@ -3,7 +3,6 @@ use bytes::Bytes;
 use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
-use tracing::trace;
 use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 pub struct ToolListFilter {
@@ -64,7 +63,7 @@ impl HttpFilter for ToolListFilter {
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
 
-        trace!(namespace = %namespace, "handling MCP tools/list request");
+        tracing::debug!(namespace = %namespace, "handling MCP tools/list request");
 
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {
             Some(r) => r,
@@ -74,7 +73,17 @@ impl HttpFilter for ToolListFilter {
             }
         };
 
+        let all_tools = registry.list_tools();
+        tracing::debug!(
+            namespace = %namespace,
+            total_tools = all_tools.len(),
+            tool_namespaces = ?all_tools.iter().map(|t| format!("{}:{}", t.name, t.namespace.as_deref().unwrap_or("None"))).collect::<Vec<_>>(),
+            "all tools in registry before namespace filter"
+        );
+
         let tools = registry.list_tools_in_namespace(namespace);
+
+        tracing::debug!(namespace = %namespace, tool_count = tools.len(), "tools found in namespace");
         let mcp_tools: Vec<serde_json::Value> = tools
             .iter()
             .map(|t| {
