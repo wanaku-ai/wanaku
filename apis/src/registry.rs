@@ -66,16 +66,22 @@ pub enum RegistryError {
     },
 }
 
+pub const DEFAULT_NAMESPACE: &str = "default";
+
 pub trait ToolRegistry: Send + Sync {
     fn list_tools(&self) -> Vec<ToolEntry>;
+    fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry>;
     fn get_tool(&self, name: &str) -> Option<ToolEntry>;
+    fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     fn register_tool(&self, tool: ToolEntry);
     fn remove_tool(&self, name: &str) -> bool;
 }
 
 pub trait ResourceRegistry: Send + Sync {
     fn list_resources(&self) -> Vec<ResourceEntry>;
+    fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry>;
     fn get_resource(&self, name: &str) -> Option<ResourceEntry>;
+    fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     fn register_resource(&self, resource: ResourceEntry);
     fn remove_resource(&self, name: &str) -> bool;
 }
@@ -118,16 +124,38 @@ impl Default for InMemoryRegistry {
     }
 }
 
+fn effective_namespace(ns: &Option<String>) -> &str {
+    ns.as_deref().unwrap_or(DEFAULT_NAMESPACE)
+}
+
 impl ToolRegistry for InMemoryRegistry {
     fn list_tools(&self) -> Vec<ToolEntry> {
         self.tools.iter().map(|entry| entry.value().clone()).collect()
+    }
+
+    fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry> {
+        self.tools
+            .iter()
+            .filter(|entry| effective_namespace(&entry.value().namespace) == namespace)
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     fn get_tool(&self, name: &str) -> Option<ToolEntry> {
         self.tools.get(name).map(|entry| entry.value().clone())
     }
 
-    fn register_tool(&self, tool: ToolEntry) {
+    fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry> {
+        self.tools
+            .get(name)
+            .map(|entry| entry.value().clone())
+            .filter(|tool| effective_namespace(&tool.namespace) == namespace)
+    }
+
+    fn register_tool(&self, mut tool: ToolEntry) {
+        if tool.namespace.is_none() {
+            tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+        }
         self.tools.insert(tool.name.clone(), tool);
     }
 
@@ -141,11 +169,29 @@ impl ResourceRegistry for InMemoryRegistry {
         self.resources.iter().map(|entry| entry.value().clone()).collect()
     }
 
+    fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry> {
+        self.resources
+            .iter()
+            .filter(|entry| effective_namespace(&entry.value().namespace) == namespace)
+            .map(|entry| entry.value().clone())
+            .collect()
+    }
+
     fn get_resource(&self, name: &str) -> Option<ResourceEntry> {
         self.resources.get(name).map(|entry| entry.value().clone())
     }
 
-    fn register_resource(&self, resource: ResourceEntry) {
+    fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry> {
+        self.resources
+            .get(name)
+            .map(|entry| entry.value().clone())
+            .filter(|res| effective_namespace(&res.namespace) == namespace)
+    }
+
+    fn register_resource(&self, mut resource: ResourceEntry) {
+        if resource.namespace.is_none() {
+            resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+        }
         self.resources.insert(resource.name.clone(), resource);
     }
 

@@ -117,7 +117,11 @@ impl HttpFilter for ResourceReadFilter {
             }
         };
 
-        trace!(uri = %resource_uri, "handling MCP resources/read request");
+        let namespace = ctx
+            .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+
+        trace!(uri = %resource_uri, namespace = %namespace, "handling MCP resources/read request");
 
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {
             Some(r) => r,
@@ -127,7 +131,7 @@ impl HttpFilter for ResourceReadFilter {
             }
         };
 
-        let resource = match find_resource_by_uri(registry, &resource_uri) {
+        let resource = match find_resource_by_uri(registry, namespace, &resource_uri) {
             Some(r) => r,
             None => {
                 warn!(uri = %resource_uri, "resource not found in registry");
@@ -205,10 +209,11 @@ impl HttpFilter for ResourceReadFilter {
 
 fn find_resource_by_uri(
     registry: &InMemoryRegistry,
+    namespace: &str,
     uri: &str,
 ) -> Option<wanaku_praxis_apis::registry::ResourceEntry> {
     registry
-        .list_resources()
+        .list_resources_in_namespace(namespace)
         .into_iter()
         .find(|r| r.location == uri)
 }

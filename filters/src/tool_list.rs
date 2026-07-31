@@ -60,7 +60,11 @@ impl HttpFilter for ToolListFilter {
             return Ok(FilterAction::Continue);
         }
 
-        trace!("handling MCP tools/list request");
+        let namespace = ctx
+            .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+
+        trace!(namespace = %namespace, "handling MCP tools/list request");
 
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {
             Some(r) => r,
@@ -70,7 +74,7 @@ impl HttpFilter for ToolListFilter {
             }
         };
 
-        let tools = registry.list_tools();
+        let tools = registry.list_tools_in_namespace(namespace);
         let mcp_tools: Vec<serde_json::Value> = tools
             .iter()
             .map(|t| {

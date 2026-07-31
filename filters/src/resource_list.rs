@@ -60,7 +60,11 @@ impl HttpFilter for ResourceListFilter {
             return Ok(FilterAction::Continue);
         }
 
-        trace!("handling MCP resources/list request");
+        let namespace = ctx
+            .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+
+        trace!(namespace = %namespace, "handling MCP resources/list request");
 
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {
             Some(r) => r,
@@ -70,7 +74,7 @@ impl HttpFilter for ResourceListFilter {
             }
         };
 
-        let resources = registry.list_resources();
+        let resources = registry.list_resources_in_namespace(namespace);
         let mcp_resources: Vec<serde_json::Value> = resources
             .iter()
             .map(|r| {

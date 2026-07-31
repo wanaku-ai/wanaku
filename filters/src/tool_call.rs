@@ -129,7 +129,11 @@ impl HttpFilter for ToolCallFilter {
             }
         };
 
-        trace!(tool = %tool_name, "handling MCP tools/call request");
+        let namespace = ctx
+            .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+
+        trace!(tool = %tool_name, namespace = %namespace, "handling MCP tools/call request");
 
         let parsed = parse_body(body);
 
@@ -147,7 +151,7 @@ impl HttpFilter for ToolCallFilter {
             }
         };
 
-        let tool = match registry.get_tool(&tool_name) {
+        let tool = match registry.get_tool_in_namespace(namespace, &tool_name) {
             Some(t) => {
                 tracing::debug!(
                     tool = %t.name,
