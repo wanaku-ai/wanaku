@@ -1,18 +1,18 @@
 tools:
-  - name: "example-tool"
-    type: "product-catalog"
-    uri: "product-catalog://some-product-catalog-tool"
-    description: "Product catalog tool"
+  - name: "echo-tool"
+    type: "echo-tool"
+    uri: "echo-tool://echo"
+    description: "Echoes a message"
     input_schema:
       type: object
       properties:
-        url:
+        wanaku_body:
           type: string
-          description: "Target URL"
+          description: "The message to echo"
       required:
-        - url
+        - wanaku_body
 
 services:
-  - name: "product-catalog"
+  - name: "echo-tool"
     address: "localhost:9191"
     service_type: "tool-invoker"
