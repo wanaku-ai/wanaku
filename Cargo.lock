@@ -282,6 +282,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
+
+[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1282,7 +1288,7 @@ version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -1746,7 +1752,7 @@ version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1db0d8f1fc9e62caebd0319e11eaec5822b0186c171568f0480b46a0137f9108"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "evmap",
  "indexmap 2.14.0",
  "metrics",
@@ -2088,17 +2094,20 @@ dependencies = [
 [[package]]
 name = "praxis-ai-apis"
 version = "0.2.0"
+source = "git+https://github.com/praxis-proxy/ai?rev=d3185bdb54d3759bc7e611b6eb77fa16ea00985e#d3185bdb54d3759bc7e611b6eb77fa16ea00985e"
 dependencies = [
  "async-trait",
- "base64",
+ "base64 0.23.0",
  "bytes",
  "dashmap 6.2.1",
+ "futures",
  "http",
  "percent-encoding",
  "praxis-proxy-core",
  "praxis-proxy-filter",
+ "quixotic-plecostomus-core",
  "reqwest",
- "rmcp",
+ "rmcp 3.1.0",
  "secrecy",
  "serde",
  "serde_json",
@@ -2114,14 +2123,18 @@ dependencies = [
 [[package]]
 name = "praxis-ai-filters"
 version = "0.2.0"
+source = "git+https://github.com/praxis-proxy/ai?rev=d3185bdb54d3759bc7e611b6eb77fa16ea00985e#d3185bdb54d3759bc7e611b6eb77fa16ea00985e"
 dependencies = [
  "async-trait",
- "base64",
+ "base64 0.23.0",
  "bytes",
+ "futures",
  "http",
+ "metrics",
  "praxis-ai-apis",
  "praxis-proxy-core",
  "praxis-proxy-filter",
+ "reqwest",
  "serde",
  "serde_json",
  "tracing",
@@ -2130,17 +2143,18 @@ dependencies = [
 
 [[package]]
 name = "praxis-proxy-core"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71a30c54be1367e63135c5b3b05f7365ab7d8940c3d5fdac9d97a316c04568c9"
+checksum = "904de3102a614f84cb0f27546f22623a234091938aab29ba124f2f03847c3d8e"
 dependencies = [
+ "bytes",
  "dashmap 6.2.1",
  "http",
  "praxis-proxy-tls",
  "quixotic-plecostomus-core",
+ "quixotic-plecostomus-http",
  "rand 0.10.2",
  "regex",
- "reqwest",
  "serde",
  "thiserror 2.0.19",
  "tokio",
@@ -2151,9 +2165,9 @@ dependencies = [
 
 [[package]]
 name = "praxis-proxy-filter"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b775e4c9673c53e967cce25e8e8959a9ff01cf18a17a90448f6601c77e8f050"
+checksum = "af81fa050b848737ca6c0e8f439a5d58f2532d4f9081cfdf766288b75c52c196"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2163,6 +2177,7 @@ dependencies = [
  "percent-encoding",
  "praxis-proxy-core",
  "praxis-proxy-tls",
+ "quixotic-plecostomus-core",
  "rand 0.10.2",
  "regex",
  "secrecy",
@@ -2170,6 +2185,7 @@ dependencies = [
  "serde_json",
  "smallvec",
  "thiserror 2.0.19",
+ "tokio",
  "tracing",
  "yaml_serde",
  "zeroize",
@@ -2177,9 +2193,9 @@ dependencies = [
 
 [[package]]
 name = "praxis-proxy-protocol"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3919b20d58ab7cf5af8ba6dc380641f217430061436511fb7b83e21646d3adb9"
+checksum = "60eb11846734a0f94a9658c7837855adb451d1eaabec940de4808a3858b97334"
 dependencies = [
  "arc-swap",
  "async-trait",
@@ -2202,9 +2218,9 @@ dependencies = [
 
 [[package]]
 name = "praxis-proxy-tls"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93fcb6f2aad1284d40edf3ec7eb41f010ce48244c2caa74abd12b55f94edcad5"
+checksum = "c017f8a0cfae37910da76dad8f1c16f801634e0666741020417b7b9f3032f4fe"
 dependencies = [
  "arc-swap",
  "notify",
@@ -2767,7 +2783,7 @@ version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-core",
  "futures-util",
@@ -2822,6 +2838,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14db48ee17a9ba61810ab1a9c1beb7d06d8136ae39ac25a1137f10d357af01af"
 dependencies = [
  "async-trait",
+ "chrono",
+ "futures",
+ "http",
+ "pin-project-lite",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sse-stream",
+ "thiserror 2.0.19",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "rmcp"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad26b216c966e987e80e86daf784a455c039c43d98575ceed57b8faa259e5695"
+dependencies = [
+ "async-trait",
+ "base64 0.23.0",
+ "bytes",
  "chrono",
  "futures",
  "http",
@@ -3165,7 +3205,7 @@ version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fa1f336066b758b7c9df34ed049c0e693a426afe2b27ff7d5b14f410ab1a132"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "indexmap 2.14.0",
  "rust_decimal",
 ]
@@ -3307,7 +3347,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05b44e85bf579a8eeb4ceaa77a3a523baf2bf0e9bac7e40f405d537b5d2d5ccb"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "cfg-if",
  "crc",
@@ -3381,7 +3421,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87a2bdd6e83f6b3ea525ca9fee568030508b58355a43d0b2c1674d5f79dcd65e"
 dependencies = [
  "atoi",
- "base64",
+ "base64 0.22.1",
  "bitflags",
  "byteorder",
  "crc",
@@ -3783,7 +3823,7 @@ checksum = "7e581ba15a835f4d9ea06c55ab1bd4dce26fc53752c69a04aac00703bfb49ba9"
 dependencies = [
  "async-trait",
  "axum",
- "base64",
+ "base64 0.22.1",
  "bytes",
  "h2",
  "http",
@@ -4081,7 +4121,7 @@ dependencies = [
  "dashmap 6.2.1",
  "http",
  "prost",
- "rmcp",
+ "rmcp 2.2.0",
  "serde",
  "serde_json",
  "thiserror 2.0.19",
