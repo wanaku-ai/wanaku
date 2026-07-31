@@ -4111,12 +4111,16 @@ dependencies = [
 name = "wanaku-praxis-proxy"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "http",
  "nix",
  "praxis-ai-filters",
  "praxis-proxy-core",
  "praxis-proxy-filter",
  "praxis-proxy-protocol",
+ "quixotic-plecostomus-core",
  "serde",
+ "serde_json",
  "tikv-jemallocator",
  "tokio",
  "tracing",

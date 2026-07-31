@@ -11,9 +11,18 @@ pub struct ToolEntry {
     pub uri: String,
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(alias = "inputSchema")]
     pub input_schema: serde_json::Value,
     #[serde(default)]
     pub labels: HashMap<String, String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "configurationURI")]
+    pub configuration_uri: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "secretsURI")]
+    pub secrets_uri: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,6 +144,10 @@ mod tests {
             type_: "http".to_owned(),
             input_schema: serde_json::json!({"type": "object"}),
             labels: HashMap::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
         }
     }
 

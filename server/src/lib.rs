@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 
+pub mod management;
 pub mod pipelines;
 
 const DEFAULT_CONFIG: &str = include_str!("default.yaml");

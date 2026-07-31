@@ -35,6 +35,8 @@ fn main() {
     let health_registry = build_health_registry(&config.clusters);
     let kv_stores = praxis_core::kv::KvStoreRegistry::new();
 
+    let mgmt_registry = wanaku_registry.clone();
+
     info!("building wanaku pipelines");
     let pipelines = wanaku_praxis::pipelines::resolve_pipelines(
         &config,
@@ -68,6 +70,16 @@ fn main() {
             config.admin.verbose,
         );
     }
+
+    let mgmt_addr = "127.0.0.1:9090";
+    let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry);
+    let mut mgmt_service = pingora_core::services::listening::Service::new(
+        "wanaku-management".to_owned(),
+        mgmt,
+    );
+    mgmt_service.add_tcp(mgmt_addr);
+    server.server_mut().add_service(mgmt_service);
+    info!(address = %mgmt_addr, "management API enabled");
 
     info!("starting wanaku-praxis server");
     server.run()
