@@ -793,15 +793,30 @@ The operator exposes metrics in Prometheus format at `/metrics` on the operator'
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `wanaku_router_reconciliations_total` | counter | Total number of `WanakuRouter` reconciliations. |
-| `wanaku_router_reconciliation_errors_total` | counter | Total number of failed `WanakuRouter` reconciliations. |
+| `wanaku_reconciliations_total` | counter | Total number of reconciliations, labeled by `controller` (`wanaku-router`, `wanaku-capability`, `wanaku-service-catalog`, `wanaku-camel-route`, `camel-code-execution-engine`). |
+| `wanaku_reconciliation_errors_total` | counter | Total number of failed reconciliations (thrown errors or reconciliations that resolved to an error status), labeled by `controller`. |
+| `wanaku_router_reconciliations_total` | counter | Total number of `WanakuRouter` reconciliations. Equivalent to `wanaku_reconciliations_total{controller="wanaku-router"}`, kept for compatibility. |
+| `wanaku_router_reconciliation_errors_total` | counter | Total number of failed `WanakuRouter` reconciliations. Equivalent to the labeled counter, kept for compatibility. |
 | `wanaku_router_instances` | gauge | Number of `WanakuRouter` instances in the operator namespace. |
 | `wanaku_router_ready_instances` | gauge | Number of `WanakuRouter` instances whose `Ready` condition is `True`. |
 | `wanaku_toolservice_instances` | gauge | Number of `WanakuCapability` (tool service) instances in the operator namespace. |
+| `wanaku_servicecatalog_instances` | gauge | Number of `WanakuServiceCatalog` instances in the operator namespace. |
+| `wanaku_camelroute_instances` | gauge | Number of `WanakuCamelRoute` instances in the operator namespace. |
+| `wanaku_codeexecutionengine_instances` | gauge | Number of `WanakuCamelCodeExecutionEngine` instances in the operator namespace. |
 
 In addition to the Wanaku-specific metrics, the endpoint also exposes the standard
 [Java Operator SDK metrics](https://javaoperatorsdk.io/docs/features/#micrometer-implementation)
 (reconciliation timings, event counts, retries per controller) and JVM/HTTP metrics provided by Quarkus.
+
+The Wanaku-specific metrics can be disabled with `wanaku.operator.metrics.enabled=false`
+(default `true`) when they are not going to be consumed — the instance gauges then never
+query the Kubernetes API. With the Helm chart, set it through an environment variable:
+
+```shell
+helm install wanaku-operator ./apps/wanaku-operator/deploy/helm/wanaku-operator \
+  --namespace wanaku \
+  --set app.envs.WANAKU_OPERATOR_METRICS_ENABLED=false
+```
 
 **Quick check with port-forward:**
 

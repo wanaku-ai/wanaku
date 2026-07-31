@@ -16,12 +16,6 @@ app:
       version: ""
   image: quay.io/wanaku/wanaku-operator:latest
   imagePullPolicy: IfNotPresent
-  metrics:
-    grafanaDashboard:
-      enabled: false
-    serviceMonitor:
-      enabled: false
-      interval: 30s
   livenessProbe:
     failureThreshold: 3
     httpGet:
@@ -31,6 +25,12 @@ app:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 10
+  metrics:
+    grafanaDashboard:
+      enabled: false
+    serviceMonitor:
+      enabled: false
+      interval: 30s
   oidc:
     secretName: wanaku-oidc
   podSecurityContext:

@@ -122,21 +122,21 @@
     {
       "id": 4,
       "type": "timeseries",
-      "title": "Router reconciliations",
-      "description": "Rate of WanakuRouter reconciliations",
+      "title": "Reconciliations by controller",
+      "description": "Rate of reconciliations per controller",
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(wanaku_router_reconciliations_total[5m])",
-          "legendFormat": "reconciliations/s"
+          "expr": "sum by (controller) (rate(wanaku_reconciliations_total[5m]))",
+          "legendFormat": "{{controller}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "ops",
-          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -147,28 +147,28 @@
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": false },
-        "tooltip": { "mode": "single" }
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
       }
     },
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Router reconciliation errors",
-      "description": "Rate of failed WanakuRouter reconciliations",
+      "title": "Reconciliation errors by controller",
+      "description": "Rate of failed reconciliations per controller",
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(wanaku_router_reconciliation_errors_total[5m])",
-          "legendFormat": "errors/s"
+          "expr": "sum by (controller) (rate(wanaku_reconciliation_errors_total[5m]))",
+          "legendFormat": "{{controller}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "ops",
-          "color": { "mode": "fixed", "fixedColor": "red" },
+          "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -179,8 +179,8 @@
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": false },
-        "tooltip": { "mode": "single" }
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
       }
     }
   ]

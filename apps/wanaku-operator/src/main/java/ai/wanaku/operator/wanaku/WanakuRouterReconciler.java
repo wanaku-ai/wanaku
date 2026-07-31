@@ -309,6 +309,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
     private UpdateControl<WanakuRouter> setErrorStatus(WanakuRouter resource, String reason, String message) {
         LOG.warnf("WanakuRouter '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+        metrics.countRouterReconciliationError();
         WanakuRouterStatus status = new WanakuRouterStatus();
         Condition condition = new ConditionBuilder()
                 .withType(OperatorUtil.READY_CONDITION)

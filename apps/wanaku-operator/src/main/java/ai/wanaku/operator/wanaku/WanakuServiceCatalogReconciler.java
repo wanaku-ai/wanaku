@@ -32,6 +32,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
 import ai.wanaku.core.services.api.ServiceCatalogService;
+import ai.wanaku.operator.metrics.OperatorMetrics;
 import ai.wanaku.operator.util.OperatorSecurityConfig;
 
 import static ai.wanaku.operator.util.OperatorUtil.READY_CONDITION;
@@ -64,6 +65,9 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
     @Inject
     KubernetesClient kubernetesClient;
 
+    @Inject
+    OperatorMetrics metrics;
+
     @Override
     public UpdateControl<WanakuServiceCatalog> reconcile(
             WanakuServiceCatalog resource, Context<WanakuServiceCatalog> context) {
@@ -71,6 +75,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
                 "Starting service catalog reconciliation for %s",
                 resource.getMetadata().getName());
 
+        metrics.countReconciliation(OperatorMetrics.CONTROLLER_SERVICE_CATALOG);
         final String namespace = resource.getMetadata().getNamespace();
 
         final String routerRef = resource.getSpec().getRouterRef();
@@ -162,6 +167,7 @@ public class WanakuServiceCatalogReconciler implements Reconciler<WanakuServiceC
         LOG.warnf(
                 "WanakuServiceCatalog '%s' error (%s): %s",
                 resource.getMetadata().getName(), reason, message);
+        metrics.countReconciliationError(OperatorMetrics.CONTROLLER_SERVICE_CATALOG);
 
         final WanakuServiceCatalogStatus status = new WanakuServiceCatalogStatus();
         Condition condition = new ConditionBuilder()
