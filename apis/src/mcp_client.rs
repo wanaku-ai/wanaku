@@ -1,131 +1,98 @@
 use std::time::Duration;
 
+use rmcp::{
+    ServiceExt as _,
+    model::{CallToolRequestParams, PaginatedRequestParams},
+    transport::{
+        StreamableHttpClientTransport,
+        streamable_http_client::StreamableHttpClientTransportConfig,
+    },
+};
 use serde_json::Value;
 
 const TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_TOOLS: usize = 500;
 
 #[derive(Debug, thiserror::Error)]
 pub enum McpClientError {
-    #[error("HTTP request failed: {0}")]
-    Http(#[from] reqwest::Error),
+    #[error("failed to connect to MCP server at {url}: {message}")]
+    Connection { url: String, message: String },
 
-    #[error("JSON-RPC error from server: code={code}, message={message}")]
-    JsonRpc { code: i64, message: String },
+    #[error("MCP operation timed out for {url}")]
+    Timeout { url: String },
 
-    #[error("unexpected response format: {0}")]
-    Format(String),
+    #[error("tools/list failed for {url}: {message}")]
+    ListTools { url: String, message: String },
+
+    #[error("tools/call failed for {url}, tool={tool_name}: {message}")]
+    CallTool {
+        url: String,
+        tool_name: String,
+        message: String,
+    },
 }
 
-async fn initialize(client: &reqwest::Client, url: &str) -> Result<Option<String>, McpClientError> {
-    let body = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "initialize",
-        "params": {
-            "protocolVersion": "2025-03-26",
-            "capabilities": {},
-            "clientInfo": {"name": "wanaku-praxis", "version": "0.1.0"}
-        }
-    });
-
-    tracing::debug!(url = %url, "sending MCP initialize");
-
-    let response = client
-        .post(url)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json, text/event-stream")
-        .json(&body)
-        .send()
-        .await?;
-
-    let status = response.status();
-    let session_id = response
-        .headers()
-        .get("mcp-session-id")
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_owned);
-
-    tracing::debug!(url = %url, %status, session_id = ?session_id, "MCP initialize complete");
-
-    Ok(session_id)
-}
-
-fn check_json_rpc_error(response: &Value) -> Result<(), McpClientError> {
-    if let Some(error) = response.get("error") {
-        let code = error.get("code").and_then(Value::as_i64).unwrap_or(-1);
-        let message = error
-            .get("message")
-            .and_then(Value::as_str)
-            .unwrap_or("unknown error")
-            .to_owned();
-        return Err(McpClientError::JsonRpc { code, message });
-    }
-    Ok(())
+fn build_transport(url: &str) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
+    let config = StreamableHttpClientTransportConfig::with_uri(url);
+    StreamableHttpClientTransport::from_config(config)
 }
 
 pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
-    let client = reqwest::Client::builder()
-        .timeout(TIMEOUT)
-        .build()?;
+    let url = url.to_owned();
+    let transport = build_transport(&url);
 
-    let session_id = initialize(&client, url).await?;
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
 
-    let body = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 2,
-        "method": "tools/list",
-    });
+    tracing::debug!(url = %url, "connected to MCP server for tools/list");
 
-    let mut request = client
-        .post(url)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json, text/event-stream");
+    let mut all_tools = Vec::new();
+    let mut cursor = None;
 
-    if let Some(sid) = &session_id {
-        request = request.header("Mcp-Session-Id", sid);
+    for _ in 0..100 {
+        let params = PaginatedRequestParams::default().with_cursor(cursor);
+        let page = tokio::time::timeout(
+            TIMEOUT,
+            Box::pin(client.list_tools(Some(params))),
+        )
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::ListTools {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+        all_tools.extend(page.tools);
+
+        if all_tools.len() >= MAX_TOOLS {
+            all_tools.truncate(MAX_TOOLS);
+            break;
+        }
+
+        match page.next_cursor {
+            Some(next) if !next.is_empty() => cursor = Some(next),
+            _ => break,
+        }
     }
 
-    let raw_response = request
-        .json(&body)
-        .send()
-        .await?;
+    tracing::debug!(url = %url, tool_count = all_tools.len(), "discovered tools from MCP server");
 
-    let status = raw_response.status();
-    let content_type = raw_response
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("")
-        .to_owned();
-    let response_text = raw_response.text().await?;
-
-    tracing::debug!(
-        url = %url,
-        %status,
-        content_type = %content_type,
-        body_len = response_text.len(),
-        "MCP tools/list response"
-    );
-
-    let response: Value = if content_type.contains("text/event-stream") {
-        parse_sse_json(&response_text)?
-    } else {
-        serde_json::from_str(&response_text)
-            .map_err(|e| McpClientError::Format(format!("invalid JSON response: {e}")))?
-    };
-
-    check_json_rpc_error(&response)?;
-
-    let tools = response
-        .get("result")
-        .and_then(|r| r.get("tools"))
-        .and_then(Value::as_array)
-        .cloned()
-        .ok_or_else(|| McpClientError::Format(format!("missing result.tools in response: {response}")))?;
-
-    tracing::debug!(url = %url, tool_count = tools.len(), "discovered tools from MCP server");
-
-    Ok(tools)
+    all_tools
+        .into_iter()
+        .map(|t| serde_json::to_value(t).map_err(|e| McpClientError::ListTools {
+            url: url.to_owned(),
+            message: e.to_string(),
+        }))
+        .collect()
 }
 
 pub async fn call_tool(
@@ -133,76 +100,41 @@ pub async fn call_tool(
     tool_name: &str,
     arguments: Value,
 ) -> Result<Vec<String>, McpClientError> {
-    let client = reqwest::Client::builder()
-        .timeout(TIMEOUT)
-        .build()?;
+    let url = url.to_owned();
+    let transport = build_transport(&url);
 
-    let session_id = initialize(&client, url).await?;
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
 
-    let body = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 2,
-        "method": "tools/call",
-        "params": {
-            "name": tool_name,
-            "arguments": arguments,
-        }
-    });
-
-    let mut request = client
-        .post(url)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json, text/event-stream");
-
-    if let Some(sid) = &session_id {
-        request = request.header("Mcp-Session-Id", sid);
+    let mut params = CallToolRequestParams::new(tool_name.to_owned());
+    if let Value::Object(args) = &arguments {
+        params = params.with_arguments(args.clone());
     }
 
-    let raw_response = request
-        .json(&body)
-        .send()
-        .await?;
+    let result = tokio::time::timeout(TIMEOUT, Box::pin(client.call_tool(params)))
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::CallTool {
+            url: url.to_owned(),
+            tool_name: tool_name.to_owned(),
+            message: e.to_string(),
+        })?;
 
-    let ct = raw_response
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("")
-        .to_owned();
-    let text = raw_response.text().await?;
-
-    let response: Value = if ct.contains("text/event-stream") {
-        parse_sse_json(&text)?
-    } else {
-        serde_json::from_str(&text)
-            .map_err(|e| McpClientError::Format(format!("invalid JSON response: {e}")))?
-    };
-
-    check_json_rpc_error(&response)?;
-
-    let content = response
-        .get("result")
-        .and_then(|r| r.get("content"))
-        .and_then(Value::as_array)
-        .ok_or_else(|| McpClientError::Format("missing result.content in response".to_owned()))?;
-
-    Ok(content
+    Ok(result
+        .content
         .iter()
-        .filter_map(|c| c.get("text").and_then(Value::as_str).map(str::to_owned))
+        .filter_map(|block| match block {
+            rmcp::model::ContentBlock::Text(text) => Some(text.text.clone()),
+            _ => None,
+        })
         .collect())
-}
-
-fn parse_sse_json(sse_text: &str) -> Result<Value, McpClientError> {
-    for line in sse_text.lines() {
-        if let Some(data) = line.strip_prefix("data: ") {
-            if let Ok(value) = serde_json::from_str::<Value>(data) {
-                if value.get("jsonrpc").is_some() {
-                    return Ok(value);
-                }
-            }
-        }
-    }
-    Err(McpClientError::Format(
-        "no JSON-RPC message found in SSE response".to_owned(),
-    ))
 }
