@@ -61,7 +61,7 @@ export WANAKU_HOST="${WANAKU_HOST:-http://localhost:8080}"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-test-key-placeholder}"
 export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4}"
 export OPENAI_ORG="${OPENAI_ORG:-}"
-export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp/sse}"
+export MCP_SERVER_URI="${MCP_SERVER_URI:-http://localhost:8080/public/mcp}"
 ```
 
 ### Build, re-augment, and start the router

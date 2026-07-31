@@ -5,12 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.EmbeddedResource;
-import io.quarkiverse.mcp.server.PromptManager;
-import io.quarkiverse.mcp.server.PromptMessage;
-import io.quarkiverse.mcp.server.PromptResponse;
-import io.quarkiverse.mcp.server.TextContent;
-import io.quarkiverse.mcp.server.TextResourceContents;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.spec.McpSchema;
 import ai.wanaku.capabilities.sdk.api.types.AudioContent;
 import ai.wanaku.capabilities.sdk.api.types.ImageContent;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
@@ -18,143 +15,108 @@ import ai.wanaku.capabilities.sdk.api.types.PromptReference;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 
 /**
- * Helper class for dealing with prompts and MCP protocol exposure
+ * Helper class for registering prompts with MCP servers and converting
+ * prompt content between Wanaku and MCP protocol formats.
  */
 public final class PromptHelper {
     private static final Logger LOG = Logger.getLogger(PromptHelper.class);
 
     private PromptHelper() {}
 
-    /**
-     * Registers a prompt with the given prompt manager by applying the provided handler function
-     * to expose the prompt's functionality via the MCP protocol.
-     *
-     * @param promptReference The reference to the prompt being registered
-     * @param promptManager   The prompt manager instance responsible for managing prompts
-     * @param handler       A BiFunction that takes PromptArguments and PromptReference as input,
-     *                      and returns a PromptResponse. This function will be applied to retrieve the prompt.
-     */
     public static void registerPrompt(
             PromptReference promptReference,
-            PromptManager promptManager,
-            BiFunction<PromptManager.PromptArguments, PromptReference, PromptResponse> handler) {
-        registerPrompt(promptReference, promptManager, null, handler);
+            McpSyncServer server,
+            BiFunction<McpSchema.GetPromptRequest, PromptReference, McpSchema.GetPromptResult> handler) {
+        registerPrompt(promptReference, server, null, handler);
     }
 
-    /**
-     * Registers a prompt with the given prompt manager by applying the provided handler function
-     * to expose the prompt's functionality via the MCP protocol.
-     *
-     * @param promptReference The reference to the prompt being registered
-     * @param promptManager   The prompt manager instance responsible for managing prompts
-     * @param namespace     The namespace to use for registering the prompt
-     * @param handler       A BiFunction that takes PromptArguments and PromptReference as input,
-     *                      and returns a PromptResponse. This function will be applied to retrieve the prompt.
-     */
     public static void registerPrompt(
             PromptReference promptReference,
-            PromptManager promptManager,
+            McpSyncServer server,
             Namespace namespace,
-            BiFunction<PromptManager.PromptArguments, PromptReference, PromptResponse> handler) {
+            BiFunction<McpSchema.GetPromptRequest, PromptReference, McpSchema.GetPromptResult> handler) {
 
-        PromptManager.PromptDefinition promptDefinition =
-                promptManager.newPrompt(promptReference.getName()).setDescription(promptReference.getDescription());
-
-        // Add arguments
+        List<McpSchema.PromptArgument> promptArgs = new ArrayList<>();
         if (promptReference.getArguments() != null) {
             for (PromptReference.PromptArgument arg : promptReference.getArguments()) {
-                promptDefinition.addArgument(arg.getName(), arg.getDescription(), arg.isRequired());
+                promptArgs.add(McpSchema.PromptArgument.builder(arg.getName())
+                        .description(arg.getDescription())
+                        .required(arg.isRequired())
+                        .build());
             }
         }
+
+        McpSchema.Prompt prompt = McpSchema.Prompt.builder(promptReference.getName())
+                .description(promptReference.getDescription())
+                .arguments(promptArgs)
+                .build();
+
+        McpServerFeatures.SyncPromptSpecification spec =
+                new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, request) -> {
+                    return handler.apply(request, promptReference);
+                });
 
         if (namespace != null) {
             LOG.debugf(
                     "Registering prompt %s in namespace %s with path %s",
                     promptReference.getName(), namespace.getName(), namespace.getPath());
-            promptDefinition
-                    .setServerName(namespace.getPath())
-                    .setHandler(pa -> handler.apply(pa, promptReference))
-                    .register();
         } else {
             LOG.debugf("Registering prompt %s", promptReference.getName());
-            promptDefinition
-                    .setHandler(pa -> handler.apply(pa, promptReference))
-                    .register();
         }
+        server.addPrompt(spec);
     }
 
-    /**
-     * Expands a prompt template with the provided arguments and converts it to MCP format.
-     *
-     * @param arguments Map of argument names to values
-     * @param promptReference The prompt reference with template messages
-     * @return A PromptResponse with expanded messages in MCP format
-     */
-    public static PromptResponse expandAndConvert(Map<String, String> arguments, PromptReference promptReference) {
+    public static McpSchema.GetPromptResult expandAndConvert(
+            Map<String, String> arguments, PromptReference promptReference) {
 
-        // Expand template variables
         PromptReference expanded = PromptExpander.expand(promptReference, arguments);
 
-        // Convert to MCP format
-        List<PromptMessage> mcpMessages = new ArrayList<>();
+        List<McpSchema.PromptMessage> mcpMessages = new ArrayList<>();
         if (expanded.getMessages() != null) {
             for (ai.wanaku.capabilities.sdk.api.types.PromptMessage message : expanded.getMessages()) {
                 mcpMessages.add(convertMessage(message));
             }
         }
 
-        return PromptResponse.withMessages(mcpMessages);
+        return McpSchema.GetPromptResult.builder(mcpMessages).build();
     }
 
-    /**
-     * Converts a Wanaku PromptMessage to MCP PromptMessage format.
-     * Supports all MCP content types: text, image, audio, and embedded resources.
-     */
-    private static PromptMessage convertMessage(ai.wanaku.capabilities.sdk.api.types.PromptMessage message) {
+    private static McpSchema.PromptMessage convertMessage(ai.wanaku.capabilities.sdk.api.types.PromptMessage message) {
         String role = message.getRole();
         Object content = message.getContent();
 
-        io.quarkiverse.mcp.server.Content mcpContent;
+        McpSchema.Content mcpContent;
 
         if (content instanceof ai.wanaku.capabilities.sdk.api.types.TextContent textContent) {
-            // Text content
-            mcpContent = new TextContent(textContent.getText());
+            mcpContent = McpSchema.TextContent.builder(textContent.getText()).build();
         } else if (content instanceof ImageContent imageContent) {
-            // Image content (base64 encoded data)
-            mcpContent = new io.quarkiverse.mcp.server.ImageContent(imageContent.getData(), imageContent.getMimeType());
+            mcpContent = new McpSchema.ImageContent(null, imageContent.getData(), imageContent.getMimeType());
         } else if (content instanceof AudioContent audioContent) {
-            // Audio content (base64 encoded data)
-            mcpContent = new io.quarkiverse.mcp.server.AudioContent(audioContent.getData(), audioContent.getMimeType());
+            mcpContent = new McpSchema.AudioContent(null, audioContent.getData(), audioContent.getMimeType());
         } else if (content instanceof ai.wanaku.capabilities.sdk.api.types.EmbeddedResource embeddedResource) {
-            // Embedded resource
             ResourceReference resource = embeddedResource.getResource();
-
-            // Create TextResourceContents with location (URI), text/description, and mime type
-            TextResourceContents resourceContents = new TextResourceContents(
+            McpSchema.TextResourceContents resourceContents = new McpSchema.TextResourceContents(
                     resource.getLocation() != null ? resource.getLocation() : "",
-                    resource.getDescription() != null ? resource.getDescription() : "",
-                    resource.getMimeType() != null ? resource.getMimeType() : "text/plain");
-
-            mcpContent = new EmbeddedResource(resourceContents);
+                    resource.getMimeType() != null ? resource.getMimeType() : "text/plain",
+                    resource.getDescription() != null ? resource.getDescription() : "");
+            mcpContent = new McpSchema.EmbeddedResource(null, resourceContents);
         } else {
-            // Fallback to empty text
-            mcpContent = new TextContent("");
+            mcpContent = McpSchema.TextContent.builder("").build();
         }
 
         return createMessageByRole(role, mcpContent);
     }
 
-    /**
-     * Creates a PromptMessage with the appropriate role.
-     */
-    private static PromptMessage createMessageByRole(String role, io.quarkiverse.mcp.server.Content content) {
-        return switch (role.toLowerCase()) {
-            case "user" -> PromptMessage.withUserRole(content);
-            case "assistant" -> PromptMessage.withAssistantRole(content);
-            default -> {
-                LOG.warnf("Unknown role '%s', defaulting to user", role);
-                yield PromptMessage.withUserRole(content);
-            }
-        };
+    private static McpSchema.PromptMessage createMessageByRole(String role, McpSchema.Content content) {
+        McpSchema.Role mcpRole =
+                switch (role.toLowerCase()) {
+                    case "user" -> McpSchema.Role.USER;
+                    case "assistant" -> McpSchema.Role.ASSISTANT;
+                    default -> {
+                        LOG.warnf("Unknown role '%s', defaulting to user", role);
+                        yield McpSchema.Role.USER;
+                    }
+                };
+        return new McpSchema.PromptMessage(mcpRole, content);
     }
 }

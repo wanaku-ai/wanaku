@@ -7,8 +7,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import java.util.List;
-import io.quarkiverse.mcp.server.ResourceManager;
-import io.quarkiverse.mcp.server.ResourceResponse;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.smallrye.mutiny.Uni;
 import ai.wanaku.backend.bridge.ProvisionerBridge;
 import ai.wanaku.backend.bridge.ResourceAcquirerBridge;
@@ -22,9 +21,6 @@ import ai.wanaku.backend.service.support.ServiceResolver;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
 import picocli.CommandLine;
 
-/**
- * A provider for resources resolvers
- */
 @ApplicationScoped
 public class ResourcesProvider {
     @Inject
@@ -65,9 +61,14 @@ public class ResourcesProvider {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
             return new ResourceBridge() {
                 @Override
-                public Uni<ResourceResponse> read(
-                        ResourceManager.ResourceArguments arguments, ResourceReference mcpResource) {
-                    return Uni.createFrom().item(new ResourceResponse(List.of()));
+                public Uni<McpSchema.ReadResourceResult> read(
+                        McpSchema.ReadResourceRequest readRequest,
+                        String sessionId,
+                        io.modelcontextprotocol.common.McpTransportContext transportContext,
+                        ResourceReference mcpResource) {
+                    return Uni.createFrom()
+                            .item(McpSchema.ReadResourceResult.builder(List.of())
+                                    .build());
                 }
             };
         }

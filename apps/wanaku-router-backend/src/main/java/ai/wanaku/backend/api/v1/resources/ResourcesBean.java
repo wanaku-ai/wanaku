@@ -8,7 +8,7 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ResourceManager;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.common.ProvisioningHelper;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
@@ -18,6 +18,7 @@ import ai.wanaku.backend.common.AbstractBean;
 import ai.wanaku.backend.common.ResourceHelper;
 import ai.wanaku.backend.core.persistence.api.ResourceReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.backend.mcp.McpServerRegistry;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.ResourceReference;
@@ -30,7 +31,7 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     private static final Logger LOG = Logger.getLogger(ResourcesBean.class);
 
     @Inject
-    ResourceManager resourceManager;
+    McpServerRegistry registry;
 
     @Inject
     ResourceBridge resourceBridge;
@@ -52,8 +53,11 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     }
 
     public ResourceReference expose(ResourceReference mcpResource) {
+        List<ResourceReference> existing = resourceReferenceRepository.findByName(mcpResource.getName());
+        if (!existing.isEmpty()) {
+            throw EntityAlreadyExistsException.forName(mcpResource.getName());
+        }
         doExposeResource(mcpResource);
-
         return resourceReferenceRepository.persist(mcpResource);
     }
 
@@ -86,12 +90,11 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     }
 
     void loadResources(@Observes StartupEvent ev) {
-        // Preload data
         namespacesBean.preload();
 
         for (ResourceReference resourceReference : list()) {
             try {
-                expose(resourceReference);
+                doExposeResource(resourceReference);
             } catch (EntityAlreadyExistsException e) {
                 LOG.errorf(
                         e,
@@ -104,24 +107,26 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
     private void doExposeResource(ResourceReference resourceReference) {
         if (!StringHelper.isEmpty(resourceReference.getNamespace())) {
             final Namespace namespace = namespacesBean.alocateNamespace(resourceReference.getNamespace());
-
-            ResourceHelper.expose(resourceReference, resourceManager, namespace, resourceBridge::read);
+            McpSyncServer server = registry.getServerForPath(namespace.getPath());
+            ResourceHelper.expose(resourceReference, server, namespace, resourceBridge::read);
         } else {
-            ResourceHelper.expose(resourceReference, resourceManager, resourceBridge::read);
+            ResourceHelper.expose(resourceReference, registry.getPublicServer(), resourceBridge::read);
         }
     }
 
     private int removeReference(String name, ResourceReference resourceReference) {
         int removed = 0;
-
         try {
             removed = resourceReferenceRepository.removeByField("name", name);
         } finally {
             if (removed > 0) {
-                resourceManager.removeResource(resourceReference.getLocation());
+                try {
+                    registry.getPublicServer().removeResource(resourceReference.getLocation());
+                } catch (Exception e) {
+                    LOG.debugf(e, "Resource %s not found on public server for removal", name);
+                }
             }
         }
-
         return removed;
     }
 
@@ -130,7 +135,6 @@ public class ResourcesBean extends AbstractBean<ResourceReference> {
         if (ref == null) {
             return 0;
         }
-
         return removeReference(name, ref);
     }
 

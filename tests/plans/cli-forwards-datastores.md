@@ -76,7 +76,7 @@ fi
 wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name test-forward \
-  --service "http://localhost:9999/mcp/sse" \
+  --service "http://localhost:9999/mcp" \
   --namespace public
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -eq 0 ]; then
@@ -124,7 +124,7 @@ This verifies the `--namespace` flag resolves the namespace name to its ID befor
 wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name ns-name-test-forward \
-  --service "http://localhost:9999/mcp/sse" \
+  --service "http://localhost:9999/mcp" \
   --namespace public
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -eq 0 ]; then
@@ -145,7 +145,7 @@ wanaku forwards remove \
 OUTPUT=$(wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name ns-name-invalid-test \
-  --service "http://localhost:9999/mcp/sse" \
+  --service "http://localhost:9999/mcp" \
   --namespace non-existent-namespace 2>&1)
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -166,7 +166,7 @@ fi
 wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name test-forward-refresh \
-  --service "http://localhost:9999/mcp/sse" \
+  --service "http://localhost:9999/mcp" \
   --namespace public
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -eq 0 ]; then
@@ -491,7 +491,7 @@ fi
 ```bash
 wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
-  --service "http://localhost:9999/mcp/sse" \
+  --service "http://localhost:9999/mcp" \
   --namespace public 2>&1
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -524,7 +524,7 @@ fi
 wanaku forwards add \
   --host "${WANAKU_ROUTER_URL}" \
   --name negative-test-forward \
-  --service "http://localhost:9999/mcp/sse" 2>&1
+  --service "http://localhost:9999/mcp" 2>&1
 EXIT_CODE=$?
 if [ "${EXIT_CODE}" -ne 0 ]; then
   echo "PASS: forwards add without --namespace or --namespace-id rejected (exit code ${EXIT_CODE})"

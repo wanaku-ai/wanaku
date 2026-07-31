@@ -9,7 +9,7 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.ToolManager;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.common.ProvisioningHelper;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
@@ -19,6 +19,7 @@ import ai.wanaku.backend.common.LabelsAwareWanakuEntityBean;
 import ai.wanaku.backend.common.ToolsHelper;
 import ai.wanaku.backend.core.persistence.api.ToolReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.backend.mcp.McpServerRegistry;
 import ai.wanaku.backend.support.ProvisioningReference;
 import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
@@ -35,7 +36,7 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     private static final Logger LOG = Logger.getLogger(ToolsBean.class);
 
     @Inject
-    ToolManager toolManager;
+    McpServerRegistry registry;
 
     @Inject
     ToolsBridge toolsBridge;
@@ -57,17 +58,17 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     public ToolReference add(ToolReference toolReference) {
-        // then registers the tool with the tool manager
-        registerTool(toolReference);
+        List<ToolReference> existing = toolReferenceRepository.findByName(toolReference.getName());
+        if (!existing.isEmpty()) {
+            throw EntityAlreadyExistsException.forName(toolReference.getName());
+        }
 
-        // if all goes well, persist the tool, so it can be loaded back when restarting
+        registerTool(toolReference);
         return toolReferenceRepository.persist(toolReference);
     }
 
     public ToolReference add(ToolPayload toolPayload) {
-        // First, provision the tool (i.e.: configuration, secrets, etc) in the target defined by the remote
         provision(toolPayload);
-
         return add(toolPayload.getPayload());
     }
 
@@ -103,19 +104,18 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
             Map.Entry<String, PropertySchema> serviceProperty, Map<String, PropertySchema> serviceProperties) {
         PropertySchema schema = serviceProperties.get(serviceProperty.getKey());
         Property property = new Property();
-
         property.setDescription(schema.getDescription());
         property.setType(schema.getType());
-
         return property;
     }
 
     private void registerTool(ToolReference toolReference) {
         if (!StringHelper.isEmpty(toolReference.getNamespace())) {
             final Namespace namespace = namespacesBean.alocateNamespace(toolReference.getNamespace());
-            ToolsHelper.registerTool(toolReference, toolManager, namespace, toolsBridge::execute);
+            McpSyncServer server = registry.getServerForPath(namespace.getPath());
+            ToolsHelper.registerTool(toolReference, server, namespace, toolsBridge::execute);
         } else {
-            ToolsHelper.registerTool(toolReference, toolManager, toolsBridge::execute);
+            ToolsHelper.registerTool(toolReference, registry.getPublicServer(), toolsBridge::execute);
         }
     }
 
@@ -131,7 +131,6 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     void loadTools(@Observes StartupEvent ev) {
-        // Preload data
         namespacesBean.preload();
 
         for (ToolReference toolReference : list()) {
@@ -147,16 +146,35 @@ public class ToolsBean extends LabelsAwareWanakuEntityBean<ToolReference> {
     }
 
     public int remove(String name) throws WanakuException {
+        ToolReference ref = getByName(name);
         int removed = 0;
         try {
             removed = removeByName(name);
         } finally {
             if (removed > 0) {
-                toolManager.removeTool(name);
+                removeToolFromServer(name, ref);
             }
         }
-
         return removed;
+    }
+
+    private void removeToolFromServer(String name, ToolReference ref) {
+        if (ref != null && !StringHelper.isEmpty(ref.getNamespace())) {
+            try {
+                Namespace ns = namespacesBean.getById(ref.getNamespace());
+                if (ns != null) {
+                    registry.getServerForPath(ns.getPath()).removeTool(name);
+                    return;
+                }
+            } catch (Exception e) {
+                LOG.debugf(e, "Could not resolve namespace for tool %s, trying public server", name);
+            }
+        }
+        try {
+            registry.getPublicServer().removeTool(name);
+        } catch (Exception e) {
+            LOG.debugf(e, "Tool %s not found on public server for removal", name);
+        }
     }
 
     public void update(ToolReference resource) {

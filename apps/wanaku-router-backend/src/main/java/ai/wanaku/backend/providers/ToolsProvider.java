@@ -40,7 +40,8 @@ public class ToolsProvider {
     @Produces
     ToolsBridge getToolsBridge() {
         if (parseResult.isUsageHelpRequested() || parseResult.isVersionHelpRequested()) {
-            return (toolArguments, toolReference) -> Uni.createFrom().nullItem();
+            return (callToolRequest, sessionId, transportContext, toolReference) ->
+                    Uni.createFrom().nullItem();
         }
 
         LOG.infof("Wanaku version %s is starting", VersionHelper.VERSION);

@@ -1,6 +1,7 @@
 package ai.wanaku.backend.api.v1.oidc;
 
 import java.util.Map;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -14,13 +15,19 @@ import org.junit.jupiter.api.Test;
 @TestProfile(OAuthAuthorizationServerWellKnownResourceIT.Profile.class)
 class OAuthAuthorizationServerWellKnownResourceIT {
 
+    @ConfigProperty(name = "auth.proxy")
+    String authProxy;
+
+    @ConfigProperty(name = "quarkus.oidc-proxy.root-path")
+    String oidcProxyRootPath;
+
     @Test
     void forwardsOpenIdConfiguration() {
         given().when()
                 .get("/.well-known/oauth-authorization-server")
                 .then()
                 .statusCode(200)
-                .body(equalTo("{\"issuer\":\"http://test-issuer\"}"));
+                .body("issuer", equalTo(authProxy + oidcProxyRootPath));
     }
 
     @Test
@@ -29,7 +36,7 @@ class OAuthAuthorizationServerWellKnownResourceIT {
                 .get("/.well-known/oauth-authorization-server/mcp")
                 .then()
                 .statusCode(200)
-                .body(equalTo("{\"issuer\":\"http://test-issuer\"}"));
+                .body("issuer", equalTo(authProxy + oidcProxyRootPath));
     }
 
     public static class Profile implements QuarkusTestProfile {

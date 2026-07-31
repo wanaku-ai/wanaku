@@ -7,8 +7,10 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
-import io.quarkiverse.mcp.server.PromptManager;
+import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.quarkus.runtime.StartupEvent;
 import ai.wanaku.backend.api.v1.namespaces.NamespacesBean;
 import ai.wanaku.backend.common.AbstractBean;
@@ -16,6 +18,8 @@ import ai.wanaku.backend.common.PromptHelper;
 import ai.wanaku.backend.core.mcp.common.resolvers.PromptsResolver;
 import ai.wanaku.backend.core.persistence.api.PromptReferenceRepository;
 import ai.wanaku.backend.core.persistence.api.WanakuRepository;
+import ai.wanaku.backend.mcp.McpServerRegistry;
+import ai.wanaku.capabilities.sdk.api.exceptions.EntityAlreadyExistsException;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.Namespace;
 import ai.wanaku.capabilities.sdk.api.types.PromptReference;
@@ -27,7 +31,7 @@ public class PromptsBean extends AbstractBean<PromptReference> {
     private static final Logger LOG = Logger.getLogger(PromptsBean.class);
 
     @Inject
-    PromptManager promptManager;
+    McpServerRegistry registry;
 
     @Inject
     PromptsResolver promptsResolver;
@@ -46,10 +50,11 @@ public class PromptsBean extends AbstractBean<PromptReference> {
     }
 
     public PromptReference add(PromptReference promptReference) {
-        // Register with MCP PromptManager
+        List<PromptReference> existing = promptReferenceRepository.findByName(promptReference.getName());
+        if (!existing.isEmpty()) {
+            throw EntityAlreadyExistsException.forName(promptReference.getName());
+        }
         registerPrompt(promptReference);
-
-        // if all goes well, persist the prompt, so it can be loaded back when restarting
         return promptReferenceRepository.persist(promptReference);
     }
 
@@ -60,16 +65,20 @@ public class PromptsBean extends AbstractBean<PromptReference> {
     private void registerPrompt(PromptReference promptReference) {
         if (!StringHelper.isEmpty(promptReference.getNamespace())) {
             final Namespace namespace = namespacesBean.alocateNamespace(promptReference.getNamespace());
-
-            PromptHelper.registerPrompt(promptReference, promptManager, namespace, this::handlePromptGet);
+            McpSyncServer server = registry.getServerForPath(namespace.getPath());
+            PromptHelper.registerPrompt(promptReference, server, namespace, this::handlePromptGet);
         } else {
-            PromptHelper.registerPrompt(promptReference, promptManager, this::handlePromptGet);
+            PromptHelper.registerPrompt(promptReference, registry.getPublicServer(), this::handlePromptGet);
         }
     }
 
-    private io.quarkiverse.mcp.server.PromptResponse handlePromptGet(
-            PromptManager.PromptArguments args, PromptReference promptReference) {
-        return PromptHelper.expandAndConvert(args.args(), promptReference);
+    private McpSchema.GetPromptResult handlePromptGet(
+            McpSchema.GetPromptRequest request, PromptReference promptReference) {
+        Map<String, String> stringArgs = new java.util.HashMap<>();
+        if (request.arguments() != null) {
+            request.arguments().forEach((k, v) -> stringArgs.put(k, v != null ? v.toString() : null));
+        }
+        return PromptHelper.expandAndConvert(stringArgs, promptReference);
     }
 
     public List<PromptReference> list() {
@@ -77,10 +86,8 @@ public class PromptsBean extends AbstractBean<PromptReference> {
     }
 
     void loadPrompts(@Observes StartupEvent ev) {
-        // Preload namespaces
         namespacesBean.preload();
 
-        // Register all prompts with MCP server
         for (PromptReference promptReference : list()) {
             registerPrompt(promptReference);
         }
@@ -94,23 +101,27 @@ public class PromptsBean extends AbstractBean<PromptReference> {
             removed = removeByName(name);
         } finally {
             if (removed > 0) {
-                promptManager.removePrompt(name);
+                try {
+                    registry.getPublicServer().removePrompt(name);
+                } catch (Exception e) {
+                    LOG.debugf(e, "Prompt %s not found on public server for removal", name);
+                }
             }
         }
-
         return removed;
     }
 
     public void update(PromptReference resource) {
-        // Fetch the existing prompt by name to get its ID
         PromptReference existing = getByName(resource.getName());
         if (existing != null) {
-            // Set the ID from the existing prompt
             resource.setId(existing.getId());
             promptReferenceRepository.update(resource.getId(), resource);
 
-            // Remove old prompt from MCP and re-register with updated content
-            promptManager.removePrompt(resource.getName());
+            try {
+                registry.getPublicServer().removePrompt(resource.getName());
+            } catch (Exception e) {
+                LOG.debugf(e, "Prompt %s not found on public server for removal during update", resource.getName());
+            }
             registerPrompt(resource);
         }
     }
