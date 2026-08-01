@@ -739,4 +739,79 @@ public abstract class AbstractCapabilitiesResourceTest extends WanakuRouterTest 
                 .then()
                 .statusCode(Response.Status.FOUND.getStatusCode()); // 302 redirect to Keycloak login
     }
+
+    @Test
+    void testGetCapabilities_LabelFilterFiltersResults() {
+        ServiceTarget serviceTarget = new ServiceTarget(
+                null,
+                "test-label-filter-service",
+                "localhost",
+                9301,
+                ServiceType.TOOL_INVOKER.asValue(),
+                "mcp",
+                null,
+                null,
+                null);
+
+        String serviceId = given().headers(getHeaders())
+                .body(serviceTarget)
+                .when()
+                .post("/api/v1/management/discovery")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .extract()
+                .path("data.id");
+
+        // Capabilities carry no labels, so an affirmative expression matches nothing
+        given().headers(getHeaders())
+                .queryParam("labelFilter", "nonexistent=true")
+                .when()
+                .get("/api/v1/capabilities")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.size()", equalTo(0));
+
+        // ...and a negated expression matches everything
+        given().headers(getHeaders())
+                .queryParam("labelFilter", "nonexistent!=true")
+                .when()
+                .get("/api/v1/capabilities")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.find { it.id == '" + serviceId + "' }.serviceName", equalTo("test-label-filter-service"));
+
+        // A blank filter returns all capabilities
+        given().headers(getHeaders())
+                .queryParam("labelFilter", "")
+                .when()
+                .get("/api/v1/capabilities")
+                .then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body("data.find { it.id == '" + serviceId + "' }.serviceName", equalTo("test-label-filter-service"));
+
+        // Cleanup
+        given().headers(getHeaders())
+                .body(new ServiceTarget(
+                        serviceId,
+                        "test-label-filter-service",
+                        "localhost",
+                        9301,
+                        ServiceType.TOOL_INVOKER.asValue(),
+                        "mcp",
+                        null,
+                        null,
+                        null))
+                .when()
+                .delete("/api/v1/management/discovery");
+    }
+
+    @Test
+    void testGetCapabilities_InvalidLabelFilterReturnsError() {
+        given().headers(getHeaders())
+                .queryParam("labelFilter", "((broken")
+                .when()
+                .get("/api/v1/capabilities")
+                .then()
+                .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    }
 }

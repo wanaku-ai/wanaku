@@ -16,7 +16,7 @@ export const useCapabilities = () => {
     (
       options?: RequestInit
     ): Promise<getApiV1CapabilitiesResponse> => {
-      return getApiV1Capabilities(options);
+      return getApiV1Capabilities(undefined, options);
     },
     []
   );
@@ -40,7 +40,7 @@ export const useCapabilities = () => {
     (
       options?: RequestInit
     ): Promise<getApiV1CapabilitiesResponse> => {
-      return getApiV1Capabilities(options);
+      return getApiV1Capabilities(undefined, options);
     },
     []
   );

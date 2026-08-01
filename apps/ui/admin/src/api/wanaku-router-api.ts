@@ -16,6 +16,7 @@ import type {
   DeleteApiV1ServiceTemplateRemoveParams,
   DeleteApiV1ToolsParams,
   ForwardReference,
+  GetApiV1CapabilitiesParams,
   GetApiV1CapabilitiesStaleParams,
   GetApiV1DataStoreParams,
   GetApiV1ForwardsParams,
@@ -89,15 +90,30 @@ export type getApiV1CapabilitiesResponseSuccess =
   };
 export type getApiV1CapabilitiesResponse = getApiV1CapabilitiesResponseSuccess;
 
-export const getGetApiV1CapabilitiesUrl = () => {
-  return `/api/v1/capabilities`;
+export const getGetApiV1CapabilitiesUrl = (
+  params?: GetApiV1CapabilitiesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/capabilities?${stringifiedParams}`
+    : `/api/v1/capabilities`;
 };
 
 export const getApiV1Capabilities = async (
+  params?: GetApiV1CapabilitiesParams,
   options?: RequestInit,
 ): Promise<getApiV1CapabilitiesResponse> => {
   return customFetch<getApiV1CapabilitiesResponse>(
-    getGetApiV1CapabilitiesUrl(),
+    getGetApiV1CapabilitiesUrl(params),
     {
       ...options,
       method: "GET",

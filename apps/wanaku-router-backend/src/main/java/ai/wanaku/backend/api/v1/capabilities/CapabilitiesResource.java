@@ -57,8 +57,8 @@ public class CapabilitiesResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public WanakuResponse<List<ServiceTarget>> list() {
-        return new WanakuResponse<>(capabilitiesBean.listAllCapabilities());
+    public WanakuResponse<List<ServiceTarget>> list(@QueryParam("labelFilter") String labelFilter) {
+        return new WanakuResponse<>(capabilitiesBean.listAllCapabilities(labelFilter));
     }
 
     @Path("/tools/state")
