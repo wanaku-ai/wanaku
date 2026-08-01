@@ -30,13 +30,23 @@ import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 public interface CapabilitiesService {
 
     /**
-     * Lists all available capabilities.
+     * Lists all available capabilities, optionally filtered by a label expression.
      *
+     * @param labelFilter optional label expression to filter capabilities; may be null
      * @return a {@link WanakuResponse} containing a list of tool service targets
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    WanakuResponse<List<ServiceTarget>> list();
+    WanakuResponse<List<ServiceTarget>> list(@QueryParam("labelFilter") String labelFilter);
+
+    /**
+     * Lists all available capabilities without filtering.
+     *
+     * @return a {@link WanakuResponse} containing a list of tool service targets
+     */
+    default WanakuResponse<List<ServiceTarget>> list() {
+        return list(null);
+    }
 
     /**
      * Retrieves the health and activity state of all tool providers.

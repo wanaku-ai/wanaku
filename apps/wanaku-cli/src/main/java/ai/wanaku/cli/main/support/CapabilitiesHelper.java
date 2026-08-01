@@ -89,7 +89,7 @@ public final class CapabilitiesHelper {
         return Uni.combine()
                 .all()
                 .unis(
-                        fetchCapabilities(capabilitiesService),
+                        fetchCapabilities(capabilitiesService, labelFilter),
                         fetchToolsActivityState(capabilitiesService),
                         fetchResourcesActivityState(capabilitiesService))
                 .with(CapabilitiesHelper::combineDataIntoCapabilities);
@@ -237,8 +237,21 @@ public final class CapabilitiesHelper {
      * @throws NullPointerException if targetsService is null
      */
     public static Uni<List<ServiceTarget>> fetchCapabilities(CapabilitiesService capabilitiesService) {
+        return fetchCapabilities(capabilitiesService, null);
+    }
+
+    /**
+     * Fetches the list of capabilities, optionally filtered by a label expression.
+     *
+     * @param capabilitiesService the service to fetch management tools from
+     * @param labelFilter optional label expression to filter capabilities; may be null
+     * @return a {@link Uni} emitting a list of {@link ServiceTarget} objects
+     * @throws NullPointerException if targetsService is null
+     */
+    public static Uni<List<ServiceTarget>> fetchCapabilities(
+            CapabilitiesService capabilitiesService, String labelFilter) {
         Objects.requireNonNull(capabilitiesService, "TargetsService cannot be null");
-        return executeApiCall(capabilitiesService::list, List.of());
+        return executeApiCall(() -> capabilitiesService.list(labelFilter), List.of());
     }
 
     /**

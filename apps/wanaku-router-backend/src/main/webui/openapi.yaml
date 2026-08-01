@@ -778,6 +778,11 @@ components:
 paths:
   /api/v1/capabilities:
     get:
+      parameters:
+      - name: labelFilter
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: OK

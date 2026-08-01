@@ -21,7 +21,7 @@ export const useTools = () => {
     (
       options?: RequestInit
     ): Promise<getApiV1CapabilitiesResponse> => {
-      return getApiV1Capabilities(options);
+      return getApiV1Capabilities(undefined, options);
     },
     []
   );

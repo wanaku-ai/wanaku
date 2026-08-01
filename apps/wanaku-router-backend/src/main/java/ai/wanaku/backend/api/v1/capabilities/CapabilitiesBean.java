@@ -9,15 +9,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.jboss.logging.Logger;
 import ai.wanaku.backend.core.mcp.providers.ServiceRegistry;
 import ai.wanaku.backend.core.mcp.providers.StaleCapability;
+import ai.wanaku.backend.core.mcp.util.LabelExpressionParser;
+import ai.wanaku.backend.core.mcp.util.LabelExpressionParser.LabelExpressionParseException;
+import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.capabilities.sdk.api.types.LabelsAwareEntity;
 import ai.wanaku.capabilities.sdk.api.types.discovery.ActivityRecord;
 import ai.wanaku.capabilities.sdk.api.types.discovery.HealthStatus;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceTarget;
 import ai.wanaku.capabilities.sdk.api.types.providers.ServiceType;
 import ai.wanaku.core.services.api.FleetStatus;
 import ai.wanaku.core.services.api.StaleCapabilityInfo;
+import ai.wanaku.core.util.StringHelper;
 
 @ApplicationScoped
 public class CapabilitiesBean {
@@ -43,19 +49,42 @@ public class CapabilitiesBean {
         return serviceRegistry.getEntries();
     }
 
+    public List<ServiceTarget> listAllCapabilities(String labelFilter) {
+        return filterByLabelExpression(listAllCapabilities(), labelFilter);
+    }
+
     public List<ServiceTarget> toolList() {
-        List<ServiceTarget> tools = serviceRegistry.getEntries(SERVICE_TYPE_TOOL_INVOKER);
-        return filterByLabels(tools);
+        return serviceRegistry.getEntries(SERVICE_TYPE_TOOL_INVOKER);
     }
 
     public List<ServiceTarget> resourcesList() {
-        List<ServiceTarget> resources = serviceRegistry.getEntries(SERVICE_TYPE_RESOURCE_PROVIDER);
-        return filterByLabels(resources);
+        return serviceRegistry.getEntries(SERVICE_TYPE_RESOURCE_PROVIDER);
     }
 
-    private List<ServiceTarget> filterByLabels(List<ServiceTarget> serviceTargets) {
-        return serviceTargets;
+    // ServiceTarget does not carry labels yet, so every capability is evaluated
+    // against an empty label set: affirmative expressions match nothing and
+    // negations match everything
+    static List<ServiceTarget> filterByLabelExpression(List<ServiceTarget> serviceTargets, String labelFilter) {
+        if (StringHelper.isBlank(labelFilter)) {
+            return serviceTargets;
+        }
+        try {
+            Predicate<LabelsAwareEntity<?>> predicate = LabelExpressionParser.parse(labelFilter);
+            return predicate.test(EMPTY_LABELS) ? serviceTargets : List.of();
+        } catch (LabelExpressionParseException e) {
+            throw new WanakuException("Invalid label expression: %s".formatted(labelFilter), e);
+        }
     }
+
+    private static final LabelsAwareEntity<String> EMPTY_LABELS = new LabelsAwareEntity<>() {
+        @Override
+        public String getId() {
+            return null;
+        }
+
+        @Override
+        public void setId(String id) {}
+    };
 
     public Map<String, List<ActivityRecord>> toolsState() {
         List<ServiceTarget> toolsServices = toolList();

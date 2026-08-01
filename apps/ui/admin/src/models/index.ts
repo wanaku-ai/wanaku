@@ -35,6 +35,7 @@ export * from "./eventType";
 export * from "./fleetStatus";
 export * from "./forwardReference";
 export * from "./forwardReferenceLabels";
+export * from "./getApiV1CapabilitiesParams";
 export * from "./getApiV1CapabilitiesResourcesListParams";
 export * from "./getApiV1CapabilitiesStaleParams";
 export * from "./getApiV1CapabilitiesToolsListParams";
