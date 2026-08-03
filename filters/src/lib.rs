@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 
+pub mod intercept;
 pub mod mcp_init;
 pub mod namespace;
 pub mod prompt_get;
@@ -10,6 +11,7 @@ pub(crate) mod response;
 pub mod tool_call;
 pub mod tool_list;
 
+pub use intercept::InterceptFilter;
 pub use mcp_init::McpInitFilter;
 pub use namespace::NamespaceFilter;
 pub use prompt_get::PromptGetFilter;

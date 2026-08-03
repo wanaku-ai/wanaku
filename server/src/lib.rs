@@ -61,4 +61,8 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
         @register registry,
         http "wanaku_prompt_get" => wanaku_praxis_filters::PromptGetFilter::from_config
     );
+    praxis_filter::register_filters!(
+        @register registry,
+        http "wanaku_intercept" => wanaku_praxis_filters::InterceptFilter::from_config
+    );
 }

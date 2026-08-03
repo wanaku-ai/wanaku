@@ -12,6 +12,7 @@ use praxis_protocol::http::PingoraHttp;
 use tracing::info;
 
 use wanaku_praxis_apis::grpc::GrpcPool;
+use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::registry::{
     InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry, ToolRegistry,
 };
@@ -30,12 +31,14 @@ fn main() {
 
     let wanaku_registry = load_wanaku_config(&wanaku_config_path);
     let grpc_pool = GrpcPool::new();
+    let interaction_store = InMemoryInteractionStore::new(1000);
 
     let filter_registry = wanaku_praxis::build_full_registry();
     let health_registry = build_health_registry(&config.clusters);
     let kv_stores = praxis_core::kv::KvStoreRegistry::new();
 
     let mgmt_registry = wanaku_registry.clone();
+    let mgmt_interactions = interaction_store.clone();
 
     info!("building wanaku pipelines");
     let pipelines = wanaku_praxis::pipelines::resolve_pipelines(
@@ -45,6 +48,7 @@ fn main() {
         &kv_stores,
         wanaku_registry,
         grpc_pool,
+        interaction_store,
     )
     .unwrap_or_else(|e| fatal(&e));
 
@@ -72,7 +76,7 @@ fn main() {
     }
 
     let mgmt_addr = "127.0.0.1:9090";
-    let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry);
+    let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry, mgmt_interactions);
     let mut mgmt_service = pingora_core::services::listening::Service::new(
         "wanaku-management".to_owned(),
         mgmt,

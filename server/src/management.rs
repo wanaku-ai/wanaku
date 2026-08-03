@@ -4,6 +4,7 @@ use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 use tracing::{info, warn};
 
+use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
@@ -14,11 +15,15 @@ const MAX_BODY_BYTES: usize = 1_048_576;
 
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
+    interactions: InMemoryInteractionStore,
 }
 
 impl WanakuManagementService {
-    pub fn new(registry: InMemoryRegistry) -> Self {
-        Self { registry }
+    pub fn new(registry: InMemoryRegistry, interactions: InMemoryInteractionStore) -> Self {
+        Self {
+            registry,
+            interactions,
+        }
     }
 }
 
@@ -103,6 +108,30 @@ fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
         ("POST", None | Some("payloads")) => PromptRoute::Create,
         ("DELETE", Some(n)) => PromptRoute::Delete(n.to_owned()),
         _ => PromptRoute::NotFound,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum InteractionRoute {
+    List,
+    Clear,
+    NotFound,
+}
+
+fn resolve_interaction_route(method: &str, path: &str) -> InteractionRoute {
+    let suffix = match path.strip_prefix("/api/v1/interactions") {
+        Some(s) => s,
+        None => return InteractionRoute::NotFound,
+    };
+
+    if !suffix.is_empty() && suffix != "/" {
+        return InteractionRoute::NotFound;
+    }
+
+    match method {
+        "GET" => InteractionRoute::List,
+        "DELETE" => InteractionRoute::Clear,
+        _ => InteractionRoute::NotFound,
     }
 }
 
@@ -231,6 +260,21 @@ impl ServeHttp for WanakuManagementService {
                 },
                 NamespaceRoute::Delete(name) => handle_namespace_delete(&self.registry, &name),
                 NamespaceRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        let interaction_route = resolve_interaction_route(&method, &path);
+        if interaction_route != InteractionRoute::NotFound {
+            return match interaction_route {
+                InteractionRoute::List => {
+                    let items = self.interactions.list();
+                    json_ok(&serde_json::json!(items))
+                }
+                InteractionRoute::Clear => {
+                    self.interactions.clear();
+                    json_ok(&serde_json::json!({"cleared": true}))
+                }
+                InteractionRoute::NotFound => json_err(404, "not found"),
             };
         }
 

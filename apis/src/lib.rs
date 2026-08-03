@@ -1,6 +1,7 @@
 #![deny(unsafe_code)]
 
 pub mod grpc;
+pub mod interactions;
 pub mod mcp_client;
 pub mod registry;
 

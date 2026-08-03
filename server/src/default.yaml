@@ -2,6 +2,9 @@ listeners:
   - name: mcp
     address: "127.0.0.1:8081"
     filter_chains: [mcp_router]
+  - name: ollama
+    address: "127.0.0.1:8082"
+    filter_chains: [ollama_proxy]
 
 filter_chains:
   - name: mcp_router
@@ -26,6 +29,18 @@ filter_chains:
           - name: content-type
             value: application/json
         body: '{"jsonrpc":"2.0","error":{"code":-32601,"message":"method not supported"},"id":null}'
+  - name: ollama_proxy
+    filters:
+      - filter: wanaku_intercept
+      - filter: router
+        routes:
+          - path_prefix: "/"
+            cluster: ollama
+      - filter: load_balancer
+        clusters:
+          - name: ollama
+            endpoints:
+              - "127.0.0.1:11434"
 
 insecure_options:
   skip_pipeline_validation: true
