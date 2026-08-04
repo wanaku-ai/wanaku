@@ -205,6 +205,10 @@ impl ServeHttp for WanakuManagementService {
         let path = http_session.req_header().uri.path().to_owned();
         let method = http_session.req_header().method.as_str().to_owned();
 
+        if path == "/healthz" || path == "/health" {
+            return json_ok(&serde_json::json!({"status": "ok"}));
+        }
+
         tracing::debug!(%method, %path, "management API request");
 
         let tool_route = resolve_tool_route(&method, &path);
