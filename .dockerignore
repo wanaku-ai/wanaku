@@ -1,0 +1,7 @@
+target/
+.git/
+.github/
+.claude/
+*.md
+!README.md
+wanaku.yaml
