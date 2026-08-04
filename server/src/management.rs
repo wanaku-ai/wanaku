@@ -17,6 +17,7 @@ pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     interactions: InMemoryInteractionStore,
     proxy: Option<crate::proxy::ClassicProxy>,
+    ui_path: Option<std::path::PathBuf>,
 }
 
 impl WanakuManagementService {
@@ -25,10 +26,17 @@ impl WanakuManagementService {
         if proxy.is_some() {
             info!("Classic proxy enabled via WANAKU_CLASSIC_URL");
         }
+
+        let ui_path = std::env::var("WANAKU_UI_PATH").ok().map(std::path::PathBuf::from);
+        if let Some(p) = &ui_path {
+            info!(path = %p.display(), "Admin UI serving enabled");
+        }
+
         Self {
             registry,
             interactions,
             proxy,
+            ui_path,
         }
     }
 }
@@ -241,6 +249,12 @@ impl ServeHttp for WanakuManagementService {
 
         if path == "/healthz" || path == "/health" {
             return json_ok(&serde_json::json!({"status": "ok"}));
+        }
+
+        if let Some(ui_path) = &self.ui_path {
+            if path.starts_with("/admin") {
+                return serve_static_file(ui_path, &path);
+            }
         }
 
         tracing::debug!(%method, %path, "management API request");
@@ -731,6 +745,73 @@ async fn read_body(session: &mut ServerSession) -> Result<String, Response<Vec<u
         }
     }
     String::from_utf8(buf).map_err(|_| json_err(400, "request body is not valid UTF-8"))
+}
+
+#[expect(clippy::expect_used, reason = "valid static response")]
+fn serve_static_file(ui_root: &std::path::Path, request_path: &str) -> Response<Vec<u8>> {
+    let relative = request_path
+        .strip_prefix("/admin")
+        .unwrap_or("")
+        .trim_start_matches('/');
+
+    let file_path = if relative.is_empty() {
+        ui_root.join("index.html")
+    } else {
+        ui_root.join(relative)
+    };
+
+    // Prevent path traversal
+    let canonical = match file_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            // SPA fallback: serve index.html for routes without file extensions
+            if !relative.contains('.') {
+                if let Ok(index) = std::fs::read(ui_root.join("index.html")) {
+                    return Response::builder()
+                        .status(200)
+                        .header("Content-Type", "text/html; charset=utf-8")
+                        .header("Content-Length", index.len())
+                        .body(index)
+                        .expect("valid static response");
+                }
+            }
+            return json_err(404, "file not found");
+        }
+    };
+
+    let canonical_root = match ui_root.canonicalize() {
+        Ok(r) => r,
+        Err(_) => return json_err(500, "UI root path not found"),
+    };
+
+    if !canonical.starts_with(&canonical_root) {
+        return json_err(403, "forbidden");
+    }
+
+    let body = match std::fs::read(&canonical) {
+        Ok(b) => b,
+        Err(_) => return json_err(404, "file not found"),
+    };
+
+    let content_type = match canonical.extension().and_then(|e| e.to_str()) {
+        Some("html") => "text/html; charset=utf-8",
+        Some("js") | Some("mjs") => "application/javascript",
+        Some("css") => "text/css",
+        Some("json") => "application/json",
+        Some("svg") => "image/svg+xml",
+        Some("png") => "image/png",
+        Some("ico") => "image/x-icon",
+        Some("woff2") => "font/woff2",
+        Some("woff") => "font/woff",
+        _ => "application/octet-stream",
+    };
+
+    Response::builder()
+        .status(200)
+        .header("Content-Type", content_type)
+        .header("Content-Length", body.len())
+        .body(body)
+        .expect("valid static response")
 }
 
 #[cfg(test)]
