@@ -20,6 +20,7 @@ workspace = true
 async-trait = { workspace = true }
 http = { workspace = true }
 pingora-core = { version = "0.8.2", package = "quixotic-plecostomus-core" }
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 praxis-ai-filters = { workspace = true }
 praxis-core = { workspace = true }
 praxis-filter = { workspace = true }

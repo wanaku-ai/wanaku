@@ -2,6 +2,7 @@
 
 pub mod management;
 pub mod pipelines;
+pub mod proxy;
 
 const DEFAULT_CONFIG: &str = include_str!("default.yaml");
 

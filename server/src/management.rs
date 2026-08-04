@@ -16,13 +16,19 @@ const MAX_BODY_BYTES: usize = 1_048_576;
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     interactions: InMemoryInteractionStore,
+    proxy: Option<crate::proxy::ClassicProxy>,
 }
 
 impl WanakuManagementService {
     pub fn new(registry: InMemoryRegistry, interactions: InMemoryInteractionStore) -> Self {
+        let proxy = crate::proxy::ClassicProxy::from_env();
+        if proxy.is_some() {
+            info!("Classic proxy enabled via WANAKU_CLASSIC_URL");
+        }
         Self {
             registry,
             interactions,
+            proxy,
         }
     }
 }
@@ -324,17 +330,34 @@ impl ServeHttp for WanakuManagementService {
             };
         }
 
-        match resolve_forward_route(&method, &path) {
-            ForwardRoute::List => handle_forward_list(&self.registry),
-            ForwardRoute::GetByName(name) => handle_forward_get(&self.registry, &name),
-            ForwardRoute::Create => match read_body(http_session).await {
-                Ok(body) => handle_forward_create(&self.registry, &body).await,
-                Err(resp) => resp,
-            },
-            ForwardRoute::Delete(name) => handle_forward_delete(&self.registry, &name),
-            ForwardRoute::Refresh(name) => handle_forward_refresh(&self.registry, &name).await,
-            ForwardRoute::NotFound => json_err(404, "not found"),
+        let forward_route = resolve_forward_route(&method, &path);
+        if forward_route != ForwardRoute::NotFound {
+            return match forward_route {
+                ForwardRoute::List => handle_forward_list(&self.registry),
+                ForwardRoute::GetByName(name) => handle_forward_get(&self.registry, &name),
+                ForwardRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_forward_create(&self.registry, &body).await,
+                    Err(resp) => resp,
+                },
+                ForwardRoute::Delete(name) => handle_forward_delete(&self.registry, &name),
+                ForwardRoute::Refresh(name) => handle_forward_refresh(&self.registry, &name).await,
+                ForwardRoute::NotFound => json_err(404, "not found"),
+            };
         }
+
+        if crate::proxy::ClassicProxy::should_proxy(&path) {
+            if let Some(proxy) = &self.proxy {
+                let body = match read_body(http_session).await {
+                    Ok(b) if b.is_empty() => None,
+                    Ok(b) => Some(b),
+                    Err(resp) => return resp,
+                };
+                return proxy.forward(&method, &path, body).await;
+            }
+            return json_err(503, "Classic backend not configured (set WANAKU_CLASSIC_URL)");
+        }
+
+        json_err(404, "not found")
     }
 }
 
