@@ -7,8 +7,8 @@ use tracing::{info, warn};
 use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
-    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
-    MCP_FORWARD_TYPE,
+    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ServiceEntry, ServiceRegistry,
+    ToolEntry, ToolRegistry, MCP_FORWARD_TYPE,
 };
 
 const MAX_BODY_BYTES: usize = 1_048_576;
@@ -132,6 +132,34 @@ fn resolve_interaction_route(method: &str, path: &str) -> InteractionRoute {
         "GET" => InteractionRoute::List,
         "DELETE" => InteractionRoute::Clear,
         _ => InteractionRoute::NotFound,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum ServiceRoute {
+    List,
+    GetByName(String),
+    Create,
+    Delete(String),
+    NotFound,
+}
+
+fn resolve_service_route(method: &str, path: &str) -> ServiceRoute {
+    let suffix = match path.strip_prefix("/api/v1/services") {
+        Some(s) => s,
+        None => return ServiceRoute::NotFound,
+    };
+
+    let name = suffix
+        .strip_prefix('/')
+        .filter(|s| !s.is_empty());
+
+    match (method, name) {
+        ("GET", None) => ServiceRoute::List,
+        ("GET", Some(n)) => ServiceRoute::GetByName(n.to_owned()),
+        ("POST", None | Some("payloads")) => ServiceRoute::Create,
+        ("DELETE", Some(n)) => ServiceRoute::Delete(n.to_owned()),
+        _ => ServiceRoute::NotFound,
     }
 }
 
@@ -264,6 +292,20 @@ impl ServeHttp for WanakuManagementService {
                 },
                 NamespaceRoute::Delete(name) => handle_namespace_delete(&self.registry, &name),
                 NamespaceRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        let service_route = resolve_service_route(&method, &path);
+        if service_route != ServiceRoute::NotFound {
+            return match service_route {
+                ServiceRoute::List => handle_service_list(&self.registry),
+                ServiceRoute::GetByName(name) => handle_service_get(&self.registry, &name),
+                ServiceRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_service_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                ServiceRoute::Delete(name) => handle_service_delete(&self.registry, &name),
+                ServiceRoute::NotFound => json_err(404, "not found"),
             };
         }
 
@@ -441,6 +483,63 @@ fn handle_namespace_delete(registry: &InMemoryRegistry, name: &str) -> Response<
     } else {
         json_err(404, &format!("namespace not found: {name}"))
     }
+}
+
+fn handle_service_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let services = registry.list_services();
+    json_ok(&serde_json::json!(services))
+}
+
+fn handle_service_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    let services: Vec<ServiceEntry> = registry
+        .list_services()
+        .into_iter()
+        .filter(|s| s.name == name)
+        .collect();
+
+    if services.is_empty() {
+        json_err(404, &format!("service not found: {name}"))
+    } else {
+        json_ok(&serde_json::json!(services))
+    }
+}
+
+fn handle_service_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+    tracing::debug!(body = %body, "service create request body");
+    let service: ServiceEntry = match serde_json::from_str(body) {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "invalid service JSON");
+            return json_err(400, &format!("invalid service JSON: {e}"));
+        }
+    };
+
+    info!(service = %service.name, address = %service.address, service_type = %service.service_type, "registered service via management API");
+    let response = serde_json::json!(&service);
+    registry.register_service(service);
+    json_ok(&response)
+}
+
+fn handle_service_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+    let services: Vec<ServiceEntry> = registry
+        .list_services()
+        .into_iter()
+        .filter(|s| s.name == name)
+        .collect();
+
+    if services.is_empty() {
+        return json_err(404, &format!("service not found: {name}"));
+    }
+
+    let mut removed_count = 0;
+    for svc in &services {
+        if registry.remove_service(&svc.name, &svc.service_type) {
+            removed_count += 1;
+        }
+    }
+
+    info!(service = %name, count = removed_count, "removed service(s) via management API");
+    json_ok(&serde_json::json!({"removed": name, "count": removed_count}))
 }
 
 fn handle_forward_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {

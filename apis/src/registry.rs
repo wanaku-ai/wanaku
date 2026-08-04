@@ -191,6 +191,9 @@ pub trait ForwardRegistry: Send + Sync {
 }
 
 pub trait ServiceRegistry: Send + Sync {
+    fn list_services(&self) -> Vec<ServiceEntry>;
+    fn get_service(&self, name: &str, service_type: &str) -> Option<ServiceEntry>;
+
     fn resolve_service(
         &self,
         tool_type: &str,
@@ -477,6 +480,15 @@ impl ForwardRegistry for InMemoryRegistry {
 }
 
 impl ServiceRegistry for InMemoryRegistry {
+    fn list_services(&self) -> Vec<ServiceEntry> {
+        self.services.iter().map(|e| e.value().clone()).collect()
+    }
+
+    fn get_service(&self, name: &str, service_type: &str) -> Option<ServiceEntry> {
+        let key = service_key(name, service_type);
+        self.services.get(&key).map(|e| e.value().clone())
+    }
+
     fn resolve_service(
         &self,
         tool_type: &str,
