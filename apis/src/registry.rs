@@ -4,6 +4,8 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 
+use crate::persistence::{PersistenceBackend, RegistrySnapshot};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolEntry {
     pub name: String,
@@ -211,6 +213,7 @@ pub struct InMemoryRegistry {
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
     services: Arc<DashMap<String, ServiceEntry>>,
+    persistence: Option<Arc<dyn PersistenceBackend>>,
 }
 
 impl InMemoryRegistry {
@@ -222,6 +225,70 @@ impl InMemoryRegistry {
             forwards: Arc::new(DashMap::new()),
             namespaces: Arc::new(DashMap::new()),
             services: Arc::new(DashMap::new()),
+            persistence: None,
+        }
+    }
+
+    pub fn with_persistence(backend: Arc<dyn PersistenceBackend>) -> Self {
+        Self {
+            persistence: Some(backend),
+            ..Self::new()
+        }
+    }
+
+    /// Load all entries from the persistence backend into memory.
+    pub fn load_persisted(&self) {
+        let backend = match &self.persistence {
+            Some(b) => b,
+            None => return,
+        };
+
+        let snapshot = match backend.load() {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(error = %e, "failed to load persisted registry");
+                return;
+            }
+        };
+
+        for tool in snapshot.tools {
+            self.register_tool(tool);
+        }
+        for resource in snapshot.resources {
+            self.register_resource(resource);
+        }
+        for prompt in snapshot.prompts {
+            self.register_prompt(prompt);
+        }
+        for forward in snapshot.forwards {
+            self.register_forward(forward);
+        }
+        for namespace in snapshot.namespaces {
+            self.register_namespace(namespace);
+        }
+        for service in snapshot.services {
+            self.register_service(service);
+        }
+
+        tracing::info!("loaded registry from persistence backend");
+    }
+
+    fn snapshot(&self) -> RegistrySnapshot {
+        RegistrySnapshot {
+            tools: self.list_tools(),
+            resources: self.list_resources(),
+            prompts: self.list_prompts(),
+            forwards: self.list_forwards(),
+            namespaces: self.list_namespaces(),
+            services: self.services.iter().map(|e| e.value().clone()).collect(),
+        }
+    }
+
+    fn persist(&self) {
+        if let Some(backend) = &self.persistence {
+            if let Err(e) = backend.save(&self.snapshot()) {
+                tracing::warn!(error = %e, "failed to persist registry");
+            }
         }
     }
 }
@@ -266,10 +333,15 @@ impl ToolRegistry for InMemoryRegistry {
         }
         inject_request_id_arg(&mut tool.input_schema);
         self.tools.insert(tool.name.clone(), tool);
+        self.persist();
     }
 
     fn remove_tool(&self, name: &str) -> bool {
-        self.tools.remove(name).is_some()
+        let removed = self.tools.remove(name).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 }
 
@@ -302,10 +374,15 @@ impl ResourceRegistry for InMemoryRegistry {
             resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
         }
         self.resources.insert(resource.name.clone(), resource);
+        self.persist();
     }
 
     fn remove_resource(&self, name: &str) -> bool {
-        self.resources.remove(name).is_some()
+        let removed = self.resources.remove(name).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 }
 
@@ -338,10 +415,15 @@ impl PromptRegistry for InMemoryRegistry {
             prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
         }
         self.prompts.insert(prompt.name.clone(), prompt);
+        self.persist();
     }
 
     fn remove_prompt(&self, name: &str) -> bool {
-        self.prompts.remove(name).is_some()
+        let removed = self.prompts.remove(name).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 }
 
@@ -359,10 +441,15 @@ impl NamespaceRegistry for InMemoryRegistry {
             namespace.id = Some(namespace.name.clone());
         }
         self.namespaces.insert(namespace.name.clone(), namespace);
+        self.persist();
     }
 
     fn remove_namespace(&self, name: &str) -> bool {
-        self.namespaces.remove(name).is_some()
+        let removed = self.namespaces.remove(name).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 }
 
@@ -377,10 +464,15 @@ impl ForwardRegistry for InMemoryRegistry {
 
     fn register_forward(&self, forward: ForwardEntry) {
         self.forwards.insert(forward.name.clone(), forward);
+        self.persist();
     }
 
     fn remove_forward(&self, name: &str) -> bool {
-        self.forwards.remove(name).is_some()
+        let removed = self.forwards.remove(name).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 }
 
@@ -403,11 +495,16 @@ impl ServiceRegistry for InMemoryRegistry {
     fn register_service(&self, service: ServiceEntry) {
         let key = service_key(&service.name, &service.service_type);
         self.services.insert(key, service);
+        self.persist();
     }
 
     fn remove_service(&self, name: &str, service_type: &str) -> bool {
         let key = service_key(name, service_type);
-        self.services.remove(&key).is_some()
+        let removed = self.services.remove(&key).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 }
 

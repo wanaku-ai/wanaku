@@ -13,6 +13,7 @@ use tracing::info;
 
 use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
+use wanaku_praxis_apis::persistence::FilePersistence;
 use wanaku_praxis_apis::registry::{
     InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry, ToolRegistry,
 };
@@ -29,7 +30,16 @@ fn main() {
         .nth(2)
         .unwrap_or_else(|| "wanaku.yaml".to_owned());
 
-    let wanaku_registry = load_wanaku_config(&wanaku_config_path);
+    let wanaku_registry = match FilePersistence::from_env() {
+        Some(backend) => {
+            info!("file-based persistence enabled");
+            let registry = InMemoryRegistry::with_persistence(backend);
+            registry.load_persisted();
+            registry
+        }
+        None => InMemoryRegistry::new(),
+    };
+    load_wanaku_config(&wanaku_config_path, &wanaku_registry);
     let grpc_pool = GrpcPool::new();
     let interaction_store = InMemoryInteractionStore::new(1000);
 
@@ -90,14 +100,12 @@ fn main() {
     server.run()
 }
 
-fn load_wanaku_config(path: &str) -> InMemoryRegistry {
-    let registry = InMemoryRegistry::new();
-
+fn load_wanaku_config(path: &str, registry: &InMemoryRegistry) {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
             tracing::warn!(path = %path, error = %e, "wanaku config not found, starting with empty registry");
-            return registry;
+            return;
         }
     };
 
@@ -105,7 +113,7 @@ fn load_wanaku_config(path: &str) -> InMemoryRegistry {
         Ok(c) => c,
         Err(e) => {
             tracing::warn!(path = %path, error = %e, "failed to parse wanaku config");
-            return registry;
+            return;
         }
     };
 
@@ -126,8 +134,6 @@ fn load_wanaku_config(path: &str) -> InMemoryRegistry {
             }
         }
     }
-
-    registry
 }
 
 #[expect(clippy::print_stderr, clippy::exit, reason = "fatal error before runtime is available")]
