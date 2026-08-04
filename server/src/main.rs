@@ -75,13 +75,14 @@ fn main() {
         );
     }
 
-    let mgmt_addr = "127.0.0.1:9090";
+    let mgmt_addr = std::env::var("WANAKU_MGMT_LISTEN")
+        .unwrap_or_else(|_| "0.0.0.0:9090".to_owned());
     let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry, mgmt_interactions);
     let mut mgmt_service = pingora_core::services::listening::Service::new(
         "wanaku-management".to_owned(),
         mgmt,
     );
-    mgmt_service.add_tcp(mgmt_addr);
+    mgmt_service.add_tcp(&mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 

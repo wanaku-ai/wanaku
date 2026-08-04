@@ -1,9 +1,9 @@
 listeners:
   - name: mcp
-    address: "127.0.0.1:8081"
+    address: "0.0.0.0:8081"
     filter_chains: [mcp_router]
   - name: ollama
-    address: "127.0.0.1:8082"
+    address: "0.0.0.0:8082"
     filter_chains: [ollama_proxy]
 
 filter_chains:
