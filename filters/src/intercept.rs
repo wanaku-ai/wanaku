@@ -38,10 +38,40 @@ fn parse_body(bytes: &[u8]) -> serde_json::Value {
     })
 }
 
-fn inject_system_prompt(body_bytes: &[u8], conversation_id: &str) -> Option<Bytes> {
-    let mut parsed: serde_json::Value = serde_json::from_slice(body_bytes).ok()?;
+const ID_PREFIX: &str = "wk-";
 
-    let messages = parsed.get_mut("messages")?.as_array_mut()?;
+fn find_existing_id(messages: &[serde_json::Value]) -> Option<String> {
+    for msg in messages {
+        if msg.get("role").and_then(|r| r.as_str()) != Some("system") {
+            continue;
+        }
+        let content = msg.get("content").and_then(|c| c.as_str())?;
+        if let Some(pos) = content.find(ID_PREFIX) {
+            let start = pos;
+            let id: String = content[start..]
+                .chars()
+                .take_while(|c| c.is_ascii_alphanumeric() || *c == '-')
+                .collect();
+            if id.len() > ID_PREFIX.len() {
+                return Some(id);
+            }
+        }
+    }
+    None
+}
+
+fn inject_system_prompt(body_bytes: &[u8], conversation_id: &str) -> (Option<Bytes>, String) {
+    let Ok(mut parsed) = serde_json::from_slice::<serde_json::Value>(body_bytes) else {
+        return (None, conversation_id.to_owned());
+    };
+
+    let Some(messages) = parsed.get_mut("messages").and_then(|m| m.as_array_mut()) else {
+        return (None, conversation_id.to_owned());
+    };
+
+    if let Some(existing) = find_existing_id(messages) {
+        return (None, existing);
+    }
 
     let system_msg = serde_json::json!({
         "role": "system",
@@ -52,9 +82,8 @@ fn inject_system_prompt(body_bytes: &[u8], conversation_id: &str) -> Option<Byte
 
     messages.insert(0, system_msg);
 
-    serde_json::to_vec(&parsed)
-        .ok()
-        .map(Bytes::from)
+    let bytes = serde_json::to_vec(&parsed).ok().map(Bytes::from);
+    (bytes, conversation_id.to_owned())
 }
 
 #[async_trait]
@@ -106,7 +135,12 @@ impl HttpFilter for InterceptFilter {
 
         let path = ctx.request.uri.path().to_owned();
         let body_bytes = body.clone().unwrap_or_default();
-        let conversation_id = correlation::generate_short_id();
+        let generated_id = correlation::generate_short_id();
+
+        let (enriched, conversation_id) = inject_system_prompt(&body_bytes, &generated_id);
+        if let Some(new_body) = enriched {
+            *body = Some(new_body);
+        }
 
         tracing::debug!(
             path = %path,
@@ -114,10 +148,6 @@ impl HttpFilter for InterceptFilter {
             body_len = body_bytes.len(),
             "intercepted request"
         );
-
-        if let Some(enriched) = inject_system_prompt(&body_bytes, &conversation_id) {
-            *body = Some(enriched);
-        }
 
         ctx.insert_filter_state(InterceptState {
             path,
