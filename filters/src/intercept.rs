@@ -6,11 +6,13 @@ use bytes::Bytes;
 use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
+use wanaku_praxis_apis::correlation::{self, REQUEST_ID_ARG};
 use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, Interaction, InteractionStore};
 
 struct InterceptState {
     path: String,
     body: Bytes,
+    conversation_id: String,
     start: Instant,
     status: AtomicU16,
 }
@@ -36,6 +38,25 @@ fn parse_body(bytes: &[u8]) -> serde_json::Value {
     })
 }
 
+fn inject_system_prompt(body_bytes: &[u8], conversation_id: &str) -> Option<Bytes> {
+    let mut parsed: serde_json::Value = serde_json::from_slice(body_bytes).ok()?;
+
+    let messages = parsed.get_mut("messages")?.as_array_mut()?;
+
+    let system_msg = serde_json::json!({
+        "role": "system",
+        "content": format!(
+            "For all tool calls, use '{conversation_id}' as the {REQUEST_ID_ARG} argument."
+        )
+    });
+
+    messages.insert(0, system_msg);
+
+    serde_json::to_vec(&parsed)
+        .ok()
+        .map(Bytes::from)
+}
+
 #[async_trait]
 impl HttpFilter for InterceptFilter {
     fn name(&self) -> &'static str {
@@ -47,7 +68,7 @@ impl HttpFilter for InterceptFilter {
     }
 
     fn request_body_access(&self) -> BodyAccess {
-        BodyAccess::ReadOnly
+        BodyAccess::ReadWrite
     }
 
     fn request_body_mode(&self) -> BodyMode {
@@ -85,12 +106,23 @@ impl HttpFilter for InterceptFilter {
 
         let path = ctx.request.uri.path().to_owned();
         let body_bytes = body.clone().unwrap_or_default();
+        let conversation_id = correlation::generate_short_id();
 
-        tracing::debug!(path = %path, body_len = body_bytes.len(), "intercepted request");
+        tracing::debug!(
+            path = %path,
+            conversation_id = %conversation_id,
+            body_len = body_bytes.len(),
+            "intercepted request"
+        );
+
+        if let Some(enriched) = inject_system_prompt(&body_bytes, &conversation_id) {
+            *body = Some(enriched);
+        }
 
         ctx.insert_filter_state(InterceptState {
             path,
             body: body_bytes,
+            conversation_id,
             start: Instant::now(),
             status: AtomicU16::new(0),
         });
@@ -134,6 +166,22 @@ impl HttpFilter for InterceptFilter {
         let request_body = parse_body(&state.body);
         let response_body = parse_body(response_bytes);
 
+        let completion_id = response_body
+            .get("id")
+            .and_then(serde_json::Value::as_str)
+            .map(String::from);
+
+        let model = response_body
+            .get("model")
+            .and_then(serde_json::Value::as_str)
+            .map(String::from)
+            .or_else(|| {
+                request_body
+                    .get("model")
+                    .and_then(serde_json::Value::as_str)
+                    .map(String::from)
+            });
+
         let epoch_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
@@ -142,6 +190,9 @@ impl HttpFilter for InterceptFilter {
         let interaction = Interaction {
             epoch_ms,
             path: state.path.clone(),
+            conversation_id: Some(state.conversation_id.clone()),
+            completion_id,
+            model,
             request_body,
             response_body,
             status_code,
@@ -150,6 +201,7 @@ impl HttpFilter for InterceptFilter {
 
         tracing::debug!(
             path = %interaction.path,
+            conversation_id = ?interaction.conversation_id,
             status = interaction.status_code,
             duration_ms = interaction.duration_ms,
             "recorded interaction"

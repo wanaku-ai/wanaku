@@ -176,14 +176,32 @@ impl HttpFilter for ToolCallFilter {
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
 
-        trace!(tool = %tool_name, namespace = %namespace, "handling MCP tools/call request");
+        let mut parsed = parse_body(body);
 
-        let parsed = parse_body(body);
+        let conversation_id = parsed.arguments
+            .remove(wanaku_praxis_apis::correlation::REQUEST_ID_ARG)
+            .unwrap_or_else(|| "-".to_owned());
+
+        let request_id = ctx.request.headers.get("x-request-id")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("-");
+
+        for (name, value) in &ctx.request.headers {
+            tracing::debug!(header = %name, value = ?value, "tools/call request header");
+        }
+
+        tracing::info!(
+            tool = %tool_name,
+            namespace = %namespace,
+            conversation_id = %conversation_id,
+            x_request_id = %request_id,
+            "tools/call"
+        );
 
         tracing::debug!(
             tool = %tool_name,
             arguments = ?parsed.arguments,
-            "parsed tools/call request body"
+            "parsed tools/call request body (x-request-id stripped)"
         );
 
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {

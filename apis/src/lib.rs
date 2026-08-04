@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 
+pub mod correlation;
 pub mod grpc;
 pub mod interactions;
 pub mod mcp_client;

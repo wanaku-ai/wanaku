@@ -121,6 +121,32 @@ pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 
 pub const DEFAULT_NAMESPACE: &str = "default";
 
+fn inject_request_id_arg(schema: &mut serde_json::Value) {
+    let arg = crate::correlation::REQUEST_ID_ARG;
+
+    if let Some(props) = schema.get_mut("properties").and_then(|p| p.as_object_mut()) {
+        props.entry(arg).or_insert_with(|| {
+            serde_json::json!({
+                "type": "string",
+                "description": "Conversation tracking ID provided in the system prompt"
+            })
+        });
+    }
+
+    if let Some(required) = schema.get_mut("required").and_then(|r| r.as_array_mut()) {
+        if !required.iter().any(|v| v.as_str() == Some(arg)) {
+            required.push(serde_json::Value::String(arg.to_owned()));
+        }
+    } else {
+        schema.as_object_mut().map(|obj| {
+            obj.insert(
+                "required".to_owned(),
+                serde_json::json!([arg]),
+            )
+        });
+    }
+}
+
 pub trait ToolRegistry: Send + Sync {
     fn list_tools(&self) -> Vec<ToolEntry>;
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry>;
@@ -238,6 +264,7 @@ impl ToolRegistry for InMemoryRegistry {
         if tool.namespace.is_none() {
             tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
         }
+        inject_request_id_arg(&mut tool.input_schema);
         self.tools.insert(tool.name.clone(), tool);
     }
 

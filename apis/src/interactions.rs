@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 pub struct Interaction {
     pub epoch_ms: u64,
     pub path: String,
+    pub conversation_id: Option<String>,
+    pub completion_id: Option<String>,
+    pub model: Option<String>,
     pub request_body: serde_json::Value,
     pub response_body: serde_json::Value,
     pub status_code: u16,
@@ -86,11 +89,16 @@ mod tests {
             response_body: serde_json::json!({"response": "hi"}),
             status_code: 200,
             duration_ms: 42,
+            conversation_id: Some("wk-test1234".to_owned()),
+            completion_id: Some("chatcmpl-1".to_owned()),
+            model: Some("llama3.2".to_owned()),
         });
 
         assert_eq!(store.len(), 1);
         let items = store.list();
         assert_eq!(items[0].path, "/test");
+        assert_eq!(items[0].completion_id.as_deref(), Some("chatcmpl-1"));
+        assert_eq!(items[0].model.as_deref(), Some("llama3.2"));
     }
 
     #[test]
@@ -104,6 +112,9 @@ mod tests {
                 response_body: serde_json::Value::Null,
                 status_code: 200,
                 duration_ms: 0,
+                conversation_id: None,
+                completion_id: None,
+                model: None,
             });
         }
 
@@ -123,6 +134,9 @@ mod tests {
             response_body: serde_json::Value::Null,
             status_code: 200,
             duration_ms: 0,
+            conversation_id: None,
+            completion_id: None,
+            model: None,
         });
 
         store.clear();

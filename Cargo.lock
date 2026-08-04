@@ -4121,6 +4121,7 @@ dependencies = [
  "dashmap 6.2.1",
  "http",
  "prost",
+ "rand 0.9.5",
  "rmcp 2.2.0",
  "serde",
  "serde_json",
