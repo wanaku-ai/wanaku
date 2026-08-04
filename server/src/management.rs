@@ -251,6 +251,11 @@ impl ServeHttp for WanakuManagementService {
             return json_ok(&serde_json::json!({"status": "ok"}));
         }
 
+        if path == "/openapi.json" {
+            let body = crate::openapi::openapi_json();
+            return raw_json_response(body);
+        }
+
         if let Some(ui_path) = &self.ui_path {
             if path.starts_with("/admin") {
                 return serve_static_file(ui_path, &path);
@@ -694,6 +699,16 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     for name in &forwarded {
         registry.remove_tool(name);
     }
+}
+
+#[expect(clippy::expect_used, reason = "valid static response")]
+fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(200)
+        .header("Content-Type", "application/json")
+        .header("Content-Length", body.len())
+        .body(body)
+        .expect("valid json response")
 }
 
 #[expect(clippy::expect_used, reason = "valid static response")]

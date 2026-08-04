@@ -6,12 +6,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::persistence::{PersistenceBackend, RegistrySnapshot};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ToolEntry {
     pub name: String,
     pub description: String,
     pub uri: String,
     #[serde(rename = "type")]
+    #[schema(rename = "type")]
     pub type_: String,
     #[serde(alias = "inputSchema")]
     pub input_schema: serde_json::Value,
@@ -27,13 +28,14 @@ pub struct ToolEntry {
     pub secrets_uri: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ResourceEntry {
     pub name: String,
     #[serde(default)]
     pub description: String,
     pub location: String,
     #[serde(rename = "type")]
+    #[schema(rename = "type")]
     pub type_: String,
     #[serde(default, alias = "mimeType")]
     pub mime_type: String,
@@ -49,7 +51,7 @@ pub struct ResourceEntry {
     pub secrets_uri: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PromptArgument {
     pub name: String,
     #[serde(default)]
@@ -58,13 +60,13 @@ pub struct PromptArgument {
     pub required: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PromptMessage {
     pub role: String,
     pub content: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PromptEntry {
     pub name: String,
     #[serde(default)]
@@ -81,7 +83,7 @@ pub struct PromptEntry {
     pub configuration_uri: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ServiceEntry {
     pub name: String,
     pub address: String,
@@ -100,7 +102,7 @@ pub enum RegistryError {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ForwardEntry {
     pub name: String,
     pub address: String,
@@ -108,7 +110,7 @@ pub struct ForwardEntry {
     pub namespace: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct NamespaceEntry {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
