@@ -78,23 +78,12 @@ impl GrpcPool {
         &self,
         address: &str,
         uri: String,
-        arguments: HashMap<String, String>,
+        mut arguments: HashMap<String, String>,
     ) -> Result<Vec<String>, GrpcError> {
         let channel = self.get_or_connect(address).await?;
         let mut client = ToolInvokerClient::new(channel);
 
-        let default_body = String::new();
-        let body = arguments.get(crate::WANAKU_BODY_ARG).unwrap_or(&default_body);
-
-        let grpc_request = ToolInvokeRequest {
-            uri: uri.clone(),
-            body: body.clone(),
-            arguments: arguments.clone(),
-            configuration_uri: String::new(),
-            secrets_uri: String::new(),
-            headers: HashMap::new(),
-            request_id: String::new(),
-        };
+        let body = arguments.remove(crate::WANAKU_BODY_ARG).unwrap_or_default();
 
         tracing::debug!(
             address = %address,
@@ -102,6 +91,16 @@ impl GrpcPool {
             arguments = ?arguments,
             "sending ToolInvokeRequest via gRPC"
         );
+
+        let grpc_request = ToolInvokeRequest {
+            uri,
+            body,
+            arguments,
+            configuration_uri: String::new(),
+            secrets_uri: String::new(),
+            headers: HashMap::new(),
+            request_id: String::new(),
+        };
 
         let request = tonic::Request::new(grpc_request);
 
