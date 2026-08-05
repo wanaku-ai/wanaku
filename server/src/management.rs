@@ -223,6 +223,7 @@ enum NamespaceRoute {
     List,
     GetByName(String),
     Create,
+    Update(String),
     Delete(String),
     NotFound,
 }
@@ -241,6 +242,7 @@ fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRoute {
         ("GET", None) => NamespaceRoute::List,
         ("GET", Some(n)) => NamespaceRoute::GetByName(n.to_owned()),
         ("POST", None) => NamespaceRoute::Create,
+        ("PUT", Some(n)) => NamespaceRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => NamespaceRoute::Delete(n.to_owned()),
         _ => NamespaceRoute::NotFound,
     }
@@ -327,6 +329,10 @@ impl ServeHttp for WanakuManagementService {
                 NamespaceRoute::List => handle_namespace_list(&self.registry),
                 NamespaceRoute::GetByName(name) => handle_namespace_get(&self.registry, &name),
                 NamespaceRoute::Create => match read_body(http_session).await {
+                    Ok(body) => handle_namespace_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                NamespaceRoute::Update(_id) => match read_body(http_session).await {
                     Ok(body) => handle_namespace_create(&self.registry, &body),
                     Err(resp) => resp,
                 },
