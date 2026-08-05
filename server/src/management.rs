@@ -812,7 +812,7 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     let forwarded: Vec<String> = registry
         .list_tools()
         .iter()
-        .filter(|t| t.type_ == MCP_FORWARD_TYPE && t.uri == address)
+        .filter(|t| t.is_mcp_forward() && t.uri == address)
         .map(|t| t.name.clone())
         .collect();
 

@@ -131,6 +131,12 @@ pub struct NamespaceEntry {
 
 pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 
+impl ToolEntry {
+    pub fn is_mcp_forward(&self) -> bool {
+        self.type_ == MCP_FORWARD_TYPE
+    }
+}
+
 pub const DEFAULT_NAMESPACE: &str = "default";
 
 fn inject_request_id_arg(schema: &mut serde_json::Value) {

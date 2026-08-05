@@ -136,7 +136,7 @@ impl ToolCallFilter {
             }
         };
 
-        if tool.type_ == wanaku_praxis_apis::registry::MCP_FORWARD_TYPE {
+        if tool.is_mcp_forward() {
             return self.handle_forwarded_call(&tool, &tool_name, &parsed).await;
         }
 
