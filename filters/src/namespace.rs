@@ -23,7 +23,10 @@ impl NamespaceFilter {
 }
 
 fn extract_namespace(path: &str) -> &str {
-    let trimmed = path.strip_prefix('/').unwrap_or(path);
+    let trimmed = path
+        .strip_prefix('/')
+        .unwrap_or(path)
+        .trim_end_matches('/');
 
     if trimmed == "mcp" || trimmed.is_empty() {
         return DEFAULT_NAMESPACE;
@@ -133,5 +136,15 @@ mod tests {
     #[test]
     fn mcp_prefix_nested_is_default() {
         assert_eq!(extract_namespace("/mcp/a/b"), "default");
+    }
+
+    #[test]
+    fn trailing_slash_namespace_mcp() {
+        assert_eq!(extract_namespace("/test-ns2/mcp/"), "test-ns2");
+    }
+
+    #[test]
+    fn trailing_slash_mcp_namespace() {
+        assert_eq!(extract_namespace("/mcp/test-ns2/"), "test-ns2");
     }
 }
