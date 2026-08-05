@@ -155,6 +155,24 @@ fn resolve_interaction_route(method: &str, path: &str) -> InteractionRoute {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+enum ManagementRoute {
+    Statistics,
+    NotFound,
+}
+
+fn resolve_management_route(method: &str, path: &str) -> ManagementRoute {
+    let suffix = match path.strip_prefix("/api/v1/management") {
+        Some(s) => s,
+        None => return ManagementRoute::NotFound,
+    };
+
+    match (method, suffix) {
+        ("GET", "/statistics") => ManagementRoute::Statistics,
+        _ => ManagementRoute::NotFound,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 enum CapabilityRoute {
     List,
     ToolsState,
@@ -303,8 +321,12 @@ impl ServeHttp for WanakuManagementService {
             return serve_ui(&self.ui_path, &path);
         }
 
-        if path == "/api/v1/management/statistics" && method == "GET" {
-            return handle_statistics(&self.registry);
+        let mgmt_route = resolve_management_route(&method, &path);
+        if mgmt_route != ManagementRoute::NotFound {
+            return match mgmt_route {
+                ManagementRoute::Statistics => handle_statistics(&self.registry),
+                ManagementRoute::NotFound => json_err(404, "not found"),
+            };
         }
 
         let capability_route = resolve_capability_route(&method, &path);
