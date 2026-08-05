@@ -59,7 +59,7 @@ impl ToolCallFilter {
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata("mcp.method") {
+        let method = match ctx.get_metadata(crate::MCP_METHOD_KEY) {
             Some(m) => m,
             None => return Ok(FilterAction::Continue),
         };
@@ -68,7 +68,7 @@ impl ToolCallFilter {
             return Ok(FilterAction::Continue);
         }
 
-        let tool_name = match ctx.get_metadata("mcp.name") {
+        let tool_name = match ctx.get_metadata(crate::MCP_NAME_KEY) {
             Some(n) => n.to_owned(),
             None => {
                 let parsed = parse_body(body);

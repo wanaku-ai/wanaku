@@ -46,7 +46,7 @@ impl ResourceReadFilter {
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata("mcp.method") {
+        let method = match ctx.get_metadata(crate::MCP_METHOD_KEY) {
             Some(m) => m,
             None => return Ok(FilterAction::Continue),
         };
