@@ -144,6 +144,54 @@ Request/response wrapper:
 {"data": null, "error": "message"}  // error
 ```
 
+### Management API Route Pattern
+
+Every entity MUST follow this pattern — no inline `if path.starts_with(...)` blocks:
+
+1. Define a route enum:
+```rust
+#[derive(Debug, PartialEq, Eq)]
+enum FooRoute {
+    List,
+    GetByName(String),
+    Create,
+    Delete(String),
+    NotFound,
+}
+```
+
+2. Define a resolver function:
+```rust
+fn resolve_foo_route(method: &str, path: &str) -> FooRoute {
+    let suffix = match path.strip_prefix("/api/v1/foos") {
+        Some(s) => s,
+        None => return FooRoute::NotFound,
+    };
+    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
+    match (method, name) {
+        ("GET", None) => FooRoute::List,
+        ("GET", Some(n)) => FooRoute::GetByName(n.to_owned()),
+        ("POST", None) => FooRoute::Create,
+        ("DELETE", Some(n)) => FooRoute::Delete(n.to_owned()),
+        _ => FooRoute::NotFound,
+    }
+}
+```
+
+3. Dispatch in `ServeHttp::response` using the guard pattern:
+```rust
+let foo_route = resolve_foo_route(&method, &path);
+if foo_route != FooRoute::NotFound {
+    return match foo_route {
+        FooRoute::List => handle_foo_list(&self.registry),
+        // ...
+        FooRoute::NotFound => json_err(404, "not found"),
+    };
+}
+```
+
+4. Implement each handler as a standalone function: `handle_foo_list`, `handle_foo_get`, etc.
+
 ## Filter Implementation Patterns
 
 ### Synthetic MCP Responses
