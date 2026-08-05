@@ -31,7 +31,7 @@ pub enum PersistenceError {
     Io(#[from] std::io::Error),
 
     #[error("serialization error: {0}")]
-    Serialization(String),
+    Serialization(#[from] serde_json::Error),
 }
 
 pub trait PersistenceBackend: Send + Sync {
@@ -61,16 +61,14 @@ impl PersistenceBackend for FilePersistence {
             return Ok(RegistrySnapshot::default());
         }
         let content = std::fs::read_to_string(&self.path)?;
-        serde_json::from_str(&content)
-            .map_err(|e| PersistenceError::Serialization(e.to_string()))
+        Ok(serde_json::from_str(&content)?)
     }
 
     fn save(&self, snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let content = serde_json::to_string_pretty(snapshot)
-            .map_err(|e| PersistenceError::Serialization(e.to_string()))?;
+        let content = serde_json::to_string_pretty(snapshot)?;
 
         let tmp = self.path.with_extension("json.tmp");
         std::fs::write(&tmp, content)?;
