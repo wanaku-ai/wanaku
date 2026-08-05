@@ -56,19 +56,6 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
     ParsedBody { id, uri }
 }
 
-fn json_rpc_error(id: &serde_json::Value, code: i32, message: &str) -> FilterAction {
-    let response = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": id,
-        "error": {
-            "code": code,
-            "message": message,
-        }
-    });
-    let body = Bytes::from(response.to_string());
-    FilterAction::Reject(crate::response::json_response(body))
-}
-
 #[async_trait]
 impl HttpFilter for ResourceReadFilter {
     fn name(&self) -> &'static str {
@@ -113,7 +100,7 @@ impl HttpFilter for ResourceReadFilter {
         let resource_uri = match &parsed.uri {
             Some(u) => u.clone(),
             None => {
-                return Ok(json_rpc_error(&parsed.id, -32602, "missing uri in resources/read"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, -32602, "missing uri in resources/read"));
             }
         };
 
@@ -127,7 +114,7 @@ impl HttpFilter for ResourceReadFilter {
             Some(r) => r,
             None => {
                 tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
             }
         };
 
@@ -135,7 +122,7 @@ impl HttpFilter for ResourceReadFilter {
             Some(r) => r,
             None => {
                 warn!(uri = %resource_uri, "resource not found in registry");
-                return Ok(json_rpc_error(
+                return Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     -32602,
                     &format!("resource not found: {resource_uri}"),
@@ -147,7 +134,7 @@ impl HttpFilter for ResourceReadFilter {
             Ok(s) => s,
             Err(e) => {
                 warn!(resource_type = %resource.type_, error = %e, "no service available for resource type");
-                return Ok(json_rpc_error(
+                return Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     -32603,
                     &format!("no service available for resource type: {}", resource.type_),
@@ -159,7 +146,7 @@ impl HttpFilter for ResourceReadFilter {
             Some(p) => p.clone(),
             None => {
                 tracing::error!("GrpcPool not found in request extensions");
-                return Ok(json_rpc_error(&parsed.id, -32603, "internal error: gRPC pool unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: gRPC pool unavailable"));
             }
         };
 
@@ -197,7 +184,7 @@ impl HttpFilter for ResourceReadFilter {
             }
             Err(e) => {
                 warn!(uri = %resource_uri, error = %e, "gRPC resource acquire failed");
-                Ok(json_rpc_error(
+                Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     -32603,
                     &format!("resource read failed: {e}"),

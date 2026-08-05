@@ -65,19 +65,6 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
     ParsedBody { id, name, arguments }
 }
 
-fn json_rpc_error(id: &serde_json::Value, code: i32, message: &str) -> FilterAction {
-    let response = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": id,
-        "error": {
-            "code": code,
-            "message": message,
-        }
-    });
-    let body = Bytes::from(response.to_string());
-    FilterAction::Reject(crate::response::json_response(body))
-}
-
 #[async_trait]
 impl HttpFilter for PromptGetFilter {
     fn name(&self) -> &'static str {
@@ -126,7 +113,7 @@ impl HttpFilter for PromptGetFilter {
         let prompt_name = match &parsed.name {
             Some(n) => n.clone(),
             None => {
-                return Ok(json_rpc_error(&parsed.id, -32602, "missing name in prompts/get"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, -32602, "missing name in prompts/get"));
             }
         };
 
@@ -136,7 +123,7 @@ impl HttpFilter for PromptGetFilter {
             Some(r) => r,
             None => {
                 tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
             }
         };
 
@@ -144,7 +131,7 @@ impl HttpFilter for PromptGetFilter {
             Some(p) => p,
             None => {
                 warn!(prompt = %prompt_name, "prompt not found in registry");
-                return Ok(json_rpc_error(
+                return Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     -32602,
                     &format!("prompt not found: {prompt_name}"),
