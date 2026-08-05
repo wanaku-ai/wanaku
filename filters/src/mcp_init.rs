@@ -68,7 +68,7 @@ impl McpInitFilter {
     fn handle_initialize(&self, body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
         trace!("handling MCP initialize");
 
-        let json_rpc_id = extract_id(body);
+        let json_rpc_id = crate::response::extract_json_rpc_id(body);
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": json_rpc_id,
@@ -104,7 +104,7 @@ impl McpInitFilter {
     fn handle_ping(body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
         trace!("handling MCP ping");
 
-        let json_rpc_id = extract_id(body);
+        let json_rpc_id = crate::response::extract_json_rpc_id(body);
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": json_rpc_id,
@@ -116,9 +116,3 @@ impl McpInitFilter {
     }
 }
 
-fn extract_id(body: &Option<Bytes>) -> serde_json::Value {
-    body.as_ref()
-        .and_then(|b| serde_json::from_slice::<serde_json::Value>(b).ok())
-        .and_then(|v| v.get("id").cloned())
-        .unwrap_or(serde_json::Value::Null)
-}
