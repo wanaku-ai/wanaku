@@ -7,7 +7,6 @@ const PROXIED_PREFIXES: &[&str] = &[
     "/api/v1/service-catalog",
     "/api/v1/service-template",
     "/api/v1/data-store",
-    "/api/v1/capabilities",
     "/api/v1/chat",
     "/api/v1/management/info",
     "/api/v1/toolset-repos",

@@ -155,6 +155,34 @@ fn resolve_interaction_route(method: &str, path: &str) -> InteractionRoute {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+enum CapabilityRoute {
+    List,
+    ToolsState,
+    ResourcesState,
+    FleetStatus,
+    NotFound,
+}
+
+fn resolve_capability_route(method: &str, path: &str) -> CapabilityRoute {
+    let suffix = match path.strip_prefix("/api/v1/capabilities") {
+        Some(s) => s,
+        None => return CapabilityRoute::NotFound,
+    };
+
+    if method != "GET" {
+        return CapabilityRoute::NotFound;
+    }
+
+    match suffix {
+        "" | "/" => CapabilityRoute::List,
+        "/tools/state" => CapabilityRoute::ToolsState,
+        "/resources/state" => CapabilityRoute::ResourcesState,
+        "/fleet/status" => CapabilityRoute::FleetStatus,
+        _ => CapabilityRoute::NotFound,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 enum ServiceRoute {
     List,
     GetByName(String),
@@ -277,6 +305,17 @@ impl ServeHttp for WanakuManagementService {
 
         if path == "/api/v1/management/statistics" && method == "GET" {
             return handle_statistics(&self.registry);
+        }
+
+        let capability_route = resolve_capability_route(&method, &path);
+        if capability_route != CapabilityRoute::NotFound {
+            return match capability_route {
+                CapabilityRoute::List => handle_capability_list(&self.registry),
+                CapabilityRoute::ToolsState => handle_capability_state(),
+                CapabilityRoute::ResourcesState => handle_capability_state(),
+                CapabilityRoute::FleetStatus => json_ok(&serde_json::json!({})),
+                CapabilityRoute::NotFound => json_err(404, "not found"),
+            };
         }
 
         tracing::debug!(%method, %path, "management API request");
@@ -720,6 +759,35 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     for name in &forwarded {
         registry.remove_tool(name);
     }
+}
+
+fn handle_capability_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let services = registry.list_services();
+    let targets: Vec<serde_json::Value> = services
+        .iter()
+        .map(|s| {
+            let (host, port) = s
+                .address
+                .rsplit_once(':')
+                .map(|(h, p)| (h.to_owned(), p.parse::<u16>().unwrap_or(0)))
+                .unwrap_or_else(|| (s.address.clone(), 0));
+
+            serde_json::json!({
+                "id": format!("{}:{}", s.name, s.service_type),
+                "serviceName": s.name,
+                "host": host,
+                "port": port,
+                "serviceType": s.service_type,
+            })
+        })
+        .collect();
+    json_ok(&serde_json::json!(targets))
+}
+
+fn handle_capability_state() -> Response<Vec<u8>> {
+    let empty: std::collections::HashMap<String, Vec<serde_json::Value>> =
+        std::collections::HashMap::new();
+    json_ok(&serde_json::json!(empty))
 }
 
 fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
