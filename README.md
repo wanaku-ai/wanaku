@@ -26,14 +26,40 @@ The interesting bit: filters are stateless. All the state lives in `InMemoryRegi
 
 ## Running It
 
+### Container
+
+```bash
+podman run -p 9090:9090 -p 8081:8081 quay.io/wanaku/wanaku-praxis
+```
+
+To preload tools and services, mount a `wanaku.yaml`:
+
+```bash
+podman run -p 9090:9090 -p 8081:8081 \
+  -v ./wanaku.yaml:/etc/wanaku-praxis/wanaku.yaml \
+  quay.io/wanaku/wanaku-praxis
+```
+
+Multi-arch images (x86_64 and aarch64) are published to `quay.io/wanaku/wanaku-praxis` on every push to `main`.
+
+### From Source
+
 ```bash
 cargo build
 cargo run
 ```
 
+The first `cargo build` automatically builds the admin UI via `yarn` if `ui/admin/dist/` is missing (requires Node.js and Yarn installed).
+
+### Endpoints
+
 MCP endpoint: `http://localhost:8081/mcp` (or `/{namespace}/mcp` if you've registered namespaces).
 
 Management API: `http://localhost:9090/api/v1/...` — CRUD for tools, resources, prompts, forwards, namespaces.
+
+Admin UI: `http://localhost:9090/admin/`
+
+### Configuration
 
 Optional: drop a `wanaku.yaml` in the working directory to preload static tool and service definitions. Format:
 
