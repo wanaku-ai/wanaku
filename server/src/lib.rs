@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 
+pub mod http_response;
 pub mod management;
 pub mod openapi;
 pub mod pipelines;
