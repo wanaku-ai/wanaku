@@ -172,6 +172,7 @@ pub trait ToolRegistry: Send + Sync {
     fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     fn register_tool(&self, tool: ToolEntry);
     fn remove_tool(&self, name: &str) -> bool;
+    fn tool_count(&self) -> usize;
 }
 
 pub trait ResourceRegistry: Send + Sync {
@@ -181,6 +182,7 @@ pub trait ResourceRegistry: Send + Sync {
     fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     fn register_resource(&self, resource: ResourceEntry);
     fn remove_resource(&self, name: &str) -> bool;
+    fn resource_count(&self) -> usize;
 }
 
 pub trait PromptRegistry: Send + Sync {
@@ -190,6 +192,7 @@ pub trait PromptRegistry: Send + Sync {
     fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
     fn register_prompt(&self, prompt: PromptEntry);
     fn remove_prompt(&self, name: &str) -> bool;
+    fn prompt_count(&self) -> usize;
 }
 
 pub trait NamespaceRegistry: Send + Sync {
@@ -362,6 +365,10 @@ impl ToolRegistry for InMemoryRegistry {
         }
         removed
     }
+
+    fn tool_count(&self) -> usize {
+        self.tools.len()
+    }
 }
 
 impl ResourceRegistry for InMemoryRegistry {
@@ -403,6 +410,10 @@ impl ResourceRegistry for InMemoryRegistry {
         }
         removed
     }
+
+    fn resource_count(&self) -> usize {
+        self.resources.len()
+    }
 }
 
 impl PromptRegistry for InMemoryRegistry {
@@ -443,6 +454,10 @@ impl PromptRegistry for InMemoryRegistry {
             self.persist();
         }
         removed
+    }
+
+    fn prompt_count(&self) -> usize {
+        self.prompts.len()
     }
 }
 

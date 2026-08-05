@@ -851,9 +851,9 @@ fn handle_capability_state() -> Response<Vec<u8>> {
 }
 
 fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
-    let tools_count = registry.list_tools().len() as i64;
-    let resources_count = registry.list_resources().len() as i64;
-    let prompts_count = registry.list_prompts().len() as i64;
+    let tools_count = registry.tool_count() as i64;
+    let resources_count = registry.resource_count() as i64;
+    let prompts_count = registry.prompt_count() as i64;
     let forwards_count = registry.list_forwards().len() as i64;
 
     json_ok(&serde_json::json!({
