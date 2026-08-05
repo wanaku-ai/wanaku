@@ -61,8 +61,16 @@ pub struct PromptArgument {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum PromptRole {
+    User,
+    Assistant,
+    System,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PromptMessage {
-    pub role: String,
+    pub role: PromptRole,
     pub content: serde_json::Value,
 }
 
