@@ -798,7 +798,6 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
             secrets_uri: None,
-            skip_safety_check: false,
         };
 
         info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
