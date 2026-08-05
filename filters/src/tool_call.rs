@@ -1,71 +1,12 @@
 use std::collections::HashMap;
 
-use async_trait::async_trait;
 use bytes::Bytes;
-use praxis_filter::{
-    BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
-};
+use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::registry::{InMemoryRegistry, ServiceRegistry, ToolEntry, ToolRegistry};
 
-pub struct ToolCallFilter {
-    max_body_bytes: usize,
-}
-
-impl ToolCallFilter {
-    async fn handle_forwarded_call(
-        &self,
-        tool: &ToolEntry,
-        tool_name: &str,
-        parsed: &ParsedBody,
-    ) -> Result<FilterAction, FilterError> {
-        trace!(tool = %tool_name, uri = %tool.uri, "forwarding tools/call to remote MCP server");
-
-        let arguments = serde_json::Value::Object(
-            parsed
-                .arguments
-                .iter()
-                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
-                .collect(),
-        );
-
-        match wanaku_praxis_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
-            Ok(content) => {
-                let mcp_content: Vec<serde_json::Value> = content
-                    .iter()
-                    .map(|text| serde_json::json!({"type": "text", "text": text}))
-                    .collect();
-
-                let response = serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": parsed.id,
-                    "result": {"content": mcp_content}
-                });
-
-                let response_body = Bytes::from(response.to_string());
-                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
-            }
-            Err(e) => {
-                warn!(tool = %tool_name, error = %e, "MCP forward call failed");
-                Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    -32603,
-                    &format!("forwarded tool call failed: {e}"),
-                ))
-            }
-        }
-    }
-
-    pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
-        let max_body_bytes = config
-            .get("max_body_bytes")
-            .and_then(serde_yaml::Value::as_u64)
-            .unwrap_or(1_048_576) as usize;
-
-        Ok(Box::new(Self { max_body_bytes }))
-    }
-}
+crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
 struct ParsedBody {
     id: serde_json::Value,
@@ -112,36 +53,12 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
     ParsedBody { id, arguments }
 }
 
-#[async_trait]
-impl HttpFilter for ToolCallFilter {
-    fn name(&self) -> &'static str {
-        "wanaku_tool_call"
-    }
-
-    fn request_body_access(&self) -> BodyAccess {
-        BodyAccess::ReadOnly
-    }
-
-    fn request_body_mode(&self) -> BodyMode {
-        BodyMode::StreamBuffer {
-            max_bytes: Some(self.max_body_bytes),
-        }
-    }
-
-    async fn on_request(&self, _ctx: &mut HttpFilterContext<'_>) -> Result<FilterAction, FilterError> {
-        Ok(FilterAction::Continue)
-    }
-
-    async fn on_request_body(
+impl ToolCallFilter {
+    async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
-        end_of_stream: bool,
     ) -> Result<FilterAction, FilterError> {
-        if !end_of_stream {
-            return Ok(FilterAction::Continue);
-        }
-
         let method = match ctx.get_metadata("mcp.method") {
             Some(m) => m,
             None => return Ok(FilterAction::Continue),
@@ -282,6 +199,49 @@ impl HttpFilter for ToolCallFilter {
                     &parsed.id,
                     -32603,
                     &format!("tool invocation failed: {e}"),
+                ))
+            }
+        }
+    }
+
+    async fn handle_forwarded_call(
+        &self,
+        tool: &ToolEntry,
+        tool_name: &str,
+        parsed: &ParsedBody,
+    ) -> Result<FilterAction, FilterError> {
+        trace!(tool = %tool_name, uri = %tool.uri, "forwarding tools/call to remote MCP server");
+
+        let arguments = serde_json::Value::Object(
+            parsed
+                .arguments
+                .iter()
+                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+                .collect(),
+        );
+
+        match wanaku_praxis_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
+            Ok(content) => {
+                let mcp_content: Vec<serde_json::Value> = content
+                    .iter()
+                    .map(|text| serde_json::json!({"type": "text", "text": text}))
+                    .collect();
+
+                let response = serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": parsed.id,
+                    "result": {"content": mcp_content}
+                });
+
+                let response_body = Bytes::from(response.to_string());
+                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+            }
+            Err(e) => {
+                warn!(tool = %tool_name, error = %e, "MCP forward call failed");
+                Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    -32603,
+                    &format!("forwarded tool call failed: {e}"),
                 ))
             }
         }

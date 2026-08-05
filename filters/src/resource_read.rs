@@ -1,26 +1,10 @@
-use async_trait::async_trait;
 use bytes::Bytes;
-use praxis_filter::{
-    BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
-};
+use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry, ServiceRegistry};
 
-pub struct ResourceReadFilter {
-    max_body_bytes: usize,
-}
-
-impl ResourceReadFilter {
-    pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
-        let max_body_bytes = config
-            .get("max_body_bytes")
-            .and_then(serde_yaml::Value::as_u64)
-            .unwrap_or(1_048_576) as usize;
-
-        Ok(Box::new(Self { max_body_bytes }))
-    }
-}
+crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
 struct ParsedBody {
     id: serde_json::Value,
@@ -56,36 +40,12 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
     ParsedBody { id, uri }
 }
 
-#[async_trait]
-impl HttpFilter for ResourceReadFilter {
-    fn name(&self) -> &'static str {
-        "wanaku_resource_read"
-    }
-
-    fn request_body_access(&self) -> BodyAccess {
-        BodyAccess::ReadOnly
-    }
-
-    fn request_body_mode(&self) -> BodyMode {
-        BodyMode::StreamBuffer {
-            max_bytes: Some(self.max_body_bytes),
-        }
-    }
-
-    async fn on_request(&self, _ctx: &mut HttpFilterContext<'_>) -> Result<FilterAction, FilterError> {
-        Ok(FilterAction::Continue)
-    }
-
-    async fn on_request_body(
+impl ResourceReadFilter {
+    async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
-        end_of_stream: bool,
     ) -> Result<FilterAction, FilterError> {
-        if !end_of_stream {
-            return Ok(FilterAction::Continue);
-        }
-
         let method = match ctx.get_metadata("mcp.method") {
             Some(m) => m,
             None => return Ok(FilterAction::Continue),

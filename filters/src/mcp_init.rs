@@ -1,55 +1,15 @@
-use async_trait::async_trait;
 use bytes::Bytes;
-use praxis_filter::{
-    BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
-};
+use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::trace;
 
-pub struct McpInitFilter {
-    max_body_bytes: usize,
-}
+crate::body_filter_boilerplate!(McpInitFilter, "wanaku_mcp_init");
 
 impl McpInitFilter {
-    pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
-        let max_body_bytes = config
-            .get("max_body_bytes")
-            .and_then(serde_yaml::Value::as_u64)
-            .unwrap_or(1_048_576) as usize;
-
-        Ok(Box::new(Self { max_body_bytes }))
-    }
-}
-
-#[async_trait]
-impl HttpFilter for McpInitFilter {
-    fn name(&self) -> &'static str {
-        "wanaku_mcp_init"
-    }
-
-    fn request_body_access(&self) -> BodyAccess {
-        BodyAccess::ReadOnly
-    }
-
-    fn request_body_mode(&self) -> BodyMode {
-        BodyMode::StreamBuffer {
-            max_bytes: Some(self.max_body_bytes),
-        }
-    }
-
-    async fn on_request(&self, _ctx: &mut HttpFilterContext<'_>) -> Result<FilterAction, FilterError> {
-        Ok(FilterAction::Continue)
-    }
-
-    async fn on_request_body(
+    async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
-        end_of_stream: bool,
     ) -> Result<FilterAction, FilterError> {
-        if !end_of_stream {
-            return Ok(FilterAction::Continue);
-        }
-
         let method = match ctx.get_metadata("mcp.method") {
             Some(m) => m,
             None => return Ok(FilterAction::Continue),
@@ -62,9 +22,7 @@ impl HttpFilter for McpInitFilter {
             _ => Ok(FilterAction::Continue),
         }
     }
-}
 
-impl McpInitFilter {
     fn handle_initialize(&self, body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
         trace!("handling MCP initialize");
 
@@ -115,4 +73,3 @@ impl McpInitFilter {
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))
     }
 }
-
