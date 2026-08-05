@@ -26,6 +26,8 @@ pub struct ToolEntry {
     pub configuration_uri: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "secretsURI")]
     pub secrets_uri: Option<String>,
+    #[serde(default, alias = "skipSafetyCheck")]
+    pub skip_safety_check: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -156,12 +158,12 @@ fn inject_request_id_arg(schema: &mut serde_json::Value) {
             required.push(serde_json::Value::String(arg.to_owned()));
         }
     } else {
-        schema.as_object_mut().map(|obj| {
+        if let Some(obj) = schema.as_object_mut() {
             obj.insert(
                 "required".to_owned(),
                 serde_json::json!([arg]),
-            )
-        });
+            );
+        }
     }
 }
 
@@ -581,6 +583,7 @@ mod tests {
             namespace: None,
             configuration_uri: None,
             secrets_uri: None,
+            skip_safety_check: false,
         }
     }
 
