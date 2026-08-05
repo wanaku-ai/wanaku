@@ -29,10 +29,21 @@ fn extract_namespace(path: &str) -> &str {
         return DEFAULT_NAMESPACE;
     }
 
-    match trimmed.strip_suffix("/mcp") {
-        Some(ns) if !ns.is_empty() && !ns.contains('/') => ns,
-        _ => DEFAULT_NAMESPACE,
+    // /{namespace}/mcp
+    if let Some(ns) = trimmed.strip_suffix("/mcp") {
+        if !ns.is_empty() && !ns.contains('/') {
+            return ns;
+        }
     }
+
+    // /mcp/{namespace}
+    if let Some(ns) = trimmed.strip_prefix("mcp/") {
+        if !ns.is_empty() && !ns.contains('/') {
+            return ns;
+        }
+    }
+
+    DEFAULT_NAMESPACE
 }
 
 #[async_trait]
@@ -107,5 +118,20 @@ mod tests {
     #[test]
     fn empty_path_is_default() {
         assert_eq!(extract_namespace("/"), "default");
+    }
+
+    #[test]
+    fn mcp_prefix_namespace() {
+        assert_eq!(extract_namespace("/mcp/test-ns"), "test-ns");
+    }
+
+    #[test]
+    fn mcp_prefix_another() {
+        assert_eq!(extract_namespace("/mcp/finance"), "finance");
+    }
+
+    #[test]
+    fn mcp_prefix_nested_is_default() {
+        assert_eq!(extract_namespace("/mcp/a/b"), "default");
     }
 }
