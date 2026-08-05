@@ -29,6 +29,8 @@ jobs:
         with:
           toolchain: '1.96'
       - uses: Swatinem/rust-cache@v2
+      - name: Create UI dist stub
+        run: mkdir -p ui/admin/dist
       - name: Build
         run: cargo build --verbose
       - name: Test
