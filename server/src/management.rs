@@ -484,10 +484,13 @@ fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u
         }
     };
 
-    info!(tool = %tool.name, "registered tool via management API");
-    let response = serde_json::json!(&tool);
+    let name = tool.name.clone();
     registry.register_tool(tool);
-    json_ok(&response)
+    info!(tool = %name, "registered tool via management API");
+    match registry.get_tool(&name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("tool not found after registration: {name}")),
+    }
 }
 
 fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
@@ -521,10 +524,13 @@ fn handle_resource_create(registry: &InMemoryRegistry, body: &str) -> Response<V
         }
     };
 
-    info!(resource = %resource.name, "registered resource via management API");
-    let response = serde_json::json!(&resource);
+    let name = resource.name.clone();
     registry.register_resource(resource);
-    json_ok(&response)
+    info!(resource = %name, "registered resource via management API");
+    match registry.get_resource(&name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("resource not found after registration: {name}")),
+    }
 }
 
 fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
@@ -558,10 +564,13 @@ fn handle_prompt_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec
         }
     };
 
-    info!(prompt = %prompt.name, "registered prompt via management API");
-    let response = serde_json::json!(&prompt);
+    let name = prompt.name.clone();
     registry.register_prompt(prompt);
-    json_ok(&response)
+    info!(prompt = %name, "registered prompt via management API");
+    match registry.get_prompt(&name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("prompt not found after registration: {name}")),
+    }
 }
 
 fn handle_prompt_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
@@ -594,10 +603,13 @@ fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -> Response<
         }
     };
 
-    info!(namespace = %namespace.name, "registered namespace via management API");
-    let response = serde_json::json!(&namespace);
+    let name = namespace.name.clone();
     registry.register_namespace(namespace);
-    json_ok(&response)
+    info!(namespace = %name, "registered namespace via management API");
+    match registry.get_namespace(&name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("namespace not found after registration: {name}")),
+    }
 }
 
 fn handle_namespace_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
@@ -638,10 +650,14 @@ fn handle_service_create(registry: &InMemoryRegistry, body: &str) -> Response<Ve
         }
     };
 
-    info!(service = %service.name, address = %service.address, service_type = %service.service_type, "registered service via management API");
-    let response = serde_json::json!(&service);
+    let name = service.name.clone();
+    let svc_type = service.service_type.clone();
     registry.register_service(service);
-    json_ok(&response)
+    info!(service = %name, service_type = %svc_type, "registered service via management API");
+    match registry.get_service(&name, &svc_type) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("service not found after registration: {name}")),
+    }
 }
 
 fn handle_service_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
