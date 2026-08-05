@@ -749,10 +749,16 @@ async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &Forw
     };
 
     let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
-    let count = tools.len();
+    let mut count = 0;
 
     for tool_json in &tools {
-        let name = tool_json.get("name").and_then(|n| n.as_str()).unwrap_or_default();
+        let name = match tool_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+            Some(n) if !n.is_empty() => n,
+            _ => {
+                warn!(forward = %forward.name, "skipping forwarded tool with missing or empty name");
+                continue;
+            }
+        };
         let description = tool_json
             .get("description")
             .and_then(|d| d.as_str())
@@ -777,6 +783,7 @@ async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &Forw
 
         info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
         registry.register_tool(tool);
+        count += 1;
     }
 
     count
