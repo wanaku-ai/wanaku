@@ -310,11 +310,7 @@ impl ServeHttp for WanakuManagementService {
         }
 
         if path == "/" {
-            return Response::builder()
-                .status(301)
-                .header("Location", "/admin/")
-                .body(Vec::new())
-                .expect("valid redirect");
+            return redirect_response("/admin/");
         }
 
         if path.starts_with("/admin") {
@@ -855,6 +851,15 @@ fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
             "pending": 0
         }
     }))
+}
+
+#[expect(clippy::expect_used, reason = "valid static response")]
+fn redirect_response(location: &str) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(301)
+        .header("Location", location)
+        .body(Vec::new())
+        .expect("valid redirect")
 }
 
 #[expect(clippy::expect_used, reason = "valid static response")]
