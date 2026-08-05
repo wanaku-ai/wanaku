@@ -27,12 +27,12 @@ pub struct WanakuManagementService {
 
 impl WanakuManagementService {
     pub fn new(registry: InMemoryRegistry, interactions: InMemoryInteractionStore) -> Self {
-        let proxy = crate::proxy::ClassicProxy::from_env();
+        let proxy = crate::proxy::ClassicProxy::from_config();
         if proxy.is_some() {
             info!("Classic proxy enabled via WANAKU_CLASSIC_URL");
         }
 
-        let ui_path = std::env::var("WANAKU_UI_PATH").ok().map(std::path::PathBuf::from);
+        let ui_path = wanaku_praxis_apis::config::ENV.ui_path.clone();
         if let Some(p) = &ui_path {
             info!(path = %p.display(), "Admin UI serving enabled");
         }

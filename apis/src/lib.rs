@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 
+pub mod config;
 pub mod correlation;
 pub mod grpc;
 pub mod interactions;

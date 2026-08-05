@@ -1,6 +1,6 @@
 #![deny(unsafe_code)]
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -48,18 +48,9 @@ impl FilePersistence {
         Self { path: path.into() }
     }
 
-    /// Create a `FilePersistence` from env vars, returning `None` if disabled.
-    ///
-    /// Uses `WANAKU_PERSIST_BACKEND` (must be `"file"`) and
-    /// `WANAKU_PERSIST_PATH` (directory; defaults to `/data/registry`).
-    pub fn from_env() -> Option<Arc<dyn PersistenceBackend>> {
-        let backend = std::env::var("WANAKU_PERSIST_BACKEND").ok()?;
-        if backend != "file" {
-            return None;
-        }
-        let dir = std::env::var("WANAKU_PERSIST_PATH")
-            .unwrap_or_else(|_| "/data/registry".to_owned());
-        let path = Path::new(&dir).join("registry.json");
+    pub fn from_config() -> Option<Arc<dyn PersistenceBackend>> {
+        let persist = crate::config::ENV.persist.as_ref()?;
+        let path = persist.dir.join("registry.json");
         Some(Arc::new(Self::new(path)))
     }
 }

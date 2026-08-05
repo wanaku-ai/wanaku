@@ -30,7 +30,7 @@ fn main() {
         .nth(2)
         .unwrap_or_else(|| "wanaku.yaml".to_owned());
 
-    let wanaku_registry = match FilePersistence::from_env() {
+    let wanaku_registry = match FilePersistence::from_config() {
         Some(backend) => {
             info!("file-based persistence enabled");
             let registry = InMemoryRegistry::with_persistence(backend);
@@ -85,8 +85,7 @@ fn main() {
         );
     }
 
-    let mgmt_addr = std::env::var("WANAKU_MGMT_LISTEN")
-        .unwrap_or_else(|_| "0.0.0.0:9090".to_owned());
+    let mgmt_addr = &wanaku_praxis_apis::config::ENV.mgmt_listen;
     let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry, mgmt_interactions);
     let mut mgmt_service = pingora_core::services::listening::Service::new(
         "wanaku-management".to_owned(),

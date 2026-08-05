@@ -300,6 +300,19 @@ Unit tests are in each module (`#[cfg(test)]` blocks). Integration tests would g
 
 ## Configuration
 
+### Environment Variables (`apis/src/config.rs`)
+
+All environment variables are centralized in `WanakuEnv` (`apis/src/config.rs`), backed by `std::sync::LazyLock`. Access via `wanaku_praxis_apis::config::ENV`. Never read `WANAKU_*` env vars directly with `std::env::var` outside this module.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_MGMT_LISTEN` | `0.0.0.0:9090` | Management API listen address |
+| `WANAKU_OLLAMA_UPSTREAM` | `127.0.0.1:11434` | Ollama backend address |
+| `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file persistence |
+| `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
+| `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic proxy base URL |
+| `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override |
+
 ### Praxis Config (server/src/default.yaml)
 
 ```yaml

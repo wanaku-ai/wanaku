@@ -20,11 +20,10 @@ pub struct ClassicProxy {
 }
 
 impl ClassicProxy {
-    pub fn from_env() -> Option<Self> {
-        let base_url = std::env::var("WANAKU_CLASSIC_URL").ok()?;
-        let base_url = base_url.trim_end_matches('/').to_owned();
+    pub fn from_config() -> Option<Self> {
+        let base_url = wanaku_praxis_apis::config::ENV.classic_url.as_ref()?;
         Some(Self {
-            base_url,
+            base_url: base_url.clone(),
             client: Client::new(),
         })
     }

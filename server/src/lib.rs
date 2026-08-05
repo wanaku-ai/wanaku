@@ -9,18 +9,13 @@ const DEFAULT_CONFIG: &str = include_str!("default.yaml");
 
 /// Load configuration, falling back to `praxis.yaml` then the built-in default.
 ///
-/// When using the built-in default, `WANAKU_OLLAMA_UPSTREAM` overrides the
-/// Ollama endpoint (default `127.0.0.1:11434`).
-///
 /// # Errors
 ///
 /// Returns an error if the config cannot be loaded or is invalid.
 pub fn load_config(
     explicit_path: Option<&str>,
 ) -> Result<praxis_core::config::Config, praxis_core::errors::ProxyError> {
-    let ollama_upstream = std::env::var("WANAKU_OLLAMA_UPSTREAM")
-        .unwrap_or_else(|_| "127.0.0.1:11434".to_owned());
-    let config = DEFAULT_CONFIG.replace("127.0.0.1:11434", &ollama_upstream);
+    let config = DEFAULT_CONFIG.replace("127.0.0.1:11434", &wanaku_praxis_apis::config::ENV.ollama_upstream);
     praxis_core::config::Config::load(explicit_path, &config)
 }
 
