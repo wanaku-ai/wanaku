@@ -273,6 +273,10 @@ impl ServeHttp for WanakuManagementService {
             return serve_ui(&self.ui_path, &path);
         }
 
+        if path == "/api/v1/management/statistics" && method == "GET" {
+            return handle_statistics(&self.registry);
+        }
+
         tracing::debug!(%method, %path, "management API request");
 
         let tool_route = resolve_tool_route(&method, &path);
@@ -710,6 +714,35 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     for name in &forwarded {
         registry.remove_tool(name);
     }
+}
+
+fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let tools_count = registry.list_tools().len() as i64;
+    let resources_count = registry.list_resources().len() as i64;
+    let prompts_count = registry.list_prompts().len() as i64;
+    let forwards_count = registry.list_forwards().len() as i64;
+
+    json_ok(&serde_json::json!({
+        "toolsCount": tools_count,
+        "resourcesCount": resources_count,
+        "promptsCount": prompts_count,
+        "forwardsCount": forwards_count,
+        "dataStoresCount": 0,
+        "toolCapabilities": {
+            "total": 0,
+            "healthy": 0,
+            "unhealthy": 0,
+            "down": 0,
+            "pending": 0
+        },
+        "resourceCapabilities": {
+            "total": 0,
+            "healthy": 0,
+            "unhealthy": 0,
+            "down": 0,
+            "pending": 0
+        }
+    }))
 }
 
 #[expect(clippy::expect_used, reason = "valid static response")]
