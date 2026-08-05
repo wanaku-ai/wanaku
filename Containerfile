@@ -1,7 +1,18 @@
 # syntax=docker/dockerfile:1
 
 # ------------------------------------------------------------------------------
-# Stage 1: Build
+# Stage 1: Build Admin UI
+# ------------------------------------------------------------------------------
+
+FROM node:22-alpine AS ui-builder
+WORKDIR /ui
+COPY ui/admin/package.json ui/admin/yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY ui/admin/ .
+RUN yarn build
+
+# ------------------------------------------------------------------------------
+# Stage 2: Build Rust binary
 # ------------------------------------------------------------------------------
 
 FROM rust:1.96-alpine AS builder
@@ -41,6 +52,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 COPY apis/src apis/src
 COPY filters/src filters/src
 COPY server/src server/src
+COPY --from=ui-builder /ui/dist /src/ui/admin/dist
 
 RUN find apis/src filters/src server/src \
     -name '*.rs' -exec touch {} +
@@ -51,7 +63,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     && cp target/release/wanaku-praxis /usr/local/bin/wanaku-praxis
 
 # ------------------------------------------------------------------------------
-# Stage 2: Runtime
+# Stage 3: Runtime
 # ------------------------------------------------------------------------------
 
 FROM alpine:3.23

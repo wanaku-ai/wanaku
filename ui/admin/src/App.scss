@@ -1,0 +1,35 @@
+.title {
+  padding: 2rem 4rem;
+}
+
+.description {
+  padding: 1rem 4rem;
+  padding-bottom: 2rem;
+  max-width: 600px;
+}
+
+ul {
+  margin: 1rem 0;
+  list-style-type: disc;
+  padding-left: 2rem;
+}
+
+ol {
+  margin: 1rem 0;
+  list-style: decimal;
+  padding-left: 2rem;
+}
+
+li {
+  margin-bottom: 5px;
+}
+
+#resource-tab-panel-wrapper {
+  height: 460px;
+  overflow-y: auto;
+}
+
+#prompts-tab-panel-wrapper {
+  height: 460px;
+  overflow-y: auto;
+}

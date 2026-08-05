@@ -21,6 +21,7 @@ async-trait = { workspace = true }
 http = { workspace = true }
 pingora-core = { version = "0.8.2", package = "quixotic-plecostomus-core" }
 reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
+rust-embed = "8"
 utoipa = "5.5"
 praxis-ai-filters = { workspace = true }
 praxis-core = { workspace = true }
