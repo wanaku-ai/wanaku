@@ -60,7 +60,7 @@ impl ResourceReadFilter {
         let resource_uri = match &parsed.uri {
             Some(u) => u.clone(),
             None => {
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32602, "missing uri in resources/read"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing uri in resources/read"));
             }
         };
 
@@ -74,7 +74,7 @@ impl ResourceReadFilter {
             Some(r) => r,
             None => {
                 tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
             }
         };
 
@@ -84,7 +84,7 @@ impl ResourceReadFilter {
                 warn!(uri = %resource_uri, "resource not found in registry");
                 return Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32602,
+                    crate::response::JSONRPC_INVALID_PARAMS,
                     &format!("resource not found: {resource_uri}"),
                 ));
             }
@@ -96,7 +96,7 @@ impl ResourceReadFilter {
                 warn!(resource_type = %resource.type_, error = %e, "no service available for resource type");
                 return Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32603,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
                     &format!("no service available for resource type: {}", resource.type_),
                 ));
             }
@@ -106,7 +106,7 @@ impl ResourceReadFilter {
             Some(p) => p.clone(),
             None => {
                 tracing::error!("GrpcPool not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: gRPC pool unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: gRPC pool unavailable"));
             }
         };
 
@@ -146,7 +146,7 @@ impl ResourceReadFilter {
                 warn!(uri = %resource_uri, error = %e, "gRPC resource acquire failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32603,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
                     &format!("resource read failed: {e}"),
                 ))
             }

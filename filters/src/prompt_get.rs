@@ -73,7 +73,7 @@ impl PromptGetFilter {
         let prompt_name = match &parsed.name {
             Some(n) => n.clone(),
             None => {
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32602, "missing name in prompts/get"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing name in prompts/get"));
             }
         };
 
@@ -83,7 +83,7 @@ impl PromptGetFilter {
             Some(r) => r,
             None => {
                 tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
             }
         };
 
@@ -93,7 +93,7 @@ impl PromptGetFilter {
                 warn!(prompt = %prompt_name, "prompt not found in registry");
                 return Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32602,
+                    crate::response::JSONRPC_INVALID_PARAMS,
                     &format!("prompt not found: {prompt_name}"),
                 ));
             }

@@ -72,7 +72,7 @@ impl ToolCallFilter {
             Some(n) => n.to_owned(),
             None => {
                 let parsed = parse_body(body);
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32602, "missing tool name in tools/call"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing tool name in tools/call"));
             }
         };
 
@@ -112,7 +112,7 @@ impl ToolCallFilter {
             Some(r) => r,
             None => {
                 tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: registry unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
             }
         };
 
@@ -130,7 +130,7 @@ impl ToolCallFilter {
                 warn!(tool = %tool_name, "tool not found in registry");
                 return Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32602,
+                    crate::response::JSONRPC_INVALID_PARAMS,
                     &format!("tool not found: {tool_name}"),
                 ));
             }
@@ -146,7 +146,7 @@ impl ToolCallFilter {
                 warn!(tool_type = %tool.type_, error = %e, "no service available for tool type");
                 return Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32603,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
                     &format!("no service available for tool type: {}", tool.type_),
                 ));
             }
@@ -156,7 +156,7 @@ impl ToolCallFilter {
             Some(p) => p.clone(),
             None => {
                 tracing::error!("GrpcPool not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, -32603, "internal error: gRPC pool unavailable"));
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: gRPC pool unavailable"));
             }
         };
 
@@ -197,7 +197,7 @@ impl ToolCallFilter {
                 warn!(tool = %tool_name, error = %e, "gRPC invocation failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32603,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
                     &format!("tool invocation failed: {e}"),
                 ))
             }
@@ -240,7 +240,7 @@ impl ToolCallFilter {
                 warn!(tool = %tool_name, error = %e, "MCP forward call failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
-                    -32603,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
                     &format!("forwarded tool call failed: {e}"),
                 ))
             }

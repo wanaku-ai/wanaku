@@ -1,6 +1,9 @@
 use bytes::Bytes;
 use praxis_filter::Rejection;
 
+pub const JSONRPC_INVALID_PARAMS: i32 = -32602;
+pub const JSONRPC_INTERNAL_ERROR: i32 = -32603;
+
 pub fn json_response(body: Bytes) -> Rejection {
     Rejection::status(200)
         .with_header("content-type", "application/json")
