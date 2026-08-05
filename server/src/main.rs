@@ -15,7 +15,8 @@ use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::persistence::FilePersistence;
 use wanaku_praxis_apis::registry::{
-    InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry, ToolRegistry,
+    ForwardEntry, ForwardRegistry, InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry,
+    ToolRegistry,
 };
 
 fn main() {
@@ -131,6 +132,46 @@ fn load_wanaku_config(path: &str, registry: &InMemoryRegistry) {
                 info!(service = %svc.name, address = %svc.address, "registered service from config");
                 registry.register_service(svc);
             }
+        }
+    }
+
+    let mut forwards = Vec::new();
+    if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
+        for fwd_value in fwd_list {
+            if let Ok(fwd) = serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
+                info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
+                registry.register_forward(fwd.clone());
+                forwards.push(fwd);
+            }
+        }
+    }
+
+    if !forwards.is_empty() {
+        let reg = registry.clone();
+        let handle = std::thread::spawn(move || {
+            let rt = match tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+            {
+                Ok(rt) => rt,
+                Err(e) => {
+                    tracing::error!(error = %e, "failed to create runtime for forward discovery");
+                    return;
+                }
+            };
+
+            rt.block_on(async {
+                for fwd in &forwards {
+                    info!(forward = %fwd.name, address = %fwd.address, "discovering tools from forward");
+                    let count =
+                        wanaku_praxis::management::discover_tools_from_forward(&reg, fwd).await;
+                    info!(forward = %fwd.name, tools_discovered = count, "forward discovery complete");
+                }
+            });
+        });
+
+        if let Err(e) = handle.join() {
+            tracing::error!("forward discovery thread panicked: {e:?}");
         }
     }
 }

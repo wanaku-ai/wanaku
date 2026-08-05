@@ -16,3 +16,9 @@ services:
   - name: "echo-tool"
     address: "localhost:9191"
     service_type: "tool-invoker"
+
+
+forwards:
+  - name: "mock-mcp"
+    address: "http://localhost:8080/mcp"
+    namespace: "test-ns"

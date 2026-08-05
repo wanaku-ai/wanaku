@@ -758,7 +758,7 @@ async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &str) -> Resp
     json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": count}))
 }
 
-async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
     let tools = match wanaku_praxis_apis::mcp_client::list_tools(&forward.address).await {
         Ok(t) => t,
         Err(e) => {
@@ -798,6 +798,7 @@ async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &Forw
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
             secrets_uri: None,
+            skip_safety_check: false,
         };
 
         info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
