@@ -4,7 +4,7 @@
 # Stage 1: Build Admin UI
 # ------------------------------------------------------------------------------
 
-FROM node:22-alpine AS ui-builder
+FROM node:22 AS ui-builder
 WORKDIR /ui
 COPY ui/admin/package.json ui/admin/yarn.lock ./
 RUN yarn install --frozen-lockfile
@@ -15,11 +15,13 @@ RUN yarn build
 # Stage 2: Build Rust binary
 # ------------------------------------------------------------------------------
 
-FROM rust:1.96-alpine AS builder
+FROM registry.fedoraproject.org/fedora:42 AS builder
 
-ENV OPENSSL_STATIC=1
+RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make protobuf-compiler curl \
+    && dnf clean all
 
-RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static pkgconf cmake make g++ protoc
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.96.0
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /src
 
@@ -41,7 +43,7 @@ RUN mkdir -p apis/src filters/src server/src \
     && echo '//! stub' > server/src/lib.rs \
     && printf '//! stub\nfn main() {}\n' > server/src/main.rs
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
     cargo build --release -p wanaku-praxis-proxy
 
@@ -57,7 +59,7 @@ COPY --from=ui-builder /ui/dist /src/ui/admin/dist
 RUN find apis/src filters/src server/src \
     -name '*.rs' -exec touch {} +
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
     cargo build --release -p wanaku-praxis-proxy \
     && cp target/release/wanaku-praxis /usr/local/bin/wanaku-praxis
@@ -66,15 +68,16 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Stage 3: Runtime
 # ------------------------------------------------------------------------------
 
-FROM alpine:3.23
+FROM registry.fedoraproject.org/fedora-minimal:42
 
 LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku-praxis" \
     org.opencontainers.image.description="Wanaku Praxis MCP proxy server" \
     org.opencontainers.image.licenses="Apache-2.0"
 
-RUN apk add --no-cache ca-certificates \
-    && addgroup -S wanaku \
-    && adduser -S -G wanaku -h /nonexistent -s /sbin/nologin wanaku \
+RUN microdnf install -y ca-certificates shadow-utils \
+    && microdnf clean all \
+    && groupadd -r wanaku \
+    && useradd -r -g wanaku -d /nonexistent -s /sbin/nologin wanaku \
     && mkdir -p /etc/wanaku-praxis /data/registry
 
 COPY --from=builder --chown=root:root --chmod=0555 \
@@ -89,6 +92,6 @@ WORKDIR /etc/wanaku-praxis
 EXPOSE 8081 8082 9090
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=5s \
-    CMD wget -qO- http://127.0.0.1:9090/healthz || exit 1
+    CMD curl -sf http://127.0.0.1:9090/healthz || exit 1
 
 ENTRYPOINT ["wanaku-praxis"]

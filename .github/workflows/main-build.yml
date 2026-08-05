@@ -1,0 +1,97 @@
+name: Build Main
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - ci-*
+    paths-ignore:
+      - '**.md'
+      - .claude/**
+      - .github/dependabot.yml
+      - docs/**
+      - LICENSE
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io' }}
+  CONTAINER_GROUP: ${{ vars.CONTAINER_GROUP || 'wanaku' }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.96'
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Test
+        run: cargo test --verbose
+
+      - name: Set arch
+        id: arch
+        run: echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
+
+      - name: Login to Container Registry
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Build container image
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        run: |
+          docker build -f Containerfile \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-praxis:${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+            .
+
+      - name: Push container image
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        run: |
+          docker push ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-praxis:${{ github.ref_name }}-${{ steps.arch.outputs.arch }}
+
+  createManifests:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Container Registry
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Create and push multi-arch manifests
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        run: |
+          ./build-manifests.sh ${{ github.ref_name }} ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}
