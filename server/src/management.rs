@@ -389,8 +389,8 @@ impl ServeHttp for WanakuManagementService {
                     Ok(body) => handle_namespace_create(&self.registry, &body),
                     Err(resp) => resp,
                 },
-                NamespaceRoute::Update(_id) => match read_body(http_session).await {
-                    Ok(body) => handle_namespace_create(&self.registry, &body),
+                NamespaceRoute::Update(id) => match read_body(http_session).await {
+                    Ok(body) => handle_namespace_update(&self.registry, &id, &body),
                     Err(resp) => resp,
                 },
                 NamespaceRoute::Delete(name) => handle_namespace_delete(&self.registry, &name),
@@ -605,6 +605,25 @@ fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -> Response<
     match registry.get_namespace(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
         None => json_err(404, &format!("namespace not found after registration: {name}")),
+    }
+}
+
+fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
+    let mut namespace: NamespaceEntry = match serde_json::from_str(body) {
+        Ok(n) => n,
+        Err(e) => {
+            warn!(error = %e, "invalid namespace JSON");
+            return json_err(400, &format!("invalid namespace JSON: {e}"));
+        }
+    };
+
+    namespace.name = path_name.to_owned();
+    namespace.id = None;
+    registry.register_namespace(namespace);
+    info!(namespace = %path_name, "updated namespace via management API");
+    match registry.get_namespace(path_name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("namespace not found after update: {path_name}")),
     }
 }
 
