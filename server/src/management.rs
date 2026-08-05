@@ -816,9 +816,7 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
         .map(|t| t.name.clone())
         .collect();
 
-    for name in &forwarded {
-        registry.remove_tool(name);
-    }
+    registry.remove_tools_batch(&forwarded);
 }
 
 fn handle_capability_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {

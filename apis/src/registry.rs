@@ -172,6 +172,7 @@ pub trait ToolRegistry: Send + Sync {
     fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     fn register_tool(&self, tool: ToolEntry);
     fn remove_tool(&self, name: &str) -> bool;
+    fn remove_tools_batch(&self, names: &[String]) -> usize;
     fn tool_count(&self) -> usize;
 }
 
@@ -364,6 +365,19 @@ impl ToolRegistry for InMemoryRegistry {
             self.persist();
         }
         removed
+    }
+
+    fn remove_tools_batch(&self, names: &[String]) -> usize {
+        let mut count = 0;
+        for name in names {
+            if self.tools.remove(name.as_str()).is_some() {
+                count += 1;
+            }
+        }
+        if count > 0 {
+            self.persist();
+        }
+        count
     }
 
     fn tool_count(&self) -> usize {
