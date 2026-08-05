@@ -42,26 +42,37 @@ impl InMemoryInteractionStore {
 
 impl InteractionStore for InMemoryInteractionStore {
     fn record(&self, interaction: Interaction) {
-        if let Ok(mut store) = self.interactions.write() {
-            if store.len() >= self.capacity {
-                store.pop_front();
+        match self.interactions.write() {
+            Ok(mut store) => {
+                if store.len() >= self.capacity {
+                    store.pop_front();
+                }
+                store.push_back(interaction);
             }
-            store.push_back(interaction);
+            Err(e) => {
+                tracing::warn!("interaction store write lock poisoned, dropping record: {e}");
+            }
         }
     }
 
     fn list(&self) -> Vec<Interaction> {
-        self.interactions
-            .read()
-            .map(|store| store.iter().cloned().collect())
-            .unwrap_or_default()
+        match self.interactions.read() {
+            Ok(store) => store.iter().cloned().collect(),
+            Err(e) => {
+                tracing::warn!("interaction store read lock poisoned: {e}");
+                Vec::new()
+            }
+        }
     }
 
     fn len(&self) -> usize {
-        self.interactions
-            .read()
-            .map(|store| store.len())
-            .unwrap_or(0)
+        match self.interactions.read() {
+            Ok(store) => store.len(),
+            Err(e) => {
+                tracing::warn!("interaction store read lock poisoned: {e}");
+                0
+            }
+        }
     }
 
     fn is_empty(&self) -> bool {
@@ -69,8 +80,11 @@ impl InteractionStore for InMemoryInteractionStore {
     }
 
     fn clear(&self) {
-        if let Ok(mut store) = self.interactions.write() {
-            store.clear();
+        match self.interactions.write() {
+            Ok(mut store) => store.clear(),
+            Err(e) => {
+                tracing::warn!("interaction store write lock poisoned, cannot clear: {e}");
+            }
         }
     }
 }
