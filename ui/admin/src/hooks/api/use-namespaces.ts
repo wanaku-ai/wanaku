@@ -87,13 +87,14 @@ export const clearNamespacesCache = () => {
   namespacesCache = null;
 };
 
-export const getNamespacePathById = (id?: string): string | undefined => {
+export const getNamespacePathById = (id?: string): string => {
   if (!id) {
     return "default"
   }
   if (namespacesCache) {
     const data = namespacesCache.data.data.data as Namespace[]
-    return data.find(namespace => namespace.id === id)?.path
+    const found = data.find(namespace => namespace.id === id)?.path
+    if (found) return found
   }
-  return undefined;
+  return id;
 }
