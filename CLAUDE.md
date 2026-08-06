@@ -33,13 +33,70 @@ Default configs:
 
 ## Architecture
 
-### 3-Crate Workspace
+### 3-Crate Workspace + Admin UI
 
 ```
 wanaku-praxis/
 ├── apis/       — Shared types, gRPC client (GrpcPool), MCP client (rmcp), registry traits
 ├── filters/    — Praxis HttpFilter implementations for MCP methods
-└── server/     — Binary, pipeline setup, management API (Pingora ServeHttp)
+├── server/     — Binary, pipeline setup, management API (Pingora ServeHttp)
+└── ui/admin/   — Admin UI (React 19 + Vite + Carbon Design System)
+```
+
+## Admin UI
+
+The admin UI is a React + TypeScript frontend embedded into the server binary via `rust_embed`. It follows the same patterns as the classic Wanaku Java project's admin UI.
+
+### Tech Stack
+
+- **Framework:** React 19, TypeScript 5.7, Vite 6
+- **Component Library:** IBM Carbon Design System (`@carbon/react`)
+- **Icons:** `@carbon/icons-react`
+- **Routing:** `react-router-dom` v6, hash-based (`createHashRouter`)
+- **Styling:** SCSS with Carbon theme tokens (`$g10` light / `$g100` dark)
+- **API Client:** Orval-generated from OpenAPI spec, `fetch`-based with `customFetch` mutator
+- **Package Manager:** Yarn (classic)
+
+### UI Build Commands
+
+```bash
+cd ui/admin
+yarn install
+yarn run dev          # Dev server
+yarn run build        # Production build (Orval + TypeScript + Vite)
+yarn run lint         # ESLint
+```
+
+### UI Code Conventions
+
+- **Carbon components only** — use `@carbon/react` for all UI elements, never raw HTML buttons/inputs/tables
+- **Page structure:** each page has 3 files: `<PageName>.tsx`, `index.ts` (re-exports from `router-exports.tsx`), `router-exports.tsx` (exports the page element for lazy loading)
+- **Lazy loading:** all pages use `lazy: async () => import("./Pages/<PageName>")`
+- **Route constants:** defined in `src/router/links.models.ts` as `const enum Links`
+- **API hooks:** custom hooks in `src/hooks/api/` wrap Orval-generated functions with `useCallback`
+- **Data access pattern:** `result.data.data` — `customFetch` wraps response as `{status, data, headers}`, and the backend wraps in `{"data": ..., "error": ...}`
+- **Notifications:** Carbon `ToastNotification` with auto-dismiss
+- **Error handling:** `ErrorBoundary` class component wraps page content with `InlineNotification`
+- **Empty states:** use shared `EmptyTableState` component
+- **DO NOT edit** `src/api/wanaku-router-api.ts` or `src/models/` — these are Orval-generated
+
+### UI Source Organization
+
+```
+ui/admin/src/
+  api/                    # Orval-generated API client (DO NOT EDIT)
+  assets/                 # Static assets
+  components/             # Shared layout: Header, SideNav, Content, ErrorBoundary
+  constants/              # Shared constants
+  hooks/api/              # Custom hooks wrapping API functions
+  models/                 # Orval-generated TypeScript types (DO NOT EDIT)
+  Pages/                  # Page components (capital P), each with 3-file pattern
+  router/                 # Route path constants
+  utils/                  # Utility functions
+  custom-fetch.ts         # Fetch wrapper with auth redirect handling
+  router.tsx              # Hash-based router configuration
+  App.tsx                 # Root app component
+  index.scss              # Global Carbon theme setup
 ```
 
 ### Dependencies
