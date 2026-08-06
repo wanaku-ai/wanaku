@@ -87,6 +87,11 @@ pub struct WanakuEnv {
 pub static ENV: LazyLock<WanakuEnv> = LazyLock::new(WanakuEnv::from_env);
 
 impl WanakuEnv {
+    #[must_use]
+    pub fn ollama_proxy_port(&self) -> u16 {
+        8082
+    }
+
     fn from_env() -> Self {
         let persist = std::env::var(WANAKU_PERSIST_BACKEND)
             .ok()

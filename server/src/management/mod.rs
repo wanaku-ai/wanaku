@@ -23,6 +23,7 @@ use self::handlers::{
     handle_namespace_update,
     handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
+    handle_chat_completions, handle_chat_list_llms, handle_chat_list_models,
     handle_safety_delete, handle_safety_get, handle_safety_update,
     handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
     handle_statistics,
@@ -30,11 +31,12 @@ use self::handlers::{
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
-    CapabilityRoute, ForwardRoute, InteractionRoute, ManagementRoute, NamespaceRoute, PromptRoute,
-    ResourceRoute, SafetyRoute, ServiceRoute, ToolRoute,
-    resolve_capability_route, resolve_forward_route, resolve_interaction_route,
-    resolve_management_route, resolve_namespace_route, resolve_prompt_route,
-    resolve_resource_route, resolve_safety_route, resolve_service_route, resolve_tool_route,
+    CapabilityRoute, ChatRoute, ForwardRoute, InteractionRoute, ManagementRoute, NamespaceRoute,
+    PromptRoute, ResourceRoute, SafetyRoute, ServiceRoute, ToolRoute,
+    resolve_capability_route, resolve_chat_route, resolve_forward_route,
+    resolve_interaction_route, resolve_management_route, resolve_namespace_route,
+    resolve_prompt_route, resolve_resource_route, resolve_safety_route, resolve_service_route,
+    resolve_tool_route,
 };
 use self::ui::serve_ui;
 
@@ -226,6 +228,23 @@ impl ServeHttp for WanakuManagementService {
                 },
                 SafetyRoute::Delete => handle_safety_delete(&self.safety),
                 SafetyRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        let chat_route = resolve_chat_route(&method, &path);
+        if chat_route != ChatRoute::NotFound {
+            let ollama_proxy = format!(
+                "http://127.0.0.1:{}",
+                wanaku_praxis_apis::config::ENV.ollama_proxy_port()
+            );
+            return match chat_route {
+                ChatRoute::ListLlms => handle_chat_list_llms(),
+                ChatRoute::ListModels(_) => handle_chat_list_models(&ollama_proxy).await,
+                ChatRoute::Completions => match read_body(http_session).await {
+                    Ok(body) => handle_chat_completions(&ollama_proxy, &body).await,
+                    Err(resp) => resp,
+                },
+                ChatRoute::NotFound => json_err(404, "not found"),
             };
         }
 

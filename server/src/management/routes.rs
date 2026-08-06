@@ -272,6 +272,34 @@ pub(super) fn resolve_safety_route(method: &str, path: &str) -> SafetyRoute {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum ChatRoute {
+    ListLlms,
+    ListModels(String),
+    Completions,
+    NotFound,
+}
+
+pub(super) fn resolve_chat_route(method: &str, path: &str) -> ChatRoute {
+    let suffix = match path.strip_prefix("/api/v1/chat") {
+        Some(s) => s,
+        None => return ChatRoute::NotFound,
+    };
+
+    match (method, suffix) {
+        ("GET", "/llms") => ChatRoute::ListLlms,
+        ("GET", s) if s.ends_with("/models") => {
+            let llm = s.strip_prefix('/').and_then(|s| s.strip_suffix("/models"));
+            match llm {
+                Some(name) if !name.is_empty() => ChatRoute::ListModels(name.to_owned()),
+                _ => ChatRoute::NotFound,
+            }
+        }
+        ("POST", "/completions") => ChatRoute::Completions,
+        _ => ChatRoute::NotFound,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
