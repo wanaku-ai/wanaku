@@ -1,4 +1,3 @@
-#![deny(unsafe_code)]
 
 #[cfg(unix)]
 #[global_allocator]

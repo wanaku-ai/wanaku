@@ -1,4 +1,3 @@
-#![deny(unsafe_code)]
 
 pub mod http_response;
 pub mod management;

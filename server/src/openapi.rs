@@ -1,4 +1,3 @@
-#![deny(unsafe_code)]
 #![allow(dead_code)]
 
 use utoipa::OpenApi;

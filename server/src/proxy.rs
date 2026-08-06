@@ -1,4 +1,3 @@
-#![deny(unsafe_code)]
 
 use http::Response;
 use reqwest::Client;

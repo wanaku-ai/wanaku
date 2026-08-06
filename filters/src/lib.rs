@@ -1,4 +1,3 @@
-#![deny(unsafe_code)]
 
 pub const MCP_METHOD_KEY: &str = "mcp.method";
 pub const MCP_NAME_KEY: &str = "mcp.name";
