@@ -30,10 +30,6 @@ export const router = createHashRouter([
         lazy: async () => import("./Pages/LLMChat"),
       },
       {
-        path: Links.CodeExecution,
-        lazy: async () => import("./Pages/CodeExecution"),
-      },
-      {
         path: Links.ToolCalls,
         lazy: async () => import("./Pages/ToolCalls"),
       },
@@ -48,14 +44,6 @@ export const router = createHashRouter([
       {
         path: Links.Forwards,
         lazy: async () => import("./Pages/Forwards"),
-      },
-      {
-        path: Links.DataStores,
-        lazy: async () => import("./Pages/DataStores"),
-      },
-      {
-        path: Links.ServiceCatalog,
-        lazy: async () => import("./Pages/ServiceCatalog"),
       },
     ],
   },

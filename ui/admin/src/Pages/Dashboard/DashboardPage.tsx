@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {Button, Column, Grid, Tile, ToastNotification,} from "@carbon/react";
-import {ArrowRight, DataBase, Document, Renew, TextAlignJustify, Tools,} from "@carbon/icons-react";
+import {ArrowRight, Document, Renew, TextAlignJustify, Tools,} from "@carbon/icons-react";
 import {useStatistics} from "../../hooks/api/use-statistics";
 import {CapabilityStatistics, SystemStatistics} from "../../models";
 import "./DashboardPage.scss";
@@ -108,15 +108,6 @@ export const DashboardPage: React.FC = () => {
                     {statistics.forwardsCount ?? 0}
                   </div>
                   <div className="stat-label">Forwards</div>
-                </Tile>
-              </Column>
-              <Column lg={4} md={4} sm={4}>
-                <Tile className="stat-tile">
-                  <DataBase size={24} className="stat-icon" />
-                  <div className="stat-value">
-                    {statistics.dataStoresCount ?? 0}
-                  </div>
-                  <div className="stat-label">Data Stores</div>
                 </Tile>
               </Column>
             </Grid>
