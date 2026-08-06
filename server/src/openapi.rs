@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![expect(dead_code, reason = "utoipa OpenAPI stubs — empty function bodies used only for path annotations")]
 
 use utoipa::OpenApi;
 
