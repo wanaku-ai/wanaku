@@ -19,7 +19,7 @@ http = { workspace = true }
 prost = { workspace = true }
 rand = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
-rmcp = { version = "2.0.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest", "reqwest"] }
+rmcp = { version = "3.1.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest", "reqwest"] }
 serde = { workspace = true }
 praxis-filter = { workspace = true }
 serde_json = { workspace = true }
