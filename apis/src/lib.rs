@@ -3,6 +3,7 @@ pub mod config;
 pub mod correlation;
 pub mod grpc;
 pub mod interactions;
+pub mod llm;
 pub mod mcp_client;
 pub mod persistence;
 pub mod registry;
