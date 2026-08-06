@@ -4218,11 +4218,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "wanaku-feature-chat"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "http",
+ "praxis-proxy-filter",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tracing",
+ "wanaku-praxis-apis",
+ "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-feature-safety"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "praxis-proxy-filter",
+ "serde",
+ "serde_json",
+ "tracing",
+ "wanaku-praxis-apis",
+ "wanaku-praxis-filters",
+ "yaml_serde",
+]
+
+[[package]]
 name = "wanaku-praxis-apis"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "dashmap 6.2.1",
  "http",
+ "praxis-proxy-filter",
  "prost",
  "rand 0.9.5",
  "reqwest 0.12.28",
@@ -4235,6 +4267,7 @@ dependencies = [
  "tonic-build",
  "tracing",
  "utoipa",
+ "yaml_serde",
 ]
 
 [[package]]
@@ -4274,6 +4307,8 @@ dependencies = [
  "tokio",
  "tracing",
  "utoipa",
+ "wanaku-feature-chat",
+ "wanaku-feature-safety",
  "wanaku-praxis-apis",
  "wanaku-praxis-filters",
  "yaml_serde",
