@@ -33,14 +33,17 @@ Default configs:
 
 ## Architecture
 
-### 3-Crate Workspace + Admin UI
+### Workspace Structure
 
 ```
 wanaku-praxis/
-├── apis/       — Shared types, gRPC client (GrpcPool), MCP client (rmcp), registry traits
-├── filters/    — Praxis HttpFilter implementations for MCP methods
-├── server/     — Binary, pipeline setup, management API (Pingora ServeHttp)
-└── ui/admin/   — Admin UI (React 19 + Vite + Carbon Design System)
+├── apis/              — Shared types, Feature trait, LLM infra, registry, config
+├── filters/           — Core MCP filters (tool_list, tool_call, resource_*, prompt_*, namespace)
+├── features/
+│   ├── safety/        — wanaku-feature-safety: LLM-based tool call classification
+│   └── chat/          — wanaku-feature-chat: LLM chat proxy to Ollama
+├── server/            — Binary, pipeline setup, management API (Pingora ServeHttp)
+└── ui/admin/          — Admin UI (React 19 + Vite + Carbon Design System)
 ```
 
 ## Admin UI
@@ -111,11 +114,14 @@ ui/admin/src/
 Defined in `server/src/default.yaml`:
 
 ```yaml
-cors → mcp (praxis-ai) → wanaku_namespace → wanaku_mcp_init → 
+cors → mcp (praxis-ai) → wanaku_namespace → wanaku_mcp_init →
+  wanaku_safety_check (feature) → wanaku_tool_assembly (feature) →
   wanaku_tool_list → wanaku_tool_call → wanaku_resource_list → 
   wanaku_resource_read → wanaku_prompt_list → wanaku_prompt_get → 
   static_response (catch-all)
 ```
+
+Feature filters (e.g., `wanaku_safety_check`) are registered by their feature crates, not by the core `register_wanaku_filters`. They appear in `default.yaml` but are no-ops when their feature is not configured.
 
 **Critical ordering:**
 - **MCP filter must be first** (after CORS) to parse JSON-RPC and set `mcp.method`/`mcp.name` metadata
@@ -186,14 +192,20 @@ Refreshing (`POST /api/v1/forwards/{name}/refreshes`) removes old tools and re-d
 
 ### Management API (Port 9090)
 
-**NOT axum** — uses Pingora's native `ServeHttp` trait (`server/src/management.rs`).
+**NOT axum** — uses Pingora's native `ServeHttp` trait (`server/src/management/mod.rs`).
 
-Routes (all under `/api/v1/`):
+**Core routes** (always available, defined in `server/src/management/`):
 - `GET /tools`, `GET /tools/{name}`, `POST /tools`, `DELETE /tools/{name}`
 - `GET /resources/{name}`, `POST /resources`, `DELETE /resources/{name}`
 - `GET /prompts/{name}`, `POST /prompts`, `DELETE /prompts/{name}`
 - `GET /namespaces/{name}`, `POST /namespaces`, `DELETE /namespaces/{name}`
 - `GET /forwards`, `POST /forwards`, `DELETE /forwards/{name}`, `POST /forwards/{name}/refreshes`
+
+**Feature routes** (registered by feature crates via `Feature::handle_route`):
+- `GET/PUT/DELETE /api/v1/safety` — safety classifier config (from `features/safety/`)
+- `GET /api/v1/chat/llms`, `GET /api/v1/chat/{llm}/models`, `POST /api/v1/chat/completions` — LLM chat (from `features/chat/`)
+
+The server dispatches to core routes first, then iterates registered features. Features return `None` for routes they don't own.
 
 Request/response wrapper:
 ```json
@@ -203,51 +215,15 @@ Request/response wrapper:
 
 ### Management API Route Pattern
 
-Every entity MUST follow this pattern — no inline `if path.starts_with(...)` blocks:
+**Core routes** (in `server/src/management/`) use this pattern — no inline `if path.starts_with(...)`:
 
-1. Define a route enum:
-```rust
-#[derive(Debug, PartialEq, Eq)]
-enum FooRoute {
-    List,
-    GetByName(String),
-    Create,
-    Delete(String),
-    NotFound,
-}
-```
+1. Define a route enum + resolver in `routes.rs`
+2. Dispatch in `mod.rs` using the guard pattern
+3. Handler functions in `handlers.rs`
 
-2. Define a resolver function:
-```rust
-fn resolve_foo_route(method: &str, path: &str) -> FooRoute {
-    let suffix = match path.strip_prefix("/api/v1/foos") {
-        Some(s) => s,
-        None => return FooRoute::NotFound,
-    };
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
-    match (method, name) {
-        ("GET", None) => FooRoute::List,
-        ("GET", Some(n)) => FooRoute::GetByName(n.to_owned()),
-        ("POST", None) => FooRoute::Create,
-        ("DELETE", Some(n)) => FooRoute::Delete(n.to_owned()),
-        _ => FooRoute::NotFound,
-    }
-}
-```
+See existing routes (ToolRoute, ResourceRoute, etc.) for the template.
 
-3. Dispatch in `ServeHttp::response` using the guard pattern:
-```rust
-let foo_route = resolve_foo_route(&method, &path);
-if foo_route != FooRoute::NotFound {
-    return match foo_route {
-        FooRoute::List => handle_foo_list(&self.registry),
-        // ...
-        FooRoute::NotFound => json_err(404, "not found"),
-    };
-}
-```
-
-4. Implement each handler as a standalone function: `handle_foo_list`, `handle_foo_get`, etc.
+**Feature routes** live entirely inside their feature crate (e.g., `features/safety/src/routes.rs`). They use the same route enum + resolver pattern internally, but dispatch happens via the `Feature::handle_route` trait method — not in the server's management module.
 
 ## Filter Implementation Patterns
 
@@ -357,9 +333,9 @@ Unit tests are in each module (`#[cfg(test)]` blocks). Integration tests would g
 
 ## Configuration
 
-### Environment Variables (`apis/src/config.rs`)
+### Environment Variables
 
-All environment variables are centralized in `WanakuEnv` (`apis/src/config.rs`), backed by `std::sync::LazyLock`. Access via `wanaku_praxis_apis::config::ENV`. Never read `WANAKU_*` env vars directly with `std::env::var` outside this module.
+**Core env vars** (`apis/src/config.rs`) — centralized in `WanakuEnv`, accessed via `wanaku_praxis_apis::config::ENV`:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -369,6 +345,8 @@ All environment variables are centralized in `WanakuEnv` (`apis/src/config.rs`),
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic proxy base URL |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override |
+
+**Feature env vars** are owned by their respective feature crates (NOT in `apis/src/config.rs`). Each feature reads its own env vars directly in its `load_env_config()` implementation. Example: `WANAKU_SAFETY_LLM_URL` is read by `features/safety/src/classifier.rs`.
 
 ### Praxis Config (server/src/default.yaml)
 
@@ -414,24 +392,52 @@ If missing, server starts with empty registry (can populate via management API).
 
 ## Common Tasks
 
-### Adding a New MCP Method Filter
+### Adding a New Feature (e.g., cost estimation, tool assembly, audit)
+
+Features are self-contained workspace crates under `features/`. Each implements the `Feature` trait from `apis/src/feature.rs`.
+
+1. **Create crate:** `mkdir -p features/myfeature/src` + `Cargo.toml`
+   - Depend on `wanaku-praxis-apis` (for Feature trait, registry, interactions, llm)
+   - Depend on `wanaku-praxis-filters` (for `body_filter_boilerplate!` macro, response helpers) if your feature has a filter
+   - Depend on `praxis-filter` (for HttpFilter, FilterAction, PipelineExtension)
+
+2. **Implement `Feature` trait** in `src/lib.rs`:
+   - `register_filters` — register your filter factory into the FilterRegistry
+   - `pipeline_extensions` — return pipeline extensions that inject your state into requests
+   - `handle_route` — handle management API requests (return `None` for routes you don't own)
+   - `load_yaml_config` — parse your section from wanaku.yaml
+   - `load_env_config` — read your env vars directly (feature crates own their env vars)
+
+3. **Add to workspace:** add `"features/myfeature"` to `Cargo.toml` workspace members + workspace deps
+
+4. **Add to server:** add dependency in `server/Cargo.toml`, add `Box::new(MyFeature::new())` to features vec in `main.rs`
+
+5. **Add filter to pipeline** (if applicable): add `filter: wanaku_myfeature` to `server/src/default.yaml`
+
+**Reference implementations:** `features/safety/` (filter + mgmt API + config) and `features/chat/` (mgmt API only, no filter).
+
+**Key patterns:**
+- Use `wanaku_praxis_filters::body_filter_boilerplate!` for filters
+- Use `wanaku_praxis_filters::response::json_rpc_error` for MCP error responses
+- Use `wanaku_praxis_apis::NAMESPACE_METADATA_KEY` for namespace metadata
+- Use `wanaku_praxis_apis::llm::{LlmClient, HotSwap}` for LLM-based features
+- Features define their own `json_ok`/`json_err` helpers for management API responses (to avoid depending on the server crate)
+
+### Adding a New Core MCP Method Filter
+
+Core filters live in `filters/src/` and are always active (not feature-gated).
 
 1. Create filter in `filters/src/<method>.rs`
-2. Implement `HttpFilter` trait with metadata checks:
+2. Use the `body_filter_boilerplate!` macro
+3. Implement `handle_body` with metadata checks:
    ```rust
-   let method = ctx.get_metadata("mcp.method")?;
+   let method = ctx.get_metadata(crate::MCP_METHOD_KEY)?;
    if method != "your/method" {
        return Ok(FilterAction::Continue);
    }
    ```
-3. Register in `server/src/lib.rs::register_wanaku_filters`:
-   ```rust
-   praxis_filter::register_filters!(
-       @register registry,
-       http "wanaku_your_method" => YourMethodFilter::from_config
-   );
-   ```
-4. Add to pipeline in `server/src/default.yaml`
+4. Register in `server/src/lib.rs::register_wanaku_filters`
+5. Add to pipeline in `server/src/default.yaml`
 
 ### Testing Filter Locally
 
@@ -492,7 +498,20 @@ tracing::debug!(
 );
 ```
 
-## Future Extensibility
+## Extensibility
+
+### Feature Crate Pattern
+
+New capabilities (LLM-based classification, tool assembly, audit logging, etc.) are added as self-contained workspace crates under `features/`. Each implements `Feature` from `apis/src/feature.rs` and owns its domain logic, filter, management API routes, config parsing, and pipeline extensions. The server wires features via a single registration call in `main.rs`.
+
+### Shared LLM Infrastructure
+
+`apis/src/llm.rs` provides reusable building blocks for LLM-based features:
+- `LlmClient` — HTTP client for OpenAI-compatible `/chat/completions` endpoints
+- `HotSwap<T>` — generic `Arc<RwLock<Option<T>>>` for runtime-configurable state
+- `sanitize()`, `strip_markdown_fences()`, `extract_content()` — prompt/response utilities
+
+### Registry Backends
 
 Registry traits are designed for pluggable backends:
 - Could add PostgresRegistry, RedisRegistry, EtcdRegistry
