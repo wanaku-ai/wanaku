@@ -164,3 +164,79 @@ fn find_resource_by_uri(
         .into_iter()
         .find(|r| r.location == uri)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_body_valid_with_uri() {
+        let body = Some(Bytes::from(
+            r#"{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"file:///data/report.csv"}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(1));
+        assert_eq!(parsed.uri.as_deref(), Some("file:///data/report.csv"));
+    }
+
+    #[test]
+    fn parse_body_missing_uri() {
+        let body = Some(Bytes::from(
+            r#"{"id":2,"params":{}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(2));
+        assert!(parsed.uri.is_none());
+    }
+
+    #[test]
+    fn parse_body_missing_params() {
+        let body = Some(Bytes::from(r#"{"id":3}"#));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(3));
+        assert!(parsed.uri.is_none());
+    }
+
+    #[test]
+    fn parse_body_none() {
+        let parsed = parse_body(&None);
+        assert!(parsed.id.is_null());
+        assert!(parsed.uri.is_none());
+    }
+
+    #[test]
+    fn parse_body_malformed_json() {
+        let body = Some(Bytes::from("{broken"));
+        let parsed = parse_body(&body);
+        assert!(parsed.id.is_null());
+        assert!(parsed.uri.is_none());
+    }
+
+    #[test]
+    fn parse_body_empty_bytes() {
+        let body = Some(Bytes::new());
+        let parsed = parse_body(&body);
+        assert!(parsed.id.is_null());
+        assert!(parsed.uri.is_none());
+    }
+
+    #[test]
+    fn parse_body_no_id_field() {
+        let body = Some(Bytes::from(
+            r#"{"params":{"uri":"s3://bucket/key"}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert!(parsed.id.is_null());
+        assert_eq!(parsed.uri.as_deref(), Some("s3://bucket/key"));
+    }
+
+    #[test]
+    fn parse_body_uri_is_not_string() {
+        let body = Some(Bytes::from(
+            r#"{"id":4,"params":{"uri":123}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(4));
+        assert!(parsed.uri.is_none());
+    }
+}

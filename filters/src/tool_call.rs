@@ -247,3 +247,92 @@ impl ToolCallFilter {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_body_valid_with_arguments() {
+        let body = Some(Bytes::from(
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo","arguments":{"message":"hello"}}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(1));
+        assert_eq!(parsed.arguments.len(), 1);
+        assert_eq!(parsed.arguments.get("message").map(String::as_str), Some("hello"));
+    }
+
+    #[test]
+    fn parse_body_arguments_with_non_string_values() {
+        let body = Some(Bytes::from(
+            r#"{"id":2,"params":{"arguments":{"count":42,"flag":true,"nested":{"a":1}}}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(2));
+        assert_eq!(parsed.arguments.get("count").map(String::as_str), Some("42"));
+        assert_eq!(parsed.arguments.get("flag").map(String::as_str), Some("true"));
+        assert!(parsed.arguments.contains_key("nested"));
+    }
+
+    #[test]
+    fn parse_body_missing_arguments() {
+        let body = Some(Bytes::from(
+            r#"{"id":3,"params":{"name":"echo"}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(3));
+        assert!(parsed.arguments.is_empty());
+    }
+
+    #[test]
+    fn parse_body_missing_params() {
+        let body = Some(Bytes::from(r#"{"id":4}"#));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(4));
+        assert!(parsed.arguments.is_empty());
+    }
+
+    #[test]
+    fn parse_body_none() {
+        let parsed = parse_body(&None);
+        assert!(parsed.id.is_null());
+        assert!(parsed.arguments.is_empty());
+    }
+
+    #[test]
+    fn parse_body_malformed_json() {
+        let body = Some(Bytes::from("not json"));
+        let parsed = parse_body(&body);
+        assert!(parsed.id.is_null());
+        assert!(parsed.arguments.is_empty());
+    }
+
+    #[test]
+    fn parse_body_empty_bytes() {
+        let body = Some(Bytes::new());
+        let parsed = parse_body(&body);
+        assert!(parsed.id.is_null());
+        assert!(parsed.arguments.is_empty());
+    }
+
+    #[test]
+    fn parse_body_no_id_field() {
+        let body = Some(Bytes::from(
+            r#"{"params":{"arguments":{"key":"val"}}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert!(parsed.id.is_null());
+        assert_eq!(parsed.arguments.get("key").map(String::as_str), Some("val"));
+    }
+
+    #[test]
+    fn parse_body_arguments_is_not_object() {
+        let body = Some(Bytes::from(
+            r#"{"id":5,"params":{"arguments":"not-an-object"}}"#,
+        ));
+        let parsed = parse_body(&body);
+        assert_eq!(parsed.id, serde_json::Value::from(5));
+        assert!(parsed.arguments.is_empty());
+    }
+}
