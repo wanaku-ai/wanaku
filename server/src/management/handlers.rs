@@ -431,10 +431,7 @@ pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>
 }
 
 pub(super) fn handle_safety_get(state: &SafetyState) -> Response<Vec<u8>> {
-    json_ok(&serde_json::json!({
-        "data": state.current_config(),
-        "error": serde_json::Value::Null,
-    }))
+    json_ok(&serde_json::json!(state.current_config()))
 }
 
 pub(super) fn handle_safety_update(state: &SafetyState, body: &str) -> Response<Vec<u8>> {
@@ -446,17 +443,11 @@ pub(super) fn handle_safety_update(state: &SafetyState, body: &str) -> Response<
     info!(model = %config.llm_model, url = %config.llm_url, "safety classifier updated via management API");
     state.configure(config.clone());
 
-    json_ok(&serde_json::json!({
-        "data": config,
-        "error": serde_json::Value::Null,
-    }))
+    json_ok(&serde_json::json!(config))
 }
 
 pub(super) fn handle_safety_delete(state: &SafetyState) -> Response<Vec<u8>> {
     state.disable();
     info!("safety classifier disabled via management API");
-    json_ok(&serde_json::json!({
-        "data": serde_json::Value::Null,
-        "error": serde_json::Value::Null,
-    }))
+    json_ok(&serde_json::Value::Null)
 }
