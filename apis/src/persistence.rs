@@ -110,11 +110,12 @@ mod tests {
             ..RegistrySnapshot::default()
         };
 
-        backend.save(&snapshot).ok();
-        let loaded = backend.load().ok();
-        assert!(loaded.is_some());
-        let loaded = loaded.map(|s| (s.tools.len(), s.services.len()));
-        assert_eq!(loaded, Some((1, 1)));
+        assert!(backend.save(&snapshot).is_ok(), "save should succeed");
+        let loaded = backend.load();
+        assert!(loaded.is_ok(), "load should succeed");
+        if let Ok(s) = loaded {
+            assert_eq!((s.tools.len(), s.services.len()), (1, 1));
+        }
 
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -123,8 +124,9 @@ mod tests {
     fn load_missing_file_returns_empty() {
         let backend = FilePersistence::new("/tmp/wanaku-nonexistent-path/registry.json");
         let snapshot = backend.load();
-        assert!(snapshot.is_ok());
-        let loaded = snapshot.ok().map(|s| s.tools.len());
-        assert_eq!(loaded, Some(0));
+        assert!(snapshot.is_ok(), "loading missing file should return Ok");
+        if let Ok(s) = snapshot {
+            assert_eq!(s.tools.len(), 0);
+        }
     }
 }
