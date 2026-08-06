@@ -19,6 +19,7 @@ pub(super) fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
         .status(200)
         .header("Content-Type", "application/json")
         .header("Content-Length", body.len())
+        .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
         .body(body)
         .expect("valid json response")
 }
@@ -34,6 +35,7 @@ pub(super) fn json_ok(data: &serde_json::Value) -> Response<Vec<u8>> {
         .status(200)
         .header("Content-Type", "application/json")
         .header("Content-Length", body.len())
+        .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
         .body(body)
         .expect("valid json response")
 }

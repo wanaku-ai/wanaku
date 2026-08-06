@@ -28,6 +28,10 @@ const WANAKU_CLASSIC_URL: &str = "WANAKU_CLASSIC_URL";
 /// Unset uses the compiled-in [`rust_embed`] bundle.
 const WANAKU_UI_PATH: &str = "WANAKU_UI_PATH";
 
+/// Value for the `Access-Control-Allow-Origin` header on management API responses.
+/// Defaults to `"*"`. Set to a specific origin (e.g. `http://localhost:3000`) in production.
+const WANAKU_CORS_ORIGIN: &str = "WANAKU_CORS_ORIGIN";
+
 /// Base URL for the OpenAI-compatible safety classifier LLM.
 /// Unset disables the safety classification feature entirely.
 const WANAKU_SAFETY_LLM_URL: &str = "WANAKU_SAFETY_LLM_URL";
@@ -79,6 +83,8 @@ pub struct WanakuEnv {
     pub classic_url: Option<String>,
     /// Override path for serving the admin UI from the filesystem.
     pub ui_path: Option<PathBuf>,
+    /// Value for the `Access-Control-Allow-Origin` header on management API responses.
+    pub cors_origin: String,
     /// Safety classifier config. `None` when the feature is disabled.
     pub safety: Option<SafetyEnv>,
 }
@@ -114,6 +120,8 @@ impl WanakuEnv {
                 .ok()
                 .map(|u| u.trim_end_matches('/').to_owned()),
             ui_path: std::env::var(WANAKU_UI_PATH).ok().map(PathBuf::from),
+            cors_origin: std::env::var(WANAKU_CORS_ORIGIN)
+                .unwrap_or_else(|_| "*".to_owned()),
             safety: std::env::var(WANAKU_SAFETY_LLM_URL)
                 .ok()
                 .filter(|u| !u.is_empty())
