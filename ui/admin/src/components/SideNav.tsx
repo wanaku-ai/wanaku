@@ -81,6 +81,13 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
                 >
                     Forwards
                 </SideNavMenuItem>
+                <SideNavMenuItem
+                    element={Link}
+                    to={Links.Safety}
+                    onClick={onClickSideNavExpand}
+                >
+                    Safety
+                </SideNavMenuItem>
             </SideNavItems>
         </SideNav>
     );
