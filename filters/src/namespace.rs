@@ -2,7 +2,7 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_praxis_apis::registry::DEFAULT_NAMESPACE;
 
-pub const NAMESPACE_METADATA_KEY: &str = "wanaku.namespace";
+pub use wanaku_praxis_apis::NAMESPACE_METADATA_KEY;
 
 crate::body_filter_boilerplate!(NamespaceFilter, "wanaku_namespace");
 

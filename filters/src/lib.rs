@@ -2,6 +2,7 @@
 pub const MCP_METHOD_KEY: &str = "mcp.method";
 pub const MCP_NAME_KEY: &str = "mcp.name";
 
+#[macro_export]
 macro_rules! body_filter_boilerplate {
     ($struct_name:ident, $filter_name:literal) => {
         pub struct $struct_name {
@@ -59,8 +60,6 @@ macro_rules! body_filter_boilerplate {
     };
 }
 
-pub(crate) use body_filter_boilerplate;
-
 pub mod intercept;
 pub mod mcp_init;
 pub mod namespace;
@@ -68,7 +67,7 @@ pub mod prompt_get;
 pub mod prompt_list;
 pub mod resource_list;
 pub mod resource_read;
-pub(crate) mod response;
+pub mod response;
 pub mod safety;
 pub mod tool_call;
 pub mod tool_list;
