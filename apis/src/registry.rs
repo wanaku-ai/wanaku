@@ -704,4 +704,60 @@ mod tests {
         assert_eq!(tool_svc.map(|s| s.address), Ok("localhost:9090".to_owned()));
         assert_eq!(res_svc.map(|s| s.address), Ok("localhost:9091".to_owned()));
     }
+
+    #[test]
+    fn inject_request_id_adds_property_and_required() {
+        let mut schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"}
+            }
+        });
+        super::inject_request_id_arg(&mut schema);
+
+        let props = schema["properties"].as_object().map(|m| m.len());
+        assert_eq!(props, Some(2));
+        assert!(schema["properties"]["x-request-id"].is_object());
+        assert_eq!(schema["required"], serde_json::json!(["x-request-id"]));
+    }
+
+    #[test]
+    fn inject_request_id_appends_to_existing_required() {
+        let mut schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"}
+            },
+            "required": ["message"]
+        });
+        super::inject_request_id_arg(&mut schema);
+
+        let required = schema["required"].as_array().map(|a| a.len());
+        assert_eq!(required, Some(2));
+    }
+
+    #[test]
+    fn inject_request_id_does_not_duplicate() {
+        let mut schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "x-request-id": {"type": "string"}
+            },
+            "required": ["x-request-id"]
+        });
+        super::inject_request_id_arg(&mut schema);
+
+        let props = schema["properties"].as_object().map(|m| m.len());
+        assert_eq!(props, Some(1));
+        let required = schema["required"].as_array().map(|a| a.len());
+        assert_eq!(required, Some(1));
+    }
+
+    #[test]
+    fn inject_request_id_handles_empty_object_schema() {
+        let mut schema = serde_json::json!({"type": "object"});
+        super::inject_request_id_arg(&mut schema);
+
+        assert_eq!(schema["required"], serde_json::json!(["x-request-id"]));
+    }
 }
