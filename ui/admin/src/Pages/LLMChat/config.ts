@@ -11,7 +11,7 @@ export const OPENAI = "OpenAi"
 
 const DEFAULT_EXTRA_LLM_PARAMS = ""
 const DEFAULT_SYSTEM_PROMPT = "You are helpful assistant that can use tools."
-const DEFAULT_LLM = "Mistral"
+const DEFAULT_LLM = "Ollama"
 const DEFAULT_ANTHROPIC_MODEL = "claude-4-6-sonnet"
 const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
 const DEFAULT_MISTRAL_MODEL = "mistral-small-latest"

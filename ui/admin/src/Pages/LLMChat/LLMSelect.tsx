@@ -31,7 +31,8 @@ export const LLMSelect : React.FC<LLMSelectProps> = ({ id, labelText, helperText
   }, [setLlms, setLoading])
   
   function selectedValue(llms: string[]): string | undefined {
-    return value || (llms.length > 0 ? llms[0] : undefined)
+    if (value && llms.includes(value)) return value
+    return llms.length > 0 ? llms[0] : undefined
   }
   
   if (isLoading) {

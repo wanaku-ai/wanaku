@@ -51,10 +51,11 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
     if (!selectedNamespace) {
       return tools
     }
+    const nsKey = selectedNamespace.id || selectedNamespace.name || selectedNamespace.path
     if (selectedNamespace.path === "default") {
-      return tools.filter(tool => !tool.namespace || tool.namespace === selectedNamespace.id)
+      return tools.filter(tool => !tool.namespace || tool.namespace === nsKey)
     }
-    return tools.filter(tool => tool.namespace === selectedNamespace.id)
+    return tools.filter(tool => tool.namespace === nsKey)
   }
   
   function isAllSelected() {
