@@ -19,6 +19,7 @@ pub struct Interaction {
 pub trait InteractionStore: Send + Sync {
     fn record(&self, interaction: Interaction);
     fn list(&self) -> Vec<Interaction>;
+    fn get_by_conversation_id(&self, conversation_id: &str) -> Vec<Interaction>;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;
     fn clear(&self);
@@ -63,6 +64,19 @@ impl InteractionStore for InMemoryInteractionStore {
                 Vec::new()
             }
         }
+    }
+
+    fn get_by_conversation_id(&self, conversation_id: &str) -> Vec<Interaction> {
+        self.interactions
+            .read()
+            .map(|store| {
+                store
+                    .iter()
+                    .filter(|i| i.conversation_id.as_deref() == Some(conversation_id))
+                    .cloned()
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     fn len(&self) -> usize {
@@ -136,6 +150,49 @@ mod tests {
         let items = store.list();
         assert_eq!(items[0].path, "/req-1");
         assert_eq!(items[1].path, "/req-2");
+    }
+
+    #[test]
+    fn get_by_conversation_id_filters() {
+        let store = InMemoryInteractionStore::new(10);
+        let base = Interaction {
+            epoch_ms: 0,
+            path: "/test".to_owned(),
+            request_body: serde_json::Value::Null,
+            response_body: serde_json::Value::Null,
+            status_code: 200,
+            duration_ms: 0,
+            conversation_id: None,
+            completion_id: None,
+            model: None,
+        };
+
+        store.record(Interaction {
+            conversation_id: Some("wk-abc".to_owned()),
+            epoch_ms: 1,
+            ..base.clone()
+        });
+        store.record(Interaction {
+            conversation_id: Some("wk-xyz".to_owned()),
+            epoch_ms: 2,
+            ..base.clone()
+        });
+        store.record(Interaction {
+            conversation_id: Some("wk-abc".to_owned()),
+            epoch_ms: 3,
+            ..base
+        });
+
+        let abc = store.get_by_conversation_id("wk-abc");
+        assert_eq!(abc.len(), 2);
+        assert_eq!(abc[0].epoch_ms, 1);
+        assert_eq!(abc[1].epoch_ms, 3);
+
+        let xyz = store.get_by_conversation_id("wk-xyz");
+        assert_eq!(xyz.len(), 1);
+
+        let none = store.get_by_conversation_id("wk-none");
+        assert!(none.is_empty());
     }
 
     #[test]

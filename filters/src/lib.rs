@@ -70,6 +70,7 @@ pub mod prompt_list;
 pub mod resource_list;
 pub mod resource_read;
 pub(crate) mod response;
+pub mod safety;
 pub mod tool_call;
 pub mod tool_list;
 
@@ -80,5 +81,6 @@ pub use prompt_get::PromptGetFilter;
 pub use prompt_list::PromptListFilter;
 pub use resource_list::ResourceListFilter;
 pub use resource_read::ResourceReadFilter;
+pub use safety::SafetyCheckFilter;
 pub use tool_call::ToolCallFilter;
 pub use tool_list::ToolListFilter;

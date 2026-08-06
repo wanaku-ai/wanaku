@@ -26,7 +26,7 @@ pub struct ToolEntry {
     pub configuration_uri: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "secretsURI")]
     pub secrets_uri: Option<String>,
-    #[serde(default, alias = "skipSafetyCheck")]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not", alias = "skipSafetyCheck")]
     pub skip_safety_check: bool,
 }
 
