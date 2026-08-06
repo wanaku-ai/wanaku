@@ -11,8 +11,8 @@ use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 use tracing::info;
 
+use wanaku_praxis_apis::feature::Feature;
 use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
-use wanaku_praxis_apis::safety::SafetyState;
 use wanaku_praxis_apis::registry::InMemoryRegistry;
 
 use self::handlers::{
@@ -23,19 +23,17 @@ use self::handlers::{
     handle_namespace_update,
     handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
-    handle_chat_completions, handle_chat_list_llms, handle_chat_list_models,
-    handle_safety_delete, handle_safety_get, handle_safety_update,
     handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
     handle_statistics,
     handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list,
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
-    CapabilityRoute, ChatRoute, ForwardRoute, InteractionRoute, ManagementRoute, NamespaceRoute,
-    PromptRoute, ResourceRoute, SafetyRoute, ServiceRoute, ToolRoute,
-    resolve_capability_route, resolve_chat_route, resolve_forward_route,
+    CapabilityRoute, ForwardRoute, InteractionRoute, ManagementRoute, NamespaceRoute,
+    PromptRoute, ResourceRoute, ServiceRoute, ToolRoute,
+    resolve_capability_route, resolve_forward_route,
     resolve_interaction_route, resolve_management_route, resolve_namespace_route,
-    resolve_prompt_route, resolve_resource_route, resolve_safety_route, resolve_service_route,
+    resolve_prompt_route, resolve_resource_route, resolve_service_route,
     resolve_tool_route,
 };
 use self::ui::serve_ui;
@@ -43,13 +41,17 @@ use self::ui::serve_ui;
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     interactions: InMemoryInteractionStore,
-    safety: SafetyState,
+    features: Vec<Box<dyn Feature>>,
     proxy: Option<crate::proxy::ClassicProxy>,
     ui_path: Option<std::path::PathBuf>,
 }
 
 impl WanakuManagementService {
-    pub fn new(registry: InMemoryRegistry, interactions: InMemoryInteractionStore, safety: SafetyState) -> Self {
+    pub fn new(
+        registry: InMemoryRegistry,
+        interactions: InMemoryInteractionStore,
+        features: Vec<Box<dyn Feature>>,
+    ) -> Self {
         let proxy = crate::proxy::ClassicProxy::from_config();
         if proxy.is_some() {
             info!("Classic proxy enabled via WANAKU_CLASSIC_URL");
@@ -63,7 +65,7 @@ impl WanakuManagementService {
         Self {
             registry,
             interactions,
-            safety,
+            features,
             proxy,
             ui_path,
         }
@@ -197,6 +199,7 @@ impl ServeHttp for WanakuManagementService {
                 }
                 InteractionRoute::Clear => {
                     self.interactions.clear();
+                    info!("cleared interaction store");
                     json_ok(&serde_json::json!({"cleared": true}))
                 }
                 InteractionRoute::NotFound => json_err(404, "not found"),
@@ -218,44 +221,27 @@ impl ServeHttp for WanakuManagementService {
             };
         }
 
-        let safety_route = resolve_safety_route(&method, &path);
-        if safety_route != SafetyRoute::NotFound {
-            return match safety_route {
-                SafetyRoute::Get => handle_safety_get(&self.safety),
-                SafetyRoute::Update => match read_body(http_session).await {
-                    Ok(body) => handle_safety_update(&self.safety, &body),
-                    Err(resp) => resp,
-                },
-                SafetyRoute::Delete => handle_safety_delete(&self.safety),
-                SafetyRoute::NotFound => json_err(404, "not found"),
-            };
-        }
+        // Feature dispatch — read body once for POST/PUT, then try each feature
+        let feature_body = match method.as_str() {
+            "POST" | "PUT" | "PATCH" => match read_body(http_session).await {
+                Ok(b) => Some(b),
+                Err(resp) => return resp,
+            },
+            _ => None,
+        };
 
-        let chat_route = resolve_chat_route(&method, &path);
-        if chat_route != ChatRoute::NotFound {
-            let ollama_proxy = format!(
-                "http://127.0.0.1:{}",
-                wanaku_praxis_apis::config::ENV.ollama_proxy_port()
-            );
-            return match chat_route {
-                ChatRoute::ListLlms => handle_chat_list_llms(),
-                ChatRoute::ListModels(_) => handle_chat_list_models(&ollama_proxy).await,
-                ChatRoute::Completions => match read_body(http_session).await {
-                    Ok(body) => handle_chat_completions(&ollama_proxy, &body).await,
-                    Err(resp) => resp,
-                },
-                ChatRoute::NotFound => json_err(404, "not found"),
-            };
+        for feature in &self.features {
+            if let Some(response) = feature
+                .handle_route(&method, &path, feature_body.as_deref())
+                .await
+            {
+                return response;
+            }
         }
 
         if crate::proxy::ClassicProxy::should_proxy(&path) {
             if let Some(proxy) = &self.proxy {
-                let body = match read_body(http_session).await {
-                    Ok(b) if b.is_empty() => None,
-                    Ok(b) => Some(b),
-                    Err(resp) => return resp,
-                };
-                return proxy.forward(&method, &path, body).await;
+                return proxy.forward(&method, &path, feature_body).await;
             }
             return json_err(503, "Classic backend not configured (set WANAKU_CLASSIC_URL)");
         }

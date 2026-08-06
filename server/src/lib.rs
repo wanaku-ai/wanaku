@@ -42,10 +42,6 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     );
     praxis_filter::register_filters!(
         @register registry,
-        http "wanaku_safety_check" => wanaku_praxis_filters::SafetyCheckFilter::from_config
-    );
-    praxis_filter::register_filters!(
-        @register registry,
         http "wanaku_tool_list" => wanaku_praxis_filters::ToolListFilter::from_config
     );
     praxis_filter::register_filters!(

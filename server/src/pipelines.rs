@@ -6,12 +6,11 @@ use praxis_filter::{FilterPipeline, FilterRegistry, PipelineExtension, RequestEx
 use praxis_protocol::ListenerPipelines;
 use tracing::info;
 
+use wanaku_praxis_apis::feature::Feature;
 use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::registry::InMemoryRegistry;
-use wanaku_praxis_apis::safety::SafetyState;
 
-/// Pipeline extension that injects the tool/service registry into each request.
 struct RegistryExtension {
     registry: InMemoryRegistry,
 }
@@ -22,7 +21,6 @@ impl PipelineExtension for RegistryExtension {
     }
 }
 
-/// Pipeline extension that injects the gRPC connection pool into each request.
 struct GrpcPoolExtension {
     pool: GrpcPool,
 }
@@ -33,7 +31,6 @@ impl PipelineExtension for GrpcPoolExtension {
     }
 }
 
-/// Pipeline extension that injects the interaction store into each request.
 struct InteractionStoreExtension {
     store: InMemoryInteractionStore,
 }
@@ -41,17 +38,6 @@ struct InteractionStoreExtension {
 impl PipelineExtension for InteractionStoreExtension {
     fn prepare(&self, extensions: &mut RequestExtensions) {
         extensions.insert(self.store.clone());
-    }
-}
-
-/// Pipeline extension that injects the safety classifier state into each request.
-struct SafetyStateExtension {
-    state: SafetyState,
-}
-
-impl PipelineExtension for SafetyStateExtension {
-    fn prepare(&self, extensions: &mut RequestExtensions) {
-        extensions.insert(self.state.clone());
     }
 }
 
@@ -68,7 +54,7 @@ pub fn resolve_pipelines(
     wanaku_registry: InMemoryRegistry,
     grpc_pool: GrpcPool,
     interaction_store: InMemoryInteractionStore,
-    safety_state: SafetyState,
+    features: &[Box<dyn Feature>],
 ) -> Result<ListenerPipelines, Box<dyn std::error::Error + Send + Sync>> {
     let chains: HashMap<&str, &[_]> = config
         .filter_chains
@@ -115,9 +101,13 @@ pub fn resolve_pipelines(
         pipeline.add_pipeline_extension(Box::new(InteractionStoreExtension {
             store: interaction_store.clone(),
         }));
-        pipeline.add_pipeline_extension(Box::new(SafetyStateExtension {
-            state: safety_state.clone(),
-        }));
+
+        for feature in features {
+            for ext in feature.pipeline_extensions() {
+                pipeline.add_pipeline_extension(ext);
+            }
+        }
+
         pipeline.apply_insecure_options(&config.insecure_options);
 
         info!(listener = %listener.name, "built wanaku pipeline");

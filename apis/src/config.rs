@@ -3,6 +3,9 @@
 //! All `WANAKU_*` environment variables are read once at startup via
 //! [`LazyLock`] and exposed through the [`ENV`] static. No other module
 //! should call `std::env::var` for these variables directly.
+//!
+//! Feature-specific env vars (e.g. `WANAKU_SAFETY_*`) are owned by their
+//! respective feature crates, not this module.
 
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -32,42 +35,11 @@ const WANAKU_UI_PATH: &str = "WANAKU_UI_PATH";
 /// Defaults to `"*"`. Set to a specific origin (e.g. `http://localhost:3000`) in production.
 const WANAKU_CORS_ORIGIN: &str = "WANAKU_CORS_ORIGIN";
 
-/// Base URL for the OpenAI-compatible safety classifier LLM.
-/// Unset disables the safety classification feature entirely.
-const WANAKU_SAFETY_LLM_URL: &str = "WANAKU_SAFETY_LLM_URL";
-
-/// Model name sent in the `/v1/chat/completions` request (default `llama3.2`).
-const WANAKU_SAFETY_LLM_MODEL: &str = "WANAKU_SAFETY_LLM_MODEL";
-
-/// Bearer token for the safety classifier LLM. Empty string if not needed.
-const WANAKU_SAFETY_LLM_API_KEY: &str = "WANAKU_SAFETY_LLM_API_KEY";
-
-/// Action when classification is **red**: `log`, `warn`, or `block` (default `log`).
-const WANAKU_SAFETY_RED_ACTION: &str = "WANAKU_SAFETY_RED_ACTION";
-
-/// Action when classification is **yellow**: `log`, `warn`, or `block` (default `log`).
-const WANAKU_SAFETY_YELLOW_ACTION: &str = "WANAKU_SAFETY_YELLOW_ACTION";
-
 /// File-persistence settings, present only when enabled.
 #[derive(Debug, Clone)]
 pub struct PersistEnv {
     /// Directory containing `registry.json`.
     pub dir: PathBuf,
-}
-
-/// Safety classifier settings, present only when enabled.
-#[derive(Debug, Clone)]
-pub struct SafetyEnv {
-    /// Full base URL for the OpenAI-compatible endpoint (e.g. `http://localhost:11434/v1`).
-    pub llm_url: String,
-    /// Model name passed in `/v1/chat/completions`.
-    pub llm_model: String,
-    /// Bearer token for authentication (empty if not needed).
-    pub llm_api_key: String,
-    /// Configured action for red (dangerous) classifications.
-    pub red_action: String,
-    /// Configured action for yellow (ambiguous) classifications.
-    pub yellow_action: String,
 }
 
 /// Typed snapshot of all `WANAKU_*` environment variables.
@@ -85,8 +57,6 @@ pub struct WanakuEnv {
     pub ui_path: Option<PathBuf>,
     /// Value for the `Access-Control-Allow-Origin` header on management API responses.
     pub cors_origin: String,
-    /// Safety classifier config. `None` when the feature is disabled.
-    pub safety: Option<SafetyEnv>,
 }
 
 /// Global configuration, initialized lazily on first access.
@@ -122,20 +92,6 @@ impl WanakuEnv {
             ui_path: std::env::var(WANAKU_UI_PATH).ok().map(PathBuf::from),
             cors_origin: std::env::var(WANAKU_CORS_ORIGIN)
                 .unwrap_or_else(|_| "*".to_owned()),
-            safety: std::env::var(WANAKU_SAFETY_LLM_URL)
-                .ok()
-                .filter(|u| !u.is_empty())
-                .map(|url| SafetyEnv {
-                    llm_url: url.trim_end_matches('/').to_owned(),
-                    llm_model: std::env::var(WANAKU_SAFETY_LLM_MODEL)
-                        .unwrap_or_else(|_| "llama3.2".to_owned()),
-                    llm_api_key: std::env::var(WANAKU_SAFETY_LLM_API_KEY)
-                        .unwrap_or_default(),
-                    red_action: std::env::var(WANAKU_SAFETY_RED_ACTION)
-                        .unwrap_or_else(|_| "log".to_owned()),
-                    yellow_action: std::env::var(WANAKU_SAFETY_YELLOW_ACTION)
-                        .unwrap_or_else(|_| "log".to_owned()),
-                }),
         }
     }
 }

@@ -246,60 +246,6 @@ pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRout
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub(super) enum SafetyRoute {
-    Get,
-    Update,
-    Delete,
-    NotFound,
-}
-
-pub(super) fn resolve_safety_route(method: &str, path: &str) -> SafetyRoute {
-    let suffix = match path.strip_prefix("/api/v1/safety") {
-        Some(s) => s,
-        None => return SafetyRoute::NotFound,
-    };
-
-    if !suffix.is_empty() && suffix != "/" {
-        return SafetyRoute::NotFound;
-    }
-
-    match method {
-        "GET" => SafetyRoute::Get,
-        "PUT" => SafetyRoute::Update,
-        "DELETE" => SafetyRoute::Delete,
-        _ => SafetyRoute::NotFound,
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(super) enum ChatRoute {
-    ListLlms,
-    ListModels(String),
-    Completions,
-    NotFound,
-}
-
-pub(super) fn resolve_chat_route(method: &str, path: &str) -> ChatRoute {
-    let suffix = match path.strip_prefix("/api/v1/chat") {
-        Some(s) => s,
-        None => return ChatRoute::NotFound,
-    };
-
-    match (method, suffix) {
-        ("GET", "/llms") => ChatRoute::ListLlms,
-        ("GET", s) if s.ends_with("/models") => {
-            let llm = s.strip_prefix('/').and_then(|s| s.strip_suffix("/models"));
-            match llm {
-                Some(name) if !name.is_empty() => ChatRoute::ListModels(name.to_owned()),
-                _ => ChatRoute::NotFound,
-            }
-        }
-        ("POST", "/completions") => ChatRoute::Completions,
-        _ => ChatRoute::NotFound,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
