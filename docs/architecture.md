@@ -464,7 +464,7 @@ This architecture is a proof-of-concept. Missing pieces:
 - **Metrics/observability** — no Prometheus, no tracing
 - **Clustering** — single-node only, no distributed registry
 
-These are all solvable (implement traits, add filters, integrate with classic backend), but they're not in scope for the initial Rust rewrite.
+These are all solvable (implement traits, add filters, integrate with classic backend), but they're not in scope for the initial release.
 
 ## Related Docs
 

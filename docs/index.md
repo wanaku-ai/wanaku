@@ -4,11 +4,9 @@ Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server built on the P
 
 ## Why Praxis?
 
-The classic Wanaku MCP Router (Java + Quarkus) is powerful but heavyweight. Praxis is the Rust rewrite: faster, smaller, and easier to deploy. Same MCP protocol, same management API, but with a composable filter architecture that makes adding features trivial.
+The classic Wanaku MCP Router (Java + Quarkus) is a fully-featured MCP server with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Praxis expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling features like LLM-based safety classification and pluggable feature crates that would be difficult to express in the classic architecture.
 
-Fair warning: this is not a drop-in replacement for the classic router. Praxis focuses on the core MCP proxy functionality—namespace isolation, tool routing, safety filtering. Advanced features (service catalogs, complex Camel routes, OIDC integration) live in the classic backend or are delegated to gRPC services.
-
-Think of Praxis as the stateless edge proxy. Point `WANAKU_CLASSIC_URL` at a classic backend for persistence and advanced features, or run Praxis standalone for lightweight deployments.
+Praxis shares the same MCP protocol and management API as classic Wanaku. It can run standalone or alongside the classic backend — point `WANAKU_CLASSIC_URL` at a classic instance to combine both.
 
 ## What You Get
 
@@ -41,11 +39,11 @@ All in a single binary with no runtime dependencies (except libc).
 
 ## Who This Is For
 
-- **You're running MCP workloads in production** and need a lightweight, stateless proxy
+- **You want a composable filter pipeline** for MCP request processing
 - **You want namespace isolation** without multi-tenancy complexity
 - **You're building LLM apps** that need tool call safety filtering
-- **You prefer Rust over Java** for infrastructure components
-- **You're replacing a classic Wanaku deployment** but want to keep the API stable
+- **You need pluggable features** like LLM-based classification or custom request processing
+- **You want to run alongside classic Wanaku** to extend its capabilities
 
 ## Who This Isn't For (Yet)
 
@@ -211,9 +209,9 @@ Run Praxis as the only MCP server. All tools are gRPC-based, registered via the 
 
 ### Hybrid (Praxis + Classic Backend)
 
-Run Praxis as a stateless edge proxy. Point `WANAKU_CLASSIC_URL` at a classic Wanaku backend for persistence and service catalogs.
+Run Praxis alongside a classic Wanaku backend. Point `WANAKU_CLASSIC_URL` at the classic instance to combine Praxis's filter pipeline with classic's persistence and service catalogs.
 
-**Pros:** Praxis performance + classic features
+**Pros:** Filter pipeline features + classic backend capabilities
 **Cons:** Two servers to manage
 
 ### Kubernetes
@@ -231,13 +229,14 @@ Deploy Praxis as a `Deployment` with a `PersistentVolume` for the registry. Use 
 | **Namespace isolation** | ✅ Yes | ✅ Yes |
 | **Tool routing (gRPC)** | ✅ Yes | ✅ Yes |
 | **MCP forwarding** | ✅ Yes | ✅ Yes |
+| **Filter pipeline** | — | ✅ Composable filter chain |
+| **Feature crates** | — | ✅ Pluggable Rust crates |
+| **LLM safety filtering** | — | ✅ Built-in |
 | **Service catalogs** | ✅ Yes | ❌ Not yet |
-| **Complex Camel routes** | ✅ Yes | ⚠️ Delegate to gRPC service |
+| **Camel routes** | ✅ Yes | ⚠️ Delegate to gRPC service |
 | **OIDC/OAuth** | ✅ Keycloak | ❌ Not yet |
 | **Persistence** | ✅ Infinispan | ⚠️ File snapshots only |
 | **Admin UI** | ✅ React + Orval | ✅ React + Orval |
-| **Binary size** | ~200MB (JVM) | ~50MB (native) |
-| **Startup time** | ~3s | ~100ms |
 
 ## Performance Characteristics
 

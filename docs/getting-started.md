@@ -13,7 +13,7 @@ You'll need:
 - A terminal where you're comfortable running commands
 - Optional: **Docker** or **Podman** if you want to run the classic Wanaku backend alongside Praxis
 
-That's it. No JVM, no Maven, no Node.js required to run the server itself (though the admin UI dev workflow uses Yarn).
+That's it. The admin UI dev workflow also uses Yarn, but that's only needed if you're modifying the frontend.
 
 ## Quick Start: Get It Running
 
@@ -180,7 +180,7 @@ cargo build --release
 ./target/release/wanaku-praxis
 ```
 
-The release binary is optimized and ~10x faster than debug. It's also stripped of debug symbols, so logs are terser.
+The release binary is optimized compared to debug builds.
 
 ### Custom Configuration
 
