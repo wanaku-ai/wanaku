@@ -5,28 +5,19 @@ set -euo pipefail
 # Safety Classification Filter — integration test script
 #
 # Assumes wanaku-praxis is already running (e.g. from an IDE).
-# Start the server with the desired WANAKU_SAFETY_* env vars, then
-# run this script to exercise the safety filter.
+# Safety can be configured via the admin UI (Safety page), the
+# management API (PUT /api/v1/safety), or wanaku.yaml.
 #
 # Prerequisites:
 #   - wanaku-praxis running on ports 8081 (MCP) and 9090 (management)
-#   - An OpenAI-compatible LLM endpoint (for classifier tests)
 #   - curl, jq
 #
 # Usage:
-#   ./scripts/test-safety.sh                          # Ollama on localhost
-#   ./scripts/test-safety.sh http://myhost:11434/v1   # custom endpoint
-#   LLM_API_KEY=sk-... ./scripts/test-safety.sh https://api.openai.com/v1
+#   ./scripts/test-safety.sh
 #
 # Environment:
-#   MCP_FORWARD_URL  MCP server to forward tool calls to (default http://localhost:8080/)
-#   LLM_MODEL        Model name for the classifier (default llama3.2)
-#   LLM_API_KEY      Bearer token for cloud LLM providers
+#   MCP_FORWARD_URL  MCP server to forward tool calls to (default http://localhost:8080/mcp)
 # ------------------------------------------------------------------
-
-LLM_URL="${1:-http://localhost:11434/v1}"
-LLM_MODEL="${LLM_MODEL:-llama3.2}"
-LLM_API_KEY="${LLM_API_KEY:-}"
 
 NAMESPACE="test-ns"
 MCP_FORWARD_URL="${MCP_FORWARD_URL:-http://localhost:8080/mcp}"
@@ -110,18 +101,15 @@ done
 if ! curl -sf -o /dev/null "${MGMT_URL}/api/v1/tools" 2>/dev/null; then
     red "wanaku-praxis is not running on ports ${MCP_PORT}/${MGMT_PORT}"
     red "Start the server first, then re-run this script."
-    red ""
-    red "  Example (safety disabled):"
-    red "    cargo run"
-    red ""
-    red "  Example (safety enabled, block mode):"
-    red "    WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1 \\"
-    red "    WANAKU_SAFETY_LLM_MODEL=llama3.2 \\"
-    red "    WANAKU_SAFETY_RED_ACTION=block \\"
-    red "    WANAKU_SAFETY_YELLOW_ACTION=block \\"
-    red "    cargo run"
     exit 1
 fi
+
+# Check current safety config
+SAFETY_CONFIG=$(curl -sf "${MGMT_URL}/api/v1/safety" 2>/dev/null || echo '{"data":null}')
+SAFETY_ENABLED=$(echo "$SAFETY_CONFIG" | jq -r '.data != null')
+SAFETY_MODEL=$(echo "$SAFETY_CONFIG" | jq -r '.data.llm_model // "not configured"')
+SAFETY_RED=$(echo "$SAFETY_CONFIG" | jq -r '.data.red_action // "not configured"')
+SAFETY_YELLOW=$(echo "$SAFETY_CONFIG" | jq -r '.data.yellow_action // "not configured"')
 
 bold "========================================"
 bold " Safety Classification Filter Tests"
@@ -131,8 +119,19 @@ echo "MCP endpoint : ${MCP_URL}"
 echo "Mgmt API     : ${MGMT_URL}"
 echo "Forward URL  : ${MCP_FORWARD_URL}"
 echo "Namespace    : ${NAMESPACE}"
-echo "LLM endpoint : ${LLM_URL}"
-echo "LLM model    : ${LLM_MODEL}"
+echo ""
+if [ "$SAFETY_ENABLED" = "true" ]; then
+    green "Safety       : ENABLED"
+    echo "  Model      : ${SAFETY_MODEL}"
+    echo "  Red action : ${SAFETY_RED}"
+    echo "  Yellow act : ${SAFETY_YELLOW}"
+else
+    yellow "Safety       : DISABLED"
+    echo ""
+    echo "Configure safety via the admin UI (Safety page) or:"
+    echo "  curl -X PUT ${MGMT_URL}/api/v1/safety \\"
+    echo "    -d '{\"llm_url\":\"http://localhost:11434/v1\",\"llm_model\":\"llama3.2\",\"llm_api_key\":\"\",\"red_action\":\"block\",\"yellow_action\":\"log\"}'"
+fi
 echo ""
 
 # ---- register tools ----------------------------------------------
@@ -174,9 +173,13 @@ CODE=$(get_error_code "$RESP")
 if [ "$CODE" = "-32001" ]; then
     pass "dangerous-restart: restartService(production-database-primary) BLOCKED by safety"
 else
-    yellow "  restartService(production-database-primary) was NOT blocked (code=${CODE:-none})"
-    yellow "  This is expected if safety is disabled or red_action=log"
-    skip "dangerous-restart: not blocked (depends on server config)"
+    if [ "$SAFETY_ENABLED" = "true" ] && [ "$SAFETY_RED" = "block" ]; then
+        yellow "  LLM did not classify as red — result depends on model judgment"
+        skip "dangerous-restart: not blocked (LLM-dependent)"
+    else
+        yellow "  Not blocked — safety is ${SAFETY_ENABLED:-disabled}, red_action=${SAFETY_RED}"
+        skip "dangerous-restart: not blocked (safety not in block mode)"
+    fi
 fi
 
 # ==================================================================
@@ -191,9 +194,13 @@ CODE=$(get_error_code "$RESP")
 if [ "$CODE" = "-32001" ]; then
     pass "dangerous-scale-zero: scaleDeployment(payment-service, 0) BLOCKED by safety"
 else
-    yellow "  scaleDeployment(payment-service, 0) was NOT blocked (code=${CODE:-none})"
-    yellow "  This is expected if safety is disabled or red_action=log"
-    skip "dangerous-scale-zero: not blocked (depends on server config)"
+    if [ "$SAFETY_ENABLED" = "true" ] && [ "$SAFETY_RED" = "block" ]; then
+        yellow "  LLM did not classify as red — result depends on model judgment"
+        skip "dangerous-scale-zero: not blocked (LLM-dependent)"
+    else
+        yellow "  Not blocked — safety is ${SAFETY_ENABLED:-disabled}, red_action=${SAFETY_RED}"
+        skip "dangerous-scale-zero: not blocked (safety not in block mode)"
+    fi
 fi
 
 # ==================================================================
@@ -234,10 +241,12 @@ bold "========================================"
 TOTAL=$((PASS + FAIL + SKIP))
 bold " Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped (${TOTAL} total)"
 bold "========================================"
-echo ""
-echo "Skipped tests depend on server configuration (WANAKU_SAFETY_* env vars)."
-echo "To test blocking, restart the server with:"
-echo "  WANAKU_SAFETY_LLM_URL=${LLM_URL} WANAKU_SAFETY_RED_ACTION=block cargo run"
+
+if [ "$SAFETY_ENABLED" != "true" ]; then
+    echo ""
+    echo "Safety was disabled during this run. To test blocking, configure it"
+    echo "via the admin UI (Safety page) or the management API, then re-run."
+fi
 
 if [ "$FAIL" -gt 0 ]; then
     exit 1
