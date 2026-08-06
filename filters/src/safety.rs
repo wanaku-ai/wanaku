@@ -5,7 +5,7 @@ use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::interactions::InteractionStore;
 use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
-use wanaku_praxis_apis::safety::{SafetyAction, SafetyLevel, CLASSIFIER};
+use wanaku_praxis_apis::safety::{SafetyAction, SafetyLevel, SafetyState};
 
 crate::body_filter_boilerplate!(SafetyCheckFilter, "wanaku_safety_check");
 
@@ -80,10 +80,15 @@ impl SafetyCheckFilter {
             return Ok(FilterAction::Continue);
         }
 
-        let classifier = match CLASSIFIER.as_ref() {
+        let state = match ctx.extensions.get::<SafetyState>() {
+            Some(s) => s.clone(),
+            None => return Ok(FilterAction::Continue),
+        };
+
+        let classifier = match state.get_classifier() {
             Some(c) => c,
             None => {
-                tracing::debug!("safety classifier not configured (WANAKU_SAFETY_LLM_URL not set), skipping");
+                tracing::debug!("safety classifier not configured, skipping");
                 return Ok(FilterAction::Continue);
             }
         };

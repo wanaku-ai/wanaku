@@ -18,6 +18,7 @@ use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry,
     ToolRegistry,
 };
+use wanaku_praxis_apis::safety::{SafetyConfig, SafetyState};
 
 fn main() {
     let config_path = std::env::args().nth(1);
@@ -40,7 +41,12 @@ fn main() {
         }
         None => InMemoryRegistry::new(),
     };
-    load_wanaku_config(&wanaku_config_path, &wanaku_registry);
+    let safety_state = SafetyState::new();
+    load_wanaku_config(&wanaku_config_path, &wanaku_registry, &safety_state);
+    if let Some(env_cfg) = SafetyConfig::from_env() {
+        info!("safety classifier configured from environment variables");
+        safety_state.configure(env_cfg);
+    }
     let grpc_pool = GrpcPool::new();
     let interaction_store = InMemoryInteractionStore::new(1000);
 
@@ -50,6 +56,7 @@ fn main() {
 
     let mgmt_registry = wanaku_registry.clone();
     let mgmt_interactions = interaction_store.clone();
+    let mgmt_safety = safety_state.clone();
 
     info!("building wanaku pipelines");
     let pipelines = wanaku_praxis::pipelines::resolve_pipelines(
@@ -60,6 +67,7 @@ fn main() {
         wanaku_registry,
         grpc_pool,
         interaction_store,
+        safety_state,
     )
     .unwrap_or_else(|e| fatal(&e));
 
@@ -87,7 +95,7 @@ fn main() {
     }
 
     let mgmt_addr = &wanaku_praxis_apis::config::ENV.mgmt_listen;
-    let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry, mgmt_interactions);
+    let mgmt = wanaku_praxis::management::WanakuManagementService::new(mgmt_registry, mgmt_interactions, mgmt_safety);
     let mut mgmt_service = pingora_core::services::listening::Service::new(
         "wanaku-management".to_owned(),
         mgmt,
@@ -100,7 +108,7 @@ fn main() {
     server.run()
 }
 
-fn load_wanaku_config(path: &str, registry: &InMemoryRegistry) {
+fn load_wanaku_config(path: &str, registry: &InMemoryRegistry, safety_state: &SafetyState) {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
@@ -131,6 +139,18 @@ fn load_wanaku_config(path: &str, registry: &InMemoryRegistry) {
             if let Ok(svc) = serde_yaml::from_value::<ServiceEntry>(svc_value.clone()) {
                 info!(service = %svc.name, address = %svc.address, "registered service from config");
                 registry.register_service(svc);
+            }
+        }
+    }
+
+    if let Some(safety_val) = config.get("safety") {
+        match serde_yaml::from_value::<SafetyConfig>(safety_val.clone()) {
+            Ok(cfg) => {
+                info!(model = %cfg.llm_model, url = %cfg.llm_url, "safety classifier configured from wanaku.yaml");
+                safety_state.configure(cfg);
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "failed to parse safety config from wanaku.yaml");
             }
         }
     }

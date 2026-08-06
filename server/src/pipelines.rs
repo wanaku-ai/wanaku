@@ -9,6 +9,7 @@ use tracing::info;
 use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::registry::InMemoryRegistry;
+use wanaku_praxis_apis::safety::SafetyState;
 
 /// Pipeline extension that injects the tool/service registry into each request.
 struct RegistryExtension {
@@ -43,6 +44,17 @@ impl PipelineExtension for InteractionStoreExtension {
     }
 }
 
+/// Pipeline extension that injects the safety classifier state into each request.
+struct SafetyStateExtension {
+    state: SafetyState,
+}
+
+impl PipelineExtension for SafetyStateExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(self.state.clone());
+    }
+}
+
 /// Build filter pipelines for all listeners, injecting wanaku extensions.
 ///
 /// # Errors
@@ -56,6 +68,7 @@ pub fn resolve_pipelines(
     wanaku_registry: InMemoryRegistry,
     grpc_pool: GrpcPool,
     interaction_store: InMemoryInteractionStore,
+    safety_state: SafetyState,
 ) -> Result<ListenerPipelines, Box<dyn std::error::Error + Send + Sync>> {
     let chains: HashMap<&str, &[_]> = config
         .filter_chains
@@ -101,6 +114,9 @@ pub fn resolve_pipelines(
         }));
         pipeline.add_pipeline_extension(Box::new(InteractionStoreExtension {
             store: interaction_store.clone(),
+        }));
+        pipeline.add_pipeline_extension(Box::new(SafetyStateExtension {
+            state: safety_state.clone(),
         }));
         pipeline.apply_insecure_options(&config.insecure_options);
 

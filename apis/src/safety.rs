@@ -1,6 +1,8 @@
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
 
 use crate::config::ENV;
 use crate::interactions::Interaction;
@@ -74,6 +76,31 @@ Respond with ONLY a single JSON object on one line, no markdown fences:
 {"level": "<green|yellow|red>", "reason": "<brief explanation>"}
 "#;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SafetyConfig {
+    pub llm_url: String,
+    pub llm_model: String,
+    #[serde(default, skip_serializing)]
+    pub llm_api_key: String,
+    pub red_action: String,
+    pub yellow_action: String,
+}
+
+impl SafetyConfig {
+    #[must_use]
+    pub fn from_env() -> Option<Self> {
+        let safety = ENV.safety.as_ref()?;
+        Some(Self {
+            llm_url: safety.llm_url.clone(),
+            llm_model: safety.llm_model.clone(),
+            llm_api_key: safety.llm_api_key.clone(),
+            red_action: safety.red_action.clone(),
+            yellow_action: safety.yellow_action.clone(),
+        })
+    }
+}
+
+#[derive(Clone)]
 pub struct SafetyClassifier {
     client: reqwest::Client,
     url: String,
@@ -83,33 +110,28 @@ pub struct SafetyClassifier {
     yellow_action: SafetyAction,
 }
 
-pub static CLASSIFIER: LazyLock<Option<SafetyClassifier>> =
-    LazyLock::new(|| SafetyClassifier::from_config());
-
 impl SafetyClassifier {
-    fn from_config() -> Option<Self> {
-        let safety = ENV.safety.as_ref()?;
-
+    fn from_safety_config(config: &SafetyConfig) -> Option<Self> {
         let client = match reqwest::Client::builder()
             .timeout(CLASSIFIER_TIMEOUT)
             .build()
         {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!(error = %e, "failed to build safety classifier HTTP client, safety checks disabled");
+                tracing::error!(error = %e, "failed to build safety classifier HTTP client");
                 return None;
             }
         };
 
-        let url = format!("{}/chat/completions", safety.llm_url);
+        let url = format!("{}/chat/completions", config.llm_url.trim_end_matches('/'));
 
         Some(Self {
             client,
             url,
-            model: safety.llm_model.clone(),
-            api_key: safety.llm_api_key.clone(),
-            red_action: SafetyAction::parse(&safety.red_action),
-            yellow_action: SafetyAction::parse(&safety.yellow_action),
+            model: config.llm_model.clone(),
+            api_key: config.llm_api_key.clone(),
+            red_action: SafetyAction::parse(&config.red_action),
+            yellow_action: SafetyAction::parse(&config.yellow_action),
         })
     }
 
@@ -179,6 +201,57 @@ impl SafetyClassifier {
         tracing::debug!(llm_response = %content, "raw safety classifier response");
 
         extract_level(&body)
+    }
+}
+
+#[derive(Clone)]
+pub struct SafetyState {
+    classifier: Arc<RwLock<Option<SafetyClassifier>>>,
+    config: Arc<RwLock<Option<SafetyConfig>>>,
+}
+
+impl SafetyState {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            classifier: Arc::new(RwLock::new(None)),
+            config: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    pub fn configure(&self, config: SafetyConfig) {
+        let classifier = SafetyClassifier::from_safety_config(&config);
+        if let Ok(mut guard) = self.config.write() {
+            *guard = Some(config);
+        }
+        if let Ok(mut guard) = self.classifier.write() {
+            *guard = classifier;
+        }
+    }
+
+    pub fn disable(&self) {
+        if let Ok(mut guard) = self.classifier.write() {
+            *guard = None;
+        }
+        if let Ok(mut guard) = self.config.write() {
+            *guard = None;
+        }
+    }
+
+    #[must_use]
+    pub fn get_classifier(&self) -> Option<SafetyClassifier> {
+        self.classifier
+            .read()
+            .ok()
+            .and_then(|guard| guard.clone())
+    }
+
+    #[must_use]
+    pub fn current_config(&self) -> Option<SafetyConfig> {
+        self.config
+            .read()
+            .ok()
+            .and_then(|guard| guard.clone())
     }
 }
 
@@ -464,5 +537,45 @@ mod tests {
         assert!(!contains_whole_word("addressed", "red"));
         assert!(!contains_whole_word("credited", "red"));
         assert!(contains_whole_word("classification: red.", "red"));
+    }
+
+    #[test]
+    fn safety_state_configure_and_read() {
+        let state = SafetyState::new();
+        assert!(state.current_config().is_none());
+        assert!(state.get_classifier().is_none());
+
+        state.configure(SafetyConfig {
+            llm_url: "http://localhost:11434/v1".to_owned(),
+            llm_model: "llama3.2".to_owned(),
+            llm_api_key: String::new(),
+            red_action: "block".to_owned(),
+            yellow_action: "log".to_owned(),
+        });
+
+        let cfg = state.current_config();
+        assert!(cfg.is_some());
+        let cfg = cfg.as_ref();
+        assert_eq!(cfg.map(|c| c.llm_model.as_str()), Some("llama3.2"));
+        assert_eq!(cfg.map(|c| c.red_action.as_str()), Some("block"));
+
+        assert!(state.get_classifier().is_some());
+    }
+
+    #[test]
+    fn safety_state_disable() {
+        let state = SafetyState::new();
+        state.configure(SafetyConfig {
+            llm_url: "http://localhost:11434/v1".to_owned(),
+            llm_model: "test".to_owned(),
+            llm_api_key: String::new(),
+            red_action: "log".to_owned(),
+            yellow_action: "log".to_owned(),
+        });
+        assert!(state.get_classifier().is_some());
+
+        state.disable();
+        assert!(state.get_classifier().is_none());
+        assert!(state.current_config().is_none());
     }
 }

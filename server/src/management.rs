@@ -5,6 +5,7 @@ use pingora_core::protocols::http::ServerSession;
 use tracing::{info, warn};
 
 use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_praxis_apis::safety::{SafetyConfig, SafetyState};
 use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ServiceEntry, ServiceRegistry,
@@ -21,12 +22,13 @@ const MAX_BODY_BYTES: usize = 1_048_576;
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     interactions: InMemoryInteractionStore,
+    safety: SafetyState,
     proxy: Option<crate::proxy::ClassicProxy>,
     ui_path: Option<std::path::PathBuf>,
 }
 
 impl WanakuManagementService {
-    pub fn new(registry: InMemoryRegistry, interactions: InMemoryInteractionStore) -> Self {
+    pub fn new(registry: InMemoryRegistry, interactions: InMemoryInteractionStore, safety: SafetyState) -> Self {
         let proxy = crate::proxy::ClassicProxy::from_config();
         if proxy.is_some() {
             info!("Classic proxy enabled via WANAKU_CLASSIC_URL");
@@ -40,6 +42,7 @@ impl WanakuManagementService {
         Self {
             registry,
             interactions,
+            safety,
             proxy,
             ui_path,
         }
@@ -294,6 +297,32 @@ fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRoute {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum SafetyRoute {
+    Get,
+    Update,
+    Delete,
+    NotFound,
+}
+
+fn resolve_safety_route(method: &str, path: &str) -> SafetyRoute {
+    let suffix = match path.strip_prefix("/api/v1/safety") {
+        Some(s) => s,
+        None => return SafetyRoute::NotFound,
+    };
+
+    if !suffix.is_empty() && suffix != "/" {
+        return SafetyRoute::NotFound;
+    }
+
+    match method {
+        "GET" => SafetyRoute::Get,
+        "PUT" => SafetyRoute::Update,
+        "DELETE" => SafetyRoute::Delete,
+        _ => SafetyRoute::NotFound,
+    }
+}
+
 #[async_trait]
 impl ServeHttp for WanakuManagementService {
     async fn response(&self, http_session: &mut ServerSession) -> Response<Vec<u8>> {
@@ -439,6 +468,19 @@ impl ServeHttp for WanakuManagementService {
                 ForwardRoute::Delete(name) => handle_forward_delete(&self.registry, &name),
                 ForwardRoute::Refresh(name) => handle_forward_refresh(&self.registry, &name).await,
                 ForwardRoute::NotFound => json_err(404, "not found"),
+            };
+        }
+
+        let safety_route = resolve_safety_route(&method, &path);
+        if safety_route != SafetyRoute::NotFound {
+            return match safety_route {
+                SafetyRoute::Get => handle_safety_get(&self.safety),
+                SafetyRoute::Update => match read_body(http_session).await {
+                    Ok(body) => handle_safety_update(&self.safety, &body),
+                    Err(resp) => resp,
+                },
+                SafetyRoute::Delete => handle_safety_delete(&self.safety),
+                SafetyRoute::NotFound => json_err(404, "not found"),
             };
         }
 
@@ -875,6 +917,37 @@ fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
             "down": 0,
             "pending": 0
         }
+    }))
+}
+
+fn handle_safety_get(state: &SafetyState) -> Response<Vec<u8>> {
+    json_ok(&serde_json::json!({
+        "data": state.current_config(),
+        "error": serde_json::Value::Null,
+    }))
+}
+
+fn handle_safety_update(state: &SafetyState, body: &str) -> Response<Vec<u8>> {
+    let config: SafetyConfig = match serde_json::from_str(body) {
+        Ok(c) => c,
+        Err(e) => return json_err(400, &format!("invalid safety config: {e}")),
+    };
+
+    info!(model = %config.llm_model, url = %config.llm_url, "safety classifier updated via management API");
+    state.configure(config.clone());
+
+    json_ok(&serde_json::json!({
+        "data": config,
+        "error": serde_json::Value::Null,
+    }))
+}
+
+fn handle_safety_delete(state: &SafetyState) -> Response<Vec<u8>> {
+    state.disable();
+    info!("safety classifier disabled via management API");
+    json_ok(&serde_json::json!({
+        "data": serde_json::Value::Null,
+        "error": serde_json::Value::Null,
     }))
 }
 

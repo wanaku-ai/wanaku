@@ -22,3 +22,10 @@ forwards:
   - name: "mock-mcp"
     address: "http://localhost:8080/mcp"
     namespace: "test-ns"
+
+# Sample safety configuration
+#safety:
+#  llm_url: "http://localhost:11434/v1"
+#  llm_model: "llama3.2"
+#  red_action: "block"
+#  yellow_action: "log"
