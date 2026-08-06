@@ -288,6 +288,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
 
 [[package]]
+name = "bit-set"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
+dependencies = [
+ "bit-vec",
+]
+
+[[package]]
+name = "bit-vec"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
+
+[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -822,6 +837,17 @@ dependencies = [
  "hashbag",
  "left-right",
  "smallvec",
+]
+
+[[package]]
+name = "fancy-regex"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72cf461f865c862bb7dc573f643dd6a2b6842f7c30b07882b56bd148cc2761b8"
+dependencies = [
+ "bit-set",
+ "regex-automata",
+ "regex-syntax",
 ]
 
 [[package]]
@@ -2112,7 +2138,7 @@ dependencies = [
 [[package]]
 name = "praxis-ai-apis"
 version = "0.2.0"
-source = "git+https://github.com/praxis-proxy/ai?rev=d3185bdb54d3759bc7e611b6eb77fa16ea00985e#d3185bdb54d3759bc7e611b6eb77fa16ea00985e"
+source = "git+https://github.com/praxis-proxy/ai?rev=b2baf287d27ffce7cba9638014f96ef66bf009fc#b2baf287d27ffce7cba9638014f96ef66bf009fc"
 dependencies = [
  "async-trait",
  "base64 0.23.0",
@@ -2131,6 +2157,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 2.0.19",
+ "tiktoken-rs",
  "tokio",
  "tracing",
  "url",
@@ -2141,20 +2168,28 @@ dependencies = [
 [[package]]
 name = "praxis-ai-filters"
 version = "0.2.0"
-source = "git+https://github.com/praxis-proxy/ai?rev=d3185bdb54d3759bc7e611b6eb77fa16ea00985e#d3185bdb54d3759bc7e611b6eb77fa16ea00985e"
+source = "git+https://github.com/praxis-proxy/ai?rev=b2baf287d27ffce7cba9638014f96ef66bf009fc#b2baf287d27ffce7cba9638014f96ef66bf009fc"
 dependencies = [
+ "arc-swap",
  "async-trait",
  "base64 0.23.0",
  "bytes",
+ "chrono",
+ "dashmap 6.2.1",
  "futures",
  "http",
  "metrics",
+ "notify",
  "praxis-ai-apis",
  "praxis-proxy-core",
  "praxis-proxy-filter",
  "reqwest 0.13.4",
  "serde",
  "serde_json",
+ "serde_json_canonicalizer",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-util",
  "tracing",
  "yaml_serde",
 ]
@@ -3146,6 +3181,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "ryu-js"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04d056b875a9d2e6cb9a61d127afee9ac5999b9f87bcb32079d1318e505be714"
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3275,6 +3316,17 @@ dependencies = [
  "serde",
  "serde_core",
  "zmij",
+]
+
+[[package]]
+name = "serde_json_canonicalizer"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe52319a927259afbfa5180c5157cd8167edfd3e8c254f9558c7fef44c5649f2"
+dependencies = [
+ "ryu-js",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3759,6 +3811,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ad99c4c6d32803332c548b1af0540b357b3f5fc0be8f6c6bfe8b2e6ae784070"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "tiktoken-rs"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "027853bbf8c7763b77c5c595f1c271c7d536ced7d6f83452911b944621e57fc2"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "bstr",
+ "fancy-regex",
+ "lazy_static",
+ "regex",
+ "rustc-hash",
 ]
 
 [[package]]
