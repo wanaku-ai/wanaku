@@ -79,6 +79,7 @@ impl GrpcPool {
         address: &str,
         uri: String,
         mut arguments: HashMap<String, String>,
+        request_id: &str,
     ) -> Result<Vec<String>, GrpcError> {
         let channel = self.get_or_connect(address).await?;
         let mut client = ToolInvokerClient::new(channel);
@@ -99,7 +100,7 @@ impl GrpcPool {
             configuration_uri: String::new(),
             secrets_uri: String::new(),
             headers: HashMap::new(),
-            request_id: String::new(),
+            request_id: request_id.to_owned(),
         };
 
         let request = tonic::Request::new(grpc_request);
@@ -114,6 +115,7 @@ impl GrpcPool {
         location: String,
         type_: String,
         name: String,
+        request_id: &str,
     ) -> Result<Vec<String>, GrpcError> {
         let channel = self.get_or_connect(address).await?;
         let mut client = ResourceAcquirerClient::new(channel);
@@ -125,7 +127,7 @@ impl GrpcPool {
             params: HashMap::new(),
             configuration_uri: String::new(),
             secrets_uri: String::new(),
-            request_id: String::new(),
+            request_id: request_id.to_owned(),
         };
 
         tracing::debug!(

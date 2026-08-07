@@ -110,12 +110,17 @@ impl ResourceReadFilter {
             }
         };
 
+        let request_id = ctx.request.headers.get("x-request-id")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("-");
+
         match grpc_pool
             .acquire_resource(
                 &service.address,
                 resource.location.clone(),
                 resource.type_.clone(),
                 resource.name.clone(),
+                request_id,
             )
             .await
         {

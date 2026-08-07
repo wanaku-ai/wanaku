@@ -168,7 +168,7 @@ impl ToolCallFilter {
         );
 
         match grpc_pool
-            .invoke_tool(&service.address, tool.uri.clone(), parsed.arguments)
+            .invoke_tool(&service.address, tool.uri.clone(), parsed.arguments, request_id)
             .await
         {
             Ok(content) => {
