@@ -13,7 +13,6 @@ use tracing::info;
 
 use wanaku_praxis_apis::feature::Feature;
 use wanaku_praxis_apis::grpc::GrpcPool;
-use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::persistence::FilePersistence;
 use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry,
@@ -42,7 +41,11 @@ fn main() {
         None => InMemoryRegistry::new(),
     };
 
+    // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
+    wanaku_registry.enable_request_id_injection();
+
     let features: Vec<Box<dyn Feature>> = vec![
+        Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
         Box::new(wanaku_feature_safety::SafetyFeature::new()),
         Box::new(wanaku_feature_chat::ChatFeature::new(
@@ -66,7 +69,6 @@ fn main() {
     }
 
     let grpc_pool = GrpcPool::new();
-    let interaction_store = InMemoryInteractionStore::new(1000);
 
     let mut filter_registry = wanaku_praxis::build_full_registry();
     for feature in &features {
@@ -77,7 +79,6 @@ fn main() {
     let kv_stores = praxis_core::kv::KvStoreRegistry::new();
 
     let mgmt_registry = wanaku_registry.clone();
-    let mgmt_interactions = interaction_store.clone();
 
     info!("building wanaku pipelines");
     let pipelines = wanaku_praxis::pipelines::resolve_pipelines(
@@ -87,7 +88,6 @@ fn main() {
         &kv_stores,
         wanaku_registry,
         grpc_pool,
-        interaction_store,
         &features,
     )
     .unwrap_or_else(|e| fatal(&e));
@@ -118,7 +118,6 @@ fn main() {
     let mgmt_addr = &wanaku_praxis_apis::config::ENV.mgmt_listen;
     let mgmt = wanaku_praxis::management::WanakuManagementService::new(
         mgmt_registry,
-        mgmt_interactions,
         features,
     );
     let mut mgmt_service = pingora_core::services::listening::Service::new(

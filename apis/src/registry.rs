@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
@@ -243,6 +244,7 @@ pub struct InMemoryRegistry {
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
     services: Arc<DashMap<String, ServiceEntry>>,
     persistence: Option<Arc<dyn PersistenceBackend>>,
+    inject_request_id: Arc<AtomicBool>,
 }
 
 impl InMemoryRegistry {
@@ -255,7 +257,12 @@ impl InMemoryRegistry {
             namespaces: Arc::new(DashMap::new()),
             services: Arc::new(DashMap::new()),
             persistence: None,
+            inject_request_id: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    pub fn enable_request_id_injection(&self) {
+        self.inject_request_id.store(true, Ordering::Relaxed);
     }
 
     pub fn with_persistence(backend: Arc<dyn PersistenceBackend>) -> Self {
@@ -360,7 +367,9 @@ impl ToolRegistry for InMemoryRegistry {
         if tool.namespace.is_none() {
             tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
         }
-        inject_request_id_arg(&mut tool.input_schema);
+        if self.inject_request_id.load(Ordering::Relaxed) {
+            inject_request_id_arg(&mut tool.input_schema);
+        }
         self.tools.insert(tool.name.clone(), tool);
         self.persist();
     }
@@ -763,5 +772,61 @@ mod tests {
         super::inject_request_id_arg(&mut schema);
 
         assert_eq!(schema["required"], serde_json::json!(["x-request-id"]));
+    }
+
+    #[test]
+    fn register_tool_skips_injection_when_disabled() {
+        let registry = InMemoryRegistry::new();
+        let tool = ToolEntry {
+            name: "test".to_owned(),
+            description: "test tool".to_owned(),
+            uri: "test://uri".to_owned(),
+            type_: "test".to_owned(),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "msg": {"type": "string"}
+                }
+            }),
+            namespace: None,
+            id: None,
+            configuration_uri: None,
+            secrets_uri: None,
+            skip_safety_check: false,
+            labels: std::collections::HashMap::new(),
+        };
+        registry.register_tool(tool);
+        let stored = registry.get_tool("test").expect("tool should exist");
+        let props = stored.input_schema["properties"].as_object().expect("has properties");
+        assert_eq!(props.len(), 1, "x-request-id should not be injected when flag is disabled");
+    }
+
+    #[test]
+    fn register_tool_injects_when_enabled() {
+        let registry = InMemoryRegistry::new();
+        registry.enable_request_id_injection();
+        let tool = ToolEntry {
+            name: "test".to_owned(),
+            description: "test tool".to_owned(),
+            uri: "test://uri".to_owned(),
+            type_: "test".to_owned(),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "msg": {"type": "string"}
+                }
+            }),
+            namespace: None,
+            id: None,
+            configuration_uri: None,
+            secrets_uri: None,
+            skip_safety_check: false,
+            labels: std::collections::HashMap::new(),
+        };
+        registry.register_tool(tool);
+        let stored = registry.get_tool("test").expect("tool should exist");
+        let props = stored.input_schema["properties"].as_object().expect("has properties");
+        assert_eq!(props.len(), 2, "x-request-id should be injected when flag is enabled");
+        assert!(props.contains_key("x-request-id"));
     }
 }

@@ -12,7 +12,6 @@ use pingora_core::protocols::http::ServerSession;
 use tracing::info;
 
 use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_praxis_apis::registry::InMemoryRegistry;
 
 use self::handlers::{
@@ -29,10 +28,10 @@ use self::handlers::{
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
-    CapabilityRoute, ForwardRoute, InteractionRoute, ManagementRoute, NamespaceRoute,
+    CapabilityRoute, ForwardRoute, ManagementRoute, NamespaceRoute,
     PromptRoute, ResourceRoute, ServiceRoute, ToolRoute,
     resolve_capability_route, resolve_forward_route,
-    resolve_interaction_route, resolve_management_route, resolve_namespace_route,
+    resolve_management_route, resolve_namespace_route,
     resolve_prompt_route, resolve_resource_route, resolve_service_route,
     resolve_tool_route,
 };
@@ -40,7 +39,6 @@ use self::ui::serve_ui;
 
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
-    interactions: InMemoryInteractionStore,
     features: Vec<Box<dyn Feature>>,
     proxy: Option<crate::proxy::ClassicProxy>,
     ui_path: Option<std::path::PathBuf>,
@@ -49,7 +47,6 @@ pub struct WanakuManagementService {
 impl WanakuManagementService {
     pub fn new(
         registry: InMemoryRegistry,
-        interactions: InMemoryInteractionStore,
         features: Vec<Box<dyn Feature>>,
     ) -> Self {
         let proxy = crate::proxy::ClassicProxy::from_config();
@@ -64,7 +61,6 @@ impl WanakuManagementService {
 
         Self {
             registry,
-            interactions,
             features,
             proxy,
             ui_path,
@@ -189,22 +185,6 @@ impl ServeHttp for WanakuManagementService {
                 },
                 ServiceRoute::Delete(name) => handle_service_delete(&self.registry, &name),
                 ServiceRoute::NotFound => json_err(404, "not found"),
-            };
-        }
-
-        let interaction_route = resolve_interaction_route(&method, &path);
-        if interaction_route != InteractionRoute::NotFound {
-            return match interaction_route {
-                InteractionRoute::List => {
-                    let items = self.interactions.list();
-                    json_ok(&serde_json::json!(items))
-                }
-                InteractionRoute::Clear => {
-                    self.interactions.clear();
-                    info!("cleared interaction store");
-                    json_ok(&serde_json::json!({"cleared": true}))
-                }
-                InteractionRoute::NotFound => json_err(404, "not found"),
             };
         }
 

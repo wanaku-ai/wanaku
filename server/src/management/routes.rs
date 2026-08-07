@@ -83,30 +83,6 @@ pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(super) enum InteractionRoute {
-    List,
-    Clear,
-    NotFound,
-}
-
-pub(super) fn resolve_interaction_route(method: &str, path: &str) -> InteractionRoute {
-    let suffix = match path.strip_prefix("/api/v1/interactions") {
-        Some(s) => s,
-        None => return InteractionRoute::NotFound,
-    };
-
-    if !suffix.is_empty() && suffix != "/" {
-        return InteractionRoute::NotFound;
-    }
-
-    match method {
-        "GET" => InteractionRoute::List,
-        "DELETE" => InteractionRoute::Clear,
-        _ => InteractionRoute::NotFound,
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
 pub(super) enum ManagementRoute {
     Statistics,
     NotFound,

@@ -4286,6 +4286,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "wanaku-feature-intercept"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "praxis-proxy-filter",
+ "serde_json",
+ "tracing",
+ "wanaku-praxis-apis",
+ "yaml_serde",
+]
+
+[[package]]
 name = "wanaku-feature-mcp-metadata"
 version = "0.1.0"
 dependencies = [
@@ -4378,6 +4392,7 @@ dependencies = [
  "tracing",
  "utoipa",
  "wanaku-feature-chat",
+ "wanaku-feature-intercept",
  "wanaku-feature-mcp-metadata",
  "wanaku-feature-safety",
  "wanaku-praxis-apis",
