@@ -321,9 +321,13 @@ impl InMemoryRegistry {
 
     fn persist(&self) {
         if let Some(backend) = &self.persistence {
-            if let Err(e) = backend.save(&self.snapshot()) {
-                tracing::warn!(error = %e, "failed to persist registry");
-            }
+            let snapshot = self.snapshot();
+            let backend = Arc::clone(backend);
+            std::thread::spawn(move || {
+                if let Err(e) = backend.save(&snapshot) {
+                    tracing::warn!(error = %e, "failed to persist registry");
+                }
+            });
         }
     }
 }
