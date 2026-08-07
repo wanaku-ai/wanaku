@@ -69,6 +69,11 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-openshift-client</artifactId>
         </dependency>
 
@@ -122,7 +127,10 @@
                     AdditionalHelmTemplateBuildItem pipeline).
                  2. Add security-context fields not yet supported by the quarkus-kubernetes
                     extension (seccompProfile, allowPrivilegeEscalation, capabilities.drop)
-                    and template them as configurable Helm values. -->
+                    and template them as configurable Helm values.
+                 3. Copy the Grafana dashboard overlay (template + dashboards/ dir) into the
+                    chart; quarkus-helm does not carry over non-template dirs nor templates
+                    using .Files.Get. -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -135,6 +143,15 @@
                         <configuration>
                             <target>
                                 <property name="helm.templates" value="${project.build.directory}/helm/kubernetes/wanaku-operator/templates" />
+                                <!-- Copy the Grafana dashboard template and JSON into the chart -->
+                                <copy file="${project.basedir}/src/main/helm/templates/grafana-dashboard.yaml" todir="${helm.templates}" overwrite="true" />
+                                <copy todir="${project.build.directory}/helm/kubernetes/wanaku-operator/dashboards" overwrite="true">
+                                    <fileset dir="${project.basedir}/src/main/helm/dashboards" />
+                                </copy>
+                                <!-- Strip the commit-id annotation so the local clone's HEAD does not leak into the chart -->
+                                <replaceregexp flags="g" match="\r?\n\s*app\.quarkus\.io/commit-id: [^\r\n]*" replace="">
+                                    <fileset dir="${helm.templates}" includes="*.yaml" />
+                                </replaceregexp>
                                 <!-- Prefix roleRef names to match namespace-prefixed ClusterRoles -->
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-capability-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-capability-cluster-role" />
                                 <replace dir="${helm.templates}" includes="*-crd-role-binding.yaml" token="name: wanaku-router-cluster-role" value="name: {{ $.Release.Namespace }}-wanaku-router-cluster-role" />

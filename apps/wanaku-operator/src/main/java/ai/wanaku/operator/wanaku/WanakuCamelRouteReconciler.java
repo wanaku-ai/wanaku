@@ -43,6 +43,7 @@ import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
 import ai.wanaku.capabilities.sdk.api.types.DataStore;
 import ai.wanaku.capabilities.sdk.security.ServiceAuthenticator;
 import ai.wanaku.core.services.api.ServiceCatalogService;
+import ai.wanaku.operator.metrics.OperatorMetrics;
 import ai.wanaku.operator.util.CamelRoutePackager;
 import ai.wanaku.operator.util.CapabilityResourceFactory;
 import ai.wanaku.operator.util.EnvironmentVariableHelper;
@@ -110,10 +111,15 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
     @Inject
     KubernetesClient kubernetesClient;
 
+    @Inject
+    OperatorMetrics metrics;
+
     @Override
     public UpdateControl<WanakuCamelRoute> reconcile(WanakuCamelRoute resource, Context<WanakuCamelRoute> context) {
         String crName = resource.getMetadata().getName();
         LOG.infof("Starting camel route reconciliation for %s", crName);
+
+        metrics.countReconciliation(OperatorMetrics.CONTROLLER_CAMEL_ROUTE);
 
         final String namespace = resource.getMetadata().getNamespace();
 
@@ -255,6 +261,7 @@ public class WanakuCamelRouteReconciler implements Reconciler<WanakuCamelRoute>,
 
     private UpdateControl<WanakuCamelRoute> setErrorStatus(WanakuCamelRoute resource, String reason, String message) {
         LOG.warnf("WanakuCamelRoute '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+        metrics.countReconciliationError(OperatorMetrics.CONTROLLER_CAMEL_ROUTE);
 
         final WanakuCamelRouteStatus status = new WanakuCamelRouteStatus();
         Condition condition = new ConditionBuilder()

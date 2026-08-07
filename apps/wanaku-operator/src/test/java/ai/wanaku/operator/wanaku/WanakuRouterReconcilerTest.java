@@ -4,6 +4,7 @@ import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
+import ai.wanaku.operator.metrics.OperatorMetrics;
 
 import static ai.wanaku.operator.assertions.OperatorAssertions.assertCondition;
 
@@ -25,6 +26,9 @@ class WanakuRouterReconcilerTest {
 
     @Mock
     KubernetesClient kubernetesClient;
+
+    @Mock
+    OperatorMetrics metrics;
 
     @InjectMocks
     WanakuRouterReconciler reconciler;

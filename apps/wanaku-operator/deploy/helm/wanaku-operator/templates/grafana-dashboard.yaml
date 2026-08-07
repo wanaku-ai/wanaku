@@ -1,0 +1,13 @@
+{{- if .Values.app.metrics.grafanaDashboard.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: wanaku-operator
+    grafana_dashboard: "1"
+  name: wanaku-operator-dashboard
+data:
+  wanaku-operator.json: |-
+    {{- .Files.Get "dashboards/wanaku-operator-dashboard.json" | nindent 4 }}
+{{- end }}

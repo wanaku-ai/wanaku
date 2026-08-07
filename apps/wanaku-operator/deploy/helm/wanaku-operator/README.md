@@ -24,6 +24,9 @@ The following table lists the configurable parameters and their default values.
 | `app.livenessProbe.periodSeconds` | The period in which the action should be called. | 10 |
 | `app.livenessProbe.successThreshold` | The success threshold to use. | 1 |
 | `app.livenessProbe.timeoutSeconds` | The amount of time to wait for each action. | 10 |
+| `app.metrics.grafanaDashboard.enabled` |   | false |
+| `app.metrics.serviceMonitor.enabled` |   | false |
+| `app.metrics.serviceMonitor.interval` |   | 30s |
 | `app.oidc.secretName` |   | wanaku-oidc |
 | `app.podSecurityContext.runAsNonRoot` | Require the pod to run as a non-root user. | true |
 | `app.podSecurityContext.seccompProfile.type` |   | RuntimeDefault |

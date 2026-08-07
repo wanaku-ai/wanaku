@@ -24,6 +24,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.operator.metrics.OperatorMetrics;
 import ai.wanaku.operator.util.OperatorUtil;
 
 import static ai.wanaku.operator.util.CodeExecutionEngineResourceFactory.makeCodeExecutionEngineInternalService;
@@ -67,6 +68,9 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
     @Inject
     KubernetesClient kubernetesClient;
 
+    @Inject
+    OperatorMetrics metrics;
+
     @Override
     public UpdateControl<WanakuCamelCodeExecutionEngine> reconcile(
             WanakuCamelCodeExecutionEngine resource, Context<WanakuCamelCodeExecutionEngine> context) throws Exception {
@@ -74,6 +78,8 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
         LOG.infof(
                 "Starting code execution engine reconciliation for %s",
                 resource.getMetadata().getName());
+
+        metrics.countReconciliation(OperatorMetrics.CONTROLLER_CODE_EXECUTION_ENGINE);
 
         ValidateSpecResult validation = validateSpec(resource);
         if (!validation.valid) {
@@ -315,6 +321,7 @@ public class WanakuCamelCodeExecutionEngineReconciler implements Reconciler<Wana
         LOG.warnf(
                 "WanakuCamelCodeExecutionEngine '%s' error (%s): %s",
                 resource.getMetadata().getName(), reason, message);
+        metrics.countReconciliationError(OperatorMetrics.CONTROLLER_CODE_EXECUTION_ENGINE);
 
         WanakuCamelCodeExecutionEngineStatus status = new WanakuCamelCodeExecutionEngineStatus();
         Condition condition = new ConditionBuilder()

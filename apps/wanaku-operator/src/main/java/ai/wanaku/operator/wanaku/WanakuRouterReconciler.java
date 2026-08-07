@@ -28,6 +28,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.core.util.StringHelper;
+import ai.wanaku.operator.metrics.OperatorMetrics;
 import ai.wanaku.operator.util.OperatorUtil;
 import ai.wanaku.operator.util.RouterResourceFactory;
 
@@ -101,38 +102,53 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
     @Inject
     KubernetesClient kubernetesClient;
 
+    @Inject
+    OperatorMetrics metrics;
+
     @Override
     public UpdateControl<WanakuRouter> reconcile(WanakuRouter resource, Context<WanakuRouter> context) {
         LOG.infof(
                 "Starting router reconciliation for %s", resource.getMetadata().getName());
 
-        ValidateSpecResult validation = validateSpec(resource);
-        if (!validation.valid) {
-            return setErrorStatus(resource, "ValidationError", validation.errorMessage);
+        metrics.countRouterReconciliation();
+        try {
+            ValidateSpecResult validation = validateSpec(resource);
+            if (!validation.valid) {
+                return setErrorStatus(resource, "ValidationError", validation.errorMessage);
+            }
+
+            WanakuTypes.ExposureSpec exposureSpec = resource.getSpec().getExposure();
+            if (exposureSpec != null
+                    && exposureSpec.getType() == WanakuTypes.ExposureType.ROUTE
+                    && !isOpenShiftCluster()) {
+                LOG.errorf(
+                        "WanakuRouter '%s' requests type=Route but the cluster does not have the"
+                                + " OpenShift Route API (route.openshift.io)",
+                        resource.getMetadata().getName());
+                return setErrorStatus(
+                        resource,
+                        "ValidationError",
+                        "spec.exposure.type is Route but this is not an OpenShift cluster");
+            }
+
+            final String namespace = resource.getMetadata().getNamespace();
+            final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
+            deployRouter(resource, context, namespace, wanakuStatus);
+
+            final Condition previousReadyCondition = OperatorUtil.findCondition(
+                    resource.getStatus() != null ? resource.getStatus().getConditions() : null,
+                    OperatorUtil.READY_CONDITION);
+            wanakuStatus.setConditions(List.of(OperatorUtil.readyCondition(
+                    resource.getMetadata().getGeneration(),
+                    previousReadyCondition,
+                    "WanakuRouter deployment is ready")));
+
+            resource.setStatus(wanakuStatus);
+            return UpdateControl.patchStatus(resource);
+        } catch (RuntimeException e) {
+            metrics.countRouterReconciliationError();
+            throw e;
         }
-
-        WanakuTypes.ExposureSpec exposureSpec = resource.getSpec().getExposure();
-        if (exposureSpec != null && exposureSpec.getType() == WanakuTypes.ExposureType.ROUTE && !isOpenShiftCluster()) {
-            LOG.errorf(
-                    "WanakuRouter '%s' requests type=Route but the cluster does not have the"
-                            + " OpenShift Route API (route.openshift.io)",
-                    resource.getMetadata().getName());
-            return setErrorStatus(
-                    resource, "ValidationError", "spec.exposure.type is Route but this is not an OpenShift cluster");
-        }
-
-        final String namespace = resource.getMetadata().getNamespace();
-        final WanakuRouterStatus wanakuStatus = new WanakuRouterStatus();
-        deployRouter(resource, context, namespace, wanakuStatus);
-
-        final Condition previousReadyCondition = OperatorUtil.findCondition(
-                resource.getStatus() != null ? resource.getStatus().getConditions() : null,
-                OperatorUtil.READY_CONDITION);
-        wanakuStatus.setConditions(List.of(OperatorUtil.readyCondition(
-                resource.getMetadata().getGeneration(), previousReadyCondition, "WanakuRouter deployment is ready")));
-
-        resource.setStatus(wanakuStatus);
-        return UpdateControl.patchStatus(resource);
     }
 
     private void deployRouter(
@@ -293,6 +309,7 @@ public class WanakuRouterReconciler implements Reconciler<WanakuRouter> {
 
     private UpdateControl<WanakuRouter> setErrorStatus(WanakuRouter resource, String reason, String message) {
         LOG.warnf("WanakuRouter '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+        metrics.countRouterReconciliationError();
         WanakuRouterStatus status = new WanakuRouterStatus();
         Condition condition = new ConditionBuilder()
                 .withType(OperatorUtil.READY_CONDITION)

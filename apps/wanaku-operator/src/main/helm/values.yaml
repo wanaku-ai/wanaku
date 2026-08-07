@@ -10,3 +10,9 @@ app:
         - ALL
   oidc:
     secretName: wanaku-oidc
+  metrics:
+    grafanaDashboard:
+      enabled: false
+    serviceMonitor:
+      enabled: false
+      interval: 30s

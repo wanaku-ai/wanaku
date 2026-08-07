@@ -23,6 +23,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.RBACRule;
 import io.quarkiverse.operatorsdk.annotations.RBACVerbs;
 import ai.wanaku.capabilities.sdk.api.exceptions.WanakuException;
+import ai.wanaku.operator.metrics.OperatorMetrics;
 import ai.wanaku.operator.util.CapabilityResourceFactory;
 import ai.wanaku.operator.util.OperatorConstants;
 import ai.wanaku.operator.util.OperatorUtil;
@@ -63,12 +64,16 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
     @Inject
     KubernetesClient kubernetesClient;
 
+    @Inject
+    OperatorMetrics metrics;
+
     @Override
     public UpdateControl<WanakuCapability> reconcile(WanakuCapability resource, Context<WanakuCapability> context) {
         LOG.infof(
                 "Starting capability reconciliation for %s",
                 resource.getMetadata().getName());
 
+        metrics.countReconciliation(OperatorMetrics.CONTROLLER_CAPABILITY);
         try {
             final String namespace = resource.getMetadata().getNamespace();
 
@@ -205,6 +210,7 @@ public class WanakuCapabilityReconciler implements Reconciler<WanakuCapability> 
 
     private UpdateControl<WanakuCapability> setErrorStatus(WanakuCapability resource, String reason, String message) {
         LOG.warnf("WanakuCapability '%s' error (%s): %s", resource.getMetadata().getName(), reason, message);
+        metrics.countReconciliationError(OperatorMetrics.CONTROLLER_CAPABILITY);
 
         WanakuCapabilityStatus status = new WanakuCapabilityStatus();
         Condition condition = new ConditionBuilder()
