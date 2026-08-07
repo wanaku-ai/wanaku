@@ -6,7 +6,7 @@ import {
   TextArea,
   Toggle
 } from "@carbon/react"
-import {LlmConfig, OLLAMA} from "./config"
+import {LlmConfig} from "./config"
 import {LLMSelect} from "./LLMSelect"
 import {LLMModelComboBox} from "./LLMModelComboBox"
 
@@ -25,8 +25,6 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, onConfigChan
   const apiKey = config.llms[selectedLlm].apiKey
   const extraLlmParams = config.llms[selectedLlm].extraLlmParams
   
-  const isApiKeyRequired = selectedLlm !== OLLAMA
-
   return (
     <Form>
       <Stack gap={5}>
@@ -56,21 +54,19 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, onConfigChan
             onConfigChange(newConfig)
           }}
         />
-        {isApiKeyRequired && (
-          <PasswordInput
-            id="api-key"
-            labelText="API Key"
-            placeholder="Type your API key here..."
-            value={apiKey}
-            onChange={(event) => {
-              const apiKey = event.target.value
-              const newConfig = structuredClone(config)
-              newConfig.llms[selectedLlm].apiKey = apiKey
-              onConfigChange(newConfig)
-            }}
-            size="md"
-          />
-        )}
+        <PasswordInput
+          id="api-key"
+          labelText="API Key"
+          placeholder="Type your API key here..."
+          value={apiKey}
+          onChange={(event) => {
+            const apiKey = event.target.value
+            const newConfig = structuredClone(config)
+            newConfig.llms[selectedLlm].apiKey = apiKey
+            onConfigChange(newConfig)
+          }}
+          size="md"
+        />
         <TextArea
           id="extra-llm-input"
           labelText="Extra LLM Parameters"

@@ -157,7 +157,7 @@ The safety feature uses an LLM to classify tool calls as safe or dangerous befor
 Set these environment variables:
 
 ```bash
-export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1  # Ollama endpoint
+export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1  # LLM endpoint (OpenAI-compatible)
 export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
 ```
 

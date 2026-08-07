@@ -52,26 +52,52 @@ fn json_err(status: u16, message: &str) -> Response<Vec<u8>> {
 }
 
 pub(crate) fn handle_chat_list_llms() -> Response<Vec<u8>> {
-    raw_json_response(serde_json::to_vec(&serde_json::json!(["Ollama"])).unwrap_or_default())
+    raw_json_response(serde_json::to_vec(&serde_json::json!(["Inference"])).unwrap_or_default())
 }
 
-pub(crate) async fn handle_chat_list_models(ollama_proxy: &str) -> Response<Vec<u8>> {
-    let url = format!("{ollama_proxy}/v1/models");
+pub(crate) async fn handle_chat_list_models(
+    base_url: &str,
+    upstream_host: Option<&str>,
+    api_key: &str,
+) -> Response<Vec<u8>> {
+    let url = format!("{base_url}/v1/models");
     let client = reqwest::Client::new();
 
-    let response = match client.get(&url).send().await {
+    let mut request = client.get(&url);
+    if let Some(host) = upstream_host {
+        request = request.header("Host", host);
+    }
+    if !api_key.is_empty() {
+        request = request.bearer_auth(api_key);
+    }
+
+    let response = match request.send().await {
         Ok(r) => r,
         Err(e) => {
-            warn!(error = %e, "failed to fetch models from Ollama proxy");
-            return json_err(502, &format!("failed to reach Ollama: {e}"));
+            warn!(error = %e, "failed to fetch models from inference backend");
+            return json_err(502, &format!("failed to reach inference backend: {e}"));
         }
     };
 
-    let body: serde_json::Value = match response.json().await {
+    let status = response.status();
+    let raw = match response.text().await {
+        Ok(t) => t,
+        Err(e) => {
+            warn!(error = %e, status = %status, "failed to read inference backend models response");
+            return json_err(502, &format!("failed to read inference backend response: {e}"));
+        }
+    };
+
+    if !status.is_success() {
+        warn!(status = %status, body = %raw, "inference backend returned error for models");
+        return json_err(status.as_u16(), &format!("inference backend error: {raw}"));
+    }
+
+    let body: serde_json::Value = match serde_json::from_str(&raw) {
         Ok(b) => b,
         Err(e) => {
-            warn!(error = %e, "failed to parse Ollama models response");
-            return json_err(502, &format!("invalid response from Ollama: {e}"));
+            warn!(error = %e, status = %status, body = %raw, "failed to parse inference backend models response");
+            return json_err(502, &format!("invalid response from inference backend: {e}"));
         }
     };
 
@@ -89,10 +115,25 @@ pub(crate) async fn handle_chat_list_models(ollama_proxy: &str) -> Response<Vec<
     raw_json_response(serde_json::to_vec(&serde_json::json!(models)).unwrap_or_default())
 }
 
-pub(crate) async fn handle_chat_completions(ollama_proxy: &str, body: &str) -> Response<Vec<u8>> {
+pub(crate) async fn handle_chat_completions(
+    base_url: &str,
+    upstream_host: Option<&str>,
+    api_key: &str,
+    body: &str,
+) -> Response<Vec<u8>> {
     let request: serde_json::Value = match serde_json::from_str(body) {
         Ok(r) => r,
         Err(e) => return json_err(400, &format!("invalid request: {e}")),
+    };
+
+    let request_api_key = request
+        .get("apiKey")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    let effective_key = if request_api_key.is_empty() {
+        api_key
+    } else {
+        request_api_key
     };
 
     let model = request
@@ -127,22 +168,44 @@ pub(crate) async fn handle_chat_completions(ollama_proxy: &str, body: &str) -> R
         "messages": messages,
     });
 
-    let url = format!("{ollama_proxy}/v1/chat/completions");
+    let url = format!("{base_url}/v1/chat/completions");
     let client = reqwest::Client::new();
 
-    let response = match client.post(&url).json(&openai_request).send().await {
+    let mut req = client.post(&url).json(&openai_request);
+    if let Some(host) = upstream_host {
+        req = req.header("Host", host);
+    }
+    if !effective_key.is_empty() {
+        req = req.bearer_auth(effective_key);
+    }
+
+    let response = match req.send().await {
         Ok(r) => r,
         Err(e) => {
-            warn!(error = %e, "chat completions request to Ollama proxy failed");
-            return json_err(502, &format!("failed to reach Ollama: {e}"));
+            warn!(error = %e, "chat completions request to inference backend failed");
+            return json_err(502, &format!("failed to reach inference backend: {e}"));
         }
     };
 
-    let resp_body: serde_json::Value = match response.json().await {
+    let status = response.status();
+    let raw = match response.text().await {
+        Ok(t) => t,
+        Err(e) => {
+            warn!(error = %e, status = %status, "failed to read inference backend completions response");
+            return json_err(502, &format!("failed to read inference backend response: {e}"));
+        }
+    };
+
+    if !status.is_success() {
+        warn!(status = %status, body = %raw, "inference backend returned error for completions");
+        return json_err(status.as_u16(), &format!("inference backend error: {raw}"));
+    }
+
+    let resp_body: serde_json::Value = match serde_json::from_str(&raw) {
         Ok(b) => b,
         Err(e) => {
-            warn!(error = %e, "failed to parse Ollama completions response");
-            return json_err(502, &format!("invalid response from Ollama: {e}"));
+            warn!(error = %e, status = %status, body = %raw, "failed to parse inference backend completions response");
+            return json_err(502, &format!("invalid response from inference backend: {e}"));
         }
     };
 

@@ -13,14 +13,23 @@ use crate::routes::{
 };
 
 pub struct ChatFeature {
-    ollama_proxy: String,
+    inference_base_url: String,
+    upstream_host: Option<String>,
+    api_key: String,
 }
 
 impl ChatFeature {
     #[must_use]
-    pub fn new(ollama_proxy_port: u16) -> Self {
+    pub fn new(
+        inference_proxy_port: u16,
+        path_prefix: String,
+        upstream_host: Option<String>,
+        api_key: String,
+    ) -> Self {
         Self {
-            ollama_proxy: format!("http://127.0.0.1:{ollama_proxy_port}"),
+            inference_base_url: format!("http://127.0.0.1:{inference_proxy_port}{path_prefix}"),
+            upstream_host,
+            api_key,
         }
     }
 }
@@ -50,9 +59,22 @@ impl Feature for ChatFeature {
         }
         Some(match route {
             ChatRoute::ListLlms => handle_chat_list_llms(),
-            ChatRoute::ListModels(_) => handle_chat_list_models(&self.ollama_proxy).await,
+            ChatRoute::ListModels(_) => {
+                handle_chat_list_models(
+                    &self.inference_base_url,
+                    self.upstream_host.as_deref(),
+                    &self.api_key,
+                )
+                .await
+            }
             ChatRoute::Completions => {
-                handle_chat_completions(&self.ollama_proxy, body.unwrap_or("")).await
+                handle_chat_completions(
+                    &self.inference_base_url,
+                    self.upstream_host.as_deref(),
+                    &self.api_key,
+                    body.unwrap_or(""),
+                )
+                .await
             }
             ChatRoute::NotFound => return None,
         })

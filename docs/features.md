@@ -63,7 +63,7 @@ Set these environment variables:
 ```bash
 export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1
 export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
-export WANAKU_SAFETY_LLM_API_KEY=your-api-key  # optional, for non-Ollama providers
+export WANAKU_SAFETY_LLM_API_KEY=your-api-key  # optional, for providers requiring authentication
 ```
 
 **Management API:**
@@ -108,29 +108,29 @@ You can customize the prompt by modifying `features/safety/src/classifier.rs`.
 
 ### Chat Feature (`features/chat/`)
 
-Proxies LLM chat completion requests to Ollama. This lets you use Praxis as a unified API gateway for both MCP tools and raw LLM chat.
+Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you use Praxis as a unified API gateway for both MCP tools and raw LLM chat.
 
 **How it works:**
 
 The chat feature exposes these management API routes:
 
-- `GET /api/v1/chat/llms` — list available LLM backends (currently just Ollama)
+- `GET /api/v1/chat/llms` — list available LLM backends
 - `GET /api/v1/chat/{llm}/models` — list models for an LLM
-- `POST /api/v1/chat/completions` — proxy chat completion request to Ollama
+- `POST /api/v1/chat/completions` — proxy chat completion request to the inference backend
 
 **Configuration:**
 
-The chat feature uses the same Ollama endpoint as the safety feature:
+The chat feature uses the same inference endpoint as the safety feature:
 
 ```bash
-export WANAKU_OLLAMA_UPSTREAM=http://localhost:11434
+export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
 ```
 
 **Example:**
 
 ```bash
 # List available models
-curl http://localhost:9090/api/v1/chat/ollama/models
+curl http://localhost:9090/api/v1/chat/inference/models
 
 # Send chat completion request
 curl -X POST http://localhost:9090/api/v1/chat/completions \
@@ -141,7 +141,7 @@ curl -X POST http://localhost:9090/api/v1/chat/completions \
   }'
 ```
 
-The request is proxied to `http://localhost:11434/v1/chat/completions`.
+The request is proxied to `WANAKU_INFERENCE_UPSTREAM/v1/chat/completions`.
 
 ## Creating a Custom Feature
 

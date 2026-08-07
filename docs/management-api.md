@@ -351,7 +351,7 @@ Returns:
 
 ```json
 {
-  "data": ["ollama"],
+  "data": ["inference"],
   "error": null
 }
 ```
@@ -365,7 +365,7 @@ GET /api/v1/chat/{llm}/models
 Example:
 
 ```bash
-GET /api/v1/chat/ollama/models
+GET /api/v1/chat/inference/models
 ```
 
 Returns:
@@ -394,7 +394,7 @@ Content-Type: application/json
 }
 ```
 
-This proxies the request to `WANAKU_OLLAMA_UPSTREAM/v1/chat/completions`.
+This proxies the request to `WANAKU_INFERENCE_UPSTREAM/v1/chat/completions`.
 
 ### MCP Metadata Feature
 

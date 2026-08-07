@@ -15,7 +15,14 @@ const DEFAULT_CONFIG: &str = include_str!("default.yaml");
 pub fn load_config(
     explicit_path: Option<&str>,
 ) -> Result<praxis_core::config::Config, praxis_core::errors::ProxyError> {
-    let config = DEFAULT_CONFIG.replace("127.0.0.1:11434", &wanaku_praxis_apis::config::ENV.ollama_upstream);
+    let env = &wanaku_praxis_apis::config::ENV;
+    let mut config = DEFAULT_CONFIG.replace("127.0.0.1:11434", &env.inference_upstream);
+    if let Some(sni) = &env.inference_tls_sni {
+        config = config.replace(
+            "- name: inference\n            endpoints:",
+            &format!("- name: inference\n            tls:\n              sni: \"{sni}\"\n            endpoints:"),
+        );
+    }
     praxis_core::config::Config::load(explicit_path, &config)
 }
 

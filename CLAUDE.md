@@ -2,6 +2,12 @@
 
 A Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. Routes MCP requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and both local (gRPC) and remote (MCP forwarding) tool execution.
 
+## Core Guidelines
+
+- Think before you write
+- Don't create abstractions unnecessarily.
+- Simplicity is important: focus on the minimum code required to achieve the result.
+
 ## Quick Start
 
 ```bash
@@ -42,7 +48,7 @@ wanaku-praxis/
 ├── features/
 │   ├── mcp-metadata/  — wanaku-feature-mcp-metadata: RFC 9728 OAuth metadata endpoint
 │   ├── safety/        — wanaku-feature-safety: LLM-based tool call classification
-│   └── chat/          — wanaku-feature-chat: LLM chat proxy to Ollama
+│   └── chat/          — wanaku-feature-chat: LLM chat proxy (OpenAI-compatible)
 ├── server/            — Binary, pipeline setup, management API (Pingora ServeHttp)
 └── ui/admin/          — Admin UI (React 19 + Vite + Carbon Design System)
 ```
@@ -341,17 +347,18 @@ Unit tests are in each module (`#[cfg(test)]` blocks). Integration tests would g
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:9090` | Management API listen address |
-| `WANAKU_OLLAMA_UPSTREAM` | `127.0.0.1:11434` | Ollama backend address |
+| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend address |
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic proxy base URL |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata (auth handled by oauth2-proxy) |
+| `WANAKU_INFERENCE_API_KEY` | _(unset = no auth)_ | Bearer token API key for the inference upstream. Empty means no auth. |
 
 **Feature env vars** are owned by their respective feature crates (NOT in `apis/src/config.rs`). Each feature reads its own env vars directly in its `load_env_config()` implementation. Examples:
 - MCP Metadata: `WANAKU_AUTH_ISSUER` (read by `features/mcp-metadata/src/lib.rs`)
 - Safety: `WANAKU_SAFETY_LLM_URL`, `WANAKU_SAFETY_LLM_MODEL` (read by `features/safety/src/classifier.rs`)
-- Chat: uses core `WANAKU_OLLAMA_UPSTREAM`
+- Chat: uses core `WANAKU_INFERENCE_UPSTREAM`
 
 ### Praxis Config (server/src/default.yaml)
 

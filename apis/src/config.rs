@@ -13,8 +13,11 @@ use std::sync::LazyLock;
 /// Management API listen address (default `0.0.0.0:9090`).
 const WANAKU_MGMT_LISTEN: &str = "WANAKU_MGMT_LISTEN";
 
-/// Ollama backend address used in the default Praxis config (default `127.0.0.1:11434`).
-const WANAKU_OLLAMA_UPSTREAM: &str = "WANAKU_OLLAMA_UPSTREAM";
+/// Inference backend address used in the default Praxis config (default `127.0.0.1:11434`).
+const WANAKU_INFERENCE_UPSTREAM: &str = "WANAKU_INFERENCE_UPSTREAM";
+
+/// Bearer token API key for the inference upstream. Empty means no auth.
+const WANAKU_INFERENCE_API_KEY: &str = "WANAKU_INFERENCE_API_KEY";
 
 /// Persistence backend selector. Set to `"file"` to enable file-based persistence.
 /// Unset or any other value disables persistence.
@@ -47,8 +50,15 @@ pub struct PersistEnv {
 pub struct WanakuEnv {
     /// Management API listen address.
     pub mgmt_listen: String,
-    /// Ollama upstream address for the default Praxis pipeline config.
-    pub ollama_upstream: String,
+    /// Inference upstream `host:port` for the Praxis proxy load-balancer endpoint.
+    pub inference_upstream: String,
+    /// Path prefix extracted from the upstream URL (e.g. `/api` from `https://host/api`).
+    /// Empty when the upstream is a bare `host:port`.
+    pub inference_path_prefix: String,
+    /// SNI hostname for TLS upstream connections. `None` means plain TCP.
+    pub inference_tls_sni: Option<String>,
+    /// Bearer token API key for the inference upstream. Empty means no auth.
+    pub inference_api_key: String,
     /// File-persistence config. `None` when persistence is disabled.
     pub persist: Option<PersistEnv>,
     /// Classic proxy base URL. `None` when proxying is disabled.
@@ -64,7 +74,7 @@ pub static ENV: LazyLock<WanakuEnv> = LazyLock::new(WanakuEnv::from_env);
 
 impl WanakuEnv {
     #[must_use]
-    pub fn ollama_proxy_port(&self) -> u16 {
+    pub fn inference_proxy_port(&self) -> u16 {
         8082
     }
 
@@ -80,11 +90,19 @@ impl WanakuEnv {
                 }
             });
 
+        let parsed = parse_upstream(
+            &std::env::var(WANAKU_INFERENCE_UPSTREAM)
+                .unwrap_or_else(|_| "127.0.0.1:11434".to_owned()),
+        );
+
         Self {
             mgmt_listen: std::env::var(WANAKU_MGMT_LISTEN)
                 .unwrap_or_else(|_| "0.0.0.0:9090".to_owned()),
-            ollama_upstream: std::env::var(WANAKU_OLLAMA_UPSTREAM)
-                .unwrap_or_else(|_| "127.0.0.1:11434".to_owned()),
+            inference_upstream: parsed.host_port,
+            inference_path_prefix: parsed.path_prefix,
+            inference_tls_sni: parsed.tls_sni,
+            inference_api_key: std::env::var(WANAKU_INFERENCE_API_KEY)
+                .unwrap_or_default(),
             persist,
             classic_url: std::env::var(WANAKU_CLASSIC_URL)
                 .ok()
@@ -93,5 +111,104 @@ impl WanakuEnv {
             cors_origin: std::env::var(WANAKU_CORS_ORIGIN)
                 .unwrap_or_else(|_| "*".to_owned()),
         }
+    }
+}
+
+struct ParsedUpstream {
+    host_port: String,
+    path_prefix: String,
+    tls_sni: Option<String>,
+}
+
+/// Accepts `host:port`, `http://host/path`, or `https://host:port/path`.
+fn parse_upstream(raw: &str) -> ParsedUpstream {
+    let (host_and_rest, default_port, is_tls) =
+        if let Some(rest) = raw.strip_prefix("https://") {
+            (rest, "443", true)
+        } else if let Some(rest) = raw.strip_prefix("http://") {
+            (rest, "80", false)
+        } else {
+            return ParsedUpstream {
+                host_port: raw.to_owned(),
+                path_prefix: String::new(),
+                tls_sni: None,
+            };
+        };
+
+    let (authority, path) = match host_and_rest.find('/') {
+        Some(i) => (&host_and_rest[..i], host_and_rest[i..].trim_end_matches('/')),
+        None => (host_and_rest, ""),
+    };
+
+    let hostname = authority.split(':').next().unwrap_or(authority);
+    let host_port = if authority.contains(':') {
+        authority.to_owned()
+    } else {
+        format!("{authority}:{default_port}")
+    };
+
+    ParsedUpstream {
+        host_port,
+        path_prefix: path.to_owned(),
+        tls_sni: if is_tls { Some(hostname.to_owned()) } else { None },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_upstream;
+
+    #[test]
+    fn bare_host_port_unchanged() {
+        let p = parse_upstream("127.0.0.1:11434");
+        assert_eq!(p.host_port, "127.0.0.1:11434");
+        assert_eq!(p.path_prefix, "");
+        assert!(p.tls_sni.is_none());
+    }
+
+    #[test]
+    fn https_with_path() {
+        let p = parse_upstream("https://openrouter.ai/api");
+        assert_eq!(p.host_port, "openrouter.ai:443");
+        assert_eq!(p.path_prefix, "/api");
+        assert_eq!(p.tls_sni.as_deref(), Some("openrouter.ai"));
+    }
+
+    #[test]
+    fn https_with_deep_path() {
+        let p = parse_upstream("https://host.com/some/long/path");
+        assert_eq!(p.host_port, "host.com:443");
+        assert_eq!(p.path_prefix, "/some/long/path");
+        assert_eq!(p.tls_sni.as_deref(), Some("host.com"));
+    }
+
+    #[test]
+    fn https_with_port_and_path() {
+        let p = parse_upstream("https://host.com:8443/v1");
+        assert_eq!(p.host_port, "host.com:8443");
+        assert_eq!(p.path_prefix, "/v1");
+        assert_eq!(p.tls_sni.as_deref(), Some("host.com"));
+    }
+
+    #[test]
+    fn http_plain_no_tls() {
+        let p = parse_upstream("http://localhost:11434");
+        assert_eq!(p.host_port, "localhost:11434");
+        assert_eq!(p.path_prefix, "");
+        assert!(p.tls_sni.is_none());
+    }
+
+    #[test]
+    fn http_no_port() {
+        let p = parse_upstream("http://example.com");
+        assert_eq!(p.host_port, "example.com:80");
+        assert!(p.tls_sni.is_none());
+    }
+
+    #[test]
+    fn trailing_slash_stripped() {
+        let p = parse_upstream("https://host.com/api/");
+        assert_eq!(p.host_port, "host.com:443");
+        assert_eq!(p.path_prefix, "/api");
     }
 }

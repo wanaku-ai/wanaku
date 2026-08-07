@@ -6,12 +6,12 @@ export const LLM_CONFIG = "llmConfig"
 export const ANTHROPIC = "Anthropic"
 export const GEMINI = "Gemini"
 export const MISTRAL = "Mistral"
-export const OLLAMA = "Ollama"
+export const INFERENCE = "Inference"
 export const OPENAI = "OpenAi"
 
 const DEFAULT_EXTRA_LLM_PARAMS = ""
 const DEFAULT_SYSTEM_PROMPT = "You are helpful assistant that can use tools."
-const DEFAULT_LLM = "Ollama"
+const DEFAULT_LLM = "Inference"
 const DEFAULT_ANTHROPIC_MODEL = "claude-4-6-sonnet"
 const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
 const DEFAULT_MISTRAL_MODEL = "mistral-small-latest"
@@ -36,7 +36,7 @@ export function defaultLlmConfig(): LlmConfig {
       [ANTHROPIC]: createSubconfig(DEFAULT_ANTHROPIC_MODEL),
       [GEMINI]: createSubconfig(DEFAULT_GEMINI_MODEL),
       [MISTRAL]: createSubconfig(DEFAULT_MISTRAL_MODEL),
-      [OLLAMA]: createSubconfig(""),
+      [INFERENCE]: createSubconfig(""),
       [OPENAI]: createSubconfig(DEFAULT_OPENAI_MODEL)
     },
     systemPrompt: DEFAULT_SYSTEM_PROMPT
@@ -64,9 +64,9 @@ function parseConfig(json: string): LlmConfig {
   config.llms[MISTRAL] ??= createSubconfig(DEFAULT_MISTRAL_MODEL)
   config.llms[MISTRAL].selectedModel ??= DEFAULT_MISTRAL_MODEL
   config.llms[MISTRAL].extraLlmParams ??= DEFAULT_EXTRA_LLM_PARAMS
-  config.llms[OLLAMA] ??= createSubconfig("")
-  config.llms[OLLAMA].selectedModel ??= ""
-  config.llms[OLLAMA].extraLlmParams ??= DEFAULT_EXTRA_LLM_PARAMS
+  config.llms[INFERENCE] ??= createSubconfig("")
+  config.llms[INFERENCE].selectedModel ??= ""
+  config.llms[INFERENCE].extraLlmParams ??= DEFAULT_EXTRA_LLM_PARAMS
   config.llms[OPENAI] ??= createSubconfig(DEFAULT_OPENAI_MODEL)
   config.llms[OPENAI].selectedModel ??= DEFAULT_OPENAI_MODEL
   config.llms[OPENAI].extraLlmParams ??= DEFAULT_EXTRA_LLM_PARAMS

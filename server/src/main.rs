@@ -46,7 +46,10 @@ fn main() {
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
         Box::new(wanaku_feature_safety::SafetyFeature::new()),
         Box::new(wanaku_feature_chat::ChatFeature::new(
-            wanaku_praxis_apis::config::ENV.ollama_proxy_port(),
+            wanaku_praxis_apis::config::ENV.inference_proxy_port(),
+            wanaku_praxis_apis::config::ENV.inference_path_prefix.clone(),
+            wanaku_praxis_apis::config::ENV.inference_tls_sni.clone(),
+            wanaku_praxis_apis::config::ENV.inference_api_key.clone(),
         )),
     ];
 

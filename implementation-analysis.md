@@ -2,7 +2,7 @@
 
 ## Problem
 
-The Ollama proxy (`:8082`) and the MCP endpoint (`:8081`) are separate request flows.
+The inference proxy (`:8082`) and the MCP endpoint (`:8081`) are separate request flows.
 When an LLM responds with `tool_calls`, the client issues a separate MCP `tools/call`
 request. There is no shared context linking the conversation that triggered the tool
 call to the MCP request that executes it.
@@ -37,7 +37,7 @@ logs and stores it on both sides.
 
 - Simplest to implement (< 50 lines changed)
 - Reliable explicit correlation, no guessing
-- Works with any LLM backend, not Ollama-specific
+- Works with any LLM backend, not provider-specific
 - No proxy-side state beyond what already exists
 
 ### Cons
@@ -51,7 +51,7 @@ logs and stores it on both sides.
 
 ## Approach 2: Proxy-Side Inference
 
-The proxy parses Ollama's chat completion response, detects `tool_calls` in the
+The proxy parses the inference backend's chat completion response, detects `tool_calls` in the
 output, generates a correlation ID, and stores a pending-tool-call mapping. When
 an MCP `tools/call` arrives for that tool name within a time window, the proxy
 auto-correlates.
@@ -60,7 +60,7 @@ auto-correlates.
 
 - New `PendingToolCall` registry in `apis/`: a time-windowed map of
   `(tool_name, timestamp) -> correlation_id` with a configurable TTL (e.g. 30s)
-- Intercept filter: after buffering the Ollama response, parse JSON for
+- Intercept filter: after buffering the inference backend response, parse JSON for
   `choices[0].message.tool_calls`, extract tool names, generate UUID, store in
   pending registry
 - Tool call filter: on `tools/call`, check pending registry for matching tool name
@@ -120,7 +120,7 @@ arguments.
 | `filters/src/conversation_tag.rs` | New: dynamic prompt injection filter |
 | `filters/src/intercept.rs` | Read conversation ID from metadata |
 | `filters/src/tool_call.rs` | Extract conversation ID from arguments |
-| `server/src/default.yaml` | Add `conversation_tag` to ollama_proxy chain |
+| `server/src/default.yaml` | Add `conversation_tag` to inference_proxy chain |
 | `server/src/lib.rs` | Register the new filter |
 
 ### Pros
@@ -147,7 +147,7 @@ arguments.
 
 The proxy handles the full LLM -> tool call -> result -> LLM loop internally.
 The client only talks to `:8082`. The proxy enriches prompts with available MCP
-tools, detects tool calls in Ollama's response, executes them via MCP, feeds
+tools, detects tool calls in the inference backend's response, executes them via MCP, feeds
 results back, and returns the final answer.
 
 ### How praxis-ai Does It
@@ -180,7 +180,7 @@ pipeline. This requires:
 - Registering ~8-10 praxis-ai filters via `register_ai_filters()`
 - A tool enrichment filter that reads MCP tools from the registry and injects
   them as OpenAI-format tool definitions into the request body
-- Configuring Ollama as the inference backend cluster
+- Configuring the inference backend cluster
 
 | File | Change |
 |---|---|
@@ -194,10 +194,10 @@ pipeline. This requires:
 Write a single custom filter that handles the entire loop:
 
 1. `on_request_body`: parse client request, enrich with MCP tool definitions
-2. Forward to Ollama (let the request pass through to the upstream)
+2. Forward to the inference backend (let the request pass through to the upstream)
 3. `on_response_body`: parse response, check for `tool_calls`
 4. If tool calls present: call MCP tools directly (like `tool_call.rs` already does),
-   build a new request with tool results, re-send to Ollama via an HTTP client
+   build a new request with tool results, re-send to the inference backend via an HTTP client
 5. Repeat until no tool calls or max iterations reached
 6. Return final response to client
 
@@ -227,8 +227,8 @@ assembled response, but this blocks the client until the full loop completes.
 - **`on_response_body` is synchronous** in Praxis, making 4b's in-filter loop
   architecturally difficult
 - Tight coupling between proxy and both LLM + MCP backends
-- Requires Ollama to support OpenAI-compatible function calling format
-  (Ollama does, but not all models expose tools)
+- Requires the inference backend to support OpenAI-compatible function calling format
+  (most do, but not all models expose tools)
 
 ---
 
@@ -250,7 +250,7 @@ to the actual tool backend.
 - Tool call filter (`tool_call.rs`): on `tools/call`, extract `X-Conversation-Id`
   from the arguments, log/store it for correlation, then strip it from the arguments
   before forwarding to the gRPC backend or MCP server
-- Intercept filter (`intercept.rs`): on the Ollama side, parse the response for
+- Intercept filter (`intercept.rs`): on the inference proxy side, parse the response for
   `tool_calls` and extract the `X-Conversation-Id` the LLM filled in. Store it
   alongside the interaction for cross-endpoint correlation
 - The orchestrator must set the conversation ID as a regular tool argument when
@@ -264,7 +264,7 @@ to the actual tool backend.
 |---|---|
 | `apis/src/registry.rs` | Mutate `input_schema` on tool registration to inject the argument |
 | `filters/src/tool_call.rs` | Extract `X-Conversation-Id` from arguments, strip before forwarding |
-| `filters/src/intercept.rs` | Parse Ollama response `tool_calls` for the conversation ID |
+| `filters/src/intercept.rs` | Parse inference backend response `tool_calls` for the conversation ID |
 | `apis/src/interactions.rs` | Add `conversation_id` field to `Interaction` |
 
 ### Pros
@@ -284,13 +284,13 @@ to the actual tool backend.
     (similar to approach 1, just via arguments instead of headers)
   - If the LLM generates it: the model will hallucinate a value (a random string or
     UUID-like), which is unique per call but not correlated across the chat completion
-    and tool call unless the proxy recognizes it from the Ollama response
+    and tool call unless the proxy recognizes it from the inference backend response
 - Modifying tool schemas at registration time is a side effect the tool author didn't
   ask for -- could confuse tooling that validates schemas against a known contract
 - The stripped argument must be removed cleanly before forwarding; if the downstream
   tool validates strictly, a leftover field could cause errors
 - Only works with models that support structured function/tool calling (most modern
-  models do, but not all Ollama-served models)
+  models do, but not all served models)
 - Forward-discovered tools (from remote MCP servers) get their schemas mutated, which
   may diverge from the upstream server's expectations
 
@@ -314,7 +314,7 @@ the arguments it generated. The intercept filter can parse:
 }
 ```
 
-The proxy extracts `abc-123` from the Ollama response and from the subsequent MCP
+The proxy extracts `abc-123` from the inference backend response and from the subsequent MCP
 `tools/call` arguments, correlating both sides.
 
 ### Hybrid Variant: Proxy-Generated ID
@@ -335,14 +335,14 @@ on the LLM copying the value correctly.
 
 ## Approach 6: Completion ID as Correlation Key
 
-The Ollama response body already contains a unique `id` field (e.g. `"chatcmpl-327"`).
+The inference backend response body already contains a unique `id` field (e.g. `"chatcmpl-327"`).
 The intercept filter now extracts and exposes it via the interactions API. The
 orchestrator receives this ID in the chat completion response alongside any
 `tool_calls`, and passes it on the subsequent MCP `tools/call` request — either
 as the standard `x-request-id` header (from the OpenAI protocol) or as a tool
 argument.
 
-This is not a new mechanism — it reuses an identifier Ollama already generates.
+This is not a new mechanism — it reuses an identifier the inference backend already generates.
 
 ### Implementation
 
@@ -361,13 +361,13 @@ The intercept filter already extracts `completion_id` from the response body
 |---|---|
 | `filters/src/tool_call.rs` | Read `x-request-id` header, log for correlation |
 
-That's it. The Ollama side is already done. The `completion_id` is already in the
+That's it. The inference proxy side is already done. The `completion_id` is already in the
 interactions API.
 
 ### Flow
 
 1. Client sends chat completion to `:8082`
-2. Ollama responds with `{"id": "chatcmpl-327", "choices": [{"message": {"tool_calls": [...]}}]}`
+2. Inference backend responds with `{"id": "chatcmpl-327", "choices": [{"message": {"tool_calls": [...]}}]}`
 3. Proxy records the interaction with `completion_id: "chatcmpl-327"` (already working)
 4. Client receives the response, sees both `id` and `tool_calls`
 5. Client sends MCP `tools/call` to `:8081` with header `x-request-id: chatcmpl-327`
@@ -382,7 +382,7 @@ interactions API.
 - Uses identifiers that already exist — no generation, no injection, no schema mutation
 - `x-request-id` is a standard OpenAI protocol header — client SDKs already support it
 - No prompt pollution, no schema modification, no timing heuristics
-- Works with any model served by Ollama (not function-calling dependent)
+- Works with any model served by the inference backend (not function-calling dependent)
 - The `completion_id` is already visible in `GET /api/v1/interactions`
 
 ### Cons
@@ -392,7 +392,7 @@ interactions API.
 - The `chatcmpl-*` ID is per-completion, not per-conversation — multi-turn
   conversations produce multiple IDs. The orchestrator must decide which one to
   forward (typically the most recent one that contained `tool_calls`)
-- Ollama generates the ID, not the proxy — if Ollama changes its ID format or
+- The inference backend generates the ID, not the proxy — if the backend changes its ID format or
   stops including it, the approach breaks (unlikely for OpenAI-compat endpoints)
 
 ### Comparison with Approach 1
@@ -401,7 +401,7 @@ Approach 6 is a refinement of approach 1. The difference:
 
 | | Approach 1 | Approach 6 |
 |---|---|---|
-| ID source | Client generates | Ollama generates (already in response) |
+| ID source | Client generates | Inference backend generates (already in response) |
 | Header | Custom `X-Conversation-Id` | Standard `x-request-id` |
 | Client work | Generate + send on both sides | Read from response + send on MCP side |
 | Protocol fit | Custom convention | OpenAI standard |
@@ -428,7 +428,7 @@ learn a custom convention — it just forwards what it received.
 For an immediate PoC: **Approach 6** (completion ID). Half the work is already
 done — `completion_id` is already extracted and exposed in the interactions API.
 The only remaining step is reading `x-request-id` in the tool call filter. It
-uses existing protocol identifiers (Ollama's `id` field + OpenAI's `x-request-id`
+uses existing protocol identifiers (the inference backend's `id` field + OpenAI's `x-request-id`
 header), requires no schema mutation, no prompt injection, and no custom conventions.
 
 For structured tool calling: **Approach 5** is a strong middle ground when the

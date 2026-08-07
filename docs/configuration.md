@@ -15,12 +15,13 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:9090` | Management API listen address (host:port) |
-| `WANAKU_OLLAMA_UPSTREAM` | `127.0.0.1:11434` | Ollama LLM backend for chat/safety features |
+| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat/safety features (OpenAI-compatible) |
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file-based registry persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic Wanaku backend base URL (e.g., `http://classic:8080`) |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
+| `WANAKU_INFERENCE_API_KEY` | _(unset = no auth)_ | Bearer token API key for the inference upstream. Empty means no auth. |
 
 **Example:**
 
@@ -170,7 +171,7 @@ The safety feature uses an LLM to classify tool calls as safe or dangerous.
 |---|---|---|
 | `WANAKU_SAFETY_LLM_URL` | _(required)_ | LLM API endpoint (e.g., `http://localhost:11434/v1`) |
 | `WANAKU_SAFETY_LLM_MODEL` | _(required)_ | Model name (e.g., `llama3.1:8b`) |
-| `WANAKU_SAFETY_LLM_API_KEY` | _(optional)_ | API key for non-Ollama LLM providers |
+| `WANAKU_SAFETY_LLM_API_KEY` | _(optional)_ | API key for LLM providers requiring authentication |
 
 **Example:**
 
@@ -183,12 +184,12 @@ The safety filter is enabled in the pipeline (`server/src/default.yaml`) but doe
 
 ### Chat Feature
 
-The chat feature proxies LLM chat completions to Ollama.
+The chat feature proxies LLM chat completions to an inference backend (any OpenAI-compatible endpoint).
 
-The chat feature uses the core `WANAKU_OLLAMA_UPSTREAM` env var — it doesn't define any of its own.
+The chat feature uses the core `WANAKU_INFERENCE_UPSTREAM` env var — it doesn't define any of its own.
 
 ```bash
-export WANAKU_OLLAMA_UPSTREAM=127.0.0.1:11434
+export WANAKU_INFERENCE_UPSTREAM=127.0.0.1:11434
 ```
 
 The chat feature exposes these management API routes:
@@ -461,8 +462,8 @@ services:
 ### Development (Local Machine)
 
 ```bash
-# No persistence, embedded UI, Ollama for LLMs
-export WANAKU_OLLAMA_UPSTREAM=http://localhost:11434
+# No persistence, embedded UI, inference backend for LLMs
+export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
 export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1
 export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
 cargo run

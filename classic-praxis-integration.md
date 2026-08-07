@@ -49,7 +49,7 @@ Praxis replaces Classic's MCP routing engine. Classic's MCP server gets removed.
 | `/api/v1/namespaces` | Praxis (direct) |
 | `/api/v1/services` | Praxis (direct) — new |
 | `/api/v1/interactions` | Praxis (direct) |
-| `/api/v1/config/ollama` | Praxis (direct) |
+| `/api/v1/config/inference` | Praxis (direct) |
 | `/admin/*` | Praxis (static files) |
 | `/healthz` | Praxis (direct) |
 | `/api/v1/service-catalog` | Praxis → Classic proxy |
@@ -66,13 +66,13 @@ Praxis replaces Classic's MCP routing engine. Classic's MCP server gets removed.
 
 ### 1. Containerfile (new)
 - Multi-stage Alpine build (pattern from praxis/Containerfile)
-- EXPOSE 8081 (MCP) + 8082 (Ollama) + 9090 (mgmt/REST)
+- EXPOSE 8081 (MCP) + 8082 (inference) + 9090 (mgmt/REST)
 - Image: `quay.io/wanaku/wanaku-praxis:latest`
 
 ### 2. Configurable listen addresses
 - `server/src/main.rs:78` — mgmt addr from `WANAKU_MGMT_LISTEN` (default `0.0.0.0:9090`)
 - `server/src/default.yaml` — change `127.0.0.1` to `0.0.0.0` for all listeners
-- Ollama upstream via `WANAKU_OLLAMA_UPSTREAM` (default `127.0.0.1:11434`) + REST API at `POST /api/v1/config/ollama`
+- Inference upstream via `WANAKU_INFERENCE_UPSTREAM` (default `127.0.0.1:11434`) + REST API at `POST /api/v1/config/inference`
 
 ### 3. Health endpoint
 - `/healthz` on management API → `{"status":"ok"}`
@@ -137,7 +137,7 @@ Praxis replaces Classic's MCP routing engine. Classic's MCP server gets removed.
 | # | What | Repo | Blocks |
 |---|---|---|---|
 | 1 | Containerfile | praxis | 8, 10, 11 |
-| 2 | Configurable addresses + Ollama config | praxis | — |
+| 2 | Configurable addresses + inference config | praxis | — |
 | 3 | Health endpoint | praxis | — |
 | 4 | Extensible persistence | praxis | — |
 | 5 | Services CRUD API | praxis | — |
@@ -161,5 +161,5 @@ Steps 2-7 can proceed in parallel. Steps 9-11 can proceed in parallel (9 is inde
 ## Deferred Questions
 
 1. **Authentication:** How auth works end-to-end is TBD. Classic currently uses Keycloak/OIDC. Need to decide: does Praxis validate tokens, delegate to Classic, or use a different mechanism?
-2. **Port consolidation:** Praxis currently opens 8081 (MCP) + 8082 (Ollama) + 9090 (REST/UI). Evaluate merging some onto a single port with path-based routing.
+2. **Port consolidation:** Praxis currently opens 8081 (MCP) + 8082 (inference) + 9090 (REST/UI). Evaluate merging some onto a single port with path-based routing.
 3. **CLI migration:** CLI currently defaults to `--host :8080`. Needs retargeting to `:9090`. Evaluate how to make this smooth for existing users.
