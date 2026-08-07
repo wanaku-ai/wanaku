@@ -10,7 +10,7 @@ crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
 struct ParsedBody {
     id: serde_json::Value,
-    arguments: HashMap<String, String>,
+    arguments: HashMap<String, serde_json::Value>,
 }
 
 fn parse_body(body: &Option<Bytes>) -> ParsedBody {
@@ -39,13 +39,7 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
         .and_then(|a| a.as_object())
         .map(|args| {
             args.iter()
-                .map(|(k, v)| {
-                    let value_str = match v {
-                        serde_json::Value::String(s) => s.clone(),
-                        other => other.to_string(),
-                    };
-                    (k.clone(), value_str)
-                })
+                .map(|(k, v)| (k.clone(), v.clone()))
                 .collect()
         })
         .unwrap_or_default();
@@ -84,6 +78,10 @@ impl ToolCallFilter {
 
         let conversation_id = parsed.arguments
             .remove(wanaku_praxis_apis::correlation::REQUEST_ID_ARG)
+            .and_then(|v| match v {
+                serde_json::Value::String(s) => Some(s),
+                other => Some(other.to_string()),
+            })
             .unwrap_or_else(|| "-".to_owned());
 
         let request_id = ctx.request.headers.get("x-request-id")
@@ -167,8 +165,19 @@ impl ToolCallFilter {
             "invoking tool via gRPC"
         );
 
+        let string_arguments: HashMap<String, String> = parsed.arguments
+            .iter()
+            .map(|(k, v)| {
+                let value_str = match v {
+                    serde_json::Value::String(s) => s.clone(),
+                    other => other.to_string(),
+                };
+                (k.clone(), value_str)
+            })
+            .collect();
+
         match grpc_pool
-            .invoke_tool(&service.address, tool.uri.clone(), parsed.arguments, request_id)
+            .invoke_tool(&service.address, tool.uri.clone(), string_arguments, request_id)
             .await
         {
             Ok(content) => {
@@ -216,7 +225,7 @@ impl ToolCallFilter {
             parsed
                 .arguments
                 .iter()
-                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+                .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
         );
 
@@ -260,7 +269,7 @@ mod tests {
         let parsed = parse_body(&body);
         assert_eq!(parsed.id, serde_json::Value::from(1));
         assert_eq!(parsed.arguments.len(), 1);
-        assert_eq!(parsed.arguments.get("message").map(String::as_str), Some("hello"));
+        assert_eq!(parsed.arguments.get("message"), Some(&serde_json::Value::String("hello".to_owned())));
     }
 
     #[test]
@@ -270,9 +279,9 @@ mod tests {
         ));
         let parsed = parse_body(&body);
         assert_eq!(parsed.id, serde_json::Value::from(2));
-        assert_eq!(parsed.arguments.get("count").map(String::as_str), Some("42"));
-        assert_eq!(parsed.arguments.get("flag").map(String::as_str), Some("true"));
-        assert!(parsed.arguments.contains_key("nested"));
+        assert_eq!(parsed.arguments.get("count"), Some(&serde_json::json!(42)));
+        assert_eq!(parsed.arguments.get("flag"), Some(&serde_json::json!(true)));
+        assert_eq!(parsed.arguments.get("nested"), Some(&serde_json::json!({"a": 1})));
     }
 
     #[test]
@@ -323,7 +332,7 @@ mod tests {
         ));
         let parsed = parse_body(&body);
         assert!(parsed.id.is_null());
-        assert_eq!(parsed.arguments.get("key").map(String::as_str), Some("val"));
+        assert_eq!(parsed.arguments.get("key"), Some(&serde_json::Value::String("val".to_owned())));
     }
 
     #[test]
