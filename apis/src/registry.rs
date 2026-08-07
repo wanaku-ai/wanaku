@@ -272,6 +272,9 @@ impl InMemoryRegistry {
     }
 
     /// Load all entries from the persistence backend into memory.
+    ///
+    /// Inserts directly into the DashMaps to avoid triggering
+    /// `persist()` on every entry (the data already came from disk).
     pub fn load_persisted(&self) {
         let backend = match &self.persistence {
             Some(b) => b,
@@ -286,23 +289,37 @@ impl InMemoryRegistry {
             }
         };
 
-        for tool in snapshot.tools {
-            self.register_tool(tool);
+        for mut tool in snapshot.tools {
+            if tool.namespace.is_none() {
+                tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+            }
+            inject_request_id_arg(&mut tool.input_schema);
+            self.tools.insert(tool.name.clone(), tool);
         }
-        for resource in snapshot.resources {
-            self.register_resource(resource);
+        for mut resource in snapshot.resources {
+            if resource.namespace.is_none() {
+                resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+            }
+            self.resources.insert(resource.name.clone(), resource);
         }
-        for prompt in snapshot.prompts {
-            self.register_prompt(prompt);
+        for mut prompt in snapshot.prompts {
+            if prompt.namespace.is_none() {
+                prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+            }
+            self.prompts.insert(prompt.name.clone(), prompt);
         }
         for forward in snapshot.forwards {
-            self.register_forward(forward);
+            self.forwards.insert(forward.name.clone(), forward);
         }
-        for namespace in snapshot.namespaces {
-            self.register_namespace(namespace);
+        for mut namespace in snapshot.namespaces {
+            if namespace.id.is_none() {
+                namespace.id = Some(namespace.name.clone());
+            }
+            self.namespaces.insert(namespace.name.clone(), namespace);
         }
         for service in snapshot.services {
-            self.register_service(service);
+            let key = service_key(&service.name, &service.service_type);
+            self.services.insert(key, service);
         }
 
         tracing::info!("loaded registry from persistence backend");
