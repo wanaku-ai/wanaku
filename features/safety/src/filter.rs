@@ -13,7 +13,7 @@ wanaku_praxis_filters::body_filter_boilerplate!(SafetyCheckFilter, "wanaku_safet
 struct ParsedArgs {
     id: serde_json::Value,
     arguments: HashMap<String, String>,
-    conversation_id: String,
+    conversation_id: Option<String>,
 }
 
 fn parse_for_safety(body: &Option<Bytes>) -> ParsedArgs {
@@ -21,7 +21,7 @@ fn parse_for_safety(body: &Option<Bytes>) -> ParsedArgs {
         return ParsedArgs {
             id: serde_json::Value::Null,
             arguments: HashMap::new(),
-            conversation_id: "-".to_owned(),
+            conversation_id: None,
         };
     };
 
@@ -29,7 +29,7 @@ fn parse_for_safety(body: &Option<Bytes>) -> ParsedArgs {
         return ParsedArgs {
             id: serde_json::Value::Null,
             arguments: HashMap::new(),
-            conversation_id: "-".to_owned(),
+            conversation_id: None,
         };
     };
 
@@ -56,8 +56,7 @@ fn parse_for_safety(body: &Option<Bytes>) -> ParsedArgs {
         .unwrap_or_default();
 
     let conversation_id = arguments
-        .remove(wanaku_praxis_apis::correlation::REQUEST_ID_ARG)
-        .unwrap_or_else(|| "-".to_owned());
+        .remove(wanaku_praxis_apis::correlation::REQUEST_ID_ARG);
 
     ParsedArgs {
         id,
@@ -116,13 +115,13 @@ impl SafetyCheckFilter {
 
         let parsed = parse_for_safety(body);
 
-        let history = if parsed.conversation_id != "-" {
-            ctx.extensions
+        let history = match parsed.conversation_id.as_deref() {
+            Some(cid) => ctx
+                .extensions
                 .get::<InMemoryInteractionStore>()
-                .map(|store| store.get_by_conversation_id(&parsed.conversation_id))
-                .unwrap_or_default()
-        } else {
-            Vec::new()
+                .map(|store| store.get_by_conversation_id(cid))
+                .unwrap_or_default(),
+            None => Vec::new(),
         };
 
         let level = classifier
@@ -135,7 +134,7 @@ impl SafetyCheckFilter {
             tool = %tool_name,
             safety_level = level.as_str(),
             action = ?action,
-            conversation_id = %parsed.conversation_id,
+            conversation_id = parsed.conversation_id.as_deref().unwrap_or("-"),
             "safety classification result"
         );
 
@@ -147,7 +146,7 @@ impl SafetyCheckFilter {
                 tracing::warn!(
                     tool = %tool_name,
                     safety_level = level.as_str(),
-                    conversation_id = %parsed.conversation_id,
+                    conversation_id = parsed.conversation_id.as_deref().unwrap_or("-"),
                     "tool call blocked by safety classification"
                 );
                 Ok(wanaku_praxis_filters::response::json_rpc_error(
@@ -163,7 +162,7 @@ impl SafetyCheckFilter {
                 tracing::warn!(
                     tool = %tool_name,
                     safety_level = level.as_str(),
-                    conversation_id = %parsed.conversation_id,
+                    conversation_id = parsed.conversation_id.as_deref().unwrap_or("-"),
                     "safety classification warning"
                 );
                 ctx.set_metadata("wanaku.safety.level", level.as_str());
@@ -173,7 +172,7 @@ impl SafetyCheckFilter {
                 tracing::warn!(
                     tool = %tool_name,
                     safety_level = level.as_str(),
-                    conversation_id = %parsed.conversation_id,
+                    conversation_id = parsed.conversation_id.as_deref().unwrap_or("-"),
                     "safety classification"
                 );
                 Ok(FilterAction::Continue)
