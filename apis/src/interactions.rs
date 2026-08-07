@@ -67,16 +67,19 @@ impl InteractionStore for InMemoryInteractionStore {
     }
 
     fn get_by_conversation_id(&self, conversation_id: &str) -> Vec<Interaction> {
-        self.interactions
-            .read()
-            .map(|store| {
+        match self.interactions.read() {
+            Ok(store) => {
                 store
                     .iter()
                     .filter(|i| i.conversation_id.as_deref() == Some(conversation_id))
                     .cloned()
                     .collect()
-            })
-            .unwrap_or_default()
+            }
+            Err(e) => {
+                tracing::warn!("interaction store read lock poisoned: {e}");
+                Vec::new()
+            }
+        }
     }
 
     fn len(&self) -> usize {
