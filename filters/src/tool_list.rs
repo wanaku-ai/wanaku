@@ -29,7 +29,12 @@ impl ToolListFilter {
             Some(r) => r,
             None => {
                 tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(FilterAction::Continue);
+                let json_rpc_id = crate::response::extract_json_rpc_id(body);
+                return Ok(crate::response::json_rpc_error(
+                    &json_rpc_id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    "internal error: registry unavailable",
+                ));
             }
         };
 
