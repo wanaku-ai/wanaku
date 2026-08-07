@@ -12,10 +12,11 @@ filter_chains:
       - filter: cors
         allow_origins: ["*"]
         allow_methods: ["GET", "POST", "OPTIONS"]
-        allow_headers: ["Content-Type", "Accept", "Mcp-Session-Id", "Mcp-Protocol-Version"]
+        allow_headers: ["Content-Type", "Accept", "Mcp-Session-Id", "Mcp-Protocol-Version", "Authorization"]
       - filter: mcp
         on_invalid: continue
       - filter: wanaku_namespace
+      - filter: wanaku_well_known
       - filter: wanaku_mcp_init
       - filter: wanaku_safety_check
       - filter: wanaku_tool_list

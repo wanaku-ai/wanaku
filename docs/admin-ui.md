@@ -443,6 +443,37 @@ export const customFetch = async <T>(url: string, options: RequestInit): Promise
 
 The base URL is dynamic — it uses `VITE_API_URL` if set, otherwise `window.location.origin`. This means the UI works against any backend, not just localhost.
 
+## Authentication
+
+The admin UI is protected by oauth2-proxy when auth is enabled. Users authenticate via oauth2-proxy's browser-based cookie flow — no client-side OIDC logic in the React app.
+
+**How it works:**
+
+1. User visits `http://localhost:4181/admin/` (oauth2-proxy management port)
+2. oauth2-proxy checks for a valid session cookie
+3. If no cookie, oauth2-proxy redirects to Keycloak's login page
+4. User authenticates with Keycloak
+5. Keycloak redirects back to oauth2-proxy with an auth code
+6. oauth2-proxy exchanges the code for a token and sets a session cookie
+7. oauth2-proxy proxies the request to Praxis on port 9090
+8. The UI loads, session is established
+
+**Session expiry:**
+
+When the session expires, oauth2-proxy returns HTTP 401. The browser is redirected to the login page automatically.
+
+**No client-side tokens:**
+
+Unlike the previous embedded auth approach, the UI does NOT store tokens in sessionStorage or send `Authorization: Bearer` headers. oauth2-proxy handles all auth via cookies.
+
+**Code changes:**
+
+The UI no longer depends on `oidc-client-ts`. Auth redirect handling is removed from `src/custom-fetch.ts`.
+
+**Testing without auth:**
+
+Run Praxis standalone on port 9090 without oauth2-proxy. The UI connects directly and sends unauthenticated requests.
+
 ## Adding a New Page
 
 ### 1. Create Page Files

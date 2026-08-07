@@ -40,6 +40,7 @@ wanaku-praxis/
 ├── apis/              — Shared types, Feature trait, LLM infra, registry, config
 ├── filters/           — Core MCP filters (tool_list, tool_call, resource_*, prompt_*, namespace)
 ├── features/
+│   ├── mcp-metadata/  — wanaku-feature-mcp-metadata: RFC 9728 OAuth metadata endpoint
 │   ├── safety/        — wanaku-feature-safety: LLM-based tool call classification
 │   └── chat/          — wanaku-feature-chat: LLM chat proxy to Ollama
 ├── server/            — Binary, pipeline setup, management API (Pingora ServeHttp)
@@ -114,14 +115,14 @@ ui/admin/src/
 Defined in `server/src/default.yaml`:
 
 ```yaml
-cors → mcp (praxis-ai) → wanaku_namespace → wanaku_mcp_init →
+cors → mcp (praxis-ai) → wanaku_namespace → wanaku_mcp_init → 
   wanaku_safety_check (feature) → wanaku_tool_assembly (feature) →
   wanaku_tool_list → wanaku_tool_call → wanaku_resource_list → 
   wanaku_resource_read → wanaku_prompt_list → wanaku_prompt_get → 
   static_response (catch-all)
 ```
 
-Feature filters (e.g., `wanaku_safety_check`) are registered by their feature crates, not by the core `register_wanaku_filters`. They appear in `default.yaml` but are no-ops when their feature is not configured.
+Feature filters (e.g., `wanaku_safety_check`, `wanaku_tool_assembly`) are registered by their feature crates, not by the core `register_wanaku_filters`. They appear in `default.yaml` but are no-ops when their feature is not configured.
 
 **Critical ordering:**
 - **MCP filter must be first** (after CORS) to parse JSON-RPC and set `mcp.method`/`mcp.name` metadata
@@ -345,8 +346,12 @@ Unit tests are in each module (`#[cfg(test)]` blocks). Integration tests would g
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic proxy base URL |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override |
+| `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata (auth handled by oauth2-proxy) |
 
-**Feature env vars** are owned by their respective feature crates (NOT in `apis/src/config.rs`). Each feature reads its own env vars directly in its `load_env_config()` implementation. Example: `WANAKU_SAFETY_LLM_URL` is read by `features/safety/src/classifier.rs`.
+**Feature env vars** are owned by their respective feature crates (NOT in `apis/src/config.rs`). Each feature reads its own env vars directly in its `load_env_config()` implementation. Examples:
+- MCP Metadata: `WANAKU_AUTH_ISSUER` (read by `features/mcp-metadata/src/lib.rs`)
+- Safety: `WANAKU_SAFETY_LLM_URL`, `WANAKU_SAFETY_LLM_MODEL` (read by `features/safety/src/classifier.rs`)
+- Chat: uses core `WANAKU_OLLAMA_UPSTREAM`
 
 ### Praxis Config (server/src/default.yaml)
 

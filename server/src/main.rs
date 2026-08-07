@@ -43,6 +43,7 @@ fn main() {
     };
 
     let features: Vec<Box<dyn Feature>> = vec![
+        Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
         Box::new(wanaku_feature_safety::SafetyFeature::new()),
         Box::new(wanaku_feature_chat::ChatFeature::new(
             wanaku_praxis_apis::config::ENV.ollama_proxy_port(),

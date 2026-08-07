@@ -13,6 +13,7 @@ pub trait Feature: Send + Sync {
         &self,
         method: &str,
         path: &str,
+        query: Option<&str>,
         body: Option<&str>,
     ) -> Option<Response<Vec<u8>>>;
 

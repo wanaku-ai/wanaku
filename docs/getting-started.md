@@ -171,6 +171,57 @@ Open `http://localhost:9090` in your browser. You'll see the React-based admin U
 
 From here you can view and manage tools, namespaces, resources, and services.
 
+### Enable Authentication
+
+Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy runs as a reverse proxy in front of the MCP and management API ports.
+
+**Quick start with docker-compose:**
+
+```bash
+cd deploy/auth
+
+# Generate a cookie secret
+openssl rand -base64 32
+
+# Edit oauth2-proxy-shared.env:
+#   - Set OAUTH2_PROXY_COOKIE_SECRET to the generated secret
+#   - Set OAUTH2_PROXY_CLIENT_SECRET to your Keycloak client secret
+
+# Place your Keycloak realm export as wanaku-realm.json in this directory
+
+# Start the stack (Keycloak + oauth2-proxy + Praxis)
+docker compose -f docker-compose-auth.yml up
+```
+
+**Access:**
+
+- Admin UI: `http://localhost:4181/admin/`
+- MCP endpoint: `http://localhost:4180/mcp`
+- Public MCP (no auth): `http://localhost:4180/public/mcp`
+
+**Test with CLI:**
+
+```bash
+# Get a token from Keycloak
+TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
+  -d grant_type=password \
+  -d client_id=wanaku-mcp-router \
+  -d username=test \
+  -d password=test | jq -r .access_token)
+
+# Use with MCP endpoint
+curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/mcp \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
+
+**Architecture:**
+
+Two oauth2-proxy instances with shared SSO:
+- **oauth2-proxy-mcp** (port 4180 → 8081) — MCP endpoint, requires `mcp-user` role
+- **oauth2-proxy-mgmt** (port 4181 → 9090) — management API/UI, requires `admin` role
+
+See `deploy/auth/README.md` for detailed setup, role-based access, and local development without Docker.
+
 ## Building for Production
 
 The `cargo run` command uses the debug build. For production, use:

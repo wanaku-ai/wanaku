@@ -396,11 +396,36 @@ Content-Type: application/json
 
 This proxies the request to `WANAKU_OLLAMA_UPSTREAM/v1/chat/completions`.
 
+### MCP Metadata Feature
+
+When `WANAKU_AUTH_ISSUER` is set, the MCP metadata feature exposes RFC 9728 OAuth Protected Resource Metadata.
+
+**OAuth Protected Resource Metadata:**
+
+```bash
+GET /.well-known/oauth-protected-resource/{namespace}/mcp
+```
+
+Returns OAuth server metadata for the specified namespace. MCP clients use this to discover the authorization server and token endpoints.
+
+**Example response:**
+
+```json
+{
+  "issuer": "http://localhost:8543/realms/wanaku",
+  "authorization_endpoint": "http://localhost:8543/realms/wanaku/protocol/openid-connect/auth",
+  "token_endpoint": "http://localhost:8543/realms/wanaku/protocol/openid-connect/token"
+}
+```
+
+This endpoint is read-only metadata — actual authentication is handled by oauth2-proxy running as a sidecar. See `deploy/auth/README.md` for deployment details.
+
 ## HTTP Status Codes
 
 - **200 OK** — Success (most responses)
 - **204 No Content** — Success, no body (DELETE operations)
 - **400 Bad Request** — Invalid JSON or missing required fields
+- **401 Unauthorized** — Auth enabled and token missing/invalid (RFC 6750 WWW-Authenticate header included)
 - **404 Not Found** — Resource not found
 - **500 Internal Server Error** — Server error (check logs)
 
@@ -434,12 +459,30 @@ None. The management API is unthrottled. In production, put it behind a reverse 
 
 ## Authentication
 
-None. The management API is unauthenticated. Anyone who can reach port 9090 can create/delete tools.
+**When auth is disabled** (default): The management API is unauthenticated. Anyone who can reach port 9090 can create/delete tools.
 
-For production:
-1. Bind to localhost only (`WANAKU_MGMT_LISTEN=127.0.0.1:9090`)
-2. Use a reverse proxy with API key auth (nginx `auth_request`, Envoy `ext_authz`)
-3. Or add a custom auth filter to the management API pipeline
+**When auth is enabled** (via oauth2-proxy): All `/api/v1/*` routes require a valid Bearer token:
+
+```bash
+curl http://localhost:4181/api/v1/tools \
+  -H "Authorization: Bearer <token>"
+```
+
+oauth2-proxy validates tokens and proxies authenticated requests to Praxis on port 9090. Praxis itself does not perform any authentication.
+
+**oauth2-proxy deployment:**
+
+See `deploy/auth/README.md` for oauth2-proxy configuration. The typical setup uses two instances:
+- **oauth2-proxy-mcp** (port 4180 → 8081) — MCP endpoint, requires `mcp-user` role
+- **oauth2-proxy-mgmt** (port 4181 → 9090) — management API/UI, requires `admin` role
+
+Both instances share a cookie secret for SSO.
+
+**For production deployments without auth:**
+
+1. Run Praxis standalone on ports 8081/9090 without oauth2-proxy
+2. Bind to localhost only (`WANAKU_MGMT_LISTEN=127.0.0.1:9090`)
+3. Use a reverse proxy with API key auth (nginx `auth_request`, Envoy `ext_authz`)
 
 ## Persistence
 

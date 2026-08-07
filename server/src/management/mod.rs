@@ -75,7 +75,9 @@ impl WanakuManagementService {
 #[async_trait]
 impl ServeHttp for WanakuManagementService {
     async fn response(&self, http_session: &mut ServerSession) -> Response<Vec<u8>> {
-        let path = http_session.req_header().uri.path().to_owned();
+        let uri = &http_session.req_header().uri;
+        let path = uri.path().to_owned();
+        let query = uri.query().map(|q| q.to_owned());
         let method = http_session.req_header().method.as_str().to_owned();
 
         if path == "/healthz" || path == "/health" {
@@ -232,7 +234,7 @@ impl ServeHttp for WanakuManagementService {
 
         for feature in &self.features {
             if let Some(response) = feature
-                .handle_route(&method, &path, feature_body.as_deref())
+                .handle_route(&method, &path, query.as_deref(), feature_body.as_deref())
                 .await
             {
                 return response;

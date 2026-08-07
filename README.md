@@ -135,14 +135,43 @@ Now all tools from `remote.example.com` appear in your local catalog. The client
 - `rmcp` — MCP client for forwarding
 - `dashmap` — Concurrent in-memory registry
 
+## Authentication
+
+Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) — Praxis itself contains no auth code. Two oauth2-proxy instances sit in front of the MCP and management ports, sharing an SSO cookie:
+
+- **MCP proxy** (`:4180` → `:8081`) — protects MCP endpoints, any authenticated user
+- **Management proxy** (`:4181` → `:9090`) — protects admin UI and REST API, admin role required
+
+See [`deploy/auth/README.md`](deploy/auth/README.md) for setup instructions (Docker Compose and local development).
+
+Praxis serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp` via the `mcp-metadata` feature crate. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
+
+## Contributing
+
+### Prerequisites
+
+- Rust 1.96+ and Cargo
+- Node.js and Yarn (for admin UI)
+- Keycloak (for auth testing)
+- oauth2-proxy (for auth testing): `brew install oauth2-proxy`
+
+### Development Setup
+
+```bash
+cargo build    # builds Rust + admin UI
+cargo test     # runs all tests
+cargo run      # starts Praxis (MCP on :8081, management on :9090)
+```
+
+### Testing with Authentication
+
+To test with auth locally, run Keycloak and two oauth2-proxy instances alongside Praxis. See [`deploy/auth/README.md`](deploy/auth/README.md) for the full setup and Keycloak client configuration requirements.
+
 ## What's Missing (and Known)
 
-- Persistence. Registry is in-memory. Restart the server, lose your dynamic registrations.
-- Auth. There isn't any.
+- Persistence. Registry is in-memory by default. Set `WANAKU_PERSIST_BACKEND=file` to enable file-based persistence.
 - Metrics. Logs and traces, yes. Prometheus endpoint, no.
 - Graceful config reload. Edit `wanaku.yaml`, restart the binary.
-
-This is intentional—it's a PoC to validate the Praxis integration and the routing model. If you need production-grade hardening, look at the Java version or consider this the skeleton you build on.
 
 ## License
 

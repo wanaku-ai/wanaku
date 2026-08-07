@@ -20,6 +20,7 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic Wanaku backend base URL (e.g., `http://classic:8080`) |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
+| `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
 
 **Example:**
 
@@ -122,7 +123,44 @@ The server serves files from `dist/` instead of the embedded bundle. Changes to 
 
 ## Feature-Specific Environment Variables
 
-Features (safety, chat, etc.) own their env vars. They're NOT in `apis/src/config.rs`. Each feature reads its own config in `load_env_config()`.
+Features (mcp-metadata, safety, chat, etc.) own their env vars. They're NOT in `apis/src/config.rs`. Each feature reads its own config in `load_env_config()`.
+
+### Authentication with oauth2-proxy
+
+Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication, not embedded code. Two oauth2-proxy instances run as sidecars in front of ports 8081 (MCP) and 9090 (management API).
+
+**MCP Metadata Feature:**
+
+The only auth-related configuration in Praxis itself is the OIDC issuer URL for RFC 9728 metadata:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL (e.g., `http://localhost:8543/realms/wanaku`) |
+
+**Example:**
+
+```bash
+export WANAKU_AUTH_ISSUER=http://localhost:8543/realms/wanaku
+```
+
+When set, the endpoint `/.well-known/oauth-protected-resource/{namespace}/mcp` returns OAuth server metadata. When unset, the endpoint returns 404.
+
+**oauth2-proxy deployment:**
+
+For oauth2-proxy configuration, cookie secrets, role-based access, and docker-compose setup, see `deploy/auth/README.md`.
+
+**Quick start:**
+
+```bash
+cd deploy/auth
+# Edit oauth2-proxy-shared.env with your Keycloak client secret
+docker compose -f docker-compose-auth.yml up
+```
+
+Access:
+- Admin UI: `http://localhost:4181/admin/`
+- MCP endpoint: `http://localhost:4180/mcp`
+- Public MCP (no auth): `http://localhost:4180/public/mcp`
 
 ### Safety Feature
 

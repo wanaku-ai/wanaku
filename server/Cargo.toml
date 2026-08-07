@@ -35,6 +35,7 @@ tracing = { workspace = true }
 wanaku-praxis-apis = { workspace = true }
 wanaku-praxis-filters = { workspace = true }
 wanaku-feature-chat = { workspace = true }
+wanaku-feature-mcp-metadata = { workspace = true }
 wanaku-feature-safety = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]

@@ -41,6 +41,7 @@ impl Feature for ChatFeature {
         &self,
         method: &str,
         path: &str,
+        _query: Option<&str>,
         body: Option<&str>,
     ) -> Option<Response<Vec<u8>>> {
         let route = resolve_chat_route(method, path);

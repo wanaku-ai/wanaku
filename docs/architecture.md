@@ -302,10 +302,15 @@ pub trait Feature: Send + Sync {
 4. Calls `pipeline_extensions` to get shared state (e.g., LLM client)
 5. For each request, calls `handle_route` if the path matches the feature's API
 
-**Example: Safety feature**
+**Examples:**
 
-The safety feature (`features/safety/`) provides:
+**MCP Metadata feature** (`features/mcp-metadata/`):
+- **Filter:** none
+- **Management API:** `GET /.well-known/oauth-protected-resource/{namespace}/mcp` — RFC 9728 metadata
+- **State:** none (reads `WANAKU_AUTH_ISSUER` env var)
+- **Purpose:** exposes OAuth server metadata for MCP clients
 
+**Safety feature** (`features/safety/`):
 - **Filter:** `wanaku_safety_check` — intercepts tool calls, sends to LLM for classification
 - **Management API:** `GET/PUT/DELETE /api/v1/safety` — configure the classifier
 - **State:** `HotSwap<SafetyClassifier>` — runtime-reconfigurable LLM client
@@ -438,21 +443,40 @@ Registry is in-memory. Each tool/resource/prompt is ~1KB. A deployment with 10,0
 
 ## Security Model
 
-**Current state:**
+**Authentication:**
 
-- **No authentication** on MCP endpoint (port 8081)
-- **No authorization** on management API (port 9090)
-- **CORS enabled** by default (allows all origins)
+Wanaku Praxis delegates authentication to [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), an external reverse proxy that sits in front of the MCP and management API ports. Praxis itself contains zero authentication code.
 
-This is a prototype. Production deployments should:
+**oauth2-proxy sidecar pattern:**
 
-- Add API key auth to management API (check `Authorization` header in a custom filter)
-- Add OAuth/OIDC to MCP endpoint (integrate with classic Wanaku's Keycloak setup)
-- Restrict CORS origins to known LLM clients
+Two oauth2-proxy instances with a shared cookie provide SSO across both endpoints:
 
-**Safety features:**
+- **oauth2-proxy-mcp** (port 4180 → 8081) — protects MCP endpoints, requires `mcp-user` role
+- **oauth2-proxy-mgmt** (port 4181 → 9090) — protects admin UI and REST API, requires `admin` role
 
-The safety feature provides runtime tool call filtering via LLM classification. It's not a security boundary (LLMs are fallible), but it's a useful defense-in-depth layer.
+Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Praxis.
+
+**Praxis-side metadata:**
+
+The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. This endpoint is read-only and simply returns the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`.
+
+When auth is disabled:
+
+- Run Praxis standalone on ports 8081/9090 without oauth2-proxy
+- **No authentication** on either endpoint
+
+**CORS:**
+
+CORS is enabled by default via the `cors` filter (allows all origins). Restrict origins in `server/src/default.yaml`:
+
+```yaml
+- filter: cors
+  allow_origins: ["https://app.example.com"]
+```
+
+**Defense-in-depth:**
+
+The safety feature provides runtime tool call filtering via LLM classification. It's not a security boundary (LLMs are fallible), but it's a useful layer for catching obviously malicious prompts.
 
 ## What's Not Here (Yet)
 

@@ -58,6 +58,7 @@ impl Feature for SafetyFeature {
         &self,
         method: &str,
         path: &str,
+        _query: Option<&str>,
         body: Option<&str>,
     ) -> Option<Response<Vec<u8>>> {
         let route = resolve_safety_route(method, path);

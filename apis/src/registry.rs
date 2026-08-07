@@ -129,6 +129,10 @@ pub struct NamespaceEntry {
     pub path: String,
     #[serde(default)]
     pub labels: HashMap<String, String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auth_required: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audience: Option<String>,
 }
 
 pub const MCP_FORWARD_TYPE: &str = "mcp-forward";

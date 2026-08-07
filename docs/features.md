@@ -6,7 +6,43 @@ Think of features as plugins. The core server provides the infrastructure (filte
 
 ## Built-in Features
 
-Wanaku Praxis ships with two features out of the box:
+Wanaku Praxis ships with three features out of the box:
+
+### MCP Metadata Feature (`features/mcp-metadata/`)
+
+Exposes RFC 9728 OAuth Protected Resource Metadata to advertise authentication requirements to MCP clients. This is a read-only metadata endpoint — actual authentication is handled by oauth2-proxy as an external sidecar.
+
+**How it works:**
+
+1. MCP client queries `GET /.well-known/oauth-protected-resource/{namespace}/mcp`
+2. Praxis returns JSON metadata with the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`
+3. MCP client uses the issuer URL to discover the authorization server and token endpoints
+
+**Configuration:**
+
+Set the OIDC issuer URL:
+
+```bash
+export WANAKU_AUTH_ISSUER=http://localhost:8543/realms/wanaku
+```
+
+If `WANAKU_AUTH_ISSUER` is unset, the metadata endpoint returns a 404 (feature disabled).
+
+**Example response:**
+
+```json
+{
+  "issuer": "http://localhost:8543/realms/wanaku",
+  "authorization_endpoint": "http://localhost:8543/realms/wanaku/protocol/openid-connect/auth",
+  "token_endpoint": "http://localhost:8543/realms/wanaku/protocol/openid-connect/token"
+}
+```
+
+**Authentication architecture:**
+
+Praxis does NOT validate tokens or enforce authentication. That's handled by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), which runs as a reverse proxy in front of Praxis ports 8081 (MCP) and 9090 (management API).
+
+For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
 
 ### Safety Feature (`features/safety/`)
 
