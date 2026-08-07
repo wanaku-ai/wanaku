@@ -545,7 +545,10 @@ impl ForwardRegistry for InMemoryRegistry {
         self.forwards.get(name).map(|entry| entry.value().clone())
     }
 
-    fn register_forward(&self, forward: ForwardEntry) {
+    fn register_forward(&self, mut forward: ForwardEntry) {
+        if forward.namespace.is_none() {
+            forward.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+        }
         self.forwards.insert(forward.name.clone(), forward);
         self.persist();
     }
