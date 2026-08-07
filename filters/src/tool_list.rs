@@ -33,14 +33,6 @@ impl ToolListFilter {
             }
         };
 
-        let all_tools = registry.list_tools();
-        tracing::debug!(
-            namespace = %namespace,
-            total_tools = all_tools.len(),
-            tool_namespaces = ?all_tools.iter().map(|t| format!("{}:{}", t.name, t.namespace.as_deref().unwrap_or("None"))).collect::<Vec<_>>(),
-            "all tools in registry before namespace filter"
-        );
-
         let tools = registry.list_tools_in_namespace(namespace);
 
         tracing::debug!(namespace = %namespace, tool_count = tools.len(), "tools found in namespace");
