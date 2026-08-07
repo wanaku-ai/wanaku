@@ -91,7 +91,7 @@ impl ToolCallFilter {
             .unwrap_or("-");
 
         for (name, value) in &ctx.request.headers {
-            tracing::debug!(header = %name, value = ?value, "tools/call request header");
+            tracing::trace!(header = %name, value = ?value, "tools/call request header");
         }
 
         tracing::info!(
