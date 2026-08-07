@@ -86,3 +86,78 @@ fn build_response(status: u16, body: Vec<u8>) -> Response<Vec<u8>> {
         .body(body)
         .expect("valid proxy response")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn matches_service_catalog() {
+        assert!(ClassicProxy::should_proxy("/api/v1/service-catalog"));
+    }
+
+    #[test]
+    fn matches_service_catalog_subpath() {
+        assert!(ClassicProxy::should_proxy("/api/v1/service-catalog/some/item"));
+    }
+
+    #[test]
+    fn matches_service_template() {
+        assert!(ClassicProxy::should_proxy("/api/v1/service-template"));
+    }
+
+    #[test]
+    fn matches_data_store() {
+        assert!(ClassicProxy::should_proxy("/api/v1/data-store"));
+    }
+
+    #[test]
+    fn matches_chat() {
+        assert!(ClassicProxy::should_proxy("/api/v1/chat"));
+    }
+
+    #[test]
+    fn matches_management_info() {
+        assert!(ClassicProxy::should_proxy("/api/v1/management/info"));
+    }
+
+    #[test]
+    fn matches_toolset_repos() {
+        assert!(ClassicProxy::should_proxy("/api/v1/toolset-repos"));
+    }
+
+    #[test]
+    fn matches_v2_code_execution() {
+        assert!(ClassicProxy::should_proxy("/api/v2/code-execution"));
+    }
+
+    #[test]
+    fn matches_v2_tool_calls() {
+        assert!(ClassicProxy::should_proxy("/api/v2/tool-calls"));
+    }
+
+    #[test]
+    fn rejects_tools_path() {
+        assert!(!ClassicProxy::should_proxy("/api/v1/tools"));
+    }
+
+    #[test]
+    fn rejects_resources_path() {
+        assert!(!ClassicProxy::should_proxy("/api/v1/resources"));
+    }
+
+    #[test]
+    fn rejects_healthz() {
+        assert!(!ClassicProxy::should_proxy("/healthz"));
+    }
+
+    #[test]
+    fn rejects_empty_path() {
+        assert!(!ClassicProxy::should_proxy(""));
+    }
+
+    #[test]
+    fn rejects_root_path() {
+        assert!(!ClassicProxy::should_proxy("/"));
+    }
+}
