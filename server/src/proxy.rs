@@ -56,7 +56,7 @@ impl ClassicProxy {
             Ok(r) => r,
             Err(e) => {
                 tracing::warn!(url = %url, error = %e, "proxy request to Classic failed");
-                return json_err(502, &format!("upstream error: {e}"));
+                return json_err(502, "upstream request failed");
             }
         };
 
@@ -65,7 +65,7 @@ impl ClassicProxy {
             Ok(b) => b.to_vec(),
             Err(e) => {
                 tracing::warn!(error = %e, "failed to read proxy response body");
-                return json_err(502, &format!("upstream body read error: {e}"));
+                return json_err(502, "upstream response read failed");
             }
         };
 
