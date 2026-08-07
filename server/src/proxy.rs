@@ -84,6 +84,7 @@ fn build_response(status: u16, body: Vec<u8>) -> Response<Vec<u8>> {
         .status(status)
         .header("Content-Type", "application/json")
         .header("Content-Length", body.len())
+        .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
         .body(body)
         .expect("valid proxy response")
 }
