@@ -115,7 +115,7 @@ pub fn strip_markdown_fences(s: &str) -> &str {
 /// Sanitize untrusted text for inclusion in LLM prompts.
 #[must_use]
 pub fn sanitize(s: &str, max_len: usize) -> String {
-    let truncated = if s.len() > max_len { &s[..max_len] } else { s };
+    let truncated = if s.len() > max_len { &s[..s.floor_char_boundary(max_len)] } else { s };
     truncated
         .replace('#', "")
         .replace('\n', " ")
@@ -212,5 +212,29 @@ mod tests {
 
         swap.clear();
         assert!(swap.get().is_none());
+    }
+
+    #[test]
+    fn sanitize_truncates_ascii() {
+        assert_eq!(super::sanitize("hello world", 5), "hello");
+    }
+
+    #[test]
+    fn sanitize_multibyte_does_not_panic() {
+        let s = "cafe\u{0301}"; // café with combining accent (5 bytes)
+        let result = super::sanitize(s, 5);
+        assert!(result.len() <= 5);
+    }
+
+    #[test]
+    fn sanitize_emoji_boundary() {
+        let s = "hi😀bye"; // 😀 is 4 bytes
+        let result = super::sanitize(s, 3);
+        assert_eq!(result, "hi");
+    }
+
+    #[test]
+    fn sanitize_strips_hashes_and_newlines() {
+        assert_eq!(super::sanitize("a#b\nc\rd", 100), "ab c d");
     }
 }
