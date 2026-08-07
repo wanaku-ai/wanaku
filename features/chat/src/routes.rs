@@ -46,12 +46,12 @@ pub(crate) fn handle_chat_list_llms() -> Response<Vec<u8>> {
 }
 
 pub(crate) async fn handle_chat_list_models(
+    client: &reqwest::Client,
     base_url: &str,
     upstream_host: Option<&str>,
     api_key: &str,
 ) -> Response<Vec<u8>> {
     let url = format!("{base_url}/v1/models");
-    let client = reqwest::Client::new();
 
     let mut request = client.get(&url);
     if let Some(host) = upstream_host {
@@ -106,6 +106,7 @@ pub(crate) async fn handle_chat_list_models(
 }
 
 pub(crate) async fn handle_chat_completions(
+    client: &reqwest::Client,
     base_url: &str,
     upstream_host: Option<&str>,
     api_key: &str,
@@ -159,7 +160,6 @@ pub(crate) async fn handle_chat_completions(
     });
 
     let url = format!("{base_url}/v1/chat/completions");
-    let client = reqwest::Client::new();
 
     let mut req = client.post(&url).json(&openai_request);
     if let Some(host) = upstream_host {
