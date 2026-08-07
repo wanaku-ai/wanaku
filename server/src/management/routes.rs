@@ -183,7 +183,11 @@ pub(super) fn resolve_forward_route(method: &str, path: &str) -> ForwardRoute {
         ("DELETE", Some(n)) if !n.contains('/') => ForwardRoute::Delete(n.to_owned()),
         ("POST", Some(n)) => {
             if let Some(name) = n.strip_suffix("/refreshes") {
-                ForwardRoute::Refresh(name.to_owned())
+                if !name.contains('/') {
+                    ForwardRoute::Refresh(name.to_owned())
+                } else {
+                    ForwardRoute::NotFound
+                }
             } else {
                 ForwardRoute::NotFound
             }
