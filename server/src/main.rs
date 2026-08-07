@@ -165,18 +165,28 @@ fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {
 fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     if let Some(tools) = config.get("tools").and_then(|t| t.as_sequence()) {
         for tool_value in tools {
-            if let Ok(tool) = serde_yaml::from_value::<ToolEntry>(tool_value.clone()) {
-                info!(tool = %tool.name, "registered tool from config");
-                registry.register_tool(tool);
+            match serde_yaml::from_value::<ToolEntry>(tool_value.clone()) {
+                Ok(tool) => {
+                    info!(tool = %tool.name, "registered tool from config");
+                    registry.register_tool(tool);
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "failed to deserialize tool entry from config");
+                }
             }
         }
     }
 
     if let Some(services) = config.get("services").and_then(|s| s.as_sequence()) {
         for svc_value in services {
-            if let Ok(svc) = serde_yaml::from_value::<ServiceEntry>(svc_value.clone()) {
-                info!(service = %svc.name, address = %svc.address, "registered service from config");
-                registry.register_service(svc);
+            match serde_yaml::from_value::<ServiceEntry>(svc_value.clone()) {
+                Ok(svc) => {
+                    info!(service = %svc.name, address = %svc.address, "registered service from config");
+                    registry.register_service(svc);
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "failed to deserialize service entry from config");
+                }
             }
         }
     }
@@ -184,10 +194,15 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
         for fwd_value in fwd_list {
-            if let Ok(fwd) = serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
-                info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
-                registry.register_forward(fwd.clone());
-                forwards.push(fwd);
+            match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
+                Ok(fwd) => {
+                    info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
+                    registry.register_forward(fwd.clone());
+                    forwards.push(fwd);
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "failed to deserialize forward entry from config");
+                }
             }
         }
     }
