@@ -225,3 +225,80 @@ pub(crate) async fn handle_chat_completions(
         .body(response_body)
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_llms() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/chat/llms"),
+            ChatRoute::ListLlms
+        );
+    }
+
+    #[test]
+    fn list_models_for_llm() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/chat/ollama/models"),
+            ChatRoute::ListModels("ollama".to_owned())
+        );
+    }
+
+    #[test]
+    fn completions() {
+        assert_eq!(
+            resolve_chat_route("POST", "/api/v1/chat/completions"),
+            ChatRoute::Completions
+        );
+    }
+
+    #[test]
+    fn wrong_method_for_llms() {
+        assert_eq!(
+            resolve_chat_route("POST", "/api/v1/chat/llms"),
+            ChatRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn wrong_method_for_completions() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/chat/completions"),
+            ChatRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn wrong_prefix() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/other/llms"),
+            ChatRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn models_with_empty_llm_name() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/chat//models"),
+            ChatRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn bare_models_suffix() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/chat/models"),
+            ChatRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn empty_suffix() {
+        assert_eq!(
+            resolve_chat_route("GET", "/api/v1/chat"),
+            ChatRoute::NotFound
+        );
+    }
+}
