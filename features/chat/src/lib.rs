@@ -21,13 +21,12 @@ pub struct ChatFeature {
 impl ChatFeature {
     #[must_use]
     pub fn new(
-        inference_proxy_port: u16,
-        path_prefix: String,
+        inference_base_url: String,
         upstream_host: Option<String>,
         api_key: String,
     ) -> Self {
         Self {
-            inference_base_url: format!("http://127.0.0.1:{inference_proxy_port}{path_prefix}"),
+            inference_base_url,
             upstream_host,
             api_key,
         }
