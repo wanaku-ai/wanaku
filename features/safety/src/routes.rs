@@ -74,3 +74,64 @@ fn json_err(status: u16, message: &str) -> Response<Vec<u8>> {
         .body(body)
         .expect("valid json error response")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_safety() {
+        assert_eq!(
+            resolve_safety_route("GET", "/api/v1/safety"),
+            SafetyRoute::Get
+        );
+    }
+
+    #[test]
+    fn get_safety_with_trailing_slash() {
+        assert_eq!(
+            resolve_safety_route("GET", "/api/v1/safety/"),
+            SafetyRoute::Get
+        );
+    }
+
+    #[test]
+    fn update_safety() {
+        assert_eq!(
+            resolve_safety_route("PUT", "/api/v1/safety"),
+            SafetyRoute::Update
+        );
+    }
+
+    #[test]
+    fn delete_safety() {
+        assert_eq!(
+            resolve_safety_route("DELETE", "/api/v1/safety"),
+            SafetyRoute::Delete
+        );
+    }
+
+    #[test]
+    fn post_not_supported() {
+        assert_eq!(
+            resolve_safety_route("POST", "/api/v1/safety"),
+            SafetyRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn wrong_prefix() {
+        assert_eq!(
+            resolve_safety_route("GET", "/api/v1/other"),
+            SafetyRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn sub_path_not_found() {
+        assert_eq!(
+            resolve_safety_route("GET", "/api/v1/safety/config"),
+            SafetyRoute::NotFound
+        );
+    }
+}
