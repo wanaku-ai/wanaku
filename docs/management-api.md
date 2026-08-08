@@ -1,6 +1,6 @@
 # Management API
 
-The management API runs on port 9090 (configurable via `WANAKU_MGMT_LISTEN`) and provides REST endpoints for managing tools, resources, prompts, namespaces, forwards, and services.
+The management API runs on port 8080 (configurable via `WANAKU_MGMT_LISTEN`) and provides REST endpoints for managing tools, resources, prompts, namespaces, forwards, and services.
 
 This isn't axum or actix-web. It's Pingora's native `ServeHttp` trait. Requests are dispatched via a guard pattern defined in `server/src/management/routes.rs`, and responses are wrapped in a standard envelope.
 
@@ -459,7 +459,7 @@ None. The management API is unthrottled. In production, put it behind a reverse 
 
 ## Authentication
 
-**When auth is disabled** (default): The management API is unauthenticated. Anyone who can reach port 9090 can create/delete tools.
+**When auth is disabled** (default): The management API is unauthenticated. Anyone who can reach port 8080 can create/delete tools.
 
 **When auth is enabled** (via oauth2-proxy): All `/api/v1/*` routes require a valid Bearer token:
 
@@ -468,20 +468,20 @@ curl http://localhost:4181/api/v1/tools \
   -H "Authorization: Bearer <token>"
 ```
 
-oauth2-proxy validates tokens and proxies authenticated requests to Praxis on port 9090. Praxis itself does not perform any authentication.
+oauth2-proxy validates tokens and proxies authenticated requests to Praxis on port 8080. Praxis itself does not perform any authentication.
 
 **oauth2-proxy deployment:**
 
 See `deploy/auth/README.md` for oauth2-proxy configuration. The typical setup uses two instances:
 - **oauth2-proxy-mcp** (port 4180 → 8081) — MCP endpoint, requires `mcp-user` role
-- **oauth2-proxy-mgmt** (port 4181 → 9090) — management API/UI, requires `admin` role
+- **oauth2-proxy-mgmt** (port 4181 → 8080) — management API/UI, requires `admin` role
 
 Both instances share a cookie secret for SSO.
 
 **For production deployments without auth:**
 
-1. Run Praxis standalone on ports 8081/9090 without oauth2-proxy
-2. Bind to localhost only (`WANAKU_MGMT_LISTEN=127.0.0.1:9090`)
+1. Run Praxis standalone on ports 8081/8080 without oauth2-proxy
+2. Bind to localhost only (`WANAKU_MGMT_LISTEN=127.0.0.1:8080`)
 3. Use a reverse proxy with API key auth (nginx `auth_request`, Envoy `ext_authz`)
 
 ## Persistence
@@ -501,12 +501,12 @@ See [Configuration](./configuration.md) for details.
 
 ```bash
 # 1. Register the service
-curl -X POST http://localhost:9090/api/v1/services \
+curl -X POST http://localhost:8080/api/v1/services \
   -H "Content-Type: application/json" \
   -d '{"name": "echo-tool", "address": "localhost:9191", "service_type": "tool-invoker"}'
 
 # 2. Register the tool
-curl -X POST http://localhost:9090/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "echo",
@@ -521,34 +521,34 @@ curl -X POST http://localhost:9090/api/v1/tools \
   }'
 
 # 3. Verify
-curl http://localhost:9090/api/v1/tools
+curl http://localhost:8080/api/v1/tools
 ```
 
 ### Forward to Upstream MCP Server
 
 ```bash
 # 1. Register the forward (auto-discovers tools)
-curl -X POST http://localhost:9090/api/v1/forwards \
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
   -d '{"name": "upstream", "address": "http://upstream:8080/mcp"}'
 
 # 2. List discovered tools
-curl http://localhost:9090/api/v1/tools
+curl http://localhost:8080/api/v1/tools
 
 # 3. Refresh after upstream changes
-curl -X POST http://localhost:9090/api/v1/forwards/upstream/refreshes
+curl -X POST http://localhost:8080/api/v1/forwards/upstream/refreshes
 ```
 
 ### Create a Namespace with Isolated Tools
 
 ```bash
 # 1. Create namespace
-curl -X POST http://localhost:9090/api/v1/namespaces \
+curl -X POST http://localhost:8080/api/v1/namespaces \
   -H "Content-Type: application/json" \
   -d '{"name": "finance", "description": "Financial tools"}'
 
 # 2. Create tool in namespace
-curl -X POST http://localhost:9090/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get-stock-price",

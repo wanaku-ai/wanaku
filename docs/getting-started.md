@@ -35,14 +35,14 @@ cargo run --release
 
 You should see log output indicating two services started:
 - **MCP endpoint:** `http://127.0.0.1:8081/mcp`
-- **Management API:** `http://0.0.0.0:9090/api/v1`
+- **Management API:** `http://0.0.0.0:8080/api/v1`
 
 ### 3. Verify It's Alive
 
 Open another terminal and hit the management API:
 
 ```bash
-curl http://localhost:9090/api/v1/tools
+curl http://localhost:8080/api/v1/tools
 ```
 
 Expected response:
@@ -58,7 +58,7 @@ That empty array means the server is running, but you haven't registered any too
 Create a simple echo tool:
 
 ```bash
-curl -X POST http://localhost:9090/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "echo",
@@ -78,7 +78,7 @@ curl -X POST http://localhost:9090/api/v1/tools \
 Now list tools again:
 
 ```bash
-curl http://localhost:9090/api/v1/tools
+curl http://localhost:8080/api/v1/tools
 ```
 
 You'll see your echo tool in the response. The server is ready to route MCP requests.
@@ -124,11 +124,11 @@ See [Architecture](./architecture.md) for how gRPC tool routing works.
 Namespaces isolate tools. Create a tool in the `"finance"` namespace:
 
 ```bash
-curl -X POST http://localhost:9090/api/v1/namespaces \
+curl -X POST http://localhost:8080/api/v1/namespaces \
   -H "Content-Type: application/json" \
   -d '{"name": "finance"}'
 
-curl -X POST http://localhost:9090/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get-stock-price",
@@ -167,7 +167,7 @@ See [Features](./features.md) for configuration details.
 
 ### Use the Admin UI
 
-Open `http://localhost:9090` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via curl.
+Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via curl.
 
 From here you can view and manage tools, namespaces, resources, and services.
 
@@ -218,7 +218,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/mcp \
 
 Two oauth2-proxy instances with shared SSO:
 - **oauth2-proxy-mcp** (port 4180 → 8081) — MCP endpoint, requires `mcp-user` role
-- **oauth2-proxy-mgmt** (port 4181 → 9090) — management API/UI, requires `admin` role
+- **oauth2-proxy-mgmt** (port 4181 → 8080) — management API/UI, requires `admin` role
 
 See `deploy/auth/README.md` for detailed setup, role-based access, and local development without Docker.
 
@@ -253,7 +253,7 @@ All configuration is environment-first. Common vars:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `WANAKU_MGMT_LISTEN` | `0.0.0.0:9090` | Management API listen address |
+| `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address |
 | `WANAKU_PERSIST_BACKEND` | _(unset)_ | Set to `"file"` to persist registry to disk |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
 | `WANAKU_CLASSIC_URL` | _(unset)_ | Classic proxy base URL (for hybrid mode) |
@@ -264,11 +264,11 @@ See [Configuration](./configuration.md) for the full list.
 
 ### 1. "Address already in use" on startup
 
-Something else is using port 8081 or 9090. Check with:
+Something else is using port 8081 or 8080. Check with:
 
 ```bash
 lsof -ti :8081
-lsof -ti :9090
+lsof -ti :8080
 ```
 
 Kill the process, or change the management listen address via `WANAKU_MGMT_LISTEN`. The MCP listener address is defined in `server/src/default.yaml` — use a custom config file to override it.

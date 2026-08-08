@@ -1,6 +1,6 @@
 # Admin UI
 
-The admin UI is a React 19 + TypeScript frontend embedded into the server binary via `rust_embed`. It's accessible at `http://localhost:9090` and provides a graphical interface to the management API.
+The admin UI is a React 19 + TypeScript frontend embedded into the server binary via `rust_embed`. It's accessible at `http://localhost:8080` and provides a graphical interface to the management API.
 
 This isn't a separate deployment. The UI is compiled into the Rust binary as static assets, served directly by the management API server. No nginx, no S3, no CDN. One binary, one port, one URL.
 
@@ -69,7 +69,7 @@ yarn run dev
 
 This starts Vite's dev server on `http://localhost:5173` with hot module replacement (HMR). Changes to `.tsx`/`.scss` files reload instantly.
 
-The dev server proxies API calls to `http://localhost:9090` (configurable in `vite.config.ts`).
+The dev server proxies API calls to `http://localhost:8080` (configurable in `vite.config.ts`).
 
 ### 3. Build for Production
 
@@ -103,7 +103,7 @@ The server binary embeds `ui/admin/dist/` at compile time via `rust_embed`:
 struct AdminUI;
 ```
 
-When you visit `http://localhost:9090`, the server serves files from the embedded bundle.
+When you visit `http://localhost:8080`, the server serves files from the embedded bundle.
 
 **Gotcha:** Changes to the UI require:
 1. `yarn run build` to update `dist/`
@@ -455,7 +455,7 @@ The admin UI is protected by oauth2-proxy when auth is enabled. Users authentica
 4. User authenticates with Keycloak
 5. Keycloak redirects back to oauth2-proxy with an auth code
 6. oauth2-proxy exchanges the code for a token and sets a session cookie
-7. oauth2-proxy proxies the request to Praxis on port 9090
+7. oauth2-proxy proxies the request to Praxis on port 8080
 8. The UI loads, session is established
 
 **Session expiry:**
@@ -472,7 +472,7 @@ The UI no longer depends on `oidc-client-ts`. Auth redirect handling is removed 
 
 **Testing without auth:**
 
-Run Praxis standalone on port 9090 without oauth2-proxy. The UI connects directly and sends unauthenticated requests.
+Run Praxis standalone on port 8080 without oauth2-proxy. The UI connects directly and sends unauthenticated requests.
 
 ## Adding a New Page
 

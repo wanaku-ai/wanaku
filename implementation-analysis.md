@@ -2,7 +2,7 @@
 
 ## Problem
 
-The inference proxy (`:8082`) and the MCP endpoint (`:8081`) are separate request flows.
+The inference proxy (`:8083`) and the MCP endpoint (`:8081`) are separate request flows.
 When an LLM responds with `tool_calls`, the client issues a separate MCP `tools/call`
 request. There is no shared context linking the conversation that triggered the tool
 call to the MCP request that executes it.
@@ -14,7 +14,7 @@ Four approaches are analyzed below.
 ## Approach 1: Shared Correlation Header
 
 The client/orchestrator passes an `X-Conversation-Id` header on both the chat
-completion request (`:8082`) and the MCP `tools/call` request (`:8081`). The proxy
+completion request (`:8083`) and the MCP `tools/call` request (`:8081`). The proxy
 logs and stores it on both sides.
 
 ### Implementation
@@ -146,7 +146,7 @@ arguments.
 ## Approach 4: Proxy-Orchestrated Agentic Loop
 
 The proxy handles the full LLM -> tool call -> result -> LLM loop internally.
-The client only talks to `:8082`. The proxy enriches prompts with available MCP
+The client only talks to `:8083`. The proxy enriches prompts with available MCP
 tools, detects tool calls in the inference backend's response, executes them via MCP, feeds
 results back, and returns the final answer.
 
@@ -366,7 +366,7 @@ interactions API.
 
 ### Flow
 
-1. Client sends chat completion to `:8082`
+1. Client sends chat completion to `:8083`
 2. Inference backend responds with `{"id": "chatcmpl-327", "choices": [{"message": {"tool_calls": [...]}}]}`
 3. Proxy records the interaction with `completion_id: "chatcmpl-327"` (already working)
 4. Client receives the response, sees both `id` and `tool_calls`

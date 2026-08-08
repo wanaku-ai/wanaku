@@ -99,9 +99,9 @@ USER wanaku:wanaku
 
 WORKDIR /etc/wanaku-praxis
 
-EXPOSE 8081 8082 9090
+EXPOSE 8080 8081 8083
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=5s \
-    CMD curl -sf http://127.0.0.1:9090/healthz || exit 1
+    CMD curl -sf http://127.0.0.1:8080/healthz || exit 1
 
 ENTRYPOINT ["wanaku-praxis"]

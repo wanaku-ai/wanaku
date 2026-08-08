@@ -17,7 +17,7 @@ cargo build
 # Test
 cargo test
 
-# Run (MCP on :8081, management API on :9090)
+# Run (MCP on :8081, management API on :8080)
 cargo run
 
 # Optional: specify custom config files
@@ -197,7 +197,7 @@ When you POST to `/api/v1/forwards`, the management API:
 
 Refreshing (`POST /api/v1/forwards/{name}/refreshes`) removes old tools and re-discovers.
 
-### Management API (Port 9090)
+### Management API (Port 8080)
 
 **NOT axum** — uses Pingora's native `ServeHttp` trait (`server/src/management/mod.rs`).
 
@@ -298,7 +298,7 @@ Pingora forks worker processes. `kill -9 <parent-pid>` may not kill workers.
 Safe cleanup:
 ```bash
 lsof -ti :8081 | xargs kill -9
-lsof -ti :9090 | xargs kill -9
+lsof -ti :8080 | xargs kill -9
 ```
 
 Or use `SIGTERM` to let Pingora gracefully shutdown workers.
@@ -346,7 +346,7 @@ Unit tests are in each module (`#[cfg(test)]` blocks). Integration tests would g
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `WANAKU_MGMT_LISTEN` | `0.0.0.0:9090` | Management API listen address |
+| `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend address |
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
@@ -462,8 +462,8 @@ curl -X POST http://localhost:8081/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 
-# Management API (port 9090)
-curl http://localhost:9090/api/v1/tools
+# Management API (port 8080)
+curl http://localhost:8080/api/v1/tools
 ```
 
 ### Namespace Isolation Example

@@ -3,7 +3,7 @@ listeners:
     address: "0.0.0.0:8081"
     filter_chains: [mcp_router]
   - name: inference
-    address: "0.0.0.0:8082"
+    address: "0.0.0.0:8083"
     filter_chains: [inference_proxy]
 
 filter_chains:

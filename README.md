@@ -20,7 +20,7 @@ Three crates, clean separation:
 
 - **`apis/`** — The glue layer. gRPC protobuf types (tonic-built from Wanaku's `.proto` files), a pooled gRPC client, an `rmcp`-based MCP client, and an in-memory registry with traits for tools/resources/prompts/forwards/namespaces/services.
 - **`filters/`** — Praxis `HttpFilter` implementations. Namespace extraction, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `prompts/list`, `prompts/get`, MCP initialization—standard MCP protocol stuff, plumbed into the Praxis filter pipeline.
-- **`server/`** — The binary. Wires up the filters, boots a Pingora-based management REST API on port 9090, loads static config from `wanaku.yaml`, and starts listening for MCP traffic on 8081.
+- **`server/`** — The binary. Wires up the filters, boots a Pingora-based management REST API on port 8080, loads static config from `wanaku.yaml`, and starts listening for MCP traffic on 8081.
 
 The interesting bit: filters are stateless. All the state lives in `InMemoryRegistry` (a `DashMap`-backed concurrent registry). CRUD operations happen via the management API; filters query the registry when routing requests.
 
@@ -29,13 +29,13 @@ The interesting bit: filters are stateless. All the state lives in `InMemoryRegi
 ### Container
 
 ```bash
-podman run -p 9090:9090 -p 8081:8081 quay.io/wanaku/wanaku-praxis
+podman run -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-praxis
 ```
 
 To preload tools and services, mount a `wanaku.yaml`:
 
 ```bash
-podman run -p 9090:9090 -p 8081:8081 \
+podman run -p 8080:8080 -p 8081:8081 \
   -v ./wanaku.yaml:/etc/wanaku-praxis/wanaku.yaml \
   quay.io/wanaku/wanaku-praxis \
   --wanaku-config /etc/wanaku-praxis/wanaku.yaml
@@ -61,9 +61,9 @@ The first `cargo build` automatically builds the admin UI via `yarn` if `ui/admi
 
 MCP endpoint: `http://localhost:8081/mcp` (or `/{namespace}/mcp` if you've registered namespaces).
 
-Management API: `http://localhost:9090/api/v1/...` — CRUD for tools, resources, prompts, forwards, namespaces.
+Management API: `http://localhost:8080/api/v1/...` — CRUD for tools, resources, prompts, forwards, namespaces.
 
-Admin UI: `http://localhost:9090/admin/`
+Admin UI: `http://localhost:8080/admin/`
 
 ### Configuration
 
@@ -92,7 +92,7 @@ services:
 
 Register a tool:
 ```bash
-curl -X POST http://localhost:9090/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "calculator",
@@ -111,7 +111,7 @@ curl -X POST http://localhost:9090/api/v1/tools \
 
 Register a remote MCP server as a forward:
 ```bash
-curl -X POST http://localhost:9090/api/v1/forwards \
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
   -d '{
     "name": "upstream-mcp",
@@ -121,7 +121,7 @@ curl -X POST http://localhost:9090/api/v1/forwards \
 
 Refresh tools from the forward (auto-discover):
 ```bash
-curl -X POST http://localhost:9090/api/v1/forwards/upstream-mcp/refreshes
+curl -X POST http://localhost:8080/api/v1/forwards/upstream-mcp/refreshes
 ```
 
 Now all tools from `remote.example.com` appear in your local catalog. The client has no idea they're forwarded.
@@ -146,7 +146,7 @@ Now all tools from `remote.example.com` appear in your local catalog. The client
 Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) — Praxis itself contains no auth code. Two oauth2-proxy instances sit in front of the MCP and management ports, sharing an SSO cookie:
 
 - **MCP proxy** (`:4180` → `:8081`) — protects MCP endpoints, any authenticated user
-- **Management proxy** (`:4181` → `:9090`) — protects admin UI and REST API, admin role required
+- **Management proxy** (`:4181` → `:8080`) — protects admin UI and REST API, admin role required
 
 See [`deploy/auth/README.md`](deploy/auth/README.md) for setup instructions (Docker Compose and local development).
 
@@ -166,7 +166,7 @@ Praxis serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protec
 ```bash
 cargo build    # builds Rust + admin UI
 cargo test     # runs all tests
-cargo run      # starts Praxis (MCP on :8081, management on :9090)
+cargo run      # starts Praxis (MCP on :8081, management on :8080)
 ```
 
 ### Testing with Authentication

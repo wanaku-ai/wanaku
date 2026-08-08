@@ -40,7 +40,7 @@ If `WANAKU_AUTH_ISSUER` is unset, the metadata endpoint returns a 404 (feature d
 
 **Authentication architecture:**
 
-Praxis does NOT validate tokens or enforce authentication. That's handled by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), which runs as a reverse proxy in front of Praxis ports 8081 (MCP) and 9090 (management API).
+Praxis does NOT validate tokens or enforce authentication. That's handled by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), which runs as a reverse proxy in front of Praxis ports 8081 (MCP) and 8080 (management API).
 
 For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
 
@@ -76,10 +76,10 @@ export WANAKU_SAFETY_LLM_API_KEY=your-api-key  # optional, for providers requiri
 
 ```bash
 # Get current config
-curl http://localhost:9090/api/v1/safety
+curl http://localhost:8080/api/v1/safety
 
 # Update config
-curl -X PUT http://localhost:9090/api/v1/safety \
+curl -X PUT http://localhost:8080/api/v1/safety \
   -H "Content-Type: application/json" \
   -d '{"llm_url": "http://ollama:11434/v1", "model": "llama3.2:3b"}'
 ```
@@ -130,10 +130,10 @@ export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
 
 ```bash
 # List available models
-curl http://localhost:9090/api/v1/chat/inference/models
+curl http://localhost:8080/api/v1/chat/inference/models
 
 # Send chat completion request
-curl -X POST http://localhost:9090/api/v1/chat/completions \
+curl -X POST http://localhost:8080/api/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llama3.1:8b",
@@ -313,7 +313,7 @@ curl -X POST http://localhost:8081/mcp \
 Check stats:
 
 ```bash
-curl http://localhost:9090/api/v1/stats/tools
+curl http://localhost:8080/api/v1/stats/tools
 ```
 
 Expected response:

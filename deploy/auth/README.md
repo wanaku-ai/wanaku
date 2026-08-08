@@ -41,7 +41,7 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
 
 ```
 Browser/CLI ──► oauth2-proxy-mcp (:4180) ──► Praxis MCP (:8081)
-            └─► oauth2-proxy-mgmt (:4181) ──► Praxis Mgmt (:9090)
+            └─► oauth2-proxy-mgmt (:4181) ──► Praxis Mgmt (:8080)
 ```
 
 Both instances share the same cookie secret, so logging in on one port authenticates you on the other (SSO).
@@ -125,7 +125,7 @@ Start the management proxy (in another terminal, same `$COOKIE_SECRET` for SSO):
 ```bash
 oauth2-proxy \
   --http-address=127.0.0.1:4181 \
-  --upstream=http://127.0.0.1:9090 \
+  --upstream=http://127.0.0.1:8080 \
   --provider=keycloak-oidc \
   --oidc-issuer-url=http://localhost:8543/realms/wanaku \
   --client-id=wanaku-mcp-router \

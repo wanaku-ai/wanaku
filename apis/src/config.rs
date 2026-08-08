@@ -10,7 +10,7 @@
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
-/// Management API listen address (default `0.0.0.0:9090`).
+/// Management API listen address (default `0.0.0.0:8080`).
 const WANAKU_MGMT_LISTEN: &str = "WANAKU_MGMT_LISTEN";
 
 /// Inference backend address used in the default Praxis config (default `127.0.0.1:11434`).
@@ -75,7 +75,7 @@ pub static ENV: LazyLock<WanakuEnv> = LazyLock::new(WanakuEnv::from_env);
 impl WanakuEnv {
     #[must_use]
     pub fn inference_proxy_port(&self) -> u16 {
-        8082
+        8083
     }
 
     fn from_env() -> Self {
@@ -97,7 +97,7 @@ impl WanakuEnv {
 
         Self {
             mgmt_listen: std::env::var(WANAKU_MGMT_LISTEN)
-                .unwrap_or_else(|_| "0.0.0.0:9090".to_owned()),
+                .unwrap_or_else(|_| "0.0.0.0:8080".to_owned()),
             inference_upstream: parsed.host_port,
             inference_path_prefix: parsed.path_prefix,
             inference_tls_sni: parsed.tls_sni,

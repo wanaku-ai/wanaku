@@ -11,7 +11,7 @@ Praxis shares the same MCP protocol and management API as classic Wanaku. It can
 ## What You Get
 
 - **MCP endpoint** (port 8081) — JSON-RPC over HTTP, compatible with any MCP client
-- **Management API** (port 9090) — REST API for tools, resources, prompts, namespaces
+- **Management API** (port 8080) — REST API for tools, resources, prompts, namespaces
 - **Admin UI** — React-based web interface embedded in the binary
 - **Namespace isolation** — different tools visible to different namespaces
 - **Tool routing** — local gRPC services or remote MCP server forwarding
@@ -139,12 +139,12 @@ cargo run --release
 
 Server starts on:
 - MCP: `http://127.0.0.1:8081/mcp`
-- Management API: `http://0.0.0.0:9090/api/v1`
+- Management API: `http://0.0.0.0:8080/api/v1`
 
 ### Register a Tool
 
 ```bash
-curl -X POST http://localhost:9090/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "echo",

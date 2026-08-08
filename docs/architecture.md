@@ -275,7 +275,7 @@ Now when an LLM calls one of those tools, Praxis forwards the request to the ups
 To re-discover tools after upstream changes:
 
 ```bash
-curl -X POST http://localhost:9090/api/v1/forwards/upstream-mcp/refreshes
+curl -X POST http://localhost:8080/api/v1/forwards/upstream-mcp/refreshes
 ```
 
 This removes all tools previously discovered from that forward and re-queries the upstream server.
@@ -319,7 +319,7 @@ See [Features](./features.md) for how to create your own.
 
 ## Management API
 
-The management API runs on port 9090 and uses Pingora's `ServeHttp` trait (not axum).
+The management API runs on port 8080 and uses Pingora's `ServeHttp` trait (not axum).
 
 **Request flow:**
 
@@ -372,7 +372,7 @@ Feature routes follow the same pattern but live entirely inside the feature crat
 
 ## Admin UI
 
-The admin UI is a React 19 + TypeScript app built with Vite and embedded into the server binary via `rust_embed`. When you visit `http://localhost:9090`, the server serves static files from the embedded `ui/admin/dist` directory.
+The admin UI is a React 19 + TypeScript app built with Vite and embedded into the server binary via `rust_embed`. When you visit `http://localhost:8080`, the server serves static files from the embedded `ui/admin/dist` directory.
 
 **API integration:**
 
@@ -414,7 +414,7 @@ Praxis handles MCP protocol, namespace isolation, and safety features. Classic h
 Deploy Praxis as a `Deployment` with:
 
 - **Service:** ClusterIP for MCP endpoint (port 8081)
-- **Service:** LoadBalancer for management API (port 9090)
+- **Service:** LoadBalancer for management API (port 8080)
 - **ConfigMap:** `wanaku.yaml` bootstrap config
 - **Secret:** LLM API keys (for safety/chat features)
 
@@ -452,7 +452,7 @@ Wanaku Praxis delegates authentication to [oauth2-proxy](https://github.com/oaut
 Two oauth2-proxy instances with a shared cookie provide SSO across both endpoints:
 
 - **oauth2-proxy-mcp** (port 4180 → 8081) — protects MCP endpoints, requires `mcp-user` role
-- **oauth2-proxy-mgmt** (port 4181 → 9090) — protects admin UI and REST API, requires `admin` role
+- **oauth2-proxy-mgmt** (port 4181 → 8080) — protects admin UI and REST API, requires `admin` role
 
 Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Praxis.
 
@@ -462,7 +462,7 @@ The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Met
 
 When auth is disabled:
 
-- Run Praxis standalone on ports 8081/9090 without oauth2-proxy
+- Run Praxis standalone on ports 8081/8080 without oauth2-proxy
 - **No authentication** on either endpoint
 
 **CORS:**

@@ -14,7 +14,7 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `WANAKU_MGMT_LISTEN` | `0.0.0.0:9090` | Management API listen address (host:port) |
+| `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat/safety features (OpenAI-compatible) |
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file-based registry persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
@@ -40,13 +40,13 @@ The `WANAKU_MGMT_LISTEN` variable controls where the management API binds. Forma
 **Bind to all interfaces (default):**
 
 ```bash
-export WANAKU_MGMT_LISTEN=0.0.0.0:9090
+export WANAKU_MGMT_LISTEN=0.0.0.0:8080
 ```
 
 **Bind to localhost only:**
 
 ```bash
-export WANAKU_MGMT_LISTEN=127.0.0.1:9090
+export WANAKU_MGMT_LISTEN=127.0.0.1:8080
 ```
 
 Useful when running Praxis behind a reverse proxy (nginx, Envoy) that handles external traffic.
@@ -54,7 +54,7 @@ Useful when running Praxis behind a reverse proxy (nginx, Envoy) that handles ex
 **Bind to specific IP:**
 
 ```bash
-export WANAKU_MGMT_LISTEN=10.0.1.42:9090
+export WANAKU_MGMT_LISTEN=10.0.1.42:8080
 ```
 
 ### Registry Persistence
@@ -128,7 +128,7 @@ Features (mcp-metadata, safety, chat, etc.) own their env vars. They're NOT in `
 
 ### Authentication with oauth2-proxy
 
-Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication, not embedded code. Two oauth2-proxy instances run as sidecars in front of ports 8081 (MCP) and 9090 (management API).
+Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication, not embedded code. Two oauth2-proxy instances run as sidecars in front of ports 8081 (MCP) and 8080 (management API).
 
 **MCP Metadata Feature:**
 
@@ -245,7 +245,7 @@ filter_chains:
 ```yaml
 listeners:
   - name: mcp
-    address: "0.0.0.0:8082"  # Bind to all interfaces, port 8082
+    address: "0.0.0.0:8083"  # Bind to all interfaces, port 8083
     filter_chains: [mcp_router]
 ```
 
@@ -483,12 +483,12 @@ COPY --from=builder /build/target/release/wanaku-praxis /usr/local/bin/
 COPY praxis.yaml /etc/praxis/praxis.yaml
 COPY wanaku.yaml /etc/praxis/wanaku.yaml
 
-ENV WANAKU_MGMT_LISTEN=0.0.0.0:9090
+ENV WANAKU_MGMT_LISTEN=0.0.0.0:8080
 ENV WANAKU_PERSIST_BACKEND=file
 ENV WANAKU_PERSIST_PATH=/data/registry
 
 VOLUME /data
-EXPOSE 8081 9090
+EXPOSE 8081 8080
 CMD ["/usr/local/bin/wanaku-praxis", "--praxis-config", "/etc/praxis/praxis.yaml", "--wanaku-config", "/etc/praxis/wanaku.yaml"]
 ```
 
@@ -498,7 +498,7 @@ Run with:
 docker run -v /var/lib/wanaku:/data \
   -e WANAKU_SAFETY_LLM_URL=http://ollama:11434/v1 \
   -e WANAKU_SAFETY_LLM_MODEL=llama3.1:8b \
-  -p 8081:8081 -p 9090:9090 \
+  -p 8081:8081 -p 8080:8080 \
   wanaku-praxis:latest
 ```
 
@@ -549,7 +549,7 @@ spec:
         image: wanaku-praxis:latest
         env:
         - name: WANAKU_MGMT_LISTEN
-          value: "0.0.0.0:9090"
+          value: "0.0.0.0:8080"
         - name: WANAKU_PERSIST_BACKEND
           value: "file"
         - name: WANAKU_PERSIST_PATH
