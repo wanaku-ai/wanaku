@@ -33,14 +33,23 @@ COPY Cargo.toml Cargo.lock ./
 COPY apis/Cargo.toml apis/Cargo.toml
 COPY filters/Cargo.toml filters/Cargo.toml
 COPY server/Cargo.toml server/Cargo.toml
+COPY features/chat/Cargo.toml features/chat/Cargo.toml
+COPY features/intercept/Cargo.toml features/intercept/Cargo.toml
+COPY features/mcp-metadata/Cargo.toml features/mcp-metadata/Cargo.toml
+COPY features/safety/Cargo.toml features/safety/Cargo.toml
 
 COPY apis/build.rs apis/build.rs
 COPY apis/src/proto apis/src/proto
 
 RUN mkdir -p apis/src filters/src server/src \
+    features/chat/src features/intercept/src features/mcp-metadata/src features/safety/src \
     && echo '//! stub' > apis/src/lib.rs \
     && echo '//! stub' > filters/src/lib.rs \
     && echo '//! stub' > server/src/lib.rs \
+    && echo '//! stub' > features/chat/src/lib.rs \
+    && echo '//! stub' > features/intercept/src/lib.rs \
+    && echo '//! stub' > features/mcp-metadata/src/lib.rs \
+    && echo '//! stub' > features/safety/src/lib.rs \
     && printf '//! stub\nfn main() {}\n' > server/src/main.rs
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
@@ -54,9 +63,10 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
 COPY apis/src apis/src
 COPY filters/src filters/src
 COPY server/src server/src
+COPY features features
 COPY --from=ui-builder /ui/dist /src/ui/admin/dist
 
-RUN find apis/src filters/src server/src \
+RUN find apis/src filters/src server/src features \
     -name '*.rs' -exec touch {} +
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
