@@ -37,7 +37,8 @@ To preload tools and services, mount a `wanaku.yaml`:
 ```bash
 podman run -p 9090:9090 -p 8081:8081 \
   -v ./wanaku.yaml:/etc/wanaku-praxis/wanaku.yaml \
-  quay.io/wanaku/wanaku-praxis
+  quay.io/wanaku/wanaku-praxis \
+  --wanaku-config /etc/wanaku-praxis/wanaku.yaml
 ```
 
 Multi-arch images (x86_64 and aarch64) are published to `quay.io/wanaku/wanaku-praxis` on every push to `main`.

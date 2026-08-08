@@ -4,6 +4,7 @@
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
+use clap::Parser;
 use praxis_core::config::ProtocolKind;
 use praxis_core::health::build_health_registry;
 use praxis_core::PingoraServerRuntime;
@@ -20,16 +21,12 @@ use wanaku_praxis_apis::registry::{
 };
 
 fn main() {
-    let config_path = std::env::args().nth(1);
-    let config = wanaku_praxis::load_config(config_path.as_deref())
+    let args = ServerArgs::parse();
+    let config = wanaku_praxis::load_config(args.praxis_config.as_deref())
         .unwrap_or_else(|e| fatal(&e));
 
     praxis_core::logging::init_tracing(&config)
         .unwrap_or_else(|e| fatal(&e));
-
-    let wanaku_config_path = std::env::args()
-        .nth(2)
-        .unwrap_or_else(|| "wanaku.yaml".to_owned());
 
     let wanaku_registry = match FilePersistence::from_config() {
         Some(backend) => {
@@ -59,7 +56,7 @@ fn main() {
         )),
     ];
 
-    let wanaku_config = load_wanaku_yaml(&wanaku_config_path);
+    let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
     if let Some(ref yaml) = wanaku_config {
         load_core_config(yaml, &wanaku_registry);
         for feature in &features {
@@ -133,6 +130,18 @@ fn main() {
 
     info!("starting wanaku-praxis server");
     server.run()
+}
+
+#[derive(Debug, Parser)]
+#[command(version, about)]
+struct ServerArgs {
+    /// Praxis pipeline configuration file. Uses the embedded configuration when omitted.
+    #[arg(long, value_name = "PATH")]
+    praxis_config: Option<String>,
+
+    /// Wanaku bootstrap configuration file.
+    #[arg(long, value_name = "PATH", default_value = "wanaku.yaml")]
+    wanaku_config: String,
 }
 
 fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {

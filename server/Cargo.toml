@@ -18,6 +18,7 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
+clap = { workspace = true }
 http = { workspace = true }
 pingora-core = { version = "0.8.2", package = "quixotic-plecostomus-core" }
 reqwest = { version = "0.13", default-features = false, features = ["rustls"] }

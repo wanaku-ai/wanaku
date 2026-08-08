@@ -238,11 +238,12 @@ The release binary is optimized compared to debug builds.
 The server embeds `server/src/default.yaml` at compile time. To override:
 
 ```bash
-./target/release/wanaku-praxis /path/to/custom-praxis.yaml /path/to/wanaku.yaml
+./target/release/wanaku-praxis --praxis-config /path/to/custom-praxis.yaml \
+  --wanaku-config /path/to/wanaku.yaml
 ```
 
-- **First arg:** Praxis filter pipeline config (listeners, filter chains)
-- **Second arg:** Wanaku bootstrap config (tools, services, namespaces)
+- **`--praxis-config`:** Praxis filter pipeline config (listeners, filter chains)
+- **`--wanaku-config`:** Wanaku bootstrap config (tools, services, namespaces)
 
 Both are optional. If omitted, embedded defaults are used.
 

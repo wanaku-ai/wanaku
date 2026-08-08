@@ -21,7 +21,7 @@ cargo test
 cargo run
 
 # Optional: specify custom config files
-cargo run -- /path/to/praxis.yaml /path/to/wanaku.yaml
+cargo run -- --praxis-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
 ```
 
 Default configs:

@@ -4376,6 +4376,7 @@ name = "wanaku-praxis-proxy"
 version = "0.3.0"
 dependencies = [
  "async-trait",
+ "clap",
  "http",
  "nix",
  "praxis-ai-filters",

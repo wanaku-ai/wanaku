@@ -1,11 +1,11 @@
 # Configuration
 
-Wanaku Praxis is configured entirely through environment variables and two optional YAML files. There's no properties file, no command-line flags beyond the config paths. This keeps deployment simple—set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
+Wanaku Praxis is configured entirely through environment variables and two optional YAML files. There's no properties file. This keeps deployment simple—set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
 
 ## Configuration Sources (Precedence Order)
 
 1. **Environment variables** — highest priority, always win
-2. **Runtime YAML files** — loaded from CLI args (e.g., `cargo run -- praxis.yaml wanaku.yaml`)
+2. **Runtime YAML files** — loaded from CLI args (e.g., `cargo run -- --praxis-config praxis.yaml --wanaku-config wanaku.yaml`)
 3. **Embedded defaults** — `server/src/default.yaml` compiled into the binary
 
 ## Core Environment Variables
@@ -204,10 +204,10 @@ The Praxis config defines listeners, filter chains, and filter-specific settings
 
 **Default location:** `server/src/default.yaml` (embedded at compile time)
 
-**Override:** Pass as first CLI arg:
+**Override:** Pass with `--praxis-config`:
 
 ```bash
-cargo run -- /path/to/custom-praxis.yaml
+cargo run -- --praxis-config /path/to/custom-praxis.yaml
 ```
 
 **Format:**
@@ -312,10 +312,10 @@ If you reorder filters and requests start failing, check the logs. The filter th
 
 The Wanaku config bootstraps tools, resources, prompts, namespaces, and services on startup. It's optional—if omitted, the registry starts empty.
 
-**Location:** Pass as second CLI arg:
+**Location:** Pass with `--wanaku-config`:
 
 ```bash
-cargo run -- /path/to/praxis.yaml /path/to/wanaku.yaml
+cargo run -- --praxis-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
 ```
 
 **Format:**
@@ -489,7 +489,7 @@ ENV WANAKU_PERSIST_PATH=/data/registry
 
 VOLUME /data
 EXPOSE 8081 9090
-CMD ["/usr/local/bin/wanaku-praxis", "/etc/praxis/praxis.yaml", "/etc/praxis/wanaku.yaml"]
+CMD ["/usr/local/bin/wanaku-praxis", "--praxis-config", "/etc/praxis/praxis.yaml", "--wanaku-config", "/etc/praxis/wanaku.yaml"]
 ```
 
 Run with:
