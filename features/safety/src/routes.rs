@@ -1,5 +1,6 @@
 use http::Response;
 use tracing::info;
+use wanaku_praxis_apis::http_response::{json_err, json_ok};
 
 use crate::classifier::{SafetyConfig, SafetyState};
 
@@ -49,30 +50,6 @@ pub(crate) fn handle_safety_delete(state: &SafetyState) -> Response<Vec<u8>> {
     state.disable();
     info!("safety classifier disabled via management API");
     json_ok(&serde_json::Value::Null)
-}
-
-#[expect(clippy::expect_used, reason = "valid static json response")]
-fn json_ok(data: &serde_json::Value) -> Response<Vec<u8>> {
-    let wrapper = serde_json::json!({"data": data, "error": null});
-    let body = serde_json::to_vec(&wrapper).unwrap_or_default();
-    Response::builder()
-        .status(200)
-        .header("Content-Type", "application/json")
-        .header("Content-Length", body.len())
-        .body(body)
-        .expect("valid json response")
-}
-
-#[expect(clippy::expect_used, reason = "valid static json response")]
-fn json_err(status: u16, message: &str) -> Response<Vec<u8>> {
-    let wrapper = serde_json::json!({"data": null, "error": message});
-    let body = serde_json::to_vec(&wrapper).unwrap_or_default();
-    Response::builder()
-        .status(status)
-        .header("Content-Type", "application/json")
-        .header("Content-Length", body.len())
-        .body(body)
-        .expect("valid json error response")
 }
 
 #[cfg(test)]

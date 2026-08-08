@@ -1,5 +1,6 @@
 use http::Response;
 use tracing::warn;
+use wanaku_praxis_apis::http_response::json_err;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ChatRoute {
@@ -37,18 +38,6 @@ fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
         .header("Content-Length", body.len())
         .body(body)
         .expect("valid json response")
-}
-
-#[expect(clippy::expect_used, reason = "valid static json response")]
-fn json_err(status: u16, message: &str) -> Response<Vec<u8>> {
-    let wrapper = serde_json::json!({"data": null, "error": message});
-    let body = serde_json::to_vec(&wrapper).unwrap_or_default();
-    Response::builder()
-        .status(status)
-        .header("Content-Type", "application/json")
-        .header("Content-Length", body.len())
-        .body(body)
-        .expect("valid json error response")
 }
 
 pub(crate) fn handle_chat_list_llms() -> Response<Vec<u8>> {
