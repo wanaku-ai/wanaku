@@ -51,6 +51,11 @@ cargo run
 
 The first `cargo build` automatically builds the admin UI via `yarn` if `ui/admin/dist/` is missing (requires Node.js and Yarn installed).
 
+> [!NOTE]
+> You need to have the following software installed to build this project: 
+> * protobuf 
+> * yarn
+
 ### Endpoints
 
 MCP endpoint: `http://localhost:8081/mcp` (or `/{namespace}/mcp` if you've registered namespaces).
