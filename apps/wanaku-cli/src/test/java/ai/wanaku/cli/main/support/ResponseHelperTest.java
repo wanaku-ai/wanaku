@@ -35,4 +35,24 @@ class ResponseHelperTest {
 
         assertEquals(BaseCommand.EXIT_ERROR, result);
     }
+
+    @Test
+    void extractErrorMessageReadsWanakuResponseError() {
+        String body = "{\"error\":{\"message\":\"Cannot update protected namespace 'ns-6'\"},\"data\":null}";
+        assertEquals("Cannot update protected namespace 'ns-6'", ResponseHelper.extractErrorMessage(body));
+    }
+
+    @Test
+    void extractErrorMessageReadsTextualError() {
+        String body = "{\"error\":\"something went wrong\",\"data\":null}";
+        assertEquals("something went wrong", ResponseHelper.extractErrorMessage(body));
+    }
+
+    @Test
+    void extractErrorMessageFallsBackToRawBody() {
+        assertEquals("plain text error", ResponseHelper.extractErrorMessage("plain text error"));
+        assertEquals("", ResponseHelper.extractErrorMessage(""));
+        assertEquals("", ResponseHelper.extractErrorMessage(null));
+        assertEquals("{\"data\":null}", ResponseHelper.extractErrorMessage("{\"data\":null}"));
+    }
 }

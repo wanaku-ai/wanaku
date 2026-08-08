@@ -205,9 +205,9 @@ public class NamespacesBeanTest {
         updated.setPath(defaultNamespace.getPath());
         updated.setLabels(defaultNamespace.getLabels());
 
-        boolean result = namespacesBean.update(defaultNamespace.getId(), updated);
-
-        assertThat(result).isFalse();
+        assertThatThrownBy(() -> namespacesBean.update(defaultNamespace.getId(), updated))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("protected namespace");
     }
 
     @Test
@@ -225,9 +225,9 @@ public class NamespacesBeanTest {
         updated.setPath(publicNamespace.getPath());
         updated.setLabels(publicNamespace.getLabels());
 
-        boolean result = namespacesBean.update(publicNamespace.getId(), updated);
-
-        assertThat(result).isFalse();
+        assertThatThrownBy(() -> namespacesBean.update(publicNamespace.getId(), updated))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("protected namespace");
     }
 
     @Test
