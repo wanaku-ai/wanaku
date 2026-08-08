@@ -4273,7 +4273,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-chat"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "http",
@@ -4287,7 +4287,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-intercept"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4301,7 +4301,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-mcp-metadata"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4317,7 +4317,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-safety"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4333,7 +4333,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-praxis-apis"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "dashmap 6.2.1",
@@ -4356,7 +4356,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-praxis-filters"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4373,7 +4373,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-praxis-proxy"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "http",

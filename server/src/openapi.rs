@@ -281,7 +281,7 @@ fn delete_safety() {}
 #[openapi(
     info(
         title = "Wanaku Praxis API",
-        version = "0.1.0",
+        version = "0.3.0",
         description = "Wanaku Praxis MCP proxy management API"
     ),
     paths(
