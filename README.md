@@ -14,6 +14,16 @@ The original Wanaku runs on Quarkus and does this job well—and will continue t
 
 Fair warning: this is a PoC. It proves the architecture holds up in Rust. It doesn't have all the polish, observability hooks, or battle scars of the Java version.
 
+## Install
+
+Install the latest early-access build on Linux or macOS:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku-praxis/main/get-wanaku-praxis.sh | bash
+```
+
+The installer detects the host platform, verifies the release checksum, and installs `wanaku-praxis` into `$HOME/bin`. Override the destination with `WANAKU_PRAXIS_INSTALL_DIR`.
+
 ## Architecture
 
 Three crates, clean separation:
