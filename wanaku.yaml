@@ -20,7 +20,7 @@ services:
 
 forwards:
   - name: "mock-mcp"
-    address: "http://localhost:8080/mcp"
+    address: "http://localhost:8180/mcp"
     namespace: "test-ns"
 
 # Sample safety configuration
