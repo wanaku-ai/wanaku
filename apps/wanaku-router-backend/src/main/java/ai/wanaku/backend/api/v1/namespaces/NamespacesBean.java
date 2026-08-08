@@ -190,7 +190,8 @@ public class NamespacesBean {
                 || isProtectedNamespaceName(namespace.getName())
                 || isProtectedNamespaceName(namespace.getPath())) {
             LOG.warnf("Refusing to update protected namespace %s", existingNamespace.getPath());
-            return false;
+            throw new IllegalArgumentException(
+                    "Cannot update protected namespace '%s'".formatted(existingNamespace.getPath()));
         }
 
         return namespaceRepository.update(id, namespace);
