@@ -15,7 +15,7 @@ pub struct ToolEntry {
     #[serde(rename = "type")]
     #[schema(rename = "type")]
     pub type_: String,
-    #[serde(alias = "inputSchema")]
+    #[serde(rename = "inputSchema", alias = "input_schema")]
     pub input_schema: serde_json::Value,
     #[serde(default)]
     pub labels: HashMap<String, String>,
@@ -23,11 +23,11 @@ pub struct ToolEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "configurationURI")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "configurationURI", alias = "configuration_uri")]
     pub configuration_uri: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "secretsURI")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "secretsURI", alias = "secrets_uri")]
     pub secrets_uri: Option<String>,
-    #[serde(default, skip_serializing_if = "std::ops::Not::not", alias = "skipSafetyCheck")]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not", rename = "skipSafetyCheck", alias = "skip_safety_check")]
     pub skip_safety_check: bool,
 }
 
@@ -40,7 +40,7 @@ pub struct ResourceEntry {
     #[serde(rename = "type")]
     #[schema(rename = "type")]
     pub type_: String,
-    #[serde(default, alias = "mimeType")]
+    #[serde(default, rename = "mimeType", alias = "mime_type")]
     pub mime_type: String,
     #[serde(default)]
     pub labels: HashMap<String, String>,
@@ -48,9 +48,9 @@ pub struct ResourceEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "configurationURI")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "configurationURI", alias = "configuration_uri")]
     pub configuration_uri: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "secretsURI")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "secretsURI", alias = "secrets_uri")]
     pub secrets_uri: Option<String>,
 }
 
@@ -90,7 +90,7 @@ pub struct PromptEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "configurationURI")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "configurationURI", alias = "configuration_uri")]
     pub configuration_uri: Option<String>,
 }
 
@@ -98,6 +98,7 @@ pub struct PromptEntry {
 pub struct ServiceEntry {
     pub name: String,
     pub address: String,
+    #[serde(rename = "serviceType", alias = "service_type")]
     pub service_type: String,
 }
 
@@ -130,7 +131,7 @@ pub struct NamespaceEntry {
     pub path: String,
     #[serde(default)]
     pub labels: HashMap<String, String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "authRequired", alias = "auth_required")]
     pub auth_required: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audience: Option<String>,

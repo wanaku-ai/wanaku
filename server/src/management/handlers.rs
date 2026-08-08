@@ -1094,6 +1094,63 @@ mod tests {
         );
     }
 
+    // ---- Serialization format (camelCase) ----
+
+    #[test]
+    fn tool_serializes_camel_case_keys() {
+        let registry = InMemoryRegistry::new();
+        handle_tool_create(
+            &registry,
+            r#"{"name":"cc","description":"","uri":"u","type":"x","input_schema":{"type":"object","properties":{"msg":{"type":"string"}}}}"#,
+        );
+
+        let data = data_field(&handle_tool_get(&registry, "cc"));
+        assert!(
+            data.get("inputSchema").is_some(),
+            "expected camelCase key 'inputSchema' in serialized output"
+        );
+        assert!(
+            data.get("input_schema").is_none(),
+            "snake_case key 'input_schema' should not appear in serialized output"
+        );
+    }
+
+    #[test]
+    fn tool_serializes_optional_camel_case_keys() {
+        let registry = InMemoryRegistry::new();
+        handle_tool_create(
+            &registry,
+            r#"{"name":"cc-opt","description":"","uri":"u","type":"x","input_schema":{"type":"object"},"configurationURI":"cfg://a","secretsURI":"sec://b","skipSafetyCheck":true}"#,
+        );
+
+        let data = data_field(&handle_tool_get(&registry, "cc-opt"));
+        assert!(data.get("configurationURI").is_some());
+        assert!(data.get("configuration_uri").is_none());
+        assert!(data.get("secretsURI").is_some());
+        assert!(data.get("secrets_uri").is_none());
+        assert!(data.get("skipSafetyCheck").is_some());
+        assert!(data.get("skip_safety_check").is_none());
+    }
+
+    #[test]
+    fn resource_serializes_camel_case_keys() {
+        let registry = InMemoryRegistry::new();
+        handle_resource_create(
+            &registry,
+            r#"{"name":"cc-res","location":"/x","type":"file","mime_type":"text/plain"}"#,
+        );
+
+        let data = data_field(&handle_resource_get(&registry, "cc-res"));
+        assert!(
+            data.get("mimeType").is_some(),
+            "expected camelCase key 'mimeType' in serialized output"
+        );
+        assert!(
+            data.get("mime_type").is_none(),
+            "snake_case key 'mime_type' should not appear in serialized output"
+        );
+    }
+
     // ---- Response envelope ----
 
     #[test]
