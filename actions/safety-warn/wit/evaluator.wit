@@ -1,0 +1,130 @@
+/// Wanaku Evaluator — Guest API for action scripts.
+///
+/// This interface defines the contract between the host (Wanaku Praxis)
+/// and guest WASM action scripts. Guest scripts implement the `evaluate`
+/// export; the host provides imports for registry access, response
+/// control, conversation history, and logging.
+///
+/// Versioned: changes to this interface follow semver. Adding functions
+/// is a minor bump. Removing or changing signatures is a major bump.
+
+package wanaku:evaluator@0.1.0;
+
+/// Shared type definitions used across all interfaces.
+interface types {
+    /// A tool registered in the Wanaku registry.
+    record tool-entry {
+        /// Unique tool name.
+        name: string,
+        /// Human-readable description.
+        description: string,
+        /// Tool endpoint URI.
+        uri: string,
+        /// Tool type (e.g., "mcp-forward", "echo-tool").
+        tool-type: string,
+        /// Namespace the tool belongs to, if any.
+        namespace: option<string>,
+    }
+
+    /// Context passed to the guest's evaluate function.
+    /// Contains everything the action script needs to make decisions.
+    record evaluation-context {
+        /// MCP method that triggered this evaluation (e.g., "tools/call", "tools/list").
+        method: string,
+        /// Namespace extracted from the request URL path.
+        namespace: string,
+        /// Tool name from the request (present for tools/call, absent for tools/list).
+        tool-name: option<string>,
+        /// Tool call arguments as key-value pairs (present for tools/call).
+        arguments: list<tuple<string, string>>,
+        /// Raw string output from the LLM operation (classify/filter/augment result).
+        llm-result: string,
+        /// Conversation correlation ID, if available.
+        conversation-id: option<string>,
+    }
+
+    /// A single message from the conversation history.
+    record message {
+        /// Message role: "system", "user", or "assistant".
+        role: string,
+        /// Message text content.
+        content: string,
+    }
+}
+
+/// Read-only and write access to the Wanaku tool registry.
+interface registry {
+    use types.{tool-entry};
+
+    /// List all tools across all namespaces.
+    list-tools: func() -> list<tool-entry>;
+
+    /// List tools in a specific namespace.
+    list-tools-in-namespace: func(namespace: string) -> list<tool-entry>;
+
+    /// Get a single tool by name. Returns none if not found.
+    get-tool: func(name: string) -> option<tool-entry>;
+
+    /// Copy a tool into a target namespace. The tool keeps its name
+    /// but its namespace field is updated. Returns true if the tool
+    /// was found and copied, false if the source tool does not exist.
+    copy-tool-to-namespace: func(tool-name: string, target-namespace: string) -> bool;
+}
+
+/// Access to conversation history recorded by the intercept filter.
+interface conversation {
+    use types.{message};
+
+    /// Get conversation messages for a given correlation ID.
+    /// Returns an empty list if no history exists.
+    get-history: func(conversation-id: string) -> list<message>;
+}
+
+/// Control the MCP response sent back to the client.
+/// Only one response function should be called per evaluation.
+/// If none is called, the default behavior is pass (continue).
+interface response {
+    /// Allow the request to proceed to the next filter.
+    pass: func();
+
+    /// Block the request with a JSON-RPC error.
+    block: func(reason: string);
+
+    /// Log a warning but allow the request to proceed.
+    warn: func(message: string);
+
+    /// Return a filtered tools/list response containing only
+    /// the named tools. Only meaningful for tools/list triggers.
+    filter-tools: func(tool-names: list<string>);
+
+    /// Set a metadata key on the filter context for downstream filters.
+    set-metadata: func(key: string, value: string);
+}
+
+/// Structured logging to the host's tracing infrastructure.
+interface log {
+    /// Log at info level.
+    info: func(message: string);
+
+    /// Log at warn level.
+    warn: func(message: string);
+
+    /// Log at error level.
+    error: func(message: string);
+}
+
+/// The evaluator action world. Guest components implement `evaluate`;
+/// the host provides registry, conversation, response, and log imports.
+world evaluator-action {
+    import registry;
+    import conversation;
+    import response;
+    import log;
+
+    use types.{evaluation-context};
+
+    /// Called by the host when an evaluator's trigger matches.
+    /// The guest receives the full evaluation context and calls
+    /// host functions to inspect state and control the response.
+    export evaluate: func(ctx: evaluation-context);
+}
