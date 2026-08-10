@@ -22,7 +22,7 @@ set -euo pipefail
 NAMESPACE="test-ns"
 MCP_FORWARD_URL="${MCP_FORWARD_URL:-http://localhost:8080/mcp}"
 MCP_PORT=8081
-MGMT_PORT=9090
+MGMT_PORT=8080
 MCP_URL="http://localhost:${MCP_PORT}"
 MGMT_URL="http://localhost:${MGMT_PORT}"
 

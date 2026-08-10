@@ -18,6 +18,8 @@ pub struct HostState {
     pub interactions: InMemoryInteractionStore,
     pub action: ActionResult,
     pub evaluator_name: String,
+    pub wasi_ctx: wasmtime_wasi::WasiCtx,
+    pub wasi_table: wasmtime::component::ResourceTable,
 }
 
 impl wanaku::evaluator::registry::Host for HostState {
