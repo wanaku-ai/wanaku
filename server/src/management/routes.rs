@@ -296,4 +296,36 @@ mod tests {
             ResourceRoute::Delete("my-res".to_owned())
         );
     }
+
+    #[test]
+    fn forward_route_refresh() {
+        assert_eq!(
+            resolve_forward_route("POST", "/api/v1/forwards/my-fwd/refreshes"),
+            ForwardRoute::Refresh("my-fwd".to_owned())
+        );
+    }
+
+    #[test]
+    fn forward_route_refresh_rejects_slashes_in_name() {
+        assert_eq!(
+            resolve_forward_route("POST", "/api/v1/forwards/a/b/refreshes"),
+            ForwardRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn forward_route_delete() {
+        assert_eq!(
+            resolve_forward_route("DELETE", "/api/v1/forwards/my-fwd"),
+            ForwardRoute::Delete("my-fwd".to_owned())
+        );
+    }
+
+    #[test]
+    fn forward_route_delete_rejects_slashes() {
+        assert_eq!(
+            resolve_forward_route("DELETE", "/api/v1/forwards/a/b"),
+            ForwardRoute::NotFound
+        );
+    }
 }
