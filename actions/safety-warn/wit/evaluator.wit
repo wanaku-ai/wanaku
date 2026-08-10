@@ -8,7 +8,7 @@
 /// Versioned: changes to this interface follow semver. Adding functions
 /// is a minor bump. Removing or changing signatures is a major bump.
 
-package wanaku:evaluator@0.1.0;
+package wanaku:evaluator;
 
 /// Shared type definitions used across all interfaces.
 interface types {
