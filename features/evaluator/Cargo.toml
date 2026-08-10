@@ -1,0 +1,26 @@
+[package]
+name = "wanaku-feature-evaluator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "wanaku_feature_evaluator"
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+bytes = { workspace = true }
+http = { workspace = true }
+praxis-filter = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tracing = { workspace = true }
+wasmtime = { version = "47", features = ["component-model"] }
+wasmtime-wasi = "47"
+wanaku-praxis-apis = { workspace = true }
+wanaku-praxis-filters = { workspace = true }
