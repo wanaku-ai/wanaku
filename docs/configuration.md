@@ -208,7 +208,7 @@ filter_chains:
         on_invalid: continue
       - filter: wanaku_namespace
       - filter: wanaku_mcp_init
-      - filter: wanaku_tool_assembly
+      - filter: wanaku_evaluator
       - filter: wanaku_tool_list
       - filter: wanaku_tool_call
       - filter: wanaku_resource_list

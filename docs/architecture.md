@@ -57,7 +57,7 @@ filter_chains:
         on_invalid: continue
       - filter: wanaku_namespace        # Extract namespace from path
       - filter: wanaku_mcp_init         # Initialize MCP context
-      - filter: wanaku_tool_assembly    # Tool composition (optional)
+      - filter: wanaku_evaluator        # Evaluator engine (optional)
       - filter: wanaku_tool_list        # Handle tools/list
       - filter: wanaku_tool_call        # Handle tools/call
       - filter: wanaku_resource_list    # Handle resources/list

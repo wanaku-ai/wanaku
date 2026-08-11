@@ -226,7 +226,7 @@ let features: Vec<Box<dyn Feature>> = vec![
 ];
 ```
 
-Add filter to `server/src/default.yaml` (after `wanaku_tool_assembly`, before `wanaku_tool_list`):
+Add filter to `server/src/default.yaml` (after `wanaku_evaluator`, before `wanaku_tool_list`):
 
 ```yaml
       - filter: wanaku_tool_stats
