@@ -67,9 +67,9 @@ export const ToolsPage: React.FC = () => {
       setErrorMessage(null);
 
       await updateTools();
-    } catch {
+    } catch (error) {
       setIsAddModalOpen(false);
-      setErrorMessage("Error adding tool: The tool name must be unique");
+      setErrorMessage(`Error adding tool: ${error instanceof Error ? error.message : "unknown error"}`);
     }
   };
 
@@ -78,8 +78,8 @@ export const ToolsPage: React.FC = () => {
       await updateTool(tool)
       setErrorMessage(null)
       await updateTools();
-    } catch {
-      setErrorMessage(`Error updating tool: ${tool.name}`)
+    } catch (error) {
+      setErrorMessage(`Error updating tool: ${error instanceof Error ? error.message : tool.name}`)
     } finally {
       handleToolModalClose()
     }

@@ -111,7 +111,7 @@ export const ToolModal: React.FC<ToolModalProps> = ({
     setInputSchemaInvalid(Tools.isInputSchemaInvalid(schema))
     setInputSchemaInvalidText(Tools.validateInputSchema(schema))
   }
-``
+
   return (
     <Modal
       open={true}

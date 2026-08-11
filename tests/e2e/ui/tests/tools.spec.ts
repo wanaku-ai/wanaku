@@ -44,6 +44,42 @@ test.describe('Tools', () => {
     await tools.waitForToolInTable(data.name);
   });
 
+  test('add a tool with empty input schema', async () => {
+    const data = toolData();
+    createdTools.push(data.name);
+
+    await tools.goto();
+    await tools.clickAddTool();
+    await tools.fillToolForm(data);
+    await tools.submitModal();
+
+    await tools.waitForToolInTable(data.name);
+
+    const resp = await api.getTool(data.name);
+    const body = await resp.json();
+    expect(body.data.inputSchema).toEqual({ type: 'object' });
+  });
+
+  test('edit a tool via modal', async () => {
+    const data = toolData();
+    createdTools.push(data.name);
+    await api.addTool(data);
+
+    await tools.goto();
+    await tools.waitForToolInTable(data.name);
+    await tools.clickEditTool(data.name);
+
+    const heading = await tools.getModalHeadingText();
+    expect(heading).toBe('Edit Tool');
+
+    await tools.fillDescription('Updated description');
+    await tools.submitModal();
+
+    const resp = await api.getTool(data.name);
+    const body = await resp.json();
+    expect(body.data.description).toBe('Updated description');
+  });
+
   test('delete a tool', async () => {
     const data = toolData();
     await api.addTool(data);

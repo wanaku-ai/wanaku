@@ -24,7 +24,7 @@ use self::handlers::{
     handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
     handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
     handle_statistics,
-    handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list,
+    handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
@@ -121,6 +121,10 @@ impl ServeHttp for WanakuManagementService {
                 ToolRoute::GetByName(name) => handle_tool_get(&self.registry, &name),
                 ToolRoute::Create => match read_body(http_session).await {
                     Ok(body) => handle_tool_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                ToolRoute::Update(name) => match read_body(http_session).await {
+                    Ok(body) => handle_tool_update(&self.registry, &name, &body),
                     Err(resp) => resp,
                 },
                 ToolRoute::Delete(name) => handle_tool_delete(&self.registry, &name),

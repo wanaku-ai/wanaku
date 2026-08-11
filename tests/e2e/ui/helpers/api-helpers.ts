@@ -28,6 +28,11 @@ export class ApiHelper {
     return this.assertOk(resp, `addTool(${tool.name})`);
   }
 
+  async getTool(name: string) {
+    const resp = await this.request.get(`${this.baseUrl}/api/v1/tools/${name}`);
+    return this.assertOk(resp, `getTool(${name})`);
+  }
+
   async deleteTool(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/tools/${name}`);
   }

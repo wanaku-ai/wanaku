@@ -25,8 +25,12 @@ export const TargetTypeSelect: React.FC<TargetTypeSelectProps> = ({
       try {
         const result = await apiCall()
         if (result.status === 200) {
-          const targetTypes: ServiceTarget[] = result.data.data
-          setTargetTypes(targetTypes)
+          const loaded: ServiceTarget[] = result.data.data
+          setTargetTypes(loaded)
+          const validTypes = loaded.filter(t => t.serviceName)
+          if (validTypes.length > 0 && !validTypes.some(t => t.serviceName === value)) {
+            onChange(validTypes[0].serviceName!)
+          }
         } else {
           onError?.(`Failed to load target types: ${result.status}`)
           setTargetTypes([])
@@ -47,7 +51,6 @@ export const TargetTypeSelect: React.FC<TargetTypeSelectProps> = ({
       <Select
         id="target-type"
         labelText="Type"
-        defaultValue="file"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >

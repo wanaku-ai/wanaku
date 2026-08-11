@@ -248,12 +248,25 @@ pub struct InMemoryRegistry {
 
 impl InMemoryRegistry {
     pub fn new() -> Self {
+        let namespaces = DashMap::new();
+        namespaces.insert(
+            DEFAULT_NAMESPACE.to_owned(),
+            NamespaceEntry {
+                id: Some(DEFAULT_NAMESPACE.to_owned()),
+                name: DEFAULT_NAMESPACE.to_owned(),
+                path: DEFAULT_NAMESPACE.to_owned(),
+                labels: HashMap::new(),
+                auth_required: None,
+                audience: None,
+            },
+        );
+
         Self {
             tools: Arc::new(DashMap::new()),
             resources: Arc::new(DashMap::new()),
             prompts: Arc::new(DashMap::new()),
             forwards: Arc::new(DashMap::new()),
-            namespaces: Arc::new(DashMap::new()),
+            namespaces: Arc::new(namespaces),
             services: Arc::new(DashMap::new()),
             persistence: None,
             inject_request_id: Arc::new(AtomicBool::new(false)),

@@ -22,6 +22,19 @@ export class ToolsPage extends BasePage {
     await this.page.locator(Carbon.textInput('tool-uri')).fill(tool.uri);
   }
 
+  async clickEditTool(name: string) {
+    await this.rowWithText(name).getByRole('button', { name: 'Edit' }).click();
+    await this.modal().waitFor({ state: 'visible' });
+  }
+
+  async getModalHeadingText(): Promise<string> {
+    return this.modal().locator(Carbon.modalHeading).innerText();
+  }
+
+  async fillDescription(description: string) {
+    await this.page.locator(Carbon.textInput('tool-description')).fill(description);
+  }
+
   async clickDeleteTool(name: string) {
     await this.rowWithText(name).getByRole('button', { name: 'Delete' }).click();
   }

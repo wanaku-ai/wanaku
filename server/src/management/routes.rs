@@ -3,6 +3,7 @@ pub(super) enum ToolRoute {
     List,
     GetByName(String),
     Create,
+    Update(String),
     Delete(String),
     NotFound,
 }
@@ -21,6 +22,7 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
         ("GET", None) => ToolRoute::List,
         ("GET", Some(n)) => ToolRoute::GetByName(n.to_owned()),
         ("POST", None | Some("payloads")) => ToolRoute::Create,
+        ("PUT", Some(n)) => ToolRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => ToolRoute::Delete(n.to_owned()),
         _ => ToolRoute::NotFound,
     }
@@ -246,6 +248,14 @@ mod tests {
     #[test]
     fn route_create() {
         assert_eq!(resolve_tool_route("POST", "/api/v1/tools"), ToolRoute::Create);
+    }
+
+    #[test]
+    fn route_update() {
+        assert_eq!(
+            resolve_tool_route("PUT", "/api/v1/tools/my-tool"),
+            ToolRoute::Update("my-tool".to_owned())
+        );
     }
 
     #[test]

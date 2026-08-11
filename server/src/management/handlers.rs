@@ -45,6 +45,25 @@ pub(super) fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Res
     }
 }
 
+pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
+    tracing::debug!(body = %body, name = %path_name, "tool update request body");
+    let mut tool: ToolEntry = match serde_json::from_str(body) {
+        Ok(t) => t,
+        Err(e) => {
+            warn!(error = %e, "invalid tool JSON");
+            return json_err(400, &format!("invalid tool JSON: {e}"));
+        }
+    };
+
+    tool.name = path_name.to_owned();
+    registry.register_tool(tool);
+    info!(tool = %path_name, "updated tool via management API");
+    match registry.get_tool(path_name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("tool not found after update: {path_name}")),
+    }
+}
+
 pub(super) fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     if registry.remove_tool(name) {
         info!(tool = %name, "removed tool via management API");
@@ -494,6 +513,7 @@ mod tests {
         handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
         handle_statistics,
         handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list,
+        handle_tool_update,
     };
 
     fn parse_body(resp: &Response<Vec<u8>>) -> serde_json::Value {
@@ -628,6 +648,35 @@ mod tests {
         let resp = handle_tool_create(&registry, body);
         assert_eq!(resp.status(), 200);
         assert!(registry.get_tool("alias-tool").is_some());
+    }
+
+    #[test]
+    fn tool_update_changes_description() {
+        let registry = InMemoryRegistry::new();
+        let body =
+            r#"{"name":"upd","description":"old","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
+        handle_tool_create(&registry, body);
+
+        let update_body =
+            r#"{"name":"upd","description":"new","uri":"u2","type":"y","input_schema":{"type":"object"}}"#;
+        let resp = handle_tool_update(&registry, "upd", update_body);
+        assert_eq!(resp.status(), 200);
+
+        let data = data_field(&handle_tool_get(&registry, "upd"));
+        assert_eq!(
+            data.get("description").and_then(|v| v.as_str()),
+            Some("new")
+        );
+        assert_eq!(data.get("uri").and_then(|v| v.as_str()), Some("u2"));
+    }
+
+    #[test]
+    fn tool_update_invalid_json_returns_400() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(
+            handle_tool_update(&registry, "t", "???").status(),
+            400
+        );
     }
 
     // ---- Resource handlers ----
@@ -803,13 +852,13 @@ mod tests {
     }
 
     #[test]
-    fn namespace_list_empty_then_populated() {
+    fn namespace_list_has_default_then_grows() {
         let registry = InMemoryRegistry::new();
         assert_eq!(
             data_field(&handle_namespace_list(&registry))
                 .as_array()
                 .map(|a| a.len()),
-            Some(0)
+            Some(1)
         );
 
         handle_namespace_create(&registry, r#"{"name":"ns1","path":"/ns1"}"#);
@@ -817,7 +866,7 @@ mod tests {
             data_field(&handle_namespace_list(&registry))
                 .as_array()
                 .map(|a| a.len()),
-            Some(1)
+            Some(2)
         );
     }
 
