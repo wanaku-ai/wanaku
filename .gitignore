@@ -1,3 +1,6 @@
 /target
 ui/admin/dist/
 ui/admin/node_modules/
+tests/e2e/ui/node_modules/
+tests/e2e/ui/test-results/
+tests/e2e/ui/playwright-report/

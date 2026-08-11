@@ -90,6 +90,7 @@ yarn run lint         # ESLint
 - **Error handling:** `ErrorBoundary` class component wraps page content with `InlineNotification`
 - **Empty states:** use shared `EmptyTableState` component
 - **DO NOT edit** `src/api/wanaku-router-api.ts` or `src/models/` — these are Orval-generated
+- **UI E2E tests required** — every new UI page or feature must include a corresponding Playwright E2E test in `tests/e2e/ui/`. Follow the existing page object pattern: add a page object in `pages/`, test data in `helpers/test-data.ts`, API setup helpers in `helpers/api-helpers.ts`, and a spec file in `tests/`. At minimum, test page title display, add via modal, and delete flows. Run `cd tests/e2e/ui && npx playwright test` to verify.
 
 ### UI Source Organization
 
