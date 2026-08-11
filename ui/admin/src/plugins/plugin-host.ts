@@ -20,7 +20,7 @@ export function createPluginHost(
     version: "1.0",
     navigation: {
       add(entry) {
-        return navigationStore.add(entry, pluginId);
+        return navigationStore.add({ ...entry, section: entry.section ?? "Extensions" }, pluginId);
       },
     },
     pages: {
@@ -30,24 +30,28 @@ export function createPluginHost(
     },
     http: {
       async get<T>(service: string, path: string): Promise<T> {
-        return customFetch<T>(`/api/plugins/${pluginId}/${service}${path}`, { method: "GET" });
+        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, { method: "GET" });
+        return res.data as T;
       },
       async post<T>(service: string, path: string, body?: unknown): Promise<T> {
-        return customFetch<T>(`/api/plugins/${pluginId}/${service}${path}`, {
+        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: body ? JSON.stringify(body) : undefined,
         });
+        return res.data as T;
       },
       async put<T>(service: string, path: string, body?: unknown): Promise<T> {
-        return customFetch<T>(`/api/plugins/${pluginId}/${service}${path}`, {
+        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: body ? JSON.stringify(body) : undefined,
         });
+        return res.data as T;
       },
       async delete<T>(service: string, path: string): Promise<T> {
-        return customFetch<T>(`/api/plugins/${pluginId}/${service}${path}`, { method: "DELETE" });
+        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, { method: "DELETE" });
+        return res.data as T;
       },
     },
     notifications: {
