@@ -22,13 +22,19 @@ pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Respon
 
 pub(super) fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "tool create request body");
-    let tool: ToolEntry = match serde_json::from_str(body) {
+    let mut tool: ToolEntry = match serde_json::from_str(body) {
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, "invalid tool JSON");
             return json_err(400, &format!("invalid tool JSON: {e}"));
         }
     };
+
+    tool.name = tool.name.trim().to_owned();
+    if tool.name.is_empty() {
+        warn!("rejected tool with empty name");
+        return json_err(400, "tool name must not be empty");
+    }
 
     let name = tool.name.clone();
     registry.register_tool(tool);
@@ -583,6 +589,32 @@ mod tests {
         let resp = handle_tool_create(&registry, "not valid json");
         assert_eq!(resp.status(), 400);
         assert!(error_message(&resp).is_some());
+    }
+
+    #[test]
+    fn tool_create_empty_name_returns_400() {
+        let registry = InMemoryRegistry::new();
+        let resp = handle_tool_create(
+            &registry,
+            r#"{"name":"","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#,
+        );
+        assert_eq!(resp.status(), 400);
+        assert!(error_message(&resp)
+            .map(|m| m.contains("empty"))
+            .unwrap_or(false));
+    }
+
+    #[test]
+    fn tool_create_whitespace_name_returns_400() {
+        let registry = InMemoryRegistry::new();
+        let resp = handle_tool_create(
+            &registry,
+            r#"{"name":"  ","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#,
+        );
+        assert_eq!(resp.status(), 400);
+        assert!(error_message(&resp)
+            .map(|m| m.contains("empty"))
+            .unwrap_or(false));
     }
 
     #[test]
