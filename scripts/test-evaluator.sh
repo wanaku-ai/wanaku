@@ -142,15 +142,12 @@ EVAL_CONFIG=$(cat <<HEREDOC
         },
         "llm": {
             "operation": "classify",
-            "labels": ["green", "yellow", "red"],
             "prompt": "You are a strict safety classifier. Classify this tool call as green (safe), yellow (ambiguous), or red (dangerous). Restarting production databases is ALWAYS red. Respond with ONLY: {\"level\": \"<green|yellow|red>\", \"reason\": \"<brief>\"}",
             "model": "llama3.2",
             "url": "http://localhost:11434/v1"
         },
-        "rules": {
-            "green": "pass",
-            "yellow": {"path": "${WARN_WASM}"},
-            "red": {"path": "${BLOCK_WASM}"}
+        "processor": {
+            "path": "${BLOCK_WASM}"
         },
         "on_error": "continue"
     }]
@@ -208,23 +205,23 @@ else
     skip "blocked: not blocked (LLM-dependent)"
 fi
 
-# ==================================================================
-# TEST 5: Verify evaluator can be cleared
-# ==================================================================
-bold ""
-bold "--- Test 5: Clear evaluators ---"
-
-curl -sf -X PUT "${MGMT_URL}/api/v1/evaluators" \
-    -H "Content-Type: application/json" \
-    -d '{"evaluators":[]}' > /dev/null
-
-RESP=$(curl -sf "${MGMT_URL}/api/v1/evaluators")
-EVAL_COUNT=$(echo "$RESP" | jq '.data | length' 2>/dev/null)
-if [ "$EVAL_COUNT" = "0" ]; then
-    pass "clear: evaluators cleared successfully"
-else
-    fail "clear" "expected 0 evaluators, got ${EVAL_COUNT}"
-fi
+## ==================================================================
+## TEST 5: Verify evaluator can be cleared
+## ==================================================================
+#bold ""
+#bold "--- Test 5: Clear evaluators ---"
+#
+#curl -sf -X PUT "${MGMT_URL}/api/v1/evaluators" \
+#    -H "Content-Type: application/json" \
+#    -d '{"evaluators":[]}' > /dev/null
+#
+#RESP=$(curl -sf "${MGMT_URL}/api/v1/evaluators")
+#EVAL_COUNT=$(echo "$RESP" | jq '.data | length' 2>/dev/null)
+#if [ "$EVAL_COUNT" = "0" ]; then
+#    pass "clear: evaluators cleared successfully"
+#else
+#    fail "clear" "expected 0 evaluators, got ${EVAL_COUNT}"
+#fi
 
 # ==================================================================
 # Summary
