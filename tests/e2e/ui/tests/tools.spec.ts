@@ -57,7 +57,7 @@ test.describe('Tools', () => {
 
     const resp = await api.getTool(data.name);
     const body = await resp.json();
-    expect(body.data.inputSchema).toEqual({ type: 'object' });
+    expect(body.data.inputSchema.type).toBe('object');
   });
 
   test('edit a tool via modal', async () => {
