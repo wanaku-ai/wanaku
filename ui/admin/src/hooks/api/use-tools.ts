@@ -40,11 +40,8 @@ export const useTools = () => {
   );
 
   const updateTool = useCallback(
-    (tool: ToolReference, options?: RequestInit): Promise<putApiV1ToolsNameResponse> => {
-      if (!tool.name) {
-          throw new Error("Tool name is required for update");
-      }
-      return putApiV1ToolsName(tool.name, tool, options)
+    (originalName: string, tool: ToolReference, options?: RequestInit): Promise<putApiV1ToolsNameResponse> => {
+      return putApiV1ToolsName(originalName, tool, options)
     }, []
   )
 

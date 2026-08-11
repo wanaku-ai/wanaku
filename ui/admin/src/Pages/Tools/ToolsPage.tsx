@@ -75,7 +75,7 @@ export const ToolsPage: React.FC = () => {
 
   const handleUpdateTool = async(tool: ToolReference) => {
     try {
-      await updateTool(tool)
+      await updateTool(openedTool!.name!, tool)
       setErrorMessage(null)
       await updateTools();
     } catch (error) {

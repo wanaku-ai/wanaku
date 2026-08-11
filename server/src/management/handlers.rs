@@ -55,12 +55,20 @@ pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, b
         }
     };
 
-    tool.name = path_name.to_owned();
+    let new_name = tool.name.trim().to_owned();
+    if !new_name.is_empty() && new_name != path_name {
+        registry.remove_tool(path_name);
+        tool.name = new_name;
+    } else {
+        tool.name = path_name.to_owned();
+    }
+
+    let name = tool.name.clone();
     registry.register_tool(tool);
-    info!(tool = %path_name, "updated tool via management API");
-    match registry.get_tool(path_name) {
+    info!(tool = %name, "updated tool via management API");
+    match registry.get_tool(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("tool not found after update: {path_name}")),
+        None => json_err(404, &format!("tool not found after update: {name}")),
     }
 }
 
@@ -668,6 +676,22 @@ mod tests {
             Some("new")
         );
         assert_eq!(data.get("uri").and_then(|v| v.as_str()), Some("u2"));
+    }
+
+    #[test]
+    fn tool_update_rename_removes_old_entry() {
+        let registry = InMemoryRegistry::new();
+        let body =
+            r#"{"name":"old-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
+        handle_tool_create(&registry, body);
+
+        let update_body =
+            r#"{"name":"new-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
+        let resp = handle_tool_update(&registry, "old-name", update_body);
+        assert_eq!(resp.status(), 200);
+
+        assert_eq!(handle_tool_get(&registry, "old-name").status(), 404);
+        assert_eq!(handle_tool_get(&registry, "new-name").status(), 200);
     }
 
     #[test]
