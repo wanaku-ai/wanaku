@@ -1,6 +1,6 @@
 import {SideNav, SideNavItems, SideNavMenu, SideNavMenuItem,} from '@carbon/react';
-import {Links} from "../router/links.models";
 import {Link} from 'react-router-dom';
+import { useNavigation } from "../contexts/NavigationContext";
 
 interface SideNavComponentProps {
     isSideNavExpanded: boolean;
@@ -8,6 +8,11 @@ interface SideNavComponentProps {
 }
 
 function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavComponentProps) {
+    const { items } = useNavigation();
+
+    const ungroupedItems = items.filter(item => !item.section);
+    const sections = Array.from(new Set(items.filter(item => item.section).map(item => item.section)));
+
     return (
         <SideNav
             aria-label="Side navigation"
@@ -16,78 +21,33 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }:SideNavCom
             onOverlayClick={onClickSideNavExpand}
         >
             <SideNavItems>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/home"
-                    onClick={onClickSideNavExpand}
-                >
-                    Home
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/tools"
-                    onClick={onClickSideNavExpand}
-                >
-                    Tools
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/resources"
-                    onClick={onClickSideNavExpand}
-                >
-                    Resources
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/prompts"
-                    onClick={onClickSideNavExpand}
-                >
-                    Prompts
-                </SideNavMenuItem>
-                <SideNavMenu title="Developer">
+                {ungroupedItems.map(item => (
                     <SideNavMenuItem
+                        key={item.id}
                         element={Link}
-                        to={Links.LLMChat}
+                        to={item.route}
                         onClick={onClickSideNavExpand}
                     >
-                        LLMChat
+                        {item.label}
                     </SideNavMenuItem>
-                    <SideNavMenuItem
-                        element={Link}
-                        to={Links.ToolCalls}
-                        onClick={onClickSideNavExpand}
-                    >
-                        Tool Call Debugger
-                    </SideNavMenuItem>
-                </SideNavMenu>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/capabilities"
-                    onClick={onClickSideNavExpand}
-                >
-                    Capabilities
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to="/namespaces"
-                    onClick={onClickSideNavExpand}
-                >
-                    Namespaces
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to={Links.Forwards}
-                    onClick={onClickSideNavExpand}
-                >
-                    Forwards
-                </SideNavMenuItem>
-                <SideNavMenuItem
-                    element={Link}
-                    to={Links.Evaluators}
-                    onClick={onClickSideNavExpand}
-                >
-                    Evaluators
-                </SideNavMenuItem>
+                ))}
+                {sections.map(section => {
+                    const sectionItems = items.filter(item => item.section === section);
+                    return (
+                        <SideNavMenu key={section} title={section || ""}>
+                            {sectionItems.map(item => (
+                                <SideNavMenuItem
+                                    key={item.id}
+                                    element={Link}
+                                    to={item.route}
+                                    onClick={onClickSideNavExpand}
+                                >
+                                    {item.label}
+                                </SideNavMenuItem>
+                            ))}
+                        </SideNavMenu>
+                    );
+                })}
             </SideNavItems>
         </SideNav>
     );

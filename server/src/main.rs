@@ -54,6 +54,7 @@ fn main() {
             wanaku_praxis_apis::config::ENV.inference_tls_sni.clone(),
             wanaku_praxis_apis::config::ENV.inference_api_key.clone(),
         )),
+        Box::new(wanaku_feature_plugins::PluginsFeature::new()),
     ];
 
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);

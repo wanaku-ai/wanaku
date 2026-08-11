@@ -15,6 +15,7 @@ import {ExternalLinks, Links} from "../router/links.models";
 
 import {LogoGithub, Logout, Notification, Search} from "@carbon/icons-react";
 import wanakuLogo from "../assets/wanaku.svg";
+import { useNavigation } from "../contexts/NavigationContext";
 
 
 interface HeaderComponentProps {
@@ -27,6 +28,11 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
     const action = (click: string) => () => {
         console.log(click);
     };
+    const { items } = useNavigation();
+
+    const ungroupedItems = items.filter(item => !item.section);
+    const sections = Array.from(new Set(items.filter(item => item.section).map(item => item.section)));
+
     return (
         <Header aria-label="Platform Name">
             <SkipToContent />
@@ -46,38 +52,23 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
             </HeaderName>
 
             <HeaderNavigation aria-label="Wanaku">
-                <HeaderMenuItem as={Link} to={Links.Home}>
-                    Home
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Tools}>
-                    Tools
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Resources}>
-                    Resources
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Prompts}>
-                    Prompts
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Capabilities}>
-                    Capabilities
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Namespaces}>
-                    Namespaces
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Forwards}>
-                    Forwards
-                </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Evaluators}>
-                    Evaluators
-                </HeaderMenuItem>
-                <HeaderMenu aria-label="Developer" menuLinkName="Developer">
-                    <HeaderMenuItem as={Link} to={Links.LLMChat}>
-                        LLMChat
+                {ungroupedItems.map(item => (
+                    <HeaderMenuItem key={item.id} as={Link} to={item.route}>
+                        {item.label}
                     </HeaderMenuItem>
-                    <HeaderMenuItem as={Link} to={Links.ToolCalls}>
-                        Tool Call Debugger
-                    </HeaderMenuItem>
-                </HeaderMenu>
+                ))}
+                {sections.map(section => {
+                    const sectionItems = items.filter(item => item.section === section);
+                    return (
+                        <HeaderMenu key={section} aria-label={section || ""} menuLinkName={section || ""}>
+                            {sectionItems.map(item => (
+                                <HeaderMenuItem key={item.id} as={Link} to={item.route}>
+                                    {item.label}
+                                </HeaderMenuItem>
+                            ))}
+                        </HeaderMenu>
+                    );
+                })}
             </HeaderNavigation>
             <HeaderGlobalBar>
                 <HeaderGlobalAction

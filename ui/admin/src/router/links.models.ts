@@ -9,6 +9,7 @@ export const enum Links {
   Namespaces = "/namespaces",
   Forwards = "/forwards",
   Evaluators = "/evaluators",
+  Plugins = "/plugins-admin",
   Logout = "/logout"
 }
 
