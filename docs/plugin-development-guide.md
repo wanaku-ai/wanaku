@@ -20,7 +20,7 @@ Five steps to see a plugin running:
 1. **Create a plugin directory** under your plugins path (e.g., `/data/plugins/my-plugin/`)
 2. **Create `plugin.json`** with id, name, version, and entrypoint
 3. **Create `plugin.js`** with `activate` and `deactivate` exports
-4. **Set `WANAKU_PLUGINS_PATH=/data/plugins`** and restart the server
+4. **Start the server with `--plugins-path /data/plugins`**
 5. **Open the admin UI** — your plugin page appears in the navigation
 
 Here's the smallest working plugin:
@@ -59,7 +59,7 @@ Restart the server. The "My Page" link appears in the sidebar.
 
 ## Plugin Structure
 
-A plugin lives in its own directory under `WANAKU_PLUGINS_PATH`. The typical layout:
+A plugin lives in its own directory under the path specified by `--plugins-path`. The typical layout:
 
 ```
 my-plugin/
@@ -319,7 +319,7 @@ To call backend services via `host.http`, you need to map logical service IDs to
 
 ### Option 1: Environment Variable + YAML Config
 
-Set `WANAKU_PLUGINS_PATH` and create a `wanaku.yaml` file with a `plugins` section:
+Start the server with `--plugins-path` and create a `wanaku.yaml` file with a `plugins` section:
 
 ```yaml
 plugins:
@@ -409,8 +409,7 @@ export function deactivate() {
 To run it:
 
 ```bash
-export WANAKU_PLUGINS_PATH=/path/to/examples
-cargo run
+cargo run -- --plugins-path /path/to/examples
 ```
 
 Open `http://localhost:8080` (or your admin UI URL). Click "Hello Plugin" in the sidebar.
@@ -500,14 +499,9 @@ Step-by-step process to test a plugin:
    EOF
    ```
 
-4. **Set the environment variable:**
+4. **Run the server:**
    ```bash
-   export WANAKU_PLUGINS_PATH=/tmp/plugins
-   ```
-
-5. **Run the server:**
-   ```bash
-   cargo run
+   cargo run -- --plugins-path /tmp/plugins
    ```
 
 6. **Open the admin UI:**

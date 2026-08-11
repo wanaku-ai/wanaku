@@ -54,7 +54,7 @@ fn main() {
             wanaku_praxis_apis::config::ENV.inference_tls_sni.clone(),
             wanaku_praxis_apis::config::ENV.inference_api_key.clone(),
         )),
-        Box::new(wanaku_feature_plugins::PluginsFeature::new()),
+        Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
     ];
 
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
@@ -143,6 +143,10 @@ struct ServerArgs {
     /// Wanaku bootstrap configuration file.
     #[arg(long, value_name = "PATH", default_value = "wanaku.yaml")]
     wanaku_config: String,
+
+    /// Directory containing UI plugin subdirectories.
+    #[arg(long, value_name = "PATH")]
+    plugins_path: Option<String>,
 }
 
 fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {

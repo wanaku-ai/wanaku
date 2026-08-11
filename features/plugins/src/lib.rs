@@ -17,28 +17,90 @@ use crate::manifest::PluginManifest;
 use crate::routes::{PluginRoute, resolve_plugin_route};
 
 pub struct PluginsFeature {
-    plugins_path: RwLock<Option<PathBuf>>,
-    manifests: RwLock<Vec<PluginManifest>>,
+    plugins_path: Option<PathBuf>,
+    manifests: Vec<PluginManifest>,
     service_map: RwLock<HashMap<(String, String), String>>,
     client: reqwest::Client,
 }
 
-impl Default for PluginsFeature {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl PluginsFeature {
     #[must_use]
-    pub fn new() -> Self {
+    pub fn new(plugins_path: Option<&str>) -> Self {
+        let (path, manifests) = match plugins_path {
+            Some(p) => {
+                let dir = PathBuf::from(p);
+                let discovered = discover_plugins(&dir);
+                (Some(dir), discovered)
+            }
+            None => (None, Vec::new()),
+        };
+
         Self {
-            plugins_path: RwLock::new(None),
-            manifests: RwLock::new(Vec::new()),
+            plugins_path: path,
+            manifests,
             service_map: RwLock::new(HashMap::new()),
             client: reqwest::Client::new(),
         }
     }
+}
+
+fn discover_plugins(plugins_dir: &PathBuf) -> Vec<PluginManifest> {
+    if !plugins_dir.is_dir() {
+        tracing::warn!(path = %plugins_dir.display(), "plugins directory does not exist");
+        return Vec::new();
+    }
+
+    let entries = match std::fs::read_dir(plugins_dir) {
+        Ok(e) => e,
+        Err(e) => {
+            tracing::warn!(path = %plugins_dir.display(), error = %e, "failed to read plugins directory");
+            return Vec::new();
+        }
+    };
+
+    let mut discovered = Vec::new();
+    for entry in entries.flatten() {
+        let entry_path = entry.path();
+        if !entry_path.is_dir() {
+            continue;
+        }
+
+        let manifest_path = entry_path.join("plugin.json");
+        let content = match std::fs::read_to_string(&manifest_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        let manifest: PluginManifest = match serde_json::from_str(&content) {
+            Ok(m) => m,
+            Err(e) => {
+                tracing::warn!(
+                    path = %manifest_path.display(),
+                    error = %e,
+                    "failed to parse plugin manifest"
+                );
+                continue;
+            }
+        };
+
+        if manifest.id.is_empty() || manifest.entrypoint.is_empty() {
+            tracing::warn!(
+                path = %manifest_path.display(),
+                "plugin manifest missing required fields (id, entrypoint)"
+            );
+            continue;
+        }
+
+        tracing::info!(
+            plugin = %manifest.id,
+            name = %manifest.name,
+            version = %manifest.version,
+            "discovered plugin"
+        );
+        discovered.push(manifest);
+    }
+
+    discovered
 }
 
 #[async_trait::async_trait]
@@ -66,22 +128,11 @@ impl Feature for PluginsFeature {
         }
         Some(match route {
             PluginRoute::ListPlugins => {
-                let manifests = self
-                    .manifests
-                    .read()
-                    .ok()
-                    .map(|g| g.clone())
-                    .unwrap_or_default();
-                routes::handle_list(&manifests)
+                routes::handle_list(&self.manifests)
             }
             PluginRoute::ServeFile(plugin_id, file_path) => {
-                let plugins_path = self
-                    .plugins_path
-                    .read()
-                    .ok()
-                    .and_then(|g| g.clone());
-                match plugins_path {
-                    Some(p) => routes::handle_file(&p, &plugin_id, &file_path),
+                match &self.plugins_path {
+                    Some(p) => routes::handle_file(p, &plugin_id, &file_path),
                     None => json_err(404, "plugins directory not configured"),
                 }
             }
@@ -154,74 +205,5 @@ impl Feature for PluginsFeature {
         }
     }
 
-    fn load_env_config(&self) {
-        let path_str = match std::env::var("WANAKU_PLUGINS_PATH") {
-            Ok(p) if !p.is_empty() => p,
-            _ => return,
-        };
-
-        let plugins_dir = PathBuf::from(&path_str);
-        if !plugins_dir.is_dir() {
-            tracing::warn!(path = %path_str, "plugins directory does not exist");
-            return;
-        }
-
-        if let Ok(mut guard) = self.plugins_path.write() {
-            *guard = Some(plugins_dir.clone());
-        }
-
-        let entries = match std::fs::read_dir(&plugins_dir) {
-            Ok(e) => e,
-            Err(e) => {
-                tracing::warn!(path = %path_str, error = %e, "failed to read plugins directory");
-                return;
-            }
-        };
-
-        let mut discovered = Vec::new();
-        for entry in entries.flatten() {
-            let entry_path = entry.path();
-            if !entry_path.is_dir() {
-                continue;
-            }
-
-            let manifest_path = entry_path.join("plugin.json");
-            let content = match std::fs::read_to_string(&manifest_path) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-
-            let manifest: PluginManifest = match serde_json::from_str(&content) {
-                Ok(m) => m,
-                Err(e) => {
-                    tracing::warn!(
-                        path = %manifest_path.display(),
-                        error = %e,
-                        "failed to parse plugin manifest"
-                    );
-                    continue;
-                }
-            };
-
-            if manifest.id.is_empty() || manifest.entrypoint.is_empty() {
-                tracing::warn!(
-                    path = %manifest_path.display(),
-                    "plugin manifest missing required fields (id, entrypoint)"
-                );
-                continue;
-            }
-
-            tracing::info!(
-                plugin = %manifest.id,
-                name = %manifest.name,
-                version = %manifest.version,
-                "discovered plugin"
-            );
-            discovered.push(manifest);
-        }
-
-        if let Ok(mut guard) = self.manifests.write() {
-            *guard = discovered;
-        }
-    }
+    fn load_env_config(&self) {}
 }
