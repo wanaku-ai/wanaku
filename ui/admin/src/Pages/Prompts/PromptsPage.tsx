@@ -50,9 +50,9 @@ export const PromptsPage: React.FC = () => {
       setErrorMessage(null);
 
       await updatePrompts();
-    } catch {
+    } catch (error) {
       setIsAddModalOpen(false);
-      setErrorMessage("Error adding prompt: The prompt name must be unique");
+      setErrorMessage(`Error adding prompt: ${error instanceof Error ? error.message : "unknown error"}`);
     }
   };
 
