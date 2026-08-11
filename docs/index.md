@@ -4,7 +4,7 @@ Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server built on the P
 
 ## Why Praxis?
 
-The classic Wanaku MCP Router (Java + Quarkus) is a fully-featured MCP server with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Praxis expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling features like LLM-based safety classification and pluggable feature crates that would be difficult to express in the classic architecture.
+The classic Wanaku MCP Router (Java + Quarkus) is a fully-featured MCP server with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Praxis expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling pluggable feature crates that would be difficult to express in the classic architecture.
 
 Praxis shares the same MCP protocol and management API as classic Wanaku. It can run standalone or alongside the classic backend — point `WANAKU_CLASSIC_URL` at a classic instance to combine both.
 
@@ -15,7 +15,7 @@ Praxis shares the same MCP protocol and management API as classic Wanaku. It can
 - **Admin UI** — React-based web interface embedded in the binary
 - **Namespace isolation** — different tools visible to different namespaces
 - **Tool routing** — local gRPC services or remote MCP server forwarding
-- **Feature system** — pluggable filters for safety checks, LLM chat, custom logic
+- **Feature system** — pluggable filters for LLM chat, custom logic
 - **File persistence** — optional registry snapshots to survive restarts
 
 All in a single binary with no runtime dependencies (except libc).
@@ -31,7 +31,7 @@ All in a single binary with no runtime dependencies (except libc).
 ### Understanding the System
 
 - **[Architecture](./architecture.md)** — filter pipeline, registry, tool routing, deployment patterns
-- **[Features](./features.md)** — safety checks, LLM chat, and how to create custom features
+- **[Features](./features.md)** — LLM chat and how to create custom features
 
 ### Extending and Customizing
 
@@ -41,8 +41,7 @@ All in a single binary with no runtime dependencies (except libc).
 
 - **You want a composable filter pipeline** for MCP request processing
 - **You want namespace isolation** without multi-tenancy complexity
-- **You're building LLM apps** that need tool call safety filtering
-- **You need pluggable features** like LLM-based classification or custom request processing
+- **You need pluggable features** for custom request processing
 - **You want to run alongside classic Wanaku** to extend its capabilities
 
 ## Who This Isn't For (Yet)
@@ -125,8 +124,6 @@ Features are Rust crates that implement the `Feature` trait. They can:
 - Share state between filters and API handlers
 - Load config from YAML or environment variables
 
-**Example:** The safety feature registers a filter that intercepts tool calls and sends them to an LLM for classification. It also exposes `GET/PUT/DELETE /api/v1/safety` to configure the classifier.
-
 ## Common Tasks
 
 ### Run Locally
@@ -157,16 +154,6 @@ curl -X POST http://localhost:8080/api/v1/tools \
     }
   }'
 ```
-
-### Enable Safety Checks
-
-```bash
-export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1
-export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
-cargo run --release
-```
-
-Now all tool calls are classified by the LLM before execution.
 
 ### Deploy to Kubernetes
 
@@ -231,7 +218,6 @@ Deploy Praxis as a `Deployment` with a `PersistentVolume` for the registry. Use 
 | **MCP forwarding** | ✅ Yes | ✅ Yes |
 | **Filter pipeline** | — | ✅ Composable filter chain |
 | **Feature crates** | — | ✅ Pluggable Rust crates |
-| **LLM safety filtering** | — | ✅ Built-in |
 | **Service catalogs** | ✅ Yes | ❌ Not yet |
 | **Camel routes** | ✅ Yes | ⚠️ Delegate to gRPC service |
 | **OIDC/OAuth** | ✅ Keycloak | ❌ Not yet |

@@ -150,21 +150,6 @@ curl -X POST http://localhost:8081/finance/mcp \
 
 Only the `get-stock-price` tool appears. The default namespace tools are invisible here.
 
-### Enable the Safety Feature
-
-The safety feature uses an LLM to classify tool calls as safe or dangerous before execution.
-
-Set these environment variables:
-
-```bash
-export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1  # LLM endpoint (OpenAI-compatible)
-export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
-```
-
-Restart the server. The safety filter is now active. When a tool call arrives, it's sent to the LLM for classification. If flagged as dangerous, the call is rejected with a JSON-RPC error.
-
-See [Features](./features.md) for configuration details.
-
 ### Use the Admin UI
 
 Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via curl.
@@ -315,18 +300,18 @@ gRPC calls have a default deadline. If your service takes too long, check the gR
 
 Check the namespace. Tools registered with `namespace: "finance"` only appear in `/finance/mcp`, not `/mcp`.
 
-**LLM-based features (safety, chat) don't work:**
+**LLM-based features (chat) don't work:**
 
 Verify:
 - The LLM endpoint is reachable (`curl http://localhost:11434/v1/models`)
-- Environment variables are set correctly (`WANAKU_SAFETY_LLM_URL`, `WANAKU_SAFETY_LLM_MODEL`)
+- Environment variables are set correctly
 - The feature is configured via the management API or `wanaku.yaml`
 
 ## Where to Go Next
 
 - **[Architecture](./architecture.md)** — understand the filter pipeline, registry, and routing
 - **[Configuration](./configuration.md)** — all env vars, YAML options, and config patterns
-- **[Features](./features.md)** — enable safety, chat, and create custom features
+- **[Features](./features.md)** — enable chat and create custom features
 - **[Management API](./management-api.md)** — full REST API reference
 - **[Admin UI](./admin-ui.md)** — customize the embedded React admin interface
 

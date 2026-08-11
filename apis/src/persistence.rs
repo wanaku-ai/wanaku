@@ -100,7 +100,6 @@ mod tests {
                 namespace: None,
                 configuration_uri: None,
                 secrets_uri: None,
-                skip_safety_check: false,
             }],
             services: vec![ServiceEntry {
                 name: "svc".to_owned(),

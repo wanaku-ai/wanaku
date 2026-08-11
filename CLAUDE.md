@@ -47,7 +47,8 @@ wanaku-praxis/
 ├── filters/           — Core MCP filters (tool_list, tool_call, resource_*, prompt_*, namespace)
 ├── features/
 │   ├── mcp-metadata/  — wanaku-feature-mcp-metadata: RFC 9728 OAuth metadata endpoint
-│   ├── safety/        — wanaku-feature-safety: LLM-based tool call classification
+│   ├── evaluator/     — wanaku-feature-evaluator: WASM-based evaluator engine
+│   ├── intercept/     — wanaku-feature-intercept: request/response interception
 │   └── chat/          — wanaku-feature-chat: LLM chat proxy (OpenAI-compatible)
 ├── server/            — Binary, pipeline setup, management API (Pingora ServeHttp)
 └── ui/admin/          — Admin UI (React 19 + Vite + Carbon Design System)
@@ -121,14 +122,14 @@ ui/admin/src/
 Defined in `server/src/default.yaml`:
 
 ```yaml
-cors → mcp (praxis-ai) → wanaku_namespace → wanaku_mcp_init → 
-  wanaku_safety_check (feature) → wanaku_tool_assembly (feature) →
+cors → mcp (praxis-ai) → wanaku_namespace → wanaku_well_known →
+  wanaku_mcp_init → wanaku_evaluator (feature) →
   wanaku_tool_list → wanaku_tool_call → wanaku_resource_list → 
   wanaku_resource_read → wanaku_prompt_list → wanaku_prompt_get → 
   static_response (catch-all)
 ```
 
-Feature filters (e.g., `wanaku_safety_check`, `wanaku_tool_assembly`) are registered by their feature crates, not by the core `register_wanaku_filters`. They appear in `default.yaml` but are no-ops when their feature is not configured.
+Feature filters (e.g., `wanaku_evaluator`) are registered by their feature crates, not by the core `register_wanaku_filters`. They appear in `default.yaml` but are no-ops when their feature is not configured.
 
 **Critical ordering:**
 - **MCP filter must be first** (after CORS) to parse JSON-RPC and set `mcp.method`/`mcp.name` metadata
@@ -209,7 +210,6 @@ Refreshing (`POST /api/v1/forwards/{name}/refreshes`) removes old tools and re-d
 - `GET /forwards`, `POST /forwards`, `DELETE /forwards/{name}`, `POST /forwards/{name}/refreshes`
 
 **Feature routes** (registered by feature crates via `Feature::handle_route`):
-- `GET/PUT/DELETE /api/v1/safety` — safety classifier config (from `features/safety/`)
 - `GET /api/v1/chat/llms`, `GET /api/v1/chat/{llm}/models`, `POST /api/v1/chat/completions` — LLM chat (from `features/chat/`)
 
 The server dispatches to core routes first, then iterates registered features. Features return `None` for routes they don't own.
@@ -230,7 +230,7 @@ Request/response wrapper:
 
 See existing routes (ToolRoute, ResourceRoute, etc.) for the template.
 
-**Feature routes** live entirely inside their feature crate (e.g., `features/safety/src/routes.rs`). They use the same route enum + resolver pattern internally, but dispatch happens via the `Feature::handle_route` trait method — not in the server's management module.
+**Feature routes** live entirely inside their feature crate. They use the same route enum + resolver pattern internally, but dispatch happens via the `Feature::handle_route` trait method — not in the server's management module.
 
 ## Filter Implementation Patterns
 
@@ -357,7 +357,6 @@ Unit tests are in each module (`#[cfg(test)]` blocks). Integration tests would g
 
 **Feature env vars** are owned by their respective feature crates (NOT in `apis/src/config.rs`). Each feature reads its own env vars directly in its `load_env_config()` implementation. Examples:
 - MCP Metadata: `WANAKU_AUTH_ISSUER` (read by `features/mcp-metadata/src/lib.rs`)
-- Safety: `WANAKU_SAFETY_LLM_URL`, `WANAKU_SAFETY_LLM_MODEL` (read by `features/safety/src/classifier.rs`)
 - Chat: uses core `WANAKU_INFERENCE_UPSTREAM`
 
 ### Praxis Config (server/src/default.yaml)
@@ -426,7 +425,7 @@ Features are self-contained workspace crates under `features/`. Each implements 
 
 5. **Add filter to pipeline** (if applicable): add `filter: wanaku_myfeature` to `server/src/default.yaml`
 
-**Reference implementations:** `features/safety/` (filter + mgmt API + config) and `features/chat/` (mgmt API only, no filter).
+**Reference implementations:** `features/evaluator/` (filter + mgmt API + config + WASM runtime) and `features/chat/` (mgmt API only, no filter).
 
 **Key patterns:**
 - Use `wanaku_praxis_filters::body_filter_boilerplate!` for filters

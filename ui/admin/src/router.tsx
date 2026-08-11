@@ -46,10 +46,6 @@ export const router = createHashRouter([
         lazy: async () => import("./Pages/Forwards"),
       },
       {
-        path: Links.Safety,
-        lazy: async () => import("./Pages/Safety"),
-      },
-      {
         path: Links.Evaluators,
         lazy: async () => import("./Pages/Evaluators"),
       },

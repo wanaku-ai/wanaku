@@ -39,7 +39,6 @@ wanaku-feature-chat = { workspace = true }
 wanaku-feature-evaluator = { workspace = true }
 wanaku-feature-intercept = { workspace = true }
 wanaku-feature-mcp-metadata = { workspace = true }
-wanaku-feature-safety = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.3", default-features = false, features = ["process", "signal", "user"] }

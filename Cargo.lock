@@ -4959,22 +4959,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wanaku-feature-safety"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "bytes",
- "http",
- "praxis-proxy-filter",
- "serde",
- "serde_json",
- "tracing",
- "wanaku-praxis-apis",
- "wanaku-praxis-filters",
- "yaml_serde",
-]
-
-[[package]]
 name = "wanaku-praxis-apis"
 version = "0.3.0"
 dependencies = [
@@ -5039,7 +5023,6 @@ dependencies = [
  "wanaku-feature-evaluator",
  "wanaku-feature-intercept",
  "wanaku-feature-mcp-metadata",
- "wanaku-feature-safety",
  "wanaku-praxis-apis",
  "wanaku-praxis-filters",
  "yaml_serde",

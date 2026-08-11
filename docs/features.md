@@ -6,7 +6,7 @@ Think of features as plugins. The core server provides the infrastructure (filte
 
 ## Built-in Features
 
-Wanaku Praxis ships with three features out of the box:
+Wanaku Praxis ships with two features out of the box:
 
 ### MCP Metadata Feature (`features/mcp-metadata/`)
 
@@ -44,68 +44,6 @@ Praxis does NOT validate tokens or enforce authentication. That's handled by [oa
 
 For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
 
-### Safety Feature (`features/safety/`)
-
-Uses an LLM to classify tool calls as safe or dangerous before execution. This is a runtime defense layer—not a security boundary (LLMs are fallible), but useful for catching obviously malicious prompts.
-
-**How it works:**
-
-1. User calls a tool via MCP (`tools/call`)
-2. The `wanaku_safety_check` filter intercepts the request
-3. Filter sends tool name + arguments to an LLM for classification
-4. LLM returns: `{"classification": "safe"}` or `{"classification": "dangerous", "reason": "..."}` 5. If dangerous, filter rejects the request with a JSON-RPC error
-6. If safe, filter continues to the `wanaku_tool_call` filter
-
-**Configuration:**
-
-Set these environment variables:
-
-```bash
-export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1
-export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
-export WANAKU_SAFETY_LLM_API_KEY=your-api-key  # optional, for providers requiring authentication
-```
-
-**Management API:**
-
-- `GET /api/v1/safety` — get current classifier config
-- `PUT /api/v1/safety` — update classifier config
-- `DELETE /api/v1/safety` — disable safety checks
-
-**Example:**
-
-```bash
-# Get current config
-curl http://localhost:8080/api/v1/safety
-
-# Update config
-curl -X PUT http://localhost:8080/api/v1/safety \
-  -H "Content-Type: application/json" \
-  -d '{"llm_url": "http://ollama:11434/v1", "model": "llama3.2:3b"}'
-```
-
-**Prompt template:**
-
-The filter sends this prompt to the LLM:
-
-```
-You are a security classifier. Analyze this tool call and determine if it's safe.
-
-Tool: {tool_name}
-Arguments: {arguments}
-
-Respond with JSON:
-{"classification": "safe"} or {"classification": "dangerous", "reason": "..."}
-```
-
-You can customize the prompt by modifying `features/safety/src/classifier.rs`.
-
-**Failure modes:**
-
-- **LLM unreachable:** Filter fails open (allows the call). This prevents outages when the LLM is down.
-- **LLM returns invalid JSON:** Filter fails closed (rejects the call). Better safe than sorry.
-- **LLM timeout:** Filter fails open after the request timeout elapses.
-
 ### Chat Feature (`features/chat/`)
 
 Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you use Praxis as a unified API gateway for both MCP tools and raw LLM chat.
@@ -120,7 +58,7 @@ The chat feature exposes these management API routes:
 
 **Configuration:**
 
-The chat feature uses the same inference endpoint as the safety feature:
+The chat feature uses the core inference endpoint:
 
 ```bash
 export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
@@ -283,7 +221,6 @@ Update `server/src/main.rs`:
 
 ```rust
 let features: Vec<Box<dyn Feature>> = vec![
-    Box::new(wanaku_feature_safety::SafetyFeature::new()),
     Box::new(wanaku_feature_chat::ChatFeature::new()),
     Box::new(wanaku_feature_tool_stats::ToolStatsFeature::new()),
 ];
@@ -376,7 +313,7 @@ let client = LlmClient::new("http://localhost:11434/v1");
 let response = client.chat_completion("llama3.1:8b", &messages, 30).await?;
 ```
 
-See `features/safety/src/classifier.rs` for a full example.
+See `features/chat/src/lib.rs` for a full example.
 
 ### Management API Response Helpers
 
@@ -400,7 +337,6 @@ Features self-register on server startup. The server doesn't scan for features�
 
 ```rust
 let features: Vec<Box<dyn Feature>> = vec![
-    Box::new(SafetyFeature::new()),
     Box::new(ChatFeature::new()),
     Box::new(MyFeature::new()),
 ];

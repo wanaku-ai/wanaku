@@ -354,7 +354,6 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
             secrets_uri: None,
-            skip_safety_check: false,
         };
 
         info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
@@ -398,7 +397,6 @@ mod forward_helpers_tests {
             namespace: None,
             configuration_uri: None,
             secrets_uri: None,
-            skip_safety_check: false,
         });
         registry.register_tool(ToolEntry {
             name: "local-tool".to_owned(),
@@ -411,7 +409,6 @@ mod forward_helpers_tests {
             namespace: None,
             configuration_uri: None,
             secrets_uri: None,
-            skip_safety_check: false,
         });
 
         remove_forwarded_tools(&registry, fwd_addr);
@@ -1152,7 +1149,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         handle_tool_create(
             &registry,
-            r#"{"name":"cc-opt","description":"","uri":"u","type":"x","input_schema":{"type":"object"},"configurationURI":"cfg://a","secretsURI":"sec://b","skipSafetyCheck":true}"#,
+            r#"{"name":"cc-opt","description":"","uri":"u","type":"x","input_schema":{"type":"object"},"configurationURI":"cfg://a","secretsURI":"sec://b"}"#,
         );
 
         let data = data_field(&handle_tool_get(&registry, "cc-opt"));
@@ -1160,8 +1157,6 @@ mod tests {
         assert!(data.get("configuration_uri").is_none());
         assert!(data.get("secretsURI").is_some());
         assert!(data.get("secrets_uri").is_none());
-        assert!(data.get("skipSafetyCheck").is_some());
-        assert!(data.get("skip_safety_check").is_none());
     }
 
     #[test]

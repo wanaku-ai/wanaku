@@ -57,7 +57,6 @@ filter_chains:
         on_invalid: continue
       - filter: wanaku_namespace        # Extract namespace from path
       - filter: wanaku_mcp_init         # Initialize MCP context
-      - filter: wanaku_safety_check     # LLM-based safety filter (optional)
       - filter: wanaku_tool_assembly    # Tool composition (optional)
       - filter: wanaku_tool_list        # Handle tools/list
       - filter: wanaku_tool_call        # Handle tools/call
@@ -310,11 +309,6 @@ pub trait Feature: Send + Sync {
 - **State:** none (reads `WANAKU_AUTH_ISSUER` env var)
 - **Purpose:** exposes OAuth server metadata for MCP clients
 
-**Safety feature** (`features/safety/`):
-- **Filter:** `wanaku_safety_check` — intercepts tool calls, sends to LLM for classification
-- **Management API:** `GET/PUT/DELETE /api/v1/safety` — configure the classifier
-- **State:** `HotSwap<SafetyClassifier>` — runtime-reconfigurable LLM client
-
 See [Features](./features.md) for how to create your own.
 
 ## Management API
@@ -404,7 +398,7 @@ Run Praxis as a stateless proxy. Point `WANAKU_CLASSIC_URL` at a classic Wanaku 
 export WANAKU_CLASSIC_URL=http://classic-wanaku:8080
 ```
 
-Praxis handles MCP protocol, namespace isolation, and safety features. Classic handles persistence, service catalogs, and advanced Camel integrations.
+Praxis handles MCP protocol and namespace isolation. Classic handles persistence, service catalogs, and advanced Camel integrations.
 
 **Pros:** Best of both worlds—Praxis performance, classic features
 **Cons:** Two servers to manage
@@ -416,7 +410,7 @@ Deploy Praxis as a `Deployment` with:
 - **Service:** ClusterIP for MCP endpoint (port 8081)
 - **Service:** LoadBalancer for management API (port 8080)
 - **ConfigMap:** `wanaku.yaml` bootstrap config
-- **Secret:** LLM API keys (for safety/chat features)
+- **Secret:** LLM API keys (for chat features)
 
 Mount `WANAKU_PERSIST_PATH` to a `PersistentVolume` for registry persistence across restarts.
 
@@ -435,7 +429,6 @@ Praxis uses Pingora's async worker pool. Each worker handles requests concurrent
 | Filter pipeline | ~1ms | CORS + MCP parse + namespace + tool lookup |
 | gRPC call | ~5ms | Local network, depends on service |
 | MCP forward | ~20ms | HTTP roundtrip to upstream MCP server |
-| LLM safety check | ~500ms | Depends on model size and load |
 
 **Memory:**
 
@@ -474,10 +467,6 @@ CORS is enabled by default via the `cors` filter (allows all origins). Restrict 
   allow_origins: ["https://app.example.com"]
 ```
 
-**Defense-in-depth:**
-
-The safety feature provides runtime tool call filtering via LLM classification. It's not a security boundary (LLMs are fallible), but it's a useful layer for catching obviously malicious prompts.
-
 ## What's Not Here (Yet)
 
 This architecture is a proof-of-concept. Missing pieces:
@@ -493,6 +482,6 @@ These are all solvable (implement traits, add filters, integrate with classic ba
 ## Related Docs
 
 - [Configuration](./configuration.md) — all env vars and YAML options
-- [Features](./features.md) — enable safety, chat, create custom features
+- [Features](./features.md) — enable chat, create custom features
 - [Management API](./management-api.md) — REST API reference
 - [Admin UI](./admin-ui.md) — customize the embedded UI

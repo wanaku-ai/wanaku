@@ -44,7 +44,6 @@ fn main() {
     let features: Vec<Box<dyn Feature>> = vec![
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-        Box::new(wanaku_feature_safety::SafetyFeature::new()),
         Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()),
         Box::new(wanaku_feature_chat::ChatFeature::new(
             format!(

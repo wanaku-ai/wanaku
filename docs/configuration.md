@@ -15,7 +15,7 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
-| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat/safety features (OpenAI-compatible) |
+| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat feature (OpenAI-compatible) |
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file-based registry persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic Wanaku backend base URL (e.g., `http://classic:8080`) |
@@ -124,7 +124,7 @@ The server serves files from `dist/` instead of the embedded bundle. Changes to 
 
 ## Feature-Specific Environment Variables
 
-Features (mcp-metadata, safety, chat, etc.) own their env vars. They're NOT in `apis/src/config.rs`. Each feature reads its own config in `load_env_config()`.
+Features (mcp-metadata, chat, etc.) own their env vars. They're NOT in `apis/src/config.rs`. Each feature reads its own config in `load_env_config()`.
 
 ### Authentication with oauth2-proxy
 
@@ -162,25 +162,6 @@ Access:
 - Admin UI: `http://localhost:4181/admin/`
 - MCP endpoint: `http://localhost:4180/mcp`
 - Public MCP (no auth): `http://localhost:4180/public/mcp`
-
-### Safety Feature
-
-The safety feature uses an LLM to classify tool calls as safe or dangerous.
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `WANAKU_SAFETY_LLM_URL` | _(required)_ | LLM API endpoint (e.g., `http://localhost:11434/v1`) |
-| `WANAKU_SAFETY_LLM_MODEL` | _(required)_ | Model name (e.g., `llama3.1:8b`) |
-| `WANAKU_SAFETY_LLM_API_KEY` | _(optional)_ | API key for LLM providers requiring authentication |
-
-**Example:**
-
-```bash
-export WANAKU_SAFETY_LLM_URL=http://ollama:11434/v1
-export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
-```
-
-The safety filter is enabled in the pipeline (`server/src/default.yaml`) but does nothing unless these vars are set. If you call a tool and the LLM endpoint is unreachable, the filter fails open (allows the call).
 
 ### Chat Feature
 
@@ -227,7 +208,6 @@ filter_chains:
         on_invalid: continue
       - filter: wanaku_namespace
       - filter: wanaku_mcp_init
-      - filter: wanaku_safety_check
       - filter: wanaku_tool_assembly
       - filter: wanaku_tool_list
       - filter: wanaku_tool_call
@@ -464,8 +444,6 @@ services:
 ```bash
 # No persistence, embedded UI, inference backend for LLMs
 export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
-export WANAKU_SAFETY_LLM_URL=http://localhost:11434/v1
-export WANAKU_SAFETY_LLM_MODEL=llama3.1:8b
 cargo run
 ```
 
@@ -496,8 +474,6 @@ Run with:
 
 ```bash
 docker run -v /var/lib/wanaku:/data \
-  -e WANAKU_SAFETY_LLM_URL=http://ollama:11434/v1 \
-  -e WANAKU_SAFETY_LLM_MODEL=llama3.1:8b \
   -p 8081:8081 -p 8080:8080 \
   wanaku-praxis:latest
 ```
@@ -554,11 +530,6 @@ spec:
           value: "file"
         - name: WANAKU_PERSIST_PATH
           value: "/data/registry"
-        - name: WANAKU_SAFETY_LLM_URL
-          valueFrom:
-            secretKeyRef:
-              name: llm-secrets
-              key: url
         volumeMounts:
         - name: config
           mountPath: /etc/praxis
@@ -617,5 +588,5 @@ cargo build
 ## Related Docs
 
 - [Architecture](./architecture.md) — understand the filter pipeline and registry
-- [Features](./features.md) — configure safety, chat, and custom features
+- [Features](./features.md) — configure chat and custom features
 - [Management API](./management-api.md) — API routes that respect configuration

@@ -4,8 +4,8 @@
 //! [`LazyLock`] and exposed through the [`ENV`] static. No other module
 //! should call `std::env::var` for these variables directly.
 //!
-//! Feature-specific env vars (e.g. `WANAKU_SAFETY_*`) are owned by their
-//! respective feature crates, not this module.
+//! Feature-specific env vars are owned by their respective feature crates,
+//! not this module.
 
 use std::path::PathBuf;
 use std::sync::LazyLock;

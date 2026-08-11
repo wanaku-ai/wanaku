@@ -299,46 +299,6 @@ DELETE /api/v1/services/{name}
 
 Features can expose their own management API routes via the `handle_route` method. These routes are dispatched after core routes.
 
-### Safety Feature
-
-**Get safety config:**
-
-```bash
-GET /api/v1/safety
-```
-
-Returns:
-
-```json
-{
-  "data": {
-    "llm_url": "http://localhost:11434/v1",
-    "model": "llama3.1:8b",
-    "timeout": 30
-  },
-  "error": null
-}
-```
-
-**Update safety config:**
-
-```bash
-PUT /api/v1/safety
-Content-Type: application/json
-
-{
-  "llm_url": "http://ollama:11434/v1",
-  "model": "llama3.2:3b",
-  "timeout": 60
-}
-```
-
-**Disable safety checks:**
-
-```bash
-DELETE /api/v1/safety
-```
-
 ### Chat Feature
 
 **List available LLMs:**

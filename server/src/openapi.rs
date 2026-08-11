@@ -257,24 +257,6 @@ fn capabilities_resources_state() {}
 )]
 fn capabilities_fleet_status() {}
 
-// -- Safety -------------------------------------------------------------------
-
-#[utoipa::path(get, path = "/api/v1/safety", tag = "Safety",
-    responses((status = 200, description = "Current safety classifier configuration", body = serde_json::Value))
-)]
-fn get_safety() {}
-
-#[utoipa::path(put, path = "/api/v1/safety", tag = "Safety",
-    request_body = serde_json::Value,
-    responses((status = 200, description = "Safety classifier updated", body = serde_json::Value))
-)]
-fn update_safety() {}
-
-#[utoipa::path(delete, path = "/api/v1/safety", tag = "Safety",
-    responses((status = 200, description = "Safety classifier disabled"))
-)]
-fn delete_safety() {}
-
 // -- OpenAPI Aggregation ------------------------------------------------------
 
 #[derive(OpenApi)]
@@ -295,7 +277,6 @@ fn delete_safety() {}
         list_interactions, clear_interactions,
         get_statistics,
         list_capabilities, capabilities_tools_state, capabilities_resources_state, capabilities_fleet_status,
-        get_safety, update_safety, delete_safety,
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,

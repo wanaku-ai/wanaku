@@ -67,9 +67,6 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }:HeaderCompo
                 <HeaderMenuItem as={Link} to={Links.Forwards}>
                     Forwards
                 </HeaderMenuItem>
-                <HeaderMenuItem as={Link} to={Links.Safety}>
-                    Safety
-                </HeaderMenuItem>
                 <HeaderMenuItem as={Link} to={Links.Evaluators}>
                     Evaluators
                 </HeaderMenuItem>
