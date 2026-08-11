@@ -61,6 +61,7 @@ impl ClassicProxy {
         };
 
         let status = response.status().as_u16();
+        tracing::debug!(url = %url, status = status, "upstream proxy response");
         let response_body = match response.bytes().await {
             Ok(b) => b.to_vec(),
             Err(e) => {
