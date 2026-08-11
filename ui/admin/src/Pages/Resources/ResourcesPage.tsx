@@ -41,7 +41,7 @@ export const ResourcesPage: React.FC = () => {
 
   async function handleUpdateResource(resource: ResourceReference) {
     try {
-      await updateResource(resource)
+      await updateResource(openedResource!.name!, resource)
     } catch (error) {
       setErrorMessage(`Error updating resource: ${getErrorMessage(error)}`)
     } finally {

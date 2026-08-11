@@ -50,6 +50,11 @@ export class ApiHelper {
     return this.assertOk(resp, `addResource(${resource.name})`);
   }
 
+  async getResource(name: string) {
+    const resp = await this.request.get(`${this.baseUrl}/api/v1/resources/${name}`);
+    return this.assertOk(resp, `getResource(${name})`);
+  }
+
   async deleteResource(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/resources/${name}`);
   }

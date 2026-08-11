@@ -26,6 +26,15 @@ export class ResourcesPage extends BasePage {
     await this.page.locator(Carbon.textInput('resource-location')).fill(resource.location);
   }
 
+  async clickEditResource(name: string) {
+    await this.rowWithText(name).getByRole('button', { name: 'Edit' }).click();
+    await this.modal().waitFor({ state: 'visible' });
+  }
+
+  async fillDescription(description: string) {
+    await this.page.locator(Carbon.textInput('resource-description')).fill(description);
+  }
+
   async clickDeleteResource(name: string) {
     await this.rowWithText(name).getByRole('button', { name: 'Delete' }).click();
   }

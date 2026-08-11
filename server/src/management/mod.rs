@@ -22,6 +22,7 @@ use self::handlers::{
     handle_namespace_update,
     handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
+    handle_resource_update,
     handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
     handle_statistics,
     handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
@@ -139,6 +140,10 @@ impl ServeHttp for WanakuManagementService {
                 ResourceRoute::GetByName(name) => handle_resource_get(&self.registry, &name),
                 ResourceRoute::Create => match read_body(http_session).await {
                     Ok(body) => handle_resource_create(&self.registry, &body),
+                    Err(resp) => resp,
+                },
+                ResourceRoute::Update(name) => match read_body(http_session).await {
+                    Ok(body) => handle_resource_update(&self.registry, &name, &body),
                     Err(resp) => resp,
                 },
                 ResourceRoute::Delete(name) => handle_resource_delete(&self.registry, &name),

@@ -43,13 +43,11 @@ export const useResources = () => {
 
   const updateResource = useCallback(
     (
+      originalName: string,
       resource: ResourceReference,
       options?: RequestInit
     ): Promise<putApiV1ResourcesNameResponse> => {
-      if (!resource.name) {
-        throw new Error("Resource name is required for update");
-      }
-      return putApiV1ResourcesName(resource.name, resource, options)
+      return putApiV1ResourcesName(originalName, resource, options)
     },
     []
   )

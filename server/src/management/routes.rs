@@ -33,6 +33,7 @@ pub(super) enum ResourceRoute {
     List,
     GetByName(String),
     Create,
+    Update(String),
     Delete(String),
     NotFound,
 }
@@ -51,6 +52,7 @@ pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute 
         ("GET", None) => ResourceRoute::List,
         ("GET", Some(n)) => ResourceRoute::GetByName(n.to_owned()),
         ("POST", None | Some("payloads")) => ResourceRoute::Create,
+        ("PUT", Some(n)) => ResourceRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => ResourceRoute::Delete(n.to_owned()),
         _ => ResourceRoute::NotFound,
     }
@@ -297,6 +299,14 @@ mod tests {
     #[test]
     fn resource_route_create_payloads() {
         assert_eq!(resolve_resource_route("POST", "/api/v1/resources/payloads"), ResourceRoute::Create);
+    }
+
+    #[test]
+    fn resource_route_update() {
+        assert_eq!(
+            resolve_resource_route("PUT", "/api/v1/resources/my-res"),
+            ResourceRoute::Update("my-res".to_owned())
+        );
     }
 
     #[test]

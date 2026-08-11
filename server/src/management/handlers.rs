@@ -112,6 +112,33 @@ pub(super) fn handle_resource_create(registry: &InMemoryRegistry, body: &str) ->
     }
 }
 
+pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
+    tracing::debug!(body = %body, name = %path_name, "resource update request body");
+    let mut resource: ResourceEntry = match serde_json::from_str(body) {
+        Ok(r) => r,
+        Err(e) => {
+            warn!(error = %e, "invalid resource JSON");
+            return json_err(400, &format!("invalid resource JSON: {e}"));
+        }
+    };
+
+    let new_name = resource.name.trim().to_owned();
+    if !new_name.is_empty() && new_name != path_name {
+        registry.remove_resource(path_name);
+        resource.name = new_name;
+    } else {
+        resource.name = path_name.to_owned();
+    }
+
+    let name = resource.name.clone();
+    registry.register_resource(resource);
+    info!(resource = %name, "updated resource via management API");
+    match registry.get_resource(&name) {
+        Some(entry) => json_ok(&serde_json::json!(entry)),
+        None => json_err(404, &format!("resource not found after update: {name}")),
+    }
+}
+
 pub(super) fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     if registry.remove_resource(name) {
         info!(resource = %name, "removed resource via management API");
@@ -518,6 +545,7 @@ mod tests {
         handle_namespace_list, handle_namespace_update,
         handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
         handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
+        handle_resource_update,
         handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
         handle_statistics,
         handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list,
@@ -774,6 +802,42 @@ mod tests {
     fn resource_create_invalid_json_returns_400() {
         let registry = InMemoryRegistry::new();
         assert_eq!(handle_resource_create(&registry, "{bad}").status(), 400);
+    }
+
+    #[test]
+    fn resource_update_changes_description() {
+        let registry = InMemoryRegistry::new();
+        handle_resource_create(&registry, r#"{"name":"res","description":"old","location":"/a","type":"file"}"#);
+
+        let resp = handle_resource_update(
+            &registry, "res",
+            r#"{"name":"res","description":"new","location":"/b","type":"file"}"#,
+        );
+        assert_eq!(resp.status(), 200);
+
+        let data = data_field(&handle_resource_get(&registry, "res"));
+        assert_eq!(data.get("description").and_then(|v| v.as_str()), Some("new"));
+        assert_eq!(data.get("location").and_then(|v| v.as_str()), Some("/b"));
+    }
+
+    #[test]
+    fn resource_update_rename_removes_old_entry() {
+        let registry = InMemoryRegistry::new();
+        handle_resource_create(&registry, r#"{"name":"old-res","description":"d","location":"/x","type":"file"}"#);
+
+        let resp = handle_resource_update(
+            &registry, "old-res",
+            r#"{"name":"new-res","description":"d","location":"/x","type":"file"}"#,
+        );
+        assert_eq!(resp.status(), 200);
+        assert_eq!(handle_resource_get(&registry, "old-res").status(), 404);
+        assert_eq!(handle_resource_get(&registry, "new-res").status(), 200);
+    }
+
+    #[test]
+    fn resource_update_invalid_json_returns_400() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(handle_resource_update(&registry, "r", "???").status(), 400);
     }
 
     // ---- Prompt handlers ----

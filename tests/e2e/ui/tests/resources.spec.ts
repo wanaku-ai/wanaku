@@ -44,6 +44,26 @@ test.describe('Resources', () => {
     await resources.waitForResourceInTable(data.name);
   });
 
+  test('edit a resource via modal', async () => {
+    const data = resourceData();
+    createdResources.push(data.name);
+    await api.addResource(data);
+
+    await resources.goto();
+    await resources.waitForResourceInTable(data.name);
+    await resources.clickEditResource(data.name);
+
+    const heading = await resources.getModalHeading();
+    expect(heading).toBe('Edit resource');
+
+    await resources.fillDescription('Updated description');
+    await resources.submitModal();
+
+    const resp = await api.getResource(data.name);
+    const body = await resp.json();
+    expect(body.data.description).toBe('Updated description');
+  });
+
   test('delete a resource', async () => {
     const data = resourceData();
     await api.addResource(data);
