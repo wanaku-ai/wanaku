@@ -1,7 +1,6 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
@@ -69,26 +68,6 @@ impl ResourceReadFilter {
 
         trace!(uri = %resource_uri, namespace = %namespace, "handling MCP resources/read request");
 
-        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
-            Some(r) => r,
-            None => {
-                tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
-            }
-        };
-
-        let _resource = match find_resource_by_uri(registry, namespace, &resource_uri) {
-            Some(r) => r,
-            None => {
-                warn!(uri = %resource_uri, "resource not found in registry");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INVALID_PARAMS,
-                    &format!("resource not found: {resource_uri}"),
-                ));
-            }
-        };
-
         warn!(uri = %resource_uri, "resource read is not supported — no resource provider backend configured");
         Ok(crate::response::json_rpc_error(
             &parsed.id,
@@ -96,17 +75,6 @@ impl ResourceReadFilter {
             "resource read is not supported in this configuration",
         ))
     }
-}
-
-fn find_resource_by_uri(
-    registry: &InMemoryRegistry,
-    namespace: &str,
-    uri: &str,
-) -> Option<wanaku_praxis_apis::registry::ResourceEntry> {
-    registry
-        .list_resources_in_namespace(namespace)
-        .into_iter()
-        .find(|r| r.location == uri)
 }
 
 #[cfg(test)]

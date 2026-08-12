@@ -26,7 +26,7 @@ cargo run -- --praxis-config /path/to/praxis.yaml --wanaku-config /path/to/wanak
 
 Default configs:
 - `server/src/default.yaml` — praxis pipeline config (embedded at compile time)
-- `wanaku.yaml` — tool/service registry bootstrap (optional, loaded at runtime)
+- `wanaku.yaml` — forward registry bootstrap (optional, loaded at runtime)
 
 **Gotcha:** Changes to `server/src/default.yaml` don't trigger cargo rebuilds due to `include_str!`. Touch `server/src/lib.rs` to force recompile after editing default.yaml.
 

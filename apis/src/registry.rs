@@ -92,12 +92,6 @@ pub struct PromptEntry {
     pub configuration_uri: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum RegistryError {
-    #[error("tool not found: {0}")]
-    ToolNotFound(String),
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ForwardEntry {
     pub name: String,
