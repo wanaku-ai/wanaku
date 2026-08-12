@@ -35,7 +35,7 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = { package = "yaml_serde", version = "0.10.4" }
 thiserror = "2.0"
 tokio = { version = "1", features = ["macros", "rt"] }
-tonic = "0.13"
+tonic = "0.14"
 tracing = "0.1.44"
 
 praxis-core = { version = "0.5.1", package = "praxis-proxy-core" }
