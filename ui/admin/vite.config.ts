@@ -12,8 +12,26 @@ export default defineConfig({
   },
   build: {
     outDir,
-    sourcemap: true,
+    sourcemap: false,
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@carbon/react") || id.includes("@carbon/icons-react")) {
+              return "vendor-carbon";
+            }
+            if (id.includes("react-markdown") || id.includes("highlight.js")) {
+              return "vendor-markdown";
+            }
+            if (id.includes("react-router-dom")) {
+              return "vendor-router";
+            }
+            return "vendor";
+          }
+        },
+      },
+    },
   },
   base: "/admin/",
   css: {
