@@ -133,34 +133,6 @@ pub(super) fn resolve_capability_route(method: &str, path: &str) -> CapabilityRo
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(super) enum ServiceRoute {
-    List,
-    GetByName(String),
-    Create,
-    Delete(String),
-    NotFound,
-}
-
-pub(super) fn resolve_service_route(method: &str, path: &str) -> ServiceRoute {
-    let suffix = match path.strip_prefix("/api/v1/services") {
-        Some(s) => s,
-        None => return ServiceRoute::NotFound,
-    };
-
-    let name = suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty());
-
-    match (method, name) {
-        ("GET", None) => ServiceRoute::List,
-        ("GET", Some(n)) => ServiceRoute::GetByName(n.to_owned()),
-        ("POST", None | Some("payloads")) => ServiceRoute::Create,
-        ("DELETE", Some(n)) => ServiceRoute::Delete(n.to_owned()),
-        _ => ServiceRoute::NotFound,
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
 pub(super) enum ForwardRoute {
     List,
     GetByName(String),

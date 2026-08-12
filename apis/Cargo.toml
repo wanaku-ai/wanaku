@@ -16,7 +16,6 @@ async-trait = { workspace = true }
 dashmap = { workspace = true }
 utoipa = "5.5"
 http = { workspace = true }
-prost = { workspace = true }
 rand = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 rmcp = { version = "3.1.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest", "reqwest"] }
@@ -26,9 +25,4 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
-tonic = { workspace = true }
-tonic-prost = { workspace = true }
 tracing = { workspace = true }
-
-[build-dependencies]
-tonic-prost-build = { workspace = true }

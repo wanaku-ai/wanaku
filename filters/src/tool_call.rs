@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_praxis_apis::grpc::GrpcPool;
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ServiceRegistry, ToolEntry, ToolRegistry};
+use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
@@ -138,79 +137,12 @@ impl ToolCallFilter {
             return self.handle_forwarded_call(&tool, &tool_name, &parsed).await;
         }
 
-        let service = match registry.resolve_service(&tool.type_, "tool-invoker") {
-            Ok(s) => s,
-            Err(e) => {
-                warn!(tool_type = %tool.type_, error = %e, "no service available for tool type");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("no service available for tool type: {}", tool.type_),
-                ));
-            }
-        };
-
-        let grpc_pool = match ctx.extensions.get::<GrpcPool>() {
-            Some(p) => p.clone(),
-            None => {
-                tracing::error!("GrpcPool not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: gRPC pool unavailable"));
-            }
-        };
-
-        trace!(
-            tool = %tool_name,
-            uri = %tool.uri,
-            service = %service.address,
-            "invoking tool via gRPC"
-        );
-
-        let string_arguments: HashMap<String, String> = parsed.arguments
-            .iter()
-            .map(|(k, v)| {
-                let value_str = match v {
-                    serde_json::Value::String(s) => s.clone(),
-                    other => other.to_string(),
-                };
-                (k.clone(), value_str)
-            })
-            .collect();
-
-        match grpc_pool
-            .invoke_tool(&service.address, tool.uri.clone(), string_arguments, request_id)
-            .await
-        {
-            Ok(content) => {
-                let mcp_content: Vec<serde_json::Value> = content
-                    .iter()
-                    .map(|text| {
-                        serde_json::json!({
-                            "type": "text",
-                            "text": text,
-                        })
-                    })
-                    .collect();
-
-                let response = serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": parsed.id,
-                    "result": {
-                        "content": mcp_content,
-                    }
-                });
-
-                let response_body = Bytes::from(response.to_string());
-                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
-            }
-            Err(e) => {
-                warn!(tool = %tool_name, error = %e, "gRPC invocation failed");
-                Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("tool invocation failed: {e}"),
-                ))
-            }
-        }
+        warn!(tool = %tool_name, tool_type = %tool.type_, "unsupported tool type — only MCP-forwarded tools are supported");
+        Ok(crate::response::json_rpc_error(
+            &parsed.id,
+            crate::response::JSONRPC_INTERNAL_ERROR,
+            &format!("unsupported tool type '{}': only MCP-forwarded tools are supported", tool.type_),
+        ))
     }
 
     async fn handle_forwarded_call(

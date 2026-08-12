@@ -5,7 +5,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::registry::{
-    ForwardEntry, NamespaceEntry, PromptEntry, ResourceEntry, ServiceEntry, ToolEntry,
+    ForwardEntry, NamespaceEntry, PromptEntry, ResourceEntry, ToolEntry,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -20,8 +20,6 @@ pub struct RegistrySnapshot {
     pub forwards: Vec<ForwardEntry>,
     #[serde(default)]
     pub namespaces: Vec<NamespaceEntry>,
-    #[serde(default)]
-    pub services: Vec<ServiceEntry>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -101,11 +99,6 @@ mod tests {
                 configuration_uri: None,
                 secrets_uri: None,
             }],
-            services: vec![ServiceEntry {
-                name: "svc".to_owned(),
-                address: "localhost:9000".to_owned(),
-                service_type: "tool-invoker".to_owned(),
-            }],
             ..RegistrySnapshot::default()
         };
 
@@ -113,7 +106,7 @@ mod tests {
         let loaded = backend.load();
         assert!(loaded.is_ok(), "load should succeed");
         if let Ok(s) = loaded {
-            assert_eq!((s.tools.len(), s.services.len()), (1, 1));
+            assert_eq!(s.tools.len(), 1);
         }
 
         let _ = std::fs::remove_dir_all(&dir);

@@ -1,6 +1,6 @@
 # Wanaku Praxis
 
-A Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. Routes MCP requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and both local (gRPC) and remote (MCP forwarding) tool execution.
+A Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. Routes MCP requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and MCP-to-MCP tool forwarding.
 
 ## Core Guidelines
 
@@ -29,6 +29,8 @@ Default configs:
 - `wanaku.yaml` — tool/service registry bootstrap (optional, loaded at runtime)
 
 **Gotcha:** Changes to `server/src/default.yaml` don't trigger cargo rebuilds due to `include_str!`. Touch `server/src/lib.rs` to force recompile after editing default.yaml.
+
+**Note:** No protobuf compiler is required — gRPC support has been removed.
 
 ## Build Info
 
@@ -116,7 +118,6 @@ ui/admin/src/
 - **Praxis Core:** praxis-proxy-{core,filter,protocol} 0.4.1 (crates.io)
 - **Praxis AI:** praxis-ai-{apis,filters} (git dep at rev a6d8552 — NOT on crates.io)
 - **MCP Client:** rmcp crate for upstream MCP calls
-- **gRPC:** tonic with pooled connections (GrpcPool in apis/src/grpc.rs)
 
 ### Filter Pipeline
 
@@ -162,7 +163,7 @@ All downstream filters query these via `ctx.get_metadata(key)`.
 ### Registry Architecture
 
 **InMemoryRegistry** (`apis/src/registry.rs`):
-- Implements 5 traits: ToolRegistry, ResourceRegistry, PromptRegistry, NamespaceRegistry, ForwardRegistry, ServiceRegistry
+- Implements 5 traits: ToolRegistry, ResourceRegistry, PromptRegistry, NamespaceRegistry, ForwardRegistry
 - **Clone-safe** via `Arc<DashMap>` — shared between filter pipeline and management API
 - Injected into requests via `PipelineExtension` in `server/src/pipelines.rs`
 - Filters access via `ctx.extensions.get::<InMemoryRegistry>()`
@@ -175,21 +176,13 @@ All downstream filters query these via `ctx.get_metadata(key)`.
 - `ToolEntry` accepts both `input_schema` and `inputSchema` (serde alias)
 - `ForwardEntry` uses `address` field (matches Java model)
 
-### Tool Routing: gRPC vs. MCP Forward
+### Tool Routing
 
-Tools can execute in two ways:
-
-1. **gRPC (local execution):**
-   - Tool has `type_` != `"mcp-forward"` (e.g., `"echo-tool"`, `"camel"`)
-   - Filter calls `registry.resolve_service(tool.type_, "tool-invoker")` to get gRPC address
-   - Uses `GrpcPool` to invoke via tonic
-   - See `filters/src/tool_call.rs:217-282`
-
-2. **MCP forward (remote MCP server):**
-   - Tool has `type_: "mcp-forward"`
-   - Filter calls `mcp_client::call_tool(tool.uri, ...)` directly (no gRPC)
-   - Uses rmcp crate for upstream HTTP+SSE connection
-   - See `filters/src/tool_call.rs:17-58`
+All tools execute via MCP forwarding:
+- Tool has `type_: "mcp-forward"`
+- Filter calls `mcp_client::call_tool(tool.uri, ...)` directly
+- Uses rmcp crate for upstream HTTP+SSE connection
+- Non-MCP-forward tool types return an error
 
 **Forward discovery:**
 When you POST to `/api/v1/forwards`, the management API:
@@ -209,6 +202,8 @@ Refreshing (`POST /api/v1/forwards/{name}/refreshes`) removes old tools and re-d
 - `GET /prompts/{name}`, `POST /prompts`, `DELETE /prompts/{name}`
 - `GET /namespaces/{name}`, `POST /namespaces`, `DELETE /namespaces/{name}`
 - `GET /forwards`, `POST /forwards`, `DELETE /forwards/{name}`, `POST /forwards/{name}/refreshes`
+
+Note: the `/api/v1/services` routes have been removed (gRPC service registry is no longer used).
 
 **Feature routes** (registered by feature crates via `Feature::handle_route`):
 - `GET /api/v1/chat/llms`, `GET /api/v1/chat/{llm}/models`, `POST /api/v1/chat/completions` — LLM chat (from `features/chat/`)
@@ -383,21 +378,10 @@ filter_chains:
 ### Wanaku Config (wanaku.yaml — optional)
 
 ```yaml
-tools:
-  - name: "echo-tool"
-    type: "echo-tool"
-    uri: "echo-tool://echo"
-    description: "Echoes a message"
-    input_schema:
-      type: object
-      properties:
-        wanaku_body:
-          type: string
-
-services:
-  - name: "echo-tool"
-    address: "localhost:9191"
-    service_type: "tool-invoker"
+forwards:
+  - name: "my-mcp-server"
+    address: "http://localhost:8180/mcp"
+    namespace: "default"
 ```
 
 If missing, server starts with empty registry (can populate via management API).

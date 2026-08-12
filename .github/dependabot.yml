@@ -4,11 +4,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    groups:
-      tonic:
-        patterns:
-          - "tonic"
-          - "tonic-build"
   - package-ecosystem: github-actions
     directory: /
     schedule:
