@@ -38,7 +38,7 @@ The installer detects the host platform, verifies the release checksum, and inst
 podman run -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-praxis
 ```
 
-To preload tools and services, mount a `wanaku.yaml`:
+To preload forwards, mount a `wanaku.yaml`:
 
 ```bash
 podman run -p 8080:8080 -p 8081:8081 \
@@ -87,26 +87,7 @@ If no config file is provided, the server starts with an empty registry that can
 
 ## Management API Examples
 
-Register a tool:
-```bash
-curl -X POST http://localhost:8080/api/v1/tools \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "calculator",
-    "type": "math",
-    "uri": "math://add",
-    "description": "Adds numbers",
-    "input_schema": {
-      "type": "object",
-      "properties": {
-        "a": {"type": "number"},
-        "b": {"type": "number"}
-      }
-    }
-  }'
-```
-
-Register a remote MCP server as a forward:
+Register a remote MCP server as a forward (its tools are auto-discovered):
 ```bash
 curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
