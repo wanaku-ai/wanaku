@@ -71,7 +71,7 @@ The first `cargo build` automatically builds the admin UI via `yarn` if `ui/admi
 
 The easiest way to learn Wanaku is by following the **[guided tutorial](https://wanaku.ai/docs/demos/)**.
 
-The reference documentation, including the complete installation and configuration instructions, is available on the [usage guide](https://wanaku.ai/docs/version/).
+The reference documentation, including the complete installation and configuration instructions, is available in the [usage guide](https://wanaku.ai/docs/version/).
 
 ## Configuration
 
