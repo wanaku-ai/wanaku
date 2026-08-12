@@ -1,6 +1,0 @@
-wanaku-tool-service-exec:latest
-wanaku-tool-service-http:latest
-wanaku-tool-performance-noop:latest
-wanaku-provider-performance-static-file:latest
-wanaku-router-backend:latest
-wanaku-operator:latest

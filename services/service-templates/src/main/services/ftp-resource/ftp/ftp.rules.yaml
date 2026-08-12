@@ -1,6 +1,0 @@
-mcp:
-  resources:
-    - ftp-read:
-        route:
-          id: "ftp-read"
-        description: "Consume from FTP"

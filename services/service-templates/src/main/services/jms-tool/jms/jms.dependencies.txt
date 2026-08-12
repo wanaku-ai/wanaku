@@ -1,5 +1,0 @@
-org.apache.camel:camel-jms
-io.kaoto.forage:forage-jms
-io.kaoto.forage:forage-core-common
-io.kaoto.forage:forage-jms-artemis
-org.apache.activemq:artemis-commons:2.44.0

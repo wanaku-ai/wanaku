@@ -1,2 +1,0 @@
-org.apache.camel:camel-http
-org.apache.camel:camel-jackson

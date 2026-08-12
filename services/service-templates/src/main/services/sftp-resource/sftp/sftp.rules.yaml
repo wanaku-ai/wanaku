@@ -1,6 +1,0 @@
-mcp:
-  resources:
-    - sftp-read:
-        route:
-          id: "sftp-read"
-        description: "Consume from sftp"

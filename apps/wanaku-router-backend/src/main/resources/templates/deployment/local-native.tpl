@@ -1,1 +1,0 @@
-java -jar capabilities/tools/wanaku-tool-service-{{systemName}}/target/quarkus-app/quarkus-run.jar

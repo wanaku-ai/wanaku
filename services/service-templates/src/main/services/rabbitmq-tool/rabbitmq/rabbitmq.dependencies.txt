@@ -1,3 +1,0 @@
-org.apache.camel:camel-spring-rabbitmq
-io.kaoto.forage:forage-core-common
-io.kaoto.forage:forage-spring-rabbitmq

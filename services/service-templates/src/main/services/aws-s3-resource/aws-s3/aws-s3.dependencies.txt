@@ -1,1 +1,0 @@
-org.apache.camel:camel-aws2-s3
