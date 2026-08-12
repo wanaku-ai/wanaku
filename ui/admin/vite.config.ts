@@ -18,16 +18,15 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("@carbon/react") || id.includes("@carbon/icons-react")) {
+            if (id.includes("@carbon/")) {
               return "vendor-carbon";
             }
             if (id.includes("react-markdown") || id.includes("highlight.js")) {
               return "vendor-markdown";
             }
-            if (id.includes("react-router-dom")) {
+            if (id.includes("react-router")) {
               return "vendor-router";
             }
-            return "vendor";
           }
         },
       },
