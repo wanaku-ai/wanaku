@@ -27,8 +27,8 @@ serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
+tonic-prost = { workspace = true }
 tracing = { workspace = true }
-tonic-prost = "0.14"
 
 [build-dependencies]
-tonic-prost-build = "0.14"
+tonic-prost-build = { workspace = true }
