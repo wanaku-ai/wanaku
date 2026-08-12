@@ -4981,7 +4981,7 @@ dependencies = [
  "http",
  "praxis-proxy-filter",
  "prost",
- "rand 0.9.5",
+ "rand 0.10.2",
  "reqwest 0.12.28",
  "rmcp",
  "serde",
