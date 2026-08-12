@@ -1,4 +1,4 @@
-name: Early Access
+name: early-access
 
 on:
   workflow_dispatch:
