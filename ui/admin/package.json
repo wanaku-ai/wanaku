@@ -22,7 +22,6 @@
     "@carbon/layout": "^11.49.0",
     "@carbon/react": "^1.103.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "axios": "^1.15.2",
     "highlight.js": "^11.11.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -32,12 +31,12 @@
     "sass": "^1.98.0"
   },
   "devDependencies": {
-    "baseline-browser-mapping": "^2.10.27",
     "@eslint/js": "^9.39.4",
     "@types/node": "^22.19.15",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
+    "baseline-browser-mapping": "^2.10.27",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",

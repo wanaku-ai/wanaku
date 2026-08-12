@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from "react"
-import "highlight.js/styles/atom-one-dark.css"
 import {LLMSetup} from "./LLMSetup.tsx"
 import {LLMTools} from "./LLMTools.tsx"
 import {LLMChatArea, LlmChatConfig} from "./LLMChatArea"
