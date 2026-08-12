@@ -2,16 +2,16 @@
 
 This rule file contains project-specific metadata used by OSS Helper commands.
 
-- **Remote pattern:** `wanaku-ai/wanaku-praxis`
-- **GitHub repo:** `wanaku-ai/wanaku-praxis`
+- **Remote pattern:** `wanaku-ai/wanaku`
+- **GitHub repo:** `wanaku-ai/wanaku`
 - **Issue tracker:** GitHub
-- **Issue tracker URL:** https://github.com/wanaku-ai/wanaku-praxis/issues
+- **Issue tracker URL:** https://github.com/wanaku-ai/wanaku/issues
 - **Issue ID format:** numeric
 - **SonarCloud component key:** _(none)_
-- **Documentation URL:** https://github.com/wanaku-ai/wanaku-praxis/tree/main/docs
+- **Documentation URL:** https://github.com/wanaku-ai/wanaku/tree/main/docs
 - **Documentation URL:** https://wanaku.ai/docs/
 - **Related repositories:**
-    - `wanaku-ai/wanaku` - Wanaku Classic
+    - `wanaku-ai/wanaku-barn` - Wanaku Barn (home of the Classic Wanaku)
     - `wanaku-ai/wanaku-capabilities-java-sdk` - Capabilities SDK
     - `wanaku-ai/camel-integration-capability` - Camel integration
     - `wanaku-ai/camel-code-execution-engine` (optional) - experimental Camel code execution engine integration
