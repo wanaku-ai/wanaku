@@ -1,0 +1,140 @@
+use std::time::Duration;
+
+use rmcp::{
+    ServiceExt as _,
+    model::{CallToolRequestParams, PaginatedRequestParams},
+    transport::{
+        StreamableHttpClientTransport,
+        streamable_http_client::StreamableHttpClientTransportConfig,
+    },
+};
+use serde_json::Value;
+
+const TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_TOOLS: usize = 500;
+
+#[derive(Debug, thiserror::Error)]
+pub enum McpClientError {
+    #[error("failed to connect to MCP server at {url}: {message}")]
+    Connection { url: String, message: String },
+
+    #[error("MCP operation timed out for {url}")]
+    Timeout { url: String },
+
+    #[error("tools/list failed for {url}: {message}")]
+    ListTools { url: String, message: String },
+
+    #[error("tools/call failed for {url}, tool={tool_name}: {message}")]
+    CallTool {
+        url: String,
+        tool_name: String,
+        message: String,
+    },
+}
+
+fn build_transport(url: &str) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
+    let config = StreamableHttpClientTransportConfig::with_uri(url);
+    StreamableHttpClientTransport::from_config(config)
+}
+
+pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
+    let url = url.to_owned();
+    let transport = build_transport(&url);
+
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    tracing::debug!(url = %url, "connected to MCP server for tools/list");
+
+    let mut all_tools = Vec::new();
+    let mut cursor = None;
+
+    for _ in 0..100 {
+        let params = PaginatedRequestParams::default().with_cursor(cursor);
+        let page = tokio::time::timeout(
+            TIMEOUT,
+            Box::pin(client.list_tools(Some(params))),
+        )
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::ListTools {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+        all_tools.extend(page.tools);
+
+        if all_tools.len() >= MAX_TOOLS {
+            all_tools.truncate(MAX_TOOLS);
+            break;
+        }
+
+        match page.next_cursor {
+            Some(next) if !next.is_empty() => cursor = Some(next),
+            _ => break,
+        }
+    }
+
+    tracing::debug!(url = %url, tool_count = all_tools.len(), "discovered tools from MCP server");
+
+    all_tools
+        .into_iter()
+        .map(|t| serde_json::to_value(t).map_err(|e| McpClientError::ListTools {
+            url: url.to_owned(),
+            message: e.to_string(),
+        }))
+        .collect()
+}
+
+pub async fn call_tool(
+    url: &str,
+    tool_name: &str,
+    arguments: Value,
+) -> Result<Vec<String>, McpClientError> {
+    let url = url.to_owned();
+    let transport = build_transport(&url);
+
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    let mut params = CallToolRequestParams::new(tool_name.to_owned());
+    if let Value::Object(args) = &arguments {
+        params = params.with_arguments(args.clone());
+    }
+
+    let result = tokio::time::timeout(TIMEOUT, Box::pin(client.call_tool(params)))
+        .await
+        .map_err(|_| McpClientError::Timeout {
+            url: url.to_owned(),
+        })?
+        .map_err(|e| McpClientError::CallTool {
+            url: url.to_owned(),
+            tool_name: tool_name.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    Ok(result
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            rmcp::model::ContentBlock::Text(text) => Some(text.text.clone()),
+            _ => None,
+        })
+        .collect())
+}

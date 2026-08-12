@@ -1,0 +1,13 @@
+{
+  "id": "hello-world",
+  "name": "Hello World",
+  "version": "1.0.0",
+  "entrypoint": "./plugin.js",
+  "requires": {
+    "hostApi": ">=1.0 <2.0"
+  },
+  "permissions": [
+    "navigation",
+    "pages"
+  ]
+}

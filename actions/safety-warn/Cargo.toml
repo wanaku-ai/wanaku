@@ -1,0 +1,18 @@
+[package]
+name = "safety-warn-action"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.41"
+wit-bindgen-rt = "0.41"
+
+[package.metadata.component]
+package = "wanaku:safety-warn"
+
+[package.metadata.component.target]
+path = "wit/evaluator.wit"
+world = "evaluator-action"

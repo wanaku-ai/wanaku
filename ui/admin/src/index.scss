@@ -1,0 +1,50 @@
+// Bring in all the styles for Carbon
+@use "@carbon/react" with (
+  $font-path: "@ibm/plex"
+);
+
+@use "@carbon/react/scss/reset";
+@use "@carbon/react/scss/grid";
+@use "@carbon/react/scss/layer";
+@use "@carbon/react/scss/themes";
+@use "@carbon/react/scss/theme";
+
+@include grid.flex-grid();
+
+:root {
+  @include theme.theme(themes.$g10);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include theme.theme(themes.$g100);
+  }
+}
+
+body {
+  background: theme.$background;
+  color: theme.$text-primary;
+}
+
+#main-content {
+  background: theme.$layer-01;
+  padding: 0;
+}
+
+#page-content {
+  background: theme.$background;
+  padding-top: 2rem;
+}
+
+.tabbg {
+  background: theme.$background;
+}
+
+.message {
+  padding: 0.5rem;
+  background: theme.$layer-02;
+  border-radius: 4px;
+  width: 100%;
+  word-wrap: break-word;
+  border: 1px solid theme.$border-subtle;
+}

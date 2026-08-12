@@ -1,10 +1,3 @@
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-out
-apps/wanaku-router-backend/application.dev.properties
-
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
@@ -46,12 +39,15 @@ build/
 ### Mac OS ###
 .DS_Store
 
-### Camel JBang ###
-/capabilities/tools/wanaku-tool-service-exec/.camel-jbang/camel-jbang-run.properties
-
 plan
 .claude/worktrees
 .claude/plans
 .claude/settings.local.json
 working-data/
 .bob/
+/target
+ui/admin/dist/
+ui/admin/node_modules/
+tests/e2e/ui/node_modules/
+tests/e2e/ui/test-results/
+tests/e2e/ui/playwright-report/

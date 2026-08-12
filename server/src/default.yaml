@@ -1,0 +1,48 @@
+listeners:
+  - name: mcp
+    address: "0.0.0.0:8081"
+    filter_chains: [mcp_router]
+  - name: inference
+    address: "0.0.0.0:8083"
+    filter_chains: [inference_proxy]
+
+filter_chains:
+  - name: mcp_router
+    filters:
+      - filter: cors
+        allow_origins: ["*"]
+        allow_methods: ["GET", "POST", "OPTIONS"]
+        allow_headers: ["Content-Type", "Accept", "Mcp-Session-Id", "Mcp-Protocol-Version", "Authorization"]
+      - filter: mcp
+        on_invalid: continue
+      - filter: wanaku_namespace
+      - filter: wanaku_well_known
+      - filter: wanaku_mcp_init
+      - filter: wanaku_evaluator
+      - filter: wanaku_tool_list
+      - filter: wanaku_tool_call
+      - filter: wanaku_resource_list
+      - filter: wanaku_resource_read
+      - filter: wanaku_prompt_list
+      - filter: wanaku_prompt_get
+      - filter: static_response
+        status: 200
+        headers:
+          - name: content-type
+            value: application/json
+        body: '{"jsonrpc":"2.0","error":{"code":-32601,"message":"method not supported"},"id":null}'
+  - name: inference_proxy
+    filters:
+      - filter: wanaku_intercept
+      - filter: router
+        routes:
+          - path_prefix: "/"
+            cluster: inference
+      - filter: load_balancer
+        clusters:
+          - name: inference
+            endpoints:
+              - "127.0.0.1:11434"
+
+insecure_options:
+  skip_pipeline_validation: true

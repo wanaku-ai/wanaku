@@ -1,0 +1,98 @@
+name: UI E2E Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - .claude/**
+      - .github/dependabot.yml
+      - docs/**
+      - LICENSE
+  push:
+    branches:
+      - main
+      - ci-*
+    paths-ignore:
+      - '**.md'
+      - .claude/**
+      - .github/dependabot.yml
+      - docs/**
+      - LICENSE
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ui-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Install protobuf compiler
+      run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+      with:
+        toolchain: '1.96'
+
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      with:
+        node-version: 'lts/*'
+        cache: 'yarn'
+        cache-dependency-path: ui/admin/yarn.lock
+
+    - name: Build Admin UI
+      working-directory: ui/admin
+      run: |
+        yarn install --frozen-lockfile
+        yarn run build
+
+    - name: Build Server
+      run: cargo build
+
+    - name: Install Playwright dependencies
+      working-directory: tests/e2e/ui
+      run: |
+        yarn install --frozen-lockfile
+        npx playwright install --with-deps chromium
+
+    - name: Start Server
+      run: |
+        cargo run &
+        echo "Waiting for server to be ready..."
+        for i in $(seq 1 60); do
+          if curl -sf http://localhost:8080/api/v1/management/statistics > /dev/null 2>&1; then
+            echo "Server ready after ${i}s"
+            break
+          fi
+          if [ "$i" -eq 60 ]; then
+            echo "Server failed to start within 60s"
+            exit 1
+          fi
+          sleep 1
+        done
+
+    - name: Run Playwright Tests
+      working-directory: tests/e2e/ui
+      run: npx playwright test
+
+    - name: Upload Playwright Report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: playwright-report
+        path: |
+          tests/e2e/ui/playwright-report/
+          tests/e2e/ui/test-results/
+        retention-days: 14
+        if-no-files-found: ignore
