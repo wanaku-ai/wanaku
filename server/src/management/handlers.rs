@@ -3,7 +3,7 @@ use tracing::{info, warn};
 
 use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
-    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ServiceEntry, ServiceRegistry,
+    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
     ToolEntry, ToolRegistry, MCP_FORWARD_TYPE,
 };
 use super::response::{json_ok, json_err};
@@ -246,67 +246,6 @@ pub(super) fn handle_namespace_delete(registry: &InMemoryRegistry, name: &str) -
     }
 }
 
-pub(super) fn handle_service_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
-    let services = registry.list_services();
-    json_ok(&serde_json::json!(services))
-}
-
-pub(super) fn handle_service_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    let services: Vec<ServiceEntry> = registry
-        .list_services()
-        .into_iter()
-        .filter(|s| s.name == name)
-        .collect();
-
-    if services.is_empty() {
-        json_err(404, &format!("service not found: {name}"))
-    } else {
-        json_ok(&serde_json::json!(services))
-    }
-}
-
-pub(super) fn handle_service_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, "service create request body");
-    let service: ServiceEntry = match serde_json::from_str(body) {
-        Ok(s) => s,
-        Err(e) => {
-            warn!(error = %e, "invalid service JSON");
-            return json_err(400, &format!("invalid service JSON: {e}"));
-        }
-    };
-
-    let name = service.name.clone();
-    let svc_type = service.service_type.clone();
-    registry.register_service(service);
-    info!(service = %name, service_type = %svc_type, "registered service via management API");
-    match registry.get_service(&name, &svc_type) {
-        Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("service not found after registration: {name}")),
-    }
-}
-
-pub(super) fn handle_service_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    let services: Vec<ServiceEntry> = registry
-        .list_services()
-        .into_iter()
-        .filter(|s| s.name == name)
-        .collect();
-
-    if services.is_empty() {
-        return json_err(404, &format!("service not found: {name}"));
-    }
-
-    let mut removed_count = 0;
-    for svc in &services {
-        if registry.remove_service(&svc.name, &svc.service_type) {
-            removed_count += 1;
-        }
-    }
-
-    info!(service = %name, count = removed_count, "removed service(s) via management API");
-    json_ok(&serde_json::json!({"removed": name, "count": removed_count}))
-}
-
 pub(super) fn handle_forward_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let forwards = registry.list_forwards();
     json_ok(&serde_json::json!(forwards))
@@ -472,26 +411,8 @@ mod forward_helpers_tests {
     }
 }
 
-pub(super) fn handle_capability_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
-    let services = registry.list_services();
-    let targets: Vec<serde_json::Value> = services
-        .iter()
-        .map(|s| {
-            let (host, port) = s
-                .address
-                .rsplit_once(':')
-                .map(|(h, p)| (h.to_owned(), p.parse::<u16>().unwrap_or(0)))
-                .unwrap_or_else(|| (s.address.clone(), 0));
-
-            serde_json::json!({
-                "id": format!("{}:{}", s.name, s.service_type),
-                "serviceName": s.name,
-                "host": host,
-                "port": port,
-                "serviceType": s.service_type,
-            })
-        })
-        .collect();
+pub(super) fn handle_capability_list(_registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let targets: Vec<serde_json::Value> = Vec::new();
     json_ok(&serde_json::json!(targets))
 }
 
@@ -534,7 +455,7 @@ pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>
 mod tests {
     use http::Response;
     use wanaku_praxis_apis::registry::{
-        ForwardEntry, ForwardRegistry, InMemoryRegistry, ServiceEntry, ServiceRegistry,
+        ForwardEntry, ForwardRegistry, InMemoryRegistry,
         ToolRegistry,
     };
 
@@ -546,7 +467,6 @@ mod tests {
         handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
         handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
         handle_resource_update,
-        handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
         handle_statistics,
         handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list,
         handle_tool_update,
@@ -993,82 +913,6 @@ mod tests {
         );
     }
 
-    // ---- Service handlers ----
-
-    #[test]
-    fn service_create_and_get_roundtrip() {
-        let registry = InMemoryRegistry::new();
-        let body =
-            r#"{"name":"echo","address":"localhost:9191","service_type":"tool-invoker"}"#;
-
-        let create_resp = handle_service_create(&registry, body);
-        assert_eq!(create_resp.status(), 200);
-
-        let get_resp = handle_service_get(&registry, "echo");
-        assert_eq!(get_resp.status(), 200);
-
-        let data = data_field(&get_resp);
-        let arr = data.as_array();
-        assert_eq!(arr.map(|a| a.len()), Some(1));
-    }
-
-    #[test]
-    fn service_list_empty_then_populated() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(
-            data_field(&handle_service_list(&registry))
-                .as_array()
-                .map(|a| a.len()),
-            Some(0)
-        );
-
-        handle_service_create(
-            &registry,
-            r#"{"name":"s1","address":"h:1","service_type":"t"}"#,
-        );
-        assert_eq!(
-            data_field(&handle_service_list(&registry))
-                .as_array()
-                .map(|a| a.len()),
-            Some(1)
-        );
-    }
-
-    #[test]
-    fn service_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_service_get(&registry, "nope").status(), 404);
-    }
-
-    #[test]
-    fn service_delete_existing() {
-        let registry = InMemoryRegistry::new();
-        handle_service_create(
-            &registry,
-            r#"{"name":"del-svc","address":"h:1","service_type":"t"}"#,
-        );
-        let resp = handle_service_delete(&registry, "del-svc");
-        assert_eq!(resp.status(), 200);
-
-        let data = data_field(&resp);
-        assert_eq!(
-            data.get("removed").and_then(|v| v.as_str()),
-            Some("del-svc")
-        );
-    }
-
-    #[test]
-    fn service_delete_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_service_delete(&registry, "nope").status(), 404);
-    }
-
-    #[test]
-    fn service_create_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_service_create(&registry, "nope").status(), 400);
-    }
-
     // ---- Forward handlers (sync-only, skipping async create/refresh) ----
 
     #[test]
@@ -1124,46 +968,11 @@ mod tests {
     // ---- Capability handlers ----
 
     #[test]
-    fn capability_list_reflects_services() {
+    fn capability_list_returns_empty() {
         let registry = InMemoryRegistry::new();
         let resp = handle_capability_list(&registry);
         assert_eq!(resp.status(), 200);
         assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(0));
-
-        registry.register_service(ServiceEntry {
-            name: "echo".to_owned(),
-            address: "host:9191".to_owned(),
-            service_type: "tool-invoker".to_owned(),
-        });
-
-        let resp = handle_capability_list(&registry);
-        let data = data_field(&resp);
-        let arr = data.as_array();
-        assert_eq!(arr.map(|a| a.len()), Some(1));
-
-        if let Some(first) = arr.and_then(|a| a.first()) {
-            assert_eq!(
-                first.get("serviceName").and_then(|v| v.as_str()),
-                Some("echo")
-            );
-            assert_eq!(first.get("host").and_then(|v| v.as_str()), Some("host"));
-            assert_eq!(first.get("port").and_then(|v| v.as_u64()), Some(9191));
-        }
-    }
-
-    #[test]
-    fn capability_list_parses_address_without_port() {
-        let registry = InMemoryRegistry::new();
-        registry.register_service(ServiceEntry {
-            name: "no-port".to_owned(),
-            address: "just-a-host".to_owned(),
-            service_type: "t".to_owned(),
-        });
-
-        let data = data_field(&handle_capability_list(&registry));
-        if let Some(first) = data.as_array().and_then(|a| a.first()) {
-            assert_eq!(first.get("port").and_then(|v| v.as_u64()), Some(0));
-        }
     }
 
     #[test]

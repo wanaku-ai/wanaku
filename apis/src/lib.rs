@@ -2,7 +2,6 @@
 pub mod config;
 pub mod correlation;
 pub mod feature;
-pub mod grpc;
 pub mod http_response;
 pub mod interactions;
 pub mod llm;

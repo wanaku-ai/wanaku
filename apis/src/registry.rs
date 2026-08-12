@@ -92,24 +92,10 @@ pub struct PromptEntry {
     pub configuration_uri: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct ServiceEntry {
-    pub name: String,
-    pub address: String,
-    #[serde(rename = "serviceType", alias = "service_type")]
-    pub service_type: String,
-}
-
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum RegistryError {
     #[error("tool not found: {0}")]
     ToolNotFound(String),
-
-    #[error("no service available for tool type '{tool_type}' with service type '{service_type}'")]
-    ServiceNotFound {
-        tool_type: String,
-        service_type: String,
-    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -216,24 +202,6 @@ pub trait ForwardRegistry: Send + Sync {
     fn remove_forward(&self, name: &str) -> bool;
 }
 
-pub trait ServiceRegistry: Send + Sync {
-    fn list_services(&self) -> Vec<ServiceEntry>;
-    fn get_service(&self, name: &str, service_type: &str) -> Option<ServiceEntry>;
-
-    fn resolve_service(
-        &self,
-        tool_type: &str,
-        service_type: &str,
-    ) -> Result<ServiceEntry, RegistryError>;
-
-    fn register_service(&self, service: ServiceEntry);
-    fn remove_service(&self, name: &str, service_type: &str) -> bool;
-}
-
-fn service_key(name: &str, service_type: &str) -> String {
-    format!("{name}:{service_type}")
-}
-
 #[derive(Clone)]
 pub struct InMemoryRegistry {
     tools: Arc<DashMap<String, ToolEntry>>,
@@ -241,7 +209,6 @@ pub struct InMemoryRegistry {
     prompts: Arc<DashMap<String, PromptEntry>>,
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
-    services: Arc<DashMap<String, ServiceEntry>>,
     persistence: Option<Arc<dyn PersistenceBackend>>,
     inject_request_id: Arc<AtomicBool>,
 }
@@ -267,7 +234,6 @@ impl InMemoryRegistry {
             prompts: Arc::new(DashMap::new()),
             forwards: Arc::new(DashMap::new()),
             namespaces: Arc::new(namespaces),
-            services: Arc::new(DashMap::new()),
             persistence: None,
             inject_request_id: Arc::new(AtomicBool::new(false)),
         }
@@ -330,10 +296,6 @@ impl InMemoryRegistry {
             }
             self.namespaces.insert(namespace.name.clone(), namespace);
         }
-        for service in snapshot.services {
-            let key = service_key(&service.name, &service.service_type);
-            self.services.insert(key, service);
-        }
 
         tracing::info!("loaded registry from persistence backend");
     }
@@ -345,7 +307,6 @@ impl InMemoryRegistry {
             prompts: self.list_prompts(),
             forwards: self.list_forwards(),
             namespaces: self.list_namespaces(),
-            services: self.services.iter().map(|e| e.value().clone()).collect(),
         }
     }
 
@@ -575,47 +536,6 @@ impl ForwardRegistry for InMemoryRegistry {
     }
 }
 
-impl ServiceRegistry for InMemoryRegistry {
-    fn list_services(&self) -> Vec<ServiceEntry> {
-        self.services.iter().map(|e| e.value().clone()).collect()
-    }
-
-    fn get_service(&self, name: &str, service_type: &str) -> Option<ServiceEntry> {
-        let key = service_key(name, service_type);
-        self.services.get(&key).map(|e| e.value().clone())
-    }
-
-    fn resolve_service(
-        &self,
-        tool_type: &str,
-        service_type: &str,
-    ) -> Result<ServiceEntry, RegistryError> {
-        let key = service_key(tool_type, service_type);
-        self.services
-            .get(&key)
-            .map(|entry| entry.value().clone())
-            .ok_or_else(|| RegistryError::ServiceNotFound {
-                tool_type: tool_type.to_owned(),
-                service_type: service_type.to_owned(),
-            })
-    }
-
-    fn register_service(&self, service: ServiceEntry) {
-        let key = service_key(&service.name, &service.service_type);
-        self.services.insert(key, service);
-        self.persist();
-    }
-
-    fn remove_service(&self, name: &str, service_type: &str) -> bool {
-        let key = service_key(name, service_type);
-        let removed = self.services.remove(&key).is_some();
-        if removed {
-            self.persist();
-        }
-        removed
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -647,14 +567,6 @@ mod tests {
             namespace: None,
             configuration_uri: None,
             secrets_uri: None,
-        }
-    }
-
-    fn sample_service() -> ServiceEntry {
-        ServiceEntry {
-            name: "http".to_owned(),
-            address: "localhost:9090".to_owned(),
-            service_type: "tool-invoker".to_owned(),
         }
     }
 
@@ -691,22 +603,6 @@ mod tests {
     }
 
     #[test]
-    fn resolve_service_by_type() {
-        let registry = InMemoryRegistry::new();
-        registry.register_service(sample_service());
-        let svc = registry.resolve_service("http", "tool-invoker");
-        assert!(svc.is_ok());
-        assert_eq!(svc.as_ref().map(|s| s.address.as_str()), Ok("localhost:9090"));
-    }
-
-    #[test]
-    fn resolve_missing_service_returns_error() {
-        let registry = InMemoryRegistry::new();
-        let result = registry.resolve_service("nonexistent", "tool-invoker");
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn register_and_list_resources() {
         let registry = InMemoryRegistry::new();
         registry.register_resource(sample_resource());
@@ -730,27 +626,6 @@ mod tests {
         registry.register_resource(sample_resource());
         assert!(registry.remove_resource("test-resource"));
         assert!(registry.get_resource("test-resource").is_none());
-    }
-
-    #[test]
-    fn different_service_types_coexist() {
-        let registry = InMemoryRegistry::new();
-        registry.register_service(ServiceEntry {
-            name: "http".to_owned(),
-            address: "localhost:9090".to_owned(),
-            service_type: "tool-invoker".to_owned(),
-        });
-        registry.register_service(ServiceEntry {
-            name: "http".to_owned(),
-            address: "localhost:9091".to_owned(),
-            service_type: "resource-provider".to_owned(),
-        });
-        let tool_svc = registry.resolve_service("http", "tool-invoker");
-        let res_svc = registry.resolve_service("http", "resource-provider");
-        assert!(tool_svc.is_ok());
-        assert!(res_svc.is_ok());
-        assert_eq!(tool_svc.map(|s| s.address), Ok("localhost:9090".to_owned()));
-        assert_eq!(res_svc.map(|s| s.address), Ok("localhost:9091".to_owned()));
     }
 
     #[test]

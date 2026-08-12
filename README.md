@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/wanaku-ai/wanaku)](https://github.com/wanaku-ai/wanaku/releases)
 
 The Wanaku MCP Router is a router for AI-enabled applications powered by the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/).
-It sits between AI clients and your backend services, routing requests through a filter pipeline to provide namespace isolation, tool management, and both local (gRPC) and remote (MCP forwarding) tool execution.
+It sits between AI clients and your backend services, routing requests through a filter pipeline to provide namespace isolation, tool management, and MCP-to-MCP tool forwarding.
 
 The project name comes from the origins of the word [Guanaco](https://en.wikipedia.org/wiki/Guanaco), a camelid native to
 South America.
@@ -50,7 +50,7 @@ podman run -p 8080:8080 -p 8081:8081 \
 ### From Source
 
 > [!NOTE]
-> Building from source requires: Rust 1.96+, protobuf, and Yarn (for the admin UI).
+> Building from source requires: Rust 1.96+ and Yarn (for the admin UI).
 
 ```bash
 cargo build
@@ -75,25 +75,12 @@ The reference documentation, including the complete installation and configurati
 
 ## Configuration
 
-Drop a `wanaku.yaml` in the working directory to preload tool and service definitions:
+Drop a `wanaku.yaml` in the working directory to preload forward definitions:
 
 ```yaml
-tools:
-  - name: "search-docs"
-    type: "doc-search"
-    uri: "doc-search://semantic"
-    description: "Searches documentation"
-    input_schema:
-      type: object
-      properties:
-        query:
-          type: string
-      required: [query]
-
-services:
-  - name: "doc-search"
-    address: "localhost:9191"
-    service_type: "tool-invoker"
+forwards:
+  - name: "upstream-mcp"
+    address: "http://remote.example.com/mcp"
 ```
 
 If no config file is provided, the server starts with an empty registry that can be populated via the management API.

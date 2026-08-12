@@ -5,7 +5,7 @@ use utoipa::OpenApi;
 use wanaku_praxis_apis::interactions::Interaction;
 use wanaku_praxis_apis::registry::{
     ForwardEntry, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage, ResourceEntry,
-    ServiceEntry, ToolEntry,
+    ToolEntry,
 };
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -145,37 +145,6 @@ fn create_namespace() {}
 )]
 fn delete_namespace() {}
 
-// -- Services -----------------------------------------------------------------
-
-#[utoipa::path(get, path = "/api/v1/services", tag = "Services",
-    responses((status = 200, description = "List all services", body = Vec<ServiceEntry>))
-)]
-fn list_services() {}
-
-#[utoipa::path(get, path = "/api/v1/services/{name}", tag = "Services",
-    params(("name" = String, Path, description = "Service name")),
-    responses(
-        (status = 200, description = "Service(s) found", body = Vec<ServiceEntry>),
-        (status = 404, description = "Service not found"),
-    )
-)]
-fn get_service() {}
-
-#[utoipa::path(post, path = "/api/v1/services", tag = "Services",
-    request_body = ServiceEntry,
-    responses((status = 200, description = "Service registered", body = ServiceEntry))
-)]
-fn create_service() {}
-
-#[utoipa::path(delete, path = "/api/v1/services/{name}", tag = "Services",
-    params(("name" = String, Path, description = "Service name")),
-    responses(
-        (status = 200, description = "Service removed"),
-        (status = 404, description = "Service not found"),
-    )
-)]
-fn delete_service() {}
-
 // -- Forwards -----------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/forwards", tag = "Forwards",
@@ -272,7 +241,6 @@ fn capabilities_fleet_status() {}
         list_resources, get_resource, create_resource, delete_resource,
         list_prompts, get_prompt, create_prompt, delete_prompt,
         list_namespaces, get_namespace, create_namespace, delete_namespace,
-        list_services, get_service, create_service, delete_service,
         list_forwards, get_forward, create_forward, delete_forward, refresh_forward,
         list_interactions, clear_interactions,
         get_statistics,
@@ -280,7 +248,7 @@ fn capabilities_fleet_status() {}
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,
-        ServiceEntry, ForwardEntry, NamespaceEntry, Interaction,
+        ForwardEntry, NamespaceEntry, Interaction,
     ))
 )]
 pub struct ApiDoc;

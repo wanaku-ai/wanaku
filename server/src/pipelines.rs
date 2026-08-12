@@ -7,7 +7,6 @@ use praxis_protocol::ListenerPipelines;
 use tracing::info;
 
 use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::registry::InMemoryRegistry;
 
 struct RegistryExtension {
@@ -17,16 +16,6 @@ struct RegistryExtension {
 impl PipelineExtension for RegistryExtension {
     fn prepare(&self, extensions: &mut RequestExtensions) {
         extensions.insert(self.registry.clone());
-    }
-}
-
-struct GrpcPoolExtension {
-    pool: GrpcPool,
-}
-
-impl PipelineExtension for GrpcPoolExtension {
-    fn prepare(&self, extensions: &mut RequestExtensions) {
-        extensions.insert(self.pool.clone());
     }
 }
 
@@ -41,7 +30,6 @@ pub fn resolve_pipelines(
     health_registry: &praxis_core::health::HealthRegistry,
     kv_stores: &praxis_core::kv::KvStoreRegistry,
     wanaku_registry: InMemoryRegistry,
-    grpc_pool: GrpcPool,
     features: &[Box<dyn Feature>],
 ) -> Result<ListenerPipelines, Box<dyn std::error::Error + Send + Sync>> {
     let chains: HashMap<&str, &[_]> = config
@@ -82,9 +70,6 @@ pub fn resolve_pipelines(
 
         pipeline.add_pipeline_extension(Box::new(RegistryExtension {
             registry: wanaku_registry.clone(),
-        }));
-        pipeline.add_pipeline_extension(Box::new(GrpcPoolExtension {
-            pool: grpc_pool.clone(),
         }));
 
         for feature in features {

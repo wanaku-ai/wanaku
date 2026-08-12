@@ -13,10 +13,9 @@ use praxis_protocol::http::PingoraHttp;
 use tracing::info;
 
 use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::grpc::GrpcPool;
 use wanaku_praxis_apis::persistence::FilePersistence;
 use wanaku_praxis_apis::registry::{
-    ForwardEntry, ForwardRegistry, InMemoryRegistry, ServiceEntry, ServiceRegistry, ToolEntry,
+    ForwardEntry, ForwardRegistry, InMemoryRegistry, ToolEntry,
     ToolRegistry,
 };
 
@@ -69,8 +68,6 @@ fn main() {
         feature.load_env_config();
     }
 
-    let grpc_pool = GrpcPool::new();
-
     let mut filter_registry = wanaku_praxis::build_full_registry();
     for feature in &features {
         feature.register_filters(&mut filter_registry);
@@ -88,7 +85,6 @@ fn main() {
         &health_registry,
         &kv_stores,
         wanaku_registry,
-        grpc_pool,
         &features,
     )
     .unwrap_or_else(|e| fatal(&e));
@@ -177,20 +173,6 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
                 }
                 Err(e) => {
                     tracing::warn!(error = %e, "failed to deserialize tool entry from config");
-                }
-            }
-        }
-    }
-
-    if let Some(services) = config.get("services").and_then(|s| s.as_sequence()) {
-        for svc_value in services {
-            match serde_yaml::from_value::<ServiceEntry>(svc_value.clone()) {
-                Ok(svc) => {
-                    info!(service = %svc.name, address = %svc.address, "registered service from config");
-                    registry.register_service(svc);
-                }
-                Err(e) => {
-                    tracing::warn!(error = %e, "failed to deserialize service entry from config");
                 }
             }
         }

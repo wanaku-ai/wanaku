@@ -23,17 +23,16 @@ use self::handlers::{
     handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
     handle_resource_update,
-    handle_service_create, handle_service_delete, handle_service_get, handle_service_list,
     handle_statistics,
     handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
     CapabilityRoute, ForwardRoute, ManagementRoute, NamespaceRoute,
-    PromptRoute, ResourceRoute, ServiceRoute, ToolRoute,
+    PromptRoute, ResourceRoute, ToolRoute,
     resolve_capability_route, resolve_forward_route,
     resolve_management_route, resolve_namespace_route,
-    resolve_prompt_route, resolve_resource_route, resolve_service_route,
+    resolve_prompt_route, resolve_resource_route,
     resolve_tool_route,
 };
 use self::ui::serve_ui;
@@ -180,20 +179,6 @@ impl ServeHttp for WanakuManagementService {
                 },
                 NamespaceRoute::Delete(name) => handle_namespace_delete(&self.registry, &name),
                 NamespaceRoute::NotFound => json_err(404, "not found"),
-            };
-        }
-
-        let service_route = resolve_service_route(&method, &path);
-        if service_route != ServiceRoute::NotFound {
-            return match service_route {
-                ServiceRoute::List => handle_service_list(&self.registry),
-                ServiceRoute::GetByName(name) => handle_service_get(&self.registry, &name),
-                ServiceRoute::Create => match read_body(http_session).await {
-                    Ok(body) => handle_service_create(&self.registry, &body),
-                    Err(resp) => resp,
-                },
-                ServiceRoute::Delete(name) => handle_service_delete(&self.registry, &name),
-                ServiceRoute::NotFound => json_err(404, "not found"),
             };
         }
 
