@@ -30,4 +30,4 @@ tonic = { workspace = true }
 tracing = { workspace = true }
 
 [build-dependencies]
-tonic-build = "0.13"
+tonic-build = "0.14"
