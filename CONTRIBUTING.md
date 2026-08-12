@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the Wanaku MCP Router project!
 
 ## Getting Started
 
-Please read our comprehensive [Contributing Guide](docs/contributing.md) for detailed information on:
+Please read our [Getting Started](docs/getting-started.md) guide for detailed information on:
 
 - Understanding tools, providers, and prompts
 - Creating new capabilities
@@ -14,11 +14,10 @@ Please read our comprehensive [Contributing Guide](docs/contributing.md) for det
 
 ## Quick Links
 
-- **Contributing Guide**: [docs/contributing.md](docs/contributing.md)
-- **Building Guide**: [docs/building.md](docs/building.md)
+- **Getting Started**: [docs/getting-started.md](docs/getting-started.md)
 - **Architecture Overview**: [docs/architecture.md](docs/architecture.md)
-- **gRPC Bridge Guide**: [docs/grpc-bridge.md](docs/grpc-bridge.md)
-- **Release Guide**: [docs/release-guide.md](docs/release-guide.md)
+- **Configuration Reference**: [docs/configuration.md](docs/configuration.md)
+- **Plugin Development**: [docs/plugin-development-guide.md](docs/plugin-development-guide.md)
 
 ## Code of Conduct
 
