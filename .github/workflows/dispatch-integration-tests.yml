@@ -1,0 +1,83 @@
+name: Dispatch Integration Tests
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: integration-tests-pr-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    name: Dispatch Integration Tests
+    runs-on: ubuntu-latest
+    if: >-
+      github.repository == 'wanaku-ai/wanaku'
+      && github.event.issue.pull_request
+      && contains(github.event.comment.body, '/wanaku-integration-tests')
+    steps:
+      - name: Check commenter permission
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PERM=$(gh api "repos/${{ github.repository }}/collaborators/${{ github.event.comment.user.login }}/permission" \
+            --jq '.permission')
+          if [[ "$PERM" != "admin" && "$PERM" != "write" ]]; then
+            echo "::error::User ${{ github.event.comment.user.login }} does not have write permission (has: $PERM)"
+            exit 1
+          fi
+
+      - name: Acknowledge comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='eyes'
+
+      - name: Fetch PR metadata
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_JSON=$(gh pr view "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --json headRefName,headRepository)
+          HEAD_REF=$(echo "$PR_JSON" | jq -r '.headRefName')
+          HEAD_REPO=$(echo "$PR_JSON" | jq -r '.headRepository.nameWithOwner')
+          if [[ -z "$HEAD_REF" || -z "$HEAD_REPO" || "$HEAD_REPO" == "null" ]]; then
+            echo "::error::Could not resolve PR head reference (fork may have been deleted)"
+            exit 1
+          fi
+          echo "head_ref=${HEAD_REF}" >> "$GITHUB_OUTPUT"
+          echo "head_repo=${HEAD_REPO}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.INTEGRATION_APP_CLIENT_ID }}
+          private-key: ${{ secrets.INTEGRATION_APP_PRIVATE_KEY }}
+          owner: wanaku-ai
+          repositories: wanaku-tests
+
+      - name: Dispatch integration tests
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          HEAD_REPO: ${{ steps.pr.outputs.head_repo }}
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          SOURCE_REPO: ${{ github.repository }}
+        run: |
+          gh workflow run full-integration-test.yml \
+            --repo wanaku-ai/wanaku-tests \
+            --ref main \
+            -f wanaku_repo="${HEAD_REPO}" \
+            -f wanaku_branch="${HEAD_REF}" \
+            -f pr_number="${PR_NUMBER}" \
+            -f source_repo="${SOURCE_REPO}"
