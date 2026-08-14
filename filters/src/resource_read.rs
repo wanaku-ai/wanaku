@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
+use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
@@ -68,12 +69,83 @@ impl ResourceReadFilter {
 
         trace!(uri = %resource_uri, namespace = %namespace, "handling MCP resources/read request");
 
-        warn!(uri = %resource_uri, "resource read is not supported — no resource provider backend configured");
+        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
+            Some(r) => r,
+            None => {
+                tracing::error!("InMemoryRegistry not found in request extensions");
+                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
+            }
+        };
+
+        let resource = registry
+            .list_resources_in_namespace(namespace)
+            .into_iter()
+            .find(|r| r.location == resource_uri);
+
+        let resource = match resource {
+            Some(r) => r,
+            None => {
+                warn!(uri = %resource_uri, namespace = %namespace, "resource not found in registry");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INVALID_PARAMS,
+                    &format!("resource not found: {resource_uri}"),
+                ));
+            }
+        };
+
+        if resource.is_mcp_forward() {
+            return self.handle_forwarded_read(&resource, &resource_uri, &parsed).await;
+        }
+
+        warn!(uri = %resource_uri, resource_type = %resource.type_, "unsupported resource type — only MCP-forwarded resources are supported");
         Ok(crate::response::json_rpc_error(
             &parsed.id,
             crate::response::JSONRPC_INTERNAL_ERROR,
-            "resource read is not supported in this configuration",
+            &format!("unsupported resource type '{}': only MCP-forwarded resources are supported", resource.type_),
         ))
+    }
+
+    async fn handle_forwarded_read(
+        &self,
+        resource: &wanaku_praxis_apis::registry::ResourceEntry,
+        resource_uri: &str,
+        parsed: &ParsedBody,
+    ) -> Result<FilterAction, FilterError> {
+        let forward_address = match resource.forward_address() {
+            Some(addr) => addr,
+            None => {
+                warn!(uri = %resource_uri, "forwarded resource missing forward address label");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    "forwarded resource has no upstream address configured",
+                ));
+            }
+        };
+
+        trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
+
+        match wanaku_praxis_apis::mcp_client::read_resource(forward_address, resource_uri).await {
+            Ok(contents) => {
+                let response = serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": parsed.id,
+                    "result": {"contents": contents}
+                });
+
+                let response_body = Bytes::from(response.to_string());
+                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+            }
+            Err(e) => {
+                warn!(uri = %resource_uri, error = %e, "MCP forward resource read failed");
+                Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    &format!("forwarded resource read failed: {e}"),
+                ))
+            }
+        }
     }
 }
 
