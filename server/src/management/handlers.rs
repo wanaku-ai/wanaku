@@ -271,11 +271,13 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
     registry.register_forward(forward.clone());
 
-    let count = discover_tools_from_forward(registry, &forward).await;
+    let tools_count = discover_tools_from_forward(registry, &forward).await;
+    let resources_count = discover_resources_from_forward(registry, &forward).await;
 
     json_ok(&serde_json::json!({
         "forward": &forward,
-        "tools_discovered": count,
+        "tools_discovered": tools_count,
+        "resources_discovered": resources_count,
     }))
 }
 
@@ -288,6 +290,7 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
 
     if let Some(fwd) = forward {
         remove_forwarded_tools(registry, &fwd.address);
+        remove_forwarded_resources(registry, &fwd.address);
     }
 
     info!(forward = %name, "removed forward via management API");
@@ -301,10 +304,12 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
     };
 
     remove_forwarded_tools(registry, &forward.address);
-    let count = discover_tools_from_forward(registry, &forward).await;
+    remove_forwarded_resources(registry, &forward.address);
+    let tools_count = discover_tools_from_forward(registry, &forward).await;
+    let resources_count = discover_resources_from_forward(registry, &forward).await;
 
-    info!(forward = %name, tools_discovered = count, "refreshed forward");
-    json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": count}))
+    info!(forward = %name, tools_discovered = tools_count, resources_discovered = resources_count, "refreshed forward");
+    json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count}))
 }
 
 pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
@@ -357,6 +362,77 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
     count
 }
 
+pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+    let resources = match wanaku_praxis_apis::mcp_client::list_resources(&forward.address).await {
+        Ok(r) => r,
+        Err(e) => {
+            warn!(forward = %forward.name, error = %e, "failed to discover resources from forward");
+            return 0;
+        }
+    };
+
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+    let mut count = 0;
+
+    for res_json in &resources {
+        let name = match res_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+            Some(n) if !n.is_empty() => n,
+            _ => {
+                warn!(forward = %forward.name, "skipping forwarded resource with missing or empty name");
+                continue;
+            }
+        };
+        let description = res_json
+            .get("description")
+            .and_then(|d| d.as_str())
+            .unwrap_or_default();
+        let uri = res_json
+            .get("uri")
+            .and_then(|u| u.as_str())
+            .unwrap_or_default();
+        let mime_type = res_json
+            .get("mimeType")
+            .and_then(|m| m.as_str())
+            .unwrap_or_default();
+
+        let mut labels = std::collections::HashMap::new();
+        labels.insert(
+            wanaku_praxis_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
+            forward.address.clone(),
+        );
+
+        let resource = ResourceEntry {
+            name: name.to_owned(),
+            description: description.to_owned(),
+            location: uri.to_owned(),
+            type_: MCP_FORWARD_TYPE.to_owned(),
+            mime_type: mime_type.to_owned(),
+            labels,
+            id: None,
+            namespace: Some(namespace.to_owned()),
+            configuration_uri: None,
+            secrets_uri: None,
+        };
+
+        info!(resource = %name, forward = %forward.name, "discovered forwarded resource");
+        registry.register_resource(resource);
+        count += 1;
+    }
+
+    count
+}
+
+fn remove_forwarded_resources(registry: &InMemoryRegistry, address: &str) {
+    let forwarded: Vec<String> = registry
+        .list_resources()
+        .iter()
+        .filter(|r| r.is_mcp_forward() && r.forward_address() == Some(address))
+        .map(|r| r.name.clone())
+        .collect();
+
+    registry.remove_resources_batch(&forwarded);
+}
+
 fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     let forwarded: Vec<String> = registry
         .list_tools()
@@ -371,8 +447,47 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
+    use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
     use std::collections::HashMap;
+
+    #[test]
+    fn remove_forwarded_resources_clears_matching_resources() {
+        let registry = InMemoryRegistry::new();
+        let fwd_addr = "http://remote:8080";
+
+        let mut fwd_labels = HashMap::new();
+        fwd_labels.insert(FORWARD_ADDRESS_LABEL.to_owned(), fwd_addr.to_owned());
+
+        registry.register_resource(ResourceEntry {
+            name: "fwd-res".to_owned(),
+            description: "forwarded".to_owned(),
+            location: "file:///data/report.csv".to_owned(),
+            type_: MCP_FORWARD_TYPE.to_owned(),
+            mime_type: "text/csv".to_owned(),
+            labels: fwd_labels,
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
+        });
+        registry.register_resource(ResourceEntry {
+            name: "local-res".to_owned(),
+            description: "local".to_owned(),
+            location: "/tmp/local.txt".to_owned(),
+            type_: "file".to_owned(),
+            mime_type: "text/plain".to_owned(),
+            labels: HashMap::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
+        });
+
+        remove_forwarded_resources(&registry, fwd_addr);
+
+        assert!(registry.get_resource("fwd-res").is_none());
+        assert!(registry.get_resource("local-res").is_some());
+    }
 
     #[test]
     fn remove_forwarded_tools_clears_matching_tools() {

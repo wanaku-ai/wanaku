@@ -117,9 +117,21 @@ pub struct NamespaceEntry {
 
 pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 
+pub const FORWARD_ADDRESS_LABEL: &str = "wanaku.forward_address";
+
 impl ToolEntry {
     pub fn is_mcp_forward(&self) -> bool {
         self.type_ == MCP_FORWARD_TYPE
+    }
+}
+
+impl ResourceEntry {
+    pub fn is_mcp_forward(&self) -> bool {
+        self.type_ == MCP_FORWARD_TYPE
+    }
+
+    pub fn forward_address(&self) -> Option<&str> {
+        self.labels.get(FORWARD_ADDRESS_LABEL).map(|s| s.as_str())
     }
 }
 
@@ -169,6 +181,7 @@ pub trait ResourceRegistry: Send + Sync {
     fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     fn register_resource(&self, resource: ResourceEntry);
     fn remove_resource(&self, name: &str) -> bool;
+    fn remove_resources_batch(&self, names: &[String]) -> usize;
     fn resource_count(&self) -> usize;
 }
 
@@ -428,6 +441,19 @@ impl ResourceRegistry for InMemoryRegistry {
         removed
     }
 
+    fn remove_resources_batch(&self, names: &[String]) -> usize {
+        let mut count = 0;
+        for name in names {
+            if self.resources.remove(name.as_str()).is_some() {
+                count += 1;
+            }
+        }
+        if count > 0 {
+            self.persist();
+        }
+        count
+    }
+
     fn resource_count(&self) -> usize {
         self.resources.len()
     }
@@ -620,6 +646,50 @@ mod tests {
         registry.register_resource(sample_resource());
         assert!(registry.remove_resource("test-resource"));
         assert!(registry.get_resource("test-resource").is_none());
+    }
+
+    #[test]
+    fn resource_is_mcp_forward() {
+        let mut resource = sample_resource();
+        assert!(!resource.is_mcp_forward());
+
+        resource.type_ = MCP_FORWARD_TYPE.to_owned();
+        assert!(resource.is_mcp_forward());
+    }
+
+    #[test]
+    fn resource_forward_address_from_labels() {
+        let mut resource = sample_resource();
+        assert!(resource.forward_address().is_none());
+
+        resource.labels.insert(
+            FORWARD_ADDRESS_LABEL.to_owned(),
+            "http://remote:8080/mcp".to_owned(),
+        );
+        assert_eq!(resource.forward_address(), Some("http://remote:8080/mcp"));
+    }
+
+    #[test]
+    fn remove_resources_batch() {
+        let registry = InMemoryRegistry::new();
+        registry.register_resource(ResourceEntry {
+            name: "r1".to_owned(),
+            ..sample_resource()
+        });
+        registry.register_resource(ResourceEntry {
+            name: "r2".to_owned(),
+            ..sample_resource()
+        });
+        registry.register_resource(ResourceEntry {
+            name: "r3".to_owned(),
+            ..sample_resource()
+        });
+
+        let removed = registry.remove_resources_batch(&["r1".to_owned(), "r3".to_owned()]);
+        assert_eq!(removed, 2);
+        assert!(registry.get_resource("r1").is_none());
+        assert!(registry.get_resource("r2").is_some());
+        assert!(registry.get_resource("r3").is_none());
     }
 
     #[test]
