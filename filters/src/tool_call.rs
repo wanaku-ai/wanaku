@@ -162,8 +162,8 @@ impl ToolCallFilter {
         );
 
         match wanaku_praxis_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
-            Ok(content) => {
-                let mcp_content: Vec<serde_json::Value> = content
+            Ok(call_result) => {
+                let mcp_content: Vec<serde_json::Value> = call_result.content
                     .iter()
                     .map(|text| serde_json::json!({"type": "text", "text": text}))
                     .collect();
@@ -171,7 +171,7 @@ impl ToolCallFilter {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",
                     "id": parsed.id,
-                    "result": {"content": mcp_content}
+                    "result": {"content": mcp_content, "isError": call_result.is_error}
                 });
 
                 let response_body = Bytes::from(response.to_string());
