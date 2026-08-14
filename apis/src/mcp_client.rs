@@ -95,6 +95,7 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
         .collect()
 }
 
+#[derive(Debug, Clone)]
 pub struct CallToolResponse {
     pub content: Vec<String>,
     pub is_error: bool,

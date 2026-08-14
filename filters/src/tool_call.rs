@@ -276,4 +276,32 @@ mod tests {
         assert_eq!(parsed.id, serde_json::Value::from(5));
         assert!(parsed.arguments.is_empty());
     }
+
+    #[test]
+    fn forwarded_response_includes_is_error_false() {
+        let mcp_content: Vec<serde_json::Value> = vec![
+            serde_json::json!({"type": "text", "text": "hello"}),
+        ];
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"content": mcp_content, "isError": false}
+        });
+        let result = response.get("result").expect("result missing");
+        assert_eq!(result.get("isError"), Some(&serde_json::Value::Bool(false)));
+    }
+
+    #[test]
+    fn forwarded_response_includes_is_error_true() {
+        let mcp_content: Vec<serde_json::Value> = vec![
+            serde_json::json!({"type": "text", "text": "something went wrong"}),
+        ];
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"content": mcp_content, "isError": true}
+        });
+        let result = response.get("result").expect("result missing");
+        assert_eq!(result.get("isError"), Some(&serde_json::Value::Bool(true)));
+    }
 }
