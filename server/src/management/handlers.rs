@@ -122,6 +122,14 @@ pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &st
         }
     };
 
+    if let Some(existing) = registry.get_resource(path_name) {
+        for (k, v) in &existing.labels {
+            if k.starts_with("wanaku.") {
+                resource.labels.entry(k.clone()).or_insert_with(|| v.clone());
+            }
+        }
+    }
+
     let new_name = resource.name.trim().to_owned();
     if !new_name.is_empty() && new_name != path_name {
         registry.remove_resource(path_name);
@@ -386,10 +394,13 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
             .get("description")
             .and_then(|d| d.as_str())
             .unwrap_or_default();
-        let uri = res_json
-            .get("uri")
-            .and_then(|u| u.as_str())
-            .unwrap_or_default();
+        let uri = match res_json.get("uri").and_then(|u| u.as_str()).map(str::trim) {
+            Some(u) if !u.is_empty() => u,
+            _ => {
+                warn!(forward = %forward.name, resource = %name, "skipping forwarded resource with missing or empty uri");
+                continue;
+            }
+        };
         let mime_type = res_json
             .get("mimeType")
             .and_then(|m| m.as_str())
@@ -873,6 +884,29 @@ mod tests {
     fn resource_update_invalid_json_returns_400() {
         let registry = InMemoryRegistry::new();
         assert_eq!(handle_resource_update(&registry, "r", "???").status(), 400);
+    }
+
+    #[test]
+    fn resource_update_preserves_internal_labels() {
+        let registry = InMemoryRegistry::new();
+        handle_resource_create(
+            &registry,
+            r#"{"name":"fwd-res","description":"old","location":"file:///data","type":"mcp-forward","labels":{"wanaku.forward_address":"http://remote:8080"}}"#,
+        );
+
+        let resp = handle_resource_update(
+            &registry, "fwd-res",
+            r#"{"name":"fwd-res","description":"new","location":"file:///data","type":"mcp-forward"}"#,
+        );
+        assert_eq!(resp.status(), 200);
+
+        let data = data_field(&handle_resource_get(&registry, "fwd-res"));
+        assert_eq!(data.get("description").and_then(|v| v.as_str()), Some("new"));
+        let labels = data.get("labels").and_then(|v| v.as_object());
+        assert_eq!(
+            labels.and_then(|l| l.get("wanaku.forward_address")).and_then(|v| v.as_str()),
+            Some("http://remote:8080"),
+        );
     }
 
     // ---- Prompt handlers ----
