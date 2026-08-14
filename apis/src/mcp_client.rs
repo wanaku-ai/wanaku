@@ -95,11 +95,16 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
         .collect()
 }
 
+pub struct CallToolResponse {
+    pub content: Vec<String>,
+    pub is_error: bool,
+}
+
 pub async fn call_tool(
     url: &str,
     tool_name: &str,
     arguments: Value,
-) -> Result<Vec<String>, McpClientError> {
+) -> Result<CallToolResponse, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
 
@@ -129,12 +134,17 @@ pub async fn call_tool(
             message: e.to_string(),
         })?;
 
-    Ok(result
+    let content = result
         .content
         .iter()
         .filter_map(|block| match block {
             rmcp::model::ContentBlock::Text(text) => Some(text.text.clone()),
             _ => None,
         })
-        .collect())
+        .collect();
+
+    Ok(CallToolResponse {
+        content,
+        is_error: result.is_error.unwrap_or(false),
+    })
 }
