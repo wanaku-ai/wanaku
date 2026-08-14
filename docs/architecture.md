@@ -140,6 +140,36 @@ let namespace = ctx.get_metadata("wanaku.namespace")?;
 
 All downstream filters (tool_list, tool_call, etc.) rely on these keys. If they're missing, the filter returns an error.
 
+## Why Custom Filters Instead of Praxis-AI's MCP Broker?
+
+Wanaku uses the praxis-ai `McpFilter` (the classifier) to parse JSON-RPC and set `mcp.method`/`mcp.name` metadata. However, all downstream MCP handling (`tools/list`, `tools/call`, `resources/list`, `resources/read`, `prompts/list`, `prompts/get`) uses custom Wanaku filters rather than praxis-ai's `McpBrokerFilter`. Here's why:
+
+**Praxis-ai's `McpBrokerFilter` is a static catalog broker.** Tools are declared in YAML at deploy time with preconfigured backend clusters. In stateless mode it routes `tools/call` via Pingora's L7 proxy by matching tool names to cluster endpoints; in current mode `tools/call` is not even implemented. It has no concept of namespaces, dynamic discovery, or runtime registration.
+
+**Wanaku needs dynamic, namespace-aware routing:**
+
+| Capability | Praxis-ai Broker | Wanaku Filters |
+|---|---|---|
+| Tool catalog | Static YAML config | Dynamic `InMemoryRegistry`, populated at runtime via management API |
+| Namespace isolation | None | Per-namespace filtering (`/finance/mcp` sees only `finance` tools) |
+| Tool execution | L7 proxy forwarding to Pingora clusters (stateless profile only; unsupported in current profile) | Direct MCP-to-MCP forwarding via `rmcp` crate |
+| Forward discovery | None | Auto-discovers tools from upstream MCP servers on registration |
+| Resources & Prompts | Not supported | Full `resources/*` and `prompts/*` filter support |
+
+**What we reuse from praxis-ai:**
+
+- `McpFilter` (classifier) — JSON-RPC parsing, metadata extraction (`mcp.method`, `mcp.name`)
+- Praxis builtins — `cors`, `static_response`, `router`, `load_balancer`
+
+**What is custom:**
+
+- `wanaku_namespace` — path-based namespace extraction
+- `wanaku_mcp_init` — handles `initialize` (capability negotiation), `ping`, and `notifications/initialized`
+- `wanaku_tool_list` / `wanaku_tool_call` — registry-backed tool routing with MCP forwarding
+- `wanaku_resource_list` / `wanaku_resource_read` — registry-backed resource handling
+- `wanaku_prompt_list` / `wanaku_prompt_get` — registry-backed prompt handling
+- Feature filters (`wanaku_well_known`, `wanaku_evaluator`) — registered by their respective feature crates, not by core filter registration
+
 ## The Registry
 
 The registry is the source of truth for tools, resources, prompts, namespaces, and services. It's an in-memory data structure (no database) implemented as `InMemoryRegistry` in `apis/src/registry.rs`.
