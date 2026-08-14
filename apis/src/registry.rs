@@ -197,6 +197,7 @@ pub trait PromptRegistry: Send + Sync {
     fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
     fn register_prompt(&self, prompt: PromptEntry);
     fn remove_prompt(&self, name: &str) -> bool;
+    fn remove_prompts_batch(&self, names: &[String]) -> usize;
     fn prompt_count(&self) -> usize;
 }
 
@@ -502,6 +503,19 @@ impl PromptRegistry for InMemoryRegistry {
             self.persist();
         }
         removed
+    }
+
+    fn remove_prompts_batch(&self, names: &[String]) -> usize {
+        let mut count = 0;
+        for name in names {
+            if self.prompts.remove(name.as_str()).is_some() {
+                count += 1;
+            }
+        }
+        if count > 0 {
+            self.persist();
+        }
+        count
     }
 
     fn prompt_count(&self) -> usize {

@@ -5,6 +5,7 @@ mod ui;
 
 pub use handlers::discover_tools_from_forward;
 pub use handlers::discover_resources_from_forward;
+pub use handlers::discover_prompts_from_forward;
 
 use async_trait::async_trait;
 use http::Response;
