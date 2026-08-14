@@ -281,11 +281,13 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
 
     let tools_count = discover_tools_from_forward(registry, &forward).await;
     let resources_count = discover_resources_from_forward(registry, &forward).await;
+    let prompts_count = discover_prompts_from_forward(registry, &forward).await;
 
     json_ok(&serde_json::json!({
         "forward": &forward,
         "tools_discovered": tools_count,
         "resources_discovered": resources_count,
+        "prompts_discovered": prompts_count,
     }))
 }
 
@@ -299,6 +301,7 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
     if let Some(fwd) = forward {
         remove_forwarded_tools(registry, &fwd.address);
         remove_forwarded_resources(registry, &fwd.address);
+        remove_forwarded_prompts(registry, &fwd.address);
     }
 
     info!(forward = %name, "removed forward via management API");
@@ -313,11 +316,13 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
 
     remove_forwarded_tools(registry, &forward.address);
     remove_forwarded_resources(registry, &forward.address);
+    remove_forwarded_prompts(registry, &forward.address);
     let tools_count = discover_tools_from_forward(registry, &forward).await;
     let resources_count = discover_resources_from_forward(registry, &forward).await;
+    let prompts_count = discover_prompts_from_forward(registry, &forward).await;
 
-    info!(forward = %name, tools_discovered = tools_count, resources_discovered = resources_count, "refreshed forward");
-    json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count}))
+    info!(forward = %name, tools_discovered = tools_count, resources_discovered = resources_count, prompts_discovered = prompts_count, "refreshed forward");
+    json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count, "prompts_discovered": prompts_count}))
 }
 
 pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
@@ -515,10 +520,89 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     registry.remove_tools_batch(&forwarded);
 }
 
+pub async fn discover_prompts_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+    let prompts = match wanaku_praxis_apis::mcp_client::list_prompts(&forward.address).await {
+        Ok(p) => p,
+        Err(e) => {
+            warn!(forward = %forward.name, error = %e, "failed to discover prompts from forward");
+            return 0;
+        }
+    };
+
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+    let mut count = 0;
+
+    for prompt_json in &prompts {
+        let name = match prompt_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+            Some(n) if !n.is_empty() => n,
+            _ => {
+                warn!(forward = %forward.name, "skipping forwarded prompt with missing or empty name");
+                continue;
+            }
+        };
+        let description = prompt_json
+            .get("description")
+            .and_then(|d| d.as_str())
+            .unwrap_or_default();
+
+        let arguments: Vec<wanaku_praxis_apis::registry::PromptArgument> = prompt_json
+            .get("arguments")
+            .and_then(|a| a.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|arg| {
+                        let arg_name = arg.get("name")?.as_str()?;
+                        Some(wanaku_praxis_apis::registry::PromptArgument {
+                            name: arg_name.to_owned(),
+                            description: arg
+                                .get("description")
+                                .and_then(|d| d.as_str())
+                                .unwrap_or_default()
+                                .to_owned(),
+                            required: arg
+                                .get("required")
+                                .and_then(|r| r.as_bool())
+                                .unwrap_or(false),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let prompt = PromptEntry {
+            name: name.to_owned(),
+            description: description.to_owned(),
+            arguments,
+            messages: Vec::new(),
+            id: None,
+            namespace: Some(namespace.to_owned()),
+            configuration_uri: Some(forward.address.clone()),
+        };
+
+        info!(prompt = %name, forward = %forward.name, "discovered forwarded prompt");
+        registry.register_prompt(prompt);
+        count += 1;
+    }
+
+    count
+}
+
+fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
+    let forwarded: Vec<String> = registry
+        .list_prompts()
+        .iter()
+        .filter(|p| p.messages.is_empty() && p.configuration_uri.as_deref() == Some(address))
+        .map(|p| p.name.clone())
+        .collect();
+
+    registry.remove_prompts_batch(&forwarded);
+}
+
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
+    use wanaku_praxis_apis::registry::{InMemoryRegistry, PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
+    use wanaku_praxis_apis::registry::{PromptMessage, PromptRole};
     use std::collections::HashMap;
 
     #[test]
@@ -594,6 +678,62 @@ mod forward_helpers_tests {
 
         assert!(registry.get_tool("fwd-tool").is_none());
         assert!(registry.get_tool("local-tool").is_some());
+    }
+
+    #[test]
+    fn remove_forwarded_prompts_clears_matching_prompts() {
+        let registry = InMemoryRegistry::new();
+        let fwd_addr = "http://remote:8080";
+
+        registry.register_prompt(PromptEntry {
+            name: "fwd-prompt".to_owned(),
+            description: "forwarded".to_owned(),
+            arguments: Vec::new(),
+            messages: Vec::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: Some(fwd_addr.to_owned()),
+        });
+        registry.register_prompt(PromptEntry {
+            name: "local-prompt".to_owned(),
+            description: "local".to_owned(),
+            arguments: Vec::new(),
+            messages: Vec::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+        });
+
+        remove_forwarded_prompts(&registry, fwd_addr);
+
+        assert!(registry.get_prompt("fwd-prompt").is_none());
+        assert!(registry.get_prompt("local-prompt").is_some());
+    }
+
+    #[test]
+    fn remove_forwarded_prompts_preserves_user_prompts_with_same_uri() {
+        let registry = InMemoryRegistry::new();
+        let fwd_addr = "http://remote:8080";
+
+        registry.register_prompt(PromptEntry {
+            name: "user-prompt".to_owned(),
+            description: "user-created with configurationURI".to_owned(),
+            arguments: Vec::new(),
+            messages: vec![PromptMessage {
+                role: PromptRole::User,
+                content: serde_json::json!("Hello {name}"),
+            }],
+            id: None,
+            namespace: None,
+            configuration_uri: Some(fwd_addr.to_owned()),
+        });
+
+        remove_forwarded_prompts(&registry, fwd_addr);
+
+        assert!(
+            registry.get_prompt("user-prompt").is_some(),
+            "user-created prompt with messages must not be removed"
+        );
     }
 }
 

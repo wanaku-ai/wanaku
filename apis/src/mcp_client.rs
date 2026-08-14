@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use rmcp::{
     ServiceExt as _,
-    model::{CallToolRequestParams, PaginatedRequestParams, ReadResourceRequestParams},
+    model::{
+        CallToolRequestParams, GetPromptRequestParams, PaginatedRequestParams,
+        ReadResourceRequestParams,
+    },
     transport::{
         StreamableHttpClientTransport,
         streamable_http_client::StreamableHttpClientTransportConfig,
@@ -14,6 +17,7 @@ const TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_TOOLS: usize = 500;
 const MAX_RESOURCES: usize = 500;
 const MAX_RESOURCE_TEMPLATES: usize = 500;
+const MAX_PROMPTS: usize = 500;
 
 #[derive(Debug, thiserror::Error)]
 pub enum McpClientError {
@@ -43,6 +47,16 @@ pub enum McpClientError {
     ReadResource {
         url: String,
         resource_uri: String,
+        message: String,
+    },
+
+    #[error("prompts/list failed for {url}: {message}")]
+    ListPrompts { url: String, message: String },
+
+    #[error("prompts/get failed for {url}, prompt={prompt_name}: {message}")]
+    GetPrompt {
+        url: String,
+        prompt_name: String,
         message: String,
     },
 }
@@ -308,4 +322,95 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
             message: e.to_string(),
         }))
         .collect()
+}
+
+pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
+    let url = url.to_owned();
+    let transport = build_transport(&url);
+
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout { url: url.to_owned() })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    tracing::debug!(url = %url, "connected to MCP server for prompts/list");
+
+    let mut all_prompts = Vec::new();
+    let mut cursor = None;
+
+    for _ in 0..100 {
+        let params = PaginatedRequestParams::default().with_cursor(cursor);
+        let page = tokio::time::timeout(
+            TIMEOUT,
+            Box::pin(client.list_prompts(Some(params))),
+        )
+        .await
+        .map_err(|_| McpClientError::Timeout { url: url.to_owned() })?
+        .map_err(|e| McpClientError::ListPrompts {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+        all_prompts.extend(page.prompts);
+
+        if all_prompts.len() >= MAX_PROMPTS {
+            all_prompts.truncate(MAX_PROMPTS);
+            break;
+        }
+
+        match page.next_cursor {
+            Some(next) if !next.is_empty() => cursor = Some(next),
+            _ => break,
+        }
+    }
+
+    tracing::debug!(url = %url, prompt_count = all_prompts.len(), "discovered prompts from MCP server");
+
+    all_prompts
+        .into_iter()
+        .map(|p| serde_json::to_value(p).map_err(|e| McpClientError::ListPrompts {
+            url: url.to_owned(),
+            message: e.to_string(),
+        }))
+        .collect()
+}
+
+pub async fn get_prompt(
+    url: &str,
+    prompt_name: &str,
+    arguments: Option<serde_json::Map<String, Value>>,
+) -> Result<Value, McpClientError> {
+    let url = url.to_owned();
+    let transport = build_transport(&url);
+
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout { url: url.to_owned() })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    let mut params = GetPromptRequestParams::new(prompt_name.to_owned());
+    if let Some(args) = arguments {
+        params.arguments = Some(args);
+    }
+
+    let result = tokio::time::timeout(TIMEOUT, Box::pin(client.get_prompt(params)))
+        .await
+        .map_err(|_| McpClientError::Timeout { url: url.to_owned() })?
+        .map_err(|e| McpClientError::GetPrompt {
+            url: url.to_owned(),
+            prompt_name: prompt_name.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    serde_json::to_value(result).map_err(|e| McpClientError::GetPrompt {
+        url: url.to_owned(),
+        prompt_name: prompt_name.to_owned(),
+        message: e.to_string(),
+    })
 }

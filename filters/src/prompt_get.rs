@@ -99,6 +99,12 @@ impl PromptGetFilter {
             }
         };
 
+        if prompt.messages.is_empty() {
+            if let Some(ref uri) = prompt.configuration_uri {
+                return self.handle_forwarded_get(uri, &prompt_name, &parsed).await;
+            }
+        }
+
         let messages: Vec<serde_json::Value> = prompt
             .messages
             .iter()
@@ -138,6 +144,42 @@ impl PromptGetFilter {
 
         let response_body = Bytes::from(response.to_string());
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+    }
+
+    async fn handle_forwarded_get(
+        &self,
+        forward_address: &str,
+        prompt_name: &str,
+        parsed: &ParsedBody,
+    ) -> Result<FilterAction, FilterError> {
+        trace!(prompt = %prompt_name, forward = %forward_address, "forwarding prompts/get to remote MCP server");
+
+        let arguments = if parsed.arguments.is_empty() {
+            None
+        } else {
+            Some(parsed.arguments.clone())
+        };
+
+        match wanaku_praxis_apis::mcp_client::get_prompt(forward_address, prompt_name, arguments).await {
+            Ok(result) => {
+                let response = serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": parsed.id,
+                    "result": result,
+                });
+
+                let response_body = Bytes::from(response.to_string());
+                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+            }
+            Err(e) => {
+                warn!(prompt = %prompt_name, error = %e, "MCP forward prompt get failed");
+                Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    &format!("forwarded prompt get failed: {e}"),
+                ))
+            }
+        }
     }
 }
 
