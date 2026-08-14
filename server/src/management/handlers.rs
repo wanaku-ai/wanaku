@@ -430,6 +430,66 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
         count += 1;
     }
 
+    let templates = match wanaku_praxis_apis::mcp_client::list_resource_templates(&forward.address).await {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::debug!(forward = %forward.name, error = %e, "no resource templates from forward (may not be supported)");
+            return count;
+        }
+    };
+
+    for tmpl_json in &templates {
+        let name = match tmpl_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+            Some(n) if !n.is_empty() => n,
+            _ => {
+                warn!(forward = %forward.name, "skipping forwarded template with missing or empty name");
+                continue;
+            }
+        };
+        let uri_template = match tmpl_json.get("uriTemplate").and_then(|u| u.as_str()).map(str::trim) {
+            Some(u) if !u.is_empty() => u,
+            _ => {
+                warn!(forward = %forward.name, template = %name, "skipping forwarded template with missing or empty uriTemplate");
+                continue;
+            }
+        };
+        let description = tmpl_json
+            .get("description")
+            .and_then(|d| d.as_str())
+            .unwrap_or_default();
+        let mime_type = tmpl_json
+            .get("mimeType")
+            .and_then(|m| m.as_str())
+            .unwrap_or_default();
+
+        let mut labels = std::collections::HashMap::new();
+        labels.insert(
+            wanaku_praxis_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
+            forward.address.clone(),
+        );
+        labels.insert(
+            wanaku_praxis_apis::registry::IS_TEMPLATE_LABEL.to_owned(),
+            "true".to_owned(),
+        );
+
+        let resource = ResourceEntry {
+            name: name.to_owned(),
+            description: description.to_owned(),
+            location: uri_template.to_owned(),
+            type_: MCP_FORWARD_TYPE.to_owned(),
+            mime_type: mime_type.to_owned(),
+            labels,
+            id: None,
+            namespace: Some(namespace.to_owned()),
+            configuration_uri: None,
+            secrets_uri: None,
+        };
+
+        info!(template = %name, uri_template = %uri_template, forward = %forward.name, "discovered forwarded resource template");
+        registry.register_resource(resource);
+        count += 1;
+    }
+
     count
 }
 

@@ -16,7 +16,9 @@ impl ResourceListFilter {
             None => return Ok(FilterAction::Continue),
         };
 
-        if method != "resources/list" {
+        let is_list = method == "resources/list";
+        let is_template_list = method == "resources/templates/list";
+        if !is_list && !is_template_list {
             return Ok(FilterAction::Continue);
         }
 
@@ -39,28 +41,48 @@ impl ResourceListFilter {
             }
         };
 
-        let resources = registry.list_resources_in_namespace(namespace);
-        let mcp_resources: Vec<serde_json::Value> = resources
-            .iter()
-            .map(|r| {
-                serde_json::json!({
-                    "uri": r.location,
-                    "name": r.name,
-                    "description": r.description,
-                    "mimeType": r.mime_type,
-                })
-            })
-            .collect();
-
+        let all_resources = registry.list_resources_in_namespace(namespace);
         let json_rpc_id = crate::response::extract_json_rpc_id(body);
 
-        let response = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": json_rpc_id,
-            "result": {
-                "resources": mcp_resources,
-            }
-        });
+        let response = if is_template_list {
+            let templates: Vec<serde_json::Value> = all_resources
+                .iter()
+                .filter(|r| r.is_template())
+                .map(|r| {
+                    serde_json::json!({
+                        "uriTemplate": r.location,
+                        "name": r.name,
+                        "description": r.description,
+                        "mimeType": r.mime_type,
+                    })
+                })
+                .collect();
+
+            serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": json_rpc_id,
+                "result": { "resourceTemplates": templates }
+            })
+        } else {
+            let resources: Vec<serde_json::Value> = all_resources
+                .iter()
+                .filter(|r| !r.is_template())
+                .map(|r| {
+                    serde_json::json!({
+                        "uri": r.location,
+                        "name": r.name,
+                        "description": r.description,
+                        "mimeType": r.mime_type,
+                    })
+                })
+                .collect();
+
+            serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": json_rpc_id,
+                "result": { "resources": resources }
+            })
+        };
 
         let response_body = Bytes::from(response.to_string());
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))

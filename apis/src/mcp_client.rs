@@ -13,6 +13,7 @@ use serde_json::Value;
 const TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_TOOLS: usize = 500;
 const MAX_RESOURCES: usize = 500;
+const MAX_RESOURCE_TEMPLATES: usize = 500;
 
 #[derive(Debug, thiserror::Error)]
 pub enum McpClientError {
@@ -34,6 +35,9 @@ pub enum McpClientError {
 
     #[error("resources/list failed for {url}: {message}")]
     ListResources { url: String, message: String },
+
+    #[error("resources/templates/list failed for {url}: {message}")]
+    ListResourceTemplates { url: String, message: String },
 
     #[error("resources/read failed for {url}, uri={resource_uri}: {message}")]
     ReadResource {
@@ -247,6 +251,60 @@ pub async fn read_resource(
         .map(|c| serde_json::to_value(c).map_err(|e| McpClientError::ReadResource {
             url: url.to_owned(),
             resource_uri: resource_uri.to_owned(),
+            message: e.to_string(),
+        }))
+        .collect()
+}
+
+pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientError> {
+    let url = url.to_owned();
+    let transport = build_transport(&url);
+
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+        .await
+        .map_err(|_| McpClientError::Timeout { url: url.to_owned() })?
+        .map_err(|e| McpClientError::Connection {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+    tracing::debug!(url = %url, "connected to MCP server for resources/templates/list");
+
+    let mut all_templates = Vec::new();
+    let mut cursor = None;
+
+    for _ in 0..100 {
+        let params = PaginatedRequestParams::default().with_cursor(cursor);
+        let page = tokio::time::timeout(
+            TIMEOUT,
+            Box::pin(client.list_resource_templates(Some(params))),
+        )
+        .await
+        .map_err(|_| McpClientError::Timeout { url: url.to_owned() })?
+        .map_err(|e| McpClientError::ListResourceTemplates {
+            url: url.to_owned(),
+            message: e.to_string(),
+        })?;
+
+        all_templates.extend(page.resource_templates);
+
+        if all_templates.len() >= MAX_RESOURCE_TEMPLATES {
+            all_templates.truncate(MAX_RESOURCE_TEMPLATES);
+            break;
+        }
+
+        match page.next_cursor {
+            Some(next) if !next.is_empty() => cursor = Some(next),
+            _ => break,
+        }
+    }
+
+    tracing::debug!(url = %url, template_count = all_templates.len(), "discovered resource templates from MCP server");
+
+    all_templates
+        .into_iter()
+        .map(|t| serde_json::to_value(t).map_err(|e| McpClientError::ListResourceTemplates {
+            url: url.to_owned(),
             message: e.to_string(),
         }))
         .collect()

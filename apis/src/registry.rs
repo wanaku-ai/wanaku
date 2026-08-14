@@ -118,6 +118,7 @@ pub struct NamespaceEntry {
 pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 
 pub const FORWARD_ADDRESS_LABEL: &str = "wanaku.forward_address";
+pub const IS_TEMPLATE_LABEL: &str = "wanaku.is_template";
 
 impl ToolEntry {
     pub fn is_mcp_forward(&self) -> bool {
@@ -128,6 +129,10 @@ impl ToolEntry {
 impl ResourceEntry {
     pub fn is_mcp_forward(&self) -> bool {
         self.type_ == MCP_FORWARD_TYPE
+    }
+
+    pub fn is_template(&self) -> bool {
+        self.labels.get(IS_TEMPLATE_LABEL).map(|v| v == "true").unwrap_or(false)
     }
 
     pub fn forward_address(&self) -> Option<&str> {

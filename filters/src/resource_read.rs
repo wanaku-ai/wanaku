@@ -5,6 +5,45 @@ use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
+fn matches_uri_template(template: &str, uri: &str) -> bool {
+    let mut parts = Vec::new();
+    let mut rest = template;
+    while let Some(start) = rest.find('{') {
+        parts.push(&rest[..start]);
+        match rest[start..].find('}') {
+            Some(end) => rest = &rest[start + end + 1..],
+            None => return false,
+        }
+    }
+    parts.push(rest);
+
+    if parts.len() == 1 {
+        return template == uri;
+    }
+
+    let mut pos = 0;
+    for (i, part) in parts.iter().enumerate() {
+        if part.is_empty() {
+            continue;
+        }
+        match uri[pos..].find(part) {
+            Some(found) => {
+                if i == 0 && found != 0 {
+                    return false;
+                }
+                pos += found + part.len();
+            }
+            None => return false,
+        }
+    }
+
+    if template.ends_with('}') {
+        return pos <= uri.len();
+    }
+
+    pos == uri.len()
+}
+
 struct ParsedBody {
     id: serde_json::Value,
     uri: Option<String>,
@@ -77,13 +116,12 @@ impl ResourceReadFilter {
             }
         };
 
-        let resource = registry
-            .list_resources_in_namespace(namespace)
-            .into_iter()
-            .find(|r| r.location == resource_uri);
+        let resources = registry.list_resources_in_namespace(namespace);
+        let resource = resources.iter().find(|r| !r.is_template() && r.location == resource_uri)
+            .or_else(|| resources.iter().find(|r| r.is_template() && matches_uri_template(&r.location, &resource_uri)));
 
         let resource = match resource {
-            Some(r) => r,
+            Some(r) => r.clone(),
             None => {
                 warn!(uri = %resource_uri, namespace = %namespace, "resource not found in registry");
                 return Ok(crate::response::json_rpc_error(
@@ -222,5 +260,41 @@ mod tests {
         let parsed = parse_body(&body);
         assert_eq!(parsed.id, serde_json::Value::from(4));
         assert!(parsed.uri.is_none());
+    }
+
+    #[test]
+    fn template_matches_single_param() {
+        assert!(matches_uri_template("logs://{server_id}/syslog", "logs://web-01/syslog"));
+    }
+
+    #[test]
+    fn template_matches_multiple_params() {
+        assert!(matches_uri_template("logs://{server}/{log_type}", "logs://web-01/syslog"));
+    }
+
+    #[test]
+    fn template_no_match_wrong_prefix() {
+        assert!(!matches_uri_template("logs://{server_id}/syslog", "files://web-01/syslog"));
+    }
+
+    #[test]
+    fn template_no_match_wrong_suffix() {
+        assert!(!matches_uri_template("logs://{server_id}/syslog", "logs://web-01/access"));
+    }
+
+    #[test]
+    fn template_matches_param_at_end() {
+        assert!(matches_uri_template("file://{path}", "file:///data/report.csv"));
+    }
+
+    #[test]
+    fn template_exact_match_no_params() {
+        assert!(matches_uri_template("file:///fixed.txt", "file:///fixed.txt"));
+        assert!(!matches_uri_template("file:///fixed.txt", "file:///other.txt"));
+    }
+
+    #[test]
+    fn template_malformed_unclosed_brace() {
+        assert!(!matches_uri_template("logs://{server/syslog", "logs://web-01/syslog"));
     }
 }
