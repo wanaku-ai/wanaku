@@ -52,10 +52,7 @@ export function buildRouter(pluginPages: PluginPage[]) {
           path: Links.ToolCalls,
           lazy: async () => import("./Pages/ToolCalls"),
         },
-        {
-          path: Links.Capabilities,
-          lazy: async () => import("./Pages/Targets"),
-        },
+
         {
           path: Links.Namespaces,
           lazy: async () => import("./Pages/Namespaces"),

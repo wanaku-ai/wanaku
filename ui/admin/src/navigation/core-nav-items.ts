@@ -8,7 +8,7 @@ export const CORE_NAV_ITEMS: NavItem[] = [
   { id: "prompts", label: "Prompts", route: Links.Prompts, source: "core", order: 30 },
   { id: "llmchat", label: "LLMChat", route: Links.LLMChat, source: "core", section: "Developer", order: 40 },
   { id: "tool-calls", label: "Tool Call Debugger", route: Links.ToolCalls, source: "core", section: "Developer", order: 41 },
-  { id: "capabilities", label: "Capabilities", route: Links.Capabilities, source: "core", order: 50 },
+
   { id: "namespaces", label: "Namespaces", route: Links.Namespaces, source: "core", order: 60 },
   { id: "forwards", label: "Forwards", route: Links.Forwards, source: "core", order: 70 },
   { id: "evaluators", label: "Evaluators", route: Links.Evaluators, source: "core", order: 80 },

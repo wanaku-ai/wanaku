@@ -30,18 +30,6 @@ test.describe('Dashboard', () => {
     }
   });
 
-  test('displays capability sections', async () => {
-    await expect(dashboard.capabilityTile('Tool Capabilities')).toBeVisible();
-    await expect(dashboard.capabilityTile('Resource Capabilities')).toBeVisible();
-
-    for (const tile of ['Tool Capabilities', 'Resource Capabilities']) {
-      for (const label of ['Total', 'Healthy', 'Down']) {
-        const value = await dashboard.getCapabilityValue(tile, label);
-        expect(Number(value)).toBeGreaterThanOrEqual(0);
-      }
-    }
-  });
-
   test('refresh button reloads statistics without error', async () => {
     await dashboard.clickRefresh();
     await expect(dashboard.errorNotification()).toBeHidden();

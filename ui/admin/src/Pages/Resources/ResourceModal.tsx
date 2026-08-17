@@ -2,8 +2,8 @@ import {ComboBox, Modal, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} fro
 import React, { useState} from "react"
 import {Param, ResourceReference} from "../../models"
 import {commonMimeTypes, commonMimeTypesMapping} from "../../constants/mimeTypes"
-import {useCapabilities} from "../../hooks/api/use-capabilities"
-import {TargetTypeSelect} from "../Targets/TargetTypeSelect"
+
+
 import {ParametersTable} from "./ParametersTable"
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
 
@@ -27,8 +27,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
   const [configurationURI, setConfigurationURI] = useState(openedResource?.configurationURI)
   const [secretsURI, setSecretsURI] = useState(openedResource?.secretsURI)
   const [submitDisable, setSubmitDisabled] = useState(false)
-  const { listManagementResources } = useCapabilities()
-
   function handleSubmit() {
     onSubmit({
       id: openedResource?.id,
@@ -99,11 +97,12 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                   autoDetectMimeType(location)
                 }}
               />
-              <TargetTypeSelect
+              <TextInput
+                id="resource-type"
+                labelText="Type"
+                placeholder="e.g. file"
                 value={type}
-                onChange={setType}
-                apiCall={listManagementResources}
-                onError={onError}
+                onChange={(event) => setType(event.target.value)}
               />
               <ComboBox
                 id="resource-mime-type"
