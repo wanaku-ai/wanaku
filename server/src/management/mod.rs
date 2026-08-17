@@ -17,7 +17,6 @@ use wanaku_praxis_apis::feature::Feature;
 use wanaku_praxis_apis::registry::InMemoryRegistry;
 
 use self::handlers::{
-    handle_capability_list, handle_capability_state,
     handle_forward_create, handle_forward_delete, handle_forward_get, handle_forward_list,
     handle_forward_refresh,
     handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
@@ -30,9 +29,9 @@ use self::handlers::{
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
-    CapabilityRoute, ForwardRoute, ManagementRoute, NamespaceRoute,
+    ForwardRoute, ManagementRoute, NamespaceRoute,
     PromptRoute, ResourceRoute, ToolRoute,
-    resolve_capability_route, resolve_forward_route,
+    resolve_forward_route,
     resolve_management_route, resolve_namespace_route,
     resolve_prompt_route, resolve_resource_route,
     resolve_tool_route,
@@ -100,17 +99,6 @@ impl ServeHttp for WanakuManagementService {
             return match mgmt_route {
                 ManagementRoute::Statistics => handle_statistics(&self.registry),
                 ManagementRoute::NotFound => json_err(404, "not found"),
-            };
-        }
-
-        let capability_route = resolve_capability_route(&method, &path);
-        if capability_route != CapabilityRoute::NotFound {
-            return match capability_route {
-                CapabilityRoute::List => handle_capability_list(&self.registry),
-                CapabilityRoute::ToolsState => handle_capability_state(),
-                CapabilityRoute::ResourcesState => handle_capability_state(),
-                CapabilityRoute::FleetStatus => json_ok(&serde_json::json!({})),
-                CapabilityRoute::NotFound => json_err(404, "not found"),
             };
         }
 

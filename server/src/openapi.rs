@@ -204,28 +204,6 @@ fn clear_interactions() {}
 )]
 fn get_statistics() {}
 
-// -- Capabilities -------------------------------------------------------------
-
-#[utoipa::path(get, path = "/api/v1/capabilities", tag = "Capabilities",
-    responses((status = 200, description = "List registered capabilities/targets", body = Vec<serde_json::Value>))
-)]
-fn list_capabilities() {}
-
-#[utoipa::path(get, path = "/api/v1/capabilities/tools/state", tag = "Capabilities",
-    responses((status = 200, description = "Tool capabilities state", body = serde_json::Value))
-)]
-fn capabilities_tools_state() {}
-
-#[utoipa::path(get, path = "/api/v1/capabilities/resources/state", tag = "Capabilities",
-    responses((status = 200, description = "Resource capabilities state", body = serde_json::Value))
-)]
-fn capabilities_resources_state() {}
-
-#[utoipa::path(get, path = "/api/v1/capabilities/fleet/status", tag = "Capabilities",
-    responses((status = 200, description = "Fleet status", body = serde_json::Value))
-)]
-fn capabilities_fleet_status() {}
-
 // -- OpenAPI Aggregation ------------------------------------------------------
 
 #[derive(OpenApi)]
@@ -244,7 +222,6 @@ fn capabilities_fleet_status() {}
         list_forwards, get_forward, create_forward, delete_forward, refresh_forward,
         list_interactions, clear_interactions,
         get_statistics,
-        list_capabilities, capabilities_tools_state, capabilities_resources_state, capabilities_fleet_status,
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,
