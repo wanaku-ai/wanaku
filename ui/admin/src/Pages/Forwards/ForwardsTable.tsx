@@ -11,7 +11,7 @@ import {
   TableToolbar,
   TableToolbarContent
 } from "@carbon/react"
-import {Add, Edit, Renew, TrashCan} from "@carbon/icons-react"
+import {Add, Edit, Information, Renew, TrashCan} from "@carbon/icons-react"
 import {ForwardReference} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import React from "react"
@@ -20,6 +20,7 @@ import {TableEmptyState} from "../EmptyTableState"
 interface ForwardsTableProps {
   forwards: ForwardReference[]
   onAdd: () => void
+  onDetail: (forward: ForwardReference) => void
   onEdit: (forward: ForwardReference) => void
   onDelete: (forward: ForwardReference) => void
   onRefresh: (forward: ForwardReference) => void
@@ -28,6 +29,7 @@ interface ForwardsTableProps {
 export const ForwardsTable: React.FC<ForwardsTableProps> = ({
   forwards,
   onAdd,
+  onDetail,
   onEdit,
   onDelete,
   onRefresh
@@ -36,18 +38,28 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
   const headers = [
     {key: "name", header: "Name"},
     {key: "address", header: "Address"},
-    {key: "namespace", header: "Namespace"}
+    {key: "namespace", header: "Namespace"},
+    {key: "server", header: "Server"}
   ]
 
   function forwardsToRows() {
     return forwards
       //.filter((forward: ForwardReference) => forward.id)
-      .map((forward: ForwardReference) => ({
-        id: forward.id!,
-        name: forward.name,
-        address: forward.address,
-        namespace: getNamespacePathById(forward.namespace)
-      }))
+      .map((forward: ForwardReference) => {
+        const si = (forward as Record<string, unknown>).serverInfo as
+          | {serverName?: string; version?: string}
+          | undefined
+        const server = si?.serverName
+          ? `${si.serverName} ${si.version ?? ""}`.trim()
+          : ""
+        return {
+          id: forward.name ?? forward.id!,
+          name: forward.name,
+          address: forward.address,
+          namespace: getNamespacePathById(forward.namespace),
+          server
+        }
+      })
   }
 
   return (
@@ -81,7 +93,7 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
           </TableHead>
           <TableBody>
             {rows.map((row) => {
-              const forward = forwards.find(forward => forward.id === row.id)
+              const forward = forwards.find(f => (f.name ?? f.id) === row.id)
               if (forward) {
                 return (
                   <TableRow {...getRowProps({row})}>
@@ -89,6 +101,13 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                     <TableCell>
+                      <Button
+                        kind="ghost"
+                        renderIcon={Information}
+                        iconDescription="Details"
+                        hasIconOnly
+                        onClick={() => {onDetail(forward)}}
+                      />
                       <Button
                         kind="ghost"
                         renderIcon={Renew}

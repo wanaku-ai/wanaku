@@ -4,6 +4,7 @@ import {
 import {useEffect, useState} from "react"
 import {addForward, updateForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
 import {ForwardReference} from "../../models"
+import {ForwardDetailModal} from "./ForwardDetailModal.tsx"
 import {ForwardModal} from "./ForwardModal.tsx"
 import {ForwardsTable} from "./ForwardsTable.tsx"
 
@@ -12,6 +13,7 @@ const ForwardsPage = () => {
   const [forwards, setForwards] = useState<ForwardReference[]>([])
   const [isModalOpen, setModalOpen] = useState(false)
   const [openedForward, setOpenedForward] = useState<ForwardReference>()
+  const [detailForward, setDetailForward] = useState<ForwardReference>()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function fetchForwards() {
@@ -34,6 +36,10 @@ const ForwardsPage = () => {
   function closeModal() {
     setOpenedForward(undefined)
     setModalOpen(false)
+  }
+
+  function handleDetailButton(forward: ForwardReference) {
+    setDetailForward(forward)
   }
 
   function handleAddButton() {
@@ -128,12 +134,19 @@ const ForwardsPage = () => {
           <ForwardsTable
             forwards={forwards}
             onAdd={handleAddButton}
+            onDetail={handleDetailButton}
             onEdit={handleEditButton}
             onDelete={handleDeleteForward}
             onRefresh={handleRefreshForward}
           />
         )}
       </div>
+      {detailForward && (
+        <ForwardDetailModal
+          forward={detailForward}
+          onRequestClose={() => setDetailForward(undefined)}
+        />
+      )}
       {isModalOpen && (
         <ForwardModal
           forward={openedForward}

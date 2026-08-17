@@ -74,4 +74,24 @@ export class ApiHelper {
   async deletePrompt(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/prompts/${name}`);
   }
+
+  async addForward(forward: { name: string; address: string; namespace?: string }) {
+    const resp = await this.request.post(`${this.baseUrl}/api/v1/forwards`, {
+      data: {
+        name: forward.name,
+        address: forward.address,
+        namespace: forward.namespace,
+      },
+    });
+    return this.assertOk(resp, `addForward(${forward.name})`);
+  }
+
+  async getForward(name: string) {
+    const resp = await this.request.get(`${this.baseUrl}/api/v1/forwards/${name}`);
+    return this.assertOk(resp, `getForward(${name})`);
+  }
+
+  async deleteForward(name: string) {
+    return this.request.delete(`${this.baseUrl}/api/v1/forwards/${name}`);
+  }
 }

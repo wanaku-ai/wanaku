@@ -93,11 +93,32 @@ pub struct PromptEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct McpServerInfo {
+    #[serde(rename = "serverName", alias = "server_name")]
+    pub server_name: String,
+    pub version: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "websiteUrl", alias = "website_url")]
+    pub website_url: Option<String>,
+    #[serde(default)]
+    pub capabilities: Vec<String>,
+    #[serde(default)]
+    pub extensions: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ForwardEntry {
     pub name: String,
     pub address: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "serverInfo", alias = "server_info")]
+    pub server_info: Option<McpServerInfo>,
+    #[serde(default)]
+    pub labels: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -819,5 +840,78 @@ mod tests {
         let props = stored.input_schema["properties"].as_object().expect("has properties");
         assert_eq!(props.len(), 2, "x-request-id should be injected when flag is enabled");
         assert!(props.contains_key("x-request-id"));
+    }
+
+    #[test]
+    fn mcp_server_info_serde_round_trip() {
+        let info = McpServerInfo {
+            server_name: "apache-camel".to_owned(),
+            version: "4.22.0".to_owned(),
+            description: Some("Apache Camel MCP server".to_owned()),
+            website_url: Some("https://camel.apache.org".to_owned()),
+            capabilities: vec!["tools".to_owned(), "resources".to_owned()],
+            extensions: vec!["io.apache.camel/routes".to_owned()],
+            instructions: Some("A Camel MCP server".to_owned()),
+        };
+
+        let json = serde_json::to_string(&info).expect("serialize");
+        let parsed: McpServerInfo = serde_json::from_str(&json).expect("deserialize");
+
+        assert_eq!(parsed.server_name, "apache-camel");
+        assert_eq!(parsed.version, "4.22.0");
+        assert_eq!(parsed.description.as_deref(), Some("Apache Camel MCP server"));
+        assert_eq!(parsed.website_url.as_deref(), Some("https://camel.apache.org"));
+        assert_eq!(parsed.capabilities.len(), 2);
+        assert_eq!(parsed.extensions.len(), 1);
+        assert_eq!(parsed.instructions.as_deref(), Some("A Camel MCP server"));
+    }
+
+    #[test]
+    fn mcp_server_info_camel_case_keys() {
+        let info = McpServerInfo {
+            server_name: "test".to_owned(),
+            version: "1.0".to_owned(),
+            description: None,
+            website_url: Some("https://example.com".to_owned()),
+            capabilities: Vec::new(),
+            extensions: Vec::new(),
+            instructions: None,
+        };
+
+        let json = serde_json::to_string(&info).expect("serialize");
+        assert!(json.contains("\"serverName\""), "expected camelCase key");
+        assert!(!json.contains("\"server_name\""), "unexpected snake_case key");
+        assert!(json.contains("\"websiteUrl\""), "expected camelCase websiteUrl");
+        assert!(!json.contains("\"website_url\""), "unexpected snake_case website_url");
+    }
+
+    #[test]
+    fn forward_entry_with_server_info_round_trip() {
+        let json = r#"{
+            "name": "camel-prod",
+            "address": "http://localhost:8180/mcp",
+            "serverInfo": {
+                "serverName": "apache-camel",
+                "version": "4.22.0",
+                "capabilities": ["tools"]
+            },
+            "labels": {"type": "camel"}
+        }"#;
+
+        let entry: ForwardEntry = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(entry.name, "camel-prod");
+        assert!(entry.server_info.is_some());
+        let si = entry.server_info.as_ref().unwrap();
+        assert_eq!(si.server_name, "apache-camel");
+        assert_eq!(entry.labels.get("type").map(|s| s.as_str()), Some("camel"));
+    }
+
+    #[test]
+    fn forward_entry_without_server_info_backward_compat() {
+        let json = r#"{"name": "legacy", "address": "http://x:1"}"#;
+        let entry: ForwardEntry = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(entry.name, "legacy");
+        assert!(entry.server_info.is_none());
+        assert!(entry.labels.is_empty());
     }
 }
