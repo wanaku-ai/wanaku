@@ -4,8 +4,8 @@ use utoipa::OpenApi;
 
 use wanaku_praxis_apis::interactions::Interaction;
 use wanaku_praxis_apis::registry::{
-    ForwardEntry, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage, ResourceEntry,
-    ToolEntry,
+    ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
+    ResourceEntry, ToolEntry,
 };
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -225,7 +225,7 @@ fn get_statistics() {}
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,
-        ForwardEntry, NamespaceEntry, Interaction,
+        ForwardEntry, McpServerInfo, NamespaceEntry, Interaction,
     ))
 )]
 pub struct ApiDoc;

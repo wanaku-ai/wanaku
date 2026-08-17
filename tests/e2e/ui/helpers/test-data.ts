@@ -26,3 +26,10 @@ export function promptData(overrides?: Partial<{ name: string; description: stri
     description: overrides?.description ?? 'E2E test prompt',
   };
 }
+
+export function forwardData(overrides?: Partial<{ name: string; address: string }>) {
+  return {
+    name: overrides?.name ?? `e2e-forward-${suffix()}`,
+    address: overrides?.address ?? 'http://localhost:19999/mcp',
+  };
+}

@@ -210,12 +210,8 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
 
             rt.block_on(async {
                 for fwd in &forwards {
-                    info!(forward = %fwd.name, address = %fwd.address, "discovering tools and resources from forward");
-                    let tools_count =
-                        wanaku_praxis::management::discover_tools_from_forward(&reg, fwd).await;
-                    let resources_count =
-                        wanaku_praxis::management::discover_resources_from_forward(&reg, fwd).await;
-                    info!(forward = %fwd.name, tools_discovered = tools_count, resources_discovered = resources_count, "forward discovery complete");
+                    info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
+                    wanaku_praxis::management::discover_and_update_forward(&reg, fwd).await;
                 }
             });
         });
