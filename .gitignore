@@ -39,7 +39,7 @@ build/
 ### Mac OS ###
 .DS_Store
 
-plan
+plans
 .claude/worktrees
 .claude/plans
 .claude/settings.local.json
