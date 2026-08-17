@@ -737,17 +737,6 @@ mod forward_helpers_tests {
     }
 }
 
-pub(super) fn handle_capability_list(_registry: &InMemoryRegistry) -> Response<Vec<u8>> {
-    let targets: Vec<serde_json::Value> = Vec::new();
-    json_ok(&serde_json::json!(targets))
-}
-
-pub(super) fn handle_capability_state() -> Response<Vec<u8>> {
-    let empty: std::collections::HashMap<String, Vec<serde_json::Value>> =
-        std::collections::HashMap::new();
-    json_ok(&serde_json::json!(empty))
-}
-
 pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let tools_count = registry.tool_count() as i64;
     let resources_count = registry.resource_count() as i64;
@@ -760,20 +749,6 @@ pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>
         "promptsCount": prompts_count,
         "forwardsCount": forwards_count,
         "dataStoresCount": 0,
-        "toolCapabilities": {
-            "total": 0,
-            "healthy": 0,
-            "unhealthy": 0,
-            "down": 0,
-            "pending": 0
-        },
-        "resourceCapabilities": {
-            "total": 0,
-            "healthy": 0,
-            "unhealthy": 0,
-            "down": 0,
-            "pending": 0
-        }
     }))
 }
 
@@ -786,7 +761,6 @@ mod tests {
     };
 
     use super::{
-        handle_capability_list, handle_capability_state,
         handle_forward_delete, handle_forward_get, handle_forward_list,
         handle_namespace_create, handle_namespace_delete, handle_namespace_get,
         handle_namespace_list, handle_namespace_update,
@@ -1314,26 +1288,6 @@ mod tests {
         assert_eq!(handle_forward_delete(&registry, "nope").status(), 404);
     }
 
-    // ---- Capability handlers ----
-
-    #[test]
-    fn capability_list_returns_empty() {
-        let registry = InMemoryRegistry::new();
-        let resp = handle_capability_list(&registry);
-        assert_eq!(resp.status(), 200);
-        assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(0));
-    }
-
-    #[test]
-    fn capability_state_returns_empty_object() {
-        let resp = handle_capability_state();
-        assert_eq!(resp.status(), 200);
-
-        let data = data_field(&resp);
-        assert!(data.is_object());
-        assert_eq!(data.as_object().map(|m| m.len()), Some(0));
-    }
-
     // ---- Statistics handler ----
 
     #[test]
@@ -1391,30 +1345,6 @@ mod tests {
         assert_eq!(
             data.get("forwardsCount").and_then(|v| v.as_i64()),
             Some(1)
-        );
-    }
-
-    #[test]
-    fn statistics_includes_capability_fields() {
-        let registry = InMemoryRegistry::new();
-        let data = data_field(&handle_statistics(&registry));
-
-        let tool_caps = data.get("toolCapabilities");
-        assert!(tool_caps.is_some());
-        assert_eq!(
-            tool_caps
-                .and_then(|c| c.get("total"))
-                .and_then(|v| v.as_i64()),
-            Some(0)
-        );
-
-        let resource_caps = data.get("resourceCapabilities");
-        assert!(resource_caps.is_some());
-        assert_eq!(
-            resource_caps
-                .and_then(|c| c.get("total"))
-                .and_then(|v| v.as_i64()),
-            Some(0)
         );
     }
 

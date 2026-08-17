@@ -105,34 +105,6 @@ pub(super) fn resolve_management_route(method: &str, path: &str) -> ManagementRo
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(super) enum CapabilityRoute {
-    List,
-    ToolsState,
-    ResourcesState,
-    FleetStatus,
-    NotFound,
-}
-
-pub(super) fn resolve_capability_route(method: &str, path: &str) -> CapabilityRoute {
-    let suffix = match path.strip_prefix("/api/v1/capabilities") {
-        Some(s) => s,
-        None => return CapabilityRoute::NotFound,
-    };
-
-    if method != "GET" {
-        return CapabilityRoute::NotFound;
-    }
-
-    match suffix {
-        "" | "/" => CapabilityRoute::List,
-        "/tools/state" => CapabilityRoute::ToolsState,
-        "/resources/state" => CapabilityRoute::ResourcesState,
-        "/fleet/status" => CapabilityRoute::FleetStatus,
-        _ => CapabilityRoute::NotFound,
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
 pub(super) enum ForwardRoute {
     List,
     GetByName(String),
