@@ -90,6 +90,11 @@ interface response {
     /// Block the request with a JSON-RPC error.
     block: func(reason: string);
 
+    /// Signal that the request cannot be evaluated because the LLM
+    /// result or input data is malformed. Distinct from block: this
+    /// means "I cannot make a decision" rather than "I decided to reject."
+    reject-malformed: func(reason: string);
+
     /// Log a warning but allow the request to proceed.
     warn: func(message: string);
 
@@ -99,6 +104,14 @@ interface response {
 
     /// Set a metadata key on the filter context for downstream filters.
     set-metadata: func(key: string, value: string);
+}
+
+/// Validate LLM results against the evaluator's declared schema.
+interface validation {
+    /// Validate a raw string against the evaluator's declared result schema.
+    /// Returns the validated string on success, or an error description on failure.
+    /// If no schema is declared, validation always succeeds.
+    verify-llm-result: func(raw: string) -> result<string, string>;
 }
 
 /// Structured logging to the host's tracing infrastructure.
@@ -119,6 +132,7 @@ world evaluator-action {
     import registry;
     import conversation;
     import response;
+    import validation;
     import log;
 
     use types.{evaluation-context};

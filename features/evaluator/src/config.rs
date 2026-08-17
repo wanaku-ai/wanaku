@@ -37,6 +37,8 @@ pub struct LlmDef {
     pub url: String,
     #[serde(default)]
     pub api_key: String,
+    #[serde(default)]
+    pub result_schema: Option<serde_json::Value>,
 }
 
 /// The type of cognitive operation the LLM performs.

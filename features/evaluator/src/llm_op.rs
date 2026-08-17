@@ -94,3 +94,31 @@ fn build_context_prompt(
 
     prompt
 }
+
+/// Retry an LLM operation with a correction prompt that includes
+/// the schema and the previous (invalid) response.
+pub async fn retry_with_schema_correction(
+    llm_def: &LlmDef,
+    method: &str,
+    tool_name: Option<&str>,
+    arguments: &HashMap<String, String>,
+    tools: &[ToolEntry],
+    history: &[Interaction],
+    previous_result: &str,
+    schema: &serde_json::Value,
+    validation_error: &str,
+) -> Option<String> {
+    let client = LlmClient::new(&llm_def.url, &llm_def.model, &llm_def.api_key)?;
+
+    let base_prompt = build_context_prompt(method, tool_name, arguments, tools, history);
+    let correction = format!(
+        "{base_prompt}\n\n## Correction\n\n\
+         Your previous response did not match the expected JSON schema.\n\
+         Validation error: {validation_error}\n\
+         Expected schema:\n```json\n{schema}\n```\n\
+         Your response was:\n```\n{previous_result}\n```\n\n\
+         Provide a response that strictly matches the expected JSON schema."
+    );
+
+    client.chat(&llm_def.prompt, &correction).await
+}

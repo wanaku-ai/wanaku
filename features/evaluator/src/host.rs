@@ -10,7 +10,10 @@ pub use wanaku::evaluator::types;
 use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
 
+use std::sync::Arc;
+
 use crate::action::ActionResult;
+use crate::schema::CompiledSchema;
 
 /// Host state available to the WASM guest during evaluation.
 pub struct HostState {
@@ -18,6 +21,7 @@ pub struct HostState {
     pub interactions: InMemoryInteractionStore,
     pub action: ActionResult,
     pub evaluator_name: String,
+    pub compiled_schema: Option<Arc<CompiledSchema>>,
     pub wasi_ctx: wasmtime_wasi::WasiCtx,
     pub wasi_table: wasmtime::component::ResourceTable,
 }
@@ -104,8 +108,21 @@ impl wanaku::evaluator::response::Host for HostState {
         self.action = ActionResult::FilterTools(tool_names);
     }
 
+    fn reject_malformed(&mut self, reason: String) {
+        self.action = ActionResult::RejectMalformed(reason);
+    }
+
     fn set_metadata(&mut self, key: String, value: String) {
         self.action = ActionResult::SetMetadata(key, value);
+    }
+}
+
+impl wanaku::evaluator::validation::Host for HostState {
+    fn verify_llm_result(&mut self, raw: String) -> Result<String, String> {
+        let Some(schema) = &self.compiled_schema else {
+            return Ok(raw);
+        };
+        schema.validate(&raw).map(|()| raw)
     }
 }
 

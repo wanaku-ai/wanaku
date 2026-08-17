@@ -1,8 +1,12 @@
 use std::path::Path;
 
+use std::sync::Arc;
+
 use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::{WasiCtxBuilder, WasiCtxView, WasiView};
+
+use crate::schema::CompiledSchema;
 
 use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
 use wanaku_praxis_apis::registry::InMemoryRegistry;
@@ -58,6 +62,7 @@ impl CompiledEvaluator {
         registry: InMemoryRegistry,
         interactions: InMemoryInteractionStore,
         ctx: host::types::EvaluationContext,
+        compiled_schema: Option<Arc<CompiledSchema>>,
     ) -> ActionResult {
         let wasi_ctx = WasiCtxBuilder::new().build();
 
@@ -66,6 +71,7 @@ impl CompiledEvaluator {
             interactions,
             action: ActionResult::Pass,
             evaluator_name: self.name.clone(),
+            compiled_schema,
             wasi_ctx,
             wasi_table: ResourceTable::new(),
         };
