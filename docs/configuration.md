@@ -307,7 +307,31 @@ forwards:
     address: "http://upstream:8080/mcp"
 ```
 
-**Note:** Only `tools` and `forwards` are loaded from wanaku.yaml at startup. Resources, prompts, and namespaces must be registered via the management API (POST `/api/v1/resources`, `/api/v1/prompts`, `/api/v1/namespaces`).
+**Note:** Only `tools`, `forwards`, and `evaluators` are loaded from wanaku.yaml at startup. Resources, prompts, and namespaces must be registered via the management API (POST `/api/v1/resources`, `/api/v1/prompts`, `/api/v1/namespaces`).
+
+**Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):
+
+```yaml
+evaluators:
+  - name: "safety-gate"
+    trigger:
+      method: "tools/call"
+    llm:
+      operation: classify
+      prompt: "Classify this tool call..."
+      model: "llama3.2"
+      url: "http://localhost:11434/v1"
+      result_schema:              # Optional JSON Schema for LLM output validation
+        type: object
+        properties:
+          level: { type: string }
+          reason: { type: string }
+        required: ["level", "reason"]
+    processor:
+      path: "/wasm/safety-gate.wasm"
+```
+
+When `result_schema` is set, the host validates LLM output against the schema and retries once with a correction prompt on mismatch.
 
 ### Tool Definitions
 

@@ -15,6 +15,7 @@ workspace = true
 async-trait = { workspace = true }
 bytes = { workspace = true }
 http = { workspace = true }
+jsonschema = { version = "0.28", default-features = false }
 praxis-filter = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -24,3 +25,7 @@ wasmtime = { version = "47", features = ["component-model"] }
 wasmtime-wasi = "47"
 wanaku-praxis-apis = { workspace = true }
 wanaku-praxis-filters = { workspace = true }
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+serial_test = "3"

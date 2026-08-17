@@ -4,6 +4,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::config::EvaluatorDef;
 use crate::engine::CompiledEvaluator;
+use crate::schema::CompiledSchema;
 
 /// Shared state for the evaluator engine.
 /// Holds loaded evaluator definitions, compiled WASM modules,
@@ -12,6 +13,7 @@ use crate::engine::CompiledEvaluator;
 pub struct EvaluatorState {
     evaluators: Arc<RwLock<Vec<EvaluatorDef>>>,
     compiled: Arc<RwLock<HashMap<PathBuf, Arc<CompiledEvaluator>>>>,
+    schemas: Arc<RwLock<HashMap<String, Arc<CompiledSchema>>>>,
     bindings: Arc<RwLock<HashMap<String, String>>>,
 }
 
@@ -21,12 +23,14 @@ impl EvaluatorState {
         Self {
             evaluators: Arc::new(RwLock::new(Vec::new())),
             compiled: Arc::new(RwLock::new(HashMap::new())),
+            schemas: Arc::new(RwLock::new(HashMap::new())),
             bindings: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     pub fn load_evaluators(&self, defs: Vec<EvaluatorDef>) {
         self.compile_modules(&defs);
+        self.compile_schemas(&defs);
         if let Ok(mut guard) = self.evaluators.write() {
             *guard = defs;
         }
@@ -44,6 +48,13 @@ impl EvaluatorState {
             .read()
             .ok()
             .and_then(|guard| guard.iter().find(|e| e.trigger.matches(method, namespace)).cloned())
+    }
+
+    pub fn get_compiled_schema(&self, evaluator_name: &str) -> Option<Arc<CompiledSchema>> {
+        self.schemas
+            .read()
+            .ok()
+            .and_then(|guard| guard.get(evaluator_name).cloned())
     }
 
     pub fn get_compiled(&self, path: &Path) -> Option<Arc<CompiledEvaluator>> {
@@ -111,6 +122,26 @@ impl EvaluatorState {
 
         if let Ok(mut guard) = self.compiled.write() {
             *guard = compiled;
+        }
+    }
+
+    fn compile_schemas(&self, defs: &[EvaluatorDef]) {
+        let mut schemas = HashMap::new();
+
+        for def in defs {
+            if let Some(ref schema_val) = def.llm.result_schema {
+                if let Some(compiled) = CompiledSchema::compile(schema_val) {
+                    tracing::info!(
+                        evaluator = %def.name,
+                        "compiled result schema"
+                    );
+                    schemas.insert(def.name.clone(), Arc::new(compiled));
+                }
+            }
+        }
+
+        if let Ok(mut guard) = self.schemas.write() {
+            *guard = schemas;
         }
     }
 }

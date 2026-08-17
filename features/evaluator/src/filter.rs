@@ -6,7 +6,7 @@ use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStor
 use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 use crate::action::ActionResult;
-use crate::config::{ErrorPolicy, LlmOperation};
+use crate::config::{ErrorPolicy, EvaluatorDef, LlmOperation};
 use crate::state::EvaluatorState;
 
 wanaku_praxis_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
@@ -75,7 +75,7 @@ impl EvaluatorFilter {
             _ => Vec::new(),
         };
 
-        let llm_result = crate::llm_op::run_llm_operation(
+        let raw_llm_result = crate::llm_op::run_llm_operation(
             &evaluator.llm,
             &method,
             tool_name.as_deref(),
@@ -85,6 +85,20 @@ impl EvaluatorFilter {
         )
         .await
         .unwrap_or_default();
+
+        let compiled_schema = state.get_compiled_schema(&evaluator.name);
+
+        let llm_result = validate_and_retry_if_needed(
+            &raw_llm_result,
+            &evaluator,
+            compiled_schema.as_ref(),
+            &method,
+            tool_name.as_deref(),
+            &arguments,
+            &tools,
+            &history,
+        )
+        .await;
 
         tracing::info!(
             evaluator = %evaluator.name,
@@ -120,7 +134,12 @@ impl EvaluatorFilter {
             conversation_id,
         };
 
-        let result = compiled.evaluate(registry, interactions, eval_ctx);
+        let result = compiled.evaluate(
+            registry,
+            interactions,
+            eval_ctx,
+            compiled_schema,
+        );
 
         tracing::info!(
             evaluator = %evaluator.name,
@@ -149,6 +168,14 @@ fn dispatch_action(
                 &json_rpc_id,
                 -32001,
                 &format!("blocked by evaluator {evaluator_name}: {reason}"),
+            ))
+        }
+        ActionResult::RejectMalformed(reason) => {
+            tracing::warn!(evaluator = %evaluator_name, reason = %reason, "rejected: malformed input");
+            Ok(wanaku_praxis_filters::response::json_rpc_error(
+                &json_rpc_id,
+                -32002,
+                &format!("evaluator {evaluator_name}: malformed input — {reason}"),
             ))
         }
         ActionResult::Warn(message) => {
@@ -191,6 +218,64 @@ fn dispatch_action(
         ActionResult::SetMetadata(key, value) => {
             ctx.set_metadata(&key, &value);
             Ok(FilterAction::Continue)
+        }
+    }
+}
+
+async fn validate_and_retry_if_needed(
+    raw_result: &str,
+    evaluator: &EvaluatorDef,
+    compiled_schema: Option<&std::sync::Arc<crate::schema::CompiledSchema>>,
+    method: &str,
+    tool_name: Option<&str>,
+    arguments: &HashMap<String, String>,
+    tools: &[wanaku_praxis_apis::registry::ToolEntry],
+    history: &[wanaku_praxis_apis::interactions::Interaction],
+) -> String {
+    let Some(schema) = compiled_schema else {
+        return raw_result.to_owned();
+    };
+
+    let validation_error = match schema.validate(raw_result) {
+        Ok(()) => return raw_result.to_owned(),
+        Err(e) => e,
+    };
+
+    tracing::warn!(
+        evaluator = %evaluator.name,
+        error = %validation_error,
+        "LLM result failed schema validation, retrying with correction"
+    );
+
+    let raw_schema = evaluator.llm.result_schema.as_ref();
+    let retry_result = if let Some(raw_schema) = raw_schema {
+        crate::llm_op::retry_with_schema_correction(
+            &evaluator.llm,
+            method,
+            tool_name,
+            arguments,
+            tools,
+            history,
+            raw_result,
+            raw_schema,
+            &validation_error,
+        )
+        .await
+    } else {
+        None
+    };
+
+    match retry_result {
+        Some(ref retried) if schema.validate(retried).is_ok() => {
+            tracing::info!(evaluator = %evaluator.name, "retry produced valid result");
+            retried.clone()
+        }
+        _ => {
+            tracing::warn!(
+                evaluator = %evaluator.name,
+                "retry also failed schema validation, passing raw result to guest"
+            );
+            raw_result.to_owned()
         }
     }
 }

@@ -167,6 +167,28 @@ StreamBuffer mode executes in this order:
 
 Namespace filter uses `on_request_body` (not `on_request`) because the MCP filter sets `mcp.method` in its `on_request_body`. If namespace ran in `on_request`, it would execute in phase 3 — before the MCP body handler in phase 2 has set the metadata. Both in `on_request_body` ensures pipeline-order execution during post-read.
 
+### Evaluator Tests
+
+Three test tiers, none require an LLM:
+
+```bash
+# Integration tests (always run, no server needed)
+# WASM engine tests skip automatically if actions aren't built
+cargo test -p wanaku-feature-evaluator
+
+# E2e tests (require a running wanaku-praxis server)
+cargo test -p wanaku-feature-evaluator --test e2e -- --ignored
+
+# Classification e2e (require server + Ollama on localhost:11434)
+# Same command — classification tests skip if Ollama isn't reachable
+```
+
+**Building WASM actions** for the engine tests:
+```bash
+cd actions/safety-block && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
+cd ../safety-warn && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
+```
+
 ## Configuration
 
 **Env vars** (core in `apis/src/config.rs`, features own theirs):
@@ -182,6 +204,54 @@ Namespace filter uses `on_request_body` (not `on_request`) because the MCP filte
 | `WANAKU_INFERENCE_API_KEY` | unset | Bearer token for upstream |
 
 **Praxis config** (`server/src/default.yaml`): listener, filter chains. **Wanaku config** (`wanaku.yaml`): forwards bootstrap (optional).
+
+### Evaluator Config (in wanaku.yaml)
+
+```yaml
+evaluators:
+  - name: "safety-check"
+    trigger:
+      method: "tools/call"
+      namespace: "default"        # optional — matches all if omitted
+    llm:
+      operation: classify
+      prompt: "Classify this request as safe or unsafe..."
+      model: "llama3"
+      url: "http://localhost:11434"
+      api_key: ""                 # optional
+      result_schema:              # optional — JSON Schema for expected LLM output
+        type: object
+        properties:
+          level: { type: string, enum: ["green", "yellow", "red"] }
+          reason: { type: string }
+        required: ["level", "reason"]
+    processor:
+      path: "/path/to/action.wasm"
+    on_error: continue            # or "block"
+```
+
+When `result_schema` is set, the host validates the LLM result against it before passing to the WASM guest. On mismatch, it retries once with a correction prompt that includes the specific validation error. The result (valid or not after retry) is then passed to the guest, which can use `verify-llm-result` for its own validation.
+
+### Evaluator Guest API (WIT)
+
+The evaluator WIT contract (`features/evaluator/wit/evaluator.wit`) defines the WASM guest interface:
+
+**Imports available to guest scripts:**
+- `registry` — read/write access to tool registry
+- `conversation` — access to conversation history
+- `response` — control MCP response (`pass`, `block`, `reject-malformed`, `warn`, `filter-tools`, `set-metadata`)
+- `validation` — `verify-llm-result(raw) -> result<string, string>` validates against declared schema
+- `log` — structured logging (`info`, `warn`, `error`)
+
+**Response variants and their JSON-RPC error codes:**
+- `pass` — continue to next filter (no error)
+- `block(reason)` — reject with code `-32001` (policy violation)
+- `reject-malformed(reason)` — reject with code `-32002` (malformed input, cannot assess)
+- `warn(message)` — log warning, continue
+- `filter-tools(names)` — return filtered tools/list (only for `tools/list` method)
+- `set-metadata(key, value)` — set metadata for downstream filters
+
+The distinction between `block` and `reject-malformed` matters: `block` means the evaluator made a decision to reject; `reject-malformed` means the evaluator could not make a decision because the input data was malformed.
 
 ## Common Tasks
 

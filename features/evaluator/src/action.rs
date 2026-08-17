@@ -6,6 +6,10 @@ pub enum ActionResult {
     Pass,
     /// Guest called response.block(reason).
     Block(String),
+    /// Guest called response.reject_malformed(reason).
+    /// Signals that the evaluator cannot make a decision because the
+    /// LLM result or input data is malformed — distinct from Block.
+    RejectMalformed(String),
     /// Guest called response.warn(message).
     Warn(String),
     /// Guest called response.filter_tools(names).

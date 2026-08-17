@@ -5,8 +5,10 @@ pub mod config;
 pub mod engine;
 pub mod filter;
 mod host;
+pub use host::types as wit_types;
 pub mod llm_op;
 mod routes;
+pub mod schema;
 pub mod state;
 
 use http::Response;
