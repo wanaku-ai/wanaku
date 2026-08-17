@@ -15,6 +15,7 @@ pub trait Feature: Send + Sync {
         path: &str,
         query: Option<&str>,
         body: Option<&str>,
+        headers: &http::HeaderMap,
     ) -> Option<Response<Vec<u8>>>;
 
     fn load_yaml_config(&self, root: &serde_yaml::Value);

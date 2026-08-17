@@ -53,6 +53,7 @@ impl Feature for ChatFeature {
         path: &str,
         _query: Option<&str>,
         body: Option<&str>,
+        _headers: &http::HeaderMap,
     ) -> Option<Response<Vec<u8>>> {
         let route = resolve_chat_route(method, path);
         if route == ChatRoute::NotFound {

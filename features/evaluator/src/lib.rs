@@ -69,6 +69,7 @@ impl Feature for EvaluatorFeature {
         path: &str,
         _query: Option<&str>,
         body: Option<&str>,
+        _headers: &http::HeaderMap,
     ) -> Option<Response<Vec<u8>>> {
         let route = resolve_evaluator_route(method, path);
         if route == EvaluatorRoute::NotFound {

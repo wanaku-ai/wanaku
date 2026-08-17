@@ -61,6 +61,7 @@ pub(crate) async fn handle_proxy_service(
     query: Option<&str>,
     method: &str,
     body: Option<&str>,
+    headers: &http::HeaderMap,
 ) -> Response<Vec<u8>> {
     let url = match query {
         Some(q) => format!("{target_url}{path}?{q}"),
@@ -73,6 +74,12 @@ pub(crate) async fn handle_proxy_service(
     };
 
     let mut request = client.request(req_method, &url);
+
+    let accept = headers
+        .get(http::header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/json");
+    request = request.header(http::header::ACCEPT, accept);
 
     if let Some(b) = body {
         request = request

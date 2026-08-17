@@ -76,8 +76,9 @@ pub(crate) async fn handle_proxy(
     query: Option<&str>,
     method: &str,
     body: Option<&str>,
+    headers: &http::HeaderMap,
 ) -> Response<Vec<u8>> {
-    handlers::handle_proxy_service(client, target_url, path, query, method, body).await
+    handlers::handle_proxy_service(client, target_url, path, query, method, body, headers).await
 }
 
 #[cfg(test)]

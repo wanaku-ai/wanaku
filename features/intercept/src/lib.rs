@@ -68,6 +68,7 @@ impl Feature for InterceptFeature {
         path: &str,
         _query: Option<&str>,
         _body: Option<&str>,
+        _headers: &http::HeaderMap,
     ) -> Option<Response<Vec<u8>>> {
         let route = resolve_interaction_route(method, path);
         if route == InteractionRoute::NotFound {
