@@ -16,22 +16,21 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
 │              Wanaku Praxis Server (Port 8081)                │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │              Filter Pipeline (Praxis)                   │ │
-│  │  CORS → MCP Parse → Namespace → Tool List/Call →       │ │
-│  │  Resource Read → Prompt Get → Static Response          │ │
+│  │  CORS → MCP Parse → Namespace → Evaluator →            │ │
+│  │  Tool List/Call → Resource → Prompt → Static Response   │ │
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │              In-Memory Registry (DashMap)               │ │
-│  │  Tools │ Resources │ Prompts │ Namespaces │ Services   │ │
+│  │  Tools │ Resources │ Prompts │ Forwards │ Namespaces   │ │
 │  └────────────────────────────────────────────────────────┘ │
-└────────────────┬───────────────────────────────────┬────────┘
-                 │                                   │
-    MCP Forward (HTTP)                          gRPC (Tonic)
-                 │                                   │
-                 ▼                                   ▼
-     ┌───────────────────┐           ┌──────────────────────┐
-     │ Upstream MCP      │           │ gRPC Tool Services   │
-     │ Servers           │           │ (ToolInvoker proto)  │
-     └───────────────────┘           └──────────────────────┘
+└────────────────────────────────┬────────────────────────────┘
+                                 │
+                        MCP Forward (HTTP)
+                                 │
+                                 ▼
+                   ┌───────────────────────┐
+                   │ Upstream MCP Servers   │
+                   └───────────────────────┘
 ```
 
 **Request flow:**
@@ -39,9 +38,7 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
 1. LLM sends MCP request to `/mcp` or `/{namespace}/mcp`
 2. Praxis filter pipeline processes the request
 3. Filters query the in-memory registry for tools/resources/prompts
-4. For tool calls:
-   - If `type == "mcp-forward"`: forward to upstream MCP server via HTTP
-   - Otherwise: invoke gRPC service registered for that tool type
+4. For tool calls: the filter forwards the request to the upstream MCP server registered as the tool's forward address via HTTP
 5. Response flows back through filters, wrapped in JSON-RPC
 
 ## The Filter Pipeline
@@ -56,8 +53,9 @@ filter_chains:
       - filter: mcp                     # Parse JSON-RPC, set metadata
         on_invalid: continue
       - filter: wanaku_namespace        # Extract namespace from path
+      - filter: wanaku_well_known       # RFC 9728 OAuth metadata (feature)
       - filter: wanaku_mcp_init         # Initialize MCP context
-      - filter: wanaku_evaluator        # Evaluator engine (optional)
+      - filter: wanaku_evaluator        # Evaluator engine (feature)
       - filter: wanaku_tool_list        # Handle tools/list
       - filter: wanaku_tool_call        # Handle tools/call
       - filter: wanaku_resource_list    # Handle resources/list
@@ -152,7 +150,7 @@ Wanaku uses the praxis-ai `McpFilter` (the classifier) to parse JSON-RPC and set
 |---|---|---|
 | Tool catalog | Static YAML config | Dynamic `InMemoryRegistry`, populated at runtime via management API |
 | Namespace isolation | None | Per-namespace filtering (`/finance/mcp` sees only `finance` tools) |
-| Tool execution | L7 proxy forwarding to Pingora clusters (stateless profile only; unsupported in current profile) | Direct MCP-to-MCP forwarding via `rmcp` crate |
+| Tool execution | L7 proxy forwarding to Pingora clusters (stateless profile only; unsupported in current profile) | MCP-to-MCP forwarding via `rmcp` crate |
 | Forward discovery | None | Auto-discovers tools from upstream MCP servers on registration |
 | Resources & Prompts | Not supported | Full `resources/*` and `prompts/*` filter support |
 
@@ -172,24 +170,25 @@ Wanaku uses the praxis-ai `McpFilter` (the classifier) to parse JSON-RPC and set
 
 ## The Registry
 
-The registry is the source of truth for tools, resources, prompts, namespaces, and services. It's an in-memory data structure (no database) implemented as `InMemoryRegistry` in `apis/src/registry.rs`.
+The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. It's an in-memory data structure (no database) implemented as `InMemoryRegistry` in `apis/src/registry.rs`.
 
 **Key design:**
 
 - **Clone-safe:** Uses `Arc<DashMap>` internally, so cloning is cheap (bumps refcount)
 - **Shared state:** Injected into filter pipeline and management API via `PipelineExtension`
-- **Trait-based:** Implements `ToolRegistry`, `ResourceRegistry`, `PromptRegistry`, `NamespaceRegistry`, `ForwardRegistry`, `ServiceRegistry`
+- **Trait-based:** Implements `ToolRegistry`, `ResourceRegistry`, `PromptRegistry`, `NamespaceRegistry`, `ForwardRegistry`
 
 **Data structures:**
 
 ```rust
 pub struct InMemoryRegistry {
-    tools: Arc<DashMap<String, ToolEntry>>,          // key: name
+    tools: Arc<DashMap<String, ToolEntry>>,
     resources: Arc<DashMap<String, ResourceEntry>>,
     prompts: Arc<DashMap<String, PromptEntry>>,
-    namespaces: Arc<DashMap<String, NamespaceEntry>>,
     forwards: Arc<DashMap<String, ForwardEntry>>,
-    services: Arc<DashMap<String, ServiceEntry>>,    // key: name
+    namespaces: Arc<DashMap<String, NamespaceEntry>>,
+    persistence: Option<Arc<dyn PersistenceBackend>>,
+    inject_request_id: Arc<AtomicBool>,
 }
 ```
 
@@ -220,65 +219,17 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 
 For production, point `WANAKU_CLASSIC_URL` at a classic Wanaku backend and treat Praxis as a stateless proxy.
 
-## Tool Routing: gRPC vs. MCP Forward
+## Tool Routing
 
-When a tool call arrives (`tools/call`), the tool_call filter routes it one of two ways:
+All tool execution in Praxis happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
 
-### 1. gRPC (Local Execution)
+1. Looks up the tool in the registry by name
+2. Calls `mcp_client::call_tool(tool.uri, name, arguments)` to forward the request to the upstream MCP server
+3. Uses the `rmcp` crate to send an HTTP POST
+4. Upstream returns MCP `CallToolResult`
+5. Filter wraps it in JSON-RPC and returns
 
-For tools with `type != "mcp-forward"` (e.g., `"echo-tool"`, `"camel"`):
-
-1. Filter calls `registry.resolve_service(tool.type_, "tool-invoker")` to get gRPC address
-2. Uses `GrpcPool` to get or create a connection to that address
-3. Invokes `ToolInvoke` gRPC method with tool arguments
-4. Returns result or error
-
-**Service registration:**
-
-Services self-register via `POST /api/v1/services`:
-
-```json
-{
-  "name": "echo-tool",
-  "address": "localhost:9191",
-  "service_type": "tool-invoker"
-}
-```
-
-The registry stores this as a `ServiceEntry`. When a tool of type `"echo-tool"` is called, the filter looks up the service and connects via gRPC.
-
-**gRPC proto:**
-
-```protobuf
-service ToolInvoker {
-  rpc InvokeTool (ToolInvokeRequest) returns (ToolInvokeReply) {}
-}
-
-message ToolInvokeRequest {
-  string uri = 1;
-  string body = 2;
-  map<string, string> arguments = 3;
-  string configuration_uri = 4;
-  string secrets_uri = 5;
-  map<string, string> headers = 6;
-  string request_id = 9;
-}
-
-message ToolInvokeReply {
-  repeated string content = 2;
-}
-```
-
-See `apis/src/proto/toolrequest.proto` and `apis/src/proto/resourcerequest.proto` for the full definitions.
-
-### 2. MCP Forward (Remote MCP Server)
-
-For tools with `type == "mcp-forward"`:
-
-1. Filter calls `mcp_client::call_tool(tool.uri, name, arguments)` directly
-2. Uses the `rmcp` crate to send an HTTP POST to the upstream MCP server
-3. Upstream returns MCP `CallToolResult`
-4. Filter wraps it in JSON-RPC and returns
+Tools have `type: "mcp-forward"` and a `uri` pointing at the upstream MCP server. This is the only execution model — there is no built-in gRPC or local tool execution.
 
 **Forward discovery:**
 
@@ -314,12 +265,16 @@ This removes all tools previously discovered from that forward and re-queries th
 Features are self-contained modules that extend Praxis with new capabilities. They live in `features/<name>/` and implement the `Feature` trait from `apis/src/feature.rs`:
 
 ```rust
+#[async_trait::async_trait]
 pub trait Feature: Send + Sync {
-    fn register_filters(&self, registry: &mut FilterRegistry) -> Result<(), FilterError>;
-    fn pipeline_extensions(&self) -> Vec<Box<dyn Any + Send + Sync>>;
-    fn handle_route(&self, req: &HttpRequest, path: &str, body: &[u8]) -> Option<HttpResponse>;
-    fn load_yaml_config(&mut self, config: &serde_yaml::Value) -> Result<(), Box<dyn std::error::Error>>;
-    fn load_env_config(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    fn name(&self) -> &'static str;
+    fn register_filters(&self, registry: &mut FilterRegistry);
+    fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>>;
+    async fn handle_route(
+        &self, method: &str, path: &str, query: Option<&str>, body: Option<&str>,
+    ) -> Option<Response<Vec<u8>>>;
+    fn load_yaml_config(&self, root: &serde_yaml::Value);
+    fn load_env_config(&self);
 }
 ```
 
@@ -331,13 +286,13 @@ pub trait Feature: Send + Sync {
 4. Calls `pipeline_extensions` to get shared state (e.g., LLM client)
 5. For each request, calls `handle_route` if the path matches the feature's API
 
-**Examples:**
+**Registered features** (in `main.rs`):
 
-**MCP Metadata feature** (`features/mcp-metadata/`):
-- **Filter:** none
-- **Management API:** `GET /.well-known/oauth-protected-resource/{namespace}/mcp` — RFC 9728 metadata
-- **State:** none (reads `WANAKU_AUTH_ISSUER` env var)
-- **Purpose:** exposes OAuth server metadata for MCP clients
+1. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
+2. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
+3. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
+4. **Chat** (`features/chat/`) — proxies LLM chat completions to an inference backend
+5. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
 See [Features](./features.md) for how to create your own.
 
@@ -348,7 +303,7 @@ The management API runs on port 8080 and uses Pingora's `ServeHttp` trait (not a
 **Request flow:**
 
 1. Pingora calls `handle_request` in `server/src/management/mod.rs`
-2. Dispatcher tries core routes (tools, resources, prompts, namespaces, forwards, services)
+2. Dispatcher tries core routes (tools, resources, prompts, namespaces, forwards)
 3. If no match, iterates over registered features and calls `feature.handle_route()`
 4. If still no match, returns 404
 
@@ -415,10 +370,10 @@ See [Admin UI](./admin-ui.md) for development details.
 
 ### Standalone
 
-Run Praxis as the only MCP server. All tools and services are gRPC-based, registered via the management API or `wanaku.yaml`.
+Run Praxis as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, and execute via MCP forwarding to upstream servers.
 
 **Pros:** Simple, no dependencies
-**Cons:** No persistence, no classic Wanaku features (service catalogs, complex Camel routes)
+**Cons:** No persistence beyond file snapshots, no classic Wanaku features (service catalogs, Camel routes)
 
 ### Hybrid (Praxis + Classic Backend)
 
@@ -428,9 +383,9 @@ Run Praxis as a stateless proxy. Point `WANAKU_CLASSIC_URL` at a classic Wanaku 
 export WANAKU_CLASSIC_URL=http://classic-wanaku:8080
 ```
 
-Praxis handles MCP protocol and namespace isolation. Classic handles persistence, service catalogs, and advanced Camel integrations.
+Praxis handles MCP protocol and namespace isolation. Classic handles persistence and service catalogs.
 
-**Pros:** Best of both worlds—Praxis performance, classic features
+**Pros:** Best of both worlds — Praxis performance, classic features
 **Cons:** Two servers to manage
 
 ### Kubernetes
@@ -457,7 +412,6 @@ Praxis uses Pingora's async worker pool. Each worker handles requests concurrent
 | Component | Typical Latency | Notes |
 |---|---|---|
 | Filter pipeline | ~1ms | CORS + MCP parse + namespace + tool lookup |
-| gRPC call | ~5ms | Local network, depends on service |
 | MCP forward | ~20ms | HTTP roundtrip to upstream MCP server |
 
 **Memory:**
@@ -499,9 +453,7 @@ CORS is enabled by default via the `cors` filter (allows all origins). Restrict 
 
 ## What's Not Here (Yet)
 
-This architecture is a proof-of-concept. Missing pieces:
-
-- **Persistence beyond file dumps** — no PostgreSQL/Redis integration
+- **Persistence beyond file snapshots** — no PostgreSQL/Redis integration
 - **Multi-tenancy** — namespaces provide isolation, but no user/tenant association
 - **Rate limiting** — no throttling on MCP or management API
 - **Metrics/observability** — no Prometheus, no tracing

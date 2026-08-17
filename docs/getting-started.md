@@ -55,15 +55,15 @@ That empty array means the server is running, but you haven't registered any too
 
 ### 4. Register Your First Tool
 
-Create a simple echo tool:
+Create a simple echo tool (note: this registers the tool metadata, but it won't actually execute without an upstream MCP server):
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "echo",
-    "type": "echo-tool",
-    "uri": "echo-tool://echo",
+    "type": "mcp-forward",
+    "uri": "http://echo-mcp:8080/mcp",
     "description": "Echoes back whatever you send it",
     "input_schema": {
       "type": "object",
@@ -109,15 +109,20 @@ No downstream services were called. The tool list is served directly from the in
 
 ## Next Steps
 
-### Add a gRPC Tool Service
+### Forward to an Upstream MCP Server
 
-The echo tool above is a stub—it doesn't actually execute. To call a real service, you need to:
+The echo tool above is registered locally but doesn't actually execute — there's no upstream server behind it. To connect to a real MCP server, register it as a forward:
 
-1. Run a gRPC service that implements the tool invoker protocol (see `apis/src/proto/toolrequest.proto`)
-2. Register the service in the registry
-3. Create a tool with `type` matching the service name
+```bash
+curl -X POST http://localhost:8080/api/v1/forwards \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-mcp-server",
+    "address": "http://localhost:8180/mcp"
+  }'
+```
 
-See [Architecture](./architecture.md) for how gRPC tool routing works.
+Praxis auto-discovers all tools from that server and registers them with `type: "mcp-forward"`. Now when an LLM calls one of those tools, Praxis forwards the request transparently.
 
 ### Explore Namespaces
 
@@ -133,8 +138,8 @@ curl -X POST http://localhost:8080/api/v1/tools \
   -d '{
     "name": "get-stock-price",
     "namespace": "finance",
-    "type": "market-data",
-    "uri": "market://stocks",
+    "type": "mcp-forward",
+    "uri": "http://market-data-mcp:8080/mcp",
     "description": "Retrieves current stock prices",
     "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}}}
   }'
@@ -154,7 +159,7 @@ Only the `get-stock-price` tool appears. The default namespace tools are invisib
 
 Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via curl.
 
-From here you can view and manage tools, namespaces, resources, and services.
+From here you can view and manage tools, namespaces, resources, prompts, and forwards.
 
 ### Enable Authentication
 
@@ -228,7 +233,7 @@ The server embeds `server/src/default.yaml` at compile time. To override:
 ```
 
 - **`--praxis-config`:** Praxis filter pipeline config (listeners, filter chains)
-- **`--wanaku-config`:** Wanaku bootstrap config (tools, services, namespaces)
+- **`--wanaku-config`:** Wanaku bootstrap config (tools, forwards, namespaces)
 
 Both are optional. If omitted, embedded defaults are used.
 
@@ -294,7 +299,7 @@ Praxis denies `unsafe_code`, `unwrap_used`, `expect_used`, and `panic` at the cr
 
 **Tool calls time out:**
 
-gRPC calls have a default deadline. If your service takes too long, check the gRPC pool configuration or optimize the service.
+MCP forward calls have a connection timeout. If your upstream MCP server takes too long, verify it's reachable and responding.
 
 **Tools don't appear in `/mcp` but show up in `/api/v1/tools`:**
 
