@@ -15,7 +15,7 @@ interface ResourceModalProps {
   onError?: (message: string) => void
 }
 
-export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, onSubmit, onCancel, onError }) => {
+export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, onSubmit, onCancel }) => {
   
   const [name, setName] = useState(openedResource?.name)
   const [description, setDescription] = useState(openedResource?.description)

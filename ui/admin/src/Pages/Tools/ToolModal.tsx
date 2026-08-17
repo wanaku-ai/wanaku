@@ -28,7 +28,6 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   tool,
   onSubmit,
   onRequestClose,
-  onError
 }) => {
   const [namespaces, setNamespaces] = useState<Namespace[]>([])
   const [toolName, setToolName] = useState(tool?.name || "")
