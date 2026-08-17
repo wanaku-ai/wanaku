@@ -1,7 +1,5 @@
 import {useCallback} from "react";
 import {
-    getApiV1Capabilities,
-    getApiV1CapabilitiesResponse,
     getApiV1Tools,
     getApiV1ToolsResponse,
     postApiV1Tools,
@@ -14,18 +12,6 @@ import {
 import {GetApiV1ToolsParams, ToolReference,} from "../../models";
 
 export const useTools = () => {
-  /**
-   * List management tools.
-   */
-  const listManagementTools = useCallback(
-    (
-      options?: RequestInit
-    ): Promise<getApiV1CapabilitiesResponse> => {
-      return getApiV1Capabilities(options);
-    },
-    []
-  );
-
   /**
    * Add a tool.
    */
@@ -69,7 +55,6 @@ export const useTools = () => {
   );
 
   return {
-    listManagementTools,
     addTool,
     updateTool,
     listTools,

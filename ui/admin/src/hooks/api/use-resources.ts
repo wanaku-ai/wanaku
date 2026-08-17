@@ -1,7 +1,5 @@
 import { useCallback } from "react";
 import {
-  getApiV1Capabilities,
-  getApiV1CapabilitiesResponse,
   getApiV1Resources,
   getApiV1ResourcesResponse,
   postApiV1Resources,
@@ -14,20 +12,6 @@ import {
 import { ResourceReference, } from "../../models";
 
 export const useResources = () => {
-
-
-  /**
-   * List management resources.
-   */
-  const listManagementResources = useCallback(
-    (
-      options?: RequestInit
-    ): Promise<getApiV1CapabilitiesResponse> => {
-      return getApiV1Capabilities(options);
-    },
-    []
-  );
-
   /**
    * Expose a resource.
    */
@@ -78,7 +62,6 @@ export const useResources = () => {
   );
 
   return {
-    listManagementResources,
     exposeResource,
     listResources,
     updateResource,

@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from "react";
 import {Button, Column, Grid, Tile, ToastNotification,} from "@carbon/react";
 import {ArrowRight, Document, Renew, TextAlignJustify, Tools,} from "@carbon/icons-react";
 import {useStatistics} from "../../hooks/api/use-statistics";
-import {CapabilityStatistics, SystemStatistics} from "../../models";
+import {SystemStatistics} from "../../models";
 import "./DashboardPage.scss";
 
 export const DashboardPage: React.FC = () => {
@@ -60,8 +60,7 @@ export const DashboardPage: React.FC = () => {
       )}
       <h1 className="title">Dashboard</h1>
       <p className="description">
-        System overview showing counts for registered entities and capability
-        status.
+        System overview showing counts for registered entities.
       </p>
       <div className="dashboard-actions">
         <Button
@@ -112,49 +111,8 @@ export const DashboardPage: React.FC = () => {
               </Column>
             </Grid>
           </section>
-
-          <section className="dashboard-section">
-            <h3 className="section-heading">Capabilities</h3>
-            <Grid className="stats-grid">
-              <Column lg={8} md={4} sm={4}>
-                <Tile className="capability-tile">
-                  <div className="capability-title">Tool Capabilities</div>
-                  <CapabilityDetails stats={statistics.toolCapabilities} />
-                </Tile>
-              </Column>
-              <Column lg={8} md={4} sm={4}>
-                <Tile className="capability-tile">
-                  <div className="capability-title">Resource Capabilities</div>
-                  <CapabilityDetails stats={statistics.resourceCapabilities} />
-                </Tile>
-              </Column>
-            </Grid>
-          </section>
         </>
       )}
-    </div>
-  );
-};
-
-interface CapabilityDetailsProps {
-  stats?: CapabilityStatistics;
-}
-
-const CapabilityDetails: React.FC<CapabilityDetailsProps> = ({ stats }) => {
-  return (
-    <div className="capability-details">
-      <div className="capability-stat capability-stat--neutral">
-        <div className="capability-value">{stats?.total ?? 0}</div>
-        <div className="capability-label">Total</div>
-      </div>
-      <div className="capability-stat capability-stat--active">
-        <div className="capability-value">{stats?.healthy ?? 0}</div>
-        <div className="capability-label">Healthy</div>
-      </div>
-      <div className="capability-stat capability-stat--inactive">
-        <div className="capability-value">{stats?.down ?? 0}</div>
-        <div className="capability-label">Down</div>
-      </div>
     </div>
   );
 };

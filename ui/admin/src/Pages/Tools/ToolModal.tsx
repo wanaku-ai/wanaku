@@ -9,8 +9,6 @@ import {
 } from "@carbon/react";
 import React, {useEffect, useState} from "react";
 import {Namespace, ToolReference} from "../../models";
-import {TargetTypeSelect} from "../Targets/TargetTypeSelect";
-import {useCapabilities} from "../../hooks/api/use-capabilities";
 import {formatInputSchema, parseInputSchema} from "./tools-utils.ts";
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 import {useNamespaces} from "../../hooks/api/use-namespaces"
@@ -45,7 +43,6 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace)
   const [configurationURI, setConfigurationURI] = useState(tool?.configurationURI || "")
   const [secretsURI, setSecretsURI] = useState(tool?.secretsURI || "")
-  const { listManagementTools } = useCapabilities()
   const { listNamespaces } = useNamespaces()
   
   useEffect(() => {
@@ -156,11 +153,12 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               value={uri}
               onChange={(event) => setUri(event.target.value)}
             />
-            <TargetTypeSelect
+            <TextInput
+              id="tool-type"
+              labelText="Type"
+              placeholder="e.g. mcp-forward"
               value={toolType}
-              onChange={setToolType}
-              apiCall={listManagementTools}
-              onError={onError}
+              onChange={(event) => setToolType(event.target.value)}
             />
             <TextInput
               id="input-schema"
