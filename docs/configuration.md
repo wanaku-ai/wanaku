@@ -20,6 +20,7 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
 | `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic Wanaku backend base URL (e.g., `http://classic:8080`) |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
+| `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on management API responses |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
 | `WANAKU_INFERENCE_API_KEY` | _(unset = no auth)_ | Bearer token API key for the inference upstream. Empty means no auth. |
 
@@ -76,8 +77,7 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
   "resources": [...],
   "prompts": [...],
   "namespaces": [...],
-  "forwards": [...],
-  "services": [...]
+  "forwards": [...]
 }
 ```
 
@@ -95,9 +95,9 @@ When set, Praxis proxies certain management API calls (e.g., service catalog ope
 
 **Hybrid mode workflow:**
 
-1. Register tools/services in classic Wanaku via its REST API
+1. Register tools in classic Wanaku via its REST API
 2. Praxis queries classic backend on startup to populate its registry
-3. MCP requests hit Praxis (port 8081), tool calls are routed to gRPC services
+3. MCP requests hit Praxis (port 8081), tool calls are forwarded to upstream MCP servers
 4. Management API writes go to Praxis AND classic (eventual consistency)
 
 This is experimental. Not all classic features are supported.
@@ -163,6 +163,14 @@ Access:
 - MCP endpoint: `http://localhost:4180/mcp`
 - Public MCP (no auth): `http://localhost:4180/public/mcp`
 
+### Intercept Feature
+
+The intercept feature records request/response interactions for conversation tracking. Evaluators use this history to provide context to LLM operations.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_INTERACTION_CAPACITY` | `1000` | Maximum number of interactions kept in the in-memory store |
+
 ### Chat Feature
 
 The chat feature proxies LLM chat completions to an inference backend (any OpenAI-compatible endpoint).
@@ -207,6 +215,7 @@ filter_chains:
       - filter: mcp
         on_invalid: continue
       - filter: wanaku_namespace
+      - filter: wanaku_well_known
       - filter: wanaku_mcp_init
       - filter: wanaku_evaluator
       - filter: wanaku_tool_list
@@ -290,7 +299,7 @@ If you reorder filters and requests start failing, check the logs. The filter th
 
 ## Wanaku Config File (wanaku.yaml)
 
-The Wanaku config bootstraps tools, resources, prompts, namespaces, and services on startup. It's optional—if omitted, the registry starts empty.
+The Wanaku config bootstraps tools and forwards on startup. It's optional — if omitted, the registry starts empty. Resources, prompts, and namespaces must be registered via the management API.
 
 **Location:** Pass with `--wanaku-config`:
 
@@ -303,8 +312,8 @@ cargo run -- --praxis-config /path/to/praxis.yaml --wanaku-config /path/to/wanak
 ```yaml
 tools:
   - name: "echo"
-    type: "echo-tool"
-    uri: "echo-tool://echo"
+    type: "mcp-forward"
+    uri: "http://echo-mcp:8080/mcp"
     description: "Echoes a message"
     namespace: "default"
     input_schema:
@@ -314,46 +323,24 @@ tools:
           type: string
       required: [message]
 
-resources:
-  - name: "readme"
-    type: "file"
-    uri: "file:///README.md"
-    description: "Project README"
-    namespace: "default"
-
-prompts:
-  - name: "code-review"
-    description: "Review code for issues"
-    namespace: "default"
-    messages:
-      - role: "user"
-        content:
-          type: "text"
-          text: "Review this code: {{code}}"
-
-namespaces:
-  - name: "finance"
-    description: "Financial tools and resources"
-
 forwards:
   - name: "upstream-mcp"
     address: "http://upstream:8080/mcp"
-
-services:
-  - name: "echo-tool"
-    address: "localhost:9191"
-    service_type: "tool-invoker"
 ```
 
+**Note:** Only `tools` and `forwards` are loaded from wanaku.yaml at startup. Resources, prompts, and namespaces must be registered via the management API (POST `/api/v1/resources`, `/api/v1/prompts`, `/api/v1/namespaces`).
+
 ### Tool Definitions
+
+**All tools must have `type: "mcp-forward"`** — other tool types are not supported. The `uri` field points to the upstream MCP server that will execute the tool.
 
 **Minimal:**
 
 ```yaml
 tools:
   - name: "my-tool"
-    type: "my-service"
-    uri: "my-service://operation"
+    type: "mcp-forward"
+    uri: "http://my-mcp-server:8080/mcp"
     description: "Does a thing"
 ```
 
@@ -362,16 +349,16 @@ tools:
 ```yaml
 tools:
   - name: "http-get"
-    type: "http"
-    uri: "http://example.com/api/{path}"
+    type: "mcp-forward"
+    uri: "http://http-mcp-server:8080/mcp"
     description: "HTTP GET request"
     input_schema:
       type: object
       properties:
-        path:
+        url:
           type: string
-          description: "API endpoint path"
-      required: [path]
+          description: "Target URL"
+      required: [url]
 ```
 
 **Namespace isolation:**
@@ -379,8 +366,8 @@ tools:
 ```yaml
 tools:
   - name: "get-stock-price"
-    type: "market-data"
-    uri: "market://stocks"
+    type: "mcp-forward"
+    uri: "http://market-mcp:8080/mcp"
     namespace: "finance"
     input_schema:
       type: object
@@ -391,51 +378,7 @@ tools:
 
 This tool only appears in `/finance/mcp`, not `/mcp`.
 
-**MCP forward:**
-
-```yaml
-tools:
-  - name: "upstream-tool"
-    type: "mcp-forward"
-    uri: "http://upstream:8080/mcp"
-    description: "Tool from upstream MCP server"
-```
-
-When called, Praxis forwards the request to `http://upstream:8080/mcp` via HTTP POST.
-
-### Service Definitions
-
-Services are gRPC endpoints that implement the `ToolInvoker` or `ResourceProvider` protocol.
-
-**Format:**
-
-```yaml
-services:
-  - name: "echo-tool"
-    address: "localhost:9191"
-    service_type: "tool-invoker"
-```
-
-**Fields:**
-
-- `name` — must match the `type` field in tool definitions
-- `address` — `host:port` of the gRPC server
-- `service_type` — one of: `"tool-invoker"`, `"resource-provider"`, `"multi-capability"`
-
-**Example with multiple services:**
-
-```yaml
-services:
-  - name: "http"
-    address: "http-service:9000"
-    service_type: "tool-invoker"
-  - name: "camel"
-    address: "camel-service:9001"
-    service_type: "tool-invoker"
-  - name: "file"
-    address: "file-provider:9002"
-    service_type: "resource-provider"
-```
+**Note:** When called, Praxis forwards the request to the upstream MCP server via HTTP POST and returns the result.
 
 ## Common Configuration Patterns
 
@@ -504,8 +447,8 @@ data:
   wanaku.yaml: |
     tools:
       - name: "echo"
-        type: "echo-tool"
-        uri: "echo-tool://echo"
+        type: "mcp-forward"
+        uri: "http://echo-mcp:8080/mcp"
         description: "Echoes a message"
 ```
 

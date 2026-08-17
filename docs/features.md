@@ -6,7 +6,24 @@ Think of features as plugins. The core server provides the infrastructure (filte
 
 ## Built-in Features
 
-Wanaku Praxis ships with two features out of the box:
+Wanaku Praxis ships with five features:
+
+### Intercept Feature (`features/intercept/`)
+
+Records MCP request/response interactions in an in-memory store. Other features — especially the evaluator engine — use this history to provide conversation context to LLM operations.
+
+**Filter:** `wanaku_intercept` (runs in the inference proxy pipeline)
+
+**Management API routes:**
+
+- `GET /api/v1/interactions` — list recorded interactions
+- `DELETE /api/v1/interactions` — clear the interaction store
+
+**Configuration:**
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_INTERACTION_CAPACITY` | `1000` | Maximum interactions kept in memory |
 
 ### MCP Metadata Feature (`features/mcp-metadata/`)
 
@@ -81,6 +98,36 @@ curl -X POST http://localhost:8080/api/v1/chat/completions \
 
 The request is proxied to `WANAKU_INFERENCE_UPSTREAM/v1/chat/completions`.
 
+### Evaluator Feature (`features/evaluator/`)
+
+A WASM-based evaluation engine that lets you build trigger→evaluate→act pipelines. When an MCP request matches a trigger, the engine calls an LLM to classify or filter, then runs a WebAssembly action script that can block requests, filter tool lists, or set metadata.
+
+**Filter:** `wanaku_evaluator`
+
+**Management API routes:**
+
+- `GET /api/v1/evaluators` — list configured evaluators
+- `PUT /api/v1/evaluators` — hot-reload evaluator configuration
+- `GET /api/v1/evaluators/namespaces` — list namespace-to-conversation bindings
+- `PUT /api/v1/evaluators/namespaces/{namespace}` — bind a namespace to a conversation ID
+- `DELETE /api/v1/evaluators/namespaces/{namespace}` — unbind
+
+See the [Evaluator Engine](./evaluator-engine.md) guide for configuration details and WASM action script development.
+
+### Plugins Feature (`features/plugins/`)
+
+Loads external UI plugins from a filesystem directory. Plugins are ES modules that can add navigation entries, pages, and backend service integrations to the admin UI at runtime.
+
+**Configuration:**
+
+Start the server with `--plugins-path`:
+
+```bash
+cargo run -- --plugins-path /path/to/plugins
+```
+
+See the [Plugin Development Guide](./plugin-development-guide.md) for details.
+
 ## Creating a Custom Feature
 
 Let's build a simple feature that counts tool calls and exposes stats via the management API.
@@ -105,6 +152,8 @@ edition = "2024"
 wanaku-praxis-apis = { path = "../../apis" }
 wanaku-praxis-filters = { path = "../../filters" }
 praxis-filter = "0.4.1"
+async-trait = "0.1"
+http = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
@@ -115,11 +164,11 @@ tracing = "0.1"
 Create `src/lib.rs`:
 
 ```rust
-use wanaku_praxis_apis::Feature;
-use praxis_filter::{FilterRegistry, FilterError};
+use wanaku_praxis_apis::feature::Feature;
+use praxis_filter::{FilterRegistry, PipelineExtension};
+use http::Response;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::any::Any;
 
 pub struct ToolStatsFeature {
     counter: Arc<AtomicU64>,
@@ -133,40 +182,43 @@ impl ToolStatsFeature {
     }
 }
 
+#[async_trait::async_trait]
 impl Feature for ToolStatsFeature {
-    fn register_filters(&self, registry: &mut FilterRegistry) -> Result<(), FilterError> {
-        // Register a filter that increments the counter on every tool call
-        let counter = self.counter.clone();
-        registry.register("wanaku_tool_stats", move || {
-            Box::new(ToolStatsFilter { counter: counter.clone() })
-        })
+    fn name(&self) -> &'static str {
+        "tool-stats"
     }
 
-    fn pipeline_extensions(&self) -> Vec<Box<dyn Any + Send + Sync>> {
-        // No shared state needed
+    fn register_filters(&self, registry: &mut FilterRegistry) {
+        // Register a filter that increments the counter on every tool call
+        let counter = self.counter.clone();
+        praxis_filter::register_filters!(
+            @register registry,
+            http "wanaku_tool_stats" => move |_| ToolStatsFilter { counter: counter.clone() }
+        );
+    }
+
+    fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>> {
         vec![]
     }
 
-    fn handle_route(&self, req: &HttpRequest, path: &str, _body: &[u8]) -> Option<HttpResponse> {
-        if req.method() == "GET" && path == "/api/v1/stats/tools" {
+    async fn handle_route(
+        &self, method: &str, path: &str, _query: Option<&str>, _body: Option<&str>,
+    ) -> Option<Response<Vec<u8>>> {
+        if method == "GET" && path == "/api/v1/stats/tools" {
             let count = self.counter.load(Ordering::Relaxed);
-            let response = serde_json::json!({
+            let body = serde_json::json!({
                 "data": {"tool_calls": count},
                 "error": null
             });
-            Some(HttpResponse::ok(response.to_string()))
+            Some(wanaku_praxis_apis::http_response::json_ok(&body))
         } else {
-            None  // Not our route
+            None
         }
     }
 
-    fn load_yaml_config(&mut self, _config: &serde_yaml::Value) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())  // No YAML config needed
-    }
+    fn load_yaml_config(&self, _root: &serde_yaml::Value) {}
 
-    fn load_env_config(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())  // No env vars needed
-    }
+    fn load_env_config(&self) {}
 }
 ```
 
@@ -176,7 +228,7 @@ Add to `src/lib.rs`:
 
 ```rust
 use wanaku_praxis_filters::body_filter_boilerplate;
-use praxis_filter::{HttpFilter, HttpFilterContext, FilterAction};
+use praxis_filter::{HttpFilterContext, FilterAction, FilterError};
 use bytes::Bytes;
 
 struct ToolStatsFilter {
@@ -191,10 +243,11 @@ impl ToolStatsFilter {
         ctx: &mut HttpFilterContext<'_>,
         _body: &Bytes,
     ) -> Result<FilterAction, FilterError> {
-        let method = ctx.get_metadata("mcp.method")?;
-        if method == "tools/call" {
-            self.counter.fetch_add(1, Ordering::Relaxed);
-            tracing::info!("Tool call count: {}", self.counter.load(Ordering::Relaxed));
+        if let Some(method) = ctx.get_metadata("mcp.method") {
+            if method == "tools/call" {
+                self.counter.fetch_add(1, Ordering::Relaxed);
+                tracing::info!("Tool call count: {}", self.counter.load(Ordering::Relaxed));
+            }
         }
         Ok(FilterAction::Continue)
     }
@@ -263,18 +316,28 @@ Expected response:
 
 ### State Management
 
-Features can share state between filters and management API handlers via `pipeline_extensions`:
+Features can share state between filters and management API handlers via `pipeline_extensions`. Implement `PipelineExtension` on a wrapper type:
 
 ```rust
-fn pipeline_extensions(&self) -> Vec<Box<dyn Any + Send + Sync>> {
-    vec![Box::new(self.counter.clone())]
+struct CounterExtension {
+    counter: Arc<AtomicU64>,
+}
+
+impl PipelineExtension for CounterExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(self.counter.clone());
+    }
+}
+
+fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>> {
+    vec![Box::new(CounterExtension { counter: self.counter.clone() })]
 }
 ```
 
 Filters retrieve the state via:
 
 ```rust
-let counter = ctx.extensions.get::<Arc<AtomicU64>>().unwrap();
+let counter = ctx.extensions.get::<Arc<AtomicU64>>();
 ```
 
 ### Hot-Reloadable Config

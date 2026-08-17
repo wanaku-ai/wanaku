@@ -8,7 +8,7 @@ You write the logic in JavaScript or Rust. The engine compiles it to WASM and ru
 
 ## YAML Configuration
 
-Evaluators live in `wanaku.yaml` or get pushed via the management API. Each evaluator has five parts:
+Evaluators live in `wanaku.yaml` or get pushed via the management API. Each evaluator has four parts:
 
 ```yaml
 evaluators:
@@ -16,20 +16,14 @@ evaluators:
     trigger:                          # When to run
       method: "tools/call"            # MCP method (tools/call, tools/list, etc.)
       namespace: "production"         # Optional: only this namespace
-      binding: "conv-12345"           # Optional: only this conversation ID
     llm:                              # LLM operation
       operation: classify             # classify | filter | augment
-      labels: ["green", "yellow", "red"]  # For classify: possible outputs
       prompt: "You are a safety classifier..."
       model: "llama3.2"
       url: "http://localhost:11434/v1"
       api_key: ""                     # Optional bearer token
-    rules:                            # For classify: label → action map
-      green: "pass"
-      yellow: "pass"
-      red: {path: "/wasm/safety-block.wasm"}
-    action:                           # For filter/augment: single action
-      path: "/wasm/assembly-filter.wasm"
+    processor:                        # WASM action script
+      path: "/wasm/safety-gate.wasm"
     on_error: continue                # continue | block (default: continue)
 ```
 
@@ -39,16 +33,12 @@ evaluators:
 |-------|------|---------|
 | `method` | string | MCP method to match (e.g., `tools/call`, `tools/list`, `resources/read`) |
 | `namespace` | string | Optional. Only trigger for this namespace (extracted from URL path `/finance/mcp` → `finance`) |
-| `binding` | string | Optional. Only trigger for requests with this conversation ID |
-
-**Namespace binding pattern:** Use `PUT /api/v1/evaluators/namespaces/{namespace}` to bind a namespace to a conversation ID. Then set `binding` to that conversation ID. This lets you create per-conversation tool catalogs.
 
 ### LLM Fields
 
 | Field | Type | Purpose |
 |-------|------|---------|
 | `operation` | string | `classify` (pick a label), `filter` (return structured data), or `augment` (enrich prompt) |
-| `labels` | array | For classify only: the allowed labels (e.g., `["safe", "dangerous"]`) |
 | `prompt` | string | System prompt for the LLM. The engine builds a user prompt with request context. |
 | `model` | string | Model name (passed to `/v1/chat/completions`) |
 | `url` | string | OpenAI-compatible endpoint URL |
@@ -62,31 +52,16 @@ evaluators:
 
 Your system prompt tells the LLM what to do with that context.
 
-### Rules (classify only)
+### Processor
 
-Map each label to an action. Actions are either `"pass"` (continue) or a WASM file path:
-
-```yaml
-rules:
-  safe: "pass"
-  dangerous: {path: "/wasm/block-dangerous.wasm"}
-```
-
-**The WASM script receives the raw LLM output** in `ctx.llmResult` — useful if the LLM returns JSON with extra metadata beyond just the label.
-
-### Action (filter/augment only)
-
-Single WASM action that processes the LLM output:
+A single WASM action script that processes the LLM output. The script receives the raw LLM result in `ctx.llmResult` and decides what to do:
 
 ```yaml
-action: {path: "/wasm/assembly-filter.wasm"}
+processor:
+  path: "/wasm/safety-gate.wasm"
 ```
 
-Or string shorthand:
-
-```yaml
-action: "/wasm/assembly-filter.wasm"
-```
+The WASM script can call `block()`, `pass()`, `warn()`, `filterTools()`, or `setMetadata()` based on its analysis of the LLM output.
 
 ### Error Policy
 
@@ -106,7 +81,6 @@ evaluators:
       method: "tools/call"
     llm:
       operation: classify
-      labels: ["green", "yellow", "red"]
       prompt: |
         You are a strict safety classifier. Classify this tool call as:
         - green: safe operations (read-only, low impact)
@@ -116,10 +90,8 @@ evaluators:
         Respond with ONLY a JSON object: {"level": "green|yellow|red", "reason": "brief explanation"}
       model: "llama3.2"
       url: "http://localhost:11434/v1"
-    rules:
-      green: "pass"
-      yellow: "pass"
-      red: {path: "/wasm/safety-block.wasm"}
+    processor:
+      path: "/wasm/safety-block.wasm"
     on_error: continue
 ```
 
@@ -127,20 +99,20 @@ evaluators:
 1. User calls `restart-database` tool
 2. Engine sends tool name + args to LLM with your prompt
 3. LLM returns `{"level": "red", "reason": "database restart is dangerous"}`
-4. Engine extracts `"red"` label, runs `safety-block.wasm`
-5. WASM script calls `block("Tool call blocked by safety classification: red")`
+4. Engine runs `safety-block.wasm` with the raw LLM output in `ctx.llmResult`
+5. WASM script parses the JSON, sees `"red"`, calls `block("Tool call blocked: red")`
 6. User gets JSON-RPC error instead of executing the tool
 
 ### Example 2: Tool Assembly
 
-Dynamically populate a namespace with only the tools the LLM approves for this conversation.
+Dynamically populate a namespace with only the tools the LLM approves.
 
 ```yaml
 evaluators:
   - name: "assembly-gate"
     trigger:
       method: "tools/list"
-      binding: "conv-finance-2024"  # Only for this conversation
+      namespace: "curated"
     llm:
       operation: filter
       prompt: |
@@ -150,26 +122,18 @@ evaluators:
         Respond with ONLY a JSON array: ["tool-name-1", "tool-name-2"]
       model: "llama3.2"
       url: "http://localhost:11434/v1"
-    action: {path: "/wasm/assembly-filter.wasm"}
+    processor:
+      path: "/wasm/assembly-filter.wasm"
 ```
 
 **What happens:**
-1. User sends `tools/list` with conversation ID `conv-finance-2024`
+1. User sends `tools/list` to the `curated` namespace (`/curated/mcp`)
 2. Engine sends conversation history + available tools to LLM
 3. LLM returns `["read-balance", "transfer-funds", "generate-report"]`
 4. Engine runs `assembly-filter.wasm` with that JSON in `ctx.llmResult`
 5. WASM script parses JSON, calls `copyToolToNamespace(name, ctx.namespace)` for each
 6. WASM calls `filterTools(approved)` to return only the assembled tools
 7. User sees a curated tool list
-
-**Namespace binding setup:**
-
-```bash
-# Bind the 'finance-team' namespace to conversation ID 'conv-finance-2024'
-curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance-team \
-  -H "Content-Type: application/json" \
-  -d '{"conversationId": "conv-finance-2024"}'
-```
 
 ## Writing Action Scripts in JavaScript
 
@@ -316,11 +280,11 @@ The first time you compile, expect cryptic errors if your imports don't match th
 
 ### Step 6: Deploy
 
-Place the `.wasm` file somewhere the server can read it (e.g., `/wasm/` directory), then reference it in your YAML:
+Place the `.wasm` file somewhere the server can read it (e.g., `/wasm/` directory), then reference it in your evaluator config:
 
 ```yaml
-rules:
-  red: {path: "/wasm/safety-block.wasm"}
+processor:
+  path: "/wasm/safety-block.wasm"
 ```
 
 Or update via the management API:
@@ -333,16 +297,28 @@ curl -X PUT http://localhost:8080/api/v1/evaluators \
 
 ### Complete JavaScript Examples
 
-#### Safety Block (classify → block)
+#### Safety Gate (classify → block or pass)
 
 ```javascript
-import { block } from 'wanaku:evaluator/response';
+import { block, pass } from 'wanaku:evaluator/response';
 import { warn } from 'wanaku:evaluator/log';
 
 export function evaluate(ctx) {
-  const reason = `Tool call blocked by safety classification: ${ctx.llmResult}`;
-  warn(reason);
-  block(reason);
+  let level = "red";
+  try {
+    const result = JSON.parse(ctx.llmResult);
+    level = result.level || "red";
+  } catch (e) {
+    warn("Failed to parse LLM result, defaulting to red");
+  }
+
+  if (level === "red") {
+    const reason = `Tool call blocked by safety classification: ${ctx.llmResult}`;
+    warn(reason);
+    block(reason);
+  } else {
+    pass();
+  }
 }
 ```
 
@@ -523,8 +499,8 @@ The filename comes from your `[package] name` with `_` replacing `-`.
 Same as JavaScript — reference the WASM file in your evaluator config:
 
 ```yaml
-rules:
-  red: {path: "/wasm/safety_block_action.wasm"}
+processor:
+  path: "/wasm/safety_block_action.wasm"
 ```
 
 ### Complete Rust Example
@@ -576,16 +552,12 @@ curl http://localhost:8080/api/v1/evaluators
       "trigger": {"method": "tools/call"},
       "llm": {
         "operation": "classify",
-        "labels": ["green", "yellow", "red"],
         "prompt": "...",
         "model": "llama3.2",
         "url": "http://localhost:11434/v1",
         "api_key": ""
       },
-      "rules": {
-        "green": "pass",
-        "red": {"path": "/wasm/safety-block.wasm"}
-      },
+      "processor": {"path": "/wasm/safety-gate.wasm"},
       "on_error": "continue"
     }
   ],
@@ -605,15 +577,11 @@ curl -X PUT http://localhost:8080/api/v1/evaluators \
         "trigger": {"method": "tools/call"},
         "llm": {
           "operation": "classify",
-          "labels": ["green", "yellow", "red"],
           "prompt": "You are a safety classifier...",
           "model": "llama3.2",
           "url": "http://localhost:11434/v1"
         },
-        "rules": {
-          "green": "pass",
-          "red": {"path": "/wasm/safety-block.wasm"}
-        }
+        "processor": {"path": "/wasm/safety-gate.wasm"}
       }
     ]
   }'
@@ -653,7 +621,7 @@ curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance-team \
   -d '{"conversationId": "conv-finance-2024"}'
 ```
 
-**Use case:** You want the `assembly-gate` evaluator to only fire for namespace `finance-team` when the conversation ID is `conv-finance-2024`. This binding makes that work.
+**Use case:** You want the evaluator to retrieve conversation history for a specific namespace. When a request arrives for the `finance-team` namespace, the evaluator looks up the binding, resolves the conversation ID, and fetches the matching interaction history to include in the LLM prompt.
 
 ### Unbind Namespace
 
@@ -687,16 +655,11 @@ curl -sf -X PUT $MGMT/api/v1/evaluators -H "Content-Type: application/json" \
       "trigger": {"method": "tools/call"},
       "llm": {
         "operation": "classify",
-        "labels": ["green", "yellow", "red"],
         "prompt": "You are a safety classifier. You MUST classify every tool call as exactly one of: green, yellow, or red. Restarting any database is ALWAYS red. Respond with ONLY a JSON object, no other text: {\"level\": \"green|yellow|red\", \"reason\": \"brief\"}",
         "model": "llama3.2",
         "url": "http://localhost:11434/v1"
       },
-      "rules": {
-        "green": "pass",
-        "yellow": "pass",
-        "red": {"path": "'"$WASM"'"}
-      }
+      "processor": {"path": "'"$WASM"'"}
     }]
   }' > /dev/null
 
@@ -755,8 +718,8 @@ You don't need to understand this to use the engine, but it helps when things go
    - For each match:
      - Builds context prompt (conversation history + request details)
      - Calls LLM with your system prompt + context
-     - Extracts result (classify → label, filter/augment → raw output)
-     - Loads pre-compiled WASM module
+     - Extracts the raw LLM output
+     - Loads pre-compiled WASM processor module
      - Instantiates WASM with fresh host state (registry, interactions, result accumulator)
      - Calls `evaluate(ctx)` export
      - WASM calls host imports (e.g., `block()`, `copyToolToNamespace()`)
@@ -799,43 +762,45 @@ Your system prompt tells the LLM what to extract from that context. The engine s
 
 ```yaml
 on_error: continue  # LLM/WASM failures don't block production
-rules:
-  dangerous: {path: "/wasm/block.wasm"}
-  safe: "pass"
+processor:
+  path: "/wasm/safety-gate.wasm"
 ```
 
-If the LLM is down, requests proceed. Only active blocking happens when the LLM explicitly returns `dangerous`.
+If the LLM is down, requests proceed. The WASM script decides whether to block based on the LLM output — if it never runs, the request continues.
 
 ### Fail-Closed Safety Gate
 
 ```yaml
 on_error: block  # Any failure blocks the request
-rules:
-  safe: "pass"
-  dangerous: {path: "/wasm/block.wasm"}
+processor:
+  path: "/wasm/safety-gate.wasm"
 ```
 
 If the LLM is down or WASM crashes, the request is blocked. Use this for high-security environments where availability is secondary to safety.
 
-### Per-Conversation Tool Assembly
+### Namespace-Scoped Evaluation
 
-1. Bind namespace to conversation:
-   ```bash
-   curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/user-123 \
-     -H "Content-Type: application/json" \
-     -d '{"conversationId": "conv-abc-xyz"}'
-   ```
+Restrict evaluators to specific namespaces:
 
-2. Configure evaluator with binding:
-   ```yaml
-   trigger:
-     method: "tools/list"
-     binding: "conv-abc-xyz"
-   ```
+```yaml
+trigger:
+  method: "tools/list"
+  namespace: "production"
+```
 
-3. WASM action copies approved tools into `ctx.namespace` and calls `filterTools(approved)`
+This evaluator only fires for requests to `/production/mcp`. The WASM action can use `filterTools()` to curate the tool catalog for that namespace.
 
-Result: Each conversation gets its own curated tool catalog, and the LLM only sees tools it approved for that user.
+### Namespace-Conversation Binding
+
+Bind a namespace to a conversation ID so the evaluator can retrieve relevant interaction history:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance-team \
+  -H "Content-Type: application/json" \
+  -d '{"conversationId": "conv-finance-2024"}'
+```
+
+When a request arrives for the `finance-team` namespace, the evaluator resolves the conversation ID from the binding and includes the matching interaction history in the LLM prompt. This gives the LLM context about what the user has been doing in this session.
 
 ### Metadata Propagation
 
@@ -873,7 +838,6 @@ Downstream filters can read this metadata and make decisions (e.g., extra loggin
 1. Check server logs for `evaluator filter` trace messages — they show what the filter sees
 2. Verify `trigger.method` matches `mcp.method` metadata (e.g., `tools/call` not `tool/call`)
 3. If using `trigger.namespace`, verify the request URL is `/namespace/mcp`, not `/mcp`
-4. If using `trigger.binding`, verify the conversation ID is set and matches the binding
 
 Enable trace logs: `RUST_LOG=wanaku_praxis_evaluator=trace`
 
@@ -892,7 +856,7 @@ Enable trace logs: `RUST_LOG=wanaku_praxis_evaluator=trace`
      return;  // Default: pass
    }
    ```
-3. Use `llm.labels` to constrain classify operations — the engine will fuzzy-match even if JSON parsing fails
+3. Use a smaller, faster model for classification tasks — they need less context
 
 ### "WASM action did nothing"
 

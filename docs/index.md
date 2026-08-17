@@ -1,6 +1,6 @@
 # Wanaku Praxis Documentation
 
-Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. It routes AI agent requests through a sophisticated filter pipeline to provide namespace isolation, tool/resource/prompt management, and both local (gRPC) and remote (MCP forwarding) tool execution.
+Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. It routes AI agent requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and MCP-to-MCP tool forwarding.
 
 ## Why Praxis?
 
@@ -14,8 +14,8 @@ Praxis shares the same MCP protocol and management API as classic Wanaku. It can
 - **Management API** (port 8080) — REST API for tools, resources, prompts, namespaces
 - **Admin UI** — React-based web interface embedded in the binary
 - **Namespace isolation** — different tools visible to different namespaces
-- **Tool routing** — local gRPC services or remote MCP server forwarding
-- **Feature system** — pluggable filters for LLM chat, custom logic
+- **Tool routing** — MCP-to-MCP forwarding to upstream servers with auto-discovery
+- **Feature system** — pluggable filters for evaluation, LLM chat, interaction tracking
 - **File persistence** — optional registry snapshots to survive restarts
 
 All in a single binary with no runtime dependencies (except libc).
@@ -47,8 +47,7 @@ All in a single binary with no runtime dependencies (except libc).
 ## Who This Isn't For (Yet)
 
 - **You need service catalogs** — use classic Wanaku or build a custom feature
-- **You need complex Camel routes** — delegate to classic backend or a gRPC service
-- **You need OIDC/OAuth** — authentication isn't implemented (yet)
+- **You need complex Camel routes** — delegate to classic backend via an MCP forward
 - **You need clustering** — Praxis is single-node only
 - **You need metrics/tracing** — no Prometheus or OpenTelemetry integration
 
@@ -65,22 +64,19 @@ These are solvable, but they're not in scope for the initial release.
 ┌────────────────────────────────────────────┐
 │       Praxis Filter Pipeline                │
 │  CORS → MCP Parse → Namespace →             │
-│  Tool List/Call → Resource → Prompt        │
+│  Evaluator → Tool/Resource/Prompt          │
 └──────────────┬─────────────────────────────┘
                │
-       ┌───────┴────────┐
-       │                │
-    gRPC            HTTP MCP
-  (Local)          (Forward)
-       │                │
-       ▼                ▼
- ┌──────────┐    ┌──────────┐
- │  Tool    │    │ Upstream │
- │ Services │    │   MCP    │
- └──────────┘    └──────────┘
+          MCP Forward
+               │
+               ▼
+        ┌──────────┐
+        │ Upstream │
+        │   MCP    │
+        └──────────┘
 ```
 
-Requests flow through a chain of filters. Each filter reads metadata (method, namespace, tool name) and decides whether to continue, reject, or synthesize a response. The in-memory registry tracks tools, resources, prompts, and services. Tool calls are routed to gRPC services or forwarded to upstream MCP servers.
+Requests flow through a chain of filters. Each filter reads metadata (method, namespace, tool name) and decides whether to continue, reject, or synthesize a response. The in-memory registry tracks tools, resources, prompts, forwards, and namespaces. Tool calls are forwarded to upstream MCP servers.
 
 See [Architecture](./architecture.md) for the full story.
 
@@ -100,7 +96,7 @@ Filters are middleware that processes requests. Each filter hooks into the Praxi
 
 ### Registry
 
-The registry is the source of truth for tools, resources, prompts, namespaces, forwards, and services. It's an in-memory `DashMap` (concurrent hash map) shared between the filter pipeline and management API.
+The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. It's an in-memory `DashMap` (concurrent hash map) shared between the filter pipeline and management API.
 
 **Persistence:** By default, the registry is ephemeral. Enable file persistence with `WANAKU_PERSIST_BACKEND=file` to snapshot to `registry.json` on shutdown.
 
@@ -110,10 +106,7 @@ Namespaces isolate tools. A tool registered with `namespace: "finance"` only app
 
 ### Tool Routing
 
-Tools can execute in two ways:
-
-1. **gRPC (local):** Tool has `type != "mcp-forward"`. The filter looks up a gRPC service registered for that type and calls it.
-2. **MCP forward (remote):** Tool has `type == "mcp-forward"`. The filter forwards the request to an upstream MCP server via HTTP.
+Tools execute via MCP forwarding. When an LLM calls a tool, Praxis forwards the request to the upstream MCP server specified in the tool's `uri` field. The upstream server handles actual execution and returns the result, which Praxis wraps in a JSON-RPC response.
 
 ### Features
 
@@ -145,8 +138,8 @@ curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "echo",
-    "type": "echo-tool",
-    "uri": "echo-tool://echo",
+    "type": "mcp-forward",
+    "uri": "http://echo-mcp:8080/mcp",
     "description": "Echoes a message",
     "input_schema": {
       "type": "object",
@@ -189,10 +182,10 @@ See [Configuration](./configuration.md) for details.
 
 ### Standalone
 
-Run Praxis as the only MCP server. All tools are gRPC-based, registered via the management API or `wanaku.yaml`.
+Run Praxis as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, executing via MCP forwarding to upstream servers.
 
 **Pros:** Simple, no dependencies
-**Cons:** No persistence beyond file snapshots, no advanced features
+**Cons:** No persistence beyond file snapshots
 
 ### Hybrid (Praxis + Classic Backend)
 
@@ -214,19 +207,19 @@ Deploy Praxis as a `Deployment` with a `PersistentVolume` for the registry. Use 
 |---|---|---|
 | **MCP protocol** | ✅ Full support | ✅ Full support |
 | **Namespace isolation** | ✅ Yes | ✅ Yes |
-| **Tool routing (gRPC)** | ✅ Yes | ✅ Yes |
-| **MCP forwarding** | ✅ Yes | ✅ Yes |
+| **MCP forwarding** | ✅ Yes | ✅ Yes (with auto-discovery) |
 | **Filter pipeline** | — | ✅ Composable filter chain |
 | **Feature crates** | — | ✅ Pluggable Rust crates |
+| **WASM evaluators** | — | ✅ LLM + WASM action scripts |
 | **Service catalogs** | ✅ Yes | ❌ Not yet |
-| **Camel routes** | ✅ Yes | ⚠️ Delegate to gRPC service |
-| **OIDC/OAuth** | ✅ Keycloak | ❌ Not yet |
+| **Camel routes** | ✅ Yes | ⚠️ Delegate via MCP forward |
+| **OIDC/OAuth** | ✅ Keycloak | ✅ oauth2-proxy + Keycloak |
 | **Persistence** | ✅ Infinispan | ⚠️ File snapshots only |
 | **Admin UI** | ✅ React + Orval | ✅ React + Orval |
 
 ## Performance Characteristics
 
-Praxis is built on Pingora (Cloudflare's proxy framework) and uses async I/O throughout. The filter pipeline adds minimal overhead to each request. Actual throughput and latency depend on your downstream services (gRPC, upstream MCP servers, LLM endpoints).
+Praxis is built on Pingora (Cloudflare's proxy framework) and uses async I/O throughout. The filter pipeline adds minimal overhead to each request. Actual throughput and latency depend on your downstream services (upstream MCP servers, LLM endpoints).
 
 The binary is a single statically-linked executable with low memory footprint.
 

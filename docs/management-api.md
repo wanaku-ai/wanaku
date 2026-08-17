@@ -1,6 +1,6 @@
 # Management API
 
-The management API runs on port 8080 (configurable via `WANAKU_MGMT_LISTEN`) and provides REST endpoints for managing tools, resources, prompts, namespaces, forwards, and services.
+The management API runs on port 8080 (configurable via `WANAKU_MGMT_LISTEN`) and provides REST endpoints for managing tools, resources, prompts, namespaces, and forwards.
 
 This isn't axum or actix-web. It's Pingora's native `ServeHttp` trait. Requests are dispatched via a guard pattern defined in `server/src/management/routes.rs`, and responses are wrapped in a standard envelope.
 
@@ -20,7 +20,7 @@ This matches the classic Wanaku API format for CLI compatibility. The `data` fie
 ```json
 {
   "data": [
-    {"name": "echo", "type": "echo-tool", "uri": "echo-tool://echo", "namespace": "default"}
+    {"name": "echo", "type": "mcp-forward", "uri": "http://echo-mcp:8080/mcp", "namespace": "default"}
   ],
   "error": null
 }
@@ -63,8 +63,8 @@ Content-Type: application/json
 
 {
   "name": "echo",
-  "type": "echo-tool",
-  "uri": "echo-tool://echo",
+  "type": "mcp-forward",
+  "uri": "http://echo-mcp:8080/mcp",
   "description": "Echoes a message",
   "namespace": "default",
   "input_schema": {
@@ -79,8 +79,8 @@ Content-Type: application/json
 
 Fields:
 - `name` (required) — unique tool identifier
-- `type` (required) — service type or `"mcp-forward"`
-- `uri` (required) — tool-specific URI
+- `type` (required) — must be `"mcp-forward"` (only MCP-forwarded tools are supported)
+- `uri` (required) — upstream MCP server address (e.g., `http://server:8080/mcp`)
 - `description` (optional) — human-readable description
 - `namespace` (optional, defaults to `"default"`)
 - `input_schema` (optional) — JSON Schema for tool arguments
@@ -263,38 +263,6 @@ POST /api/v1/forwards/{name}/refreshes
 
 Re-queries the upstream server and updates the tool list.
 
-### Services
-
-**List all services:**
-
-```bash
-GET /api/v1/services
-```
-
-**Create a service:**
-
-```bash
-POST /api/v1/services
-Content-Type: application/json
-
-{
-  "name": "echo-tool",
-  "address": "localhost:9191",
-  "service_type": "tool-invoker"
-}
-```
-
-Fields:
-- `name` (required) — must match tool `type` field
-- `address` (required) — `host:port` of gRPC server
-- `service_type` (required) — `"tool-invoker"`, `"resource-provider"`, or `"multi-capability"`
-
-**Delete a service:**
-
-```bash
-DELETE /api/v1/services/{name}
-```
-
 ## Feature Routes
 
 Features can expose their own management API routes via the `handle_route` method. These routes are dispatched after core routes.
@@ -402,14 +370,31 @@ Errors are returned in the standard envelope:
 
 The HTTP status code indicates the error class (400, 404, 500), and the `error` field provides details.
 
+### Intercept Feature
+
+**List interactions:**
+
+```bash
+GET /api/v1/interactions
+```
+
+Returns the recorded request/response interactions. These are used by the evaluator engine for conversation history context.
+
+**Clear interactions:**
+
+```bash
+DELETE /api/v1/interactions
+```
+
+Clears all stored interactions from the in-memory store.
+
 ## CORS
 
-The management API does NOT set CORS headers by default. If you're calling it from a browser, you'll get CORS errors.
+The management API sets `Access-Control-Allow-Origin` via the `WANAKU_CORS_ORIGIN` environment variable (defaults to `*`). Set this to a specific origin in production:
 
-Workarounds:
-1. Run the API behind a reverse proxy (nginx, Envoy) that adds CORS headers
-2. Add a CORS filter to the management API pipeline (not implemented yet)
-3. Use a browser extension to disable CORS (dev only)
+```bash
+export WANAKU_CORS_ORIGIN=https://app.example.com
+```
 
 The MCP endpoint (port 8081) has CORS enabled via the `cors` filter in the pipeline.
 
@@ -457,21 +442,16 @@ See [Configuration](./configuration.md) for details.
 
 ## Example Workflows
 
-### Register a Tool and Service
+### Register a Tool
 
 ```bash
-# 1. Register the service
-curl -X POST http://localhost:8080/api/v1/services \
-  -H "Content-Type: application/json" \
-  -d '{"name": "echo-tool", "address": "localhost:9191", "service_type": "tool-invoker"}'
-
-# 2. Register the tool
+# 1. Register the tool
 curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "echo",
-    "type": "echo-tool",
-    "uri": "echo-tool://echo",
+    "type": "mcp-forward",
+    "uri": "http://localhost:8180/mcp",
     "description": "Echoes a message",
     "input_schema": {
       "type": "object",
@@ -480,7 +460,7 @@ curl -X POST http://localhost:8080/api/v1/tools \
     }
   }'
 
-# 3. Verify
+# 2. Verify
 curl http://localhost:8080/api/v1/tools
 ```
 
@@ -512,8 +492,8 @@ curl -X POST http://localhost:8080/api/v1/tools \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get-stock-price",
-    "type": "market-data",
-    "uri": "market://stocks",
+    "type": "mcp-forward",
+    "uri": "http://market-data-mcp:8080/mcp",
     "namespace": "finance"
   }'
 
