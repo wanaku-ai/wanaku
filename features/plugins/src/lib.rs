@@ -121,6 +121,7 @@ impl Feature for PluginsFeature {
         path: &str,
         query: Option<&str>,
         body: Option<&str>,
+        headers: &http::HeaderMap,
     ) -> Option<Response<Vec<u8>>> {
         let route = resolve_plugin_route(method, path);
         if route == PluginRoute::NotFound {
@@ -151,6 +152,7 @@ impl Feature for PluginsFeature {
                             query,
                             method,
                             body,
+                            headers,
                         )
                         .await
                     }

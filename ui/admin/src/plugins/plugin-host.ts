@@ -30,13 +30,16 @@ export function createPluginHost(
     },
     http: {
       async get<T>(service: string, path: string): Promise<T> {
-        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, { method: "GET" });
+        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+        });
         return res.data as T;
       },
       async post<T>(service: string, path: string, body?: unknown): Promise<T> {
         const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: body ? JSON.stringify(body) : undefined,
         });
         return res.data as T;
@@ -44,13 +47,16 @@ export function createPluginHost(
       async put<T>(service: string, path: string, body?: unknown): Promise<T> {
         const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: body ? JSON.stringify(body) : undefined,
         });
         return res.data as T;
       },
       async delete<T>(service: string, path: string): Promise<T> {
-        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, { method: "DELETE" });
+        const res: Record<string, unknown> = await customFetch(`/api/plugins/${pluginId}/${service}${path}`, {
+          method: "DELETE",
+          headers: { "Accept": "application/json" },
+        });
         return res.data as T;
       },
     },

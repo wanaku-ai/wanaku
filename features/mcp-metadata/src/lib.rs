@@ -59,6 +59,7 @@ impl Feature for McpMetadataFeature {
         _path: &str,
         _query: Option<&str>,
         _body: Option<&str>,
+        _headers: &http::HeaderMap,
     ) -> Option<Response<Vec<u8>>> {
         None
     }
