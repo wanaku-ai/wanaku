@@ -5023,87 +5023,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wanaku-feature-chat"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "http",
- "praxis-proxy-filter",
- "reqwest 0.12.28",
- "serde_json",
- "tracing",
- "wanaku-praxis-apis",
- "yaml_serde",
-]
-
-[[package]]
-name = "wanaku-feature-evaluator"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "bytes",
- "http",
- "jsonschema",
- "praxis-proxy-filter",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "serial_test",
- "tracing",
- "wanaku-praxis-apis",
- "wanaku-praxis-filters",
- "wasmtime",
- "wasmtime-wasi",
- "yaml_serde",
-]
-
-[[package]]
-name = "wanaku-feature-intercept"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "bytes",
- "http",
- "praxis-proxy-filter",
- "serde_json",
- "tracing",
- "wanaku-praxis-apis",
- "yaml_serde",
-]
-
-[[package]]
-name = "wanaku-feature-mcp-metadata"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "bytes",
- "http",
- "praxis-proxy-filter",
- "reqwest 0.12.28",
- "serde_json",
- "tracing",
- "wanaku-praxis-apis",
- "wanaku-praxis-filters",
- "yaml_serde",
-]
-
-[[package]]
-name = "wanaku-feature-plugins"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "http",
- "praxis-proxy-filter",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "tracing",
- "wanaku-praxis-apis",
- "yaml_serde",
-]
-
-[[package]]
-name = "wanaku-praxis-apis"
+name = "wanaku-apis"
 version = "0.3.0"
 dependencies = [
  "async-trait",
@@ -5123,7 +5043,87 @@ dependencies = [
 ]
 
 [[package]]
-name = "wanaku-praxis-filters"
+name = "wanaku-feature-chat"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "http",
+ "praxis-proxy-filter",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tracing",
+ "wanaku-apis",
+ "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-feature-evaluator"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "jsonschema",
+ "praxis-proxy-filter",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "tracing",
+ "wanaku-apis",
+ "wanaku-filters",
+ "wasmtime",
+ "wasmtime-wasi",
+ "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-feature-intercept"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "praxis-proxy-filter",
+ "serde_json",
+ "tracing",
+ "wanaku-apis",
+ "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-feature-mcp-metadata"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "praxis-proxy-filter",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tracing",
+ "wanaku-apis",
+ "wanaku-filters",
+ "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-feature-plugins"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "http",
+ "praxis-proxy-filter",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tracing",
+ "wanaku-apis",
+ "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-filters"
 version = "0.3.0"
 dependencies = [
  "async-trait",
@@ -5133,12 +5133,12 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.20",
  "tracing",
- "wanaku-praxis-apis",
+ "wanaku-apis",
  "yaml_serde",
 ]
 
 [[package]]
-name = "wanaku-praxis-proxy"
+name = "wanaku-server"
 version = "0.3.0"
 dependencies = [
  "async-trait",
@@ -5157,13 +5157,13 @@ dependencies = [
  "tokio",
  "tracing",
  "utoipa",
+ "wanaku-apis",
  "wanaku-feature-chat",
  "wanaku-feature-evaluator",
  "wanaku-feature-intercept",
  "wanaku-feature-mcp-metadata",
  "wanaku-feature-plugins",
- "wanaku-praxis-apis",
- "wanaku-praxis-filters",
+ "wanaku-filters",
  "yaml_serde",
 ]
 

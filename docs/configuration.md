@@ -1,16 +1,16 @@
 # Configuration
 
-Wanaku Praxis is configured entirely through environment variables and two optional YAML files. There's no properties file. This keeps deployment simple—set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
+Wanaku is configured entirely through environment variables and two optional YAML files. There's no properties file. This keeps deployment simple—set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
 
 ## Configuration Sources (Precedence Order)
 
 1. **Environment variables** — highest priority, always win
-2. **Runtime YAML files** — loaded from CLI args (e.g., `cargo run -- --praxis-config praxis.yaml --wanaku-config wanaku.yaml`)
+2. **Runtime YAML files** — loaded from CLI args (e.g., `cargo run -- --pipeline-config praxis.yaml --wanaku-config wanaku.yaml`)
 3. **Embedded defaults** — `server/src/default.yaml` compiled into the binary
 
 ## Core Environment Variables
 
-These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::config::ENV`:
+These are defined in `apis/src/config.rs` and accessed via `wanaku_apis::config::ENV`:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -48,7 +48,7 @@ export WANAKU_MGMT_LISTEN=0.0.0.0:8080
 export WANAKU_MGMT_LISTEN=127.0.0.1:8080
 ```
 
-Useful when running Praxis behind a reverse proxy (nginx, Envoy) that handles external traffic.
+Useful when running Wanaku behind a reverse proxy (nginx, Envoy) that handles external traffic.
 
 **Bind to specific IP:**
 
@@ -107,11 +107,11 @@ Features (mcp-metadata, chat, etc.) own their env vars. They're NOT in `apis/src
 
 ### Authentication with oauth2-proxy
 
-Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication, not embedded code. Two oauth2-proxy instances run as sidecars in front of ports 8081 (MCP) and 8080 (management API).
+Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication, not embedded code. Two oauth2-proxy instances run as sidecars in front of ports 8081 (MCP) and 8080 (management API).
 
 **MCP Metadata Feature:**
 
-The only auth-related configuration in Praxis itself is the OIDC issuer URL for RFC 9728 metadata:
+The only auth-related configuration in Wanaku itself is the OIDC issuer URL for RFC 9728 metadata:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -166,16 +166,16 @@ The chat feature exposes these management API routes:
 - `GET /api/v1/chat/{llm}/models` — list models for an LLM
 - `POST /api/v1/chat/completions` — proxy chat completion request
 
-## Praxis Config File (praxis.yaml)
+## Pipeline Config File (praxis.yaml)
 
-The Praxis config defines listeners, filter chains, and filter-specific settings. It's a YAML file that matches Praxis's native config format.
+The pipeline config defines listeners, filter chains, and filter-specific settings. It's a YAML file that matches Praxis's native config format.
 
 **Default location:** `server/src/default.yaml` (embedded at compile time)
 
-**Override:** Pass with `--praxis-config`:
+**Override:** Pass with `--pipeline-config`:
 
 ```bash
-cargo run -- --praxis-config /path/to/custom-praxis.yaml
+cargo run -- --pipeline-config /path/to/custom-praxis.yaml
 ```
 
 **Format:**
@@ -224,8 +224,8 @@ listeners:
   - name: mcp
     address: "0.0.0.0:8081"
     tls:
-      cert_path: /etc/praxis/cert.pem
-      key_path: /etc/praxis/key.pem
+      cert_path: /etc/wanaku/cert.pem
+      key_path: /etc/wanaku/key.pem
     filter_chains: [mcp_router]
 ```
 
@@ -283,7 +283,7 @@ The Wanaku config bootstraps forwarded MCP servers on startup. It's optional —
 **Location:** Pass with `--wanaku-config`:
 
 ```bash
-cargo run -- --praxis-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
+cargo run -- --pipeline-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
 ```
 
 **Format:**
@@ -340,9 +340,9 @@ RUN cargo build --release
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /build/target/release/wanaku-praxis /usr/local/bin/
-COPY praxis.yaml /etc/praxis/praxis.yaml
-COPY wanaku.yaml /etc/praxis/wanaku.yaml
+COPY --from=builder /build/target/release/wanaku-server /usr/local/bin/
+COPY praxis.yaml /etc/wanaku/praxis.yaml
+COPY wanaku.yaml /etc/wanaku/wanaku.yaml
 
 ENV WANAKU_MGMT_LISTEN=0.0.0.0:8080
 ENV WANAKU_PERSIST_BACKEND=file
@@ -350,7 +350,7 @@ ENV WANAKU_PERSIST_PATH=/data/registry
 
 VOLUME /data
 EXPOSE 8081 8080
-CMD ["/usr/local/bin/wanaku-praxis", "--praxis-config", "/etc/praxis/praxis.yaml", "--wanaku-config", "/etc/praxis/wanaku.yaml"]
+CMD ["/usr/local/bin/wanaku-server", "--pipeline-config", "/etc/wanaku/praxis.yaml", "--wanaku-config", "/etc/wanaku/wanaku.yaml"]
 ```
 
 Run with:
@@ -358,7 +358,7 @@ Run with:
 ```bash
 docker run -v /var/lib/wanaku:/data \
   -p 8081:8081 -p 8080:8080 \
-  wanaku-praxis:latest
+  wanaku-server:latest
 ```
 
 ### Kubernetes
@@ -396,14 +396,14 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wanaku-praxis
+  name: wanaku-server
 spec:
   replicas: 1  # each replica has its own in-memory registry; scale only with external persistence
   template:
     spec:
       containers:
       - name: wanaku
-        image: wanaku-praxis:latest
+        image: wanaku-server:latest
         env:
         - name: WANAKU_MGMT_LISTEN
           value: "0.0.0.0:8080"
@@ -413,7 +413,7 @@ spec:
           value: "/data/registry"
         volumeMounts:
         - name: config
-          mountPath: /etc/praxis
+          mountPath: /etc/wanaku
         - name: data
           mountPath: /data
       volumes:
@@ -438,7 +438,7 @@ This logs all filter decisions, metadata reads/writes, and registry operations. 
 **Filter-specific logs:**
 
 ```bash
-RUST_LOG=wanaku_praxis_filters=trace cargo run
+RUST_LOG=wanaku_filters=trace cargo run
 ```
 
 ### Verify Environment Variables
@@ -449,8 +449,8 @@ To check what the server sees:
 
 ```rust
 // Add to main.rs before server start
-println!("WANAKU_MGMT_LISTEN: {:?}", wanaku_praxis_apis::config::ENV.mgmt_listen);
-println!("WANAKU_PERSIST_BACKEND: {:?}", wanaku_praxis_apis::config::ENV.persist_backend);
+println!("WANAKU_MGMT_LISTEN: {:?}", wanaku_apis::config::ENV.mgmt_listen);
+println!("WANAKU_PERSIST_BACKEND: {:?}", wanaku_apis::config::ENV.persist_backend);
 ```
 
 Rebuild and run. The server prints the effective config.

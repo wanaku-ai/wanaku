@@ -1,6 +1,6 @@
-# Wanaku Praxis
+# Wanaku
 
-Rust MCP server on Praxis proxy. Routes MCP requests through a filter pipeline for namespace isolation, tool/resource/prompt management, and MCP-to-MCP forwarding.
+Rust MCP server built on the Praxis proxy framework. Routes MCP requests through a filter pipeline for namespace isolation, tool/resource/prompt management, and MCP-to-MCP forwarding.
 
 ## Core Guidelines
 
@@ -11,7 +11,7 @@ Think before you write. Don't create abstractions unnecessarily. Simplicity matt
 ```bash
 cargo build && cargo test
 cargo run  # MCP :8081, management API :8080
-cargo run -- --praxis-config praxis.yaml --wanaku-config wanaku.yaml  # custom configs
+cargo run -- --pipeline-config pipeline.yaml --wanaku-config wanaku.yaml  # custom configs
 ```
 
 Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (optional, forward registry bootstrap).
@@ -51,7 +51,7 @@ Feature filters (e.g., `wanaku_evaluator`) registered via `Feature::register_fil
 
 ### Metadata Contract
 
-**praxis-ai MCP filter sets** (`on_request_body` pre-read):
+**MCP filter (from praxis-ai) sets** (`on_request_body` pre-read):
 - `mcp.method` — JSON-RPC method (`"tools/list"`, `"tools/call"`)
 - `mcp.name` — tool/resource/prompt name (from `params.name` or `params.arguments`)
 
@@ -178,7 +178,7 @@ Three test tiers, none require an LLM:
 # WASM engine tests skip automatically if actions aren't built
 cargo test -p wanaku-feature-evaluator
 
-# E2e tests (require a running wanaku-praxis server)
+# E2e tests (require a running wanaku server)
 cargo test -p wanaku-feature-evaluator --test e2e -- --ignored
 
 # Classification e2e (require server + Ollama on localhost:11434)
@@ -205,7 +205,7 @@ cd ../safety-warn && cargo component build --release && cp target/wasm32-wasip1/
 | `WANAKU_AUTH_ISSUER` | unset | OIDC issuer (RFC 9728) |
 | `WANAKU_INFERENCE_API_KEY` | unset | Bearer token for upstream |
 
-**Praxis config** (`server/src/default.yaml`): listener, filter chains. **Wanaku config** (`wanaku.yaml`): forwards bootstrap (optional).
+**Pipeline config** (`server/src/default.yaml`): listener, filter chains. **Wanaku config** (`wanaku.yaml`): forwards bootstrap (optional).
 
 ### Evaluator Config (in wanaku.yaml)
 
@@ -258,7 +258,7 @@ The distinction between `block` and `reject-malformed` matters: `block` means th
 ## Common Tasks
 
 **Add feature:**
-1. `mkdir features/myfeature` + `Cargo.toml` — depend on `wanaku-praxis-apis` (Feature, registry, llm), `wanaku-praxis-filters` (boilerplate, response helpers), `praxis-filter` (HttpFilter)
+1. `mkdir features/myfeature` + `Cargo.toml` — depend on `wanaku-apis` (Feature, registry, llm), `wanaku-filters` (boilerplate, response helpers), `praxis-filter` (HttpFilter)
 2. Implement `Feature` trait: `register_filters`, `pipeline_extensions`, `handle_route`, `load_yaml_config`, `load_env_config`
 3. Add to workspace `Cargo.toml` (members + deps)
 4. Add dep in `server/Cargo.toml`, `Box::new(MyFeature::new())` in `main.rs`
@@ -314,7 +314,7 @@ Pin to a specific `rev` — HEAD may break.
 
 ```bash
 RUST_LOG=trace cargo run
-RUST_LOG=wanaku_praxis_filters=trace cargo run  # metadata flow
+RUST_LOG=wanaku_filters=trace cargo run  # metadata flow
 ```
 
 In filters:
@@ -334,7 +334,7 @@ tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_m
 
 ```bash
 cargo test                         # all
-cargo test -p wanaku-praxis-apis   # single crate
+cargo test -p wanaku-apis   # single crate
 cargo test -- --nocapture          # tracing output
 ```
 

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use wanaku_praxis_apis::interactions::Interaction;
-use wanaku_praxis_apis::llm::{self, LlmClient};
-use wanaku_praxis_apis::registry::ToolEntry;
+use wanaku_apis::interactions::Interaction;
+use wanaku_apis::llm::{self, LlmClient};
+use wanaku_apis::registry::ToolEntry;
 
 use crate::config::LlmDef;
 

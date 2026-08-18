@@ -1,5 +1,5 @@
 {
-  "name": "wanaku-praxis-e2e-ui",
+  "name": "wanaku-e2e-ui",
   "private": true,
   "scripts": {
     "test": "npx playwright test",

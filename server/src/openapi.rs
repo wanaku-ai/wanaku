@@ -2,8 +2,8 @@
 
 use utoipa::OpenApi;
 
-use wanaku_praxis_apis::interactions::Interaction;
-use wanaku_praxis_apis::registry::{
+use wanaku_apis::interactions::Interaction;
+use wanaku_apis::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
     ResourceEntry, ToolEntry,
 };
@@ -191,9 +191,9 @@ const fn get_statistics() {}
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "Wanaku Praxis API",
+        title = "Wanaku API",
         version = "0.3.0",
-        description = "Wanaku Praxis MCP proxy management API"
+        description = "Wanaku MCP proxy management API"
     ),
     paths(
         healthz,

@@ -1,16 +1,16 @@
 [package]
-name = "wanaku-praxis-proxy"
+name = "wanaku-server"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
 [lib]
-name = "wanaku_praxis"
+name = "wanaku_server"
 path = "src/lib.rs"
 
 [[bin]]
-name = "wanaku-praxis"
+name = "wanaku-server"
 path = "src/main.rs"
 
 [lints]
@@ -32,8 +32,8 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync", "time", "fs"] }
 tracing = { workspace = true }
-wanaku-praxis-apis = { workspace = true }
-wanaku-praxis-filters = { workspace = true }
+wanaku-apis = { workspace = true }
+wanaku-filters = { workspace = true }
 wanaku-feature-chat = { workspace = true }
 wanaku-feature-evaluator = { workspace = true }
 wanaku-feature-intercept = { workspace = true }

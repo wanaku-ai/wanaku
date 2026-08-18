@@ -1,12 +1,12 @@
-# Wanaku Praxis Documentation
+# Wanaku Documentation
 
-Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. It routes AI agent requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and MCP-to-MCP tool forwarding.
+Wanaku is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. It routes AI agent requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and MCP-to-MCP tool forwarding.
 
-## Why Praxis?
+## Why Rust?
 
-The classic Wanaku MCP Router (Java + Quarkus) is a fully-featured MCP server with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Praxis expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling pluggable feature crates that would be difficult to express in the classic architecture.
+The classic Wanaku MCP Router (Java + Quarkus) is a fully-featured MCP server with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Wanaku expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling pluggable feature crates that would be difficult to express in the classic architecture.
 
-Praxis shares the same MCP protocol and management API as classic Wanaku.
+Wanaku shares the same MCP protocol and management API as classic Wanaku.
 
 ## What You Get
 
@@ -45,7 +45,7 @@ All in a single binary with no runtime dependencies (except libc).
 
 ## Who This Isn't For (Yet)
 
-- **You need clustering** — Praxis is single-node only
+- **You need clustering** — Wanaku is single-node only
 - **You need metrics/tracing** — no Prometheus or OpenTelemetry integration
 
 These are solvable, but they're not in scope for the initial release.
@@ -103,7 +103,7 @@ Namespaces isolate tools. A tool registered with `namespace: "finance"` only app
 
 ### Tool Routing
 
-Tools execute via MCP forwarding. When an LLM calls a tool, Praxis forwards the request to the upstream MCP server specified in the tool's `uri` field. The upstream server handles actual execution and returns the result, which Praxis wraps in a JSON-RPC response.
+Tools execute via MCP forwarding. When an LLM calls a tool, Wanaku forwards the request to the upstream MCP server specified in the tool's `uri` field. The upstream server handles actual execution and returns the result, which Wanaku wraps in a JSON-RPC response.
 
 ### Features
 
@@ -119,8 +119,8 @@ Features are Rust crates that implement the `Feature` trait. They can:
 ### Run Locally
 
 ```bash
-git clone https://github.com/wanaku-ai/wanaku-praxis.git
-cd wanaku-praxis
+git clone https://github.com/wanaku-ai/wanaku.git
+cd wanaku
 cargo run --release
 ```
 
@@ -153,14 +153,14 @@ curl -X POST http://localhost:8080/api/v1/forwards/echo-server/refreshes
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wanaku-praxis
+  name: wanaku-server
 spec:
   replicas: 1  # each replica has its own in-memory registry; scale only with external persistence
   template:
     spec:
       containers:
       - name: wanaku
-        image: wanaku-praxis:latest
+        image: wanaku-server:latest
         env:
         - name: WANAKU_PERSIST_BACKEND
           value: "file"
@@ -181,21 +181,21 @@ See [Configuration](./configuration.md) for details.
 
 ### Standalone
 
-Run Praxis as the only MCP server. Tools are discovered from forwarded MCP servers registered via the management API or `wanaku.yaml`, executing via MCP forwarding to those upstream servers.
+Run Wanaku as the only MCP server. Tools are discovered from forwarded MCP servers registered via the management API or `wanaku.yaml`, executing via MCP forwarding to those upstream servers.
 
 **Pros:** Simple, no dependencies
 **Cons:** No persistence beyond file snapshots
 
 ### Kubernetes
 
-Deploy Praxis as a `Deployment` with a `PersistentVolume` for the registry. Use `ConfigMap` for `wanaku.yaml` and `Secret` for LLM API keys.
+Deploy Wanaku as a `Deployment` with a `PersistentVolume` for the registry. Use `ConfigMap` for `wanaku.yaml` and `Secret` for LLM API keys.
 
 **Pros:** Horizontal scaling, declarative config
 **Cons:** Requires k8s infrastructure
 
 ## What's Different from Classic Wanaku?
 
-| Feature | Classic (Java) | Praxis (Rust) |
+| Feature | Classic (Java) | Wanaku (Rust) |
 |---|---|---|
 | **MCP protocol** | ✅ Full support | ✅ Full support |
 | **Namespace isolation** | ✅ Yes | ✅ Yes |
@@ -211,7 +211,7 @@ Deploy Praxis as a `Deployment` with a `PersistentVolume` for the registry. Use 
 
 ## Performance Characteristics
 
-Praxis is built on Pingora (Cloudflare's proxy framework) and uses async I/O throughout. The filter pipeline adds minimal overhead to each request. Actual throughput and latency depend on your downstream services (upstream MCP servers, LLM endpoints).
+Wanaku is built on Pingora (Cloudflare's proxy framework) and uses async I/O throughout. The filter pipeline adds minimal overhead to each request. Actual throughput and latency depend on your downstream services (upstream MCP servers, LLM endpoints).
 
 The binary is a single statically-linked executable with low memory footprint.
 
@@ -226,19 +226,19 @@ RUST_LOG=trace cargo run
 Check what filters see:
 
 ```bash
-RUST_LOG=wanaku_praxis_filters=trace cargo run
+RUST_LOG=wanaku_filters=trace cargo run
 ```
 
 Verify environment variables:
 
 ```rust
 // Add to main.rs
-println!("WANAKU_MGMT_LISTEN: {:?}", wanaku_praxis_apis::config::ENV.mgmt_listen);
+println!("WANAKU_MGMT_LISTEN: {:?}", wanaku_apis::config::ENV.mgmt_listen);
 ```
 
 ## Contributing
 
-Praxis is open source (Apache 2.0). Contributions welcome.
+Wanaku is open source (Apache 2.0). Contributions welcome.
 
 **Code style:**
 - `cargo fmt` before committing
@@ -256,8 +256,8 @@ Praxis is open source (Apache 2.0). Contributions welcome.
 
 ## Support and Community
 
-- **GitHub:** https://github.com/wanaku-ai/wanaku-praxis
-- **Issues:** https://github.com/wanaku-ai/wanaku-praxis/issues
+- **GitHub:** https://github.com/wanaku-ai/wanaku
+- **Issues:** https://github.com/wanaku-ai/wanaku/issues
 - **Classic Wanaku:** https://github.com/wanaku-ai/wanaku
 
 ## License
@@ -268,7 +268,7 @@ Apache 2.0. See LICENSE for details.
 
 **Next Steps:**
 
-- New to Praxis? Start with [Getting Started](./getting-started.md)
+- New to Wanaku? Start with [Getting Started](./getting-started.md)
 - Want to understand the internals? Read [Architecture](./architecture.md)
 - Need to configure it? See [Configuration](./configuration.md)
 - Building custom features? Check [Features](./features.md)

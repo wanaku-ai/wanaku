@@ -1,1 +1,1 @@
-wanaku-praxis:latest
+wanaku-server:latest

@@ -37,7 +37,7 @@ services:
       keycloak:
         condition: service_healthy
 
-  wanaku-praxis:
+  wanaku-server:
     build:
       context: ../..
       dockerfile: Containerfile

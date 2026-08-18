@@ -7,8 +7,8 @@ bindgen!({
 
 pub use wanaku::evaluator::types;
 
-use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
+use wanaku_apis::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 use std::sync::Arc;
 
@@ -148,7 +148,7 @@ pub fn link(linker: &mut wasmtime::component::Linker<HostState>) -> Result<(), S
         .map_err(|e| format!("failed to link host functions: {e}"))
 }
 
-fn tool_entry_to_wit(t: wanaku_praxis_apis::registry::ToolEntry) -> types::ToolEntry {
+fn tool_entry_to_wit(t: wanaku_apis::registry::ToolEntry) -> types::ToolEntry {
     types::ToolEntry {
         name: t.name,
         description: t.description,

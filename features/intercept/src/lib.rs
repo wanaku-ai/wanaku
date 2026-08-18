@@ -6,8 +6,8 @@ mod routes;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::interactions::InMemoryInteractionStore;
+use wanaku_apis::feature::Feature;
+use wanaku_apis::interactions::InMemoryInteractionStore;
 
 use crate::routes::{
     InteractionRoute, handle_interaction_clear, handle_interaction_list,

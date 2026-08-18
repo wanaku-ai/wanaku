@@ -66,13 +66,13 @@ jobs:
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           docker build -f Containerfile \
-            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-praxis:${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
             .
 
       - name: Push container image
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
-          docker push ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-praxis:${{ github.ref_name }}-${{ steps.arch.outputs.arch }}
+          docker push ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ github.ref_name }}-${{ steps.arch.outputs.arch }}
 
   createManifests:
     needs: build

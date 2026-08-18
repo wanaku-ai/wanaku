@@ -1,6 +1,6 @@
-# Wanaku Praxis Plugin Development Guide
+# Wanaku Plugin Development Guide
 
-Plugins extend the Wanaku Praxis admin UI by adding pages, navigation entries, and backend service integration without modifying the core application. This guide shows you how to build one.
+Plugins extend the Wanaku admin UI by adding pages, navigation entries, and backend service integration without modifying the core application. This guide shows you how to build one.
 
 ## Overview
 
@@ -621,4 +621,4 @@ The nav entry disappears immediately. You don't have to wait for the plugin to u
 
 ---
 
-**That's the guide.** You now know how to build, configure, and test a plugin for Wanaku Praxis. Start with the Quick Start example, experiment with the host APIs, and check the `examples/hello-plugin/` directory for a working reference implementation.
+**That's the guide.** You now know how to build, configure, and test a plugin for Wanaku. Start with the Quick Start example, experiment with the host APIs, and check the `examples/hello-plugin/` directory for a working reference implementation.

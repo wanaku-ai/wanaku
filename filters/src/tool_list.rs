@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
+use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolListFilter, "wanaku_tool_list");
 
@@ -21,7 +21,7 @@ impl ToolListFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
 
         tracing::debug!(namespace = %namespace, "handling MCP tools/list request");
 

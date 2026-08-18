@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::trace;
-use wanaku_praxis_apis::registry::{InMemoryRegistry, PromptRegistry};
+use wanaku_apis::registry::{InMemoryRegistry, PromptRegistry};
 
 crate::body_filter_boilerplate!(PromptListFilter, "wanaku_prompt_list");
 
@@ -22,7 +22,7 @@ impl PromptListFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
 
         trace!(namespace = %namespace, "handling MCP prompts/list request");
 

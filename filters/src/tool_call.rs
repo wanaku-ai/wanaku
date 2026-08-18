@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
+use wanaku_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
@@ -71,12 +71,12 @@ impl ToolCallFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
 
         let mut parsed = parse_body(body);
 
         let conversation_id = parsed.arguments
-            .remove(wanaku_praxis_apis::correlation::REQUEST_ID_ARG)
+            .remove(wanaku_apis::correlation::REQUEST_ID_ARG)
             .map_or_else(|| "-".to_owned(), |v| match v {
                 serde_json::Value::String(s) => s,
                 other => other.to_string(),
@@ -158,7 +158,7 @@ impl ToolCallFilter {
                 .collect(),
         );
 
-        match wanaku_praxis_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
+        match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
             Ok(call_result) => {
                 let mcp_content: Vec<serde_json::Value> = call_result.content
                     .iter()

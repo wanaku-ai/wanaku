@@ -1,12 +1,12 @@
 [package]
-name = "wanaku-praxis-apis"
+name = "wanaku-apis"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
 [lib]
-name = "wanaku_praxis_apis"
+name = "wanaku_apis"
 
 [lints]
 workspace = true

@@ -1,12 +1,12 @@
 # Features
 
-Features are self-contained modules that extend Wanaku Praxis with new capabilities. They're not just configuration options—they're full-fledged Rust crates that can register filters into the pipeline, expose management API routes, and manage their own state.
+Features are self-contained modules that extend Wanaku with new capabilities. They're not just configuration options—they're full-fledged Rust crates that can register filters into the pipeline, expose management API routes, and manage their own state.
 
 Think of features as plugins. The core server provides the infrastructure (filter pipeline, registry, management API), and features build on top of it.
 
 ## Built-in Features
 
-Wanaku Praxis ships with five features:
+Wanaku ships with five features:
 
 ### Intercept Feature (`features/intercept/`)
 
@@ -32,7 +32,7 @@ Exposes RFC 9728 OAuth Protected Resource Metadata to advertise authentication r
 **How it works:**
 
 1. MCP client queries `GET /.well-known/oauth-protected-resource/{namespace}/mcp`
-2. Praxis returns JSON metadata with the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`
+2. Wanaku returns JSON metadata with the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`
 3. MCP client uses the issuer URL to discover the authorization server and token endpoints
 
 **Configuration:**
@@ -57,13 +57,13 @@ If `WANAKU_AUTH_ISSUER` is unset, the metadata endpoint returns a 404 (feature d
 
 **Authentication architecture:**
 
-Praxis does NOT validate tokens or enforce authentication. That's handled by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), which runs as a reverse proxy in front of Praxis ports 8081 (MCP) and 8080 (management API).
+Wanaku does NOT validate tokens or enforce authentication. That's handled by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), which runs as a reverse proxy in front of Wanaku ports 8081 (MCP) and 8080 (management API).
 
 For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
 
 ### Chat Feature (`features/chat/`)
 
-Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you use Praxis as a unified API gateway for both MCP tools and raw LLM chat.
+Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you use Wanaku as a unified API gateway for both MCP tools and raw LLM chat.
 
 **How it works:**
 
@@ -149,8 +149,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wanaku-praxis-apis = { path = "../../apis" }
-wanaku-praxis-filters = { path = "../../filters" }
+wanaku-apis = { path = "../../apis" }
+wanaku-filters = { path = "../../filters" }
 praxis-filter = "0.4.1"
 async-trait = "0.1"
 http = "1"
@@ -164,7 +164,7 @@ tracing = "0.1"
 Create `src/lib.rs`:
 
 ```rust
-use wanaku_praxis_apis::feature::Feature;
+use wanaku_apis::feature::Feature;
 use praxis_filter::{FilterRegistry, PipelineExtension};
 use http::Response;
 use std::sync::Arc;
@@ -210,7 +210,7 @@ impl Feature for ToolStatsFeature {
                 "data": {"tool_calls": count},
                 "error": null
             });
-            Some(wanaku_praxis_apis::http_response::json_ok(&body))
+            Some(wanaku_apis::http_response::json_ok(&body))
         } else {
             None
         }
@@ -227,7 +227,7 @@ impl Feature for ToolStatsFeature {
 Add to `src/lib.rs`:
 
 ```rust
-use wanaku_praxis_filters::body_filter_boilerplate;
+use wanaku_filters::body_filter_boilerplate;
 use praxis_filter::{HttpFilterContext, FilterAction, FilterError};
 use bytes::Bytes;
 
@@ -342,10 +342,10 @@ let counter = ctx.extensions.get::<Arc<AtomicU64>>();
 
 ### Hot-Reloadable Config
 
-Use `HotSwap<T>` from `wanaku_praxis_apis::llm` for runtime-reconfigurable state:
+Use `HotSwap<T>` from `wanaku_apis::llm` for runtime-reconfigurable state:
 
 ```rust
-use wanaku_praxis_apis::llm::HotSwap;
+use wanaku_apis::llm::HotSwap;
 
 pub struct MyFeature {
     config: HotSwap<MyConfig>,
@@ -367,10 +367,10 @@ let config = feature_state.config.read();
 
 ### LLM Integration
 
-Use `LlmClient` from `wanaku_praxis_apis::llm` for OpenAI-compatible LLM calls:
+Use `LlmClient` from `wanaku_apis::llm` for OpenAI-compatible LLM calls:
 
 ```rust
-use wanaku_praxis_apis::llm::LlmClient;
+use wanaku_apis::llm::LlmClient;
 
 let client = LlmClient::new("http://localhost:11434/v1");
 let response = client.chat_completion("llama3.1:8b", &messages, 30).await?;

@@ -1,7 +1,7 @@
 use http::{Response, StatusCode};
 use tracing::{info, warn};
 
-use wanaku_praxis_apis::registry::{
+use wanaku_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
     ToolEntry, ToolRegistry, MCP_FORWARD_TYPE,
@@ -215,7 +215,7 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
         }
     };
 
-    let discovery = match wanaku_praxis_apis::mcp_client::discover_forward(&forward.address).await {
+    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed");
@@ -271,7 +271,7 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
     remove_forwarded_resources(registry, &forward.address);
     remove_forwarded_prompts(registry, &forward.address);
 
-    let discovery = match wanaku_praxis_apis::mcp_client::discover_forward(&forward.address).await {
+    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %name, error = %e, "forward refresh discovery failed");
@@ -291,7 +291,7 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
 }
 
 pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) {
-    let discovery = match wanaku_praxis_apis::mcp_client::discover_forward(&forward.address).await {
+    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
@@ -317,7 +317,7 @@ pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &
 }
 
 pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let tools = match wanaku_praxis_apis::mcp_client::list_tools(&forward.address).await {
+    let tools = match wanaku_apis::mcp_client::list_tools(&forward.address).await {
         Ok(t) => t,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover tools from forward");
@@ -330,7 +330,7 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
 
 #[expect(clippy::too_many_lines, reason = "sequential tool registration")]
 fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry, tools: &[serde_json::Value]) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
     let mut count = 0;
 
     for tool_json in tools {
@@ -372,7 +372,7 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
 }
 
 pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let resources = match wanaku_praxis_apis::mcp_client::list_resources(&forward.address).await {
+    let resources = match wanaku_apis::mcp_client::list_resources(&forward.address).await {
         Ok(r) => r,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover resources from forward");
@@ -380,7 +380,7 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
         }
     };
 
-    let templates = match wanaku_praxis_apis::mcp_client::list_resource_templates(&forward.address).await {
+    let templates = match wanaku_apis::mcp_client::list_resource_templates(&forward.address).await {
         Ok(t) => t,
         Err(e) => {
             tracing::debug!(forward = %forward.name, error = %e, "no resource templates from forward (may not be supported)");
@@ -398,7 +398,7 @@ fn register_discovered_resources(
     resources: &[serde_json::Value],
     templates: &[serde_json::Value],
 ) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
     let mut count = 0;
 
     for res_json in resources {
@@ -427,7 +427,7 @@ fn register_discovered_resources(
 
         let mut labels = std::collections::HashMap::new();
         labels.insert(
-            wanaku_praxis_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
+            wanaku_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
             forward.address.clone(),
         );
 
@@ -475,11 +475,11 @@ fn register_discovered_resources(
 
         let mut labels = std::collections::HashMap::new();
         labels.insert(
-            wanaku_praxis_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
+            wanaku_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
             forward.address.clone(),
         );
         labels.insert(
-            wanaku_praxis_apis::registry::IS_TEMPLATE_LABEL.to_owned(),
+            wanaku_apis::registry::IS_TEMPLATE_LABEL.to_owned(),
             "true".to_owned(),
         );
 
@@ -527,7 +527,7 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
 }
 
 pub async fn discover_prompts_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let prompts = match wanaku_praxis_apis::mcp_client::list_prompts(&forward.address).await {
+    let prompts = match wanaku_apis::mcp_client::list_prompts(&forward.address).await {
         Ok(p) => p,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover prompts from forward");
@@ -544,7 +544,7 @@ fn register_discovered_prompts(
     forward: &ForwardEntry,
     prompts: &[serde_json::Value],
 ) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
     let mut count = 0;
 
     for prompt_json in prompts {
@@ -560,14 +560,14 @@ fn register_discovered_prompts(
             .and_then(|d| d.as_str())
             .unwrap_or_default();
 
-        let arguments: Vec<wanaku_praxis_apis::registry::PromptArgument> = prompt_json
+        let arguments: Vec<wanaku_apis::registry::PromptArgument> = prompt_json
             .get("arguments")
             .and_then(|a| a.as_array())
             .map(|arr| {
                 arr.iter()
                     .filter_map(|arg| {
                         let arg_name = arg.get("name")?.as_str()?;
-                        Some(wanaku_praxis_apis::registry::PromptArgument {
+                        Some(wanaku_apis::registry::PromptArgument {
                             name: arg_name.to_owned(),
                             description: arg
                                 .get("description")
@@ -616,8 +616,8 @@ fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_praxis_apis::registry::{InMemoryRegistry, PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
-    use wanaku_praxis_apis::registry::{PromptMessage, PromptRole};
+    use wanaku_apis::registry::{InMemoryRegistry, PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
+    use wanaku_apis::registry::{PromptMessage, PromptRole};
     use std::collections::HashMap;
 
     #[test]
@@ -773,7 +773,7 @@ mod tests {
     use std::collections::HashMap;
 
     use http::Response;
-    use wanaku_praxis_apis::registry::{
+    use wanaku_apis::registry::{
         ForwardEntry, ForwardRegistry, InMemoryRegistry,
         PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
         ToolEntry, ToolRegistry,

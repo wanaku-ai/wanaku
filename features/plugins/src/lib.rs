@@ -11,8 +11,8 @@ use std::sync::RwLock;
 
 use http::{Response, StatusCode};
 use praxis_filter::{FilterRegistry, PipelineExtension};
-use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::http_response::json_err;
+use wanaku_apis::feature::Feature;
+use wanaku_apis::http_response::json_err;
 
 use crate::manifest::PluginManifest;
 use crate::routes::{PluginRoute, resolve_plugin_route};

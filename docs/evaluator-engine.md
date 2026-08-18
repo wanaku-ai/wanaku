@@ -454,7 +454,7 @@ world = "evaluator-action"
 Copy the WIT file into your crate:
 
 ```bash
-cp /path/to/wanaku-praxis/features/evaluator/wit/evaluator.wit wit/evaluator.wit
+cp /path/to/wanaku/features/evaluator/wit/evaluator.wit wit/evaluator.wit
 ```
 
 ### Step 2: Use wit-bindgen
@@ -750,7 +750,7 @@ Tests cover: config parsing (including `result_schema`), trigger matching, evalu
 End-to-end tests that hit the management API and MCP endpoint against a running server. These replace the shell scripts and are gated with `#[ignore]`.
 
 ```bash
-# Start wanaku-praxis first, then:
+# Start wanaku-server first, then:
 cargo test -p wanaku-feature-evaluator --test e2e -- --ignored
 ```
 
@@ -913,7 +913,7 @@ Downstream filters can read this metadata and make decisions (e.g., extra loggin
 2. Verify `trigger.method` matches `mcp.method` metadata (e.g., `tools/call` not `tool/call`)
 3. If using `trigger.namespace`, verify the request URL is `/namespace/mcp`, not `/mcp`
 
-Enable trace logs: `RUST_LOG=wanaku_praxis_evaluator=trace`
+Enable trace logs: `RUST_LOG=wanaku_feature_evaluator=trace`
 
 ### "LLM returned garbage"
 
