@@ -673,6 +673,7 @@ fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod forward_helpers_tests {
     use super::*;
     use wanaku_praxis_apis::registry::{InMemoryRegistry, PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
@@ -827,6 +828,7 @@ pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use std::collections::HashMap;
 

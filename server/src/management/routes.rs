@@ -175,6 +175,7 @@ pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRout
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

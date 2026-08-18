@@ -1,0 +1,24 @@
+too-many-lines-threshold = 30
+
+# Raised from 10 to 25 because recent clippy updates started counting macro
+# expansion toward cognitive complexity (each tracing call adds ~5-6 points).
+# Revert to 10 when https://github.com/rust-lang/rust-clippy/issues/14417 is fixed.
+cognitive-complexity-threshold = 25
+
+too-many-arguments-threshold = 5
+max-fn-params-bools = 2
+max-struct-bools = 2
+enum-variant-size-threshold = 128
+future-size-threshold = 4096
+type-complexity-threshold = 200
+stack-size-threshold = 16384
+avoid-breaking-exported-api = false
+msrv = "1.96"
+
+doc-valid-idents = ["..", "IPv4", "IPv6", "gRPC", "OpenTelemetry", "MiB", "GiB", "KiB", "MCP", "JSON-RPC", "OIDC", "SSE", "WASM"]
+
+disallowed-methods = [
+    { path = "std::thread::sleep", reason = "use tokio::time::sleep in async context" },
+    { path = "std::io::stdin", reason = "a server must not read interactive input" },
+    { path = "std::io::Stdin::read_line", reason = "a server must not read interactive input" },
+]

@@ -58,6 +58,50 @@ unused_imports = "deny"
 unused_variables = "deny"
 
 [workspace.lints.clippy]
+# Safety: prevent panicking in production code
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
+
+# Correctness
+cast_possible_truncation = "warn"
+cast_sign_loss = "warn"
+cast_possible_wrap = "warn"
+float_cmp = "warn"
+fn_params_excessive_bools = "warn"
+struct_excessive_bools = "warn"
+implicit_clone = "warn"
+inefficient_to_string = "warn"
+manual_let_else = "warn"
+needless_pass_by_value = "warn"
+semicolon_if_nothing_returned = "warn"
+unnested_or_patterns = "warn"
+unused_self = "warn"
+
+# Clarity
+cloned_instead_of_copied = "warn"
+flat_map_option = "warn"
+from_iter_instead_of_collect = "warn"
+if_not_else = "warn"
+macro_use_imports = "warn"
+map_unwrap_or = "warn"
+match_same_arms = "warn"
+missing_const_for_fn = "warn"
+redundant_closure_for_method_calls = "warn"
+redundant_else = "warn"
+too_many_lines = "warn"
+trivially_copy_pass_by_ref = "warn"
+unreadable_literal = "warn"
+wildcard_imports = "warn"
+
+# Complexity
+cognitive_complexity = "warn"
+too_many_arguments = "warn"
+type_complexity = "warn"
+
+# Async
+large_futures = "warn"
+large_stack_frames = "warn"
+
+# Disallowed methods (configured in clippy.toml)
+disallowed_methods = "deny"
