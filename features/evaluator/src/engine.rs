@@ -57,6 +57,8 @@ impl CompiledEvaluator {
 
     /// Execute the evaluator with the given context.
     /// Creates a fresh WASM instance per call — no state sharing.
+    #[expect(clippy::too_many_lines, reason = "WASM instantiation and execution pipeline")]
+    #[expect(clippy::needless_pass_by_value, reason = "ctx is moved into the WASM store")]
     pub fn evaluate(
         &self,
         registry: InMemoryRegistry,

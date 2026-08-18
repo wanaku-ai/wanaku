@@ -8,9 +8,8 @@ pub(super) enum ToolRoute {
 }
 
 pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
-    let suffix = match path.strip_prefix("/api/v1/tools") {
-        Some(s) => s,
-        None => return ToolRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/tools") else {
+        return ToolRoute::NotFound;
     };
 
     let name = suffix
@@ -36,9 +35,8 @@ pub(super) enum ResourceRoute {
 }
 
 pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute {
-    let suffix = match path.strip_prefix("/api/v1/resources") {
-        Some(s) => s,
-        None => return ResourceRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/resources") else {
+        return ResourceRoute::NotFound;
     };
 
     let name = suffix
@@ -63,9 +61,8 @@ pub(super) enum PromptRoute {
 }
 
 pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
-    let suffix = match path.strip_prefix("/api/v1/prompts") {
-        Some(s) => s,
-        None => return PromptRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/prompts") else {
+        return PromptRoute::NotFound;
     };
 
     let name = suffix
@@ -87,9 +84,8 @@ pub(super) enum ManagementRoute {
 }
 
 pub(super) fn resolve_management_route(method: &str, path: &str) -> ManagementRoute {
-    let suffix = match path.strip_prefix("/api/v1/management") {
-        Some(s) => s,
-        None => return ManagementRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/management") else {
+        return ManagementRoute::NotFound;
     };
 
     match (method, suffix) {
@@ -109,9 +105,8 @@ pub(super) enum ForwardRoute {
 }
 
 pub(super) fn resolve_forward_route(method: &str, path: &str) -> ForwardRoute {
-    let suffix = match path.strip_prefix("/api/v1/forwards") {
-        Some(s) => s,
-        None => return ForwardRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/forwards") else {
+        return ForwardRoute::NotFound;
     };
 
     let name = suffix
@@ -125,10 +120,10 @@ pub(super) fn resolve_forward_route(method: &str, path: &str) -> ForwardRoute {
         ("DELETE", Some(n)) if !n.contains('/') => ForwardRoute::Delete(n.to_owned()),
         ("POST", Some(n)) => {
             if let Some(name) = n.strip_suffix("/refreshes") {
-                if !name.contains('/') {
-                    ForwardRoute::Refresh(name.to_owned())
-                } else {
+                if name.contains('/') {
                     ForwardRoute::NotFound
+                } else {
+                    ForwardRoute::Refresh(name.to_owned())
                 }
             } else {
                 ForwardRoute::NotFound
@@ -149,9 +144,8 @@ pub(super) enum NamespaceRoute {
 }
 
 pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRoute {
-    let suffix = match path.strip_prefix("/api/v1/namespaces") {
-        Some(s) => s,
-        None => return NamespaceRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/namespaces") else {
+        return NamespaceRoute::NotFound;
     };
 
     let name = suffix

@@ -5,6 +5,7 @@ use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
+#[expect(clippy::too_many_lines, reason = "URI template matching with segment iteration")]
 fn matches_uri_template(template: &str, uri: &str) -> bool {
     let mut parts = Vec::new();
     let mut rest = template;
@@ -79,14 +80,14 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
 }
 
 impl ResourceReadFilter {
+    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP protocol handler with JSON-RPC response construction")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata(crate::MCP_METHOD_KEY) {
-            Some(m) => m,
-            None => return Ok(FilterAction::Continue),
+        let Some(method) = ctx.get_metadata(crate::MCP_METHOD_KEY) else {
+            return Ok(FilterAction::Continue);
         };
 
         if method != "resources/read" {
@@ -108,12 +109,9 @@ impl ResourceReadFilter {
 
         trace!(uri = %resource_uri, namespace = %namespace, "handling MCP resources/read request");
 
-        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
-            Some(r) => r,
-            None => {
-                tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
-            }
+        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+            tracing::error!("InMemoryRegistry not found in request extensions");
+            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
         };
 
         let resources = registry.list_resources_in_namespace(namespace);
@@ -150,16 +148,13 @@ impl ResourceReadFilter {
         resource_uri: &str,
         parsed: &ParsedBody,
     ) -> Result<FilterAction, FilterError> {
-        let forward_address = match resource.forward_address() {
-            Some(addr) => addr,
-            None => {
-                warn!(uri = %resource_uri, "forwarded resource missing forward address label");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    "forwarded resource has no upstream address configured",
-                ));
-            }
+        let Some(forward_address) = resource.forward_address() else {
+            warn!(uri = %resource_uri, "forwarded resource missing forward address label");
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INTERNAL_ERROR,
+                "forwarded resource has no upstream address configured",
+            ));
         };
 
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");

@@ -11,9 +11,8 @@ pub(crate) enum ChatRoute {
 }
 
 pub(crate) fn resolve_chat_route(method: &str, path: &str) -> ChatRoute {
-    let suffix = match path.strip_prefix("/api/v1/chat") {
-        Some(s) => s,
-        None => return ChatRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/chat") else {
+        return ChatRoute::NotFound;
     };
 
     match (method, suffix) {
@@ -45,6 +44,7 @@ pub(crate) fn handle_chat_list_llms() -> Response<Vec<u8>> {
     raw_json_response(serde_json::to_vec(&serde_json::json!(["Inference"])).unwrap_or_default())
 }
 
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "sequential HTTP request handling")]
 pub(crate) async fn handle_chat_list_models(
     client: &reqwest::Client,
     base_url: &str,
@@ -105,6 +105,7 @@ pub(crate) async fn handle_chat_list_models(
     raw_json_response(serde_json::to_vec(&serde_json::json!(models)).unwrap_or_default())
 }
 
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "sequential HTTP request/response handling")]
 pub(crate) async fn handle_chat_completions(
     client: &reqwest::Client,
     base_url: &str,

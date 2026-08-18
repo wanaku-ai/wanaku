@@ -68,6 +68,7 @@ pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Re
     }
 }
 
+#[expect(clippy::cognitive_complexity, reason = "sequential validation steps")]
 pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, name = %path_name, "resource update request body");
     let mut resource: ResourceEntry = match serde_json::from_str(body) {
@@ -203,6 +204,7 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
     }
 }
 
+#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "sequential discovery and registration")]
 pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "forward create request body");
     let mut forward: ForwardEntry = match serde_json::from_str(body) {
@@ -261,9 +263,8 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
 }
 
 pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    let mut forward = match registry.get_forward(name) {
-        Some(f) => f,
-        None => return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}")),
+    let Some(mut forward) = registry.get_forward(name) else {
+        return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     };
 
     remove_forwarded_tools(registry, &forward.address);
@@ -327,6 +328,7 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
     register_discovered_tools(registry, forward, &tools)
 }
 
+#[expect(clippy::too_many_lines, reason = "sequential tool registration")]
 fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry, tools: &[serde_json::Value]) -> usize {
     let namespace = forward.namespace.as_deref().unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
     let mut count = 0;
@@ -389,6 +391,7 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
     register_discovered_resources(registry, forward, &resources, &templates)
 }
 
+#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "sequential resource and template registration")]
 fn register_discovered_resources(
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
@@ -535,6 +538,7 @@ pub async fn discover_prompts_from_forward(registry: &InMemoryRegistry, forward:
     register_discovered_prompts(registry, forward, &prompts)
 }
 
+#[expect(clippy::too_many_lines, reason = "sequential prompt registration")]
 fn register_discovered_prompts(
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
@@ -572,7 +576,7 @@ fn register_discovered_prompts(
                                 .to_owned(),
                             required: arg
                                 .get("required")
-                                .and_then(|r| r.as_bool())
+                                .and_then(serde_json::Value::as_bool)
                                 .unwrap_or(false),
                         })
                     })
@@ -748,6 +752,7 @@ mod forward_helpers_tests {
     }
 }
 
+#[expect(clippy::cast_possible_wrap, reason = "registry counts won't exceed i64::MAX")]
 pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let tools_count = registry.tool_count() as i64;
     let resources_count = registry.resource_count() as i64;

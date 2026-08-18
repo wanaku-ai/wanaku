@@ -14,6 +14,7 @@ macro_rules! body_filter_boilerplate {
             pub fn from_config(
                 config: &serde_yaml::Value,
             ) -> Result<Box<dyn praxis_filter::HttpFilter>, praxis_filter::FilterError> {
+                #[expect(clippy::cast_possible_truncation, reason = "body size limited by max_body_bytes config; values above usize::MAX are unreachable")]
                 let max_body_bytes = config
                     .get("max_body_bytes")
                     .and_then(serde_yaml::Value::as_u64)

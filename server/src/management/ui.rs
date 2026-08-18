@@ -8,7 +8,7 @@ use super::response::json_err;
 #[prefix = ""]
 struct AdminUi;
 
-#[expect(clippy::expect_used, reason = "valid static response")]
+#[expect(clippy::expect_used, clippy::too_many_lines, reason = "valid static response")]
 pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &str) -> Response<Vec<u8>> {
     let relative = request_path
         .strip_prefix("/admin")
@@ -35,8 +35,8 @@ pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &
             .expect("valid static response");
     }
 
-    if !relative.contains('.') {
-        if let Some(index) = AdminUi::get("index.html") {
+    if !relative.contains('.')
+        && let Some(index) = AdminUi::get("index.html") {
             return Response::builder()
                 .status(StatusCode::OK)
                 .header("Content-Type", "text/html; charset=utf-8")
@@ -44,12 +44,11 @@ pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &
                 .body(index.data.into_owned())
                 .expect("valid static response");
         }
-    }
 
     json_err(StatusCode::NOT_FOUND, "file not found")
 }
 
-#[expect(clippy::expect_used, reason = "valid static response")]
+#[expect(clippy::expect_used, clippy::too_many_lines, reason = "valid static response")]
 fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<Vec<u8>> {
     let file_path = if relative.is_empty() {
         ui_root.join("index.html")
@@ -57,35 +56,29 @@ fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<
         ui_root.join(relative)
     };
 
-    let canonical = match file_path.canonicalize() {
-        Ok(p) => p,
-        Err(_) => {
-            if !relative.contains('.') {
-                if let Ok(index) = std::fs::read(ui_root.join("index.html")) {
-                    return Response::builder()
-                        .status(StatusCode::OK)
-                        .header("Content-Type", "text/html; charset=utf-8")
-                        .header("Content-Length", index.len())
-                        .body(index)
-                        .expect("valid static response");
-                }
+    let Ok(canonical) = file_path.canonicalize() else {
+        if !relative.contains('.')
+            && let Ok(index) = std::fs::read(ui_root.join("index.html")) {
+                return Response::builder()
+                    .status(StatusCode::OK)
+                    .header("Content-Type", "text/html; charset=utf-8")
+                    .header("Content-Length", index.len())
+                    .body(index)
+                    .expect("valid static response");
             }
-            return json_err(StatusCode::NOT_FOUND, "file not found");
-        }
+        return json_err(StatusCode::NOT_FOUND, "file not found");
     };
 
-    let canonical_root = match ui_root.canonicalize() {
-        Ok(r) => r,
-        Err(_) => return json_err(StatusCode::INTERNAL_SERVER_ERROR, "UI root path not found"),
+    let Ok(canonical_root) = ui_root.canonicalize() else {
+        return json_err(StatusCode::INTERNAL_SERVER_ERROR, "UI root path not found");
     };
 
     if !canonical.starts_with(&canonical_root) {
         return json_err(StatusCode::FORBIDDEN, StatusCode::FORBIDDEN.canonical_reason().unwrap_or_default());
     }
 
-    let body = match std::fs::read(&canonical) {
-        Ok(b) => b,
-        Err(_) => return json_err(StatusCode::NOT_FOUND, "file not found"),
+    let Ok(body) = std::fs::read(&canonical) else {
+        return json_err(StatusCode::NOT_FOUND, "file not found");
     };
 
     let content_type = mime_for_path(canonical.to_str().unwrap_or(""));
@@ -101,7 +94,7 @@ fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<
 fn mime_for_path(path: &str) -> &'static str {
     match path.rsplit('.').next() {
         Some("html") => "text/html; charset=utf-8",
-        Some("js") | Some("mjs") => "application/javascript",
+        Some("js" | "mjs") => "application/javascript",
         Some("css") => "text/css",
         Some("json") => "application/json",
         Some("svg") => "image/svg+xml",

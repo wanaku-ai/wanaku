@@ -1,3 +1,5 @@
+#![allow(clippy::large_stack_frames, reason = "utoipa::ToSchema derive generates large stack frames")]
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -153,11 +155,11 @@ impl ResourceEntry {
     }
 
     pub fn is_template(&self) -> bool {
-        self.labels.get(IS_TEMPLATE_LABEL).map(|v| v == "true").unwrap_or(false)
+        self.labels.get(IS_TEMPLATE_LABEL).is_some_and(|v| v == "true")
     }
 
     pub fn forward_address(&self) -> Option<&str> {
-        self.labels.get(FORWARD_ADDRESS_LABEL).map(|s| s.as_str())
+        self.labels.get(FORWARD_ADDRESS_LABEL).map(std::string::String::as_str)
     }
 }
 
@@ -288,10 +290,10 @@ impl InMemoryRegistry {
     ///
     /// Inserts directly into the DashMaps to avoid triggering
     /// `persist()` on every entry (the data already came from disk).
+    #[expect(clippy::too_many_lines, reason = "sequential loading of all registry types")]
     pub fn load_persisted(&self) {
-        let backend = match &self.persistence {
-            Some(b) => b,
-            None => return,
+        let Some(backend) = &self.persistence else {
+            return;
         };
 
         let snapshot = match backend.load() {

@@ -33,6 +33,12 @@ impl InterceptFeature {
     }
 }
 
+impl Default for InterceptFeature {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct InteractionStoreExtension {
     store: InMemoryInteractionStore,
 }

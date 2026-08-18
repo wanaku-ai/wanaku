@@ -28,8 +28,14 @@ pub struct McpMetadataFeature;
 
 impl McpMetadataFeature {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
+    }
+}
+
+impl Default for McpMetadataFeature {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -67,10 +73,9 @@ impl Feature for McpMetadataFeature {
     fn load_yaml_config(&self, _root: &serde_yaml::Value) {}
 
     fn load_env_config(&self) {
-        if let Ok(issuer) = std::env::var(WANAKU_AUTH_ISSUER) {
-            if !issuer.is_empty() {
+        if let Ok(issuer) = std::env::var(WANAKU_AUTH_ISSUER)
+            && !issuer.is_empty() {
                 tracing::info!(issuer = %issuer, "MCP metadata configured with auth issuer");
             }
-        }
     }
 }

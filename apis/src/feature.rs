@@ -9,6 +9,7 @@ pub trait Feature: Send + Sync {
 
     fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>>;
 
+    #[expect(clippy::too_many_arguments, reason = "trait method requires all context parameters")]
     async fn handle_route(
         &self,
         method: &str,

@@ -16,9 +16,8 @@ pub(crate) enum EvaluatorRoute {
 }
 
 pub(crate) fn resolve_evaluator_route(method: &str, path: &str) -> EvaluatorRoute {
-    let suffix = match path.strip_prefix("/api/v1/evaluators") {
-        Some(s) => s,
-        None => return EvaluatorRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/evaluators") else {
+        return EvaluatorRoute::NotFound;
     };
 
     if suffix.is_empty() || suffix == "/" {
@@ -29,9 +28,8 @@ pub(crate) fn resolve_evaluator_route(method: &str, path: &str) -> EvaluatorRout
         };
     }
 
-    let ns_suffix = match suffix.strip_prefix("/namespaces") {
-        Some(s) => s,
-        None => return EvaluatorRoute::NotFound,
+    let Some(ns_suffix) = suffix.strip_prefix("/namespaces") else {
+        return EvaluatorRoute::NotFound;
     };
 
     if ns_suffix.is_empty() || ns_suffix == "/" {

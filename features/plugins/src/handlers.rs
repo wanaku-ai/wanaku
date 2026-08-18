@@ -25,23 +25,20 @@ pub(crate) fn handle_serve_file(
         plugin_root.join(file_path)
     };
 
-    let canonical = match target.canonicalize() {
-        Ok(p) => p,
-        Err(_) => return json_err(StatusCode::NOT_FOUND, "file not found"),
+    let Ok(canonical) = target.canonicalize() else {
+        return json_err(StatusCode::NOT_FOUND, "file not found");
     };
 
-    let canonical_root = match plugin_root.canonicalize() {
-        Ok(r) => r,
-        Err(_) => return json_err(StatusCode::NOT_FOUND, "plugin not found"),
+    let Ok(canonical_root) = plugin_root.canonicalize() else {
+        return json_err(StatusCode::NOT_FOUND, "plugin not found");
     };
 
     if !canonical.starts_with(&canonical_root) {
         return json_err(StatusCode::FORBIDDEN, "forbidden");
     }
 
-    let body = match std::fs::read(&canonical) {
-        Ok(b) => b,
-        Err(_) => return json_err(StatusCode::NOT_FOUND, "file not found"),
+    let Ok(body) = std::fs::read(&canonical) else {
+        return json_err(StatusCode::NOT_FOUND, "file not found");
     };
 
     let content_type = mime_for_path(canonical.to_str().unwrap_or(""));
@@ -54,6 +51,8 @@ pub(crate) fn handle_serve_file(
         .expect("valid static response")
 }
 
+#[expect(clippy::too_many_arguments, reason = "proxy handler requires full HTTP context")]
+#[expect(clippy::too_many_lines, reason = "HTTP proxy with request/response handling")]
 pub(crate) async fn handle_proxy_service(
     client: &reqwest::Client,
     target_url: &str,
@@ -68,9 +67,8 @@ pub(crate) async fn handle_proxy_service(
         None => format!("{target_url}{path}"),
     };
 
-    let req_method = match method.parse::<reqwest::Method>() {
-        Ok(m) => m,
-        Err(_) => return json_err(StatusCode::BAD_REQUEST, &format!("unsupported method: {method}")),
+    let Ok(req_method) = method.parse::<reqwest::Method>() else {
+        return json_err(StatusCode::BAD_REQUEST, &format!("unsupported method: {method}"));
     };
 
     let mut request = client.request(req_method, &url);
@@ -126,7 +124,7 @@ fn build_proxy_response(status: u16, content_type: &str, body: Vec<u8>) -> Respo
 fn mime_for_path(path: &str) -> &'static str {
     match path.rsplit('.').next() {
         Some("html") => "text/html; charset=utf-8",
-        Some("js") | Some("mjs") => "application/javascript",
+        Some("js" | "mjs") => "application/javascript",
         Some("css") => "text/css",
         Some("json") => "application/json",
         Some("svg") => "image/svg+xml",

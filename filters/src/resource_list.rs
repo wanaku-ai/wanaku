@@ -6,14 +6,14 @@ use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
 crate::body_filter_boilerplate!(ResourceListFilter, "wanaku_resource_list");
 
 impl ResourceListFilter {
+    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata(crate::MCP_METHOD_KEY) {
-            Some(m) => m,
-            None => return Ok(FilterAction::Continue),
+        let Some(method) = ctx.get_metadata(crate::MCP_METHOD_KEY) else {
+            return Ok(FilterAction::Continue);
         };
 
         let is_list = method == "resources/list";
@@ -28,17 +28,14 @@ impl ResourceListFilter {
 
         trace!(namespace = %namespace, "handling MCP resources/list request");
 
-        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
-            Some(r) => r,
-            None => {
-                tracing::error!("InMemoryRegistry not found in request extensions");
-                let json_rpc_id = crate::response::extract_json_rpc_id(body);
-                return Ok(crate::response::json_rpc_error(
-                    &json_rpc_id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    "internal error: registry unavailable",
-                ));
-            }
+        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+            tracing::error!("InMemoryRegistry not found in request extensions");
+            let json_rpc_id = crate::response::extract_json_rpc_id(body);
+            return Ok(crate::response::json_rpc_error(
+                &json_rpc_id,
+                crate::response::JSONRPC_INTERNAL_ERROR,
+                "internal error: registry unavailable",
+            ));
         };
 
         let all_resources = registry.list_resources_in_namespace(namespace);

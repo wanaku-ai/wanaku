@@ -24,12 +24,13 @@ impl PipelineExtension for RegistryExtension {
 /// # Errors
 ///
 /// Returns an error if pipeline construction fails.
+#[expect(clippy::too_many_arguments, clippy::too_many_lines, reason = "pipeline construction requires all dependencies")]
 pub fn resolve_pipelines(
     config: &Config,
     registry: &FilterRegistry,
     health_registry: &praxis_core::health::HealthRegistry,
     kv_stores: &praxis_core::kv::KvStoreRegistry,
-    wanaku_registry: InMemoryRegistry,
+    wanaku_registry: &InMemoryRegistry,
     features: &[Box<dyn Feature>],
 ) -> Result<ListenerPipelines, Box<dyn std::error::Error + Send + Sync>> {
     let chains: HashMap<&str, &[_]> = config

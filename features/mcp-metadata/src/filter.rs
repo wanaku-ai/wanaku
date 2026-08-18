@@ -9,6 +9,7 @@ wanaku_praxis_filters::body_filter_boilerplate!(WellKnownFilter, "wanaku_well_kn
 const WELL_KNOWN_PREFIX: &str = "/.well-known/oauth-protected-resource/";
 
 impl WellKnownFilter {
+    #[expect(clippy::too_many_lines, reason = "route dispatch with multiple well-known endpoints")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -58,6 +59,7 @@ impl WellKnownFilter {
         }
     }
 
+    #[expect(clippy::unused_self, reason = "method on impl for consistency with other handlers")]
     fn serve_discovery(&self, base: &str, config: &IssuerConfig) -> Rejection {
         let doc = serde_json::json!({
             "issuer": config.issuer,
@@ -77,6 +79,8 @@ impl WellKnownFilter {
         json_response(StatusCode::OK, &doc)
     }
 
+    #[expect(clippy::unused_self, reason = "method on impl for consistency with other handlers")]
+    #[expect(clippy::too_many_lines, reason = "RFC 9728 protected resource metadata assembly")]
     fn handle_protected_resource_metadata(
         &self,
         ctx: &HttpFilterContext<'_>,
@@ -103,8 +107,7 @@ impl WellKnownFilter {
 
         let issuer_config = ctx.extensions.get::<IssuerConfig>();
         let has_issuer = issuer_config
-            .map(|c| !c.issuer.is_empty())
-            .unwrap_or(false);
+            .is_some_and(|c| !c.issuer.is_empty());
 
         let host_str = format!("http://{host}");
         let auth_servers: Vec<&str> = if has_issuer {
@@ -124,6 +127,7 @@ impl WellKnownFilter {
     }
 }
 
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "HTTP proxy with error handling")]
 async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
     let url = format!("{issuer}/protocol/openid-connect/token");
 

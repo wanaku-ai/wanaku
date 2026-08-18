@@ -8,6 +8,7 @@ use crate::config::LlmDef;
 
 /// Execute the LLM operation and return the raw result string.
 /// The processor WASM module is responsible for parsing and acting on this.
+#[expect(clippy::too_many_arguments, reason = "LLM operation requires full request context")]
 pub async fn run_llm_operation(
     llm_def: &LlmDef,
     method: &str,
@@ -23,6 +24,7 @@ pub async fn run_llm_operation(
     client.chat(&llm_def.prompt, &user_prompt).await
 }
 
+#[expect(clippy::too_many_lines, reason = "prompt assembly with multiple optional sections")]
 fn build_context_prompt(
     method: &str,
     tool_name: Option<&str>,
@@ -40,8 +42,8 @@ fn build_context_prompt(
             history
         };
         for interaction in capped {
-            if let Some(messages) = interaction.request_body.get("messages") {
-                if let Some(arr) = messages.as_array() {
+            if let Some(messages) = interaction.request_body.get("messages")
+                && let Some(arr) = messages.as_array() {
                     for msg in arr {
                         let role = msg
                             .get("role")
@@ -59,7 +61,6 @@ fn build_context_prompt(
                         }
                     }
                 }
-            }
             prompt.push('\n');
         }
     }
@@ -97,6 +98,7 @@ fn build_context_prompt(
 
 /// Retry an LLM operation with a correction prompt that includes
 /// the schema and the previous (invalid) response.
+#[expect(clippy::too_many_arguments, reason = "retry requires original context plus correction data")]
 pub async fn retry_with_schema_correction(
     llm_def: &LlmDef,
     method: &str,

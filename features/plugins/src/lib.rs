@@ -45,6 +45,7 @@ impl PluginsFeature {
     }
 }
 
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "plugin discovery with validation")]
 fn discover_plugins(plugins_dir: &PathBuf) -> Vec<PluginManifest> {
     if !plugins_dir.is_dir() {
         tracing::warn!(path = %plugins_dir.display(), "plugins directory does not exist");
@@ -67,9 +68,8 @@ fn discover_plugins(plugins_dir: &PathBuf) -> Vec<PluginManifest> {
         }
 
         let manifest_path = entry_path.join("plugin.json");
-        let content = match std::fs::read_to_string(&manifest_path) {
-            Ok(c) => c,
-            Err(_) => continue,
+        let Ok(content) = std::fs::read_to_string(&manifest_path) else {
+            continue;
         };
 
         let manifest: PluginManifest = match serde_json::from_str(&content) {
@@ -116,6 +116,7 @@ impl Feature for PluginsFeature {
         vec![]
     }
 
+    #[expect(clippy::too_many_lines, reason = "route dispatch with plugin proxy logic")]
     async fn handle_route(
         &self,
         method: &str,
@@ -167,6 +168,7 @@ impl Feature for PluginsFeature {
         })
     }
 
+    #[expect(clippy::too_many_lines, reason = "YAML config parsing with nested plugin/service structure")]
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
         let Some(plugins_val) = root.get("plugins") else {
             return;

@@ -50,14 +50,14 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
 }
 
 impl PromptGetFilter {
+    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata(crate::MCP_METHOD_KEY) {
-            Some(m) => m,
-            None => return Ok(FilterAction::Continue),
+        let Some(method) = ctx.get_metadata(crate::MCP_METHOD_KEY) else {
+            return Ok(FilterAction::Continue);
         };
 
         if method != "prompts/get" {
@@ -79,31 +79,24 @@ impl PromptGetFilter {
 
         trace!(prompt = %prompt_name, namespace = %namespace, "handling MCP prompts/get request");
 
-        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
-            Some(r) => r,
-            None => {
-                tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
-            }
+        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+            tracing::error!("InMemoryRegistry not found in request extensions");
+            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
         };
 
-        let prompt = match registry.get_prompt_in_namespace(namespace, &prompt_name) {
-            Some(p) => p,
-            None => {
-                warn!(prompt = %prompt_name, "prompt not found in registry");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INVALID_PARAMS,
-                    &format!("prompt not found: {prompt_name}"),
-                ));
-            }
+        let Some(prompt) = registry.get_prompt_in_namespace(namespace, &prompt_name) else {
+            warn!(prompt = %prompt_name, "prompt not found in registry");
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                &format!("prompt not found: {prompt_name}"),
+            ));
         };
 
-        if prompt.messages.is_empty() {
-            if let Some(ref uri) = prompt.configuration_uri {
+        if prompt.messages.is_empty()
+            && let Some(ref uri) = prompt.configuration_uri {
                 return self.handle_forwarded_get(uri, &prompt_name, &parsed).await;
             }
-        }
 
         let messages: Vec<serde_json::Value> = prompt
             .messages
