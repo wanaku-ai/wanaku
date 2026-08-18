@@ -17,7 +17,7 @@ RUN yarn build
 
 FROM registry.fedoraproject.org/fedora:42 AS builder
 
-RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make protobuf-compiler curl \
+RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make curl \
     && dnf clean all
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.96.0
@@ -38,9 +38,6 @@ COPY features/evaluator/Cargo.toml features/evaluator/Cargo.toml
 COPY features/intercept/Cargo.toml features/intercept/Cargo.toml
 COPY features/mcp-metadata/Cargo.toml features/mcp-metadata/Cargo.toml
 COPY features/plugins/Cargo.toml features/plugins/Cargo.toml
-
-COPY apis/build.rs apis/build.rs
-COPY apis/src/proto apis/src/proto
 
 RUN mkdir -p apis/src filters/src server/src \
     features/chat/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/plugins/src \

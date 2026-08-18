@@ -218,6 +218,8 @@ curl -X POST http://localhost:8081/finance/mcp -d '{"jsonrpc":"2.0","method":"to
 
 ## Known Gotchas
 
+**Containerfile sync:** When adding/removing workspace crates, build scripts (`build.rs`), or source directories, update `Containerfile` to match — the cache-build stage copies `Cargo.toml` files and build inputs individually.
+
 **`include_str!` rebuilds:** editing `default.yaml` doesn't trigger rebuild — touch `server/src/lib.rs`, then `cargo build`.
 
 **Pingora workers:** `kill -9 <parent-pid>` may not kill workers. Use `lsof -ti :8081 | xargs kill -9` or `SIGTERM`.
