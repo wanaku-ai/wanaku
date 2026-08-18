@@ -38,7 +38,6 @@ pub fn extract_json_rpc_id(body: &Option<Bytes>) -> serde_json::Value {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
