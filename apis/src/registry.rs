@@ -348,7 +348,7 @@ impl InMemoryRegistry {
         if let Some(backend) = &self.persistence {
             let snapshot = self.snapshot();
             let backend = Arc::clone(backend);
-            std::thread::spawn(move || {
+            tokio::task::spawn_blocking(move || {
                 if let Err(e) = backend.save(&snapshot) {
                     tracing::warn!(error = %e, "failed to persist registry");
                 }
@@ -597,7 +597,6 @@ impl ForwardRegistry for InMemoryRegistry {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
