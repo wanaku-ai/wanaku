@@ -2,8 +2,6 @@ import {useCallback} from "react";
 import {
     getApiV1Tools,
     getApiV1ToolsResponse,
-    postApiV1Tools,
-    postApiV1ToolsResponse,
     putApiV1ToolsName,
     putApiV1ToolsNameResponse,
     deleteApiV1ToolsName,
@@ -12,19 +10,6 @@ import {
 import {GetApiV1ToolsParams, ToolReference,} from "../../models";
 
 export const useTools = () => {
-  /**
-   * Add a tool.
-   */
-  const addTool = useCallback(
-    (
-      toolReference: ToolReference,
-      options?: RequestInit
-    ): Promise<postApiV1ToolsResponse> => {
-      return postApiV1Tools(toolReference, options);
-    },
-    []
-  );
-
   const updateTool = useCallback(
     (originalName: string, tool: ToolReference, options?: RequestInit): Promise<putApiV1ToolsNameResponse> => {
       return putApiV1ToolsName(originalName, tool, options)
@@ -55,7 +40,6 @@ export const useTools = () => {
   );
 
   return {
-    addTool,
     updateTool,
     listTools,
     removeTool,

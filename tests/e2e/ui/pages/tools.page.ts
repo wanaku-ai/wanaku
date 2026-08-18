@@ -11,11 +11,6 @@ export class ToolsPage extends BasePage {
     await this.navigateTo('/tools');
   }
 
-  async clickAddTool() {
-    await this.page.locator(Carbon.buttonWithText('Add Tool')).click();
-    await this.modal().waitFor({ state: 'visible' });
-  }
-
   async fillToolForm(tool: { name: string; description: string; uri: string }) {
     await this.page.locator(Carbon.textInput('tool-name')).fill(tool.name);
     await this.page.locator(Carbon.textInput('tool-description')).fill(tool.description);

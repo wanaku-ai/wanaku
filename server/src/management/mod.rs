@@ -22,11 +22,11 @@ use self::handlers::{
     handle_forward_refresh,
     handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
     handle_namespace_update,
-    handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-    handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
+    handle_prompt_delete, handle_prompt_get, handle_prompt_list,
+    handle_resource_delete, handle_resource_get, handle_resource_list,
     handle_resource_update,
     handle_statistics,
-    handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
+    handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
 };
 use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
 use self::routes::{
@@ -105,10 +105,6 @@ impl ServeHttp for WanakuManagementService {
             return match tool_route {
                 ToolRoute::List => handle_tool_list(&self.registry),
                 ToolRoute::GetByName(name) => handle_tool_get(&self.registry, &name),
-                ToolRoute::Create => match read_body(http_session).await {
-                    Ok(body) => handle_tool_create(&self.registry, &body),
-                    Err(resp) => resp,
-                },
                 ToolRoute::Update(name) => match read_body(http_session).await {
                     Ok(body) => handle_tool_update(&self.registry, &name, &body),
                     Err(resp) => resp,
@@ -123,10 +119,6 @@ impl ServeHttp for WanakuManagementService {
             return match resource_route {
                 ResourceRoute::List => handle_resource_list(&self.registry),
                 ResourceRoute::GetByName(name) => handle_resource_get(&self.registry, &name),
-                ResourceRoute::Create => match read_body(http_session).await {
-                    Ok(body) => handle_resource_create(&self.registry, &body),
-                    Err(resp) => resp,
-                },
                 ResourceRoute::Update(name) => match read_body(http_session).await {
                     Ok(body) => handle_resource_update(&self.registry, &name, &body),
                     Err(resp) => resp,
@@ -141,10 +133,6 @@ impl ServeHttp for WanakuManagementService {
             return match prompt_route {
                 PromptRoute::List => handle_prompt_list(&self.registry),
                 PromptRoute::GetByName(name) => handle_prompt_get(&self.registry, &name),
-                PromptRoute::Create => match read_body(http_session).await {
-                    Ok(body) => handle_prompt_create(&self.registry, &body),
-                    Err(resp) => resp,
-                },
                 PromptRoute::Delete(name) => handle_prompt_delete(&self.registry, &name),
                 PromptRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };

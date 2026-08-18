@@ -3,14 +3,12 @@ import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
 import {PromptReference} from "../../models";
 import {PromptsTable} from "./PromptsTable";
-import {PromptModal} from "./PromptsModal"
 
 export const PromptsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<PromptReference[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { listPrompts, addPrompt, removePrompt } = usePrompts();
+  const { listPrompts, removePrompt } = usePrompts();
 
   const updatePrompts = useCallback(async () => {
     return listPrompts().then((result) => {
@@ -43,19 +41,6 @@ export const PromptsPage: React.FC = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
-  const handleAddPrompt = async (newPrompt: PromptReference) => {
-    try {
-      await addPrompt(newPrompt);
-      setIsAddModalOpen(false);
-      setErrorMessage(null);
-
-      await updatePrompts();
-    } catch (error) {
-      setIsAddModalOpen(false);
-      setErrorMessage(`Error adding prompt: ${error instanceof Error ? error.message : "unknown error"}`);
-    }
-  };
-
   const handleDeletePrompt = async (promptName?: string) => {
     try {
       await removePrompt(promptName!);
@@ -82,19 +67,13 @@ export const PromptsPage: React.FC = () => {
         Prompts are reusable templates that can leverage multiple tools and provide
         example interactions for LLMs. Each prompt contains messages, arguments, and
         optional tool references.
+        Prompts are auto-discovered from forwarded MCP servers.
       </p>
       <div id="page-content">
         {fetchedData && (
           <PromptsTable
             fetchedData={fetchedData}
             onDelete={handleDeletePrompt}
-            onAdd={() => setIsAddModalOpen(true)}
-          />
-        )}
-        {isAddModalOpen && (
-          <PromptModal
-            onRequestClose={() => setIsAddModalOpen(false)}
-            onSubmit={handleAddPrompt}
           />
         )}
       </div>

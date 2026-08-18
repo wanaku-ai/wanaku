@@ -37,12 +37,6 @@ fn list_tools() {}
 )]
 fn get_tool() {}
 
-#[utoipa::path(post, path = "/api/v1/tools", tag = "Tools",
-    request_body = ToolEntry,
-    responses((status = 200, description = "Tool registered", body = ToolEntry))
-)]
-fn create_tool() {}
-
 #[utoipa::path(delete, path = "/api/v1/tools/{name}", tag = "Tools",
     params(("name" = String, Path, description = "Tool name")),
     responses(
@@ -68,12 +62,6 @@ fn list_resources() {}
 )]
 fn get_resource() {}
 
-#[utoipa::path(post, path = "/api/v1/resources", tag = "Resources",
-    request_body = ResourceEntry,
-    responses((status = 200, description = "Resource registered", body = ResourceEntry))
-)]
-fn create_resource() {}
-
 #[utoipa::path(delete, path = "/api/v1/resources/{name}", tag = "Resources",
     params(("name" = String, Path, description = "Resource name")),
     responses(
@@ -98,12 +86,6 @@ fn list_prompts() {}
     )
 )]
 fn get_prompt() {}
-
-#[utoipa::path(post, path = "/api/v1/prompts", tag = "Prompts",
-    request_body = PromptEntry,
-    responses((status = 200, description = "Prompt registered", body = PromptEntry))
-)]
-fn create_prompt() {}
 
 #[utoipa::path(delete, path = "/api/v1/prompts/{name}", tag = "Prompts",
     params(("name" = String, Path, description = "Prompt name")),
@@ -215,9 +197,9 @@ fn get_statistics() {}
     ),
     paths(
         healthz,
-        list_tools, get_tool, create_tool, delete_tool,
-        list_resources, get_resource, create_resource, delete_resource,
-        list_prompts, get_prompt, create_prompt, delete_prompt,
+        list_tools, get_tool, delete_tool,
+        list_resources, get_resource, delete_resource,
+        list_prompts, get_prompt, delete_prompt,
         list_namespaces, get_namespace, create_namespace, delete_namespace,
         list_forwards, get_forward, create_forward, delete_forward, refresh_forward,
         list_interactions, clear_interactions,

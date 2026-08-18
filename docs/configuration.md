@@ -278,7 +278,7 @@ If you reorder filters and requests start failing, check the logs. The filter th
 
 ## Wanaku Config File (wanaku.yaml)
 
-The Wanaku config bootstraps tools and forwards on startup. It's optional — if omitted, the registry starts empty. Resources, prompts, and namespaces must be registered via the management API.
+The Wanaku config bootstraps forwarded MCP servers on startup. It's optional — if omitted, the registry starts empty.
 
 **Location:** Pass with `--wanaku-config`:
 
@@ -289,25 +289,12 @@ cargo run -- --praxis-config /path/to/praxis.yaml --wanaku-config /path/to/wanak
 **Format:**
 
 ```yaml
-tools:
-  - name: "echo"
-    type: "mcp-forward"
-    uri: "http://echo-mcp:8080/mcp"
-    description: "Echoes a message"
-    namespace: "default"
-    input_schema:
-      type: object
-      properties:
-        message:
-          type: string
-      required: [message]
-
 forwards:
   - name: "upstream-mcp"
     address: "http://upstream:8080/mcp"
 ```
 
-**Note:** Only `tools`, `forwards`, and `evaluators` are loaded from wanaku.yaml at startup. Resources, prompts, and namespaces must be registered via the management API (POST `/api/v1/resources`, `/api/v1/prompts`, `/api/v1/namespaces`).
+**Note:** Only `forwards` and `evaluators` are loaded from wanaku.yaml at startup. Tools, resources, and prompts are discovered from the forwarded MCP servers.
 
 **Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):
 
@@ -332,56 +319,6 @@ evaluators:
 ```
 
 When `result_schema` is set, the host validates LLM output against the schema and retries once with a correction prompt on mismatch.
-
-### Tool Definitions
-
-**All tools must have `type: "mcp-forward"`** — other tool types are not supported. The `uri` field points to the upstream MCP server that will execute the tool.
-
-**Minimal:**
-
-```yaml
-tools:
-  - name: "my-tool"
-    type: "mcp-forward"
-    uri: "http://my-mcp-server:8080/mcp"
-    description: "Does a thing"
-```
-
-**With input schema:**
-
-```yaml
-tools:
-  - name: "http-get"
-    type: "mcp-forward"
-    uri: "http://http-mcp-server:8080/mcp"
-    description: "HTTP GET request"
-    input_schema:
-      type: object
-      properties:
-        url:
-          type: string
-          description: "Target URL"
-      required: [url]
-```
-
-**Namespace isolation:**
-
-```yaml
-tools:
-  - name: "get-stock-price"
-    type: "mcp-forward"
-    uri: "http://market-mcp:8080/mcp"
-    namespace: "finance"
-    input_schema:
-      type: object
-      properties:
-        symbol:
-          type: string
-```
-
-This tool only appears in `/finance/mcp`, not `/mcp`.
-
-**Note:** When called, Praxis forwards the request to the upstream MCP server via HTTP POST and returns the result.
 
 ## Common Configuration Patterns
 
@@ -448,11 +385,9 @@ data:
           # ... rest of pipeline
 
   wanaku.yaml: |
-    tools:
-      - name: "echo"
-        type: "mcp-forward"
-        uri: "http://echo-mcp:8080/mcp"
-        description: "Echoes a message"
+    forwards:
+      - name: "upstream-mcp"
+        address: "http://upstream:8080/mcp"
 ```
 
 **Deployment:**

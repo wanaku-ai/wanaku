@@ -326,8 +326,8 @@ import { EmptyTableState } from '../../components/EmptyTableState';
 
 {tools.length === 0 ? (
   <EmptyTableState
-    title="No tools registered"
-    subtitle="Create your first tool to get started"
+    title="No tools discovered yet"
+    subtitle="Register a forwarded MCP server to auto-discover tools"
   />
 ) : (
   <DataTable rows={tools} headers={headers} />

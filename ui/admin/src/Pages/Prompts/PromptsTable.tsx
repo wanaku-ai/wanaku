@@ -1,4 +1,4 @@
-import {Add, TrashCan} from "@carbon/icons-react";
+import {TrashCan} from "@carbon/icons-react";
 import {
     Button,
     DataTable,
@@ -20,7 +20,6 @@ import {TableEmptyState} from "../EmptyTableState"
 interface PromptsListProps {
   fetchedData: PromptReference[];
   onDelete: (promptName?: string) => void;
-  onAdd: () => void;
 }
 
 const formatMessages = (messages?: any[]) => {
@@ -36,7 +35,6 @@ const formatArguments = (args?: any[]) => {
 export const PromptsTable: FunctionComponent<PromptsListProps> = ({
   fetchedData,
   onDelete,
-  onAdd,
 }) => {
   const headers = [
     {key: "name", header: "Name"},
@@ -66,11 +64,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
         return (
           <TableContainer>
             <TableToolbar>
-              <TableToolbarContent>
-                <Button renderIcon={Add} onClick={onAdd}>
-                  Add Prompt
-                </Button>
-              </TableToolbarContent>
+              <TableToolbarContent />
             </TableToolbar>
             <Table {...getTableProps()} aria-label="Prompts table">
               <TableHead>
@@ -116,8 +110,8 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
                 {fetchedData.length == 0 && (
                   <TableEmptyState
                     colSpan={headers.length}
-                    title="Start by adding prompts"
-                    body="Click Add Prompt to add your data"
+                    title="No prompts discovered yet"
+                    body="Register a forwarded MCP server to auto-discover prompts"
                   />
                 )}
               </TableBody>

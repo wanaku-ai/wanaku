@@ -8,35 +8,16 @@ import {getErrorMessage} from "../../utils/error"
 
 
 export const ResourcesPage: React.FC = () => {
-  
+
   const [errorMessage, setErrorMessage] = useState<string>()
   const [isModalOpen, setModalOpen] = useState(false)
   const [openedResource, setOpenedResource] = useState<ResourceReference>()
-  const { exposeResource, updateResource, removeResource } = useResources()
+  const { updateResource, removeResource } = useResources()
   const resourceTableRef = useRef<RefreshHandle>({ refresh: () => {} })
-  
-  async function handleModalSubmit(resource: ResourceReference) {
-    if (openedResource) {
-      await handleUpdateResource(resource)
-    } else {
-      await handleAddResource(resource)
-    }
-  }
-  
+
   function handleModalCancel() {
     setOpenedResource(undefined)
     setModalOpen(false)
-  }
-
-  async function handleAddResource(resource: ResourceReference) {
-    try {
-      await exposeResource(resource)
-    } catch (error) {
-      setErrorMessage(`Error adding resource: ${getErrorMessage(error)}`)
-    } finally {
-      setModalOpen(false)
-      refreshResources()
-    }
   }
 
   async function handleUpdateResource(resource: ResourceReference) {
@@ -60,7 +41,7 @@ export const ResourcesPage: React.FC = () => {
       refreshResources()
     }
   }
-  
+
   function refreshResources() {
     resourceTableRef.current.refresh()
   }
@@ -80,11 +61,11 @@ export const ResourcesPage: React.FC = () => {
       <h1 className="title">Resources</h1>
       <p className="description">
         Resources are a fundamental primitive in MCP that allow servers to
-        expose data and content to LLM clients
+        expose data and content to LLM clients.
+        Resources are auto-discovered from forwarded MCP servers.
       </p>
       <div id="page-content">
         <ResourcesTable
-          onAdd={() => setModalOpen(true)}
           onEdit={(resource) => {
             setOpenedResource(resource)
             setModalOpen(true)
@@ -94,10 +75,10 @@ export const ResourcesPage: React.FC = () => {
           ref={resourceTableRef}
         />
       </div>
-      {isModalOpen && (
+      {isModalOpen && openedResource && (
         <ResourceModal
           openedResource={openedResource}
-          onSubmit={handleModalSubmit}
+          onSubmit={handleUpdateResource}
           onCancel={handleModalCancel}
           onError={(msg) => setErrorMessage(msg)}
         />

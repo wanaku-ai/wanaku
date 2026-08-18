@@ -683,7 +683,7 @@ curl -X DELETE http://localhost:8080/api/v1/evaluators/namespaces/finance-team
 
 ### Quick Local Test
 
-This script registers a test tool, configures an evaluator, makes a tool call, and verifies the response.
+This script registers a forwarded MCP server (which auto-discovers tools), configures an evaluator, makes a tool call, and verifies the response.
 
 ```bash
 #!/usr/bin/env bash
@@ -693,9 +693,9 @@ MGMT=http://localhost:8080
 MCP=http://localhost:8081
 WASM="$(pwd)/actions/dist/safety-block.wasm"
 
-echo "Registering tool..."
-curl -sf -X POST $MGMT/api/v1/tools -H "Content-Type: application/json" \
-  -d '{"name":"restart-database","description":"Restart a production database","uri":"http://localhost:8080/mcp","type":"mcp-forward","inputSchema":{"type":"object","properties":{}}}' > /dev/null
+echo "Registering forward (auto-discovers tools)..."
+curl -sf -X POST $MGMT/api/v1/forwards -H "Content-Type: application/json" \
+  -d '{"name":"test-server","address":"http://localhost:8080/mcp"}' > /dev/null
 
 echo "Configuring evaluator with WASM action..."
 curl -sf -X PUT $MGMT/api/v1/evaluators -H "Content-Type: application/json" \
@@ -719,7 +719,7 @@ curl -sf -X POST $MCP/mcp -H "Content-Type: application/json" \
 
 echo "Cleaning up..."
 curl -sf -X PUT $MGMT/api/v1/evaluators -H "Content-Type: application/json" -d '{"evaluators":[]}' > /dev/null
-curl -sf -X DELETE $MGMT/api/v1/tools/restart-database > /dev/null
+curl -sf -X DELETE $MGMT/api/v1/forwards/test-server > /dev/null
 echo "Done."
 ```
 

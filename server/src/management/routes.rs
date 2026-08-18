@@ -2,7 +2,6 @@
 pub(super) enum ToolRoute {
     List,
     GetByName(String),
-    Create,
     Update(String),
     Delete(String),
     NotFound,
@@ -21,7 +20,6 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
     match (method, name) {
         ("GET", None) => ToolRoute::List,
         ("GET", Some(n)) => ToolRoute::GetByName(n.to_owned()),
-        ("POST", None | Some("payloads")) => ToolRoute::Create,
         ("PUT", Some(n)) => ToolRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => ToolRoute::Delete(n.to_owned()),
         _ => ToolRoute::NotFound,
@@ -32,7 +30,6 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
 pub(super) enum ResourceRoute {
     List,
     GetByName(String),
-    Create,
     Update(String),
     Delete(String),
     NotFound,
@@ -51,7 +48,6 @@ pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute 
     match (method, name) {
         ("GET", None) => ResourceRoute::List,
         ("GET", Some(n)) => ResourceRoute::GetByName(n.to_owned()),
-        ("POST", None | Some("payloads")) => ResourceRoute::Create,
         ("PUT", Some(n)) => ResourceRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => ResourceRoute::Delete(n.to_owned()),
         _ => ResourceRoute::NotFound,
@@ -62,7 +58,6 @@ pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute 
 pub(super) enum PromptRoute {
     List,
     GetByName(String),
-    Create,
     Delete(String),
     NotFound,
 }
@@ -80,7 +75,6 @@ pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
     match (method, name) {
         ("GET", None) => PromptRoute::List,
         ("GET", Some(n)) => PromptRoute::GetByName(n.to_owned()),
-        ("POST", None | Some("payloads")) => PromptRoute::Create,
         ("DELETE", Some(n)) => PromptRoute::Delete(n.to_owned()),
         _ => PromptRoute::NotFound,
     }
@@ -192,11 +186,6 @@ mod tests {
     }
 
     #[test]
-    fn route_create() {
-        assert_eq!(resolve_tool_route("POST", "/api/v1/tools"), ToolRoute::Create);
-    }
-
-    #[test]
     fn route_update() {
         assert_eq!(
             resolve_tool_route("PUT", "/api/v1/tools/my-tool"),
@@ -233,16 +222,6 @@ mod tests {
             resolve_resource_route("GET", "/api/v1/resources/my-res"),
             ResourceRoute::GetByName("my-res".to_owned())
         );
-    }
-
-    #[test]
-    fn resource_route_create() {
-        assert_eq!(resolve_resource_route("POST", "/api/v1/resources"), ResourceRoute::Create);
-    }
-
-    #[test]
-    fn resource_route_create_payloads() {
-        assert_eq!(resolve_resource_route("POST", "/api/v1/resources/payloads"), ResourceRoute::Create);
     }
 
     #[test]

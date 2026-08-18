@@ -16,8 +16,7 @@ use tracing::info;
 use wanaku_praxis_apis::feature::Feature;
 use wanaku_praxis_apis::persistence::FilePersistence;
 use wanaku_praxis_apis::registry::{
-    ForwardEntry, ForwardRegistry, InMemoryRegistry, ToolEntry,
-    ToolRegistry,
+    ForwardEntry, ForwardRegistry, InMemoryRegistry,
 };
 
 fn main() {
@@ -165,20 +164,6 @@ fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {
 }
 
 fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
-    if let Some(tools) = config.get("tools").and_then(|t| t.as_sequence()) {
-        for tool_value in tools {
-            match serde_yaml::from_value::<ToolEntry>(tool_value.clone()) {
-                Ok(tool) => {
-                    info!(tool = %tool.name, "registered tool from config");
-                    registry.register_tool(tool);
-                }
-                Err(e) => {
-                    tracing::warn!(error = %e, "failed to deserialize tool entry from config");
-                }
-            }
-        }
-    }
-
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
         for fwd_value in fwd_list {

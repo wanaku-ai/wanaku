@@ -11,11 +11,6 @@ export class PromptsPage extends BasePage {
     await this.navigateTo('/prompts');
   }
 
-  async clickAddPrompt() {
-    await this.page.locator(Carbon.buttonWithText('Add Prompt')).click();
-    await this.modal().waitFor({ state: 'visible' });
-  }
-
   async fillPromptForm(prompt: { name: string; description: string }) {
     await this.page.locator(Carbon.textInput('prompt-name')).fill(prompt.name);
     await this.page.locator(Carbon.textInput('prompt-description')).fill(prompt.description);

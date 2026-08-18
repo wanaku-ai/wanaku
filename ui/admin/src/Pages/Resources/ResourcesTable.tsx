@@ -15,7 +15,7 @@ import {
   TableToolbar,
   TableToolbarContent
 } from "@carbon/react"
-import {Add, Edit, TrashCan} from "@carbon/icons-react"
+import {Edit, TrashCan} from "@carbon/icons-react"
 import {Param, ResourceReference} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {useResources} from "../../hooks/api/use-resources"
@@ -28,14 +28,13 @@ export interface RefreshHandle {
 }
 
 interface ResourcesTableProps {
-  onAdd: () => void
   onEdit: (resource: ResourceReference) => void
   onDelete: (resourceName: string) => void
   onError?: (message: string) => void
   ref?: RefObject<RefreshHandle>
 }
 
-export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, onDelete, onError, ref }) => {
+export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete, onError, ref }) => {
   
   const [resources, setResources] = useState<ResourceReference[]>([])
   const [isLoading, setLoading] = useState(true)
@@ -165,9 +164,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, o
           }) => (
           <TableContainer>
             <TableToolbar {...getToolbarProps()}>
-              <TableToolbarContent>
-                <Button renderIcon={Add} onClick={onAdd}>Add Resource</Button>
-              </TableToolbarContent>
+              <TableToolbarContent />
             </TableToolbar>
             <Table {...getTableProps()}>
               <TableHead>
@@ -206,8 +203,8 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onAdd, onEdit, o
                 {resources.length == 0 && (
                   <TableEmptyState
                     colSpan={headers.length + 1}
-                    title="Start by adding resources"
-                    body="Click Add Resource to add your data"
+                    title="No resources discovered yet"
+                    body="Register a forwarded MCP server to auto-discover resources"
                   />
                 )}
               </TableBody>

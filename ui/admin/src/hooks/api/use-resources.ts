@@ -2,8 +2,6 @@ import { useCallback } from "react";
 import {
   getApiV1Resources,
   getApiV1ResourcesResponse,
-  postApiV1Resources,
-  postApiV1ResourcesResponse,
   putApiV1ResourcesName,
   putApiV1ResourcesNameResponse,
   deleteApiV1ResourcesName,
@@ -12,19 +10,6 @@ import {
 import { ResourceReference, } from "../../models";
 
 export const useResources = () => {
-  /**
-   * Expose a resource.
-   */
-  const exposeResource = useCallback(
-    (
-      resourceReference: ResourceReference,
-      options?: RequestInit
-    ): Promise<postApiV1ResourcesResponse> => {
-      return postApiV1Resources(resourceReference, options);
-    },
-    []
-  );
-
   const updateResource = useCallback(
     (
       originalName: string,
@@ -62,7 +47,6 @@ export const useResources = () => {
   );
 
   return {
-    exposeResource,
     listResources,
     updateResource,
     removeResource,
