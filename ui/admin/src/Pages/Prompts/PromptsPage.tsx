@@ -67,7 +67,7 @@ export const PromptsPage: React.FC = () => {
         Prompts are reusable templates that can leverage multiple tools and provide
         example interactions for LLMs. Each prompt contains messages, arguments, and
         optional tool references.
-        Prompts are auto-discovered from forwarded MCP servers.
+        Prompts are auto-discovered from forwarded MCP servers. Configure forwarded MCP servers from the Forwards page.
       </p>
       <div id="page-content">
         {fetchedData && (

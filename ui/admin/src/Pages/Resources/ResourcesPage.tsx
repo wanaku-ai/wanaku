@@ -62,7 +62,7 @@ export const ResourcesPage: React.FC = () => {
       <p className="description">
         Resources are a fundamental primitive in MCP that allow servers to
         expose data and content to LLM clients.
-        Resources are auto-discovered from forwarded MCP servers.
+        Resources are auto-discovered from forwarded MCP servers. Configure forwarded MCP servers from the Forwards page.
       </p>
       <div id="page-content">
         <ResourcesTable
