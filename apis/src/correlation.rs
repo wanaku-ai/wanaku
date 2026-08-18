@@ -17,7 +17,6 @@ pub fn generate_short_id() -> String {
 pub const REQUEST_ID_ARG: &str = "x-request-id";
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

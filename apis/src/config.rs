@@ -147,7 +147,6 @@ fn parse_upstream(raw: &str) -> ParsedUpstream {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::parse_upstream;
 
