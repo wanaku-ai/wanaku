@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! End-to-end tests for the evaluator engine against a running server.
 //!
 //! These tests hit the management API (port 8080) and MCP endpoint (port 8081).
