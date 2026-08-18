@@ -4811,7 +4811,6 @@ dependencies = [
  "praxis-proxy-filter",
  "praxis-proxy-protocol",
  "quixotic-plecostomus-core",
- "reqwest 0.13.4",
  "rust-embed",
  "serde",
  "serde_json",

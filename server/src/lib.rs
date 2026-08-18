@@ -3,7 +3,6 @@ pub mod http_response;
 pub mod management;
 pub mod openapi;
 pub mod pipelines;
-pub mod proxy;
 
 const DEFAULT_CONFIG: &str = include_str!("default.yaml");
 

@@ -217,8 +217,6 @@ export WANAKU_PERSIST_PATH=/data/registry
 
 On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shutdown, it writes back. This is a crude backup mechanism, not a production database.
 
-For production, point `WANAKU_CLASSIC_URL` at a classic Wanaku backend and treat Praxis as a stateless proxy.
-
 ## Tool Routing
 
 All tool execution in Praxis happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
@@ -373,20 +371,7 @@ See [Admin UI](./admin-ui.md) for development details.
 Run Praxis as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, and execute via MCP forwarding to upstream servers.
 
 **Pros:** Simple, no dependencies
-**Cons:** No persistence beyond file snapshots, no classic Wanaku features (service catalogs, Camel routes)
-
-### Hybrid (Praxis + Classic Backend)
-
-Run Praxis as a stateless proxy. Point `WANAKU_CLASSIC_URL` at a classic Wanaku backend:
-
-```bash
-export WANAKU_CLASSIC_URL=http://classic-wanaku:8080
-```
-
-Praxis handles MCP protocol and namespace isolation. Classic handles persistence and service catalogs.
-
-**Pros:** Best of both worlds — Praxis performance, classic features
-**Cons:** Two servers to manage
+**Cons:** No persistence beyond file snapshots
 
 ### Kubernetes
 
@@ -459,7 +444,7 @@ CORS is enabled by default via the `cors` filter (allows all origins). Restrict 
 - **Metrics/observability** — no Prometheus, no tracing
 - **Clustering** — single-node only, no distributed registry
 
-These are all solvable (implement traits, add filters, integrate with classic backend), but they're not in scope for the initial release.
+These are all solvable (implement traits, add filters), but they're not in scope for the initial release.
 
 ## Related Docs
 
