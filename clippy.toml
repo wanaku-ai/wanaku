@@ -19,6 +19,7 @@ doc-valid-idents = ["..", "IPv4", "IPv6", "gRPC", "OpenTelemetry", "MiB", "GiB",
 
 disallowed-methods = [
     { path = "std::thread::sleep", reason = "use tokio::time::sleep in async context" },
+    { path = "std::thread::spawn", reason = "use tokio::task::spawn in async context" },
     { path = "std::io::stdin", reason = "a server must not read interactive input" },
     { path = "std::io::Stdin::read_line", reason = "a server must not read interactive input" },
 ]
