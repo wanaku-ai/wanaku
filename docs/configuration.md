@@ -18,7 +18,6 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat feature (OpenAI-compatible) |
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file-based registry persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
-| `WANAKU_CLASSIC_URL` | _(unset = disabled)_ | Classic Wanaku backend base URL (e.g., `http://classic:8080`) |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on management API responses |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
@@ -30,7 +29,6 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_praxis_apis::
 export WANAKU_MGMT_LISTEN=0.0.0.0:9091
 export WANAKU_PERSIST_BACKEND=file
 export WANAKU_PERSIST_PATH=/var/lib/wanaku/registry
-export WANAKU_CLASSIC_URL=http://localhost:8080
 cargo run --release
 ```
 
@@ -82,25 +80,6 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 ```
 
 **Gotcha:** This is a crude backup mechanism. If the server crashes (SIGKILL, OOM, panic), the registry is lost. For production, use hybrid mode (see below) or implement a custom persistence backend.
-
-### Classic Wanaku Integration
-
-Point `WANAKU_CLASSIC_URL` at a classic Wanaku backend to offload persistence and advanced features:
-
-```bash
-export WANAKU_CLASSIC_URL=http://classic-wanaku:8080
-```
-
-When set, Praxis proxies certain management API calls (e.g., service catalog operations) to the classic backend. The MCP endpoint remains pure Praxis—no proxying.
-
-**Hybrid mode workflow:**
-
-1. Register tools in classic Wanaku via its REST API
-2. Praxis queries classic backend on startup to populate its registry
-3. MCP requests hit Praxis (port 8081), tool calls are forwarded to upstream MCP servers
-4. Management API writes go to Praxis AND classic (eventual consistency)
-
-This is experimental. Not all classic features are supported.
 
 ### Admin UI Override
 

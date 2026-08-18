@@ -27,9 +27,6 @@ const WANAKU_PERSIST_BACKEND: &str = "WANAKU_PERSIST_BACKEND";
 /// Only used when [`WANAKU_PERSIST_BACKEND`] is `"file"`.
 const WANAKU_PERSIST_PATH: &str = "WANAKU_PERSIST_PATH";
 
-/// Base URL for the Classic proxy backend. Unset disables proxying.
-const WANAKU_CLASSIC_URL: &str = "WANAKU_CLASSIC_URL";
-
 /// Filesystem path to serve the admin UI from instead of the embedded assets.
 /// Unset uses the compiled-in [`rust_embed`] bundle.
 const WANAKU_UI_PATH: &str = "WANAKU_UI_PATH";
@@ -61,8 +58,6 @@ pub struct WanakuEnv {
     pub inference_api_key: String,
     /// File-persistence config. `None` when persistence is disabled.
     pub persist: Option<PersistEnv>,
-    /// Classic proxy base URL. `None` when proxying is disabled.
-    pub classic_url: Option<String>,
     /// Override path for serving the admin UI from the filesystem.
     pub ui_path: Option<PathBuf>,
     /// Value for the `Access-Control-Allow-Origin` header on management API responses.
@@ -104,9 +99,6 @@ impl WanakuEnv {
             inference_api_key: std::env::var(WANAKU_INFERENCE_API_KEY)
                 .unwrap_or_default(),
             persist,
-            classic_url: std::env::var(WANAKU_CLASSIC_URL)
-                .ok()
-                .map(|u| u.trim_end_matches('/').to_owned()),
             ui_path: std::env::var(WANAKU_UI_PATH).ok().map(PathBuf::from),
             cors_origin: std::env::var(WANAKU_CORS_ORIGIN)
                 .unwrap_or_else(|_| "*".to_owned()),

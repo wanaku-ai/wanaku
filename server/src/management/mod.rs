@@ -42,7 +42,6 @@ use self::ui::serve_ui;
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     features: Vec<Box<dyn Feature>>,
-    proxy: Option<crate::proxy::ClassicProxy>,
     ui_path: Option<std::path::PathBuf>,
 }
 
@@ -51,11 +50,6 @@ impl WanakuManagementService {
         registry: InMemoryRegistry,
         features: Vec<Box<dyn Feature>>,
     ) -> Self {
-        let proxy = crate::proxy::ClassicProxy::from_config();
-        if proxy.is_some() {
-            info!("Classic proxy enabled via WANAKU_CLASSIC_URL");
-        }
-
         let ui_path = wanaku_praxis_apis::config::ENV.ui_path.clone();
         if let Some(p) = &ui_path {
             info!(path = %p.display(), "Admin UI serving enabled");
@@ -64,7 +58,6 @@ impl WanakuManagementService {
         Self {
             registry,
             features,
-            proxy,
             ui_path,
         }
     }
@@ -206,13 +199,6 @@ impl ServeHttp for WanakuManagementService {
             {
                 return response;
             }
-        }
-
-        if crate::proxy::ClassicProxy::should_proxy(&path) {
-            if let Some(proxy) = &self.proxy {
-                return proxy.forward(&method, &path, feature_body).await;
-            }
-            return json_err(StatusCode::SERVICE_UNAVAILABLE, "Classic backend not configured (set WANAKU_CLASSIC_URL)");
         }
 
         json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default())

@@ -177,7 +177,6 @@ Namespace filter uses `on_request_body` (not `on_request`) because the MCP filte
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend |
 | `WANAKU_PERSIST_BACKEND` | unset | `"file"` enables persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | `registry.json` dir |
-| `WANAKU_CLASSIC_URL` | unset | Classic proxy base |
 | `WANAKU_UI_PATH` | unset | FS path to UI override |
 | `WANAKU_AUTH_ISSUER` | unset | OIDC issuer (RFC 9728) |
 | `WANAKU_INFERENCE_API_KEY` | unset | Bearer token for upstream |
