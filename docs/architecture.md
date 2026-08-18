@@ -8,19 +8,19 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      LLM / AI Agent                          │
+│                      LLM / AI Agent                         │
 └────────────────┬────────────────────────────────────────────┘
                  │ MCP (JSON-RPC over HTTP)
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Wanaku Server (Port 8081)                │
+│              Wanaku Server (Port 8081)                      │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │              Filter Pipeline (Praxis)                   │ │
+│  │              Filter Pipeline (Praxis)                  │ │
 │  │  CORS → MCP Parse → Namespace → Evaluator →            │ │
-│  │  Tool List/Call → Resource → Prompt → Static Response   │ │
+│  │  Tool List/Call → Resource → Prompt → Static Response  │ │
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │              In-Memory Registry (DashMap)               │ │
+│  │              In-Memory Registry (DashMap)              │ │
 │  │  Tools │ Resources │ Prompts │ Forwards │ Namespaces   │ │
 │  └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────┬────────────────────────────┘
@@ -29,7 +29,7 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
                                  │
                                  ▼
                    ┌───────────────────────┐
-                   │ Upstream MCP Servers   │
+                   │ Upstream MCP Servers  │
                    └───────────────────────┘
 ```
 
