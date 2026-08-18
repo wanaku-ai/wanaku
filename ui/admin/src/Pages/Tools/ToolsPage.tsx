@@ -89,7 +89,7 @@ export const ToolsPage: React.FC = () => {
         A tool enables LLMs to execute tasks beyond their inherent capabilities
         by utilizing these tools. Each tool is uniquely identified by a name and
         defined with an input schema outlining the expected parameters.
-        Tools are auto-discovered from forwarded MCP servers.
+        Tools are auto-discovered from forwarded MCP servers. Configure forwarded MCP servers from the Forwards page.
       </p>
       <div id="page-content">
         {fetchedData && (
