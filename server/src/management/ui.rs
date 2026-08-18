@@ -1,4 +1,4 @@
-use http::Response;
+use http::{Response, StatusCode};
 use rust_embed::Embed;
 
 use super::response::json_err;
@@ -28,7 +28,7 @@ pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &
     if let Some(file) = AdminUi::get(asset_path) {
         let content_type = mime_for_path(asset_path);
         return Response::builder()
-            .status(200)
+            .status(StatusCode::OK)
             .header("Content-Type", content_type)
             .header("Content-Length", file.data.len())
             .body(file.data.into_owned())
@@ -38,7 +38,7 @@ pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &
     if !relative.contains('.') {
         if let Some(index) = AdminUi::get("index.html") {
             return Response::builder()
-                .status(200)
+                .status(StatusCode::OK)
                 .header("Content-Type", "text/html; charset=utf-8")
                 .header("Content-Length", index.data.len())
                 .body(index.data.into_owned())
@@ -46,7 +46,7 @@ pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &
         }
     }
 
-    json_err(404, "file not found")
+    json_err(StatusCode::NOT_FOUND, "file not found")
 }
 
 #[expect(clippy::expect_used, reason = "valid static response")]
@@ -63,35 +63,35 @@ fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<
             if !relative.contains('.') {
                 if let Ok(index) = std::fs::read(ui_root.join("index.html")) {
                     return Response::builder()
-                        .status(200)
+                        .status(StatusCode::OK)
                         .header("Content-Type", "text/html; charset=utf-8")
                         .header("Content-Length", index.len())
                         .body(index)
                         .expect("valid static response");
                 }
             }
-            return json_err(404, "file not found");
+            return json_err(StatusCode::NOT_FOUND, "file not found");
         }
     };
 
     let canonical_root = match ui_root.canonicalize() {
         Ok(r) => r,
-        Err(_) => return json_err(500, "UI root path not found"),
+        Err(_) => return json_err(StatusCode::INTERNAL_SERVER_ERROR, "UI root path not found"),
     };
 
     if !canonical.starts_with(&canonical_root) {
-        return json_err(403, "forbidden");
+        return json_err(StatusCode::FORBIDDEN, StatusCode::FORBIDDEN.canonical_reason().unwrap_or_default());
     }
 
     let body = match std::fs::read(&canonical) {
         Ok(b) => b,
-        Err(_) => return json_err(404, "file not found"),
+        Err(_) => return json_err(StatusCode::NOT_FOUND, "file not found"),
     };
 
     let content_type = mime_for_path(canonical.to_str().unwrap_or(""));
 
     Response::builder()
-        .status(200)
+        .status(StatusCode::OK)
         .header("Content-Type", content_type)
         .header("Content-Length", body.len())
         .body(body)

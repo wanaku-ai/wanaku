@@ -1,5 +1,5 @@
 
-use http::Response;
+use http::{Response, StatusCode};
 use reqwest::Client;
 
 const PROXIED_PREFIXES: &[&str] = &[
@@ -41,7 +41,7 @@ impl ClassicProxy {
 
         let req_method = match method.parse::<reqwest::Method>() {
             Ok(m) => m,
-            Err(_) => return json_err(400, &format!("unsupported method: {method}")),
+            Err(_) => return json_err(StatusCode::BAD_REQUEST, &format!("unsupported method: {method}")),
         };
 
         let mut request = self.client.request(req_method, &url);
@@ -56,7 +56,7 @@ impl ClassicProxy {
             Ok(r) => r,
             Err(e) => {
                 tracing::warn!(url = %url, error = %e, "proxy request to Classic failed");
-                return json_err(502, "upstream request failed");
+                return json_err(StatusCode::BAD_GATEWAY, "upstream request failed");
             }
         };
 
@@ -66,7 +66,7 @@ impl ClassicProxy {
             Ok(b) => b.to_vec(),
             Err(e) => {
                 tracing::warn!(error = %e, "failed to read proxy response body");
-                return json_err(502, "upstream response read failed");
+                return json_err(StatusCode::BAD_GATEWAY, "upstream response read failed");
             }
         };
 
@@ -74,7 +74,7 @@ impl ClassicProxy {
     }
 }
 
-fn json_err(status: u16, message: &str) -> Response<Vec<u8>> {
+fn json_err(status: StatusCode, message: &str) -> Response<Vec<u8>> {
     crate::http_response::json_err(status, message)
 }
 

@@ -1,18 +1,19 @@
 use bytes::Bytes;
+use http::StatusCode;
 use praxis_filter::Rejection;
 
 pub const JSONRPC_INVALID_PARAMS: i32 = -32602;
 pub const JSONRPC_INTERNAL_ERROR: i32 = -32603;
 
 pub fn json_response(body: Bytes) -> Rejection {
-    Rejection::status(200)
+    Rejection::status(StatusCode::OK.as_u16())
         .with_header("content-type", "application/json")
         .with_header("access-control-allow-origin", "*")
         .with_body(body)
 }
 
 pub fn empty_accepted() -> Rejection {
-    Rejection::status(202)
+    Rejection::status(StatusCode::ACCEPTED.as_u16())
         .with_header("access-control-allow-origin", "*")
 }
 

@@ -1,4 +1,4 @@
-use http::Response;
+use http::{Response, StatusCode};
 use tracing::warn;
 use wanaku_praxis_apis::http_response::json_err;
 
@@ -33,7 +33,7 @@ pub(crate) fn resolve_chat_route(method: &str, path: &str) -> ChatRoute {
 #[expect(clippy::expect_used, reason = "valid static json response")]
 fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
     Response::builder()
-        .status(200)
+        .status(StatusCode::OK)
         .header("Content-Type", "application/json")
         .header("Content-Length", body.len())
         .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
@@ -65,7 +65,7 @@ pub(crate) async fn handle_chat_list_models(
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "failed to fetch models from inference backend");
-            return json_err(502, &format!("failed to reach inference backend: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to reach inference backend: {e}"));
         }
     };
 
@@ -74,20 +74,20 @@ pub(crate) async fn handle_chat_list_models(
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, status = %status, "failed to read inference backend models response");
-            return json_err(502, &format!("failed to read inference backend response: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to read inference backend response: {e}"));
         }
     };
 
     if !status.is_success() {
         warn!(status = %status, body = %raw, "inference backend returned error for models");
-        return json_err(status.as_u16(), &format!("inference backend error: {raw}"));
+        return json_err(status, &format!("inference backend error: {raw}"));
     }
 
     let body: serde_json::Value = match serde_json::from_str(&raw) {
         Ok(b) => b,
         Err(e) => {
             warn!(error = %e, status = %status, body = %raw, "failed to parse inference backend models response");
-            return json_err(502, &format!("invalid response from inference backend: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, &format!("invalid response from inference backend: {e}"));
         }
     };
 
@@ -114,7 +114,7 @@ pub(crate) async fn handle_chat_completions(
 ) -> Response<Vec<u8>> {
     let request: serde_json::Value = match serde_json::from_str(body) {
         Ok(r) => r,
-        Err(e) => return json_err(400, &format!("invalid request: {e}")),
+        Err(e) => return json_err(StatusCode::BAD_REQUEST, &format!("invalid request: {e}")),
     };
 
     let request_api_key = request
@@ -173,7 +173,7 @@ pub(crate) async fn handle_chat_completions(
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "chat completions request to inference backend failed");
-            return json_err(502, &format!("failed to reach inference backend: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to reach inference backend: {e}"));
         }
     };
 
@@ -182,20 +182,20 @@ pub(crate) async fn handle_chat_completions(
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, status = %status, "failed to read inference backend completions response");
-            return json_err(502, &format!("failed to read inference backend response: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to read inference backend response: {e}"));
         }
     };
 
     if !status.is_success() {
         warn!(status = %status, body = %raw, "inference backend returned error for completions");
-        return json_err(status.as_u16(), &format!("inference backend error: {raw}"));
+        return json_err(status, &format!("inference backend error: {raw}"));
     }
 
     let resp_body: serde_json::Value = match serde_json::from_str(&raw) {
         Ok(b) => b,
         Err(e) => {
             warn!(error = %e, status = %status, body = %raw, "failed to parse inference backend completions response");
-            return json_err(502, &format!("invalid response from inference backend: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, &format!("invalid response from inference backend: {e}"));
         }
     };
 
@@ -209,7 +209,7 @@ pub(crate) async fn handle_chat_completions(
 
     let response_body = content.as_bytes().to_vec();
     Response::builder()
-        .status(200)
+        .status(StatusCode::OK)
         .header("Content-Type", "text/plain")
         .header("Content-Length", response_body.len())
         .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
