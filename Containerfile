@@ -15,7 +15,7 @@ RUN yarn build
 # Stage 2: Build Rust binary
 # ------------------------------------------------------------------------------
 
-FROM registry.fedoraproject.org/fedora:42 AS builder
+FROM registry.fedoraproject.org/fedora:44 AS builder
 
 RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make curl \
     && dnf clean all
@@ -77,7 +77,7 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
 # Stage 3: Runtime
 # ------------------------------------------------------------------------------
 
-FROM registry.fedoraproject.org/fedora-minimal:42
+FROM registry.fedoraproject.org/fedora-minimal:44
 
 LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku-praxis" \
     org.opencontainers.image.description="Wanaku Praxis MCP proxy server" \
