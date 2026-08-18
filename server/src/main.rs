@@ -1,4 +1,5 @@
 #![deny(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 #[cfg(unix)]
 #[global_allocator]
@@ -195,30 +196,23 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     }
 
     if !forwards.is_empty() {
-        let reg = registry.clone();
-        let handle = std::thread::spawn(move || {
-            let rt = match tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-            {
-                Ok(rt) => rt,
-                Err(e) => {
-                    tracing::error!(error = %e, "failed to create runtime for forward discovery");
-                    return;
-                }
-            };
+        let rt = match tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+        {
+            Ok(rt) => rt,
+            Err(e) => {
+                tracing::error!(error = %e, "failed to create runtime for forward discovery");
+                return;
+            }
+        };
 
-            rt.block_on(async {
-                for fwd in &forwards {
-                    info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
-                    wanaku_praxis::management::discover_and_update_forward(&reg, fwd).await;
-                }
-            });
+        rt.block_on(async {
+            for fwd in &forwards {
+                info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
+                wanaku_praxis::management::discover_and_update_forward(registry, fwd).await;
+            }
         });
-
-        if let Err(e) = handle.join() {
-            tracing::error!("forward discovery thread panicked: {e:?}");
-        }
     }
 }
 
