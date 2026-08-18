@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Integration tests for the evaluator engine.
 //!
 //! Tests that need pre-built WASM actions skip automatically if the
