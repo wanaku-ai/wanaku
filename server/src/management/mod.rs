@@ -9,7 +9,7 @@ pub use handlers::discover_resources_from_forward;
 pub use handlers::discover_prompts_from_forward;
 
 use async_trait::async_trait;
-use http::Response;
+use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 use tracing::info;
@@ -101,7 +101,7 @@ impl ServeHttp for WanakuManagementService {
         if mgmt_route != ManagementRoute::NotFound {
             return match mgmt_route {
                 ManagementRoute::Statistics => handle_statistics(&self.registry),
-                ManagementRoute::NotFound => json_err(404, "not found"),
+                ManagementRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };
         }
 
@@ -121,7 +121,7 @@ impl ServeHttp for WanakuManagementService {
                     Err(resp) => resp,
                 },
                 ToolRoute::Delete(name) => handle_tool_delete(&self.registry, &name),
-                ToolRoute::NotFound => json_err(404, "not found"),
+                ToolRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };
         }
 
@@ -139,7 +139,7 @@ impl ServeHttp for WanakuManagementService {
                     Err(resp) => resp,
                 },
                 ResourceRoute::Delete(name) => handle_resource_delete(&self.registry, &name),
-                ResourceRoute::NotFound => json_err(404, "not found"),
+                ResourceRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };
         }
 
@@ -153,7 +153,7 @@ impl ServeHttp for WanakuManagementService {
                     Err(resp) => resp,
                 },
                 PromptRoute::Delete(name) => handle_prompt_delete(&self.registry, &name),
-                PromptRoute::NotFound => json_err(404, "not found"),
+                PromptRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };
         }
 
@@ -171,7 +171,7 @@ impl ServeHttp for WanakuManagementService {
                     Err(resp) => resp,
                 },
                 NamespaceRoute::Delete(name) => handle_namespace_delete(&self.registry, &name),
-                NamespaceRoute::NotFound => json_err(404, "not found"),
+                NamespaceRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };
         }
 
@@ -186,7 +186,7 @@ impl ServeHttp for WanakuManagementService {
                 },
                 ForwardRoute::Delete(name) => handle_forward_delete(&self.registry, &name),
                 ForwardRoute::Refresh(name) => handle_forward_refresh(&self.registry, &name).await,
-                ForwardRoute::NotFound => json_err(404, "not found"),
+                ForwardRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
             };
         }
 
@@ -212,9 +212,9 @@ impl ServeHttp for WanakuManagementService {
             if let Some(proxy) = &self.proxy {
                 return proxy.forward(&method, &path, feature_body).await;
             }
-            return json_err(503, "Classic backend not configured (set WANAKU_CLASSIC_URL)");
+            return json_err(StatusCode::SERVICE_UNAVAILABLE, "Classic backend not configured (set WANAKU_CLASSIC_URL)");
         }
 
-        json_err(404, "not found")
+        json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default())
     }
 }

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use http::Response;
+use http::{Response, StatusCode};
 use tracing::warn;
 use wanaku_praxis_apis::http_response::{json_err, json_ok};
 
@@ -27,27 +27,27 @@ pub(crate) fn handle_serve_file(
 
     let canonical = match target.canonicalize() {
         Ok(p) => p,
-        Err(_) => return json_err(404, "file not found"),
+        Err(_) => return json_err(StatusCode::NOT_FOUND, "file not found"),
     };
 
     let canonical_root = match plugin_root.canonicalize() {
         Ok(r) => r,
-        Err(_) => return json_err(404, "plugin not found"),
+        Err(_) => return json_err(StatusCode::NOT_FOUND, "plugin not found"),
     };
 
     if !canonical.starts_with(&canonical_root) {
-        return json_err(403, "forbidden");
+        return json_err(StatusCode::FORBIDDEN, "forbidden");
     }
 
     let body = match std::fs::read(&canonical) {
         Ok(b) => b,
-        Err(_) => return json_err(404, "file not found"),
+        Err(_) => return json_err(StatusCode::NOT_FOUND, "file not found"),
     };
 
     let content_type = mime_for_path(canonical.to_str().unwrap_or(""));
 
     Response::builder()
-        .status(200)
+        .status(StatusCode::OK)
         .header("Content-Type", content_type)
         .header("Content-Length", body.len())
         .body(body)
@@ -70,7 +70,7 @@ pub(crate) async fn handle_proxy_service(
 
     let req_method = match method.parse::<reqwest::Method>() {
         Ok(m) => m,
-        Err(_) => return json_err(400, &format!("unsupported method: {method}")),
+        Err(_) => return json_err(StatusCode::BAD_REQUEST, &format!("unsupported method: {method}")),
     };
 
     let mut request = client.request(req_method, &url);
@@ -91,7 +91,7 @@ pub(crate) async fn handle_proxy_service(
         Ok(r) => r,
         Err(e) => {
             warn!(url = %url, error = %e, "plugin proxy request failed");
-            return json_err(502, "upstream request failed");
+            return json_err(StatusCode::BAD_GATEWAY, "upstream request failed");
         }
     };
 
@@ -106,7 +106,7 @@ pub(crate) async fn handle_proxy_service(
         Ok(b) => b.to_vec(),
         Err(e) => {
             warn!(error = %e, "failed to read plugin proxy response body");
-            return json_err(502, "upstream response read failed");
+            return json_err(StatusCode::BAD_GATEWAY, "upstream response read failed");
         }
     };
 

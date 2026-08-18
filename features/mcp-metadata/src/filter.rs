@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use http::StatusCode;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext, Rejection};
 
 use crate::IssuerConfig;
@@ -73,7 +74,7 @@ impl WellKnownFilter {
         });
 
         tracing::debug!("served openid-configuration");
-        json_response(200, &doc)
+        json_response(StatusCode::OK, &doc)
     }
 
     fn handle_protected_resource_metadata(
@@ -119,7 +120,7 @@ impl WellKnownFilter {
         });
 
         tracing::debug!(namespace = %namespace, "served protected resource metadata");
-        Ok(FilterAction::Reject(json_response(200, &metadata)))
+        Ok(FilterAction::Reject(json_response(StatusCode::OK, &metadata)))
     }
 }
 
@@ -138,7 +139,7 @@ async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
         Ok(c) => c,
         Err(e) => {
             tracing::warn!(error = %e, "failed to create HTTP client for token proxy");
-            return json_response(503, &serde_json::json!({"error": "token_proxy_error"}));
+            return json_response(StatusCode::SERVICE_UNAVAILABLE, &serde_json::json!({"error": "token_proxy_error"}));
         }
     };
 
@@ -160,13 +161,13 @@ async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
                 }
                 Err(e) => {
                     tracing::warn!(error = %e, "failed to read token response");
-                    json_response(503, &serde_json::json!({"error": "token_proxy_read_error"}))
+                    json_response(StatusCode::SERVICE_UNAVAILABLE, &serde_json::json!({"error": "token_proxy_read_error"}))
                 }
             }
         }
         Err(e) => {
             tracing::warn!(error = %e, url = %url, "token proxy request failed");
-            json_response(503, &serde_json::json!({"error": "token_proxy_unreachable"}))
+            json_response(StatusCode::SERVICE_UNAVAILABLE, &serde_json::json!({"error": "token_proxy_unreachable"}))
         }
     }
 }
@@ -177,14 +178,14 @@ fn redirect_to(url: &str, query: Option<&str>) -> Rejection {
         _ => url.to_owned(),
     };
     tracing::debug!(target = %target, "redirecting to issuer");
-    Rejection::status(302)
+    Rejection::status(StatusCode::FOUND.as_u16())
         .with_header("location", &target)
         .with_header("access-control-allow-origin", "*")
 }
 
-fn json_response(status: u16, value: &serde_json::Value) -> Rejection {
+fn json_response(status: StatusCode, value: &serde_json::Value) -> Rejection {
     let body = Bytes::from(value.to_string());
-    Rejection::status(status)
+    Rejection::status(status.as_u16())
         .with_header("content-type", "application/json")
         .with_header("access-control-allow-origin", "*")
         .with_body(body)

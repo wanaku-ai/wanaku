@@ -1,4 +1,4 @@
-use http::Response;
+use http::{Response, StatusCode};
 use tracing::{info, warn};
 
 use wanaku_praxis_apis::registry::{
@@ -16,7 +16,7 @@ pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>>
 pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_tool(name) {
         Some(tool) => json_ok(&serde_json::json!(tool)),
-        None => json_err(404, &format!("tool not found: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found: {name}")),
     }
 }
 
@@ -26,14 +26,14 @@ pub(super) fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Res
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, "invalid tool JSON");
-            return json_err(400, &format!("invalid tool JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid tool JSON: {e}"));
         }
     };
 
     tool.name = tool.name.trim().to_owned();
     if tool.name.is_empty() {
         warn!("rejected tool with empty name");
-        return json_err(400, "tool name must not be empty");
+        return json_err(StatusCode::BAD_REQUEST, "tool name must not be empty");
     }
 
     let name = tool.name.clone();
@@ -41,7 +41,7 @@ pub(super) fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Res
     info!(tool = %name, "registered tool via management API");
     match registry.get_tool(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("tool not found after registration: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found after registration: {name}")),
     }
 }
 
@@ -51,7 +51,7 @@ pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, b
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, "invalid tool JSON");
-            return json_err(400, &format!("invalid tool JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid tool JSON: {e}"));
         }
     };
 
@@ -68,7 +68,7 @@ pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, b
     info!(tool = %name, "updated tool via management API");
     match registry.get_tool(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("tool not found after update: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found after update: {name}")),
     }
 }
 
@@ -77,7 +77,7 @@ pub(super) fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Res
         info!(tool = %name, "removed tool via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(404, &format!("tool not found: {name}"))
+        json_err(StatusCode::NOT_FOUND, &format!("tool not found: {name}"))
     }
 }
 
@@ -89,7 +89,7 @@ pub(super) fn handle_resource_list(registry: &InMemoryRegistry) -> Response<Vec<
 pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_resource(name) {
         Some(resource) => json_ok(&serde_json::json!(resource)),
-        None => json_err(404, &format!("resource not found: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("resource not found: {name}")),
     }
 }
 
@@ -99,7 +99,7 @@ pub(super) fn handle_resource_create(registry: &InMemoryRegistry, body: &str) ->
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "invalid resource JSON");
-            return json_err(400, &format!("invalid resource JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid resource JSON: {e}"));
         }
     };
 
@@ -108,7 +108,7 @@ pub(super) fn handle_resource_create(registry: &InMemoryRegistry, body: &str) ->
     info!(resource = %name, "registered resource via management API");
     match registry.get_resource(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("resource not found after registration: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("resource not found after registration: {name}")),
     }
 }
 
@@ -118,7 +118,7 @@ pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &st
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "invalid resource JSON");
-            return json_err(400, &format!("invalid resource JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid resource JSON: {e}"));
         }
     };
 
@@ -143,7 +143,7 @@ pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &st
     info!(resource = %name, "updated resource via management API");
     match registry.get_resource(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("resource not found after update: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("resource not found after update: {name}")),
     }
 }
 
@@ -152,7 +152,7 @@ pub(super) fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) ->
         info!(resource = %name, "removed resource via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(404, &format!("resource not found: {name}"))
+        json_err(StatusCode::NOT_FOUND, &format!("resource not found: {name}"))
     }
 }
 
@@ -164,7 +164,7 @@ pub(super) fn handle_prompt_list(registry: &InMemoryRegistry) -> Response<Vec<u8
 pub(super) fn handle_prompt_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_prompt(name) {
         Some(prompt) => json_ok(&serde_json::json!(prompt)),
-        None => json_err(404, &format!("prompt not found: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}")),
     }
 }
 
@@ -174,7 +174,7 @@ pub(super) fn handle_prompt_create(registry: &InMemoryRegistry, body: &str) -> R
         Ok(p) => p,
         Err(e) => {
             warn!(error = %e, "invalid prompt JSON");
-            return json_err(400, &format!("invalid prompt JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid prompt JSON: {e}"));
         }
     };
 
@@ -183,7 +183,7 @@ pub(super) fn handle_prompt_create(registry: &InMemoryRegistry, body: &str) -> R
     info!(prompt = %name, "registered prompt via management API");
     match registry.get_prompt(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("prompt not found after registration: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found after registration: {name}")),
     }
 }
 
@@ -192,7 +192,7 @@ pub(super) fn handle_prompt_delete(registry: &InMemoryRegistry, name: &str) -> R
         info!(prompt = %name, "removed prompt via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(404, &format!("prompt not found: {name}"))
+        json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}"))
     }
 }
 
@@ -204,7 +204,7 @@ pub(super) fn handle_namespace_list(registry: &InMemoryRegistry) -> Response<Vec
 pub(super) fn handle_namespace_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_namespace(name) {
         Some(ns) => json_ok(&serde_json::json!(ns)),
-        None => json_err(404, &format!("namespace not found: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("namespace not found: {name}")),
     }
 }
 
@@ -213,7 +213,7 @@ pub(super) fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -
         Ok(n) => n,
         Err(e) => {
             warn!(error = %e, "invalid namespace JSON");
-            return json_err(400, &format!("invalid namespace JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid namespace JSON: {e}"));
         }
     };
 
@@ -222,7 +222,7 @@ pub(super) fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -
     info!(namespace = %name, "registered namespace via management API");
     match registry.get_namespace(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("namespace not found after registration: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("namespace not found after registration: {name}")),
     }
 }
 
@@ -231,7 +231,7 @@ pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &s
         Ok(n) => n,
         Err(e) => {
             warn!(error = %e, "invalid namespace JSON");
-            return json_err(400, &format!("invalid namespace JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid namespace JSON: {e}"));
         }
     };
 
@@ -241,7 +241,7 @@ pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &s
     info!(namespace = %path_name, "updated namespace via management API");
     match registry.get_namespace(path_name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(404, &format!("namespace not found after update: {path_name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("namespace not found after update: {path_name}")),
     }
 }
 
@@ -250,7 +250,7 @@ pub(super) fn handle_namespace_delete(registry: &InMemoryRegistry, name: &str) -
         info!(namespace = %name, "removed namespace via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(404, &format!("namespace not found: {name}"))
+        json_err(StatusCode::NOT_FOUND, &format!("namespace not found: {name}"))
     }
 }
 
@@ -262,7 +262,7 @@ pub(super) fn handle_forward_list(registry: &InMemoryRegistry) -> Response<Vec<u
 pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_forward(name) {
         Some(forward) => json_ok(&serde_json::json!(forward)),
-        None => json_err(404, &format!("forward not found: {name}")),
+        None => json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}")),
     }
 }
 
@@ -272,7 +272,7 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
         Ok(f) => f,
         Err(e) => {
             warn!(error = %e, "invalid forward JSON");
-            return json_err(400, &format!("invalid forward JSON: {e}"));
+            return json_err(StatusCode::BAD_REQUEST, &format!("invalid forward JSON: {e}"));
         }
     };
 
@@ -310,7 +310,7 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
     let forward = registry.get_forward(name);
 
     if !registry.remove_forward(name) {
-        return json_err(404, &format!("forward not found: {name}"));
+        return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     }
 
     if let Some(fwd) = forward {
@@ -326,7 +326,7 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
 pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     let mut forward = match registry.get_forward(name) {
         Some(f) => f,
-        None => return json_err(404, &format!("forward not found: {name}")),
+        None => return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}")),
     };
 
     remove_forwarded_tools(registry, &forward.address);

@@ -1,4 +1,4 @@
-use http::Response;
+use http::{Response, StatusCode};
 use tracing::info;
 use wanaku_praxis_apis::http_response::{json_err, json_ok};
 
@@ -62,7 +62,7 @@ pub(crate) fn handle_update_evaluators(
 ) -> Response<Vec<u8>> {
     let config: EvaluatorsConfig = match serde_json::from_str(body) {
         Ok(c) => c,
-        Err(e) => return json_err(400, &format!("invalid evaluators config: {e}")),
+        Err(e) => return json_err(StatusCode::BAD_REQUEST, &format!("invalid evaluators config: {e}")),
     };
 
     let count = config.evaluators.len();
@@ -88,7 +88,7 @@ pub(crate) fn handle_bind_namespace(
 
     let req: BindRequest = match serde_json::from_str(body) {
         Ok(r) => r,
-        Err(e) => return json_err(400, &format!("invalid bind request: {e}")),
+        Err(e) => return json_err(StatusCode::BAD_REQUEST, &format!("invalid bind request: {e}")),
     };
 
     info!(

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::RwLock;
 
-use http::Response;
+use http::{Response, StatusCode};
 use praxis_filter::{FilterRegistry, PipelineExtension};
 use wanaku_praxis_apis::feature::Feature;
 use wanaku_praxis_apis::http_response::json_err;
@@ -134,7 +134,7 @@ impl Feature for PluginsFeature {
             PluginRoute::ServeFile(plugin_id, file_path) => {
                 match &self.plugins_path {
                     Some(p) => routes::handle_file(p, &plugin_id, &file_path),
-                    None => json_err(404, "plugins directory not configured"),
+                    None => json_err(StatusCode::NOT_FOUND, "plugins directory not configured"),
                 }
             }
             PluginRoute::ProxyService(plugin_id, service_id, proxy_path) => {
@@ -157,7 +157,7 @@ impl Feature for PluginsFeature {
                         .await
                     }
                     None => json_err(
-                        404,
+                        StatusCode::NOT_FOUND,
                         &format!("service {service_id} not found for plugin {plugin_id}"),
                     ),
                 }
