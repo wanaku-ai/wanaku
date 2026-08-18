@@ -7,33 +7,27 @@ hero:
   tagline: Documentation guides to help you learn and use the Wanaku MCP Router.
   actions:
     - theme: brand
-      text: Read the Usage Guide
-      link: ./docs/usage
+      text: Getting Started
+      link: ./docs/getting-started
 
 features:
-  - title: Builtin Providers
-    details: View builtin resource providers available in this version of Wanaku
-    link: ./capabilities/providers/README
-  - title: Builtin Tools
-    details: View builtin tool services available in this version of Wanaku
-    link: ./capabilities/tools/README
   - title: Architecture
-    details: Learn about Wanaku system architecture
+    details: Learn about the filter pipeline, registry, tool routing, and deployment patterns
     link: ./docs/architecture
   - title: Configuration Guide
-    details: A list of all configuration parameters for Wanaku
-    link: ./docs/configurations
-  - title: Building
-    details: Learn how to build and package this capability
-    link: ./docs/building
+    details: Environment variables, YAML config, and feature configuration
+    link: ./docs/configuration
+  - title: Management API
+    details: REST API reference for tools, resources, prompts, namespaces, and forwards
+    link: ./docs/management-api
+  - title: Features
+    details: Learn about the feature system and how to create custom features
+    link: ./docs/features
+  - title: Admin UI
+    details: React and Carbon Design System frontend development
+    link: ./docs/admin-ui
   - title: Contributing
     details: Learn how to contribute to Wanaku
-    link: ./docs/contributing
-  - title: Wanaku Internals
-    details: Learn about the internals of Wanaku
-    link: ./docs/wanaku-router-internals
-  - title: Label Expression
-    details: Learn how to filter entities using label expressions and logical operators
-    link: ./cli/src/main/resources/docs/LABEL_EXPRESSIONS
+    link: ./CONTRIBUTING
 
 ---
