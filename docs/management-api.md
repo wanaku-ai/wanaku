@@ -39,6 +39,8 @@ This matches the classic Wanaku API format for CLI compatibility. The `data` fie
 
 ### Tools
 
+Tools are automatically discovered and registered when you add a forwarded MCP server via `POST /api/v1/forwards`. You cannot create tools directly — they are populated by querying upstream MCP servers.
+
 **List all tools:**
 
 ```bash
@@ -55,36 +57,6 @@ GET /api/v1/tools/{name}
 
 Returns a single tool by name. 404 if not found.
 
-**Create a tool:**
-
-```bash
-POST /api/v1/tools
-Content-Type: application/json
-
-{
-  "name": "echo",
-  "type": "mcp-forward",
-  "uri": "http://echo-mcp:8080/mcp",
-  "description": "Echoes a message",
-  "namespace": "default",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "message": {"type": "string"}
-    },
-    "required": ["message"]
-  }
-}
-```
-
-Fields:
-- `name` (required) — unique tool identifier
-- `type` (required) — must be `"mcp-forward"` (only MCP-forwarded tools are supported)
-- `uri` (required) — upstream MCP server address (e.g., `http://server:8080/mcp`)
-- `description` (optional) — human-readable description
-- `namespace` (optional, defaults to `"default"`)
-- `input_schema` (optional) — JSON Schema for tool arguments
-
 **Delete a tool:**
 
 ```bash
@@ -94,6 +66,8 @@ DELETE /api/v1/tools/{name}
 Returns 204 on success, 404 if not found.
 
 ### Resources
+
+Resources are automatically discovered and registered when you add a forwarded MCP server via `POST /api/v1/forwards`. You cannot create resources directly — they are populated by querying upstream MCP servers.
 
 **List all resources:**
 
@@ -107,30 +81,6 @@ GET /api/v1/resources
 GET /api/v1/resources/{name}
 ```
 
-**Create a resource:**
-
-```bash
-POST /api/v1/resources
-Content-Type: application/json
-
-{
-  "name": "readme",
-  "type": "file",
-  "uri": "file:///README.md",
-  "description": "Project README",
-  "namespace": "default",
-  "mime_type": "text/markdown"
-}
-```
-
-Fields:
-- `name` (required)
-- `type` (required)
-- `uri` (required)
-- `description` (optional)
-- `namespace` (optional, defaults to `"default"`)
-- `mime_type` (optional)
-
 **Delete a resource:**
 
 ```bash
@@ -138,6 +88,8 @@ DELETE /api/v1/resources/{name}
 ```
 
 ### Prompts
+
+Prompts are automatically discovered and registered when you add a forwarded MCP server via `POST /api/v1/forwards`. You cannot create prompts directly — they are populated by querying upstream MCP servers.
 
 **List all prompts:**
 
@@ -150,42 +102,6 @@ GET /api/v1/prompts
 ```bash
 GET /api/v1/prompts/{name}
 ```
-
-**Create a prompt:**
-
-```bash
-POST /api/v1/prompts
-Content-Type: application/json
-
-{
-  "name": "code-review",
-  "description": "Review code for issues",
-  "namespace": "default",
-  "messages": [
-    {
-      "role": "user",
-      "content": {
-        "type": "text",
-        "text": "Review this code: {{code}}"
-      }
-    }
-  ],
-  "arguments": [
-    {
-      "name": "code",
-      "description": "Code to review",
-      "required": true
-    }
-  ]
-}
-```
-
-Fields:
-- `name` (required)
-- `description` (optional)
-- `namespace` (optional, defaults to `"default"`)
-- `messages` (required) — array of message objects (role + content)
-- `arguments` (optional) — array of argument schemas
 
 **Delete a prompt:**
 
@@ -404,7 +320,7 @@ None. The management API is unthrottled. In production, put it behind a reverse 
 
 ## Authentication
 
-**When auth is disabled** (default): The management API is unauthenticated. Anyone who can reach port 8080 can create/delete tools.
+**When auth is disabled** (default): The management API is unauthenticated. Anyone who can reach port 8080 can delete tools or manage forwards.
 
 **When auth is enabled** (via oauth2-proxy): All `/api/v1/*` routes require a valid Bearer token:
 
@@ -442,26 +358,19 @@ See [Configuration](./configuration.md) for details.
 
 ## Example Workflows
 
-### Register a Tool
+### Discover Tools via Forward
 
 ```bash
-# 1. Register the tool
-curl -X POST http://localhost:8080/api/v1/tools \
+# 1. Register a forward (auto-discovers tools)
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "echo",
-    "type": "mcp-forward",
-    "uri": "http://localhost:8180/mcp",
-    "description": "Echoes a message",
-    "input_schema": {
-      "type": "object",
-      "properties": {"message": {"type": "string"}},
-      "required": ["message"]
-    }
-  }'
+  -d '{"name": "echo-server", "address": "http://localhost:8180/mcp"}'
 
-# 2. Verify
+# 2. List discovered tools
 curl http://localhost:8080/api/v1/tools
+
+# 3. Verify a specific tool
+curl http://localhost:8080/api/v1/tools/echo
 ```
 
 ### Forward to Upstream MCP Server
@@ -487,21 +396,18 @@ curl -X POST http://localhost:8080/api/v1/namespaces \
   -H "Content-Type: application/json" \
   -d '{"name": "finance", "description": "Financial tools"}'
 
-# 2. Create tool in namespace
-curl -X POST http://localhost:8080/api/v1/tools \
+# 2. Register a forward (tools inherit the namespace from the forward configuration)
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "get-stock-price",
-    "type": "mcp-forward",
-    "uri": "http://market-data-mcp:8080/mcp",
-    "namespace": "finance"
-  }'
+  -d '{"name": "market-data", "address": "http://market-data-mcp:8080/mcp", "namespace": "finance"}'
 
 # 3. Query finance namespace via MCP
 curl -X POST http://localhost:8081/finance/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
+
+Tools discovered from the forward will be registered in the `finance` namespace. Namespace assignment happens through the forward configuration, not by creating tools directly.
 
 ## Related Docs
 

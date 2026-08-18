@@ -49,37 +49,30 @@ Expected response:
 {"data": [], "error": null}
 ```
 
-That empty array means the server is running, but you haven't registered any tools yet. Let's fix that.
+That empty array means the server is running, but no tools have been discovered yet. Let's fix that.
 
-### 4. Register Your First Tool
+### 4. Register a Forward (Auto-Discover Tools)
 
-Create a simple echo tool (note: this registers the tool metadata, but it won't actually execute without an upstream MCP server):
+Tools are discovered automatically from upstream MCP servers. Register a forward to an MCP server:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "echo",
-    "type": "mcp-forward",
-    "uri": "http://echo-mcp:8080/mcp",
-    "description": "Echoes back whatever you send it",
-    "input_schema": {
-      "type": "object",
-      "properties": {
-        "message": {"type": "string"}
-      },
-      "required": ["message"]
-    }
+    "name": "my-mcp-server",
+    "address": "http://localhost:8180/mcp"
   }'
 ```
 
-Now list tools again:
+Praxis connects to the upstream server, discovers all available tools, and registers them automatically with `type: "mcp-forward"`.
+
+List the discovered tools:
 
 ```bash
 curl http://localhost:8080/api/v1/tools
 ```
 
-You'll see your echo tool in the response. The server is ready to route MCP requests.
+You'll see the tools discovered from the upstream server. The server is now ready to route MCP requests to those tools.
 
 ### 5. Test the MCP Endpoint
 
@@ -91,7 +84,7 @@ curl -X POST http://localhost:8081/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-You'll get a JSON-RPC response listing your echo tool. The filter pipeline parsed your request, checked the namespace (defaulted to `"default"`), and returned the registered tools.
+You'll get a JSON-RPC response listing the tools discovered from your forward. The filter pipeline parsed your request, checked the namespace (defaulted to `"default"`), and returned the tools from the registry.
 
 ## What Just Happened?
 
@@ -107,43 +100,29 @@ No downstream services were called. The tool list is served directly from the in
 
 ## Next Steps
 
-### Forward to an Upstream MCP Server
+### Register Additional Forwards
 
-The echo tool above is registered locally but doesn't actually execute — there's no upstream server behind it. To connect to a real MCP server, register it as a forward:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "my-mcp-server",
-    "address": "http://localhost:8180/mcp"
-  }'
-```
-
-Praxis auto-discovers all tools from that server and registers them with `type: "mcp-forward"`. Now when an LLM calls one of those tools, Praxis forwards the request transparently.
+To discover tools from additional MCP servers, register more forwards the same way you did in step 4. Each forward connects to an upstream MCP server and auto-discovers its tools, resources, and prompts.
 
 ### Explore Namespaces
 
-Namespaces isolate tools. Create a tool in the `"finance"` namespace:
+Namespaces isolate tools. Create a `"finance"` namespace and register a forward that assigns discovered tools to it:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/namespaces \
   -H "Content-Type: application/json" \
   -d '{"name": "finance"}'
 
-curl -X POST http://localhost:8080/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "get-stock-price",
-    "namespace": "finance",
-    "type": "mcp-forward",
-    "uri": "http://market-data-mcp:8080/mcp",
-    "description": "Retrieves current stock prices",
-    "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}}}
+    "name": "market-data-server",
+    "address": "http://market-data-mcp:8080/mcp",
+    "namespace": "finance"
   }'
 ```
 
-Now query the finance namespace:
+Tools discovered from this forward inherit the `"finance"` namespace. Query the finance namespace:
 
 ```bash
 curl -X POST http://localhost:8081/finance/mcp \
@@ -151,7 +130,7 @@ curl -X POST http://localhost:8081/finance/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-Only the `get-stock-price` tool appears. The default namespace tools are invisible here.
+Only tools from the `market-data-server` forward appear. The default namespace tools are invisible here.
 
 ### Use the Admin UI
 
@@ -231,7 +210,7 @@ The server embeds `server/src/default.yaml` at compile time. To override:
 ```
 
 - **`--praxis-config`:** Praxis filter pipeline config (listeners, filter chains)
-- **`--wanaku-config`:** Wanaku bootstrap config (tools, forwards, namespaces)
+- **`--wanaku-config`:** Wanaku bootstrap config (forwards, namespaces)
 
 Both are optional. If omitted, embedded defaults are used.
 

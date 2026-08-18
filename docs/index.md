@@ -128,21 +128,23 @@ Server starts on:
 - MCP: `http://127.0.0.1:8081/mcp`
 - Management API: `http://0.0.0.0:8080/api/v1`
 
-### Register a Tool
+### Register a Forward
+
+Tools, resources, and prompts are obtained by registering a forwarded MCP server. When you register a forward, Wanaku auto-discovers all tools from the upstream server.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/tools \
+curl -X POST http://localhost:8080/api/v1/forwards \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "echo",
-    "type": "mcp-forward",
-    "uri": "http://echo-mcp:8080/mcp",
-    "description": "Echoes a message",
-    "input_schema": {
-      "type": "object",
-      "properties": {"message": {"type": "string"}}
-    }
+    "name": "echo-server",
+    "address": "http://echo-mcp:8080/mcp"
   }'
+```
+
+This automatically discovers and registers all tools exposed by the upstream MCP server. To refresh the tool list after the upstream server changes, use the refresh endpoint:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/forwards/echo-server/refreshes
 ```
 
 ### Deploy to Kubernetes
@@ -179,7 +181,7 @@ See [Configuration](./configuration.md) for details.
 
 ### Standalone
 
-Run Praxis as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, executing via MCP forwarding to upstream servers.
+Run Praxis as the only MCP server. Tools are discovered from forwarded MCP servers registered via the management API or `wanaku.yaml`, executing via MCP forwarding to those upstream servers.
 
 **Pros:** Simple, no dependencies
 **Cons:** No persistence beyond file snapshots

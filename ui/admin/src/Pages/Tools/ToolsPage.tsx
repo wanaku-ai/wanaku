@@ -4,17 +4,15 @@ import {useTools} from "../../hooks/api/use-tools";
 import {ToolReference} from "../../models";
 import {ToolsTable} from "./ToolsTable";
 import {ToolModal} from "./ToolModal"
-import {ImportToolsetModal} from "./ImportToolsetModal"
 
 
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [openedTool, setOpenedTool] = useState<ToolReference>()
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { listTools, addTool, updateTool, removeTool } = useTools();
+  const { listTools, updateTool, removeTool } = useTools();
 
   const updateTools = useCallback(async () => {
     return listTools().then((result) => {
@@ -47,31 +45,10 @@ export const ToolsPage: React.FC = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
-  function handleToolModalSubmit(tool: ToolReference): void {
-    if (openedTool) {
-      handleUpdateTool(tool)
-    } else {
-      handleAddTool(tool)
-    }
-  }
-
   function handleToolModalClose(): void {
     setOpenedTool(undefined)
-    setIsAddModalOpen(false)
+    setIsEditModalOpen(false)
   }
-
-  const handleAddTool = async (newTool: ToolReference) => {
-    try {
-      await addTool(newTool);
-      setIsAddModalOpen(false);
-      setErrorMessage(null);
-
-      await updateTools();
-    } catch (error) {
-      setIsAddModalOpen(false);
-      setErrorMessage(`Error adding tool: ${error instanceof Error ? error.message : "unknown error"}`);
-    }
-  };
 
   const handleUpdateTool = async(tool: ToolReference) => {
     try {
@@ -84,23 +61,6 @@ export const ToolsPage: React.FC = () => {
       handleToolModalClose()
     }
   }
-
-  const handleImportToolset = async (tools: ToolReference[]) => {
-    setErrorMessage(null);
-    const failedTools: string[] = [];
-    for (const tool of tools) {
-      try {
-        await addTool(tool);
-      } catch {
-        failedTools.push(tool.name || "unknown");
-      }
-    }
-    if (failedTools.length > 0) {
-      setErrorMessage(`Failed to import: ${failedTools.join(", ")}`);
-    }
-    setIsImportModalOpen(false);
-    await updateTools();
-  };
 
   const handleDeleteTool = async (toolName?: string) => {
     try {
@@ -129,30 +89,23 @@ export const ToolsPage: React.FC = () => {
         A tool enables LLMs to execute tasks beyond their inherent capabilities
         by utilizing these tools. Each tool is uniquely identified by a name and
         defined with an input schema outlining the expected parameters.
+        Tools are auto-discovered from forwarded MCP servers.
       </p>
       <div id="page-content">
         {fetchedData && (
           <ToolsTable
             fetchedData={fetchedData}
             onDelete={handleDeleteTool}
-            onImport={() => setIsImportModalOpen(true)}
-            onAdd={() => setIsAddModalOpen(true)}
-            onEdit={(tool: ToolReference) => { setOpenedTool(tool); setIsAddModalOpen(true) }}
+            onEdit={(tool: ToolReference) => { setOpenedTool(tool); setIsEditModalOpen(true) }}
           />
         )}
-        {isAddModalOpen && (
+        {isEditModalOpen && openedTool && (
           <ToolModal
             tools={fetchedData}
             tool={openedTool}
             onRequestClose={handleToolModalClose}
-            onSubmit={handleToolModalSubmit}
+            onSubmit={handleUpdateTool}
             onError={(msg) => setErrorMessage(msg)}
-          />
-        )}
-        {isImportModalOpen && (
-          <ImportToolsetModal
-            onSubmit={handleImportToolset}
-            onCancel={() => setIsImportModalOpen(false)}
           />
         )}
       </div>

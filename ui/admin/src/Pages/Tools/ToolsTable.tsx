@@ -1,4 +1,4 @@
-import {Add, Edit, TrashCan, Upload, View} from "@carbon/icons-react";
+import {Edit, TrashCan, View} from "@carbon/icons-react";
 import {
     Button,
     DataTable,
@@ -24,16 +24,12 @@ import {TableEmptyState} from "../EmptyTableState"
 interface ToolListProps {
   fetchedData: ToolReference[];
   onDelete: (toolName?: string) => void;
-  onImport: () => void;
-  onAdd: () => void;
   onEdit: (tool: ToolReference) => void
 }
 
 export const ToolsTable: FunctionComponent<ToolListProps> = ({
   fetchedData,
   onDelete,
-  onImport,
-  onAdd,
   onEdit
 }) => {
   const [schemaModalTool, setSchemaModalTool] = useState<ToolReference | null>(null);
@@ -133,19 +129,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
           }) => (
             <TableContainer>
               <TableToolbar {...getToolbarProps()}>
-                <TableToolbarContent>
-                  <Button
-                    renderIcon={Upload}
-                    kind="secondary"
-                    onClick={onImport}>
-                      Import Toolset
-                  </Button>
-                  <Button
-                    renderIcon={Add}
-                    onClick={onAdd}>
-                      Add Tool
-                  </Button>
-                </TableToolbarContent>
+                <TableToolbarContent />
               </TableToolbar>
               <Table {...getTableProps()}>
                 <TableHead>
@@ -184,8 +168,8 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                   {fetchedData.length == 0 && (
                     <TableEmptyState
                       colSpan={headers.length + 1}
-                      title="Start by adding tools"
-                      body="Click Add Tool to add your data, or import the toolset from a remote server"
+                      title="No tools discovered yet"
+                      body="Register a forwarded MCP server to auto-discover tools"
                     />
                   )}
                 </TableBody>

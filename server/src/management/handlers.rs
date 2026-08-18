@@ -20,31 +20,6 @@ pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Respon
     }
 }
 
-pub(super) fn handle_tool_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, "tool create request body");
-    let mut tool: ToolEntry = match serde_json::from_str(body) {
-        Ok(t) => t,
-        Err(e) => {
-            warn!(error = %e, "invalid tool JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid tool JSON: {e}"));
-        }
-    };
-
-    tool.name = tool.name.trim().to_owned();
-    if tool.name.is_empty() {
-        warn!("rejected tool with empty name");
-        return json_err(StatusCode::BAD_REQUEST, "tool name must not be empty");
-    }
-
-    let name = tool.name.clone();
-    registry.register_tool(tool);
-    info!(tool = %name, "registered tool via management API");
-    match registry.get_tool(&name) {
-        Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found after registration: {name}")),
-    }
-}
-
 pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, name = %path_name, "tool update request body");
     let mut tool: ToolEntry = match serde_json::from_str(body) {
@@ -90,25 +65,6 @@ pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Re
     match registry.get_resource(name) {
         Some(resource) => json_ok(&serde_json::json!(resource)),
         None => json_err(StatusCode::NOT_FOUND, &format!("resource not found: {name}")),
-    }
-}
-
-pub(super) fn handle_resource_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, "resource create request body");
-    let resource: ResourceEntry = match serde_json::from_str(body) {
-        Ok(r) => r,
-        Err(e) => {
-            warn!(error = %e, "invalid resource JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid resource JSON: {e}"));
-        }
-    };
-
-    let name = resource.name.clone();
-    registry.register_resource(resource);
-    info!(resource = %name, "registered resource via management API");
-    match registry.get_resource(&name) {
-        Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("resource not found after registration: {name}")),
     }
 }
 
@@ -165,25 +121,6 @@ pub(super) fn handle_prompt_get(registry: &InMemoryRegistry, name: &str) -> Resp
     match registry.get_prompt(name) {
         Some(prompt) => json_ok(&serde_json::json!(prompt)),
         None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}")),
-    }
-}
-
-pub(super) fn handle_prompt_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, "prompt create request body");
-    let prompt: PromptEntry = match serde_json::from_str(body) {
-        Ok(p) => p,
-        Err(e) => {
-            warn!(error = %e, "invalid prompt JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid prompt JSON: {e}"));
-        }
-    };
-
-    let name = prompt.name.clone();
-    registry.register_prompt(prompt);
-    info!(prompt = %name, "registered prompt via management API");
-    match registry.get_prompt(&name) {
-        Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found after registration: {name}")),
     }
 }
 
@@ -833,18 +770,19 @@ mod tests {
     use http::Response;
     use wanaku_praxis_apis::registry::{
         ForwardEntry, ForwardRegistry, InMemoryRegistry,
-        ToolRegistry,
+        PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
+        ToolEntry, ToolRegistry,
     };
 
     use super::{
         handle_forward_delete, handle_forward_get, handle_forward_list,
         handle_namespace_create, handle_namespace_delete, handle_namespace_get,
         handle_namespace_list, handle_namespace_update,
-        handle_prompt_create, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-        handle_resource_create, handle_resource_delete, handle_resource_get, handle_resource_list,
+        handle_prompt_delete, handle_prompt_get, handle_prompt_list,
+        handle_resource_delete, handle_resource_get, handle_resource_list,
         handle_resource_update,
         handle_statistics,
-        handle_tool_create, handle_tool_delete, handle_tool_get, handle_tool_list,
+        handle_tool_delete, handle_tool_get, handle_tool_list,
         handle_tool_update,
     };
 
@@ -857,39 +795,49 @@ mod tests {
         body.get("data").cloned().unwrap_or_default()
     }
 
-    fn error_message(resp: &Response<Vec<u8>>) -> Option<String> {
-        let body = parse_body(resp);
-        body.get("error")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_owned())
+    fn test_tool(name: &str) -> ToolEntry {
+        ToolEntry {
+            name: name.to_owned(),
+            description: String::new(),
+            uri: "u".to_owned(),
+            type_: "x".to_owned(),
+            input_schema: serde_json::json!({"type": "object"}),
+            labels: HashMap::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
+        }
+    }
+
+    fn test_resource(name: &str) -> ResourceEntry {
+        ResourceEntry {
+            name: name.to_owned(),
+            description: String::new(),
+            location: "/x".to_owned(),
+            type_: "file".to_owned(),
+            mime_type: String::new(),
+            labels: HashMap::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
+        }
+    }
+
+    fn test_prompt(name: &str) -> PromptEntry {
+        PromptEntry {
+            name: name.to_owned(),
+            description: String::new(),
+            arguments: Vec::new(),
+            messages: Vec::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+        }
     }
 
     // ---- Tool handlers ----
-
-    #[test]
-    fn tool_create_and_get_roundtrip() {
-        let registry = InMemoryRegistry::new();
-        let body = r#"{
-            "name":"my-tool",
-            "description":"desc",
-            "uri":"echo://t",
-            "type":"echo",
-            "input_schema":{"type":"object"}
-        }"#;
-
-        let create_resp = handle_tool_create(&registry, body);
-        assert_eq!(create_resp.status(), 200);
-
-        let get_resp = handle_tool_get(&registry, "my-tool");
-        assert_eq!(get_resp.status(), 200);
-
-        let data = data_field(&get_resp);
-        assert_eq!(data.get("name").and_then(|v| v.as_str()), Some("my-tool"));
-        assert_eq!(
-            data.get("description").and_then(|v| v.as_str()),
-            Some("desc")
-        );
-    }
 
     #[test]
     fn tool_list_empty_then_populated() {
@@ -898,9 +846,7 @@ mod tests {
         assert_eq!(resp.status(), 200);
         assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(0));
 
-        let body =
-            r#"{"name":"t1","description":"","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
-        handle_tool_create(&registry, body);
+        registry.register_tool(test_tool("t1"));
 
         let resp = handle_tool_list(&registry);
         assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(1));
@@ -916,9 +862,7 @@ mod tests {
     #[test]
     fn tool_delete_existing() {
         let registry = InMemoryRegistry::new();
-        let body =
-            r#"{"name":"to-delete","description":"","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
-        handle_tool_create(&registry, body);
+        registry.register_tool(test_tool("to-delete"));
 
         let resp = handle_tool_delete(&registry, "to-delete");
         assert_eq!(resp.status(), 200);
@@ -933,61 +877,11 @@ mod tests {
     }
 
     #[test]
-    fn tool_create_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
-        let resp = handle_tool_create(&registry, "not valid json");
-        assert_eq!(resp.status(), 400);
-        assert!(error_message(&resp).is_some());
-    }
-
-    #[test]
-    fn tool_create_empty_name_returns_400() {
-        let registry = InMemoryRegistry::new();
-        let resp = handle_tool_create(
-            &registry,
-            r#"{"name":"","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#,
-        );
-        assert_eq!(resp.status(), 400);
-        assert!(error_message(&resp)
-            .map(|m| m.contains("empty"))
-            .unwrap_or(false));
-    }
-
-    #[test]
-    fn tool_create_whitespace_name_returns_400() {
-        let registry = InMemoryRegistry::new();
-        let resp = handle_tool_create(
-            &registry,
-            r#"{"name":"  ","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#,
-        );
-        assert_eq!(resp.status(), 400);
-        assert!(error_message(&resp)
-            .map(|m| m.contains("empty"))
-            .unwrap_or(false));
-    }
-
-    #[test]
-    fn tool_create_with_input_schema_alias() {
-        let registry = InMemoryRegistry::new();
-        let body = r#"{
-            "name":"alias-tool",
-            "description":"",
-            "uri":"u",
-            "type":"x",
-            "inputSchema":{"type":"object","properties":{"msg":{"type":"string"}}}
-        }"#;
-
-        let resp = handle_tool_create(&registry, body);
-        assert_eq!(resp.status(), 200);
-        assert!(registry.get_tool("alias-tool").is_some());
-    }
-
-    #[test]
     fn tool_update_changes_description() {
         let registry = InMemoryRegistry::new();
-        let body =
-            r#"{"name":"upd","description":"old","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
-        handle_tool_create(&registry, body);
+        let mut tool = test_tool("upd");
+        tool.description = "old".to_owned();
+        registry.register_tool(tool);
 
         let update_body =
             r#"{"name":"upd","description":"new","uri":"u2","type":"y","input_schema":{"type":"object"}}"#;
@@ -1005,9 +899,7 @@ mod tests {
     #[test]
     fn tool_update_rename_removes_old_entry() {
         let registry = InMemoryRegistry::new();
-        let body =
-            r#"{"name":"old-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
-        handle_tool_create(&registry, body);
+        registry.register_tool(test_tool("old-name"));
 
         let update_body =
             r#"{"name":"new-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
@@ -1030,31 +922,6 @@ mod tests {
     // ---- Resource handlers ----
 
     #[test]
-    fn resource_create_and_get_roundtrip() {
-        let registry = InMemoryRegistry::new();
-        let body = r#"{
-            "name":"my-res",
-            "description":"d",
-            "location":"/tmp/f",
-            "type":"file",
-            "mime_type":"text/plain"
-        }"#;
-
-        let create_resp = handle_resource_create(&registry, body);
-        assert_eq!(create_resp.status(), 200);
-
-        let get_resp = handle_resource_get(&registry, "my-res");
-        assert_eq!(get_resp.status(), 200);
-
-        let data = data_field(&get_resp);
-        assert_eq!(data.get("name").and_then(|v| v.as_str()), Some("my-res"));
-        assert_eq!(
-            data.get("location").and_then(|v| v.as_str()),
-            Some("/tmp/f")
-        );
-    }
-
-    #[test]
     fn resource_list_empty_then_populated() {
         let registry = InMemoryRegistry::new();
         assert_eq!(
@@ -1064,7 +931,7 @@ mod tests {
             Some(0)
         );
 
-        handle_resource_create(&registry, r#"{"name":"r1","location":"/x","type":"file"}"#);
+        registry.register_resource(test_resource("r1"));
         assert_eq!(
             data_field(&handle_resource_list(&registry))
                 .as_array()
@@ -1082,7 +949,7 @@ mod tests {
     #[test]
     fn resource_delete_existing() {
         let registry = InMemoryRegistry::new();
-        handle_resource_create(&registry, r#"{"name":"del-res","location":"/x","type":"file"}"#);
+        registry.register_resource(test_resource("del-res"));
 
         assert_eq!(handle_resource_delete(&registry, "del-res").status(), 200);
         assert_eq!(handle_resource_get(&registry, "del-res").status(), 404);
@@ -1095,15 +962,12 @@ mod tests {
     }
 
     #[test]
-    fn resource_create_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_resource_create(&registry, "{bad}").status(), 400);
-    }
-
-    #[test]
     fn resource_update_changes_description() {
         let registry = InMemoryRegistry::new();
-        handle_resource_create(&registry, r#"{"name":"res","description":"old","location":"/a","type":"file"}"#);
+        let mut res = test_resource("res");
+        res.description = "old".to_owned();
+        res.location = "/a".to_owned();
+        registry.register_resource(res);
 
         let resp = handle_resource_update(
             &registry, "res",
@@ -1119,7 +983,7 @@ mod tests {
     #[test]
     fn resource_update_rename_removes_old_entry() {
         let registry = InMemoryRegistry::new();
-        handle_resource_create(&registry, r#"{"name":"old-res","description":"d","location":"/x","type":"file"}"#);
+        registry.register_resource(test_resource("old-res"));
 
         let resp = handle_resource_update(
             &registry, "old-res",
@@ -1139,10 +1003,12 @@ mod tests {
     #[test]
     fn resource_update_preserves_internal_labels() {
         let registry = InMemoryRegistry::new();
-        handle_resource_create(
-            &registry,
-            r#"{"name":"fwd-res","description":"old","location":"file:///data","type":"mcp-forward","labels":{"wanaku.forward_address":"http://remote:8080"}}"#,
-        );
+        let mut res = test_resource("fwd-res");
+        res.description = "old".to_owned();
+        res.location = "file:///data".to_owned();
+        res.type_ = "mcp-forward".to_owned();
+        res.labels.insert("wanaku.forward_address".to_owned(), "http://remote:8080".to_owned());
+        registry.register_resource(res);
 
         let resp = handle_resource_update(
             &registry, "fwd-res",
@@ -1162,23 +1028,6 @@ mod tests {
     // ---- Prompt handlers ----
 
     #[test]
-    fn prompt_create_and_get_roundtrip() {
-        let registry = InMemoryRegistry::new();
-        let body = r#"{"name":"my-prompt","description":"A prompt"}"#;
-
-        assert_eq!(handle_prompt_create(&registry, body).status(), 200);
-
-        let get_resp = handle_prompt_get(&registry, "my-prompt");
-        assert_eq!(get_resp.status(), 200);
-
-        let data = data_field(&get_resp);
-        assert_eq!(
-            data.get("name").and_then(|v| v.as_str()),
-            Some("my-prompt")
-        );
-    }
-
-    #[test]
     fn prompt_list_empty_then_populated() {
         let registry = InMemoryRegistry::new();
         assert_eq!(
@@ -1188,7 +1037,7 @@ mod tests {
             Some(0)
         );
 
-        handle_prompt_create(&registry, r#"{"name":"p1","description":"x"}"#);
+        registry.register_prompt(test_prompt("p1"));
         assert_eq!(
             data_field(&handle_prompt_list(&registry))
                 .as_array()
@@ -1206,7 +1055,7 @@ mod tests {
     #[test]
     fn prompt_delete_existing() {
         let registry = InMemoryRegistry::new();
-        handle_prompt_create(&registry, r#"{"name":"del-p","description":""}"#);
+        registry.register_prompt(test_prompt("del-p"));
         assert_eq!(handle_prompt_delete(&registry, "del-p").status(), 200);
         assert_eq!(handle_prompt_get(&registry, "del-p").status(), 404);
     }
@@ -1215,12 +1064,6 @@ mod tests {
     fn prompt_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
         assert_eq!(handle_prompt_delete(&registry, "nope").status(), 404);
-    }
-
-    #[test]
-    fn prompt_create_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_prompt_create(&registry, "[]").status(), 400);
     }
 
     // ---- Namespace handlers ----
@@ -1396,16 +1239,10 @@ mod tests {
     fn statistics_populated_registry() {
         let registry = InMemoryRegistry::new();
 
-        handle_tool_create(
-            &registry,
-            r#"{"name":"t1","description":"","uri":"u","type":"x","input_schema":{"type":"object"}}"#,
-        );
-        handle_tool_create(
-            &registry,
-            r#"{"name":"t2","description":"","uri":"u","type":"x","input_schema":{"type":"object"}}"#,
-        );
-        handle_resource_create(&registry, r#"{"name":"r1","location":"/x","type":"file"}"#);
-        handle_prompt_create(&registry, r#"{"name":"p1","description":""}"#);
+        registry.register_tool(test_tool("t1"));
+        registry.register_tool(test_tool("t2"));
+        registry.register_resource(test_resource("r1"));
+        registry.register_prompt(test_prompt("p1"));
         registry.register_forward(ForwardEntry {
             name: "f1".to_owned(),
             address: "http://x:1".to_owned(),
@@ -1435,10 +1272,9 @@ mod tests {
     #[test]
     fn tool_serializes_camel_case_keys() {
         let registry = InMemoryRegistry::new();
-        handle_tool_create(
-            &registry,
-            r#"{"name":"cc","description":"","uri":"u","type":"x","input_schema":{"type":"object","properties":{"msg":{"type":"string"}}}}"#,
-        );
+        let mut tool = test_tool("cc");
+        tool.input_schema = serde_json::json!({"type":"object","properties":{"msg":{"type":"string"}}});
+        registry.register_tool(tool);
 
         let data = data_field(&handle_tool_get(&registry, "cc"));
         assert!(
@@ -1454,10 +1290,10 @@ mod tests {
     #[test]
     fn tool_serializes_optional_camel_case_keys() {
         let registry = InMemoryRegistry::new();
-        handle_tool_create(
-            &registry,
-            r#"{"name":"cc-opt","description":"","uri":"u","type":"x","input_schema":{"type":"object"},"configurationURI":"cfg://a","secretsURI":"sec://b"}"#,
-        );
+        let mut tool = test_tool("cc-opt");
+        tool.configuration_uri = Some("cfg://a".to_owned());
+        tool.secrets_uri = Some("sec://b".to_owned());
+        registry.register_tool(tool);
 
         let data = data_field(&handle_tool_get(&registry, "cc-opt"));
         assert!(data.get("configurationURI").is_some());
@@ -1469,10 +1305,9 @@ mod tests {
     #[test]
     fn resource_serializes_camel_case_keys() {
         let registry = InMemoryRegistry::new();
-        handle_resource_create(
-            &registry,
-            r#"{"name":"cc-res","location":"/x","type":"file","mime_type":"text/plain"}"#,
-        );
+        let mut res = test_resource("cc-res");
+        res.mime_type = "text/plain".to_owned();
+        registry.register_resource(res);
 
         let data = data_field(&handle_resource_get(&registry, "cc-res"));
         assert!(

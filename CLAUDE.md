@@ -78,16 +78,18 @@ All tools execute via MCP forwarding:
 - Filter calls `mcp_client::call_tool(tool.uri, ...)` (rmcp crate, HTTP+SSE)
 - Non-MCP-forward types error
 
-**Forward discovery:** POST `/api/v1/forwards` → register forward → `mcp_client::list_tools(address)` → auto-register tools with `type_: "mcp-forward"`, `uri: address`. Refresh (`POST /forwards/{name}/refreshes`) removes old, re-discovers.
+**Forward discovery:** POST `/api/v1/forwards` → register forward → discover tools, resources, and prompts from upstream → auto-register with `type_: "mcp-forward"`. This is the **only** way to populate tools, resources, and prompts. Refresh (`POST /forwards/{name}/refreshes`) removes old, re-discovers.
 
 ### Management API (Port 8080)
 
 Uses Pingora `ServeHttp` (NOT axum) in `server/src/management/mod.rs`.
 
 **Core routes** (`server/src/management/`), all under `/api/v1/`:
-- `/tools`, `/resources`, `/prompts`, `/namespaces`, `/forwards` — each supports GET (list), GET `/{name}`, POST, DELETE `/{name}`
-- `/tools/{name}`, `/resources/{name}`, `/namespaces/{name}` also support PUT (update)
-- `/forwards/{name}/refreshes` — POST to re-discover tools
+- `/tools`, `/resources`, `/prompts` — GET (list), GET `/{name}`, DELETE `/{name}` (read-only; populated via forward discovery)
+- `/tools/{name}`, `/resources/{name}` — also support PUT (update metadata)
+- `/namespaces` — GET (list), GET `/{name}`, POST, PUT `/{name}`, DELETE `/{name}`
+- `/forwards` — GET (list), GET `/{name}`, POST, DELETE `/{name}`
+- `/forwards/{name}/refreshes` — POST to re-discover tools/resources/prompts
 
 **Feature routes** (via `Feature::handle_route`):
 - `/api/v1/chat/llms`, `/chat/{llm}/models`, `/chat/completions` (from `features/chat/`)

@@ -11,15 +11,6 @@ export class ResourcesPage extends BasePage {
     await this.navigateTo('/resources');
   }
 
-  override async waitForDataLoad() {
-    await this.page.locator('button:has-text("Add Resource")').waitFor({ state: 'visible', timeout: 15_000 });
-  }
-
-  async clickAddResource() {
-    await this.page.locator(Carbon.buttonWithText('Add Resource')).click();
-    await this.modal().waitFor({ state: 'visible' });
-  }
-
   async fillResourceForm(resource: { name: string; description: string; location: string }) {
     await this.page.locator(Carbon.textInput('resource-name')).fill(resource.name);
     await this.page.locator(Carbon.textInput('resource-description')).fill(resource.description);
