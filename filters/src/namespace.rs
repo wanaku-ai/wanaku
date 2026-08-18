@@ -17,18 +17,16 @@ fn extract_namespace(path: &str) -> &str {
     }
 
     // /{namespace}/mcp
-    if let Some(ns) = trimmed.strip_suffix("/mcp") {
-        if !ns.is_empty() && !ns.contains('/') {
+    if let Some(ns) = trimmed.strip_suffix("/mcp")
+        && !ns.is_empty() && !ns.contains('/') {
             return ns;
         }
-    }
 
     // /mcp/{namespace}
-    if let Some(ns) = trimmed.strip_prefix("mcp/") {
-        if !ns.is_empty() && !ns.contains('/') {
+    if let Some(ns) = trimmed.strip_prefix("mcp/")
+        && !ns.is_empty() && !ns.contains('/') {
             return ns;
         }
-    }
 
     DEFAULT_NAMESPACE
 }

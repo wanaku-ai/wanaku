@@ -11,9 +11,8 @@ pub(crate) enum InteractionRoute {
 }
 
 pub(crate) fn resolve_interaction_route(method: &str, path: &str) -> InteractionRoute {
-    let suffix = match path.strip_prefix("/api/v1/interactions") {
-        Some(s) => s,
-        None => return InteractionRoute::NotFound,
+    let Some(suffix) = path.strip_prefix("/api/v1/interactions") else {
+        return InteractionRoute::NotFound;
     };
 
     if !suffix.is_empty() && suffix != "/" {

@@ -28,6 +28,15 @@ impl EvaluatorState {
         }
     }
 
+}
+
+impl Default for EvaluatorState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EvaluatorState {
     pub fn load_evaluators(&self, defs: Vec<EvaluatorDef>) {
         self.compile_modules(&defs);
         self.compile_schemas(&defs);
@@ -129,15 +138,14 @@ impl EvaluatorState {
         let mut schemas = HashMap::new();
 
         for def in defs {
-            if let Some(ref schema_val) = def.llm.result_schema {
-                if let Some(compiled) = CompiledSchema::compile(schema_val) {
+            if let Some(ref schema_val) = def.llm.result_schema
+                && let Some(compiled) = CompiledSchema::compile(schema_val) {
                     tracing::info!(
                         evaluator = %def.name,
                         "compiled result schema"
                     );
                     schemas.insert(def.name.clone(), Arc::new(compiled));
                 }
-            }
         }
 
         if let Ok(mut guard) = self.schemas.write() {

@@ -1,3 +1,5 @@
+#![allow(clippy::large_stack_frames, reason = "utoipa::ToSchema derive generates large stack frames")]
+
 use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 

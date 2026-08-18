@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::process::Command;
 
+#[expect(clippy::too_many_lines, reason = "build script with sequential WASM compilation steps")]
 fn main() {
     let actions_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../actions");
     let dist_dir = actions_dir.join("dist");

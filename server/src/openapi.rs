@@ -19,14 +19,14 @@ struct WanakuResponse<T: utoipa::ToSchema> {
 #[utoipa::path(get, path = "/healthz", tag = "Health",
     responses((status = 200, description = "Server is healthy", body = serde_json::Value))
 )]
-fn healthz() {}
+const fn healthz() {}
 
 // -- Tools --------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/tools", tag = "Tools",
     responses((status = 200, description = "List all tools", body = Vec<ToolEntry>))
 )]
-fn list_tools() {}
+const fn list_tools() {}
 
 #[utoipa::path(get, path = "/api/v1/tools/{name}", tag = "Tools",
     params(("name" = String, Path, description = "Tool name")),
@@ -35,7 +35,7 @@ fn list_tools() {}
         (status = 404, description = "Tool not found"),
     )
 )]
-fn get_tool() {}
+const fn get_tool() {}
 
 #[utoipa::path(delete, path = "/api/v1/tools/{name}", tag = "Tools",
     params(("name" = String, Path, description = "Tool name")),
@@ -44,14 +44,14 @@ fn get_tool() {}
         (status = 404, description = "Tool not found"),
     )
 )]
-fn delete_tool() {}
+const fn delete_tool() {}
 
 // -- Resources ----------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/resources", tag = "Resources",
     responses((status = 200, description = "List all resources", body = Vec<ResourceEntry>))
 )]
-fn list_resources() {}
+const fn list_resources() {}
 
 #[utoipa::path(get, path = "/api/v1/resources/{name}", tag = "Resources",
     params(("name" = String, Path, description = "Resource name")),
@@ -60,7 +60,7 @@ fn list_resources() {}
         (status = 404, description = "Resource not found"),
     )
 )]
-fn get_resource() {}
+const fn get_resource() {}
 
 #[utoipa::path(delete, path = "/api/v1/resources/{name}", tag = "Resources",
     params(("name" = String, Path, description = "Resource name")),
@@ -69,14 +69,14 @@ fn get_resource() {}
         (status = 404, description = "Resource not found"),
     )
 )]
-fn delete_resource() {}
+const fn delete_resource() {}
 
 // -- Prompts ------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/prompts", tag = "Prompts",
     responses((status = 200, description = "List all prompts", body = Vec<PromptEntry>))
 )]
-fn list_prompts() {}
+const fn list_prompts() {}
 
 #[utoipa::path(get, path = "/api/v1/prompts/{name}", tag = "Prompts",
     params(("name" = String, Path, description = "Prompt name")),
@@ -85,7 +85,7 @@ fn list_prompts() {}
         (status = 404, description = "Prompt not found"),
     )
 )]
-fn get_prompt() {}
+const fn get_prompt() {}
 
 #[utoipa::path(delete, path = "/api/v1/prompts/{name}", tag = "Prompts",
     params(("name" = String, Path, description = "Prompt name")),
@@ -94,14 +94,14 @@ fn get_prompt() {}
         (status = 404, description = "Prompt not found"),
     )
 )]
-fn delete_prompt() {}
+const fn delete_prompt() {}
 
 // -- Namespaces ---------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/namespaces", tag = "Namespaces",
     responses((status = 200, description = "List all namespaces", body = Vec<NamespaceEntry>))
 )]
-fn list_namespaces() {}
+const fn list_namespaces() {}
 
 #[utoipa::path(get, path = "/api/v1/namespaces/{name}", tag = "Namespaces",
     params(("name" = String, Path, description = "Namespace name")),
@@ -110,13 +110,13 @@ fn list_namespaces() {}
         (status = 404, description = "Namespace not found"),
     )
 )]
-fn get_namespace() {}
+const fn get_namespace() {}
 
 #[utoipa::path(post, path = "/api/v1/namespaces", tag = "Namespaces",
     request_body = NamespaceEntry,
     responses((status = 200, description = "Namespace registered", body = NamespaceEntry))
 )]
-fn create_namespace() {}
+const fn create_namespace() {}
 
 #[utoipa::path(delete, path = "/api/v1/namespaces/{name}", tag = "Namespaces",
     params(("name" = String, Path, description = "Namespace name")),
@@ -125,14 +125,14 @@ fn create_namespace() {}
         (status = 404, description = "Namespace not found"),
     )
 )]
-fn delete_namespace() {}
+const fn delete_namespace() {}
 
 // -- Forwards -----------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/forwards", tag = "Forwards",
     responses((status = 200, description = "List all forwards", body = Vec<ForwardEntry>))
 )]
-fn list_forwards() {}
+const fn list_forwards() {}
 
 #[utoipa::path(get, path = "/api/v1/forwards/{name}", tag = "Forwards",
     params(("name" = String, Path, description = "Forward name")),
@@ -141,13 +141,13 @@ fn list_forwards() {}
         (status = 404, description = "Forward not found"),
     )
 )]
-fn get_forward() {}
+const fn get_forward() {}
 
 #[utoipa::path(post, path = "/api/v1/forwards", tag = "Forwards",
     request_body = ForwardEntry,
     responses((status = 200, description = "Forward created and tools discovered", body = serde_json::Value))
 )]
-fn create_forward() {}
+const fn create_forward() {}
 
 #[utoipa::path(delete, path = "/api/v1/forwards/{name}", tag = "Forwards",
     params(("name" = String, Path, description = "Forward name")),
@@ -156,7 +156,7 @@ fn create_forward() {}
         (status = 404, description = "Forward not found"),
     )
 )]
-fn delete_forward() {}
+const fn delete_forward() {}
 
 #[utoipa::path(post, path = "/api/v1/forwards/{name}/refreshes", tag = "Forwards",
     params(("name" = String, Path, description = "Forward name")),
@@ -165,26 +165,26 @@ fn delete_forward() {}
         (status = 404, description = "Forward not found"),
     )
 )]
-fn refresh_forward() {}
+const fn refresh_forward() {}
 
 // -- Interactions -------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/interactions", tag = "Interactions",
     responses((status = 200, description = "List recorded interactions", body = Vec<Interaction>))
 )]
-fn list_interactions() {}
+const fn list_interactions() {}
 
 #[utoipa::path(delete, path = "/api/v1/interactions", tag = "Interactions",
     responses((status = 200, description = "Interactions cleared"))
 )]
-fn clear_interactions() {}
+const fn clear_interactions() {}
 
 // -- Statistics ---------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/management/statistics", tag = "Management",
     responses((status = 200, description = "Registry statistics", body = serde_json::Value))
 )]
-fn get_statistics() {}
+const fn get_statistics() {}
 
 // -- OpenAPI Aggregation ------------------------------------------------------
 

@@ -64,7 +64,7 @@ pub enum ErrorPolicy {
     Block,
 }
 
-fn default_on_error() -> ErrorPolicy {
+const fn default_on_error() -> ErrorPolicy {
     ErrorPolicy::Continue
 }
 
@@ -73,11 +73,10 @@ impl TriggerDef {
         if self.method != method {
             return false;
         }
-        if let Some(ref ns) = self.namespace {
-            if ns != namespace {
+        if let Some(ref ns) = self.namespace
+            && ns != namespace {
                 return false;
             }
-        }
         true
     }
 }

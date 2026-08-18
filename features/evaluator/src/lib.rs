@@ -37,6 +37,12 @@ impl EvaluatorFeature {
     }
 }
 
+impl Default for EvaluatorFeature {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct EvaluatorStateExtension {
     state: EvaluatorState,
 }

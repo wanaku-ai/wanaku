@@ -15,6 +15,7 @@ fn is_valid_segment(s: &str) -> bool {
     !s.is_empty() && s != "." && s != ".." && !s.contains('/') && !s.contains('\\')
 }
 
+#[expect(clippy::too_many_lines, reason = "route resolution with multiple path prefix checks")]
 pub(crate) fn resolve_plugin_route(method: &str, path: &str) -> PluginRoute {
     if let Some(suffix) = path.strip_prefix("/api/v1/plugins") {
         return match (method, suffix) {
@@ -37,9 +38,8 @@ pub(crate) fn resolve_plugin_route(method: &str, path: &str) -> PluginRoute {
     }
 
     if let Some(rest) = path.strip_prefix("/api/plugins/") {
-        let (id, remainder) = match rest.split_once('/') {
-            Some((id, r)) => (id, r),
-            None => return PluginRoute::NotFound,
+        let Some((id, remainder)) = rest.split_once('/') else {
+            return PluginRoute::NotFound;
         };
         if !is_valid_segment(id) {
             return PluginRoute::NotFound;
@@ -69,6 +69,7 @@ pub(crate) fn handle_file(
     handlers::handle_serve_file(plugins_path, plugin_id, file_path)
 }
 
+#[expect(clippy::too_many_arguments, reason = "proxy handler requires full HTTP context")]
 pub(crate) async fn handle_proxy(
     client: &reqwest::Client,
     target_url: &str,

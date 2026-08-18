@@ -69,7 +69,8 @@ pub static ENV: LazyLock<WanakuEnv> = LazyLock::new(WanakuEnv::from_env);
 
 impl WanakuEnv {
     #[must_use]
-    pub fn inference_proxy_port(&self) -> u16 {
+    #[expect(clippy::unused_self, reason = "stable API — may use self in future")]
+    pub const fn inference_proxy_port(&self) -> u16 {
         8083
     }
 

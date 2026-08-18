@@ -19,6 +19,7 @@ use wanaku_praxis_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry,
 };
 
+#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
     let args = ServerArgs::parse();
     let config = wanaku_praxis::load_config(args.praxis_config.as_deref())
@@ -84,7 +85,7 @@ fn main() {
         &filter_registry,
         &health_registry,
         &kv_stores,
-        wanaku_registry,
+        &wanaku_registry,
         &features,
     )
     .unwrap_or_else(|e| fatal(&e));
@@ -121,7 +122,7 @@ fn main() {
         "wanaku-management".to_owned(),
         mgmt,
     );
-    mgmt_service.add_tcp(&mgmt_addr);
+    mgmt_service.add_tcp(mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 
@@ -163,6 +164,7 @@ fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {
     }
 }
 
+#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "config loading requires sequential steps")]
 fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {

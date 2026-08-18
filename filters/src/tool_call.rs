@@ -47,14 +47,14 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
 }
 
 impl ToolCallFilter {
+    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP protocol handler with JSON-RPC response construction")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata(crate::MCP_METHOD_KEY) {
-            Some(m) => m,
-            None => return Ok(FilterAction::Continue),
+        let Some(method) = ctx.get_metadata(crate::MCP_METHOD_KEY) else {
+            return Ok(FilterAction::Continue);
         };
 
         if method != "tools/call" {
@@ -77,11 +77,10 @@ impl ToolCallFilter {
 
         let conversation_id = parsed.arguments
             .remove(wanaku_praxis_apis::correlation::REQUEST_ID_ARG)
-            .and_then(|v| match v {
-                serde_json::Value::String(s) => Some(s),
-                other => Some(other.to_string()),
-            })
-            .unwrap_or_else(|| "-".to_owned());
+            .map_or_else(|| "-".to_owned(), |v| match v {
+                serde_json::Value::String(s) => s,
+                other => other.to_string(),
+            });
 
         let request_id = ctx.request.headers.get("x-request-id")
             .and_then(|v| v.to_str().ok())
@@ -105,12 +104,9 @@ impl ToolCallFilter {
             "parsed tools/call request body (x-request-id stripped)"
         );
 
-        let registry = match ctx.extensions.get::<InMemoryRegistry>() {
-            Some(r) => r,
-            None => {
-                tracing::error!("InMemoryRegistry not found in request extensions");
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
-            }
+        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+            tracing::error!("InMemoryRegistry not found in request extensions");
+            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
         };
 
         let tool = match registry.get_tool_in_namespace(namespace, &tool_name) {
@@ -145,6 +141,7 @@ impl ToolCallFilter {
         ))
     }
 
+    #[expect(clippy::too_many_lines, reason = "MCP forwarding handler with error paths")]
     async fn handle_forwarded_call(
         &self,
         tool: &ToolEntry,

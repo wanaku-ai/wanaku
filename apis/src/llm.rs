@@ -43,6 +43,7 @@ impl LlmClient {
         })
     }
 
+    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "sequential HTTP request/response handling")]
     pub async fn chat(
         &self,
         system_prompt: &str,
@@ -118,8 +119,7 @@ pub fn sanitize(s: &str, max_len: usize) -> String {
     let truncated = if s.len() > max_len { &s[..s.floor_char_boundary(max_len)] } else { s };
     truncated
         .replace('#', "")
-        .replace('\n', " ")
-        .replace('\r', " ")
+        .replace(['\n', '\r'], " ")
 }
 
 /// Generic hot-swappable state wrapper. Stores a value behind Arc<RwLock>
@@ -130,12 +130,18 @@ pub struct HotSwap<T: Clone> {
     inner: Arc<RwLock<Option<T>>>,
 }
 
-impl<T: Clone> HotSwap<T> {
-    #[must_use]
-    pub fn new() -> Self {
+impl<T: Clone> Default for HotSwap<T> {
+    fn default() -> Self {
         Self {
             inner: Arc::new(RwLock::new(None)),
         }
+    }
+}
+
+impl<T: Clone> HotSwap<T> {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn set(&self, value: T) {

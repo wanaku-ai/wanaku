@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::process::Command;
 
+#[expect(clippy::too_many_lines, reason = "build script entry point")]
 fn main() {
     let ui_dir = Path::new("../ui/admin");
     let dist_index = ui_dir.join("dist/index.html");

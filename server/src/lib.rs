@@ -33,6 +33,7 @@ pub fn build_full_registry() -> praxis_filter::FilterRegistry {
     registry
 }
 
+#[expect(clippy::too_many_lines, reason = "filter registration is sequential and repetitive")]
 fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     praxis_filter::register_filters!(
         @register registry,

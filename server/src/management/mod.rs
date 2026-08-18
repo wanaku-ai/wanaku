@@ -65,11 +65,12 @@ impl WanakuManagementService {
 
 #[async_trait]
 impl ServeHttp for WanakuManagementService {
+    #[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "route dispatch requires sequential matching")]
     async fn response(&self, http_session: &mut ServerSession) -> Response<Vec<u8>> {
         let req = http_session.req_header();
         let uri = &req.uri;
         let path = uri.path().to_owned();
-        let query = uri.query().map(|q| q.to_owned());
+        let query = uri.query().map(std::borrow::ToOwned::to_owned);
         let method = req.method.as_str().to_owned();
         let headers = req.headers.clone();
 

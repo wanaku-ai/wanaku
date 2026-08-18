@@ -12,6 +12,7 @@ use crate::state::EvaluatorState;
 wanaku_praxis_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
 
 impl EvaluatorFilter {
+    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "evaluator pipeline with multiple validation steps")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -32,9 +33,8 @@ impl EvaluatorFilter {
             .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE)
             .to_owned();
 
-        let evaluator = match state.find_matching(&method, &namespace) {
-            Some(e) => e,
-            None => return Ok(FilterAction::Continue),
+        let Some(evaluator) = state.find_matching(&method, &namespace) else {
+            return Ok(FilterAction::Continue);
         };
 
         tracing::info!(
@@ -56,7 +56,7 @@ impl EvaluatorFilter {
 
         let tool_name = ctx
             .get_metadata(wanaku_praxis_filters::MCP_NAME_KEY)
-            .map(|s| s.to_owned());
+            .map(std::borrow::ToOwned::to_owned);
 
         let arguments = parse_arguments(body);
 
@@ -106,23 +106,20 @@ impl EvaluatorFilter {
             "LLM operation result"
         );
 
-        let compiled = match state.get_compiled(&evaluator.processor.path) {
-            Some(c) => c,
-            None => {
-                tracing::warn!(
-                    evaluator = %evaluator.name,
-                    path = %evaluator.processor.path.display(),
-                    "WASM processor not found or not compiled"
-                );
-                return match evaluator.on_error {
-                    ErrorPolicy::Continue => Ok(FilterAction::Continue),
-                    ErrorPolicy::Block => Ok(wanaku_praxis_filters::response::json_rpc_error(
-                        &wanaku_praxis_filters::response::extract_json_rpc_id(body),
-                        -32603,
-                        "evaluator processor module not available",
-                    )),
-                };
-            }
+        let Some(compiled) = state.get_compiled(&evaluator.processor.path) else {
+            tracing::warn!(
+                evaluator = %evaluator.name,
+                path = %evaluator.processor.path.display(),
+                "WASM processor not found or not compiled"
+            );
+            return match evaluator.on_error {
+                ErrorPolicy::Continue => Ok(FilterAction::Continue),
+                ErrorPolicy::Block => Ok(wanaku_praxis_filters::response::json_rpc_error(
+                    &wanaku_praxis_filters::response::extract_json_rpc_id(body),
+                    -32603,
+                    "evaluator processor module not available",
+                )),
+            };
         };
 
         let eval_ctx = crate::host::types::EvaluationContext {
@@ -151,6 +148,7 @@ impl EvaluatorFilter {
     }
 }
 
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "action dispatch with multiple variants")]
 fn dispatch_action(
     ctx: &mut HttpFilterContext<'_>,
     body: &mut Option<Bytes>,
@@ -181,7 +179,7 @@ fn dispatch_action(
         ActionResult::Warn(message) => {
             tracing::warn!(evaluator = %evaluator_name, message = %message, "evaluator warning");
             ctx.set_metadata(
-                &format!("wanaku.evaluator.{evaluator_name}.warning"),
+                format!("wanaku.evaluator.{evaluator_name}.warning"),
                 &message,
             );
             Ok(FilterAction::Continue)
@@ -222,6 +220,8 @@ fn dispatch_action(
     }
 }
 
+#[expect(clippy::too_many_arguments, reason = "retry requires original request context")]
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "schema validation with retry logic")]
 async fn validate_and_retry_if_needed(
     raw_result: &str,
     evaluator: &EvaluatorDef,
