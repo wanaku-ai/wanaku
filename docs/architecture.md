@@ -1,6 +1,6 @@
 # Architecture
 
-Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. At its core, it's a sophisticated HTTP filter pipeline that routes AI agent requests to the right tools, enforces security policies, and manages namespaces.
+Wanaku is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. At its core, it's a sophisticated HTTP filter pipeline that routes AI agent requests to the right tools, enforces security policies, and manages namespaces.
 
 This isn't your typical REST API. It's a proxy. Requests flow through a chain of filters, each responsible for a specific concern—CORS, protocol parsing, namespace isolation, tool dispatch. Think of it as middleware, but composable and pluggable.
 
@@ -13,7 +13,7 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
                  │ MCP (JSON-RPC over HTTP)
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Wanaku Praxis Server (Port 8081)                │
+│              Wanaku Server (Port 8081)                │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │              Filter Pipeline (Praxis)                   │ │
 │  │  CORS → MCP Parse → Namespace → Evaluator →            │ │
@@ -219,7 +219,7 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 
 ## Tool Routing
 
-All tool execution in Praxis happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
+All tool execution in Wanaku happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
 
 1. Looks up the tool in the registry by name
 2. Calls `mcp_client::call_tool(tool.uri, name, arguments)` to forward the request to the upstream MCP server
@@ -246,7 +246,7 @@ The management API:
 2. Calls `mcp_client::list_tools(address)` to discover tools
 3. Auto-registers each tool with `type: "mcp-forward"` and `uri: <forward.address>`
 
-Now when an LLM calls one of those tools, Praxis forwards the request to the upstream server transparently.
+Now when an LLM calls one of those tools, Wanaku forwards the request to the upstream server transparently.
 
 **Refreshing:**
 
@@ -260,7 +260,7 @@ This removes all tools previously discovered from that forward and re-queries th
 
 ## The Feature System
 
-Features are self-contained modules that extend Praxis with new capabilities. They live in `features/<name>/` and implement the `Feature` trait from `apis/src/feature.rs`:
+Features are self-contained modules that extend Wanaku with new capabilities. They live in `features/<name>/` and implement the `Feature` trait from `apis/src/feature.rs`:
 
 ```rust
 #[async_trait::async_trait]
@@ -368,14 +368,14 @@ See [Admin UI](./admin-ui.md) for development details.
 
 ### Standalone
 
-Run Praxis as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, and execute via MCP forwarding to upstream servers.
+Run Wanaku as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, and execute via MCP forwarding to upstream servers.
 
 **Pros:** Simple, no dependencies
 **Cons:** No persistence beyond file snapshots
 
 ### Kubernetes
 
-Deploy Praxis as a `Deployment` with:
+Deploy Wanaku as a `Deployment` with:
 
 - **Service:** ClusterIP for MCP endpoint (port 8081)
 - **Service:** LoadBalancer for management API (port 8080)
@@ -388,7 +388,7 @@ Mount `WANAKU_PERSIST_PATH` to a `PersistentVolume` for registry persistence acr
 
 **Throughput:**
 
-Praxis uses Pingora's async worker pool. Each worker handles requests concurrently. Throughput scales linearly with worker count (default: CPU core count).
+Wanaku uses Pingora's async worker pool. Each worker handles requests concurrently. Throughput scales linearly with worker count (default: CPU core count).
 
 **Latency breakdown:**
 
@@ -405,7 +405,7 @@ Registry is in-memory. Each tool/resource/prompt is ~1KB. A deployment with 10,0
 
 **Authentication:**
 
-Wanaku Praxis delegates authentication to [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), an external reverse proxy that sits in front of the MCP and management API ports. Praxis itself contains zero authentication code.
+Wanaku delegates authentication to [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), an external reverse proxy that sits in front of the MCP and management API ports. Wanaku itself contains zero authentication code.
 
 **oauth2-proxy sidecar pattern:**
 
@@ -414,15 +414,15 @@ Two oauth2-proxy instances with a shared cookie provide SSO across both endpoint
 - **oauth2-proxy-mcp** (port 4180 → 8081) — protects MCP endpoints, requires `mcp-user` role
 - **oauth2-proxy-mgmt** (port 4181 → 8080) — protects admin UI and REST API, requires `admin` role
 
-Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Praxis.
+Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Wanaku.
 
-**Praxis-side metadata:**
+**Wanaku-side metadata:**
 
 The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. This endpoint is read-only and simply returns the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`.
 
 When auth is disabled:
 
-- Run Praxis standalone on ports 8081/8080 without oauth2-proxy
+- Run Wanaku standalone on ports 8081/8080 without oauth2-proxy
 - **No authentication** on either endpoint
 
 **CORS:**

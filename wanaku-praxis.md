@@ -1,13 +1,13 @@
 ---
-name: wanaku-praxis
-description: "Bootstrap plan for a new Rust project built on praxis framework — architecture, extension points, and future goals (MCP→gRPC, admin API)"
+name: wanaku
+description: "Bootstrap plan for the Wanaku Rust project built on praxis framework — architecture, extension points, and future goals (MCP→gRPC, admin API)"
 metadata: 
   node_type: memory
   type: project
   originSessionId: b3abf2a3-5e91-43a6-8064-823d4c268b85
 ---
 
-New project ("wanaku-praxis") that builds on the praxis proxy framework to add custom protocol handling, starting with MCP→gRPC transformation and eventually a management API.
+New project ("wanaku") that builds on the praxis proxy framework to add custom protocol handling, starting with MCP→gRPC transformation and eventually a management API.
 
 **Why:** Praxis is designed as a framework — praxis-ai demonstrates the pattern. A new project follows the same model: depend on praxis core crates, implement domain-specific filters, register them, and call `run_server_with_registry()`.
 
@@ -28,9 +28,9 @@ Praxis is a general-purpose high-performance reverse proxy framework built on Pi
 ## Project Structure (follow praxis-ai's pattern)
 
 ```
-wanaku-praxis/
+wanaku/
 ├── Cargo.toml              # workspace root
-├── server/                 # binary crate (wanaku-praxis binary)
+├── server/                 # binary crate (wanaku-server binary)
 │   └── src/
 │       ├── main.rs         # entry point, CLI
 │       ├── lib.rs          # register_filters! macro, build_full_registry()

@@ -44,7 +44,7 @@ impl McpInitFilter {
                     }
                 },
                 "serverInfo": {
-                    "name": "wanaku-praxis",
+                    "name": "wanaku-server",
                     "version": "0.3.0"
                 }
             }

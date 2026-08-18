@@ -1,12 +1,12 @@
 [package]
-name = "wanaku-praxis-filters"
+name = "wanaku-filters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
 [lib]
-name = "wanaku_praxis_filters"
+name = "wanaku_filters"
 
 [lints]
 workspace = true
@@ -18,6 +18,6 @@ http = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-wanaku-praxis-apis = { workspace = true }
+wanaku-apis = { workspace = true }
 praxis-filter = { workspace = true }
 serde_yaml = { workspace = true }

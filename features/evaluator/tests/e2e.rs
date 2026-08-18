@@ -168,11 +168,11 @@ mod engine {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server"]
+    #[ignore = "requires running wanaku server"]
     fn evaluators_api_crud() {
         let harness = TestHarness::new();
         if !harness.server_is_reachable() {
-            eprintln!("SKIP: wanaku-praxis not running");
+            eprintln!("SKIP: wanaku server not running");
             return;
         }
 
@@ -212,11 +212,11 @@ mod engine {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server and pre-built WASM actions"]
+    #[ignore = "requires running wanaku server and pre-built WASM actions"]
     fn safety_block_wasm_blocks_tool_call() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
-            eprintln!("SKIP: wanaku-praxis not running");
+            eprintln!("SKIP: wanaku server not running");
             return;
         }
 
@@ -256,11 +256,11 @@ mod engine {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server and pre-built WASM actions"]
+    #[ignore = "requires running wanaku server and pre-built WASM actions"]
     fn safety_warn_wasm_does_not_block() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
-            eprintln!("SKIP: wanaku-praxis not running");
+            eprintln!("SKIP: wanaku server not running");
             return;
         }
 
@@ -299,11 +299,11 @@ mod engine {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server and pre-built WASM actions"]
+    #[ignore = "requires running wanaku server and pre-built WASM actions"]
     fn cleared_evaluator_does_not_block() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
-            eprintln!("SKIP: wanaku-praxis not running");
+            eprintln!("SKIP: wanaku server not running");
             return;
         }
 
@@ -342,11 +342,11 @@ mod engine {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server and pre-built WASM actions"]
+    #[ignore = "requires running wanaku server and pre-built WASM actions"]
     fn evaluator_with_result_schema_config() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
-            eprintln!("SKIP: wanaku-praxis not running");
+            eprintln!("SKIP: wanaku server not running");
             return;
         }
 
@@ -400,11 +400,11 @@ mod engine {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server and pre-built WASM actions"]
+    #[ignore = "requires running wanaku server and pre-built WASM actions"]
     fn namespace_scoped_evaluator() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
-            eprintln!("SKIP: wanaku-praxis not running");
+            eprintln!("SKIP: wanaku server not running");
             return;
         }
 
@@ -492,7 +492,7 @@ mod classification {
 
     #[test]
     #[serial]
-    #[ignore = "requires running wanaku-praxis server, pre-built WASM actions, and Ollama"]
+    #[ignore = "requires running wanaku server, pre-built WASM actions, and Ollama"]
     fn dangerous_restart_is_blocked() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() || !harness.ollama_is_reachable() {

@@ -13,16 +13,16 @@ use praxis_protocol::Protocol as _;
 use praxis_protocol::http::PingoraHttp;
 use tracing::info;
 
-use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::persistence::FilePersistence;
-use wanaku_praxis_apis::registry::{
+use wanaku_apis::feature::Feature;
+use wanaku_apis::persistence::FilePersistence;
+use wanaku_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry,
 };
 
 #[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
     let args = ServerArgs::parse();
-    let config = wanaku_praxis::load_config(args.praxis_config.as_deref())
+    let config = wanaku_server::load_config(args.pipeline_config.as_deref())
         .unwrap_or_else(|e| fatal(&e));
 
     praxis_core::logging::init_tracing(&config)
@@ -48,11 +48,11 @@ fn main() {
         Box::new(wanaku_feature_chat::ChatFeature::new(
             format!(
                 "http://127.0.0.1:{}{}",
-                wanaku_praxis_apis::config::ENV.inference_proxy_port(),
-                wanaku_praxis_apis::config::ENV.inference_path_prefix,
+                wanaku_apis::config::ENV.inference_proxy_port(),
+                wanaku_apis::config::ENV.inference_path_prefix,
             ),
-            wanaku_praxis_apis::config::ENV.inference_tls_sni.clone(),
-            wanaku_praxis_apis::config::ENV.inference_api_key.clone(),
+            wanaku_apis::config::ENV.inference_tls_sni.clone(),
+            wanaku_apis::config::ENV.inference_api_key.clone(),
         )),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
     ];
@@ -69,7 +69,7 @@ fn main() {
         feature.load_env_config();
     }
 
-    let mut filter_registry = wanaku_praxis::build_full_registry();
+    let mut filter_registry = wanaku_server::build_full_registry();
     for feature in &features {
         feature.register_filters(&mut filter_registry);
     }
@@ -80,7 +80,7 @@ fn main() {
     let mgmt_registry = wanaku_registry.clone();
 
     info!("building wanaku pipelines");
-    let pipelines = wanaku_praxis::pipelines::resolve_pipelines(
+    let pipelines = wanaku_server::pipelines::resolve_pipelines(
         &config,
         &filter_registry,
         &health_registry,
@@ -113,8 +113,8 @@ fn main() {
         );
     }
 
-    let mgmt_addr = &wanaku_praxis_apis::config::ENV.mgmt_listen;
-    let mgmt = wanaku_praxis::management::WanakuManagementService::new(
+    let mgmt_addr = &wanaku_apis::config::ENV.mgmt_listen;
+    let mgmt = wanaku_server::management::WanakuManagementService::new(
         mgmt_registry,
         features,
     );
@@ -126,16 +126,16 @@ fn main() {
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 
-    info!("starting wanaku-praxis server");
+    info!("starting wanaku server");
     server.run()
 }
 
 #[derive(Debug, Parser)]
 #[command(version, about)]
 struct ServerArgs {
-    /// Praxis pipeline configuration file. Uses the embedded configuration when omitted.
+    /// Pipeline configuration file. Uses the embedded configuration when omitted.
     #[arg(long, value_name = "PATH")]
-    praxis_config: Option<String>,
+    pipeline_config: Option<String>,
 
     /// Wanaku bootstrap configuration file.
     #[arg(long, value_name = "PATH", default_value = "wanaku.yaml")]
@@ -197,7 +197,7 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
         rt.block_on(async {
             for fwd in &forwards {
                 info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
-                wanaku_praxis::management::discover_and_update_forward(registry, fwd).await;
+                wanaku_server::management::discover_and_update_forward(registry, fwd).await;
             }
         });
     }

@@ -1,6 +1,6 @@
 # Authentication with oauth2-proxy
 
-Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. Two oauth2-proxy instances protect the MCP and management ports with shared SSO.
+Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. Two oauth2-proxy instances protect the MCP and management ports with shared SSO.
 
 ## Prerequisites
 
@@ -40,8 +40,8 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
 ## Architecture
 
 ```
-Browser/CLI ──► oauth2-proxy-mcp (:4180) ──► Praxis MCP (:8081)
-            └─► oauth2-proxy-mgmt (:4181) ──► Praxis Mgmt (:8080)
+Browser/CLI ──► oauth2-proxy-mcp (:4180) ──► Wanaku MCP (:8081)
+            └─► oauth2-proxy-mgmt (:4181) ──► Wanaku Mgmt (:8080)
 ```
 
 Both instances share the same cookie secret, so logging in on one port authenticates you on the other (SSO).
@@ -87,7 +87,7 @@ Generate a shared cookie secret (must be exactly 16, 24, or 32 bytes):
 export COOKIE_SECRET=$(openssl rand -hex 16)
 ```
 
-Start Praxis with the auth issuer configured:
+Start Wanaku with the auth issuer configured:
 ```bash
 WANAKU_AUTH_ISSUER=http://localhost:8543/realms/wanaku cargo run
 ```

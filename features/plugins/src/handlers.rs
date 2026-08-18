@@ -2,7 +2,7 @@ use std::path::Path;
 
 use http::{Response, StatusCode};
 use tracing::warn;
-use wanaku_praxis_apis::http_response::{json_err, json_ok};
+use wanaku_apis::http_response::{json_err, json_ok};
 
 use crate::manifest::PluginManifest;
 

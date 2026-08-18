@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ResourceRegistry};
+use wanaku_apis::registry::{InMemoryRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
@@ -105,7 +105,7 @@ impl ResourceReadFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
 
         trace!(uri = %resource_uri, namespace = %namespace, "handling MCP resources/read request");
 
@@ -144,7 +144,7 @@ impl ResourceReadFilter {
 
     async fn handle_forwarded_read(
         &self,
-        resource: &wanaku_praxis_apis::registry::ResourceEntry,
+        resource: &wanaku_apis::registry::ResourceEntry,
         resource_uri: &str,
         parsed: &ParsedBody,
     ) -> Result<FilterAction, FilterError> {
@@ -159,7 +159,7 @@ impl ResourceReadFilter {
 
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
-        match wanaku_praxis_apis::mcp_client::read_resource(forward_address, resource_uri).await {
+        match wanaku_apis::mcp_client::read_resource(forward_address, resource_uri).await {
             Ok(contents) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",

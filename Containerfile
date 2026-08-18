@@ -53,7 +53,7 @@ RUN mkdir -p apis/src filters/src server/src \
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
-    cargo build --release -p wanaku-praxis-proxy
+    cargo build --release -p wanaku-server
 
 # ------------------------------------------------------------------------------
 # Real Build
@@ -70,8 +70,8 @@ RUN find apis/src filters/src server/src features \
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
-    cargo build --release -p wanaku-praxis-proxy \
-    && cp target/release/wanaku-praxis /usr/local/bin/wanaku-praxis
+    cargo build --release -p wanaku-server \
+    && cp target/release/wanaku-server /usr/local/bin/wanaku-server
 
 # ------------------------------------------------------------------------------
 # Stage 3: Runtime
@@ -79,28 +79,28 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
 
 FROM registry.fedoraproject.org/fedora-minimal:44
 
-LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku-praxis" \
-    org.opencontainers.image.description="Wanaku Praxis MCP proxy server" \
+LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku" \
+    org.opencontainers.image.description="Wanaku MCP proxy server" \
     org.opencontainers.image.licenses="Apache-2.0"
 
 RUN microdnf install -y ca-certificates shadow-utils \
     && microdnf clean all \
     && groupadd -r wanaku \
     && useradd -r -g wanaku -d /nonexistent -s /sbin/nologin wanaku \
-    && mkdir -p /etc/wanaku-praxis /data/registry
+    && mkdir -p /etc/wanaku /data/registry
 
 COPY --from=builder --chown=root:root --chmod=0555 \
-    /usr/local/bin/wanaku-praxis /usr/local/bin/wanaku-praxis
+    /usr/local/bin/wanaku-server /usr/local/bin/wanaku-server
 
 RUN chown wanaku:wanaku /data/registry
 
 USER wanaku:wanaku
 
-WORKDIR /etc/wanaku-praxis
+WORKDIR /etc/wanaku
 
 EXPOSE 8080 8081 8083
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=5s \
     CMD curl -sf http://127.0.0.1:8080/healthz || exit 1
 
-ENTRYPOINT ["wanaku-praxis"]
+ENTRYPOINT ["wanaku-server"]

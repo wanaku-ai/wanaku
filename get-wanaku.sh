@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="wanaku-ai/wanaku-praxis"
-RELEASE_TAG="${WANAKU_PRAXIS_RELEASE:-early-access}"
-INSTALL_DIR="${WANAKU_PRAXIS_INSTALL_DIR:-$HOME/bin}"
+REPO="wanaku-ai/wanaku"
+RELEASE_TAG="${WANAKU_RELEASE:-early-access}"
+INSTALL_DIR="${WANAKU_INSTALL_DIR:-$HOME/bin}"
 
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn()  { printf '\033[1;33mWARN:\033[0m %s\n' "$*"; }
@@ -23,12 +23,12 @@ detect_platform() {
         Linux/aarch64|Linux/arm64) PLATFORM="linux-aarch64" ;;
         Darwin/x86_64|Darwin/amd64) PLATFORM="macos-x86_64" ;;
         Darwin/arm64|Darwin/aarch64) PLATFORM="macos-aarch64" ;;
-        *) error "Wanaku Praxis does not provide a release for ${os}/${arch}" ;;
+        *) error "Wanaku does not provide a release for ${os}/${arch}" ;;
     esac
 }
 
 resolve_release() {
-    info "Resolving Wanaku Praxis ${RELEASE_TAG} for ${PLATFORM}..."
+    info "Resolving Wanaku ${RELEASE_TAG} for ${PLATFORM}..."
     local response urls
     response="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}")" \
         || error "Could not fetch release ${RELEASE_TAG}"
@@ -70,22 +70,22 @@ download_and_verify() {
     fi
 }
 
-install_wanaku_praxis() {
+install_wanaku() {
     local binary
     mkdir -p "${INSTALL_TMP}/extract" "$INSTALL_DIR"
     tar -xzf "${INSTALL_TMP}/${ARTIFACT}" -C "${INSTALL_TMP}/extract"
-    binary="$(find "${INSTALL_TMP}/extract" -type f -name wanaku-praxis -print | head -n 1)"
-    [ -n "$binary" ] || error "Unexpected archive layout: wanaku-praxis binary not found"
+    binary="$(find "${INSTALL_TMP}/extract" -type f -name wanaku-server -print | head -n 1)"
+    [ -n "$binary" ] || error "Unexpected archive layout: wanaku-server binary not found"
 
-    install -m 0755 "$binary" "${INSTALL_DIR}/wanaku-praxis"
-    info "Wanaku Praxis installed at ${INSTALL_DIR}/wanaku-praxis"
+    install -m 0755 "$binary" "${INSTALL_DIR}/wanaku-server"
+    info "Wanaku installed at ${INSTALL_DIR}/wanaku-server"
 
     if ! printf '%s' "$PATH" | tr ':' '\n' | grep -Fxq "$INSTALL_DIR"; then
         warn "$INSTALL_DIR is not in your PATH. Add it with:"
         warn "  export PATH=\"${INSTALL_DIR}:\$PATH\""
     fi
 
-    "${INSTALL_DIR}/wanaku-praxis" --version 2>/dev/null || true
+    "${INSTALL_DIR}/wanaku-server" --version 2>/dev/null || true
 }
 
 main() {
@@ -95,7 +95,7 @@ main() {
     detect_platform
     resolve_release
     download_and_verify
-    install_wanaku_praxis
+    install_wanaku
 }
 
 main "$@"

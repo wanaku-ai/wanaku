@@ -1,6 +1,6 @@
-# Getting Started with Wanaku Praxis
+# Getting Started with Wanaku
 
-Wanaku Praxis is a Rust-based MCP (Model Context Protocol) server that routes AI agent requests through a sophisticated filter pipeline. Think of it as the bouncer at the club: it checks IDs, enforces the rules, and makes sure everyone gets to the right place.
+Wanaku is a Rust-based MCP (Model Context Protocol) server that routes AI agent requests through a sophisticated filter pipeline. Think of it as the bouncer at the club: it checks IDs, enforces the rules, and makes sure everyone gets to the right place.
 
 This guide gets you from zero to running MCP server in under 10 minutes.
 
@@ -18,8 +18,8 @@ That's it. The admin UI dev workflow also uses Yarn, but that's only needed if y
 ### 1. Clone and Build
 
 ```bash
-git clone https://github.com/wanaku-ai/wanaku-praxis.git
-cd wanaku-praxis
+git clone https://github.com/wanaku-ai/wanaku.git
+cd wanaku
 cargo build --release
 ```
 
@@ -64,7 +64,7 @@ curl -X POST http://localhost:8080/api/v1/forwards \
   }'
 ```
 
-Praxis connects to the upstream server, discovers all available tools, and registers them automatically with `type: "mcp-forward"`.
+Wanaku connects to the upstream server, discovers all available tools, and registers them automatically with `type: "mcp-forward"`.
 
 List the discovered tools:
 
@@ -140,7 +140,7 @@ From here you can view and manage tools, namespaces, resources, prompts, and for
 
 ### Enable Authentication
 
-Wanaku Praxis uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy runs as a reverse proxy in front of the MCP and management API ports.
+Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy runs as a reverse proxy in front of the MCP and management API ports.
 
 **Quick start with docker-compose:**
 
@@ -156,7 +156,7 @@ openssl rand -base64 32
 
 # Place your Keycloak realm export as wanaku-realm.json in this directory
 
-# Start the stack (Keycloak + oauth2-proxy + Praxis)
+# Start the stack (Keycloak + oauth2-proxy + Wanaku)
 docker compose -f docker-compose-auth.yml up
 ```
 
@@ -195,7 +195,7 @@ The `cargo run` command uses the debug build. For production, use:
 
 ```bash
 cargo build --release
-./target/release/wanaku-praxis
+./target/release/wanaku-server
 ```
 
 The release binary is optimized compared to debug builds.
@@ -205,11 +205,11 @@ The release binary is optimized compared to debug builds.
 The server embeds `server/src/default.yaml` at compile time. To override:
 
 ```bash
-./target/release/wanaku-praxis --praxis-config /path/to/custom-praxis.yaml \
+./target/release/wanaku-server --pipeline-config /path/to/custom-praxis.yaml \
   --wanaku-config /path/to/wanaku.yaml
 ```
 
-- **`--praxis-config`:** Praxis filter pipeline config (listeners, filter chains)
+- **`--pipeline-config`:** Praxis filter pipeline config (listeners, filter chains)
 - **`--wanaku-config`:** Wanaku bootstrap config (forwards, namespaces)
 
 Both are optional. If omitted, embedded defaults are used.
@@ -257,7 +257,7 @@ Check that:
 Enable trace logs to see what the filters are doing:
 
 ```bash
-RUST_LOG=wanaku_praxis_filters=trace cargo run
+RUST_LOG=wanaku_filters=trace cargo run
 ```
 
 ### 4. Management API returns 404 for valid routes
@@ -270,7 +270,7 @@ Check the route enum in `routes.rs` and the `dispatch` function in `mod.rs`.
 
 **Server crashes with "thread 'main' panicked":**
 
-Praxis denies `unsafe_code`, `unwrap_used`, `expect_used`, and `panic` at the crate level. A panic means a logic bug. File an issue with the stack trace and steps to reproduce.
+Wanaku denies `unsafe_code`, `unwrap_used`, `expect_used`, and `panic` at the crate level. A panic means a logic bug. File an issue with the stack trace and steps to reproduce.
 
 **Tool calls time out:**
 

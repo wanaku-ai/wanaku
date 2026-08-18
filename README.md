@@ -27,24 +27,24 @@ South America.
 Download the latest early-access build on Linux or macOS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku-praxis.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
 ```
 
-The installer detects the host platform, verifies the release checksum, and installs `wanaku-praxis` into `$HOME/bin`. Override the destination with `WANAKU_PRAXIS_INSTALL_DIR`.
+The installer detects the host platform, verifies the release checksum, and installs `wanaku-server` into `$HOME/bin`. Override the destination with `WANAKU_INSTALL_DIR`.
 
 ### Container
 
 ```bash
-podman run -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-praxis
+podman run -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-server
 ```
 
 To preload forwards, mount a `wanaku.yaml`:
 
 ```bash
 podman run -p 8080:8080 -p 8081:8081 \
-  -v ./wanaku.yaml:/etc/wanaku-praxis/wanaku.yaml \
-  quay.io/wanaku/wanaku-praxis \
-  --wanaku-config /etc/wanaku-praxis/wanaku.yaml
+  -v ./wanaku.yaml:/etc/wanaku/wanaku.yaml \
+  quay.io/wanaku/wanaku-server \
+  --wanaku-config /etc/wanaku/wanaku.yaml
 ```
 
 ### From Source

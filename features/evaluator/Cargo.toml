@@ -23,8 +23,8 @@ serde_yaml = { workspace = true }
 tracing = { workspace = true }
 wasmtime = { version = "47", features = ["component-model"] }
 wasmtime-wasi = "47"
-wanaku-praxis-apis = { workspace = true }
-wanaku-praxis-filters = { workspace = true }
+wanaku-apis = { workspace = true }
+wanaku-filters = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["blocking", "json"] }

@@ -6,8 +6,8 @@ use praxis_filter::{FilterPipeline, FilterRegistry, PipelineExtension, RequestEx
 use praxis_protocol::ListenerPipelines;
 use tracing::info;
 
-use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::registry::InMemoryRegistry;
+use wanaku_apis::feature::Feature;
+use wanaku_apis::registry::InMemoryRegistry;
 
 struct RegistryExtension {
     registry: InMemoryRegistry,

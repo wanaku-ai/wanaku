@@ -6,8 +6,8 @@ use bytes::Bytes;
 use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
-use wanaku_praxis_apis::correlation::{self, REQUEST_ID_ARG};
-use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, Interaction, InteractionStore};
+use wanaku_apis::correlation::{self, REQUEST_ID_ARG};
+use wanaku_apis::interactions::{InMemoryInteractionStore, Interaction, InteractionStore};
 
 struct InterceptState {
     path: String,

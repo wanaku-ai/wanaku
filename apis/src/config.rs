@@ -1,4 +1,4 @@
-//! Centralized environment variable configuration for Wanaku Praxis.
+//! Centralized environment variable configuration for Wanaku.
 //!
 //! All `WANAKU_*` environment variables are read once at startup via
 //! [`LazyLock`] and exposed through the [`ENV`] static. No other module
@@ -13,7 +13,7 @@ use std::sync::LazyLock;
 /// Management API listen address (default `0.0.0.0:8080`).
 const WANAKU_MGMT_LISTEN: &str = "WANAKU_MGMT_LISTEN";
 
-/// Inference backend address used in the default Praxis config (default `127.0.0.1:11434`).
+/// Inference backend address (default `127.0.0.1:11434`).
 const WANAKU_INFERENCE_UPSTREAM: &str = "WANAKU_INFERENCE_UPSTREAM";
 
 /// Bearer token API key for the inference upstream. Empty means no auth.
@@ -47,7 +47,7 @@ pub struct PersistEnv {
 pub struct WanakuEnv {
     /// Management API listen address.
     pub mgmt_listen: String,
-    /// Inference upstream `host:port` for the Praxis proxy load-balancer endpoint.
+    /// Inference upstream `host:port` for the proxy load-balancer endpoint.
     pub inference_upstream: String,
     /// Path prefix extracted from the upstream URL (e.g. `/api` from `https://host/api`).
     /// Empty when the upstream is a bare `host:port`.

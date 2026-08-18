@@ -1,6 +1,6 @@
 use http::{Response, StatusCode};
 use tracing::warn;
-use wanaku_praxis_apis::http_response::json_err;
+use wanaku_apis::http_response::json_err;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ChatRoute {
@@ -35,7 +35,7 @@ fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
         .status(StatusCode::OK)
         .header("Content-Type", "application/json")
         .header("Content-Length", body.len())
-        .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
+        .header("Access-Control-Allow-Origin", wanaku_apis::config::ENV.cors_origin.as_str())
         .body(body)
         .expect("valid json response")
 }
@@ -213,7 +213,7 @@ pub(crate) async fn handle_chat_completions(
         .status(StatusCode::OK)
         .header("Content-Type", "text/plain")
         .header("Content-Length", response_body.len())
-        .header("Access-Control-Allow-Origin", wanaku_praxis_apis::config::ENV.cors_origin.as_str())
+        .header("Access-Control-Allow-Origin", wanaku_apis::config::ENV.cors_origin.as_str())
         .body(response_body)
         .unwrap_or_default()
 }

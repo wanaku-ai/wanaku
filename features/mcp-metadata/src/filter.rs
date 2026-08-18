@@ -4,7 +4,7 @@ use praxis_filter::{FilterAction, FilterError, HttpFilterContext, Rejection};
 
 use crate::IssuerConfig;
 
-wanaku_praxis_filters::body_filter_boilerplate!(WellKnownFilter, "wanaku_well_known");
+wanaku_filters::body_filter_boilerplate!(WellKnownFilter, "wanaku_well_known");
 
 const WELL_KNOWN_PREFIX: &str = "/.well-known/oauth-protected-resource/";
 

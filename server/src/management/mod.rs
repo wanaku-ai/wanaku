@@ -14,8 +14,8 @@ use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 use tracing::info;
 
-use wanaku_praxis_apis::feature::Feature;
-use wanaku_praxis_apis::registry::InMemoryRegistry;
+use wanaku_apis::feature::Feature;
+use wanaku_apis::registry::InMemoryRegistry;
 
 use self::handlers::{
     handle_forward_create, handle_forward_delete, handle_forward_get, handle_forward_list,
@@ -50,7 +50,7 @@ impl WanakuManagementService {
         registry: InMemoryRegistry,
         features: Vec<Box<dyn Feature>>,
     ) -> Self {
-        let ui_path = wanaku_praxis_apis::config::ENV.ui_path.clone();
+        let ui_path = wanaku_apis::config::ENV.ui_path.clone();
         if let Some(p) = &ui_path {
             info!(path = %p.display(), "Admin UI serving enabled");
         }

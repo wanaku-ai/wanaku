@@ -2,14 +2,14 @@ use std::collections::HashMap;
 
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
-use wanaku_praxis_apis::interactions::{InMemoryInteractionStore, InteractionStore};
-use wanaku_praxis_apis::registry::{InMemoryRegistry, ToolRegistry};
+use wanaku_apis::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 use crate::action::ActionResult;
 use crate::config::{ErrorPolicy, EvaluatorDef, LlmOperation};
 use crate::state::EvaluatorState;
 
-wanaku_praxis_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
+wanaku_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
 
 impl EvaluatorFilter {
     #[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "evaluator pipeline with multiple validation steps")]
@@ -18,7 +18,7 @@ impl EvaluatorFilter {
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let method = match ctx.get_metadata(wanaku_praxis_filters::MCP_METHOD_KEY) {
+        let method = match ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY) {
             Some(m) => m.to_owned(),
             None => return Ok(FilterAction::Continue),
         };
@@ -29,8 +29,8 @@ impl EvaluatorFilter {
         };
 
         let namespace = ctx
-            .get_metadata(wanaku_praxis_apis::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_praxis_apis::registry::DEFAULT_NAMESPACE)
+            .get_metadata(wanaku_apis::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE)
             .to_owned();
 
         let Some(evaluator) = state.find_matching(&method, &namespace) else {
@@ -55,13 +55,13 @@ impl EvaluatorFilter {
         };
 
         let tool_name = ctx
-            .get_metadata(wanaku_praxis_filters::MCP_NAME_KEY)
+            .get_metadata(wanaku_filters::MCP_NAME_KEY)
             .map(std::borrow::ToOwned::to_owned);
 
         let arguments = parse_arguments(body);
 
         let conversation_id = arguments
-            .get(wanaku_praxis_apis::correlation::REQUEST_ID_ARG)
+            .get(wanaku_apis::correlation::REQUEST_ID_ARG)
             .cloned()
             .or_else(|| state.get_binding(&namespace));
 
@@ -114,8 +114,8 @@ impl EvaluatorFilter {
             );
             return match evaluator.on_error {
                 ErrorPolicy::Continue => Ok(FilterAction::Continue),
-                ErrorPolicy::Block => Ok(wanaku_praxis_filters::response::json_rpc_error(
-                    &wanaku_praxis_filters::response::extract_json_rpc_id(body),
+                ErrorPolicy::Block => Ok(wanaku_filters::response::json_rpc_error(
+                    &wanaku_filters::response::extract_json_rpc_id(body),
                     -32603,
                     "evaluator processor module not available",
                 )),
@@ -156,13 +156,13 @@ fn dispatch_action(
     method: &str,
     evaluator_name: &str,
 ) -> Result<FilterAction, FilterError> {
-    let json_rpc_id = wanaku_praxis_filters::response::extract_json_rpc_id(body);
+    let json_rpc_id = wanaku_filters::response::extract_json_rpc_id(body);
 
     match result {
         ActionResult::Pass => Ok(FilterAction::Continue),
         ActionResult::Block(reason) => {
             tracing::warn!(evaluator = %evaluator_name, reason = %reason, "request blocked");
-            Ok(wanaku_praxis_filters::response::json_rpc_error(
+            Ok(wanaku_filters::response::json_rpc_error(
                 &json_rpc_id,
                 -32001,
                 &format!("blocked by evaluator {evaluator_name}: {reason}"),
@@ -170,7 +170,7 @@ fn dispatch_action(
         }
         ActionResult::RejectMalformed(reason) => {
             tracing::warn!(evaluator = %evaluator_name, reason = %reason, "rejected: malformed input");
-            Ok(wanaku_praxis_filters::response::json_rpc_error(
+            Ok(wanaku_filters::response::json_rpc_error(
                 &json_rpc_id,
                 -32002,
                 &format!("evaluator {evaluator_name}: malformed input — {reason}"),
@@ -210,7 +210,7 @@ fn dispatch_action(
                 "result": { "tools": mcp_tools }
             });
             Ok(FilterAction::Reject(
-                wanaku_praxis_filters::response::json_response(Bytes::from(response.to_string())),
+                wanaku_filters::response::json_response(Bytes::from(response.to_string())),
             ))
         }
         ActionResult::SetMetadata(key, value) => {
@@ -229,8 +229,8 @@ async fn validate_and_retry_if_needed(
     method: &str,
     tool_name: Option<&str>,
     arguments: &HashMap<String, String>,
-    tools: &[wanaku_praxis_apis::registry::ToolEntry],
-    history: &[wanaku_praxis_apis::interactions::Interaction],
+    tools: &[wanaku_apis::registry::ToolEntry],
+    history: &[wanaku_apis::interactions::Interaction],
 ) -> String {
     let Some(schema) = compiled_schema else {
         return raw_result.to_owned();
