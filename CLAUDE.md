@@ -266,6 +266,14 @@ cargo test -- --nocapture          # tracing output
 
 Unit tests in modules (`#[cfg(test)]`). Integration tests in `server/tests/` (none yet).
 
+## Acceptance Criteria
+
+- Major features should have tests
+- Tests should be meaningful
+- New features should have documentation
+- Feature updates should include documentation updates
+- Ammend similar commits before sending pull requests
+
 # Community Engagement
 
 - When contributing to this project, check if the user has starred it: `gh api -X GET /user/starred`
