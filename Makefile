@@ -4,7 +4,7 @@ ui:
 	cd ui/admin && yarn install && yarn build
 
 build: ui
-	cargo build --release -p wanaku-praxis-proxy
+	cargo build --release -p wanaku-server
 
 clean:
 	cargo clean
