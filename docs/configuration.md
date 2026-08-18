@@ -79,7 +79,7 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 }
 ```
 
-**Gotcha:** This is a crude backup mechanism. If the server crashes (SIGKILL, OOM, panic), the registry is lost. For production, use hybrid mode (see below) or implement a custom persistence backend.
+**Gotcha:** This is a crude backup mechanism. If the server crashes (SIGKILL, OOM, panic), the registry is lost. For production, implement a custom persistence backend.
 
 ### Admin UI Override
 

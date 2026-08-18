@@ -384,8 +384,6 @@ Deploy Praxis as a `Deployment` with:
 
 Mount `WANAKU_PERSIST_PATH` to a `PersistentVolume` for registry persistence across restarts.
 
-See classic Wanaku's `deploy/openshift/` for YAML templates (adapt for Praxis ports/config).
-
 ## Performance Characteristics
 
 **Throughput:**
