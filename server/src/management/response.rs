@@ -4,6 +4,7 @@ use tracing::warn;
 
 pub(super) const MAX_BODY_BYTES: usize = 1_048_576;
 
+#[cfg(feature = "ui")]
 #[expect(clippy::expect_used, reason = "valid static response")]
 pub(super) fn redirect_response(location: &str) -> Response<Vec<u8>> {
     Response::builder()

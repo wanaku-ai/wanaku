@@ -47,6 +47,9 @@ jobs:
       - name: Build
         run: cargo build --verbose
 
+      - name: Build (headless)
+        run: cargo build --verbose --no-default-features -p wanaku-server
+
       - name: Test
         run: cargo test --verbose
 
@@ -73,6 +76,18 @@ jobs:
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           docker push ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ github.ref_name }}-${{ steps.arch.outputs.arch }}
+
+      - name: Build headless container image
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        run: |
+          docker build -f Containerfile.headless \
+            -t ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
+            .
+
+      - name: Push headless container image
+        if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        run: |
+          docker push ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ github.ref_name }}-${{ steps.arch.outputs.arch }}
 
   createManifests:
     needs: build

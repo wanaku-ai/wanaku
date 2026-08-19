@@ -1,6 +1,7 @@
 mod handlers;
 mod response;
 mod routes;
+#[cfg(feature = "ui")]
 mod ui;
 
 pub use handlers::discover_and_update_forward;
@@ -12,7 +13,6 @@ use async_trait::async_trait;
 use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
-use tracing::info;
 
 use wanaku_apis::feature::Feature;
 use wanaku_apis::registry::InMemoryRegistry;
@@ -28,7 +28,9 @@ use self::handlers::{
     handle_statistics,
     handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
 };
-use self::response::{json_err, json_ok, raw_json_response, read_body, redirect_response};
+use self::response::{json_err, json_ok, raw_json_response, read_body};
+#[cfg(feature = "ui")]
+use self::response::redirect_response;
 use self::routes::{
     ForwardRoute, ManagementRoute, NamespaceRoute,
     PromptRoute, ResourceRoute, ToolRoute,
@@ -37,11 +39,11 @@ use self::routes::{
     resolve_prompt_route, resolve_resource_route,
     resolve_tool_route,
 };
-use self::ui::serve_ui;
 
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     features: Vec<Box<dyn Feature>>,
+    #[cfg(feature = "ui")]
     ui_path: Option<std::path::PathBuf>,
 }
 
@@ -50,14 +52,17 @@ impl WanakuManagementService {
         registry: InMemoryRegistry,
         features: Vec<Box<dyn Feature>>,
     ) -> Self {
+        #[cfg(feature = "ui")]
         let ui_path = wanaku_apis::config::ENV.ui_path.clone();
+        #[cfg(feature = "ui")]
         if let Some(p) = &ui_path {
-            info!(path = %p.display(), "Admin UI serving enabled");
+            tracing::info!(path = %p.display(), "Admin UI serving enabled");
         }
 
         Self {
             registry,
             features,
+            #[cfg(feature = "ui")]
             ui_path,
         }
     }
@@ -83,12 +88,15 @@ impl ServeHttp for WanakuManagementService {
             return raw_json_response(body);
         }
 
-        if path == "/" {
-            return redirect_response("/admin/");
-        }
+        #[cfg(feature = "ui")]
+        {
+            if path == "/" {
+                return redirect_response("/admin/");
+            }
 
-        if path.starts_with("/admin") {
-            return serve_ui(&self.ui_path, &path);
+            if path.starts_with("/admin") {
+                return ui::serve_ui(&self.ui_path, &path);
+            }
         }
 
         let mgmt_route = resolve_management_route(&method, &path);

@@ -1,0 +1,97 @@
+# syntax=docker/dockerfile:1
+
+# Headless build — no admin UI, smaller image, no Node.js dependency.
+
+# ------------------------------------------------------------------------------
+# Stage 1: Build Rust binary (headless)
+# ------------------------------------------------------------------------------
+
+FROM registry.fedoraproject.org/fedora:44 AS builder
+
+RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make curl \
+    && dnf clean all
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.96.0
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+WORKDIR /src
+
+# ------------------------------------------------------------------------------
+# Cache Build
+# ------------------------------------------------------------------------------
+
+COPY Cargo.toml Cargo.lock ./
+COPY apis/Cargo.toml apis/Cargo.toml
+COPY filters/Cargo.toml filters/Cargo.toml
+COPY server/Cargo.toml server/Cargo.toml
+COPY features/chat/Cargo.toml features/chat/Cargo.toml
+COPY features/evaluator/Cargo.toml features/evaluator/Cargo.toml
+COPY features/intercept/Cargo.toml features/intercept/Cargo.toml
+COPY features/mcp-metadata/Cargo.toml features/mcp-metadata/Cargo.toml
+COPY features/plugins/Cargo.toml features/plugins/Cargo.toml
+
+RUN mkdir -p apis/src filters/src server/src \
+    features/chat/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/plugins/src \
+    ui/admin/dist \
+    && echo '//! stub' > apis/src/lib.rs \
+    && echo '//! stub' > filters/src/lib.rs \
+    && echo '//! stub' > server/src/lib.rs \
+    && echo '//! stub' > features/chat/src/lib.rs \
+    && echo '//! stub' > features/evaluator/src/lib.rs \
+    && echo '//! stub' > features/intercept/src/lib.rs \
+    && echo '//! stub' > features/mcp-metadata/src/lib.rs \
+    && echo '//! stub' > features/plugins/src/lib.rs \
+    && printf '//! stub\nfn main() {}\n' > server/src/main.rs
+
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/src/target \
+    cargo build --release -p wanaku-server --no-default-features
+
+# ------------------------------------------------------------------------------
+# Real Build
+# ------------------------------------------------------------------------------
+
+COPY apis/src apis/src
+COPY filters/src filters/src
+COPY server/src server/src
+COPY features features
+
+RUN find apis/src filters/src server/src features \
+    -name '*.rs' -exec touch {} +
+
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/src/target \
+    cargo build --release -p wanaku-server --no-default-features \
+    && cp target/release/wanaku-server /usr/local/bin/wanaku-server
+
+# ------------------------------------------------------------------------------
+# Stage 2: Runtime
+# ------------------------------------------------------------------------------
+
+FROM registry.fedoraproject.org/fedora-minimal:44
+
+LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku" \
+    org.opencontainers.image.description="Wanaku MCP proxy server (headless — no admin UI)" \
+    org.opencontainers.image.licenses="Apache-2.0"
+
+RUN microdnf install -y ca-certificates shadow-utils \
+    && microdnf clean all \
+    && groupadd -r wanaku \
+    && useradd -r -g wanaku -d /nonexistent -s /sbin/nologin wanaku \
+    && mkdir -p /etc/wanaku /data/registry
+
+COPY --from=builder --chown=root:root --chmod=0555 \
+    /usr/local/bin/wanaku-server /usr/local/bin/wanaku-server
+
+RUN chown wanaku:wanaku /data/registry
+
+USER wanaku:wanaku
+
+WORKDIR /etc/wanaku
+
+EXPOSE 8080 8081 8083
+
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s \
+    CMD curl -sf http://127.0.0.1:8080/healthz || exit 1
+
+ENTRYPOINT ["wanaku-server"]
