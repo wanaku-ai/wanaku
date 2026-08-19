@@ -350,11 +350,16 @@ impl InMemoryRegistry {
         if let Some(backend) = &self.persistence {
             let snapshot = self.snapshot();
             let backend = Arc::clone(backend);
-            tokio::task::spawn_blocking(move || {
+            let save = move || {
                 if let Err(e) = backend.save(&snapshot) {
                     tracing::warn!(error = %e, "failed to persist registry");
                 }
-            });
+            };
+            if tokio::runtime::Handle::try_current().is_ok() {
+                tokio::task::spawn_blocking(save);
+            } else {
+                save();
+            }
         }
     }
 }
