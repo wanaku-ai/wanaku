@@ -74,7 +74,7 @@ When deploying Wanaku, please follow these security best practices:
 - Review audit logs regularly
 - Set up alerts for suspicious activity
 
-For more security configuration options, see the [Configuration Guide](docs/configurations.md).
+For more security configuration options, see the [Configuration Guide](docs/configuration.md).
 
 ## Acknowledgments
 

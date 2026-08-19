@@ -341,7 +341,7 @@ Both instances share a cookie secret for SSO.
 
 **For production deployments without auth:**
 
-1. Run Praxis standalone on ports 8081/8080 without oauth2-proxy
+1. Run Wanaku standalone on ports 8081/8080 without oauth2-proxy
 2. Bind to localhost only (`WANAKU_MGMT_LISTEN=127.0.0.1:8080`)
 3. Use a reverse proxy with API key auth (nginx `auth_request`, Envoy `ext_authz`)
 

@@ -63,7 +63,7 @@ For deployment details, see `deploy/auth/README.md` and [Configuration](./config
 
 ### Chat Feature (`features/chat/`)
 
-Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you use Wanaku as a unified API gateway for both MCP tools and raw LLM chat.
+Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you proxy LLM chat completions alongside MCP tool actions through a single Wanaku deployment.
 
 **How it works:**
 
