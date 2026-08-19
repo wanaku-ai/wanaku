@@ -2,7 +2,7 @@
 
 ### Wanaku
 
-The Wanaku MCP Router binary.
+The Wanaku Server binary.
 
 | Platform | File |
 |---|---|
