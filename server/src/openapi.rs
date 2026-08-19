@@ -114,7 +114,10 @@ const fn get_namespace() {}
 
 #[utoipa::path(post, path = "/api/v1/namespaces", tag = "Namespaces",
     request_body = NamespaceEntry,
-    responses((status = 200, description = "Namespace registered", body = NamespaceEntry))
+    responses(
+        (status = 200, description = "Namespace registered", body = NamespaceEntry),
+        (status = 400, description = "Invalid namespace name"),
+    )
 )]
 const fn create_namespace() {}
 

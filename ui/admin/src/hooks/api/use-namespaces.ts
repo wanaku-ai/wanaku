@@ -32,7 +32,6 @@ export const useNamespaces = () => {
 
   const updateNamespace = useCallback(
     async (namespace: NamespaceEntry, options?: RequestInit): Promise<void> => {
-      // No PUT endpoint - delete and recreate
       if (!namespace.name) {
         throw new Error("Namespace name is required for update");
       }
@@ -60,7 +59,6 @@ export const useNamespaces = () => {
 };
 
 export const listNamespaces = async (options: any = null) => {
-  // Check if we have valid cached data
   if (namespacesCache) {
     if (process.env.NODE_ENV !== 'production') {
       console.log('Returning cached namespaces data');
@@ -68,13 +66,11 @@ export const listNamespaces = async (options: any = null) => {
     return namespacesCache.data;
   }
 
-  // Fetch fresh data
   if (process.env.NODE_ENV !== 'production') {
     console.log('Fetching fresh namespaces data');
   }
   const result = await apiListNamespaces(options);
 
-  // Cache the result
   namespacesCache = {
     data: result
   };
@@ -82,19 +78,18 @@ export const listNamespaces = async (options: any = null) => {
   return result;
 };
 
-// Function to clear cache if needed
 export const clearNamespacesCache = () => {
   namespacesCache = null;
 };
 
-export const getNamespacePathById = (id?: string): string => {
-  if (!id) {
+export const getNamespacePathById = (name?: string): string => {
+  if (!name) {
     return "default"
   }
   if (namespacesCache) {
     const data = namespacesCache.data.data as NamespaceEntry[]
-    const found = data.find(namespace => namespace.id === id)?.path
+    const found = data.find(namespace => namespace.name === name)?.name
     if (found) return found
   }
-  return id;
+  return name;
 }

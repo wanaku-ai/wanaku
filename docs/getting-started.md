@@ -130,9 +130,21 @@ To discover tools from additional MCP servers, register more forwards the same w
 
 ### Explore Namespaces
 
-Namespaces isolate tools. Create a `"finance"` namespace and register a forward that assigns discovered tools to it:
+Namespaces isolate tools and resources. Each namespace is identified by a **name** that doubles as its URL path segment.
+
+**Namespace naming rules:**
+- Lowercase letters, numbers, and hyphens only
+- Must start and end with a letter or number
+- 1 to 63 characters long
+- Examples: `finance`, `my-team`, `staging-42`
+
+Create a `"finance"` namespace and register a forward that assigns discovered tools to it:
 
 ```bash
+curl -X POST http://localhost:8080/api/v1/namespaces \
+  -H "Content-Type: application/json" \
+  -d '{"name": "finance"}'
+
 wanaku forwards add --service="http://market-data-mcp:8080/mcp" --name market-data-server --no-auth
 ```
 
@@ -145,6 +157,8 @@ curl -X POST http://localhost:8081/finance/mcp \
 ```
 
 Only tools from the `market-data-server` forward appear. The default namespace tools are invisible here.
+
+Note: the MCP endpoint path must include `/mcp` — bare namespace paths like `/finance` (without `/mcp`) are rejected.
 
 ### Use the Admin UI
 
