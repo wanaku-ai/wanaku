@@ -1,6 +1,5 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
-use wanaku_apis::registry::DEFAULT_NAMESPACE;
 
 pub use wanaku_apis::NAMESPACE_METADATA_KEY;
 
@@ -12,17 +11,13 @@ fn extract_namespace(path: &str) -> Option<&str> {
         .unwrap_or(path)
         .trim_end_matches('/');
 
-    if trimmed == "mcp" || trimmed.is_empty() {
-        return Some(DEFAULT_NAMESPACE);
-    }
-
-    // /{namespace}/mcp
+    // /{namespace}/mcp — the canonical format
     if let Some(ns) = trimmed.strip_suffix("/mcp")
         && !ns.is_empty() && !ns.contains('/') {
             return Some(ns);
         }
 
-    // /mcp/{namespace}
+    // /mcp/{namespace} — alternate format
     if let Some(ns) = trimmed.strip_prefix("mcp/")
         && !ns.is_empty() && !ns.contains('/') {
             return Some(ns);
@@ -67,8 +62,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn root_mcp_is_default() {
-        assert_eq!(extract_namespace("/mcp"), Some("default"));
+    fn bare_mcp_is_none() {
+        assert_eq!(extract_namespace("/mcp"), None);
+    }
+
+    #[test]
+    fn default_namespace_explicit() {
+        assert_eq!(extract_namespace("/default/mcp"), Some("default"));
     }
 
     #[test]
@@ -92,8 +92,8 @@ mod tests {
     }
 
     #[test]
-    fn empty_path_is_default() {
-        assert_eq!(extract_namespace("/"), Some("default"));
+    fn empty_path_is_none() {
+        assert_eq!(extract_namespace("/"), None);
     }
 
     #[test]
@@ -102,8 +102,8 @@ mod tests {
     }
 
     #[test]
-    fn mcp_prefix_another() {
-        assert_eq!(extract_namespace("/mcp/finance"), Some("finance"));
+    fn mcp_prefix_default() {
+        assert_eq!(extract_namespace("/mcp/default"), Some("default"));
     }
 
     #[test]
