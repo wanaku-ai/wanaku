@@ -3,6 +3,13 @@ import { defineConfig, devices } from '@playwright/test';
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
 export default defineConfig({
+  webServer: {
+    command: 'cargo run --manifest-path ../../../Cargo.toml',
+    url: routerUrl,
+    reuseExistingServer: true,
+    timeout: 120_000,
+  },
+
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
