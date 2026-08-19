@@ -90,13 +90,13 @@ test.describe('Forwards', () => {
 
   test('server column appears in table', async () => {
     await forwards.goto();
-    const headerText = await forwards.page.locator('th').allInnerTexts();
+    const headerText = await forwards.getColumnHeaders();
     expect(headerText.some(h => h.includes('Server'))).toBeTruthy();
   });
 
   test('status column appears in table', async () => {
     await forwards.goto();
-    const headerText = await forwards.page.locator('th').allInnerTexts();
+    const headerText = await forwards.getColumnHeaders();
     expect(headerText.some(h => h.includes('Status'))).toBeTruthy();
   });
 
