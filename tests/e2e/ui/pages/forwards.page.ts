@@ -68,6 +68,11 @@ export class ForwardsPage extends BasePage {
     await this.detailModal().waitFor({ state: 'hidden', timeout: 5_000 });
   }
 
+  async getColumnHeaders(): Promise<string[]> {
+    await this.page.locator(Carbon.dataTable).waitFor({ state: 'visible', timeout: 5_000 });
+    return this.page.locator(`${Carbon.dataTable} th`).allInnerTexts();
+  }
+
   async getRowStatusText(name: string): Promise<string> {
     const row = this.rowWithText(name);
     const tag = row.locator('.cds--tag');
