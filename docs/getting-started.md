@@ -15,13 +15,32 @@ You'll need:
 
 ### 1. Download the Server
 
-Download the latest `wanaku-server` binary from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access).
+Wanaku ships in two variants:
 
-Choose the binary that matches your platform, make it executable, and place it somewhere in your PATH:
+| Variant | Archive name | Description |
+|---|---|---|
+| **Full** | `wanaku-server-{version}-{platform}` | Includes the embedded admin UI at `http://localhost:8080/admin` |
+| **Headless** | `wanaku-server-headless-{version}-{platform}` | No admin UI — API and CLI only. Aimed at builders and integrators who embed Wanaku into their own tooling or manage it entirely through the management API and CLI. |
+
+Both variants are functionally identical: same MCP endpoint, same management API, same filter pipeline. The only difference is whether the admin UI is served.
+
+Download the variant that fits your use case from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access).
+
+Make it executable and place it in your PATH:
 
 ```bash
 chmod +x wanaku-server
 sudo mv wanaku-server /usr/local/bin/
+```
+
+Container images are also available for both variants:
+
+```bash
+# Full (with admin UI)
+docker pull quay.io/wanaku/wanaku-server:early-access
+
+# Headless (no admin UI)
+docker pull quay.io/wanaku/wanaku-server-headless:early-access
 ```
 
 ### 2. Download the CLI
@@ -128,6 +147,8 @@ curl -X POST http://localhost:8081/finance/mcp \
 Only tools from the `market-data-server` forward appear. The default namespace tools are invisible here.
 
 ### Use the Admin UI
+
+> **Note:** The admin UI is only available in the full distribution. If you're running the headless variant, manage everything through the CLI or the [Management API](./management-api.md).
 
 Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via the CLI.
 
