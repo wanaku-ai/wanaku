@@ -84,7 +84,7 @@ export const NamespacesPage: React.FC = () => {
       await removeNamespace(namespace.name);
       await refreshNamespaces();
     } catch {
-      setErrorMessage(`Failed to delete namespace: ${namespace.path}`);
+      setErrorMessage(`Failed to delete namespace: ${namespace.name}`);
     }
   };
 
