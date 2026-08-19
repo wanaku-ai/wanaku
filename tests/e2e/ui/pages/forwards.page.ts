@@ -67,4 +67,11 @@ export class ForwardsPage extends BasePage {
     await this.detailModal().locator('button[aria-label="Close"]').click();
     await this.detailModal().waitFor({ state: 'hidden', timeout: 5_000 });
   }
+
+  async getRowStatusText(name: string): Promise<string> {
+    const row = this.rowWithText(name);
+    const tag = row.locator('.cds--tag');
+    await tag.waitFor({ state: 'visible', timeout: 5_000 });
+    return tag.innerText();
+  }
 }
