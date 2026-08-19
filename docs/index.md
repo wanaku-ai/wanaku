@@ -24,18 +24,20 @@ All in a single binary with no runtime dependencies (except libc).
 
 ### Getting Started
 
-- **[Getting Started](./getting-started.md)** — install, build, run your first MCP server
+- **[Getting Started](./getting-started.md)** — download, install, and run your first MCP server
 - **[Configuration](./configuration.md)** — all environment variables and YAML config options
+- **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
 - **[Management API](./management-api.md)** — REST API reference for tools, resources, etc.
+- **[FAQ](./faq.md)** — common issues and troubleshooting
 
 ### Understanding the System
 
 - **[Architecture](./architecture.md)** — filter pipeline, registry, tool routing, deployment patterns
 - **[Features](./features.md)** — LLM chat and how to create custom features
 
-### Extending and Customizing
+### Contributing
 
-- **[Admin UI](./admin-ui.md)** — React + Carbon Design System frontend development
+- **[Admin UI Development](./contributing-admin-ui.md)** — React + Carbon Design System frontend development
 
 ## Who This Is For
 
@@ -118,10 +120,10 @@ Features are Rust crates that implement the `Feature` trait. They can:
 
 ### Run Locally
 
+Download `wanaku-server` from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access), then:
+
 ```bash
-git clone https://github.com/wanaku-ai/wanaku.git
-cd wanaku
-cargo run --release
+wanaku-server
 ```
 
 Server starts on:
@@ -132,20 +134,13 @@ Server starts on:
 
 Tools, resources, and prompts are obtained by registering a forwarded MCP server. When you register a forward, Wanaku auto-discovers all tools from the upstream server.
 
-```bash
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "echo-server",
-    "address": "http://echo-mcp:8080/mcp"
-  }'
-```
-
-This automatically discovers and registers all tools exposed by the upstream MCP server. To refresh the tool list after the upstream server changes, use the refresh endpoint:
+Using the [Wanaku CLI](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access):
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/forwards/echo-server/refreshes
+wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo-server --no-auth
 ```
+
+This automatically discovers and registers all tools exposed by the upstream MCP server.
 
 ### Deploy to Kubernetes
 
@@ -220,20 +215,13 @@ The binary is a single statically-linked executable with low memory footprint.
 Enable trace logs:
 
 ```bash
-RUST_LOG=trace cargo run
+RUST_LOG=trace wanaku-server
 ```
 
 Check what filters see:
 
 ```bash
-RUST_LOG=wanaku_filters=trace cargo run
-```
-
-Verify environment variables:
-
-```rust
-// Add to main.rs
-println!("WANAKU_MGMT_LISTEN: {:?}", wanaku_apis::config::ENV.mgmt_listen);
+RUST_LOG=wanaku_filters=trace wanaku-server
 ```
 
 ## Contributing

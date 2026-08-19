@@ -8,73 +8,78 @@ This guide gets you from zero to running MCP server in under 10 minutes.
 
 You'll need:
 
-- **Rust 1.96 or later** — check with `rustc --version`
-- **Cargo** (comes with Rust)
 - A terminal where you're comfortable running commands
-That's it. The admin UI dev workflow also uses Yarn, but that's only needed if you're modifying the frontend.
+- `jq` (optional, for formatting JSON output)
 
 ## Quick Start: Get It Running
 
-### 1. Clone and Build
+### 1. Download the Server
+
+Download the latest `wanaku-server` binary from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access).
+
+Choose the binary that matches your platform, make it executable, and place it somewhere in your PATH:
 
 ```bash
-git clone https://github.com/wanaku-ai/wanaku.git
-cd wanaku
-cargo build --release
+chmod +x wanaku-server
+sudo mv wanaku-server /usr/local/bin/
 ```
 
-The first build takes a few minutes—Rust is compiling everything from scratch. Grab a coffee. Subsequent builds are fast.
+### 2. Download the CLI
 
-### 2. Run the Server
+The Wanaku CLI is distributed separately. Download the latest `wanaku` binary from the [wanaku-barn early access release page](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access).
 
 ```bash
-cargo run --release
+chmod +x wanaku
+sudo mv wanaku /usr/local/bin/
+```
+
+Verify the CLI is installed:
+
+```bash
+wanaku --version
+```
+
+> **Note:** The Wanaku CLI was originally built for the Java-based Wanaku router and is compatible with the Rust-based engine. When running against a router without authentication enabled, use the `--no-auth` flag with CLI commands.
+
+### 3. Run the Server
+
+```bash
+wanaku-server
 ```
 
 You should see log output indicating two services started:
 - **MCP endpoint:** `http://127.0.0.1:8081/mcp`
 - **Management API:** `http://0.0.0.0:8080/api/v1`
 
-### 3. Verify It's Alive
+### 4. Verify It's Alive
 
-Open another terminal and hit the management API:
-
-```bash
-curl http://localhost:8080/api/v1/tools
-```
-
-Expected response:
-
-```json
-{"data": [], "error": null}
-```
-
-That empty array means the server is running, but no tools have been discovered yet. Let's fix that.
-
-### 4. Register a Forward (Auto-Discover Tools)
-
-Tools are discovered automatically from upstream MCP servers. Register a forward to an MCP server:
+Open another terminal and use the CLI to check for tools:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "my-mcp-server",
-    "address": "http://localhost:8180/mcp"
-  }'
+wanaku tools list --no-auth
 ```
 
-Wanaku connects to the upstream server, discovers all available tools, and registers them automatically with `type: "mcp-forward"`.
+The output should show an empty list — the server is running, but no tools have been discovered yet. Let's fix that.
+
+### 5. Register a Forward (Auto-Discover Tools)
+
+Tools are discovered automatically from upstream MCP servers. Register a forward to an MCP server using the CLI:
+
+```bash
+wanaku forwards add --service="http://localhost:8180/mcp" --name my-mcp-server --no-auth
+```
+
+Wanaku connects to the upstream server, discovers all available tools, and registers them automatically.
 
 List the discovered tools:
 
 ```bash
-curl http://localhost:8080/api/v1/tools
+wanaku tools list --no-auth
 ```
 
 You'll see the tools discovered from the upstream server. The server is now ready to route MCP requests to those tools.
 
-### 5. Test the MCP Endpoint
+### 6. Test the MCP Endpoint
 
 Send an MCP `tools/list` request:
 
@@ -102,27 +107,17 @@ No downstream services were called. The tool list is served directly from the in
 
 ### Register Additional Forwards
 
-To discover tools from additional MCP servers, register more forwards the same way you did in step 4. Each forward connects to an upstream MCP server and auto-discovers its tools, resources, and prompts.
+To discover tools from additional MCP servers, register more forwards the same way you did in step 5. Each forward connects to an upstream MCP server and auto-discovers its tools, resources, and prompts.
 
 ### Explore Namespaces
 
 Namespaces isolate tools. Create a `"finance"` namespace and register a forward that assigns discovered tools to it:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/namespaces \
-  -H "Content-Type: application/json" \
-  -d '{"name": "finance"}'
-
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "market-data-server",
-    "address": "http://market-data-mcp:8080/mcp",
-    "namespace": "finance"
-  }'
+wanaku forwards add --service="http://market-data-mcp:8080/mcp" --name market-data-server --no-auth
 ```
 
-Tools discovered from this forward inherit the `"finance"` namespace. Query the finance namespace:
+Query the finance namespace by hitting the namespace-specific MCP endpoint:
 
 ```bash
 curl -X POST http://localhost:8081/finance/mcp \
@@ -134,7 +129,7 @@ Only tools from the `market-data-server` forward appear. The default namespace t
 
 ### Use the Admin UI
 
-Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via curl.
+Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via the CLI.
 
 From here you can view and manage tools, namespaces, resources, prompts, and forwards.
 
@@ -142,70 +137,29 @@ From here you can view and manage tools, namespaces, resources, prompts, and for
 
 Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy runs as a reverse proxy in front of the MCP and management API ports.
 
-**Quick start with docker-compose:**
+See [Authentication](./auth.md) for detailed setup instructions, including Keycloak configuration, role-based access, and running oauth2-proxy locally.
 
-```bash
-cd deploy/auth
-
-# Generate a cookie secret
-openssl rand -base64 32
-
-# Edit oauth2-proxy-shared.env:
-#   - Set OAUTH2_PROXY_COOKIE_SECRET to the generated secret
-#   - Set OAUTH2_PROXY_CLIENT_SECRET to your Keycloak client secret
-
-# Place your Keycloak realm export as wanaku-realm.json in this directory
-
-# Start the stack (Keycloak + oauth2-proxy + Wanaku)
-docker compose -f docker-compose-auth.yml up
-```
-
-**Access:**
-
-- Admin UI: `http://localhost:4181/admin/`
-- MCP endpoint: `http://localhost:4180/mcp`
-- Public MCP (no auth): `http://localhost:4180/public/mcp`
-
-**Test with CLI:**
+Once authentication is enabled, you can authenticate the CLI:
 
 ```bash
 # Get a token from Keycloak
 TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
   -d grant_type=password \
   -d client_id=wanaku-mcp-router \
+  -d client_secret=<your-secret> \
   -d username=test \
   -d password=test | jq -r .access_token)
 
-# Use with MCP endpoint
-curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/mcp \
-  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+# Use the CLI with a token
+wanaku tools list --host http://localhost:4181 --token $TOKEN
 ```
-
-**Architecture:**
-
-Two oauth2-proxy instances with shared SSO:
-- **oauth2-proxy-mcp** (port 4180 → 8081) — MCP endpoint, requires `mcp-user` role
-- **oauth2-proxy-mgmt** (port 4181 → 8080) — management API/UI, requires `admin` role
-
-See `deploy/auth/README.md` for detailed setup, role-based access, and local development without Docker.
-
-## Building for Production
-
-The `cargo run` command uses the debug build. For production, use:
-
-```bash
-cargo build --release
-./target/release/wanaku-server
-```
-
-The release binary is optimized compared to debug builds.
 
 ### Custom Configuration
 
-The server embeds `server/src/default.yaml` at compile time. To override:
+The server accepts optional configuration files:
 
 ```bash
-./target/release/wanaku-server --pipeline-config /path/to/custom-praxis.yaml \
+wanaku-server --pipeline-config /path/to/custom-praxis.yaml \
   --wanaku-config /path/to/wanaku.yaml
 ```
 
@@ -223,76 +177,16 @@ All configuration is environment-first. Common vars:
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address |
 | `WANAKU_PERSIST_BACKEND` | _(unset)_ | Set to `"file"` to persist registry to disk |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
+
 See [Configuration](./configuration.md) for the full list.
-
-## Common Gotchas
-
-### 1. "Address already in use" on startup
-
-Something else is using port 8081 or 8080. Check with:
-
-```bash
-lsof -ti :8081
-lsof -ti :8080
-```
-
-Kill the process, or change the management listen address via `WANAKU_MGMT_LISTEN`. The MCP listener address is defined in `server/src/default.yaml` — use a custom config file to override it.
-
-### 2. Changing `default.yaml` doesn't trigger rebuild
-
-Cargo doesn't track `include_str!` dependencies. After editing `server/src/default.yaml`, run:
-
-```bash
-touch server/src/lib.rs
-cargo build
-```
-
-### 3. Filter returns empty JSON-RPC response
-
-Check that:
-- The MCP filter has `on_invalid: continue` in `default.yaml`
-- You're sending valid JSON-RPC (must have `"jsonrpc": "2.0"`, `"method"`, and `"id"`)
-- The URL path matches a configured namespace (`/mcp` → `"default"`, `/{namespace}/mcp` → `"{namespace}"`)
-
-Enable trace logs to see what the filters are doing:
-
-```bash
-RUST_LOG=wanaku_filters=trace cargo run
-```
-
-### 4. Management API returns 404 for valid routes
-
-The management API uses Pingora's `ServeHttp` trait, not axum. Routes are dispatched via a guard pattern in `server/src/management/mod.rs`. If you added a new route but forgot to register it in the dispatcher, it 404s.
-
-Check the route enum in `routes.rs` and the `dispatch` function in `mod.rs`.
-
-## Troubleshooting
-
-**Server crashes with "thread 'main' panicked":**
-
-Wanaku denies `unsafe_code`, `unwrap_used`, `expect_used`, and `panic` at the crate level. A panic means a logic bug. File an issue with the stack trace and steps to reproduce.
-
-**Tool calls time out:**
-
-MCP forward calls have a connection timeout. If your upstream MCP server takes too long, verify it's reachable and responding.
-
-**Tools don't appear in `/mcp` but show up in `/api/v1/tools`:**
-
-Check the namespace. Tools registered with `namespace: "finance"` only appear in `/finance/mcp`, not `/mcp`.
-
-**LLM-based features (chat) don't work:**
-
-Verify:
-- The LLM endpoint is reachable (`curl http://localhost:11434/v1/models`)
-- Environment variables are set correctly
-- The feature is configured via the management API or `wanaku.yaml`
 
 ## Where to Go Next
 
 - **[Architecture](./architecture.md)** — understand the filter pipeline, registry, and routing
 - **[Configuration](./configuration.md)** — all env vars, YAML options, and config patterns
+- **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
 - **[Features](./features.md)** — enable chat and create custom features
 - **[Management API](./management-api.md)** — full REST API reference
-- **[Admin UI](./admin-ui.md)** — customize the embedded React admin interface
+- **[FAQ](./faq.md)** — common issues and troubleshooting
 
 You now have a running MCP server. The rest is about configuring it to match your environment.

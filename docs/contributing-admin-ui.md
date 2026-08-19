@@ -1,4 +1,6 @@
-# Admin UI
+# Contributing: Admin UI
+
+This guide covers development of the admin UI for contributors. For end-user documentation on using the admin UI, see the [Getting Started](./getting-started.md) guide.
 
 The admin UI is a React 19 + TypeScript frontend embedded into the server binary via `rust_embed`. It's accessible at `http://localhost:8080` and provides a graphical interface to the management API.
 

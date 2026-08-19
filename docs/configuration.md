@@ -1,16 +1,16 @@
 # Configuration
 
-Wanaku is configured entirely through environment variables and two optional YAML files. There's no properties file. This keeps deployment simple—set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
+Wanaku is configured entirely through environment variables and two optional YAML files. There's no properties file. This keeps deployment simple — set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
 
 ## Configuration Sources (Precedence Order)
 
 1. **Environment variables** — highest priority, always win
-2. **Runtime YAML files** — loaded from CLI args (e.g., `cargo run -- --pipeline-config praxis.yaml --wanaku-config wanaku.yaml`)
-3. **Embedded defaults** — `server/src/default.yaml` compiled into the binary
+2. **Runtime YAML files** — loaded from CLI args (e.g., `wanaku-server --pipeline-config praxis.yaml --wanaku-config wanaku.yaml`)
+3. **Embedded defaults** — compiled into the binary
 
 ## Core Environment Variables
 
-These are defined in `apis/src/config.rs` and accessed via `wanaku_apis::config::ENV`:
+These control core server behavior:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -29,7 +29,7 @@ These are defined in `apis/src/config.rs` and accessed via `wanaku_apis::config:
 export WANAKU_MGMT_LISTEN=0.0.0.0:9091
 export WANAKU_PERSIST_BACKEND=file
 export WANAKU_PERSIST_PATH=/var/lib/wanaku/registry
-cargo run --release
+wanaku-server
 ```
 
 ### Management API Listen Address
@@ -83,64 +83,32 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 
 ### Admin UI Override
 
-The admin UI is embedded in the binary via `rust_embed`. To develop the UI locally without rebuilding the server:
+The admin UI is embedded in the binary. To serve UI files from a directory on disk instead of the embedded bundle:
 
 ```bash
-cd ui/admin
-yarn run build
+export WANAKU_UI_PATH=/absolute/path/to/ui/dist
+wanaku-server
 ```
 
-Then start the server with:
+The server serves files from the specified directory instead of the embedded bundle.
 
-```bash
-export WANAKU_UI_PATH=/absolute/path/to/ui/admin/dist
-cargo run
-```
-
-The server serves files from `dist/` instead of the embedded bundle. Changes to the UI (after `yarn run build`) are visible without restarting.
-
-**Warning:** Relative paths don't work. Use an absolute path or the server panics on startup.
+**Warning:** Relative paths don't work. Use an absolute path.
 
 ## Feature-Specific Environment Variables
 
-Features (mcp-metadata, chat, etc.) own their env vars. They're NOT in `apis/src/config.rs`. Each feature reads its own config in `load_env_config()`.
+Features (mcp-metadata, chat, etc.) define their own environment variables.
 
 ### Authentication with oauth2-proxy
 
-Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication, not embedded code. Two oauth2-proxy instances run as sidecars in front of ports 8081 (MCP) and 8080 (management API).
-
-**MCP Metadata Feature:**
-
-The only auth-related configuration in Wanaku itself is the OIDC issuer URL for RFC 9728 metadata:
+Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. The only auth-related configuration in Wanaku itself is the OIDC issuer URL:
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL (e.g., `http://localhost:8543/realms/wanaku`) |
 
-**Example:**
-
-```bash
-export WANAKU_AUTH_ISSUER=http://localhost:8543/realms/wanaku
-```
-
 When set, the endpoint `/.well-known/oauth-protected-resource/{namespace}/mcp` returns OAuth server metadata. When unset, the endpoint returns 404.
 
-**oauth2-proxy deployment:**
-
-For oauth2-proxy configuration, cookie secrets, role-based access, and docker-compose setup, see `deploy/auth/README.md`.
-
-**Quick start:**
-
-```bash
-cd deploy/auth
-# Edit oauth2-proxy-shared.env with your Keycloak client secret
-docker compose -f docker-compose-auth.yml up
-```
-
-Access:
-- Admin UI: `http://localhost:4181/admin/`
-- MCP endpoint: `http://localhost:4180/mcp`
-- Public MCP (no auth): `http://localhost:4180/public/mcp`
+See [Authentication](./auth.md) for full oauth2-proxy setup instructions.
 
 ### Intercept Feature
 
@@ -170,12 +138,10 @@ The chat feature exposes these management API routes:
 
 The pipeline config defines listeners, filter chains, and filter-specific settings. It's a YAML file that matches Praxis's native config format.
 
-**Default location:** `server/src/default.yaml` (embedded at compile time)
-
 **Override:** Pass with `--pipeline-config`:
 
 ```bash
-cargo run -- --pipeline-config /path/to/custom-praxis.yaml
+wanaku-server --pipeline-config /path/to/custom-praxis.yaml
 ```
 
 **Format:**
@@ -283,7 +249,7 @@ The Wanaku config bootstraps forwarded MCP servers on startup. It's optional —
 **Location:** Pass with `--wanaku-config`:
 
 ```bash
-cargo run -- --pipeline-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
+wanaku-server --pipeline-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
 ```
 
 **Format:**
@@ -327,38 +293,7 @@ When `result_schema` is set, the host validates LLM output against the schema an
 ```bash
 # No persistence, embedded UI, inference backend for LLMs
 export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
-cargo run
-```
-
-### Production (Docker)
-
-```dockerfile
-FROM rust:1.96 as builder
-WORKDIR /build
-COPY . .
-RUN cargo build --release
-
-FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /build/target/release/wanaku-server /usr/local/bin/
-COPY praxis.yaml /etc/wanaku/praxis.yaml
-COPY wanaku.yaml /etc/wanaku/wanaku.yaml
-
-ENV WANAKU_MGMT_LISTEN=0.0.0.0:8080
-ENV WANAKU_PERSIST_BACKEND=file
-ENV WANAKU_PERSIST_PATH=/data/registry
-
-VOLUME /data
-EXPOSE 8081 8080
-CMD ["/usr/local/bin/wanaku-server", "--pipeline-config", "/etc/wanaku/praxis.yaml", "--wanaku-config", "/etc/wanaku/wanaku.yaml"]
-```
-
-Run with:
-
-```bash
-docker run -v /var/lib/wanaku:/data \
-  -p 8081:8081 -p 8080:8080 \
-  wanaku-server:latest
+wanaku-server
 ```
 
 ### Kubernetes
@@ -430,44 +365,25 @@ spec:
 ### Enable Trace Logs
 
 ```bash
-RUST_LOG=trace cargo run
+RUST_LOG=trace wanaku-server
 ```
 
-This logs all filter decisions, metadata reads/writes, and registry operations. Output is verbose—use sparingly.
+This logs all filter decisions, metadata reads/writes, and registry operations. Output is verbose — use sparingly.
 
 **Filter-specific logs:**
 
 ```bash
-RUST_LOG=wanaku_filters=trace cargo run
+RUST_LOG=wanaku_filters=trace wanaku-server
 ```
 
 ### Verify Environment Variables
 
-The server doesn't validate env vars on startup. If you typo a var name, it silently uses the default.
-
-To check what the server sees:
-
-```rust
-// Add to main.rs before server start
-println!("WANAKU_MGMT_LISTEN: {:?}", wanaku_apis::config::ENV.mgmt_listen);
-println!("WANAKU_PERSIST_BACKEND: {:?}", wanaku_apis::config::ENV.persist_backend);
-```
-
-Rebuild and run. The server prints the effective config.
-
-### Rebuild Gotcha: include_str!
-
-Changes to `server/src/default.yaml` don't trigger rebuilds because Cargo doesn't track `include_str!` dependencies.
-
-After editing `default.yaml`:
-
-```bash
-touch server/src/lib.rs
-cargo build
-```
+The server doesn't validate env vars on startup. If you typo a var name, it silently uses the default. Enable trace logs to verify which values are being used.
 
 ## Related Docs
 
 - [Architecture](./architecture.md) — understand the filter pipeline and registry
+- [Authentication](./auth.md) — oauth2-proxy setup and Keycloak configuration
 - [Features](./features.md) — configure chat and custom features
 - [Management API](./management-api.md) — API routes that respect configuration
+- [FAQ](./faq.md) — troubleshooting common issues
