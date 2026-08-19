@@ -16,7 +16,7 @@ test.describe('Dashboard', () => {
     expect(title).toBe('Dashboard');
 
     const description = await dashboard.getPageDescription();
-    expect(description).toContain('System overview');
+    expect(description).toContain('system overview');
   });
 
   test('displays statistics tiles with numeric values', async () => {
