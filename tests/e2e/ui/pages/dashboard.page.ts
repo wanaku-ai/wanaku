@@ -11,11 +11,11 @@ export class DashboardPage extends BasePage {
   }
 
   statTile(label: string) {
-    return this.page.locator('.stat-tile', { hasText: label });
+    return this.page.locator('.hero-tile', { hasText: label });
   }
 
   async getStatValue(label: string): Promise<string> {
-    return this.statTile(label).locator('.stat-value').innerText();
+    return this.statTile(label).locator('.hero-value').innerText();
   }
 
   async clickRefresh() {
@@ -24,6 +24,6 @@ export class DashboardPage extends BasePage {
   }
 
   errorNotification() {
-    return this.page.locator('.cds--toast-notification--error');
+    return this.page.locator('.cds--inline-notification--error');
   }
 }

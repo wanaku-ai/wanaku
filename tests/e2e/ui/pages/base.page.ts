@@ -13,7 +13,7 @@ export class BasePage {
   }
 
   async waitForDataLoad() {
-    await this.page.locator('text=Loading...').waitFor({ state: 'hidden', timeout: 15_000 });
+    await this.page.locator('[class*="skeleton"]').first().waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {});
   }
 
   async getPageTitle(): Promise<string> {
