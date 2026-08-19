@@ -1,11 +1,11 @@
 import {Modal, Stack, TextInput} from "@carbon/react";
 import React, {useState} from "react";
-import {Namespace} from "../../models";
+import {NamespaceEntry} from "../../models";
 
 interface NamespaceModalProps {
-  openedNamespace?: Namespace;
-  namespaces: Namespace[]
-  onSubmit: (namespace: Namespace) => void;
+  openedNamespace?: NamespaceEntry;
+  namespaces: NamespaceEntry[]
+  onSubmit: (namespace: NamespaceEntry) => void;
   onRequestClose: () => void;
 }
 
@@ -20,22 +20,22 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
   const [invalidName, setInvalidName] = useState(false)
   const [invalidPath, setInvalidPath] = useState(false)
 
-  function otherNamespaces(): Namespace[] {
+  function otherNamespaces(): NamespaceEntry[] {
     return namespaces.filter(namespace => namespace.id !== openedNamespace?.id)
   }
-  
+
   function isInvalidName(name: string): boolean {
     return otherNamespaces().some(namespace => namespace.name === name)
   }
-  
+
   function isInvalidPath(path: string): boolean {
     return otherNamespaces().some(namespace => namespace.path === path)
   }
-  
+
   const handleSubmit = () => {
     onSubmit({
       id: openedNamespace?.id,
-      name: name,
+      name: name ?? "",
       path: path,
       labels: openedNamespace?.labels,
     });

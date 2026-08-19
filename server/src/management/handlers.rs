@@ -219,6 +219,8 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed");
+            forward.available = false;
+            forward.status_message = Some(e.to_string());
             registry.register_forward(forward.clone());
             return json_ok(&serde_json::json!({
                 "forward": &forward,
@@ -230,6 +232,8 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
     };
 
     forward.server_info = discovery.server_info;
+    forward.available = true;
+    forward.status_message = None;
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
     registry.register_forward(forward.clone());
 
@@ -275,11 +279,16 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %name, error = %e, "forward refresh discovery failed");
+            forward.available = false;
+            forward.status_message = Some(e.to_string());
+            registry.register_forward(forward.clone());
             return json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}));
         }
     };
 
     forward.server_info = discovery.server_info;
+    forward.available = true;
+    forward.status_message = None;
     registry.register_forward(forward.clone());
 
     let tools_count = register_discovered_tools(registry, &forward, &discovery.tools);
@@ -295,12 +304,18 @@ pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
+            let mut unavailable = forward.clone();
+            unavailable.available = false;
+            unavailable.status_message = Some(e.to_string());
+            registry.register_forward(unavailable);
             return;
         }
     };
 
     let mut updated = forward.clone();
     updated.server_info = discovery.server_info;
+    updated.available = true;
+    updated.status_message = None;
     registry.register_forward(updated.clone());
 
     let tools_count = register_discovered_tools(registry, &updated, &discovery.tools);
@@ -1171,6 +1186,8 @@ mod tests {
             namespace: None,
             server_info: None,
             labels: HashMap::new(),
+            available: true,
+            status_message: None,
         });
 
         let list_resp = handle_forward_list(&registry);
@@ -1205,6 +1222,8 @@ mod tests {
             namespace: None,
             server_info: None,
             labels: HashMap::new(),
+            available: true,
+            status_message: None,
         });
         assert_eq!(handle_forward_delete(&registry, "del-fwd").status(), 200);
         assert_eq!(handle_forward_get(&registry, "del-fwd").status(), 404);
@@ -1254,6 +1273,8 @@ mod tests {
             namespace: None,
             server_info: None,
             labels: HashMap::new(),
+            available: true,
+            status_message: None,
         });
 
         let data = data_field(&handle_statistics(&registry));

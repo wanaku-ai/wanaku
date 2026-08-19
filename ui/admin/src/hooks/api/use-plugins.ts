@@ -4,10 +4,7 @@ import type { PluginManifest } from "../../plugins/types";
 
 interface PluginsResponse {
   status: number;
-  data: {
-    data: PluginManifest[] | null;
-    error: string | null;
-  };
+  data: PluginManifest[];
   headers: Headers;
 }
 

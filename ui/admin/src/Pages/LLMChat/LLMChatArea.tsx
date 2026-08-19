@@ -10,7 +10,7 @@ import {
 import {Send, Stop} from "@carbon/icons-react"
 import {LLMChatMessage} from "./LLMChatMessage"
 import {getUrl} from "../../custom-fetch"
-import {ToolReference} from "../../models"
+import {ToolEntry} from "../../models"
 import {getErrorMessage} from "../../utils/error"
 
 
@@ -23,7 +23,7 @@ export interface LlmChatConfig {
   llm: string
   model?: string
   apiKey?: string
-  selectedTools: ToolReference[]
+  selectedTools: ToolEntry[]
   extraLlmParams?: string
   systemPrompt?: string
 }

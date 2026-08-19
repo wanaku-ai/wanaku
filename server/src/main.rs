@@ -170,7 +170,8 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
         for fwd_value in fwd_list {
             match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
-                Ok(fwd) => {
+                Ok(mut fwd) => {
+                    fwd.available = false;
                     info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
                     registry.register_forward(fwd.clone());
                     forwards.push(fwd);

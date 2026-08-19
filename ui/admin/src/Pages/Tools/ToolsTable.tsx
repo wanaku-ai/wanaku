@@ -16,15 +16,15 @@ import {
     TableToolbarContent
 } from "@carbon/react";
 import React, {FunctionComponent, useState} from "react";
-import {ToolReference} from "../../models";
+import {ToolEntry} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {InputSchemaModal} from "./InputSchemaModal";
 import {TableEmptyState} from "../EmptyTableState"
 
 interface ToolListProps {
-  fetchedData: ToolReference[];
+  fetchedData: ToolEntry[];
   onDelete: (toolName?: string) => void;
-  onEdit: (tool: ToolReference) => void
+  onEdit: (tool: ToolEntry) => void
 }
 
 export const ToolsTable: FunctionComponent<ToolListProps> = ({
@@ -32,7 +32,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
   onDelete,
   onEdit
 }) => {
-  const [schemaModalTool, setSchemaModalTool] = useState<ToolReference | null>(null);
+  const [schemaModalTool, setSchemaModalTool] = useState<ToolEntry | null>(null);
   const headers = [
     {key: "name", header: "Name"},
     {key: "type", header: "Type"},
@@ -44,17 +44,17 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
   ]
 
   function toolsToRows() {
-    return fetchedData.map((tool: ToolReference, index: number) => ({
+    return fetchedData.map((tool: ToolEntry, index: number) => ({
       ...tool,
       id: tool.name || tool.id || `tool-${index}`,
     }))
   }
 
-  function toolHasDetails(tool: ToolReference) {
+  function toolHasDetails(tool: ToolEntry) {
     return tool.configurationURI || tool.secretsURI
   }
 
-  function tableCells(tool: ToolReference) {
+  function tableCells(tool: ToolEntry) {
     return (
       <React.Fragment>
         <TableCell>{tool.name}</TableCell>
@@ -64,7 +64,8 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
           {tool.uri}
         </TableCell>
         <TableCell>
-          {tool.inputSchema?.properties && Object.keys(tool.inputSchema.properties).length > 0 ? (
+          {tool.inputSchema && typeof tool.inputSchema === 'object' && 'properties' in tool.inputSchema &&
+           (tool.inputSchema as any).properties && Object.keys((tool.inputSchema as any).properties).length > 0 ? (
             <Button
               kind="ghost"
               size="sm"
@@ -77,7 +78,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
             <span style={{ color: "var(--cds-text-secondary)" }}>&mdash;</span>
           )}
         </TableCell>
-        <TableCell>{getNamespacePathById(tool.namespace)}</TableCell>
+        <TableCell>{getNamespacePathById(tool.namespace ?? undefined)}</TableCell>
         <TableCell>
           <Button
             kind="ghost"
@@ -98,7 +99,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
     )
   }
 
-  function toolDetails(tool: ToolReference, rowProps) {
+  function toolDetails(tool: ToolEntry, rowProps) {
     return (
         <TableExpandedRow colSpan={headers.length + 3} {...rowProps}>
           {tool.configurationURI && (
@@ -179,7 +180,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
       </DataTable>
       {schemaModalTool && (
         <InputSchemaModal
-          inputSchema={schemaModalTool.inputSchema}
+          inputSchema={schemaModalTool.inputSchema as any}
           toolName={schemaModalTool.name}
           open={true}
           onClose={() => setSchemaModalTool(null)}

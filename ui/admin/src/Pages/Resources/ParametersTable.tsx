@@ -16,7 +16,10 @@ import {
   TextInput
 } from "@carbon/react";
 import {Add, Close, Edit, Save, TrashCan} from "@carbon/icons-react";
-import {Param} from "../../models";
+interface Param {
+  name?: string;
+  value?: string;
+}
 
 
 interface ParameterDraft {

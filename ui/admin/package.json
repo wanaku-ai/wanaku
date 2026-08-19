@@ -4,9 +4,9 @@
   "version": "0.3.0",
   "type": "module",
   "scripts": {
-    "dev": "orval --config ./orval.config.ts && vite",
-    "build": "tsc -b && vite build",
-    "generate-api": "orval --config ./orval.config.ts",
+    "dev": "yarn run generate-api && vite",
+    "build": "yarn run generate-api && tsc -b && vite build",
+    "generate-api": "cargo run --bin wanaku-openapi --manifest-path ../../server/Cargo.toml > openapi.json && orval --config ./orval.config.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

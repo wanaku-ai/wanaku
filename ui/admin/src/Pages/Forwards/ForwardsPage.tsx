@@ -2,24 +2,23 @@ import {
   ToastNotification
 } from "@carbon/react"
 import {useEffect, useState} from "react"
-import {addForward, updateForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
-import {ForwardReference} from "../../models"
+import {addForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
+import {ForwardEntry} from "../../models"
 import {ForwardDetailModal} from "./ForwardDetailModal.tsx"
 import {ForwardModal} from "./ForwardModal.tsx"
 import {ForwardsTable} from "./ForwardsTable.tsx"
 
 const ForwardsPage = () => {
 
-  const [forwards, setForwards] = useState<ForwardReference[]>([])
+  const [forwards, setForwards] = useState<ForwardEntry[]>([])
   const [isModalOpen, setModalOpen] = useState(false)
-  const [openedForward, setOpenedForward] = useState<ForwardReference>()
-  const [detailForward, setDetailForward] = useState<ForwardReference>()
+  const [detailForward, setDetailForward] = useState<ForwardEntry>()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function fetchForwards() {
     listForwards().then((response) => {
-      if (response.data?.data) {
-        setForwards(response.data.data as ForwardReference[])
+      if (response.data) {
+        setForwards(response.data as ForwardEntry[])
       }
     })
   }
@@ -27,18 +26,13 @@ const ForwardsPage = () => {
   useEffect(() => {
     fetchForwards()
   }, [])
-  
+
   function refreshAfterSubmit() {
-    closeModal()
+    setModalOpen(false)
     fetchForwards()
   }
 
-  function closeModal() {
-    setOpenedForward(undefined)
-    setModalOpen(false)
-  }
-
-  function handleDetailButton(forward: ForwardReference) {
+  function handleDetailButton(forward: ForwardEntry) {
     setDetailForward(forward)
   }
 
@@ -46,22 +40,9 @@ const ForwardsPage = () => {
     setModalOpen(true)
   }
 
-  function handleEditButton(forward: ForwardReference) {
-    setOpenedForward(forward)
-    setModalOpen(true)
-  }
-  
-  function handleSubmit(forward: ForwardReference) {
-    if (openedForward) {
-      handleUpdateForward(forward)
-    } else {
-      handleAddForward(forward)
-    }
-  }
-
-  async function handleAddForward(newForward: ForwardReference){
+  async function handleSubmit(forward: ForwardEntry) {
     try {
-      const response = await addForward(newForward)
+      const response = await addForward(forward)
       if (response.status !== 200) {
         const errorData = response.data as unknown as { error?: { message?: string } } | null
         setErrorMessage(errorData?.error?.message || "Failed to add forward")
@@ -73,21 +54,7 @@ const ForwardsPage = () => {
     }
   }
 
-  async function handleUpdateForward(forward: ForwardReference) {
-    try {
-      const response = await updateForward(forward)
-      if (response.status !== 200) {
-        const errorData = response.data as unknown as { error?: { message?: string } } | null
-        setErrorMessage(errorData?.error?.message || "Failed to update forward")
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred")
-    } finally {
-      refreshAfterSubmit()
-    }
-  }
-
-  async function handleDeleteForward(forward: ForwardReference) {
+  async function handleDeleteForward(forward: ForwardEntry) {
     try {
       const response = await removeForward(forward)
         if (response.status === 200) {
@@ -100,7 +67,7 @@ const ForwardsPage = () => {
     }
   }
 
-  async function handleRefreshForward(forward: ForwardReference) {
+  async function handleRefreshForward(forward: ForwardEntry) {
     try {
       const response = await refreshForward(forward)
       if (response.status === 200) {
@@ -135,7 +102,6 @@ const ForwardsPage = () => {
             forwards={forwards}
             onAdd={handleAddButton}
             onDetail={handleDetailButton}
-            onEdit={handleEditButton}
             onDelete={handleDeleteForward}
             onRefresh={handleRefreshForward}
           />
@@ -149,8 +115,7 @@ const ForwardsPage = () => {
       )}
       {isModalOpen && (
         <ForwardModal
-          forward={openedForward}
-          onRequestClose={closeModal}
+          onRequestClose={() => setModalOpen(false)}
           onSubmit={handleSubmit}
         />
       )}

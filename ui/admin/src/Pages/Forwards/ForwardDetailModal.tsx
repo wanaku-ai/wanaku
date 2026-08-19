@@ -1,19 +1,9 @@
 import { ComposedModal, ModalHeader, ModalBody, Tag } from "@carbon/react";
 import React from "react";
-import { ForwardReference } from "../../models";
-
-interface ServerInfo {
-  serverName?: string;
-  version?: string;
-  description?: string;
-  websiteUrl?: string;
-  capabilities?: string[];
-  extensions?: string[];
-  instructions?: string;
-}
+import { ForwardEntry } from "../../models";
 
 interface ForwardDetailModalProps {
-  forward: ForwardReference;
+  forward: ForwardEntry;
   onRequestClose: () => void;
 }
 
@@ -21,18 +11,31 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
   forward,
   onRequestClose,
 }) => {
-  const si = (forward as Record<string, unknown>).serverInfo as
-    | ServerInfo
-    | undefined;
-  const labels = (forward as Record<string, unknown>).labels as
-    | Record<string, string>
-    | undefined;
+  const si = forward.serverInfo;
+  const labels = forward.labels;
 
   return (
     <ComposedModal open onClose={onRequestClose}>
       <ModalHeader title={forward.name ?? "Forward Details"} />
       <ModalBody>
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <strong>Status:</strong>{" "}
+            <Tag
+              type={forward.available === true ? "green" : "red"}
+              size="sm"
+            >
+              {forward.available === true ? "Available" : "Unavailable"}
+            </Tag>
+          </div>
+          {forward.statusMessage && (
+            <div>
+              <strong>Status Detail:</strong>{" "}
+              <span style={{ color: "var(--cds-text-error, #da1e28)" }}>
+                {forward.statusMessage}
+              </span>
+            </div>
+          )}
           <div>
             <strong>Address:</strong> {forward.address}
           </div>

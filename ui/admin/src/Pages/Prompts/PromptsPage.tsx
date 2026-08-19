@@ -1,22 +1,24 @@
 import {ToastNotification,} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
-import {PromptReference} from "../../models";
+import {PromptEntry} from "../../models";
 import {PromptsTable} from "./PromptsTable";
+import {unwrapData} from "../../utils/api-response";
 
 export const PromptsPage: React.FC = () => {
-  const [fetchedData, setFetchedData] = useState<PromptReference[]>([]);
+  const [fetchedData, setFetchedData] = useState<PromptEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { listPrompts, removePrompt } = usePrompts();
 
   const updatePrompts = useCallback(async () => {
-    return listPrompts().then((result) => {
-      if (result.status !== 200 || !Array.isArray(result.data.data)) {
+    return listPrompts().then((result: any) => {
+      const data = unwrapData<PromptEntry[]>(result);
+      if (result.status !== 200 || !Array.isArray(data)) {
         setErrorMessage("Failed to fetch prompts. Please try again later.");
         setFetchedData([]);
       } else {
-        setFetchedData(result.data.data);
+        setFetchedData(data);
       }
 
       setIsLoading(false);

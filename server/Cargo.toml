@@ -13,6 +13,10 @@ path = "src/lib.rs"
 name = "wanaku-server"
 path = "src/main.rs"
 
+[[bin]]
+name = "wanaku-openapi"
+path = "src/openapi_export.rs"
+
 [lints]
 workspace = true
 

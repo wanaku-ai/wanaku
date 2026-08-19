@@ -1,26 +1,23 @@
 import {Modal, TextInput,} from "@carbon/react";
 import React, {useState} from "react";
-import {ForwardReference} from "../../models";
+import {ForwardEntry} from "../../models";
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 
 interface ForwardModalProps {
-  forward?: ForwardReference
   onRequestClose: () => void;
-  onSubmit: (newForward: ForwardReference) => void;
+  onSubmit: (newForward: ForwardEntry) => void;
 }
 
 export const ForwardModal: React.FC<ForwardModalProps> = ({
-  forward,
   onRequestClose,
   onSubmit,
 }) => {
-  const [name, setName] = useState(forward?.name || "")
-  const [address, setAddress] = useState(forward?.address || "")
-  const [selectedNamespace, setSelectedNamespace] = useState(forward?.namespace)
+  const [name, setName] = useState("")
+  const [address, setAddress] = useState("")
+  const [selectedNamespace, setSelectedNamespace] = useState<string | null>()
 
   const handleSubmit = () => {
     onSubmit({
-      id: forward?.id,
       name,
       address,
       namespace: selectedNamespace,
@@ -30,8 +27,8 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
   return (
     <Modal
       open={true}
-      modalHeading={forward ? "Edit forward" : "Add a Forward"}
-      primaryButtonText={forward ? "Save" : "Add"}
+      modalHeading="Add a Forward"
+      primaryButtonText="Add"
       secondaryButtonText="Cancel"
       onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}
@@ -57,8 +54,8 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
         id="namespace"
         labelText="Select a Namespace"
         helperText="Choose a Namespace from the list (optional)"
-        value={selectedNamespace}
-        onChange={namespace => setSelectedNamespace(namespace.id!)}
+        value={selectedNamespace ?? undefined}
+        onChange={namespace => setSelectedNamespace(namespace.id ?? undefined)}
       />
     </Modal>
   );

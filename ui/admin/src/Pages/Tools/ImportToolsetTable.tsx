@@ -1,5 +1,5 @@
 import React from "react"
-import {ToolReference} from "../../models"
+import {ToolEntry} from "../../models"
 import {
   DataTable,
   Table,
@@ -14,32 +14,32 @@ import {
 
 
 interface ImportToolsetTableProps {
-  tools: ToolReference[]
-  selectedTools: ToolReference[]
-  onSelectionChange: (tools: ToolReference[]) => void
+  tools: ToolEntry[]
+  selectedTools: ToolEntry[]
+  onSelectionChange: (tools: ToolEntry[]) => void
 }
 
 export const ImportToolsetTable: React.FC<ImportToolsetTableProps> = ({ tools, selectedTools, onSelectionChange }) => {
-  
-  function addTool(tool: ToolReference): void {
+
+  function addTool(tool: ToolEntry): void {
     if (!selectedTools.includes(tool)) {
       onSelectionChange([...selectedTools, tool])
     }
   }
-  
-  function removeTool(tool: ToolReference): void {
+
+  function removeTool(tool: ToolEntry): void {
     if (selectedTools.includes(tool)) {
       onSelectionChange(selectedTools.filter(item => item !== tool))
     }
   }
-  
+
   return (
     <DataTable
       headers={[
         {key: "name", header: "Name"},
         {key: "description", header: "Description"}
       ]}
-      rows={tools.map((tool: ToolReference) => ({
+      rows={tools.map((tool: ToolEntry) => ({
         ...tool,
         id: tool.name!,
         isSelected: selectedTools.includes(tool)

@@ -1,6 +1,6 @@
-import {Namespace} from "../../models"
+import {NamespaceEntry} from "../../models"
 
-export function sortedNamespaces(namespaces: readonly Namespace[]): Namespace[] {
+export function sortedNamespaces(namespaces: readonly NamespaceEntry[]): NamespaceEntry[] {
   const result = [...namespaces]
   result.sort((a, b) => {
     // First is default namespace
@@ -17,8 +17,8 @@ export function sortedNamespaces(namespaces: readonly Namespace[]): Namespace[] 
     if (b.path === "public") {
       return 1
     }
-    // Rest are sorte
-    return a.path!.localeCompare(b.path!)
+    // Rest are sorted alphabetically
+    return (a.path ?? "").localeCompare(b.path ?? "")
   })
   return result
 }

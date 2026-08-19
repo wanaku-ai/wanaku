@@ -27,8 +27,8 @@ const EvaluatorsPage: React.FC = () => {
   const fetchEvaluators = useCallback(async () => {
     try {
       const result = await listEvaluators();
-      if (result.status === 200 && result.data.data) {
-        setEvaluators(result.data.data);
+      if (result.status === 200 && result.data) {
+        setEvaluators(result.data);
       } else {
         setEvaluators([]);
       }
@@ -41,8 +41,8 @@ const EvaluatorsPage: React.FC = () => {
   const fetchBindings = useCallback(async () => {
     try {
       const result = await listBindings();
-      if (result.status === 200 && result.data.data) {
-        const entries: BindingEntry[] = Object.entries(result.data.data).map(
+      if (result.status === 200 && result.data) {
+        const entries: BindingEntry[] = Object.entries(result.data).map(
           ([namespace, conversationId]) => ({ namespace, conversationId })
         );
         setBindings(entries);
@@ -90,7 +90,7 @@ const EvaluatorsPage: React.FC = () => {
         setSuccessMessage(openedEvaluator ? "Evaluator updated" : "Evaluator added");
         await fetchEvaluators();
       } else {
-        setErrorMessage(result.data.error || "Failed to save evaluators");
+        setErrorMessage(((result.data as Record<string, unknown>)?.error as string) || "Failed to save evaluators");
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to save evaluators");
@@ -114,7 +114,7 @@ const EvaluatorsPage: React.FC = () => {
         setSuccessMessage("Evaluator deleted");
         await fetchEvaluators();
       } else {
-        setErrorMessage(result.data.error || "Failed to delete evaluator");
+        setErrorMessage(((result.data as Record<string, unknown>)?.error as string) || "Failed to delete evaluator");
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to delete evaluator");
@@ -133,7 +133,7 @@ const EvaluatorsPage: React.FC = () => {
         setSuccessMessage(`Namespace "${namespace}" bound`);
         await fetchBindings();
       } else {
-        setErrorMessage(result.data.error || "Failed to bind namespace");
+        setErrorMessage(((result.data as Record<string, unknown>)?.error as string) || "Failed to bind namespace");
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to bind namespace");
@@ -154,7 +154,7 @@ const EvaluatorsPage: React.FC = () => {
         setSuccessMessage(`Namespace "${binding.namespace}" unbound`);
         await fetchBindings();
       } else {
-        setErrorMessage(result.data.error || "Failed to unbind namespace");
+        setErrorMessage(((result.data as Record<string, unknown>)?.error as string) || "Failed to unbind namespace");
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to unbind namespace");

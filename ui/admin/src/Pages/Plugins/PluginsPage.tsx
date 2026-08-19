@@ -16,8 +16,8 @@ const PluginsPage: React.FC = () => {
   const fetchPlugins = useCallback(async () => {
     try {
       const result = await listPlugins();
-      if (result.status === 200 && result.data.data) {
-        setPlugins(result.data.data);
+      if (result.status === 200 && result.data) {
+        setPlugins(result.data);
       } else {
         setPlugins([]);
       }

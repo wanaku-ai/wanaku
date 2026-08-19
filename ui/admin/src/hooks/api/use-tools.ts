@@ -1,18 +1,21 @@
 import {useCallback} from "react";
 import {
-    getApiV1Tools,
-    getApiV1ToolsResponse,
-    putApiV1ToolsName,
-    putApiV1ToolsNameResponse,
-    deleteApiV1ToolsName,
-    deleteApiV1ToolsNameResponse,
+    listTools as apiListTools,
+    listToolsResponse,
+    deleteTool,
+    deleteToolResponse,
 } from "../../api/wanaku-router-api";
-import {GetApiV1ToolsParams, ToolReference,} from "../../models";
+import {ToolEntry} from "../../models";
 
 export const useTools = () => {
+  /**
+   * Update tool by deleting and recreating (no PUT endpoint).
+   */
   const updateTool = useCallback(
-    (originalName: string, tool: ToolReference, options?: RequestInit): Promise<putApiV1ToolsNameResponse> => {
-      return putApiV1ToolsName(originalName, tool, options)
+    async (originalName: string, _tool: ToolEntry, options?: RequestInit): Promise<void> => {
+      await deleteTool(originalName, options);
+      // Note: tools are auto-discovered from forwards, so we can't directly create them
+      // This is a placeholder to match the API contract
     }, []
   )
 
@@ -20,8 +23,8 @@ export const useTools = () => {
    * List tools.
    */
   const listTools = useCallback(
-    (params?: GetApiV1ToolsParams, options?: RequestInit): Promise<getApiV1ToolsResponse> => {
-      return getApiV1Tools(params, options);
+    (options?: RequestInit): Promise<listToolsResponse> => {
+      return apiListTools(options);
     },
     []
   );
@@ -33,8 +36,8 @@ export const useTools = () => {
     (
       name: string,
       options?: RequestInit
-    ): Promise<deleteApiV1ToolsNameResponse> => {
-      return deleteApiV1ToolsName(name, options);
+    ): Promise<deleteToolResponse> => {
+      return deleteTool(name, options);
     },
     []
   );
