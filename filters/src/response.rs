@@ -2,6 +2,7 @@ use bytes::Bytes;
 use http::StatusCode;
 use praxis_filter::Rejection;
 
+pub const JSONRPC_INVALID_REQUEST: i32 = -32600;
 pub const JSONRPC_INVALID_PARAMS: i32 = -32602;
 pub const JSONRPC_INTERNAL_ERROR: i32 = -32603;
 
