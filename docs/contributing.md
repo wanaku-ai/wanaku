@@ -17,6 +17,7 @@ Please read our [Getting Started](docs/getting-started.md) guide for detailed in
 - **Getting Started**: [docs/getting-started.md](docs/getting-started.md)
 - **Architecture Overview**: [docs/architecture.md](docs/architecture.md)
 - **Configuration Reference**: [docs/configuration.md](docs/configuration.md)
+- **Admin UI Development**: [docs/contributing-admin-ui.md](docs/contributing-admin-ui.md)
 - **Plugin Development**: [docs/plugin-development-guide.md](docs/plugin-development-guide.md)
 
 ## Code of Conduct

@@ -362,7 +362,7 @@ const result = await getTools();  // Orval-generated function
 const tools = result.data.data;   // Unwrap: result.data (fetch wrapper) -> .data (server wrapper)
 ```
 
-See [Admin UI](./admin-ui.md) for development details.
+See [Contributing: Admin UI](./contributing-admin-ui.md) for development details.
 
 ## Deployment Patterns
 
@@ -449,4 +449,4 @@ These are all solvable (implement traits, add filters), but they're not in scope
 - [Configuration](./configuration.md) — all env vars and YAML options
 - [Features](./features.md) — enable chat, create custom features
 - [Management API](./management-api.md) — REST API reference
-- [Admin UI](./admin-ui.md) — customize the embedded UI
+- [Contributing: Admin UI](./contributing-admin-ui.md) — customize the embedded UI
