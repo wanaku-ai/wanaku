@@ -1,21 +1,29 @@
 # syntax=docker/dockerfile:1
 
+ARG VARIANT=full
+
 # ------------------------------------------------------------------------------
-# Stage 1: Build Admin UI
+# Stage 1: Build Admin UI (or empty stub for headless)
 # ------------------------------------------------------------------------------
 
-FROM node:22 AS ui-builder
+FROM node:22 AS ui-builder-full
 WORKDIR /ui
 COPY ui/admin/package.json ui/admin/yarn.lock ./
 RUN yarn install --frozen-lockfile
 COPY ui/admin/ .
 RUN yarn build
 
+FROM busybox AS ui-builder-headless
+RUN mkdir -p /ui/dist
+
+FROM ui-builder-${VARIANT} AS ui-builder
+
 # ------------------------------------------------------------------------------
 # Stage 2: Build Rust binary
 # ------------------------------------------------------------------------------
 
 FROM registry.fedoraproject.org/fedora:44 AS builder
+ARG VARIANT=full
 
 RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make curl \
     && dnf clean all
@@ -41,6 +49,7 @@ COPY features/plugins/Cargo.toml features/plugins/Cargo.toml
 
 RUN mkdir -p apis/src filters/src server/src \
     features/chat/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/plugins/src \
+    ui/admin/dist \
     && echo '//! stub' > apis/src/lib.rs \
     && echo '//! stub' > filters/src/lib.rs \
     && echo '//! stub' > server/src/lib.rs \
@@ -53,7 +62,11 @@ RUN mkdir -p apis/src filters/src server/src \
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
-    cargo build --release -p wanaku-server
+    if [ "$VARIANT" = "headless" ]; then \
+      cargo build --release -p wanaku-server --no-default-features; \
+    else \
+      cargo build --release -p wanaku-server; \
+    fi
 
 # ------------------------------------------------------------------------------
 # Real Build
@@ -70,7 +83,11 @@ RUN find apis/src filters/src server/src features \
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
-    cargo build --release -p wanaku-server \
+    if [ "$VARIANT" = "headless" ]; then \
+      cargo build --release -p wanaku-server --no-default-features; \
+    else \
+      cargo build --release -p wanaku-server; \
+    fi \
     && cp target/release/wanaku-server /usr/local/bin/wanaku-server
 
 # ------------------------------------------------------------------------------
