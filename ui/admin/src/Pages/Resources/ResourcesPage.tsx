@@ -1,4 +1,4 @@
-import {ToastNotification} from "@carbon/react"
+import {InlineNotification} from "@carbon/react"
 import {ResourceModal} from "./ResourceModal"
 import {RefreshHandle, ResourcesTable} from "./ResourcesTable"
 import React, {useRef, useState} from "react"
@@ -49,13 +49,13 @@ export const ResourcesPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(undefined)}
-          timeout={10000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
       <h1 className="title">Resources</h1>

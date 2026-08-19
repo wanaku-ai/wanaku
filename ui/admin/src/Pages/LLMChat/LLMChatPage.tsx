@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react"
 import {LLMSetup} from "./LLMSetup.tsx"
 import {LLMTools} from "./LLMTools.tsx"
 import {LLMChatArea, LlmChatConfig} from "./LLMChatArea"
-import {Column, Grid, ToastNotification} from "@carbon/react"
+import {Column, Grid, InlineNotification} from "@carbon/react"
 import {
   isConfigStoredInLocalStorage,
   LLM_CONFIG,
@@ -49,13 +49,13 @@ export const LLMChatPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={10000}
-          style={{float: "right"}}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
       <h1 className="title">LLM Chat for testing</h1>

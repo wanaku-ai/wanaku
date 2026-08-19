@@ -1,4 +1,4 @@
-import { ToastNotification } from "@carbon/react";
+import { InlineNotification, SkeletonText } from "@carbon/react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { EvaluatorDef, useEvaluators } from "../../hooks/api/use-evaluators";
 import { EvaluatorsTable } from "./EvaluatorsTable";
@@ -163,28 +163,33 @@ const EvaluatorsPage: React.FC = () => {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div>
+      <h1 className="title">Evaluators</h1>
+      <SkeletonText heading={false} lineCount={5} width="80%" />
+    </div>
+  );
 
   return (
     <div>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={10000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
       {successMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="success"
           title="Success"
           subtitle={successMessage}
           onCloseButtonClick={() => setSuccessMessage(null)}
-          timeout={5000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
 

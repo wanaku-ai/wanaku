@@ -1,10 +1,20 @@
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme' as *;
+
 .title {
-  padding: 2rem 4rem;
+  padding: $spacing-06 $spacing-07;
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: $text-primary;
 }
 
 .description {
-  padding: 1rem 4rem;
-  padding-bottom: 2rem;
+  padding: 0 $spacing-07;
+  padding-bottom: $spacing-06;
+  font-size: 0.875rem;
+  line-height: 1.43;
+  color: $text-secondary;
   max-width: 600px;
 }
 

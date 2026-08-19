@@ -1,5 +1,5 @@
 import {
-  ToastNotification
+  InlineNotification
 } from "@carbon/react"
 import {useEffect, useState} from "react"
 import {addForward, updateForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
@@ -120,13 +120,13 @@ const ForwardsPage = () => {
         A list of forwards registered in the system.
       </p>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={5000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
       <div id="page-content">
