@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
   TableToolbar,
-  TableToolbarContent
+  TableToolbarContent,
+  Tag
 } from "@carbon/react"
 import {Add, Edit, Information, Renew, TrashCan} from "@carbon/icons-react"
 import {ForwardEntry} from "../../models"
@@ -39,7 +40,8 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
     {key: "name", header: "Name"},
     {key: "address", header: "Address"},
     {key: "namespace", header: "Namespace"},
-    {key: "server", header: "Server"}
+    {key: "server", header: "Server"},
+    {key: "status", header: "Status"}
   ]
 
   function forwardsToRows() {
@@ -54,7 +56,8 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
           name: forward.name,
           address: forward.address,
           namespace: getNamespacePathById(forward.namespace ?? undefined),
-          server
+          server,
+          status: forward.available === true ? "available" : "unavailable"
         }
       })
   }
@@ -94,9 +97,21 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
               if (forward) {
                 return (
                   <TableRow {...getRowProps({row})}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value}</TableCell>
-                    ))}
+                    {row.cells.map((cell) => {
+                      if (cell.info.header === "status") {
+                        return (
+                          <TableCell key={cell.id}>
+                            <Tag
+                              type={cell.value === "available" ? "green" : "red"}
+                              size="sm"
+                            >
+                              {cell.value === "available" ? "Available" : "Unavailable"}
+                            </Tag>
+                          </TableCell>
+                        )
+                      }
+                      return <TableCell key={cell.id}>{cell.value}</TableCell>
+                    })}
                     <TableCell>
                       <Button
                         kind="ghost"
