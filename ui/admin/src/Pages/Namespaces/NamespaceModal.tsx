@@ -32,7 +32,7 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
 
   const handleSubmit = () => {
     onSubmit({
-      name: name,
+      name: name ?? "",
       labels: openedNamespace?.labels,
     });
   };
