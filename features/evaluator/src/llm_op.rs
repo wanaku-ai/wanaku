@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use wanaku_apis::interactions::Interaction;
 use wanaku_apis::llm::{self, LlmClient};
+use wanaku_apis::metrics::MetricsStore;
 use wanaku_apis::registry::ToolEntry;
 
 use crate::config::LlmDef;
@@ -10,18 +11,30 @@ use crate::config::LlmDef;
 /// The processor WASM module is responsible for parsing and acting on this.
 #[expect(clippy::too_many_arguments, reason = "LLM operation requires full request context")]
 pub async fn run_llm_operation(
+    evaluator_name: &str,
     llm_def: &LlmDef,
     method: &str,
     tool_name: Option<&str>,
     arguments: &HashMap<String, String>,
     tools: &[ToolEntry],
     history: &[Interaction],
+    metrics: Option<&MetricsStore>,
 ) -> Option<String> {
     let client = LlmClient::new(&llm_def.url, &llm_def.model, &llm_def.api_key)?;
 
     let user_prompt = build_context_prompt(method, tool_name, arguments, tools, history);
 
-    client.chat(&llm_def.prompt, &user_prompt).await
+    let start = std::time::Instant::now();
+    let result = client.chat(&llm_def.prompt, &user_prompt).await;
+
+    if let Some(store) = metrics {
+        store.record_llm_call(evaluator_name, result.is_some(), start.elapsed());
+        if result.as_ref().is_none_or(String::is_empty) {
+            store.record_llm_empty_result(evaluator_name);
+        }
+    }
+
+    result
 }
 
 #[expect(clippy::too_many_lines, reason = "prompt assembly with multiple optional sections")]

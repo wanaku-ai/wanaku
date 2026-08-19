@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use wanaku_apis::metrics::MetricsStore;
+
 use crate::config::EvaluatorDef;
 use crate::engine::CompiledEvaluator;
 use crate::schema::CompiledSchema;
@@ -15,6 +17,7 @@ pub struct EvaluatorState {
     compiled: Arc<RwLock<HashMap<PathBuf, Arc<CompiledEvaluator>>>>,
     schemas: Arc<RwLock<HashMap<String, Arc<CompiledSchema>>>>,
     bindings: Arc<RwLock<HashMap<String, String>>>,
+    metrics: Option<MetricsStore>,
 }
 
 impl EvaluatorState {
@@ -25,7 +28,13 @@ impl EvaluatorState {
             compiled: Arc::new(RwLock::new(HashMap::new())),
             schemas: Arc::new(RwLock::new(HashMap::new())),
             bindings: Arc::new(RwLock::new(HashMap::new())),
+            metrics: None,
         }
+    }
+
+    pub fn with_metrics(mut self, store: MetricsStore) -> Self {
+        self.metrics = Some(store);
+        self
     }
 
 }
@@ -40,8 +49,12 @@ impl EvaluatorState {
     pub fn load_evaluators(&self, defs: Vec<EvaluatorDef>) {
         self.compile_modules(&defs);
         self.compile_schemas(&defs);
+        let count = defs.len() as u64;
         if let Ok(mut guard) = self.evaluators.write() {
             *guard = defs;
+        }
+        if let Some(ref store) = self.metrics {
+            store.set_evaluators_loaded(count);
         }
     }
 
@@ -76,12 +89,18 @@ impl EvaluatorState {
     pub fn bind_namespace(&self, namespace: &str, conversation_id: &str) {
         if let Ok(mut guard) = self.bindings.write() {
             guard.insert(namespace.to_owned(), conversation_id.to_owned());
+            if let Some(ref store) = self.metrics {
+                store.set_namespace_bindings(guard.len() as u64);
+            }
         }
     }
 
     pub fn unbind_namespace(&self, namespace: &str) {
         if let Ok(mut guard) = self.bindings.write() {
             guard.remove(namespace);
+            if let Some(ref store) = self.metrics {
+                store.set_namespace_bindings(guard.len() as u64);
+            }
         }
     }
 
@@ -99,6 +118,7 @@ impl EvaluatorState {
             .unwrap_or_default()
     }
 
+    #[expect(clippy::too_many_lines, reason = "WASM compilation loop with error handling")]
     fn compile_modules(&self, defs: &[EvaluatorDef]) {
         let mut compiled = HashMap::new();
 
@@ -129,8 +149,12 @@ impl EvaluatorState {
             }
         }
 
+        let count = compiled.len() as u64;
         if let Ok(mut guard) = self.compiled.write() {
             *guard = compiled;
+        }
+        if let Some(ref store) = self.metrics {
+            store.set_wasm_compiled(count);
         }
     }
 

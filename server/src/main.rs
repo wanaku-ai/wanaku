@@ -28,6 +28,8 @@ fn main() {
     praxis_core::logging::init_tracing(&config)
         .unwrap_or_else(|e| fatal(&e));
 
+    let metrics_store = wanaku_apis::metrics::MetricsStore::new();
+
     let wanaku_registry = match FilePersistence::from_config() {
         Some(backend) => {
             info!("file-based persistence enabled");
@@ -42,9 +44,11 @@ fn main() {
     wanaku_registry.enable_request_id_injection();
 
     let features: Vec<Box<dyn Feature>> = vec![
+        Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-        Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()),
+        Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()
+            .with_metrics(metrics_store.clone())),
         Box::new(wanaku_feature_chat::ChatFeature::new(
             format!(
                 "http://127.0.0.1:{}{}",

@@ -8,6 +8,7 @@
 import type {
   ForwardEntry,
   Interaction,
+  MetricsSnapshot,
   NamespaceEntry,
   PromptEntry,
   ResourceEntry,
@@ -233,6 +234,29 @@ export const getStatistics = async (
   options?: RequestInit,
 ): Promise<getStatisticsResponse> => {
   return customFetch<getStatisticsResponse>(getGetStatisticsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type getMetricsResponse200 = {
+  data: MetricsSnapshot;
+  status: 200;
+};
+
+export type getMetricsResponseSuccess = getMetricsResponse200 & {
+  headers: Headers;
+};
+export type getMetricsResponse = getMetricsResponseSuccess;
+
+export const getGetMetricsUrl = () => {
+  return `/api/v1/metrics`;
+};
+
+export const getMetrics = async (
+  options?: RequestInit,
+): Promise<getMetricsResponse> => {
+  return customFetch<getMetricsResponse>(getGetMetricsUrl(), {
     ...options,
     method: "GET",
   });

@@ -56,7 +56,18 @@ macro_rules! body_filter_boilerplate {
                 if !end_of_stream {
                     return Ok(praxis_filter::FilterAction::Continue);
                 }
-                self.handle_body(ctx, body).await
+                let start = std::time::Instant::now();
+                let result = self.handle_body(ctx, body).await;
+                if let Some(store) = ctx.extensions.get::<wanaku_apis::metrics::MetricsStore>() {
+                    let filter_result = match &result {
+                        Ok(praxis_filter::FilterAction::Continue) => wanaku_apis::metrics::FilterResult::Continue,
+                        Ok(praxis_filter::FilterAction::Reject(_)) => wanaku_apis::metrics::FilterResult::Reject,
+                        Ok(_) => wanaku_apis::metrics::FilterResult::Other,
+                        Err(_) => wanaku_apis::metrics::FilterResult::Error,
+                    };
+                    store.record_filter_result($filter_name, &filter_result, start.elapsed());
+                }
+                result
             }
         }
     };

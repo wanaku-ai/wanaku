@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_apis::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_apis::metrics::{MetricsStore, SkipReason};
 use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 use crate::action::ActionResult;
@@ -18,14 +19,23 @@ impl EvaluatorFilter {
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
+        let pipeline_start = std::time::Instant::now();
+        let metrics = ctx.extensions.get::<MetricsStore>().cloned();
+
         let method = match ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY) {
             Some(m) => m.to_owned(),
-            None => return Ok(FilterAction::Continue),
+            None => {
+                record_skip(&metrics, &SkipReason::MissingMethod);
+                return Ok(FilterAction::Continue);
+            }
         };
 
         let state = match ctx.extensions.get::<EvaluatorState>() {
             Some(s) => s.clone(),
-            None => return Ok(FilterAction::Continue),
+            None => {
+                record_skip(&metrics, &SkipReason::MissingState);
+                return Ok(FilterAction::Continue);
+            }
         };
 
         let namespace = ctx
@@ -34,8 +44,11 @@ impl EvaluatorFilter {
             .to_owned();
 
         let Some(evaluator) = state.find_matching(&method, &namespace) else {
+            record_skip(&metrics, &SkipReason::Unmatched);
+            record_trigger(&metrics, false);
             return Ok(FilterAction::Continue);
         };
+        record_trigger(&metrics, true);
 
         tracing::info!(
             evaluator = %evaluator.name,
@@ -46,12 +59,18 @@ impl EvaluatorFilter {
 
         let registry = match ctx.extensions.get::<InMemoryRegistry>() {
             Some(r) => r.clone(),
-            None => return Ok(FilterAction::Continue),
+            None => {
+                record_skip(&metrics, &SkipReason::MissingRegistry);
+                return Ok(FilterAction::Continue);
+            }
         };
 
         let interactions = match ctx.extensions.get::<InMemoryInteractionStore>() {
             Some(s) => s.clone(),
-            None => return Ok(FilterAction::Continue),
+            None => {
+                record_skip(&metrics, &SkipReason::MissingInteractions);
+                return Ok(FilterAction::Continue);
+            }
         };
 
         let tool_name = ctx
@@ -76,12 +95,14 @@ impl EvaluatorFilter {
         };
 
         let raw_llm_result = crate::llm_op::run_llm_operation(
+            &evaluator.name,
             &evaluator.llm,
             &method,
             tool_name.as_deref(),
             &arguments,
             &tools,
             &history,
+            metrics.as_ref(),
         )
         .await
         .unwrap_or_default();
@@ -97,6 +118,7 @@ impl EvaluatorFilter {
             &arguments,
             &tools,
             &history,
+            metrics.as_ref(),
         )
         .await;
 
@@ -112,6 +134,9 @@ impl EvaluatorFilter {
                 path = %evaluator.processor.path.display(),
                 "WASM processor not found or not compiled"
             );
+            if let Some(ref store) = metrics {
+                store.record_wasm_not_found(&evaluator.name);
+            }
             return match evaluator.on_error {
                 ErrorPolicy::Continue => Ok(FilterAction::Continue),
                 ErrorPolicy::Block => Ok(wanaku_filters::response::json_rpc_error(
@@ -131,12 +156,16 @@ impl EvaluatorFilter {
             conversation_id,
         };
 
+        let wasm_start = std::time::Instant::now();
         let result = compiled.evaluate(
             registry,
             interactions,
             eval_ctx,
             compiled_schema,
         );
+        if let Some(ref store) = metrics {
+            store.record_wasm_execution(&evaluator.name, wasm_start.elapsed());
+        }
 
         tracing::info!(
             evaluator = %evaluator.name,
@@ -144,7 +173,35 @@ impl EvaluatorFilter {
             "processor result"
         );
 
+        if let Some(ref store) = metrics {
+            store.record_evaluator_decision(&evaluator.name, action_label(&result));
+            store.record_pipeline_duration(&evaluator.name, pipeline_start.elapsed());
+        }
+
         dispatch_action(ctx, body, result, &method, &evaluator.name)
+    }
+}
+
+const fn action_label(result: &ActionResult) -> &'static str {
+    match result {
+        ActionResult::Pass => "pass",
+        ActionResult::Block(_) => "block",
+        ActionResult::RejectMalformed(_) => "reject_malformed",
+        ActionResult::Warn(_) => "warn",
+        ActionResult::FilterTools(_) => "filter_tools",
+        ActionResult::SetMetadata(_, _) => "set_metadata",
+    }
+}
+
+fn record_skip(metrics: &Option<MetricsStore>, reason: &SkipReason) {
+    if let Some(store) = metrics {
+        store.record_skip(reason);
+    }
+}
+
+fn record_trigger(metrics: &Option<MetricsStore>, matched: bool) {
+    if let Some(store) = metrics {
+        store.record_trigger_match(matched);
     }
 }
 
@@ -231,14 +288,25 @@ async fn validate_and_retry_if_needed(
     arguments: &HashMap<String, String>,
     tools: &[wanaku_apis::registry::ToolEntry],
     history: &[wanaku_apis::interactions::Interaction],
+    metrics: Option<&MetricsStore>,
 ) -> String {
     let Some(schema) = compiled_schema else {
         return raw_result.to_owned();
     };
 
     let validation_error = match schema.validate(raw_result) {
-        Ok(()) => return raw_result.to_owned(),
-        Err(e) => e,
+        Ok(()) => {
+            if let Some(store) = metrics {
+                store.record_schema_validation(&evaluator.name, true);
+            }
+            return raw_result.to_owned();
+        }
+        Err(e) => {
+            if let Some(store) = metrics {
+                store.record_schema_validation(&evaluator.name, false);
+            }
+            e
+        }
     };
 
     tracing::warn!(
@@ -268,6 +336,9 @@ async fn validate_and_retry_if_needed(
     match retry_result {
         Some(ref retried) if schema.validate(retried).is_ok() => {
             tracing::info!(evaluator = %evaluator.name, "retry produced valid result");
+            if let Some(store) = metrics {
+                store.record_schema_retry(&evaluator.name, true);
+            }
             retried.clone()
         }
         _ => {
@@ -275,6 +346,9 @@ async fn validate_and_retry_if_needed(
                 evaluator = %evaluator.name,
                 "retry also failed schema validation, passing raw result to guest"
             );
+            if let Some(store) = metrics {
+                store.record_schema_retry(&evaluator.name, false);
+            }
             raw_result.to_owned()
         }
     }
@@ -303,4 +377,44 @@ fn parse_arguments(body: &Option<Bytes>) -> HashMap<String, String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn action_label_all_variants() {
+        assert_eq!(action_label(&ActionResult::Pass), "pass");
+        assert_eq!(action_label(&ActionResult::Block("r".into())), "block");
+        assert_eq!(action_label(&ActionResult::RejectMalformed("r".into())), "reject_malformed");
+        assert_eq!(action_label(&ActionResult::Warn("m".into())), "warn");
+        assert_eq!(action_label(&ActionResult::FilterTools(vec![])), "filter_tools");
+        assert_eq!(action_label(&ActionResult::SetMetadata("k".into(), "v".into())), "set_metadata");
+    }
+
+    #[test]
+    fn record_skip_without_store() {
+        record_skip(&None, &SkipReason::MissingMethod);
+    }
+
+    #[test]
+    fn record_skip_with_store() {
+        let store = MetricsStore::new();
+        record_skip(&Some(store.clone()), &SkipReason::MissingMethod);
+        record_skip(&Some(store.clone()), &SkipReason::Unmatched);
+        let snap = store.snapshot();
+        assert_eq!(snap.pipeline.skipped_no_method, 1);
+        assert_eq!(snap.pipeline.skipped_no_match, 1);
+    }
+
+    #[test]
+    fn record_trigger_with_store() {
+        let store = MetricsStore::new();
+        record_trigger(&Some(store.clone()), true);
+        record_trigger(&Some(store.clone()), false);
+        let snap = store.snapshot();
+        assert_eq!(snap.pipeline.trigger_matches, 1);
+        assert_eq!(snap.pipeline.trigger_misses, 1);
+    }
 }

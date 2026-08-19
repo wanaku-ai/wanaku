@@ -202,6 +202,26 @@
         }
       }
     },
+    "/api/v1/metrics": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "operationId": "get_metrics",
+        "responses": {
+          "200": {
+            "description": "Metrics snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/namespaces": {
       "get": {
         "tags": [
@@ -579,6 +599,134 @@
   },
   "components": {
     "schemas": {
+      "DecisionSnapshot": {
+        "type": "object",
+        "required": [
+          "pass",
+          "block",
+          "reject_malformed",
+          "warn",
+          "filter_tools",
+          "set_metadata"
+        ],
+        "properties": {
+          "block": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "filter_tools": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "pass": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "reject_malformed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "set_metadata": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "warn": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "DurationSnapshot": {
+        "type": "object",
+        "required": [
+          "count",
+          "total_ms",
+          "avg_ms"
+        ],
+        "properties": {
+          "avg_ms": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_ms": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EvaluatorSnapshot": {
+        "type": "object",
+        "required": [
+          "decisions",
+          "llm",
+          "schema",
+          "wasm",
+          "pipeline_duration"
+        ],
+        "properties": {
+          "decisions": {
+            "$ref": "#/components/schemas/DecisionSnapshot"
+          },
+          "llm": {
+            "$ref": "#/components/schemas/LlmSnapshot"
+          },
+          "pipeline_duration": {
+            "$ref": "#/components/schemas/DurationSnapshot"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/SchemaSnapshot"
+          },
+          "wasm": {
+            "$ref": "#/components/schemas/WasmSnapshot"
+          }
+        }
+      },
+      "FilterSnapshot": {
+        "type": "object",
+        "required": [
+          "requests_continue",
+          "requests_reject",
+          "requests_other",
+          "errors",
+          "duration"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/DurationSnapshot"
+          },
+          "errors": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "requests_continue": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "requests_other": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "requests_reject": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "ForwardEntry": {
         "type": "object",
         "required": [
@@ -625,6 +773,31 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "GaugeSnapshot": {
+        "type": "object",
+        "required": [
+          "evaluators_loaded",
+          "wasm_compiled",
+          "namespace_bindings"
+        ],
+        "properties": {
+          "evaluators_loaded": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "namespace_bindings": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "wasm_compiled": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -679,6 +852,35 @@
           }
         }
       },
+      "LlmSnapshot": {
+        "type": "object",
+        "required": [
+          "calls_success",
+          "calls_failure",
+          "empty_results",
+          "duration"
+        ],
+        "properties": {
+          "calls_failure": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "calls_success": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "duration": {
+            "$ref": "#/components/schemas/DurationSnapshot"
+          },
+          "empty_results": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "McpServerInfo": {
         "type": "object",
         "required": [
@@ -724,6 +926,41 @@
           }
         }
       },
+      "MetricsSnapshot": {
+        "type": "object",
+        "required": [
+          "filters",
+          "evaluators",
+          "pipeline",
+          "gauges"
+        ],
+        "properties": {
+          "evaluators": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EvaluatorSnapshot"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "filters": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FilterSnapshot"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "gauges": {
+            "$ref": "#/components/schemas/GaugeSnapshot"
+          },
+          "pipeline": {
+            "$ref": "#/components/schemas/PipelineSnapshot"
+          }
+        }
+      },
       "NamespaceEntry": {
         "type": "object",
         "required": [
@@ -762,6 +999,55 @@
           },
           "path": {
             "type": "string"
+          }
+        }
+      },
+      "PipelineSnapshot": {
+        "type": "object",
+        "required": [
+          "trigger_matches",
+          "trigger_misses",
+          "skipped_no_method",
+          "skipped_no_state",
+          "skipped_no_match",
+          "skipped_no_registry",
+          "skipped_no_interactions"
+        ],
+        "properties": {
+          "skipped_no_interactions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "skipped_no_match": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "skipped_no_method": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "skipped_no_registry": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "skipped_no_state": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "trigger_matches": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "trigger_misses": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -905,6 +1191,37 @@
           }
         }
       },
+      "SchemaSnapshot": {
+        "type": "object",
+        "required": [
+          "validations_pass",
+          "validations_fail",
+          "retries_success",
+          "retries_failure"
+        ],
+        "properties": {
+          "retries_failure": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "retries_success": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "validations_fail": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "validations_pass": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "ToolEntry": {
         "type": "object",
         "required": [
@@ -960,6 +1277,29 @@
           },
           "uri": {
             "type": "string"
+          }
+        }
+      },
+      "WasmSnapshot": {
+        "type": "object",
+        "required": [
+          "executions",
+          "not_found",
+          "duration"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/DurationSnapshot"
+          },
+          "executions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "not_found": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       }
