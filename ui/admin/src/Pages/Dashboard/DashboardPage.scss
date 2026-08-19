@@ -6,6 +6,10 @@
   max-width: 1584px;
   margin: 0 auto;
 
+  > .cds--inline-notification {
+    margin-bottom: $spacing-05;
+  }
+
   .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -68,7 +72,7 @@
       &:hover {
         background: $layer-hover-01;
         border-color: $border-strong-01;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 8px $shadow;
       }
 
       &:focus {
