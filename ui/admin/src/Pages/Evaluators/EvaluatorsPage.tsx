@@ -1,4 +1,5 @@
-import { InlineNotification, SkeletonText } from "@carbon/react";
+import { InlineNotification } from "@carbon/react";
+import { PageSkeleton } from "../../components/PageSkeleton";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { EvaluatorDef, useEvaluators } from "../../hooks/api/use-evaluators";
 import { EvaluatorsTable } from "./EvaluatorsTable";
@@ -163,12 +164,7 @@ const EvaluatorsPage: React.FC = () => {
     }
   };
 
-  if (isLoading) return (
-    <div>
-      <h1 className="title">Evaluators</h1>
-      <SkeletonText heading={false} lineCount={5} width="80%" />
-    </div>
-  );
+  if (isLoading) return <PageSkeleton title="Evaluators" />;
 
   return (
     <div>

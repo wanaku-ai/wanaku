@@ -1,4 +1,5 @@
-import { InlineNotification, SkeletonText } from "@carbon/react";
+import { InlineNotification } from "@carbon/react";
+import { PageSkeleton } from "../../components/PageSkeleton";
 import React, { useCallback, useEffect, useState } from "react";
 import type { PluginManifest } from "../../plugins/types";
 import { usePlugins } from "../../hooks/api/use-plugins";
@@ -46,12 +47,7 @@ const PluginsPage: React.FC = () => {
     setSelectedPlugin(null);
   };
 
-  if (isLoading) return (
-    <div>
-      <h1 className="title">Plugins</h1>
-      <SkeletonText heading={false} lineCount={5} width="80%" />
-    </div>
-  );
+  if (isLoading) return <PageSkeleton title="Plugins" />;
 
   return (
     <div>
