@@ -62,8 +62,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
     const host = window.location.hostname;
     const protocol = window.location.protocol;
     const base = `${protocol}//${host}:8081`;
-    if (!name || name === "default") return `${base}/mcp`;
-    return `${base}/${name}/mcp`;
+    return `${base}/${name || "default"}/mcp`;
   }
 
   const rows = namespaces.map((namespace, index) => ({

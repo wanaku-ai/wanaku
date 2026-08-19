@@ -67,7 +67,7 @@ wanaku-server
 ```
 
 You should see log output indicating two services started:
-- **MCP endpoint:** `http://127.0.0.1:8081/mcp`
+- **MCP endpoint:** `http://127.0.0.1:8081/default/mcp` (default namespace)
 - **Management API:** `http://0.0.0.0:8080/api/v1`
 
 ### 4. Verify It's Alive
@@ -103,20 +103,20 @@ You'll see the tools discovered from the upstream server. The server is now read
 Send an MCP `tools/list` request:
 
 ```bash
-curl -X POST http://localhost:8081/mcp \
+curl -X POST http://localhost:8081/default/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-You'll get a JSON-RPC response listing the tools discovered from your forward. The filter pipeline parsed your request, checked the namespace (defaulted to `"default"`), and returned the tools from the registry.
+You'll get a JSON-RPC response listing the tools discovered from your forward. The filter pipeline parsed your request, extracted the namespace from the URL path, and returned the tools from the registry.
 
 ## What Just Happened?
 
-When you hit `/mcp`, your request flowed through this pipeline:
+When you hit `/default/mcp`, your request flowed through this pipeline:
 
 1. **CORS filter** — added CORS headers
 2. **MCP filter (praxis-ai)** — parsed JSON-RPC, set metadata (`mcp.method = "tools/list"`)
-3. **Namespace filter** — extracted namespace from URL path (default: `"default"`)
+3. **Namespace filter** — extracted namespace `"default"` from URL path
 4. **Tool list filter** — queried the registry for tools in the `"default"` namespace
 5. **Static response** — synthetic JSON-RPC reply
 
@@ -158,7 +158,7 @@ curl -X POST http://localhost:8081/finance/mcp \
 
 Only tools from the `market-data-server` forward appear. The default namespace tools are invisible here.
 
-Note: the MCP endpoint path must include `/mcp` — bare namespace paths like `/finance` (without `/mcp`) are rejected.
+All MCP endpoints follow the `/{namespace}/mcp` pattern — there is no shortcut. Bare paths like `/finance` or `/mcp` are rejected.
 
 ### Use the Admin UI
 
