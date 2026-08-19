@@ -20,6 +20,23 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
       <ModalBody>
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
+            <strong>Status:</strong>{" "}
+            <Tag
+              type={forward.available === true ? "green" : "red"}
+              size="sm"
+            >
+              {forward.available === true ? "Available" : "Unavailable"}
+            </Tag>
+          </div>
+          {forward.statusMessage && (
+            <div>
+              <strong>Status Detail:</strong>{" "}
+              <span style={{ color: "var(--cds-text-error, #da1e28)" }}>
+                {forward.statusMessage}
+              </span>
+            </div>
+          )}
+          <div>
             <strong>Address:</strong> {forward.address}
           </div>
           <div>
