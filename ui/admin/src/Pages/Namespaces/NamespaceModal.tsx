@@ -16,27 +16,23 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
   onRequestClose,
 }) => {
   const [name, setName] = useState(openedNamespace?.name);
-  const [path, setPath] = useState(openedNamespace?.path);
   const [invalidName, setInvalidName] = useState(false)
-  const [invalidPath, setInvalidPath] = useState(false)
 
   function otherNamespaces(): Namespace[] {
-    return namespaces.filter(namespace => namespace.id !== openedNamespace?.id)
+    return namespaces.filter(namespace => namespace.name !== openedNamespace?.name)
   }
-  
-  function isInvalidName(name: string): boolean {
+
+  function isDuplicate(name: string): boolean {
     return otherNamespaces().some(namespace => namespace.name === name)
   }
-  
-  function isInvalidPath(path: string): boolean {
-    return otherNamespaces().some(namespace => namespace.path === path)
+
+  function isDnsLabelValid(name: string): boolean {
+    return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(name);
   }
-  
+
   const handleSubmit = () => {
     onSubmit({
-      id: openedNamespace?.id,
       name: name,
-      path: path,
       labels: openedNamespace?.labels,
     });
   };
@@ -46,7 +42,7 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
       open={true}
       modalHeading={openedNamespace ? "Edit Namespace" : "Create Namespace"}
       primaryButtonText={openedNamespace ? "Save" : "Create"}
-      primaryButtonDisabled={invalidName || invalidPath}
+      primaryButtonDisabled={invalidName}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
@@ -55,29 +51,19 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
         <TextInput
           id="namespace-name"
           labelText="Name"
-          placeholder="e.g. my-namespace"
-          helperText="A human-readable name for this namespace. Leave empty for a preallocated slot."
+          placeholder="e.g. finance, my-namespace"
+          helperText="Lowercase letters, numbers, and hyphens only. Must start and end with a letter or number (1-63 characters). The name is also the URL path segment."
           value={name}
           invalid={invalidName}
-          invalidText={`Invalid namespace name: ${name} is already in use.`}
+          invalidText={
+            name && !isDnsLabelValid(name)
+              ? "Must contain only lowercase letters, numbers, and hyphens, and must start and end with a letter or number"
+              : `Namespace "${name}" already exists.`
+          }
           onChange={(e) => {
-            const name = e.target.value
-            setName(name)
-            setInvalidName(isInvalidName(name))
-          }}
-        />
-        <TextInput
-          id="namespace-path"
-          labelText="Path"
-          placeholder="e.g. ns-0"
-          helperText="The physical path identifier for this namespace."
-          value={path}
-          invalid={invalidPath}
-          invalidText={`Invalid namespace path: ${path} is already in use.`}
-          onChange={(e) => {
-            const path = e.target.value
-            setPath(path)
-            setInvalidPath(isInvalidPath(path))
+            const val = e.target.value
+            setName(val)
+            setInvalidName(!isDnsLabelValid(val) || isDuplicate(val))
           }}
           disabled={!!openedNamespace}
         />

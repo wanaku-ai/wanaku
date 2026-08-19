@@ -62,7 +62,7 @@ export const NamespacesPage: React.FC = () => {
       await refreshNamespaces();
     } catch {
       setIsModalOpen(false);
-      setErrorMessage("Error creating namespace. The name or path may already be in use.");
+      setErrorMessage("Error creating namespace. The path may already be in use or is invalid.");
     }
   };
 
@@ -80,11 +80,11 @@ export const NamespacesPage: React.FC = () => {
 
   const handleDelete = async (namespace: Namespace) => {
     try {
-      if (!namespace.id) return;
-      await removeNamespace(namespace.id);
+      if (!namespace.name) return;
+      await removeNamespace(namespace.name);
       await refreshNamespaces();
     } catch {
-      setErrorMessage(`Failed to delete namespace: ${namespace.name || namespace.path}`);
+      setErrorMessage(`Failed to delete namespace: ${namespace.path}`);
     }
   };
 
@@ -102,9 +102,8 @@ export const NamespacesPage: React.FC = () => {
       )}
       <h1 className="title">Namespaces</h1>
       <p className="description">
-        Namespaces help organize and isolate tools and resources, preventing LLM context bloat and improving deployment efficiency.
-        Wanaku provides up to 10 namespace slots (ns-0 to ns-9) plus a default namespace for general use.
-        Each namespace acts as a separate logical container to ensure tools don't interfere with each other.
+        Namespaces help organize and isolate tools and resources, preventing LLM context bloat.
+        Each namespace acts as a separate container accessible via its own MCP endpoint path.
       </p>
       <div id="page-content">
         <NamespaceTable

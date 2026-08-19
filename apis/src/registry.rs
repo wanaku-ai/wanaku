@@ -125,17 +125,44 @@ pub struct ForwardEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct NamespaceEntry {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+    #[serde(alias = "path")]
     pub name: String,
-    #[serde(default)]
-    pub path: String,
     #[serde(default)]
     pub labels: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "Option::is_none", rename = "authRequired", alias = "auth_required")]
     pub auth_required: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audience: Option<String>,
+}
+
+/// Validates that a namespace name follows DNS-label conventions:
+/// lowercase alphanumeric and hyphens, 1-63 chars, must start and end
+/// with an alphanumeric character. The name doubles as the URL path
+/// segment and unique identifier.
+pub fn validate_namespace_name(name: &str) -> Result<(), String> {
+    if name.is_empty() {
+        return Err("namespace name must not be empty".to_owned());
+    }
+
+    if name.len() > 63 {
+        return Err(format!(
+            "namespace name must be at most 63 characters, got {}",
+            name.len()
+        ));
+    }
+
+    if !name.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-') {
+        return Err(
+            "namespace name must contain only lowercase alphanumeric characters and hyphens"
+                .to_owned(),
+        );
+    }
+
+    if name.starts_with('-') || name.ends_with('-') {
+        return Err("namespace name must not start or end with a hyphen".to_owned());
+    }
+
+    Ok(())
 }
 
 pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
@@ -226,9 +253,9 @@ pub trait PromptRegistry: Send + Sync {
 
 pub trait NamespaceRegistry: Send + Sync {
     fn list_namespaces(&self) -> Vec<NamespaceEntry>;
-    fn get_namespace(&self, name: &str) -> Option<NamespaceEntry>;
+    fn get_namespace(&self, path: &str) -> Option<NamespaceEntry>;
     fn register_namespace(&self, namespace: NamespaceEntry);
-    fn remove_namespace(&self, name: &str) -> bool;
+    fn remove_namespace(&self, path: &str) -> bool;
 }
 
 pub trait ForwardRegistry: Send + Sync {
@@ -255,9 +282,7 @@ impl InMemoryRegistry {
         namespaces.insert(
             DEFAULT_NAMESPACE.to_owned(),
             NamespaceEntry {
-                id: Some(DEFAULT_NAMESPACE.to_owned()),
                 name: DEFAULT_NAMESPACE.to_owned(),
-                path: DEFAULT_NAMESPACE.to_owned(),
                 labels: HashMap::new(),
                 auth_required: None,
                 audience: None,
@@ -326,10 +351,7 @@ impl InMemoryRegistry {
         for forward in snapshot.forwards {
             self.forwards.insert(forward.name.clone(), forward);
         }
-        for mut namespace in snapshot.namespaces {
-            if namespace.id.is_none() {
-                namespace.id = Some(namespace.name.clone());
-            }
+        for namespace in snapshot.namespaces {
             self.namespaces.insert(namespace.name.clone(), namespace);
         }
 
@@ -560,10 +582,7 @@ impl NamespaceRegistry for InMemoryRegistry {
         self.namespaces.get(name).map(|entry| entry.value().clone())
     }
 
-    fn register_namespace(&self, mut namespace: NamespaceEntry) {
-        if namespace.id.is_none() {
-            namespace.id = Some(namespace.name.clone());
-        }
+    fn register_namespace(&self, namespace: NamespaceEntry) {
         self.namespaces.insert(namespace.name.clone(), namespace);
         self.persist();
     }
@@ -920,5 +939,57 @@ mod tests {
         assert_eq!(entry.name, "legacy");
         assert!(entry.server_info.is_none());
         assert!(entry.labels.is_empty());
+    }
+
+    #[test]
+    fn validate_namespace_name_valid() {
+        assert!(validate_namespace_name("finance").is_ok());
+        assert!(validate_namespace_name("my-ns").is_ok());
+        assert!(validate_namespace_name("team-42").is_ok());
+        assert!(validate_namespace_name("a").is_ok());
+        assert!(validate_namespace_name("default").is_ok());
+    }
+
+    #[test]
+    fn validate_namespace_name_empty() {
+        assert!(validate_namespace_name("").is_err());
+    }
+
+    #[test]
+    fn validate_namespace_name_too_long() {
+        let long = "a".repeat(64);
+        assert!(validate_namespace_name(&long).is_err());
+        let max = "a".repeat(63);
+        assert!(validate_namespace_name(&max).is_ok());
+    }
+
+    #[test]
+    fn validate_namespace_name_invalid_chars() {
+        assert!(validate_namespace_name("Finance").is_err());
+        assert!(validate_namespace_name("my ns").is_err());
+        assert!(validate_namespace_name("my_ns").is_err());
+        assert!(validate_namespace_name("a.b").is_err());
+        assert!(validate_namespace_name("ns!").is_err());
+    }
+
+    #[test]
+    fn validate_namespace_name_leading_trailing_hyphen() {
+        assert!(validate_namespace_name("-start").is_err());
+        assert!(validate_namespace_name("end-").is_err());
+        assert!(validate_namespace_name("-both-").is_err());
+    }
+
+    #[test]
+    fn namespace_backward_compat_path_alias() {
+        let json = r#"{"path": "finance"}"#;
+        let ns: NamespaceEntry = serde_json::from_str(json).expect("should deserialize with path alias");
+        assert_eq!(ns.name, "finance");
+    }
+
+    #[test]
+    fn namespace_name_field() {
+        let json = r#"{"name": "finance"}"#;
+        let ns: NamespaceEntry = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(ns.name, "finance");
     }
 }

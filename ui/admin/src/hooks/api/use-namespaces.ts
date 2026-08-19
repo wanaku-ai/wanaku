@@ -34,11 +34,11 @@ export const useNamespaces = () => {
 
   const updateNamespace = useCallback(
     (namespace: Namespace, options?: RequestInit): Promise<putApiV1NamespacesIdResponse> => {
-      if (!namespace.id) {
-        throw new Error("Namespace ID is required for update");
+      if (!namespace.name) {
+        throw new Error("Namespace name is required for update");
       }
       clearNamespacesCache();
-      return putApiV1NamespacesId(namespace.id, namespace, options);
+      return putApiV1NamespacesId(namespace.name, namespace, options);
     },
     []
   );
@@ -87,14 +87,14 @@ export const clearNamespacesCache = () => {
   namespacesCache = null;
 };
 
-export const getNamespacePathById = (id?: string): string => {
-  if (!id) {
+export const getNamespacePathById = (name?: string): string => {
+  if (!name) {
     return "default"
   }
   if (namespacesCache) {
     const data = namespacesCache.data.data.data as Namespace[]
-    const found = data.find(namespace => namespace.id === id)?.path
+    const found = data.find(namespace => namespace.name === name)?.name
     if (found) return found
   }
-  return id;
+  return name;
 }

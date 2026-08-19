@@ -28,7 +28,7 @@ interface NamespaceTableProps {
 }
 
 function isProtected(namespace: Namespace): boolean {
-  return PROTECTED_PATHS.includes(namespace.path || "") || PROTECTED_PATHS.includes(namespace.name || "");
+  return PROTECTED_PATHS.includes(namespace.name || "");
 }
 
 function hasLabels(namespace: Namespace): boolean {
@@ -52,18 +52,14 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
   onDelete,
 }) => {
   const headers = [
-    { key: "namespaceid", header: "ID" },
     { key: "name", header: "Name" },
-    { key: "path", header: "Path" },
     { key: "status", header: "Status" },
     { key: "actions", header: "Actions" },
   ];
 
   const rows = namespaces.map((namespace, index) => ({
-    id: namespace.id || `namespace-${index}`,
-    namespaceid: namespace.id || "N/A",
+    id: namespace.name || `namespace-${index}`,
     name: namespace.name || "N/A",
-    path: namespace.path || "N/A",
     status: namespace.name ? "Allocated" : "Available",
     actions: "",
   }));
@@ -100,16 +96,14 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
             </TableHead>
             <TableBody>
               {rows.map((row) => {
-                const namespace = namespaces.find((ns) => ns.id === row.id);
+                const namespace = namespaces.find((ns) => ns.name === row.id);
                 if (!namespace) return null;
                 const expandable = hasLabels(namespace);
                 const nsProtected = isProtected(namespace);
 
                 const cells = (
                   <React.Fragment>
-                    <TableCell>{namespace.id || "N/A"}</TableCell>
                     <TableCell>{namespace.name || "N/A"}</TableCell>
-                    <TableCell>{namespace.path || "N/A"}</TableCell>
                     <TableCell>{namespace.name ? "Allocated" : "Available"}</TableCell>
                     <TableCell>
                       <Button
@@ -134,7 +128,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
 
                 if (expandable) {
                   return (
-                    <React.Fragment key={namespace.id}>
+                    <React.Fragment key={namespace.name}>
                       <TableExpandRow expandIconDescription="Show labels" {...getRowProps({ row })}>
                         {cells}
                       </TableExpandRow>
@@ -155,7 +149,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                 }
 
                 return (
-                  <TableRow {...getRowProps({ row })} key={namespace.id}>
+                  <TableRow {...getRowProps({ row })} key={namespace.name}>
                     <TableCell />
                     {cells}
                   </TableRow>

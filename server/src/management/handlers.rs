@@ -155,6 +155,11 @@ pub(super) fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -
         }
     };
 
+    if let Err(reason) = wanaku_apis::registry::validate_namespace_name(&namespace.name) {
+        warn!(name = %namespace.name, reason = %reason, "namespace name validation failed");
+        return json_err(StatusCode::BAD_REQUEST, &reason);
+    }
+
     let name = namespace.name.clone();
     registry.register_namespace(namespace);
     info!(namespace = %name, "registered namespace via management API");
@@ -174,7 +179,6 @@ pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &s
     };
 
     namespace.name = path_name.to_owned();
-    namespace.id = None;
     registry.register_namespace(namespace);
     info!(namespace = %path_name, "updated namespace via management API");
     match registry.get_namespace(path_name) {
@@ -1076,7 +1080,7 @@ mod tests {
     #[test]
     fn namespace_create_and_get_roundtrip() {
         let registry = InMemoryRegistry::new();
-        let body = r#"{"name":"finance","path":"/finance"}"#;
+        let body = r#"{"name":"finance"}"#;
 
         assert_eq!(handle_namespace_create(&registry, body).status(), 200);
 
@@ -1085,25 +1089,39 @@ mod tests {
 
         let data = data_field(&get_resp);
         assert_eq!(data.get("name").and_then(|v| v.as_str()), Some("finance"));
-        assert_eq!(data.get("path").and_then(|v| v.as_str()), Some("/finance"));
-        assert_eq!(data.get("id").and_then(|v| v.as_str()), Some("finance"));
     }
 
     #[test]
-    fn namespace_update_uses_path_parameter_for_name() {
+    fn namespace_create_with_legacy_path_field() {
         let registry = InMemoryRegistry::new();
-        handle_namespace_create(&registry, r#"{"name":"original","path":"/orig"}"#);
+        let body = r#"{"path":"finance"}"#;
 
-        let update_body = r#"{"name":"ignored","path":"/updated"}"#;
+        assert_eq!(handle_namespace_create(&registry, body).status(), 200);
+
+        let get_resp = handle_namespace_get(&registry, "finance");
+        assert_eq!(get_resp.status(), 200);
+    }
+
+    #[test]
+    fn namespace_create_validates_name() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(handle_namespace_create(&registry, r#"{"name":"Bad Name"}"#).status(), 400);
+        assert_eq!(handle_namespace_create(&registry, r#"{"name":"-leading"}"#).status(), 400);
+        assert_eq!(handle_namespace_create(&registry, r#"{"name":"trailing-"}"#).status(), 400);
+        assert_eq!(handle_namespace_create(&registry, r#"{"name":""}"#).status(), 400);
+    }
+
+    #[test]
+    fn namespace_update_uses_url_parameter() {
+        let registry = InMemoryRegistry::new();
+        handle_namespace_create(&registry, r#"{"name":"original"}"#);
+
+        let update_body = r#"{"name":"ignored"}"#;
         let resp = handle_namespace_update(&registry, "original", update_body);
         assert_eq!(resp.status(), 200);
 
         let data = data_field(&handle_namespace_get(&registry, "original"));
-        assert_eq!(data.get("path").and_then(|v| v.as_str()), Some("/updated"));
-        assert_eq!(
-            data.get("name").and_then(|v| v.as_str()),
-            Some("original")
-        );
+        assert_eq!(data.get("name").and_then(|v| v.as_str()), Some("original"));
     }
 
     #[test]
@@ -1116,7 +1134,7 @@ mod tests {
             Some(1)
         );
 
-        handle_namespace_create(&registry, r#"{"name":"ns1","path":"/ns1"}"#);
+        handle_namespace_create(&registry, r#"{"name":"ns1"}"#);
         assert_eq!(
             data_field(&handle_namespace_list(&registry))
                 .as_array()
@@ -1134,7 +1152,7 @@ mod tests {
     #[test]
     fn namespace_delete_existing() {
         let registry = InMemoryRegistry::new();
-        handle_namespace_create(&registry, r#"{"name":"del-ns","path":"/"}"#);
+        handle_namespace_create(&registry, r#"{"name":"del-ns"}"#);
         assert_eq!(handle_namespace_delete(&registry, "del-ns").status(), 200);
         assert_eq!(handle_namespace_get(&registry, "del-ns").status(), 404);
     }
