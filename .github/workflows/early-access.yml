@@ -117,6 +117,34 @@ jobs:
           Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
           Remove-Item -Recurse -Force "dist/$archive"
 
+      - name: Build headless release binary
+        run: cargo build --release --locked -p wanaku-server --no-default-features
+
+      - name: Package headless release binary (Unix)
+        if: runner.os != 'Windows'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          archive="wanaku-server-headless-${VERSION}-${PLATFORM}"
+          mkdir -p "dist/$archive"
+          install -m 0755 target/release/wanaku-server "dist/$archive/wanaku-server"
+          cp LICENSE README.md wanaku.yaml "dist/$archive/"
+          tar -C dist -czf "dist/$archive.tar.gz" "$archive"
+          rm -rf "dist/$archive"
+
+      - name: Package headless release binary (Windows)
+        if: runner.os == 'Windows'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        shell: pwsh
+        run: |
+          $archive = "wanaku-server-headless-$env:VERSION-$env:PLATFORM"
+          New-Item -ItemType Directory -Path "dist/$archive" -Force
+          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
+          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
+          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
+          Remove-Item -Recurse -Force "dist/$archive"
+
       - name: Upload release archive
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -141,6 +169,19 @@ jobs:
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server"
           docker build -f Containerfile \
+            -t "$image:${VERSION}-${ARCH}" \
+            -t "$image:early-access-${ARCH}" \
+            .
+          docker push "$image:${VERSION}-${ARCH}"
+          docker push "$image:early-access-${ARCH}"
+
+      - name: Build and push headless container image
+        if: matrix.container && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server-headless"
+          docker build -f Containerfile.headless \
             -t "$image:${VERSION}-${ARCH}" \
             -t "$image:early-access-${ARCH}" \
             .

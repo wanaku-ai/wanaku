@@ -41,6 +41,8 @@ jobs:
         run: mkdir -p ui/admin/dist
       - name: Clippy
         run: cargo clippy --all-targets
+      - name: Clippy (headless)
+        run: cargo clippy --all-targets --no-default-features -p wanaku-server
 
   build:
     runs-on: ubuntu-latest
@@ -64,5 +66,7 @@ jobs:
         run: mkdir -p ui/admin/dist
       - name: Build
         run: cargo build --verbose
+      - name: Build (headless)
+        run: cargo build --verbose --no-default-features -p wanaku-server
       - name: Test
         run: cargo test --verbose
