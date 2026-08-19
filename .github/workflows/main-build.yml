@@ -80,7 +80,7 @@ jobs:
       - name: Build headless container image
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
-          docker build -f Containerfile.headless \
+          docker build -f Containerfile --build-arg VARIANT=headless \
             -t ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ github.ref_name }}-${{ steps.arch.outputs.arch }} \
             .
 
