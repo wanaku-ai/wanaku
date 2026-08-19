@@ -33,5 +33,6 @@ jobs:
             --exclude-path .claude
             --exclude-path .specify
             --exclude-path .oss-ai-helper-rules
+            --exclude-path CONTRIBUTING.md
             '**/*.md'
           fail: true

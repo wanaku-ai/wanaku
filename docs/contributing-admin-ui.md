@@ -364,7 +364,6 @@ The UI uses Carbon theme tokens, not hardcoded colors.
 - `$interactive-01`, `$interactive-02` — buttons, links
 - `$border-subtle`, `$border-strong` — borders
 
-See [Carbon Design Tokens](https://carbondesignsystem.com/guidelines/color/tokens/) for the full list.
 
 ## Router Configuration
 

@@ -756,13 +756,6 @@ cargo test -p wanaku-feature-evaluator --test e2e -- --ignored
 
 Tests cover: evaluator API CRUD, WASM block/warn actions, clearing evaluators, `result_schema` config, namespace-scoped evaluators, and LLM classification (classification tests also need Ollama on `localhost:11434`).
 
-### Shell Script (legacy)
-
-```bash
-./scripts/test-evaluator.sh       # evaluator engine (needs server + Ollama)
-./scripts/test-classification.sh  # safety classification (needs server + Ollama)
-```
-
 **What to look for in server logs:**
 
 ```
@@ -989,6 +982,5 @@ This re-compiles all WASM files referenced in the config.
 - **TypeScript Definitions:** [`sdk/js/wanaku-actions.d.ts`](../sdk/js/wanaku-actions.d.ts)
 - **JavaScript Examples:** [`actions/js-examples/`](../actions/js-examples/)
 - **Rust Example:** [`actions/safety-block/`](../actions/safety-block/)
-- **Integration Test:** [`scripts/test-evaluator.sh`](../scripts/test-evaluator.sh)
 - **jco Componentize Docs:** [Bytecode Alliance jco](https://github.com/bytecodealliance/jco)
 - **cargo-component Docs:** [cargo-component](https://github.com/bytecodealliance/cargo-component)
