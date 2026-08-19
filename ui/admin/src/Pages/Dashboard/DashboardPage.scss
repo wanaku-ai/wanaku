@@ -1,116 +1,193 @@
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme' as *;
+
 .dashboard-page {
-  padding: 1rem;
+  padding: $spacing-06;
+  max-width: 1584px;
+  margin: 0 auto;
 
-  .title {
-    margin-bottom: 0.5rem;
-  }
-
-  .description {
-    margin-bottom: 1.5rem;
-    color: var(--cds-text-secondary, #525252);
-  }
-
-  .dashboard-actions {
+  .dashboard-header {
     display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $spacing-07;
+
+    .title {
+      font-size: 2rem;
+      font-weight: 400;
+      line-height: 1.25;
+      margin-bottom: $spacing-02;
+      color: $text-primary;
+    }
+
+    .description {
+      font-size: 0.875rem;
+      line-height: 1.43;
+      color: $text-secondary;
+      max-width: 600px;
+    }
   }
 
   .dashboard-section {
-    margin-bottom: 2rem;
+    margin-bottom: $spacing-06;
   }
 
   .section-heading {
     font-size: 0.875rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.32px;
-    color: var(--cds-text-secondary, #525252);
-    padding-bottom: 0.75rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
-  }
+    display: flex;
+    align-items: center;
+    gap: $spacing-03;
+    color: $text-primary;
+    margin-bottom: $spacing-05;
+    padding-bottom: $spacing-04;
+    border-bottom: 1px solid $border-subtle-01;
 
-  .stats-grid {
-    margin-top: 0;
-  }
-
-  .stat-tile {
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    border: 1px solid var(--cds-border-subtle, #e0e0e0);
-    border-radius: 4px;
-    transition: box-shadow 0.15s ease;
-
-    &:hover {
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .stat-icon {
-      color: var(--cds-text-secondary, #525252);
-      margin-bottom: 0.75rem;
-    }
-
-    .stat-value {
-      font-size: 2.5rem;
-      font-weight: 600;
-      line-height: 1.2;
-      color: var(--cds-text-primary, #161616);
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: var(--cds-text-secondary, #525252);
-      margin-top: 0.5rem;
+    .heading-icon {
+      color: $icon-secondary;
     }
   }
 
-  .metrics-table {
-    margin-top: 1rem;
-    overflow-x: auto;
+  // Hero section — primary KPI tiles
+  .hero-section {
+    margin-bottom: $spacing-07;
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .hero-grid {
+      margin: 0;
+    }
 
-      th {
-        text-align: left;
+    .hero-tile {
+      min-height: 160px;
+      padding: $spacing-05;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0.38, 0.9);
+      border: 1px solid $border-subtle-01;
+
+      &:hover {
+        background: $layer-hover-01;
+        border-color: $border-strong-01;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      &:focus {
+        outline: 2px solid $focus;
+        outline-offset: 2px;
+      }
+
+      .hero-icon {
+        color: $icon-primary;
+        margin-bottom: $spacing-03;
+      }
+
+      .hero-value {
+        font-size: 2.625rem;
+        font-weight: 300;
+        line-height: 1.2;
+        color: $text-primary;
+        margin-bottom: $spacing-02;
+      }
+
+      .hero-label {
         font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
+        font-weight: 400;
         letter-spacing: 0.32px;
-        color: var(--cds-text-secondary, #525252);
-        padding: 0.75rem 1rem;
-        border-bottom: 2px solid var(--cds-border-subtle, #e0e0e0);
+        color: $text-secondary;
+        text-transform: uppercase;
+      }
+    }
+
+    .hero-tile-skeleton {
+      height: 160px;
+    }
+  }
+
+  // Summary row — compact inline cards
+  .summary-row {
+    display: flex;
+    gap: $spacing-04;
+    flex-wrap: wrap;
+
+    .summary-card {
+      flex: 1;
+      min-width: 200px;
+      padding: $spacing-05;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: $spacing-02;
+      border: 1px solid $border-subtle-01;
+
+      .card-icon {
+        color: $icon-secondary;
       }
 
-      td {
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+      .card-content {
+        display: flex;
+        align-items: baseline;
+        gap: $spacing-02;
       }
 
-      tbody tr:hover {
-        background-color: var(--cds-layer-hover, #e5e5e5);
+      .card-value {
+        font-size: 1.5rem;
+        font-weight: 300;
+        color: $text-primary;
+
+        &.error-value {
+          color: $support-error;
+        }
+      }
+
+      .card-sep {
+        font-size: 1rem;
+        color: $text-helper;
+      }
+
+      .card-label {
+        font-size: 0.75rem;
+        letter-spacing: 0.32px;
+        color: $text-secondary;
       }
     }
   }
 
-}
-
-@media (prefers-color-scheme: dark) {
-  .dashboard-page {
-    .stat-tile:hover {
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    }
+  // Tables
+  .data-table-wrapper {
+    margin-top: $spacing-05;
   }
 }
 
+// Responsive behavior
 @media (max-width: 672px) {
   .dashboard-page {
-    .stat-tile .stat-value {
-      font-size: 2rem;
+    padding: $spacing-05;
+
+    .dashboard-header {
+      flex-direction: column;
+      gap: $spacing-05;
+
+      button {
+        align-self: flex-start;
+      }
     }
 
+    .hero-section {
+      .hero-tile {
+        min-height: 120px;
+
+        .hero-value {
+          font-size: 2rem;
+        }
+      }
+    }
+
+    .summary-row {
+      flex-direction: column;
+
+      .summary-card {
+        min-width: unset;
+      }
+    }
   }
 }

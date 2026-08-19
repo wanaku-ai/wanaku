@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Accordion, AccordionItem, Button, Search, Tag, ToastNotification, Toggle,} from "@carbon/react";
+import {Accordion, AccordionItem, Button, InlineNotification, Search, Tag, Toggle,} from "@carbon/react";
 import {Download, TrashCan} from "@carbon/icons-react";
 const enum ToolCallEventType {
   STARTED = "STARTED",
@@ -216,13 +216,13 @@ const ToolCallsPage: React.FC = () => {
   return (
     <div style={{ padding: "2rem" }}>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Connection Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={10000}
-          style={{ position: "fixed", top: "3rem", right: "1rem", zIndex: 9999 }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
 

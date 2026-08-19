@@ -1,18 +1,37 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {Button, Column, Grid, Tile, ToastNotification,} from "@carbon/react";
+import {
+  Button,
+  Column,
+  Grid,
+  Tile,
+  ClickableTile,
+  InlineNotification,
+  SkeletonText,
+  SkeletonPlaceholder,
+  DataTable,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from "@carbon/react";
 import {
   Activity,
   ArrowRight,
-  ChartBar,
   Document,
   Renew,
   TextAlignJustify,
   Tools,
-  WarningAlt,
+  Settings,
+  Flow,
 } from "@carbon/icons-react";
+import {useNavigate} from "react-router-dom";
 import {useStatistics} from "../../hooks/api/use-statistics";
 import {useMetrics} from "../../hooks/api/use-metrics";
-import type {MetricsSnapshot} from "../../models";
+import {Links} from "../../router/links.models";
+import type {MetricsSnapshot, FilterSnapshot, EvaluatorSnapshot} from "../../models";
 interface SystemStatistics {
   toolsCount?: number;
   resourcesCount?: number;
@@ -23,6 +42,7 @@ interface SystemStatistics {
 import "./DashboardPage.scss";
 
 export const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const [statistics, setStatistics] = useState<SystemStatistics | null>(null);
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,8 +95,6 @@ export const DashboardPage: React.FC = () => {
     }
   }, [errorMessage]);
 
-  if (isLoading) return <div>Loading...</div>;
-
   const filterEntries = metrics
     ? Object.entries(metrics.filters).sort(([a], [b]) => a.localeCompare(b))
     : [];
@@ -95,67 +113,150 @@ export const DashboardPage: React.FC = () => {
     ? Object.entries(metrics.evaluators).sort(([a], [b]) => a.localeCompare(b))
     : [];
 
+  const filterHeaders = [
+    { key: "name", header: "Filter" },
+    { key: "continue", header: "Continue" },
+    { key: "reject", header: "Reject" },
+    { key: "errors", header: "Errors" },
+    { key: "avgDuration", header: "Avg Duration (ms)" },
+  ];
+
+  const filterRows = filterEntries.map(([name, f]: [string, FilterSnapshot]) => ({
+    id: name,
+    name,
+    continue: f.requests_continue,
+    reject: f.requests_reject,
+    errors: f.errors,
+    avgDuration: f.duration.avg_ms.toFixed(2),
+  }));
+
+  const evaluatorHeaders = [
+    { key: "name", header: "Evaluator" },
+    { key: "pass", header: "Pass" },
+    { key: "block", header: "Block" },
+    { key: "warn", header: "Warn" },
+    { key: "llmCalls", header: "LLM Calls" },
+    { key: "llmAvg", header: "LLM Avg (ms)" },
+    { key: "wasmRuns", header: "WASM Runs" },
+    { key: "schemaPass", header: "Schema ✓" },
+    { key: "schemaFail", header: "Schema ✗" },
+  ];
+
+  const evaluatorRows = evaluatorEntries.map(([name, e]: [string, EvaluatorSnapshot]) => ({
+    id: name,
+    name,
+    pass: e.decisions.pass,
+    block: e.decisions.block,
+    warn: e.decisions.warn,
+    llmCalls: e.llm.calls_success + e.llm.calls_failure,
+    llmAvg: e.llm.duration.avg_ms.toFixed(0),
+    wasmRuns: e.wasm.executions,
+    schemaPass: e.schema.validations_pass,
+    schemaFail: e.schema.validations_fail,
+  }));
+
+  if (isLoading) {
+    return (
+      <div className="dashboard-page">
+        <h1 className="title">Dashboard</h1>
+        <p className="description">
+          Governed action proxy for AI agents — system overview and operational metrics.
+        </p>
+        <section className="dashboard-section hero-section">
+          <Grid className="hero-grid">
+            <Column lg={4} md={4} sm={4}>
+              <SkeletonPlaceholder className="hero-tile-skeleton" />
+            </Column>
+            <Column lg={4} md={4} sm={4}>
+              <SkeletonPlaceholder className="hero-tile-skeleton" />
+            </Column>
+            <Column lg={4} md={4} sm={4}>
+              <SkeletonPlaceholder className="hero-tile-skeleton" />
+            </Column>
+            <Column lg={4} md={4} sm={4}>
+              <SkeletonPlaceholder className="hero-tile-skeleton" />
+            </Column>
+          </Grid>
+        </section>
+        <section className="dashboard-section">
+          <h3 className="section-heading">Filter Activity</h3>
+          <SkeletonText heading={false} lineCount={5} />
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-page">
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={10000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
-      <h1 className="title">Dashboard</h1>
-      <p className="description">
-        System overview showing counts for registered entities.
-      </p>
-      <div className="dashboard-actions">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="title">Dashboard</h1>
+          <p className="description">
+            Governed action proxy for AI agents — system overview and operational metrics.
+          </p>
+        </div>
         <Button
           kind="ghost"
-          size="sm"
+          size="md"
           renderIcon={Renew}
           onClick={fetchData}
         >
           Refresh
         </Button>
       </div>
+
       {statistics && (
-        <section className="dashboard-section">
-          <h3 className="section-heading">Overview</h3>
-          <Grid className="stats-grid">
+        <section className="dashboard-section hero-section">
+          <Grid className="hero-grid">
             <Column lg={4} md={4} sm={4}>
-              <Tile className="stat-tile">
-                <Tools size={24} className="stat-icon" />
-                <div className="stat-value">{statistics.toolsCount ?? 0}</div>
-                <div className="stat-label">Tools</div>
-              </Tile>
+              <ClickableTile
+                className="hero-tile"
+                onClick={() => navigate(Links.Tools)}
+              >
+                <Tools size={32} className="hero-icon" />
+                <div className="hero-value">{statistics.toolsCount ?? 0}</div>
+                <div className="hero-label">Tools</div>
+              </ClickableTile>
             </Column>
             <Column lg={4} md={4} sm={4}>
-              <Tile className="stat-tile">
-                <Document size={24} className="stat-icon" />
-                <div className="stat-value">
-                  {statistics.resourcesCount ?? 0}
-                </div>
-                <div className="stat-label">Resources</div>
-              </Tile>
+              <ClickableTile
+                className="hero-tile"
+                onClick={() => navigate(Links.Resources)}
+              >
+                <Document size={32} className="hero-icon" />
+                <div className="hero-value">{statistics.resourcesCount ?? 0}</div>
+                <div className="hero-label">Resources</div>
+              </ClickableTile>
             </Column>
             <Column lg={4} md={4} sm={4}>
-              <Tile className="stat-tile">
-                <TextAlignJustify size={24} className="stat-icon" />
-                <div className="stat-value">{statistics.promptsCount ?? 0}</div>
-                <div className="stat-label">Prompts</div>
-              </Tile>
+              <ClickableTile
+                className="hero-tile"
+                onClick={() => navigate(Links.Prompts)}
+              >
+                <TextAlignJustify size={32} className="hero-icon" />
+                <div className="hero-value">{statistics.promptsCount ?? 0}</div>
+                <div className="hero-label">Prompts</div>
+              </ClickableTile>
             </Column>
             <Column lg={4} md={4} sm={4}>
-              <Tile className="stat-tile">
-                <ArrowRight size={24} className="stat-icon" />
-                <div className="stat-value">
-                  {statistics.forwardsCount ?? 0}
-                </div>
-                <div className="stat-label">Forwards</div>
-              </Tile>
+              <ClickableTile
+                className="hero-tile"
+                onClick={() => navigate(Links.Forwards)}
+              >
+                <ArrowRight size={32} className="hero-icon" />
+                <div className="hero-value">{statistics.forwardsCount ?? 0}</div>
+                <div className="hero-label">Forwards</div>
+              </ClickableTile>
             </Column>
           </Grid>
         </section>
@@ -164,116 +265,118 @@ export const DashboardPage: React.FC = () => {
       {metrics && (
         <>
           <section className="dashboard-section">
-            <h3 className="section-heading">Filter Activity</h3>
-            <Grid className="stats-grid">
-              <Column lg={4} md={4} sm={4}>
-                <Tile className="stat-tile">
-                  <Activity size={24} className="stat-icon" />
-                  <div className="stat-value">{totalFilterRequests}</div>
-                  <div className="stat-label">Total Requests</div>
-                </Tile>
-              </Column>
-              <Column lg={4} md={4} sm={4}>
-                <Tile className="stat-tile">
-                  <WarningAlt size={24} className="stat-icon" />
-                  <div className="stat-value">{totalFilterErrors}</div>
-                  <div className="stat-label">Errors</div>
-                </Tile>
-              </Column>
-              <Column lg={4} md={4} sm={4}>
-                <Tile className="stat-tile">
-                  <ChartBar size={24} className="stat-icon" />
-                  <div className="stat-value">{filterEntries.length}</div>
-                  <div className="stat-label">Active Filters</div>
-                </Tile>
-              </Column>
-            </Grid>
+            <div className="summary-row">
+              <Tile className="summary-card">
+                <Activity size={20} className="card-icon" />
+                <div className="card-content">
+                  <span className="card-value">{totalFilterRequests}</span>
+                  <span className="card-sep">/</span>
+                  <span className="card-value error-value">{totalFilterErrors}</span>
+                </div>
+                <div className="card-label">Requests / Errors</div>
+              </Tile>
 
-            {filterEntries.length > 0 && (
-              <div className="metrics-table">
-                <table className="cds--data-table">
-                  <thead>
-                    <tr>
-                      <th>Filter</th>
-                      <th>Continue</th>
-                      <th>Reject</th>
-                      <th>Errors</th>
-                      <th>Avg Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filterEntries.map(([name, f]) => (
-                      <tr key={name}>
-                        <td>{name}</td>
-                        <td>{f.requests_continue}</td>
-                        <td>{f.requests_reject}</td>
-                        <td>{f.errors}</td>
-                        <td>{f.duration.avg_ms.toFixed(2)} ms</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              {metrics.pipeline && (
+                <Tile className="summary-card">
+                  <Flow size={20} className="card-icon" />
+                  <div className="card-content">
+                    <span className="card-value">{metrics.pipeline.trigger_matches}</span>
+                    <span className="card-sep">/</span>
+                    <span className="card-value">{metrics.pipeline.trigger_misses}</span>
+                    <span className="card-sep">/</span>
+                    <span className="card-value">{metrics.pipeline.skipped_no_match}</span>
+                  </div>
+                  <div className="card-label">Matches / Misses / Skipped</div>
+                </Tile>
+              )}
+
+              {metrics.gauges && (
+                <Tile className="summary-card">
+                  <Settings size={20} className="card-icon" />
+                  <div className="card-content">
+                    <span className="card-value">{metrics.gauges.evaluators_loaded}</span>
+                    <span className="card-sep">/</span>
+                    <span className="card-value">{metrics.gauges.wasm_compiled}</span>
+                    <span className="card-sep">/</span>
+                    <span className="card-value">{metrics.gauges.namespace_bindings}</span>
+                  </div>
+                  <div className="card-label">Evaluators / WASM / Namespaces</div>
+                </Tile>
+              )}
+            </div>
           </section>
 
-          {evaluatorEntries.length > 0 && (
+          {filterEntries.length > 0 && (
             <section className="dashboard-section">
-              <h3 className="section-heading">Evaluator Activity</h3>
-              <div className="metrics-table">
-                <table className="cds--data-table">
-                  <thead>
-                    <tr>
-                      <th>Evaluator</th>
-                      <th>Pass</th>
-                      <th>Block</th>
-                      <th>Warn</th>
-                      <th>LLM Calls</th>
-                      <th>LLM Avg</th>
-                      <th>WASM Runs</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {evaluatorEntries.map(([name, e]) => (
-                      <tr key={name}>
-                        <td>{name}</td>
-                        <td>{e.decisions.pass}</td>
-                        <td>{e.decisions.block}</td>
-                        <td>{e.decisions.warn}</td>
-                        <td>{e.llm.calls_success + e.llm.calls_failure}</td>
-                        <td>{e.llm.duration.avg_ms.toFixed(0)} ms</td>
-                        <td>{e.wasm.executions}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable rows={filterRows} headers={filterHeaders}>
+                {({
+                  rows,
+                  headers,
+                  getTableProps,
+                  getHeaderProps,
+                  getRowProps,
+                }) => (
+                  <TableContainer title="Filter Performance">
+                    <Table {...getTableProps()} size="md">
+                      <TableHead>
+                        <TableRow>
+                          {headers.map((header) => (
+                            <TableHeader {...getHeaderProps({ header })}>
+                              {header.header}
+                            </TableHeader>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {rows.map((row) => (
+                          <TableRow {...getRowProps({ row })}>
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value}</TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </DataTable>
             </section>
           )}
 
-          {metrics.gauges && (
+          {evaluatorEntries.length > 0 && (
             <section className="dashboard-section">
-              <h3 className="section-heading">Configuration</h3>
-              <Grid className="stats-grid">
-                <Column lg={4} md={4} sm={4}>
-                  <Tile className="stat-tile">
-                    <div className="stat-value">{metrics.gauges.evaluators_loaded}</div>
-                    <div className="stat-label">Evaluators Loaded</div>
-                  </Tile>
-                </Column>
-                <Column lg={4} md={4} sm={4}>
-                  <Tile className="stat-tile">
-                    <div className="stat-value">{metrics.gauges.wasm_compiled}</div>
-                    <div className="stat-label">WASM Compiled</div>
-                  </Tile>
-                </Column>
-                <Column lg={4} md={4} sm={4}>
-                  <Tile className="stat-tile">
-                    <div className="stat-value">{metrics.gauges.namespace_bindings}</div>
-                    <div className="stat-label">Namespace Bindings</div>
-                  </Tile>
-                </Column>
-              </Grid>
+              <DataTable rows={evaluatorRows} headers={evaluatorHeaders}>
+                {({
+                  rows,
+                  headers,
+                  getTableProps,
+                  getHeaderProps,
+                  getRowProps,
+                }) => (
+                  <TableContainer title="Evaluator Performance">
+                    <Table {...getTableProps()} size="md">
+                      <TableHead>
+                        <TableRow>
+                          {headers.map((header) => (
+                            <TableHeader {...getHeaderProps({ header })}>
+                              {header.header}
+                            </TableHeader>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {rows.map((row) => (
+                          <TableRow {...getRowProps({ row })}>
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value}</TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </DataTable>
             </section>
           )}
         </>

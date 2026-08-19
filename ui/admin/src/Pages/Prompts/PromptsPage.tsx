@@ -1,4 +1,4 @@
-import {ToastNotification,} from "@carbon/react";
+import {InlineNotification, SkeletonText} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
 import {PromptEntry} from "../../models";
@@ -41,7 +41,12 @@ export const PromptsPage: React.FC = () => {
     }
   }, [errorMessage]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div>
+      <h1 className="title">Prompts</h1>
+      <SkeletonText heading={false} lineCount={5} width="80%" />
+    </div>
+  );
 
   const handleDeletePrompt = async (promptName?: string) => {
     try {
@@ -55,13 +60,13 @@ export const PromptsPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={10000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
       <h1 className="title">Prompts</h1>

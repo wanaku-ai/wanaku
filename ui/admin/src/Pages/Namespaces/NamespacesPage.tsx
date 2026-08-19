@@ -1,4 +1,4 @@
-import {ToastNotification} from "@carbon/react";
+import {InlineNotification, SkeletonText} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {NamespaceEntry} from "../../models";
 import {NamespaceTable} from "./NamespacesTable";
@@ -39,7 +39,12 @@ export const NamespacesPage: React.FC = () => {
     }
   }, [errorMessage]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div>
+      <h1 className="title">Namespaces</h1>
+      <SkeletonText heading={false} lineCount={5} width="80%" />
+    </div>
+  );
 
   function handleModalClose(): void {
     setOpenedNamespace(undefined);
@@ -91,13 +96,13 @@ export const NamespacesPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <ToastNotification
+        <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMessage}
           onCloseButtonClick={() => setErrorMessage(null)}
-          timeout={10000}
-          style={{ float: "right" }}
+          lowContrast
+          hideCloseButton={false}
         />
       )}
       <h1 className="title">Namespaces</h1>
