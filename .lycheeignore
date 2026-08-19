@@ -1,0 +1,13 @@
+# Localhost / example URLs used in documentation
+http://localhost
+http://127\.0\.0\.1
+http://0\.0\.0\.0
+http://customer-service
+http://echo-mcp
+https://app\.example\.com
+https://customer-api\.prod\.example\.com
+https://plugins\.example\.com
+http://<your-mcp-server
+
+# Dead external URLs
+https://carbondesignsystem\.com/guidelines/color/tokens/
