@@ -28,6 +28,6 @@ features:
     link: ./docs/admin-ui
   - title: Contributing
     details: Learn how to contribute to Wanaku
-    link: ./CONTRIBUTING
+    link: ./docs/contributing.md
 
 ---
