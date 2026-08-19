@@ -1,0 +1,37 @@
+name: Check Links
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.md'
+      - '.lycheeignore'
+      - '.github/workflows/lychee-links.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**/*.md'
+      - '.lycheeignore'
+      - '.github/workflows/lychee-links.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            --exclude-path .claude
+            --exclude-path .specify
+            --exclude-path .oss-ai-helper-rules
+            '**/*.md'
+          fail: true
