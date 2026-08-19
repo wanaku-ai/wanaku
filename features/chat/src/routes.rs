@@ -231,6 +231,15 @@ mod tests {
     }
 
     #[test]
+    fn list_llms_returns_non_empty_array() {
+        let response = handle_chat_list_llms();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body: Vec<String> = serde_json::from_slice(response.body()).unwrap();
+        assert!(!body.is_empty(), "LLM list must not be empty");
+    }
+
+    #[test]
     fn list_models_for_llm() {
         assert_eq!(
             resolve_chat_route("GET", "/api/v1/chat/ollama/models"),
