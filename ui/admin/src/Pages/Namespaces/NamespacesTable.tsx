@@ -16,22 +16,22 @@ import {
     TableToolbarContent,
 } from "@carbon/react";
 import React from "react";
-import {Namespace} from "../../models";
+import {NamespaceEntry} from "../../models";
 
 const PROTECTED_PATHS = ["default", "public", "wanaku-internal"];
 
 interface NamespaceTableProps {
-  namespaces: Namespace[];
+  namespaces: NamespaceEntry[];
   onAdd: () => void;
-  onEdit: (namespace: Namespace) => void;
-  onDelete: (namespace: Namespace) => void;
+  onEdit: (namespace: NamespaceEntry) => void;
+  onDelete: (namespace: NamespaceEntry) => void;
 }
 
-function isProtected(namespace: Namespace): boolean {
+function isProtected(namespace: NamespaceEntry): boolean {
   return PROTECTED_PATHS.includes(namespace.path || "") || PROTECTED_PATHS.includes(namespace.name || "");
 }
 
-function hasLabels(namespace: Namespace): boolean {
+function hasLabels(namespace: NamespaceEntry): boolean {
   return !!namespace.labels && Object.keys(namespace.labels).length > 0;
 }
 

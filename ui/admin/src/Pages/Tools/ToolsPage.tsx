@@ -1,26 +1,28 @@
 import {ToastNotification,} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
 import {useTools} from "../../hooks/api/use-tools";
-import {ToolReference} from "../../models";
+import {ToolEntry} from "../../models";
 import {ToolsTable} from "./ToolsTable";
 import {ToolModal} from "./ToolModal"
+import {unwrapData} from "../../utils/api-response";
 
 
 export const ToolsPage: React.FC = () => {
-  const [fetchedData, setFetchedData] = useState<ToolReference[]>([]);
+  const [fetchedData, setFetchedData] = useState<ToolEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openedTool, setOpenedTool] = useState<ToolReference>()
+  const [openedTool, setOpenedTool] = useState<ToolEntry>()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { listTools, updateTool, removeTool } = useTools();
 
   const updateTools = useCallback(async () => {
-    return listTools().then((result) => {
-      if (result.status !== 200 || !Array.isArray(result.data.data)) {
+    return listTools().then((result: any) => {
+      const data = unwrapData<ToolEntry[]>(result);
+      if (result.status !== 200 || !Array.isArray(data)) {
         setErrorMessage("Failed to fetch tools. Please try again later.");
         setFetchedData([]);
       } else {
-        setFetchedData(result.data.data);
+        setFetchedData(data);
       }
 
       setIsLoading(false);
@@ -50,7 +52,7 @@ export const ToolsPage: React.FC = () => {
     setIsEditModalOpen(false)
   }
 
-  const handleUpdateTool = async(tool: ToolReference) => {
+  const handleUpdateTool = async(tool: ToolEntry) => {
     try {
       await updateTool(openedTool!.name!, tool)
       setErrorMessage(null)
@@ -96,7 +98,7 @@ export const ToolsPage: React.FC = () => {
           <ToolsTable
             fetchedData={fetchedData}
             onDelete={handleDeleteTool}
-            onEdit={(tool: ToolReference) => { setOpenedTool(tool); setIsEditModalOpen(true) }}
+            onEdit={(tool: ToolEntry) => { setOpenedTool(tool); setIsEditModalOpen(true) }}
           />
         )}
         {isEditModalOpen && openedTool && (

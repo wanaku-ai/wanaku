@@ -2,7 +2,7 @@ import {ToastNotification} from "@carbon/react"
 import {ResourceModal} from "./ResourceModal"
 import {RefreshHandle, ResourcesTable} from "./ResourcesTable"
 import React, {useRef, useState} from "react"
-import {ResourceReference} from "../../models"
+import {ResourceEntry} from "../../models"
 import {useResources} from "../../hooks/api/use-resources"
 import {getErrorMessage} from "../../utils/error"
 
@@ -11,7 +11,7 @@ export const ResourcesPage: React.FC = () => {
 
   const [errorMessage, setErrorMessage] = useState<string>()
   const [isModalOpen, setModalOpen] = useState(false)
-  const [openedResource, setOpenedResource] = useState<ResourceReference>()
+  const [openedResource, setOpenedResource] = useState<ResourceEntry>()
   const { updateResource, removeResource } = useResources()
   const resourceTableRef = useRef<RefreshHandle>({ refresh: () => {} })
 
@@ -20,7 +20,7 @@ export const ResourcesPage: React.FC = () => {
     setModalOpen(false)
   }
 
-  async function handleUpdateResource(resource: ResourceReference) {
+  async function handleUpdateResource(resource: ResourceEntry) {
     try {
       await updateResource(openedResource!.name!, resource)
     } catch (error) {

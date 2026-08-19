@@ -1,7 +1,41 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Accordion, AccordionItem, Button, Search, Tag, ToastNotification, Toggle,} from "@carbon/react";
 import {Download, TrashCan} from "@carbon/icons-react";
-import {ToolCallErrorCategory, ToolCallEvent, ToolCallEventType} from "../../models";
+const enum ToolCallEventType {
+  STARTED = "STARTED",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+}
+
+const enum ToolCallErrorCategory {
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  TOOL_DEFINITION_ERROR = "TOOL_DEFINITION_ERROR",
+  INVALID_ARGUMENTS = "INVALID_ARGUMENTS",
+  EXECUTION_ERROR = "EXECUTION_ERROR",
+  UNKNOWN = "UNKNOWN",
+}
+
+interface ToolCallEvent {
+  eventId?: string;
+  connectionId?: string;
+  toolName?: string;
+  toolType?: string;
+  serviceId?: string;
+  serviceAddress?: string;
+  eventType?: ToolCallEventType;
+  errorCategory?: ToolCallErrorCategory;
+  errorMessage?: string;
+  errorDetails?: string;
+  timestamp?: string;
+  arguments?: Record<string, unknown>;
+  result?: unknown;
+  duration?: number;
+  durationMs?: number;
+  isError?: boolean;
+  headers?: Record<string, string>;
+  body?: string;
+  content?: unknown[];
+}
 
 const MAX_EVENTS = 1000;
 
@@ -345,7 +379,7 @@ const ToolCallsPage: React.FC = () => {
                         <details open>
                           <summary><strong>Response Content</strong></summary>
                           <pre style={{ fontSize: "0.75rem", overflow: "auto", maxHeight: "200px" }}>
-                            {event.content}
+                            {JSON.stringify(event.content, null, 2)}
                           </pre>
                         </details>
                       )}

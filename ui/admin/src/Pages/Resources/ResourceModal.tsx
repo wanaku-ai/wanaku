@@ -1,29 +1,34 @@
 import {ComboBox, Modal, Tab, TabList, TabPanel, TabPanels, Tabs, TextInput} from "@carbon/react"
 import React, { useState} from "react"
-import {Param, ResourceReference} from "../../models"
+import {ResourceEntry} from "../../models"
 import {commonMimeTypes, commonMimeTypesMapping} from "../../constants/mimeTypes"
 
 
 import {ParametersTable} from "./ParametersTable"
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
 
+// Inline Param type (was removed from models)
+interface Param {
+  name?: string;
+  value?: string;
+}
 
 interface ResourceModalProps {
-  openedResource?: ResourceReference
-  onSubmit: (resource: ResourceReference) => void
+  openedResource?: ResourceEntry
+  onSubmit: (resource: ResourceEntry) => void
   onCancel: () => void
   onError?: (message: string) => void
 }
 
 export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, onSubmit, onCancel }) => {
-  
-  const [name, setName] = useState(openedResource?.name)
-  const [description, setDescription] = useState(openedResource?.description)
-  const [location, setLocation] = useState(openedResource?.location)
-  const [type, setType] = useState(openedResource?.type || "file")
-  const [mimeType, setMimeType] = useState(openedResource?.mimeType)
+
+  const [name, setName] = useState(openedResource?.name ?? "")
+  const [description, setDescription] = useState(openedResource?.description ?? "")
+  const [location, setLocation] = useState(openedResource?.location ?? "")
+  const [type, setType] = useState(openedResource?.type ?? "file")
+  const [mimeType, setMimeType] = useState<string>(openedResource?.mimeType ?? "")
   const [namespace, setNamespace] = useState(openedResource?.namespace)
-  const [params, setParams] = useState<Param[]>(openedResource?.params || [])
+  const [params, setParams] = useState<Param[]>([])
   const [configurationURI, setConfigurationURI] = useState(openedResource?.configurationURI)
   const [secretsURI, setSecretsURI] = useState(openedResource?.secretsURI)
   const [submitDisable, setSubmitDisabled] = useState(false)
@@ -36,7 +41,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
       type,
       mimeType,
       namespace,
-      params,
+      // params removed from API schema
       configurationURI,
       secretsURI
     })
@@ -112,10 +117,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                 items={commonMimeTypes}
                 selectedItem={mimeType}
                 onChange={(event) => {
-                  let value = event.selectedItem
-                  if (value === null) {
-                    value = undefined
-                  }
+                  const value = event.selectedItem ?? ""
                   setMimeType(value)
                 }}
               />
@@ -123,8 +125,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                 id="resource-namespace"
                 labelText="Select a Namespace"
                 helperText="Choose a Namespace from the list"
-                value={namespace}
-                onChange={namespace => setNamespace(namespace.id)}
+                value={namespace ?? undefined}
+                onChange={namespace => setNamespace(namespace.id ?? undefined)}
               />
             </TabPanel>
             <TabPanel>
@@ -140,14 +142,14 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                 id="resource-configuration-uri"
                 labelText="Configuration URI"
                 placeholder="e.g. file:///config/resource-config.json"
-                value={configurationURI}
+                value={configurationURI ?? ""}
                 onChange={(event) => setConfigurationURI(event.target.value)}
               />
               <TextInput
                 id="resource-secrets-uri"
                 labelText="Secrets URI"
                 placeholder="e.g. vault://secrets/db-credentials"
-                value={secretsURI}
+                value={secretsURI ?? ""}
                 onChange={(event) => setSecretsURI(event.target.value)}
               />
             </TabPanel>

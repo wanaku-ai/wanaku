@@ -10,26 +10,26 @@ import {
   TextInput
 } from "@carbon/react"
 import React, {useState} from "react"
-import {ToolReference} from "../../models"
+import {ToolEntry} from "../../models"
 import {ToolParserError, Tools} from "./tools"
 import {ImportToolsetTable} from "./ImportToolsetTable"
 import {getErrorMessage} from "../../utils/error"
 
 
 interface ImportToolsetModalProps {
-  onSubmit: (tools: ToolReference[]) => void
+  onSubmit: (tools: ToolEntry[]) => void
   onCancel: () => void
 }
 
 export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit, onCancel }) => {
-  
+
   const FINAL_STEP = 1
   const VIEW_MODE_TABLE = "table"
   const VIEW_MODE_JSON = "json"
-  
+
   const [toolsetUrl, setToolsetUrl] = useState<string>()
   const [invalidUrl, setInvalidUrl] = useState(false)
-  const [toolset, setToolset] = useState<ToolReference[]>([])
+  const [toolset, setToolset] = useState<ToolEntry[]>([])
   const [toolsetJson, setToolsetJson] = useState<string>()
   const [invalidJson, setInvalidJson] = useState(false)
   const [invalidJsonText, setInvalidJsonText] = useState<string>()
@@ -37,10 +37,10 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
   const [contentSwitcherEnabled, setContentSwitcherEnabled] = useState(true)
   const [viewMode, setViewMode] = useState(VIEW_MODE_TABLE)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const [selectedTools, setSelectedTools] = useState<ToolReference[]>([])
+  const [selectedTools, setSelectedTools] = useState<ToolEntry[]>([])
 
-  
-  function selectTools(tools: ToolReference[]) {
+
+  function selectTools(tools: ToolEntry[]) {
     setSelectedTools(tools)
     setToolsetJson(tools.length > 0 ? Tools.stringify(tools) : undefined)
   }
@@ -104,7 +104,7 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
   
   function handleSubmit() {
     try {
-      const tools: ToolReference[] = Tools.parse(toolsetJson!)
+      const tools: ToolEntry[] = Tools.parse(toolsetJson!)
       onSubmit(tools)
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof ToolParserError) {
@@ -175,7 +175,7 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
               <ImportToolsetTable
                 tools={toolset}
                 selectedTools={selectedTools}
-                onSelectionChange={(tools: ToolReference[]) => {
+                onSelectionChange={(tools: ToolEntry[]) => {
                   selectTools(tools)
                 }}
               />

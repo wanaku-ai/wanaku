@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "orval --config ./orval.config.ts && vite",
-    "build": "tsc -b && vite build",
-    "generate-api": "orval --config ./orval.config.ts",
+    "build": "orval --config ./orval.config.ts && tsc -b && vite build",
+    "generate-api": "cargo run --example wanaku-openapi --manifest-path ../../server/Cargo.toml --no-default-features > openapi.json && orval --config ./orval.config.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

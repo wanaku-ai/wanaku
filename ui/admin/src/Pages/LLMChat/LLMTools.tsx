@@ -7,24 +7,24 @@ import {
 import React, {useEffect, useState} from "react"
 import {useTools} from "../../hooks/api/use-tools"
 import {getErrorMessage} from "../../utils/error"
-import {Namespace, ToolReference} from "../../models"
+import {NamespaceEntry, ToolEntry} from "../../models"
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
 
 
 interface LLMToolsProps {
-  selectedNamespace: Namespace
-  selectedTools: ToolReference[]
-  onSelectionChange: (namespace: Namespace, tools: ToolReference[]) => void
+  selectedNamespace: NamespaceEntry
+  selectedTools: ToolEntry[]
+  onSelectionChange: (namespace: NamespaceEntry, tools: ToolEntry[]) => void
   onError?: (message: string) => void
 }
 
 export const LLMTools: React.FC<LLMToolsProps> = ({
     selectedNamespace, selectedTools, onSelectionChange, onError }) => {
-  
-  const [tools, setTools] = useState<ToolReference[]>([])
+
+  const [tools, setTools] = useState<ToolEntry[]>([])
   const [isLoading, setLoading] = useState(true)
   const { listTools } = useTools()
-  
+
   useEffect(() => {
     (async () => {
       try {
@@ -38,16 +38,16 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
       }
     })()
   }, [listTools])
-  
-  async function fetchTools(): Promise<ToolReference[]> {
+
+  async function fetchTools(): Promise<ToolEntry[]> {
     const response = await listTools()
-    if (response.status !== 200 || !Array.isArray(response.data.data)) {
+    if (response.status !== 200 || !Array.isArray(response.data)) {
       throw new Error("Error while fetching tools: " + response.status)
     }
-    return response.data.data
+    return response.data
   }
-  
-  function filteredTools(): ToolReference[] {
+
+  function filteredTools(): ToolEntry[] {
     if (!selectedNamespace) {
       return tools
     }
@@ -57,16 +57,16 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
     }
     return tools.filter(tool => tool.namespace === nsKey)
   }
-  
+
   function isAllSelected() {
     const selectedToolNames = selectedTools.map(tool => tool.name)
     return selectedTools.length > 0 && filteredTools().every((tool) => selectedToolNames.includes(tool.name))
   }
-  
+
   function isSomeSelected() {
     return selectedTools.length > 0 && selectedTools.length < filteredTools().length
   }
-  
+
   return (
     <Stack gap={5}>
       {isLoading &&
@@ -76,8 +76,8 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
         <NamespaceSelect
           id="namespace"
           labelText="Select tools"
-          value={selectedNamespace.id}
-          onChange={(namespace: Namespace) => {
+          value={selectedNamespace.id ?? undefined}
+          onChange={(namespace: NamespaceEntry) => {
             onSelectionChange(namespace, [])
           }}
         />

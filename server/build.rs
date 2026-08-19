@@ -6,12 +6,15 @@ fn main() {
     let ui_dir = Path::new("../ui/admin");
     let dist_index = ui_dir.join("dist/index.html");
 
-    // When dist/index.html is missing, cargo always reruns this script.
     println!("cargo:rerun-if-changed=../ui/admin/dist/index.html");
     println!("cargo:rerun-if-changed=../ui/admin/src");
     println!("cargo:rerun-if-changed=../ui/admin/package.json");
     println!("cargo:rerun-if-changed=../ui/admin/yarn.lock");
     println!("cargo:rerun-if-changed=../ui/admin/vite.config.ts");
+
+    if std::env::var("CARGO_FEATURE_UI").is_err() {
+        return;
+    }
 
     if dist_index.exists() {
         return;

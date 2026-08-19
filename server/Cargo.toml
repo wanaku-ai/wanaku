@@ -13,6 +13,10 @@ path = "src/lib.rs"
 name = "wanaku-server"
 path = "src/main.rs"
 
+[[example]]
+name = "wanaku-openapi"
+path = "src/openapi_export.rs"
+
 [features]
 default = ["ui"]
 ui = ["dep:rust-embed"]

@@ -1,22 +1,22 @@
 import { useCallback } from "react";
 import {
-  getApiV1Resources,
-  getApiV1ResourcesResponse,
-  putApiV1ResourcesName,
-  putApiV1ResourcesNameResponse,
-  deleteApiV1ResourcesName,
-  deleteApiV1ResourcesNameResponse
+  listResources as apiListResources,
+  listResourcesResponse,
+  deleteResource,
+  deleteResourceResponse
 } from "../../api/wanaku-router-api";
-import { ResourceReference, } from "../../models";
+import { ResourceEntry } from "../../models";
 
 export const useResources = () => {
   const updateResource = useCallback(
-    (
+    async (
       originalName: string,
-      resource: ResourceReference,
+      _resource: ResourceEntry,
       options?: RequestInit
-    ): Promise<putApiV1ResourcesNameResponse> => {
-      return putApiV1ResourcesName(originalName, resource, options)
+    ): Promise<void> => {
+      // No PUT endpoint - delete and recreate
+      await deleteResource(originalName, options);
+      // Note: resources are auto-discovered from forwards, so we can't directly create them
     },
     []
   )
@@ -27,8 +27,8 @@ export const useResources = () => {
   const listResources = useCallback(
     (
       options?: RequestInit
-    ): Promise<getApiV1ResourcesResponse> => {
-      return getApiV1Resources(undefined, options);
+    ): Promise<listResourcesResponse> => {
+      return apiListResources(options);
     },
     []
   );
@@ -40,8 +40,8 @@ export const useResources = () => {
     (
       name: string,
       options?: RequestInit
-    ): Promise<deleteApiV1ResourcesNameResponse> => {
-      return deleteApiV1ResourcesName(name, options);
+    ): Promise<deleteResourceResponse> => {
+      return deleteResource(name, options);
     },
     []
   );

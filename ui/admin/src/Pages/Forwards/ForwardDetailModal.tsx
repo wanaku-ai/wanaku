@@ -1,19 +1,9 @@
 import { ComposedModal, ModalHeader, ModalBody, Tag } from "@carbon/react";
 import React from "react";
-import { ForwardReference } from "../../models";
-
-interface ServerInfo {
-  serverName?: string;
-  version?: string;
-  description?: string;
-  websiteUrl?: string;
-  capabilities?: string[];
-  extensions?: string[];
-  instructions?: string;
-}
+import { ForwardEntry } from "../../models";
 
 interface ForwardDetailModalProps {
-  forward: ForwardReference;
+  forward: ForwardEntry;
   onRequestClose: () => void;
 }
 
@@ -21,12 +11,8 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
   forward,
   onRequestClose,
 }) => {
-  const si = (forward as Record<string, unknown>).serverInfo as
-    | ServerInfo
-    | undefined;
-  const labels = (forward as Record<string, unknown>).labels as
-    | Record<string, string>
-    | undefined;
+  const si = forward.serverInfo;
+  const labels = forward.labels;
 
   return (
     <ComposedModal open onClose={onRequestClose}>

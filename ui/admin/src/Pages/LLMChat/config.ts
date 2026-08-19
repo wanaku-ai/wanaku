@@ -1,4 +1,4 @@
-import {Namespace, ToolReference} from "../../models"
+import {NamespaceEntry, ToolEntry} from "../../models"
 
 export const STORE_IN_LOCAL_STORAGE = "storeInLocalStorage"
 export const LLM_CONFIG = "llmConfig"
@@ -22,8 +22,8 @@ const DEFAULT_NAMESPACE = { name: "default", path: "default" }
 export interface LlmConfig {
   selectedLlm: string
   llms: Record<string, { selectedModel: string, apiKey?: string, extraLlmParams: string } >
-  selectedNamespace: Namespace
-  selectedTools: ToolReference[]
+  selectedNamespace: NamespaceEntry
+  selectedTools: ToolEntry[]
   systemPrompt: string
 }
 

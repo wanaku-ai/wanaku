@@ -1,16 +1,16 @@
 import React, {useState} from "react"
-import {PromptReference} from "../../models"
+import {PromptEntry} from "../../models"
 import {InlineNotification, Modal, Stack, Tab, TabList, TabPanel, TabPanels, Tabs, TextArea, TextInput} from "@carbon/react"
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
 
 
 interface PromptModalProps {
-  onSubmit: (newPrompt: PromptReference) => void
+  onSubmit: (newPrompt: PromptEntry) => void
   onRequestClose: () => void
 }
 
 export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClose }) => {
-  
+
   const [promptName, setPromptName] = useState("")
   const [description, setDescription] = useState("")
   const [messagesJson, setMessagesJson] = useState("")
@@ -24,14 +24,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
     try {
       const messages = messagesJson ? JSON.parse(messagesJson) : []
       const args = argumentsJson ? JSON.parse(argumentsJson) : []
-      const toolRefs = toolReferences ? toolReferences.split(',').map(t => t.trim()) : []
-      
+      // toolReferences not in API schema - omitted
+
       onSubmit({
         name: promptName,
         description,
         messages,
         arguments: args,
-        toolReferences: toolRefs,
         namespace: selectedNamespace
       })
     } catch {
