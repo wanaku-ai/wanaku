@@ -93,4 +93,40 @@ test.describe('Forwards', () => {
     const headerText = await forwards.page.locator('th').allInnerTexts();
     expect(headerText.some(h => h.includes('Server'))).toBeTruthy();
   });
+
+  test('status column appears in table', async () => {
+    await forwards.goto();
+    const headerText = await forwards.page.locator('th').allInnerTexts();
+    expect(headerText.some(h => h.includes('Status'))).toBeTruthy();
+  });
+
+  test('forward shows unavailable status when unreachable', async () => {
+    const data = forwardData();
+    createdForwards.push(data.name);
+    await api.addForward(data);
+
+    await forwards.goto();
+    await forwards.waitForForwardInTable(data.name);
+
+    const status = await forwards.getRowStatusText(data.name);
+    expect(status).toBe('Unavailable');
+  });
+
+  test('detail modal shows status', async () => {
+    const data = forwardData();
+    createdForwards.push(data.name);
+    await api.addForward(data);
+
+    await forwards.goto();
+    await forwards.waitForForwardInTable(data.name);
+    await forwards.clickDetailForward(data.name);
+
+    const hasStatus = await forwards.detailModalHasText('Status:');
+    expect(hasStatus).toBeTruthy();
+
+    const hasUnavailable = await forwards.detailModalHasText('Unavailable');
+    expect(hasUnavailable).toBeTruthy();
+
+    await forwards.closeDetailModal();
+  });
 });
