@@ -33,3 +33,9 @@ export function forwardData(overrides?: Partial<{ name: string; address: string 
     address: overrides?.address ?? 'http://localhost:19999/mcp',
   };
 }
+
+export function namespaceData(overrides?: Partial<{ name: string }>) {
+  return {
+    name: overrides?.name ?? `e2e-ns-${suffix()}`,
+  };
+}

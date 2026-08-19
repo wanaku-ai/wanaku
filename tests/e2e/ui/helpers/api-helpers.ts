@@ -56,4 +56,15 @@ export class ApiHelper {
   async deleteForward(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/forwards/${name}`);
   }
+
+  async addNamespace(namespace: { name: string }) {
+    const resp = await this.request.post(`${this.baseUrl}/api/v1/namespaces`, {
+      data: { name: namespace.name },
+    });
+    return this.assertOk(resp, `addNamespace(${namespace.name})`);
+  }
+
+  async deleteNamespace(name: string) {
+    return this.request.delete(`${this.baseUrl}/api/v1/namespaces/${name}`);
+  }
 }
