@@ -125,7 +125,7 @@ Contributors working on the project may want to refer to the development documen
 - [Architecture](docs/architecture.md) - System architecture and components
 - [Configuration](docs/configuration.md) - Environment variables and configuration reference
 - [Management API](docs/management-api.md) - API reference
-- [Admin UI](docs/admin-ui.md) - Admin dashboard development
+- [Admin UI](docs/contributing-admin-ui.md) - Admin dashboard development
 - [Features / Plugins](docs/features.md) - Feature crate system
 - [Plugin Development](docs/plugin-development-guide.md) - Guide for writing new feature crates
 - [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator

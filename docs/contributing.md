@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the Wanaku project!
 
 ## Getting Started
 
-Please read our [Getting Started](docs/getting-started.md) guide for detailed information on:
+Please read our [Getting Started](getting-started.md) guide for detailed information on:
 
 - Understanding tools, providers, and prompts
 - Creating new capabilities
@@ -14,11 +14,11 @@ Please read our [Getting Started](docs/getting-started.md) guide for detailed in
 
 ## Quick Links
 
-- **Getting Started**: [docs/getting-started.md](docs/getting-started.md)
-- **Architecture Overview**: [docs/architecture.md](docs/architecture.md)
-- **Configuration Reference**: [docs/configuration.md](docs/configuration.md)
-- **Admin UI Development**: [docs/contributing-admin-ui.md](docs/contributing-admin-ui.md)
-- **Plugin Development**: [docs/plugin-development-guide.md](docs/plugin-development-guide.md)
+- **Getting Started**: [getting-started.md](getting-started.md)
+- **Architecture Overview**: [architecture.md](architecture.md)
+- **Configuration Reference**: [configuration.md](configuration.md)
+- **Admin UI Development**: [contributing-admin-ui.md](contributing-admin-ui.md)
+- **Plugin Development**: [plugin-development-guide.md](plugin-development-guide.md)
 
 ## Code of Conduct
 
