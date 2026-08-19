@@ -54,13 +54,23 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
   const headers = [
     { key: "name", header: "Name" },
     { key: "status", header: "Status" },
+    { key: "address", header: "Address" },
     { key: "actions", header: "Actions" },
   ];
+
+  function mcpAddress(name?: string): string {
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    const base = `${protocol}//${host}:8081`;
+    if (!name || name === "default") return `${base}/mcp`;
+    return `${base}/${name}/mcp`;
+  }
 
   const rows = namespaces.map((namespace, index) => ({
     id: namespace.name || `namespace-${index}`,
     name: namespace.name || "N/A",
     status: namespace.name ? "Allocated" : "Available",
+    address: mcpAddress(namespace.name),
     actions: "",
   }));
 
@@ -105,6 +115,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                   <React.Fragment>
                     <TableCell>{namespace.name || "N/A"}</TableCell>
                     <TableCell>{namespace.name ? "Allocated" : "Available"}</TableCell>
+                    <TableCell>{mcpAddress(namespace.name)}</TableCell>
                     <TableCell>
                       <Button
                         kind="ghost"
