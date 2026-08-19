@@ -6,24 +6,34 @@
  * OpenAPI spec version: 0.3.0
  */
 
+export * from "./decisionSnapshot";
+export * from "./durationSnapshot";
+export * from "./evaluatorSnapshot";
+export * from "./filterSnapshot";
 export * from "./forwardEntry";
 export * from "./forwardEntryLabels";
 export * from "./forwardEntryNamespace";
 export * from "./forwardEntryServerInfo";
 export * from "./forwardEntryStatusMessage";
+export * from "./gaugeSnapshot";
 export * from "./interaction";
 export * from "./interactionCompletionId";
 export * from "./interactionConversationId";
 export * from "./interactionModel";
+export * from "./llmSnapshot";
 export * from "./mcpServerInfo";
 export * from "./mcpServerInfoDescription";
 export * from "./mcpServerInfoInstructions";
 export * from "./mcpServerInfoWebsiteUrl";
+export * from "./metricsSnapshot";
+export * from "./metricsSnapshotEvaluators";
+export * from "./metricsSnapshotFilters";
 export * from "./namespaceEntry";
 export * from "./namespaceEntryAudience";
 export * from "./namespaceEntryAuthRequired";
 export * from "./namespaceEntryId";
 export * from "./namespaceEntryLabels";
+export * from "./pipelineSnapshot";
 export * from "./promptArgument";
 export * from "./promptEntry";
 export * from "./promptEntryConfigurationURI";
@@ -37,9 +47,11 @@ export * from "./resourceEntryId";
 export * from "./resourceEntryLabels";
 export * from "./resourceEntryNamespace";
 export * from "./resourceEntrySecretsURI";
+export * from "./schemaSnapshot";
 export * from "./toolEntry";
 export * from "./toolEntryConfigurationURI";
 export * from "./toolEntryId";
 export * from "./toolEntryLabels";
 export * from "./toolEntryNamespace";
 export * from "./toolEntrySecretsURI";
+export * from "./wasmSnapshot";

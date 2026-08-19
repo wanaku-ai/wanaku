@@ -3,6 +3,10 @@
 use utoipa::OpenApi;
 
 use wanaku_apis::interactions::Interaction;
+use wanaku_apis::metrics::{
+    DecisionSnapshot, DurationSnapshot, EvaluatorSnapshot, FilterSnapshot,
+    GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
+};
 use wanaku_apis::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
     ResourceEntry, ToolEntry,
@@ -179,6 +183,13 @@ const fn list_interactions() {}
 )]
 const fn clear_interactions() {}
 
+// -- Metrics ------------------------------------------------------------------
+
+#[utoipa::path(get, path = "/api/v1/metrics", tag = "Metrics",
+    responses((status = 200, description = "Metrics snapshot", body = MetricsSnapshot))
+)]
+const fn get_metrics() {}
+
 // -- Statistics ---------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/management/statistics", tag = "Management",
@@ -203,11 +214,15 @@ const fn get_statistics() {}
         list_namespaces, get_namespace, create_namespace, delete_namespace,
         list_forwards, get_forward, create_forward, delete_forward, refresh_forward,
         list_interactions, clear_interactions,
+        get_metrics,
         get_statistics,
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,
         ForwardEntry, McpServerInfo, NamespaceEntry, Interaction,
+        MetricsSnapshot, FilterSnapshot, DurationSnapshot, EvaluatorSnapshot,
+        DecisionSnapshot, LlmSnapshot, SchemaSnapshot, WasmSnapshot,
+        PipelineSnapshot, GaugeSnapshot,
     ))
 )]
 pub struct ApiDoc;

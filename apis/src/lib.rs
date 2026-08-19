@@ -7,6 +7,7 @@ pub mod http_response;
 pub mod interactions;
 pub mod llm;
 pub mod mcp_client;
+pub mod metrics;
 pub mod persistence;
 pub mod registry;
 
