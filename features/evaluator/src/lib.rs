@@ -15,7 +15,7 @@ pub mod state;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::Feature;
+use wanaku_apis::feature::{Feature, HttpContext};
 
 use crate::config::EvaluatorsConfig;
 use crate::routes::{
@@ -78,26 +78,19 @@ impl Feature for EvaluatorFeature {
         })]
     }
 
-    async fn handle_route(
-        &self,
-        method: &str,
-        path: &str,
-        _query: Option<&str>,
-        body: Option<&str>,
-        _headers: &http::HeaderMap,
-    ) -> Option<Response<Vec<u8>>> {
-        let route = resolve_evaluator_route(method, path);
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        let route = resolve_evaluator_route(ctx.method, ctx.path);
         if route == EvaluatorRoute::NotFound {
             return None;
         }
         Some(match route {
             EvaluatorRoute::ListEvaluators => handle_list_evaluators(&self.state),
             EvaluatorRoute::UpdateEvaluators => {
-                handle_update_evaluators(&self.state, body.unwrap_or(""))
+                handle_update_evaluators(&self.state, ctx.body.unwrap_or(""))
             }
             EvaluatorRoute::ListBindings => handle_list_bindings(&self.state),
             EvaluatorRoute::BindNamespace(ns) => {
-                handle_bind_namespace(&self.state, &ns, body.unwrap_or(""))
+                handle_bind_namespace(&self.state, &ns, ctx.body.unwrap_or(""))
             }
             EvaluatorRoute::UnbindNamespace(ns) => handle_unbind_namespace(&self.state, &ns),
             EvaluatorRoute::NotFound => return None,

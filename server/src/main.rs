@@ -84,15 +84,15 @@ fn main() {
     let mgmt_registry = wanaku_registry.clone();
 
     info!("building wanaku pipelines");
-    let pipelines = wanaku_server::pipelines::resolve_pipelines(
-        &config,
+    let pipeline_deps = wanaku_server::pipelines::PipelineDeps::new(
         &filter_registry,
         &health_registry,
         &kv_stores,
         &wanaku_registry,
         &features,
-    )
-    .unwrap_or_else(|e| fatal(&e));
+    );
+    let pipelines = wanaku_server::pipelines::resolve_pipelines(&config, &pipeline_deps)
+        .unwrap_or_else(|e| fatal(&e));
 
     info!("initializing server");
     let mut server = PingoraServerRuntime::new(&config);

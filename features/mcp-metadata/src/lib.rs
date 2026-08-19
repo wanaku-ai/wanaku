@@ -5,7 +5,7 @@ pub mod filter;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::Feature;
+use wanaku_apis::feature::{Feature, HttpContext};
 
 const WANAKU_AUTH_ISSUER: &str = "WANAKU_AUTH_ISSUER";
 
@@ -59,14 +59,7 @@ impl Feature for McpMetadataFeature {
         })]
     }
 
-    async fn handle_route(
-        &self,
-        _method: &str,
-        _path: &str,
-        _query: Option<&str>,
-        _body: Option<&str>,
-        _headers: &http::HeaderMap,
-    ) -> Option<Response<Vec<u8>>> {
+    async fn handle_route(&self, _ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
         None
     }
 

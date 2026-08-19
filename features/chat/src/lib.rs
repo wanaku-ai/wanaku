@@ -6,7 +6,7 @@ mod routes;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension};
 
-use wanaku_apis::feature::Feature;
+use wanaku_apis::feature::{Feature, HttpContext};
 
 use crate::routes::{
     ChatRoute, handle_chat_completions, handle_chat_list_llms, handle_chat_list_models,
@@ -48,15 +48,8 @@ impl Feature for ChatFeature {
         vec![]
     }
 
-    async fn handle_route(
-        &self,
-        method: &str,
-        path: &str,
-        _query: Option<&str>,
-        body: Option<&str>,
-        _headers: &http::HeaderMap,
-    ) -> Option<Response<Vec<u8>>> {
-        let route = resolve_chat_route(method, path);
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        let route = resolve_chat_route(ctx.method, ctx.path);
         if route == ChatRoute::NotFound {
             return None;
         }
@@ -77,7 +70,7 @@ impl Feature for ChatFeature {
                     &self.inference_base_url,
                     self.upstream_host.as_deref(),
                     &self.api_key,
-                    body.unwrap_or(""),
+                    ctx.body.unwrap_or(""),
                 )
                 .await
             }

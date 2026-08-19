@@ -26,7 +26,12 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 
 ## Architecture
 
-**Workspace:** `apis/` (shared types, Feature trait, LLM, registry, config), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
+**Workspace:** `apis/` (shared types, Feature trait, context structs, LLM, registry, config), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
+
+**Context structs** (`apis/src/`): group related parameters to keep function signatures under the clippy `too-many-arguments-threshold` (5). Use `Type::new(...)` to construct:
+- `HttpContext` (`feature.rs`) — HTTP method, path, query, body, headers. Passed to `Feature::handle_route`.
+- `McpContext` (`mcp.rs`) — MCP method, tool name, arguments, tool list, conversation history. Used by evaluator LLM operations.
+- `PipelineDeps` (`server/src/pipelines.rs`) — filter registry, health, KV, wanaku registry, features. Used by `resolve_pipelines`.
 
 **Dependencies:** praxis-proxy (crates.io), praxis-ai (git dep — NOT on crates.io), rmcp (upstream MCP calls).
 
@@ -259,14 +264,14 @@ The distinction between `block` and `reject-malformed` matters: `block` means th
 
 **Add feature:**
 1. `mkdir features/myfeature` + `Cargo.toml` — depend on `wanaku-apis` (Feature, registry, llm), `wanaku-filters` (boilerplate, response helpers), `praxis-filter` (HttpFilter)
-2. Implement `Feature` trait: `register_filters`, `pipeline_extensions`, `handle_route`, `load_yaml_config`, `load_env_config`
+2. Implement `Feature` trait: `register_filters`, `pipeline_extensions`, `handle_route` (receives `&HttpContext`), `load_yaml_config`, `load_env_config`
 3. Add to workspace `Cargo.toml` (members + deps)
 4. Add dep in `server/Cargo.toml`, `Box::new(MyFeature::new())` in `main.rs`
 5. Add filter to `server/src/default.yaml` if applicable
 
 Reference: `features/evaluator/` (filter + mgmt + WASM), `features/chat/` (mgmt only).
 
-Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`.
+Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
 
 **Add core filter:**
 1. `filters/src/<method>.rs` — use `body_filter_boilerplate!`
@@ -309,6 +314,7 @@ Pin to a specific `rev` — HEAD may break.
 - Filter logic in `on_request_body` + `end_of_stream` guard
 - `match` over `if let` chains
 - `#[expect(..., reason = "...")]` for allowed lints
+- Group related parameters into context structs (`HttpContext`, `McpContext`, `PipelineDeps`) — never suppress `clippy::too_many_arguments`
 
 ## Debugging
 

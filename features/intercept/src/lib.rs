@@ -6,7 +6,7 @@ mod routes;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::Feature;
+use wanaku_apis::feature::{Feature, HttpContext};
 use wanaku_apis::interactions::InMemoryInteractionStore;
 
 use crate::routes::{
@@ -68,15 +68,8 @@ impl Feature for InterceptFeature {
         })]
     }
 
-    async fn handle_route(
-        &self,
-        method: &str,
-        path: &str,
-        _query: Option<&str>,
-        _body: Option<&str>,
-        _headers: &http::HeaderMap,
-    ) -> Option<Response<Vec<u8>>> {
-        let route = resolve_interaction_route(method, path);
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        let route = resolve_interaction_route(ctx.method, ctx.path);
         if route == InteractionRoute::NotFound {
             return None;
         }
