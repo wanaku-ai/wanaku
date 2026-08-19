@@ -19,11 +19,11 @@ const WANAKU_INFERENCE_UPSTREAM: &str = "WANAKU_INFERENCE_UPSTREAM";
 /// Bearer token API key for the inference upstream. Empty means no auth.
 const WANAKU_INFERENCE_API_KEY: &str = "WANAKU_INFERENCE_API_KEY";
 
-/// Persistence backend selector. Set to `"file"` to enable file-based persistence.
-/// Unset or any other value disables persistence.
+/// Persistence backend selector. Defaults to `"file"` (file-based persistence).
+/// Set to `"none"` to disable persistence entirely.
 const WANAKU_PERSIST_BACKEND: &str = "WANAKU_PERSIST_BACKEND";
 
-/// Directory where `registry.json` is stored (default `/data/registry`).
+/// Directory where `registry.json` is stored (default `$HOME/.wanaku/server`).
 /// Only used when [`WANAKU_PERSIST_BACKEND`] is `"file"`.
 const WANAKU_PERSIST_PATH: &str = "WANAKU_PERSIST_PATH";
 
@@ -75,16 +75,17 @@ impl WanakuEnv {
     }
 
     fn from_env() -> Self {
-        let persist = std::env::var(WANAKU_PERSIST_BACKEND)
-            .ok()
-            .filter(|b| b == "file")
-            .map(|_| {
-                let dir = std::env::var(WANAKU_PERSIST_PATH)
-                    .unwrap_or_else(|_| "/data/registry".to_owned());
-                PersistEnv {
-                    dir: PathBuf::from(dir),
-                }
+        let backend = std::env::var(WANAKU_PERSIST_BACKEND)
+            .unwrap_or_else(|_| "file".to_owned());
+        let persist = (backend != "none").then(|| {
+            let dir = std::env::var(WANAKU_PERSIST_PATH).unwrap_or_else(|_| {
+                let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_owned());
+                format!("{home}/.wanaku/server")
             });
+            PersistEnv {
+                dir: PathBuf::from(dir),
+            }
+        });
 
         let parsed = parse_upstream(
             &std::env::var(WANAKU_INFERENCE_UPSTREAM)

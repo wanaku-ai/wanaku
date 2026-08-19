@@ -199,8 +199,8 @@ cd ../safety-warn && cargo component build --release && cp target/wasm32-wasip1/
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Mgmt API address |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend |
-| `WANAKU_PERSIST_BACKEND` | unset | `"file"` enables persistence |
-| `WANAKU_PERSIST_PATH` | `/data/registry` | `registry.json` dir |
+| `WANAKU_PERSIST_BACKEND` | `"file"` | Persistence backend; `"none"` disables |
+| `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | `registry.json` dir |
 | `WANAKU_UI_PATH` | unset | FS path to UI override |
 | `WANAKU_AUTH_ISSUER` | unset | OIDC issuer (RFC 9728) |
 | `WANAKU_INFERENCE_API_KEY` | unset | Bearer token for upstream |
