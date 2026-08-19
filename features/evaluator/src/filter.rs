@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_apis::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_apis::mcp::McpContext;
 use wanaku_apis::metrics::{MetricsStore, SkipReason};
 use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
 
@@ -94,14 +95,18 @@ impl EvaluatorFilter {
             _ => Vec::new(),
         };
 
-        let raw_llm_result = crate::llm_op::run_llm_operation(
-            &evaluator.name,
-            &evaluator.llm,
+        let mcp_ctx = McpContext::new(
             &method,
             tool_name.as_deref(),
             &arguments,
             &tools,
             &history,
+        );
+
+        let raw_llm_result = crate::llm_op::run_llm_operation(
+            &evaluator.name,
+            &evaluator.llm,
+            &mcp_ctx,
             metrics.as_ref(),
         )
         .await
@@ -113,11 +118,7 @@ impl EvaluatorFilter {
             &raw_llm_result,
             &evaluator,
             compiled_schema.as_ref(),
-            &method,
-            tool_name.as_deref(),
-            &arguments,
-            &tools,
-            &history,
+            &mcp_ctx,
             metrics.as_ref(),
         )
         .await;
@@ -277,17 +278,12 @@ fn dispatch_action(
     }
 }
 
-#[expect(clippy::too_many_arguments, reason = "retry requires original request context")]
 #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "schema validation with retry logic")]
 async fn validate_and_retry_if_needed(
     raw_result: &str,
     evaluator: &EvaluatorDef,
     compiled_schema: Option<&std::sync::Arc<crate::schema::CompiledSchema>>,
-    method: &str,
-    tool_name: Option<&str>,
-    arguments: &HashMap<String, String>,
-    tools: &[wanaku_apis::registry::ToolEntry],
-    history: &[wanaku_apis::interactions::Interaction],
+    mcp: &McpContext<'_>,
     metrics: Option<&MetricsStore>,
 ) -> String {
     let Some(schema) = compiled_schema else {
@@ -319,11 +315,7 @@ async fn validate_and_retry_if_needed(
     let retry_result = if let Some(raw_schema) = raw_schema {
         crate::llm_op::retry_with_schema_correction(
             &evaluator.llm,
-            method,
-            tool_name,
-            arguments,
-            tools,
-            history,
+            mcp,
             raw_result,
             raw_schema,
             &validation_error,

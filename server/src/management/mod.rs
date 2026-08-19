@@ -14,7 +14,7 @@ use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 
-use wanaku_apis::feature::Feature;
+use wanaku_apis::feature::{Feature, HttpContext};
 use wanaku_apis::registry::InMemoryRegistry;
 
 use self::handlers::{
@@ -189,11 +189,16 @@ impl ServeHttp for WanakuManagementService {
             _ => None,
         };
 
+        let http_ctx = HttpContext::new(
+            &method,
+            &path,
+            query.as_deref(),
+            feature_body.as_deref(),
+            &headers,
+        );
+
         for feature in &self.features {
-            if let Some(response) = feature
-                .handle_route(&method, &path, query.as_deref(), feature_body.as_deref(), &headers)
-                .await
-            {
+            if let Some(response) = feature.handle_route(&http_ctx).await {
                 return response;
             }
         }

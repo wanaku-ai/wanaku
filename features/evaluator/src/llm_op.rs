@@ -1,28 +1,20 @@
-use std::collections::HashMap;
-
-use wanaku_apis::interactions::Interaction;
 use wanaku_apis::llm::{self, LlmClient};
+use wanaku_apis::mcp::McpContext;
 use wanaku_apis::metrics::MetricsStore;
-use wanaku_apis::registry::ToolEntry;
 
 use crate::config::LlmDef;
 
 /// Execute the LLM operation and return the raw result string.
 /// The processor WASM module is responsible for parsing and acting on this.
-#[expect(clippy::too_many_arguments, reason = "LLM operation requires full request context")]
 pub async fn run_llm_operation(
     evaluator_name: &str,
     llm_def: &LlmDef,
-    method: &str,
-    tool_name: Option<&str>,
-    arguments: &HashMap<String, String>,
-    tools: &[ToolEntry],
-    history: &[Interaction],
+    mcp: &McpContext<'_>,
     metrics: Option<&MetricsStore>,
 ) -> Option<String> {
     let client = LlmClient::new(&llm_def.url, &llm_def.model, &llm_def.api_key)?;
 
-    let user_prompt = build_context_prompt(method, tool_name, arguments, tools, history);
+    let user_prompt = build_context_prompt(mcp);
 
     let start = std::time::Instant::now();
     let result = client.chat(&llm_def.prompt, &user_prompt).await;
@@ -38,21 +30,15 @@ pub async fn run_llm_operation(
 }
 
 #[expect(clippy::too_many_lines, reason = "prompt assembly with multiple optional sections")]
-fn build_context_prompt(
-    method: &str,
-    tool_name: Option<&str>,
-    arguments: &HashMap<String, String>,
-    tools: &[ToolEntry],
-    history: &[Interaction],
-) -> String {
+fn build_context_prompt(mcp: &McpContext<'_>) -> String {
     let mut prompt = String::with_capacity(4096);
 
-    if !history.is_empty() {
+    if !mcp.history.is_empty() {
         prompt.push_str("## Conversation Context\n\n");
-        let capped = if history.len() > 10 {
-            &history[history.len() - 10..]
+        let capped = if mcp.history.len() > 10 {
+            &mcp.history[mcp.history.len() - 10..]
         } else {
-            history
+            mcp.history
         };
         for interaction in capped {
             if let Some(messages) = interaction.request_body.get("messages")
@@ -78,15 +64,15 @@ fn build_context_prompt(
         }
     }
 
-    prompt.push_str(&format!("## Request: {method}\n\n"));
+    prompt.push_str(&format!("## Request: {}\n\n", mcp.method));
 
-    if let Some(name) = tool_name {
+    if let Some(name) = mcp.tool_name {
         prompt.push_str(&format!("Tool: {name}\n"));
     }
 
-    if !arguments.is_empty() {
+    if !mcp.arguments.is_empty() {
         prompt.push_str("Arguments:\n");
-        for (key, value) in arguments {
+        for (key, value) in mcp.arguments {
             prompt.push_str(&format!(
                 "  {}: {}\n",
                 llm::sanitize(key, 500),
@@ -95,9 +81,9 @@ fn build_context_prompt(
         }
     }
 
-    if !tools.is_empty() {
+    if !mcp.tools.is_empty() {
         prompt.push_str("\n## Available Tools\n\n");
-        for tool in tools {
+        for tool in mcp.tools {
             prompt.push_str(&format!(
                 "- {}: {}\n",
                 tool.name,
@@ -111,21 +97,16 @@ fn build_context_prompt(
 
 /// Retry an LLM operation with a correction prompt that includes
 /// the schema and the previous (invalid) response.
-#[expect(clippy::too_many_arguments, reason = "retry requires original context plus correction data")]
 pub async fn retry_with_schema_correction(
     llm_def: &LlmDef,
-    method: &str,
-    tool_name: Option<&str>,
-    arguments: &HashMap<String, String>,
-    tools: &[ToolEntry],
-    history: &[Interaction],
+    mcp: &McpContext<'_>,
     previous_result: &str,
     schema: &serde_json::Value,
     validation_error: &str,
 ) -> Option<String> {
     let client = LlmClient::new(&llm_def.url, &llm_def.model, &llm_def.api_key)?;
 
-    let base_prompt = build_context_prompt(method, tool_name, arguments, tools, history);
+    let base_prompt = build_context_prompt(mcp);
     let correction = format!(
         "{base_prompt}\n\n## Correction\n\n\
          Your previous response did not match the expected JSON schema.\n\

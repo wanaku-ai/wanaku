@@ -11,7 +11,7 @@ use std::sync::RwLock;
 
 use http::{Response, StatusCode};
 use praxis_filter::{FilterRegistry, PipelineExtension};
-use wanaku_apis::feature::Feature;
+use wanaku_apis::feature::{Feature, HttpContext};
 use wanaku_apis::http_response::json_err;
 
 use crate::manifest::PluginManifest;
@@ -117,15 +117,8 @@ impl Feature for PluginsFeature {
     }
 
     #[expect(clippy::too_many_lines, reason = "route dispatch with plugin proxy logic")]
-    async fn handle_route(
-        &self,
-        method: &str,
-        path: &str,
-        query: Option<&str>,
-        body: Option<&str>,
-        headers: &http::HeaderMap,
-    ) -> Option<Response<Vec<u8>>> {
-        let route = resolve_plugin_route(method, path);
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        let route = resolve_plugin_route(ctx.method, ctx.path);
         if route == PluginRoute::NotFound {
             return None;
         }
@@ -151,10 +144,10 @@ impl Feature for PluginsFeature {
                             &self.client,
                             &target_url,
                             &proxy_path,
-                            query,
-                            method,
-                            body,
-                            headers,
+                            ctx.query,
+                            ctx.method,
+                            ctx.body,
+                            ctx.headers,
                         )
                         .await
                     }
