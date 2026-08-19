@@ -38,6 +38,7 @@ export class NamespacesPage extends BasePage {
   }
 
   async getColumnHeaders(): Promise<string[]> {
-    return this.page.locator('th').allInnerTexts();
+    await this.page.locator(Carbon.dataTable).waitFor({ state: 'visible', timeout: 5_000 });
+    return this.page.locator(`${Carbon.dataTable} th`).allInnerTexts();
   }
 }

@@ -178,6 +178,11 @@ pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &s
         }
     };
 
+    if let Err(reason) = wanaku_apis::registry::validate_namespace_name(path_name) {
+        warn!(name = %path_name, reason = %reason, "namespace name validation failed");
+        return json_err(StatusCode::BAD_REQUEST, &reason);
+    }
+
     namespace.name = path_name.to_owned();
     registry.register_namespace(namespace);
     info!(namespace = %path_name, "updated namespace via management API");

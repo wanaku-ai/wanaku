@@ -11,14 +11,8 @@ fn extract_namespace(path: &str) -> Option<&str> {
         .unwrap_or(path)
         .trim_end_matches('/');
 
-    // /{namespace}/mcp — the canonical format
+    // /{namespace}/mcp — the only valid format
     if let Some(ns) = trimmed.strip_suffix("/mcp")
-        && !ns.is_empty() && !ns.contains('/') {
-            return Some(ns);
-        }
-
-    // /mcp/{namespace} — alternate format
-    if let Some(ns) = trimmed.strip_prefix("mcp/")
         && !ns.is_empty() && !ns.contains('/') {
             return Some(ns);
         }
@@ -47,7 +41,7 @@ impl NamespaceFilter {
                     Ok(crate::response::json_rpc_error(
                         &id,
                         crate::response::JSONRPC_INVALID_REQUEST,
-                        "invalid MCP endpoint path: use /mcp, /{namespace}/mcp, or /mcp/{namespace}",
+                        "invalid MCP endpoint path: use /{namespace}/mcp",
                     ))
                 } else {
                     Ok(FilterAction::Continue)
@@ -97,13 +91,13 @@ mod tests {
     }
 
     #[test]
-    fn mcp_prefix_namespace() {
-        assert_eq!(extract_namespace("/mcp/test-ns"), Some("test-ns"));
+    fn mcp_prefix_namespace_is_none() {
+        assert_eq!(extract_namespace("/mcp/test-ns"), None);
     }
 
     #[test]
-    fn mcp_prefix_default() {
-        assert_eq!(extract_namespace("/mcp/default"), Some("default"));
+    fn mcp_prefix_default_is_none() {
+        assert_eq!(extract_namespace("/mcp/default"), None);
     }
 
     #[test]
@@ -114,11 +108,6 @@ mod tests {
     #[test]
     fn trailing_slash_namespace_mcp() {
         assert_eq!(extract_namespace("/test-ns2/mcp/"), Some("test-ns2"));
-    }
-
-    #[test]
-    fn trailing_slash_mcp_namespace() {
-        assert_eq!(extract_namespace("/mcp/test-ns2/"), Some("test-ns2"));
     }
 
     #[test]
