@@ -2,7 +2,13 @@ import React, {useCallback, useEffect, useState} from "react";
 import {Button, Column, Grid, Tile, ToastNotification,} from "@carbon/react";
 import {ArrowRight, Document, Renew, TextAlignJustify, Tools,} from "@carbon/icons-react";
 import {useStatistics} from "../../hooks/api/use-statistics";
-import {SystemStatistics} from "../../models";
+interface SystemStatistics {
+  toolsCount?: number;
+  resourcesCount?: number;
+  promptsCount?: number;
+  forwardsCount?: number;
+  dataStoresCount?: number;
+}
 import "./DashboardPage.scss";
 
 export const DashboardPage: React.FC = () => {
@@ -14,11 +20,11 @@ export const DashboardPage: React.FC = () => {
   const fetchStatistics = useCallback(async () => {
     setIsLoading(true);
     return getStatistics().then((result) => {
-      if (result.status !== 200 || !result.data.data) {
+      if (result.status !== 200 || !result.data) {
         setErrorMessage("Failed to fetch statistics. Please try again later.");
         setStatistics(null);
       } else {
-        setStatistics(result.data.data);
+        setStatistics(result.data);
       }
       setIsLoading(false);
     }).catch(() => {

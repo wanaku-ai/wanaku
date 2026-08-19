@@ -1,6 +1,6 @@
 import React from "react";
 import {Modal, Tag} from "@carbon/react";
-import type {InputSchema, Property} from "../../models";
+import type {InputSchema, Property} from "./tools-utils";
 
 interface InputSchemaModalProps {
   inputSchema?: InputSchema;

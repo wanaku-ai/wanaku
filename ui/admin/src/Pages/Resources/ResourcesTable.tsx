@@ -16,7 +16,7 @@ import {
   TableToolbarContent
 } from "@carbon/react"
 import {Edit, TrashCan} from "@carbon/icons-react"
-import {Param, ResourceReference} from "../../models"
+import {ResourceEntry} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {useResources} from "../../hooks/api/use-resources"
 import {TableEmptyState} from "../EmptyTableState"
@@ -28,34 +28,34 @@ export interface RefreshHandle {
 }
 
 interface ResourcesTableProps {
-  onEdit: (resource: ResourceReference) => void
+  onEdit: (resource: ResourceEntry) => void
   onDelete: (resourceName: string) => void
   onError?: (message: string) => void
   ref?: RefObject<RefreshHandle>
 }
 
 export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete, onError, ref }) => {
-  
-  const [resources, setResources] = useState<ResourceReference[]>([])
+
+  const [resources, setResources] = useState<ResourceEntry[]>([])
   const [isLoading, setLoading] = useState(true)
   const { listResources } = useResources()
-  
+
   useEffect(() => {
     (async () => {
       await fetchResources()
     })()
   }, [listResources])
-  
+
   useImperativeHandle(ref, (): RefreshHandle => ({
     async refresh() {
       await fetchResources()
     }
   }), [])
-  
+
   async function fetchResources() {
     try {
       const result = await listResources()
-      const resources = result.data.data as ResourceReference[]
+      const resources = result.data as ResourceEntry[]
       setResources(resources)
     } catch (error) {
       onError?.(getErrorMessage(error))
@@ -63,7 +63,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
       setLoading(false)
     }
   }
-  
+
   const headers = [
     {key: "name", header: "Name"},
     {key: "location", header: "Location"},
@@ -75,7 +75,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
   ]
 
   function resourcesToRows() {
-    return resources.map((resource: ResourceReference, index: number) => ({
+    return resources.map((resource: ResourceEntry, index: number) => ({
       id: resource.name || resource.id || `resource-${index}`,
       name: resource.name,
       location: resource.location,
@@ -86,17 +86,11 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
     }))
   }
 
-  function resourceHasParameters(resource: ResourceReference): boolean {
-    return !!resource.params?.length
+  function resourceHasDetails(resource: ResourceEntry) {
+    return resource.configurationURI || resource.secretsURI
   }
 
-  function resourceHasDetails(resource: ResourceReference) {
-    return resourceHasParameters(resource)
-            || resource.configurationURI
-            || resource.secretsURI
-  }
-
-  function tableCells(resource) {
+  function tableCells(resource: ResourceEntry) {
     return (
       <React.Fragment>
         <TableCell>{resource.name}</TableCell>
@@ -104,7 +98,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
         <TableCell>{resource.type}</TableCell>
         <TableCell>{resource.mimeType}</TableCell>
         <TableCell>{resource.description}</TableCell>
-        <TableCell>{getNamespacePathById(resource.namespace)}</TableCell>
+        <TableCell>{getNamespacePathById(resource.namespace ?? undefined)}</TableCell>
         <TableCell>
           <Button
             kind="ghost"
@@ -125,17 +119,10 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
     )
   }
 
-  function resourceDetails(resource: ResourceReference, rowProps) {
+  function resourceDetails(resource: ResourceEntry, rowProps) {
     return (
       <TableExpandedRow colSpan={headers.length + 3} {...rowProps}>
-        {resourceHasParameters(resource) && (
-          <div>
-            <strong>Parameters:</strong>
-            {resource.params?.map((parameter: Param) => {
-              return (<div>{parameter.name + ": " + parameter.value}</div>)
-            })}
-          </div>
-        )}
+        {/* params feature removed from API - omitted */}
         {resource.configurationURI && (
           <div>
             <strong>Configuration URI:</strong> {resource.configurationURI}

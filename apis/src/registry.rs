@@ -121,6 +121,14 @@ pub struct ForwardEntry {
     pub server_info: Option<McpServerInfo>,
     #[serde(default)]
     pub labels: HashMap<String, String>,
+    #[serde(default = "default_available")]
+    pub available: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "statusMessage", alias = "status_message")]
+    pub status_message: Option<String>,
+}
+
+fn default_available() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]

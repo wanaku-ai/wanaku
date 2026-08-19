@@ -28,28 +28,19 @@ export interface EvaluatorDef {
 
 export interface EvaluatorsResponse {
   status: number;
-  data: {
-    data: EvaluatorDef[] | null;
-    error: string | null;
-  };
+  data: EvaluatorDef[];
   headers: Headers;
 }
 
 export interface BindingsResponse {
   status: number;
-  data: {
-    data: Record<string, string> | null;
-    error: string | null;
-  };
+  data: Record<string, string>;
   headers: Headers;
 }
 
 export interface SimpleResponse {
   status: number;
-  data: {
-    data: unknown;
-    error: string | null;
-  };
+  data: unknown;
   headers: Headers;
 }
 

@@ -1,15 +1,13 @@
 import {
-  getApiV1Forwards,
-  postApiV1Forwards,
-  postApiV1ForwardsResponse,
-  postApiV1ForwardsNameRefreshes,
-  postApiV1ForwardsNameRefreshesResponse,
-  putApiV1ForwardsName,
-  putApiV1ForwardsNameResponse,
-  deleteApiV1ForwardsName,
-  deleteApiV1ForwardsNameResponse
+  listForwards as apiListForwards,
+  createForward as apiCreateForward,
+  type createForwardResponse,
+  refreshForward as apiRefreshForward,
+  type refreshForwardResponse,
+  deleteForward as apiDeleteForward,
+  type deleteForwardResponse,
 } from "../../api/wanaku-router-api";
-import { ForwardReference } from "../../models";
+import { ForwardEntry } from "../../models";
 
 // Simple in-memory cache for Client Components
 let forwardsCache: {
@@ -17,21 +15,12 @@ let forwardsCache: {
 } | null = null;
 
 export const listForwards = async (options: any = null) => {
-  // Check if we have valid cached data
   if (forwardsCache) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Returning cached forwards data');
-    }
     return forwardsCache.data;
   }
 
-  // Fetch fresh data
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Fetching fresh forwards data');
-  }
-  const result = await getApiV1Forwards(undefined, options);
+  const result = await apiListForwards(options ?? undefined);
 
-  // Cache the result
   forwardsCache = {
     data: result
   };
@@ -45,42 +34,43 @@ export const clearForwardsCache = () => {
 };
 
 export const addForward = async (
-  forwardReference: ForwardReference,
+  forward: ForwardEntry,
   options?: RequestInit
-): Promise<postApiV1ForwardsResponse> => {
+): Promise<createForwardResponse> => {
   clearForwardsCache();
-  return postApiV1Forwards(forwardReference, options);
+  return apiCreateForward(forward, options);
 };
 
 export const updateForward = async (
-  forward: ForwardReference,
+  forward: ForwardEntry,
   options?: RequestInit
-): Promise<putApiV1ForwardsNameResponse> => {
+): Promise<createForwardResponse> => {
   if (!forward.name) {
     throw new Error("Forward name is required for update");
   }
-  clearForwardsCache()
-  return putApiV1ForwardsName(forward.name, forward, options)
-}
+  clearForwardsCache();
+  await apiDeleteForward(forward.name, options);
+  return apiCreateForward(forward, options);
+};
 
 export const removeForward = async (
-  forward: ForwardReference,
+  forward: ForwardEntry,
   options?: RequestInit
-): Promise<deleteApiV1ForwardsNameResponse> => {
+): Promise<deleteForwardResponse> => {
   if (!forward.name) {
     throw new Error("Forward name is required for removal");
   }
   clearForwardsCache();
-  return deleteApiV1ForwardsName(forward.name, options);
+  return apiDeleteForward(forward.name, options);
 };
 
 export const refreshForward = async (
-  forward: ForwardReference,
+  forward: ForwardEntry,
   options?: RequestInit
-): Promise<postApiV1ForwardsNameRefreshesResponse> => {
+): Promise<refreshForwardResponse> => {
   if (!forward.name) {
     throw new Error("Forward name is required for refresh");
   }
   clearForwardsCache();
-  return postApiV1ForwardsNameRefreshes(forward.name, options);
+  return apiRefreshForward(forward.name, options);
 };

@@ -3,23 +3,23 @@ import {
 } from "@carbon/react"
 import {useEffect, useState} from "react"
 import {addForward, updateForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
-import {ForwardReference} from "../../models"
+import {ForwardEntry} from "../../models"
 import {ForwardDetailModal} from "./ForwardDetailModal.tsx"
 import {ForwardModal} from "./ForwardModal.tsx"
 import {ForwardsTable} from "./ForwardsTable.tsx"
 
 const ForwardsPage = () => {
 
-  const [forwards, setForwards] = useState<ForwardReference[]>([])
+  const [forwards, setForwards] = useState<ForwardEntry[]>([])
   const [isModalOpen, setModalOpen] = useState(false)
-  const [openedForward, setOpenedForward] = useState<ForwardReference>()
-  const [detailForward, setDetailForward] = useState<ForwardReference>()
+  const [openedForward, setOpenedForward] = useState<ForwardEntry>()
+  const [detailForward, setDetailForward] = useState<ForwardEntry>()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function fetchForwards() {
     listForwards().then((response) => {
-      if (response.data?.data) {
-        setForwards(response.data.data as ForwardReference[])
+      if (response.data) {
+        setForwards(response.data as ForwardEntry[])
       }
     })
   }
@@ -27,7 +27,7 @@ const ForwardsPage = () => {
   useEffect(() => {
     fetchForwards()
   }, [])
-  
+
   function refreshAfterSubmit() {
     closeModal()
     fetchForwards()
@@ -38,7 +38,7 @@ const ForwardsPage = () => {
     setModalOpen(false)
   }
 
-  function handleDetailButton(forward: ForwardReference) {
+  function handleDetailButton(forward: ForwardEntry) {
     setDetailForward(forward)
   }
 
@@ -46,12 +46,12 @@ const ForwardsPage = () => {
     setModalOpen(true)
   }
 
-  function handleEditButton(forward: ForwardReference) {
+  function handleEditButton(forward: ForwardEntry) {
     setOpenedForward(forward)
     setModalOpen(true)
   }
-  
-  function handleSubmit(forward: ForwardReference) {
+
+  function handleSubmit(forward: ForwardEntry) {
     if (openedForward) {
       handleUpdateForward(forward)
     } else {
@@ -59,7 +59,7 @@ const ForwardsPage = () => {
     }
   }
 
-  async function handleAddForward(newForward: ForwardReference){
+  async function handleAddForward(newForward: ForwardEntry){
     try {
       const response = await addForward(newForward)
       if (response.status !== 200) {
@@ -73,7 +73,7 @@ const ForwardsPage = () => {
     }
   }
 
-  async function handleUpdateForward(forward: ForwardReference) {
+  async function handleUpdateForward(forward: ForwardEntry) {
     try {
       const response = await updateForward(forward)
       if (response.status !== 200) {
@@ -87,7 +87,7 @@ const ForwardsPage = () => {
     }
   }
 
-  async function handleDeleteForward(forward: ForwardReference) {
+  async function handleDeleteForward(forward: ForwardEntry) {
     try {
       const response = await removeForward(forward)
         if (response.status === 200) {
@@ -100,7 +100,7 @@ const ForwardsPage = () => {
     }
   }
 
-  async function handleRefreshForward(forward: ForwardReference) {
+  async function handleRefreshForward(forward: ForwardEntry) {
     try {
       const response = await refreshForward(forward)
       if (response.status === 200) {

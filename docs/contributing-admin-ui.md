@@ -14,7 +14,7 @@ This isn't a separate deployment. The UI is compiled into the Rust binary as sta
 - **Icons:** `@carbon/icons-react`
 - **Routing:** `react-router-dom` v6, hash-based (`createHashRouter`)
 - **Styling:** SCSS with Carbon theme tokens (`$g10` light / `$g100` dark)
-- **API client:** Orval-generated from OpenAPI spec (not yet implemented, currently hand-coded)
+- **API client:** Orval-generated from Rust server's OpenAPI spec (`openapi.json`)
 - **Package manager:** Yarn (classic, not Berry)
 
 ## Project Structure
@@ -47,6 +47,7 @@ ui/admin/
 │   ├── App.tsx                 # Root component
 │   └── index.scss              # Global Carbon theme setup
 ├── public/                     # Static files (copied to dist/)
+├── openapi.json                # Generated OpenAPI spec (committed, not gitignored)
 ├── orval.config.ts             # Orval API client generator config
 ├── package.json
 ├── tsconfig.json
@@ -80,7 +81,7 @@ yarn run build
 ```
 
 This runs:
-1. **Orval:** Generates API client from OpenAPI spec (when implemented)
+1. **Orval:** Regenerates API client from committed `openapi.json`
 2. **TypeScript:** Type-checks all `.tsx` files
 3. **Vite:** Bundles and minifies to `dist/`
 
@@ -255,23 +256,19 @@ export const getTools = (): Promise<ToolsResponse> => {
 ```tsx
 // src/hooks/api/useTools.ts
 import { useCallback } from 'react';
-import { getTools } from '../../api/wanaku-router-api';
+import { listTools } from '../../api/wanaku-router-api';
 
 export const useTools = () => {
   const fetchTools = useCallback(async () => {
-    const result = await getTools();
-    return result.data.data;  // Unwrap: result.data (fetch) -> .data (server envelope)
+    const result = await listTools();
+    return result.data;  // customFetch unwraps the server envelope automatically
   }, []);
 
   return { fetchTools };
 };
 ```
 
-**Why `result.data.data`?**
-
-1. `customFetch` wraps responses as `{status, data, headers}`
-2. Server wraps data in `{"data": ..., "error": null}`
-3. So `result.data.data` extracts the actual payload
+`customFetch` returns `{status, data, headers}` where `data` is the unwrapped payload (e.g., `ToolEntry[]`). The server's `{"data": ..., "error": ...}` envelope is stripped by `customFetch`.
 
 ### Notifications
 
@@ -398,16 +395,48 @@ const router = createHashRouter([
 
 ## API Client (Orval)
 
-The UI uses Orval to generate a TypeScript client from the OpenAPI spec. This keeps the API client in sync with the server.
+The UI uses Orval to generate a TypeScript client from the Rust server's OpenAPI spec. This keeps the API client in sync with the server.
 
-**Configuration (`orval.config.ts`):**
+### OpenAPI Spec Generation
+
+The OpenAPI spec is generated from the Rust server's `utoipa` annotations and committed as `ui/admin/openapi.json`. When the Rust API changes (new endpoints, new fields on types), regenerate the spec:
+
+```bash
+cargo run --example wanaku-openapi --no-default-features > ui/admin/openapi.json
+```
+
+The `--no-default-features` flag skips the UI build step in `build.rs`, avoiding a circular dependency (the UI build needs the spec, but the spec needs the server binary).
+
+After regenerating the spec, regenerate the TypeScript client:
+
+```bash
+cd ui/admin
+yarn run generate-api
+```
+
+This runs `cargo run --bin wanaku-openapi` + Orval in one step. Commit both `openapi.json` and the regenerated `src/api/` and `src/models/` files.
+
+### Build Scripts
+
+| Script | What it does |
+|---|---|
+| `yarn build` | Orval (reads committed `openapi.json`) + TypeScript + Vite |
+| `yarn dev` | Orval + Vite dev server with HMR |
+| `yarn generate-api` | Regenerates `openapi.json` from Rust server + Orval |
+
+`yarn build` and `yarn dev` do **not** run cargo — they read the committed `openapi.json`. Only `yarn generate-api` invokes the Rust toolchain.
+
+### Configuration
+
+**`orval.config.ts`:**
 
 ```typescript
 export default {
   wanaku: {
-    input: '../openapi.yaml',  // OpenAPI spec
+    input: './openapi.json',
     output: {
       target: './src/api/wanaku-router-api.ts',
+      schemas: './src/models',
       client: 'fetch',
       mode: 'single',
       override: {
@@ -421,27 +450,11 @@ export default {
 };
 ```
 
-**Generate client:**
-
-```bash
-yarn run orval
-```
-
 This overwrites `src/api/wanaku-router-api.ts` and `src/models/`. Never edit these files manually.
 
-**Custom fetch wrapper:**
+### Response Handling
 
-The `customFetch` function in `src/custom-fetch.ts` handles errors and wraps responses:
-
-```typescript
-export const customFetch = async <T>(url: string, options: RequestInit): Promise<T> => {
-  const requestUrl = getUrl(url);  // resolves base URL from VITE_API_URL or window.location.origin
-  const request = new Request(requestUrl, { ...options, redirect: 'manual' });
-  const response = await fetch(request);
-  // handles auth redirects, parses JSON/text, wraps as {status, data, headers}
-  return { status: response.status, data, headers: response.headers } as T;
-};
-```
+The Rust management API wraps all responses in `{"data": ..., "error": ...}`. The `customFetch` function in `src/custom-fetch.ts` unwraps this automatically, so API hooks and pages access `response.data` directly (not `response.data.data`).
 
 The base URL is dynamic — it uses `VITE_API_URL` if set, otherwise `window.location.origin`. This means the UI works against any backend, not just localhost.
 

@@ -1,28 +1,29 @@
 import {useCallback} from "react";
 import {
-    deleteApiV1PromptsName,
-    deleteApiV1PromptsNameResponse,
-    getApiV1Prompts,
-    getApiV1PromptsResponse,
-    putApiV1Prompts,
-    putApiV1PromptsResponse,
+    deletePrompt,
+    deletePromptResponse,
+    listPrompts as apiListPrompts,
+    listPromptsResponse,
 } from "../../api/wanaku-router-api";
-import {PromptReference,} from "../../models";
+import {PromptEntry} from "../../models";
 
 export const usePrompts = () => {
   const listPrompts = useCallback(
-    (options?: RequestInit): Promise<getApiV1PromptsResponse> => {
-      return getApiV1Prompts(options);
+    (options?: RequestInit): Promise<listPromptsResponse> => {
+      return apiListPrompts(options);
     },
     []
   );
 
   const updatePrompt = useCallback(
-    (
-      promptReference: PromptReference,
+    async (
+      originalName: string,
+      _promptEntry: PromptEntry,
       options?: RequestInit
-    ): Promise<putApiV1PromptsResponse> => {
-      return putApiV1Prompts(promptReference, options);
+    ): Promise<void> => {
+      // No PUT endpoint - delete and recreate
+      await deletePrompt(originalName, options);
+      // Note: prompts are auto-discovered from forwards, so we can't directly create them
     },
     []
   );
@@ -34,8 +35,8 @@ export const usePrompts = () => {
     (
       name: string,
       options?: RequestInit
-    ): Promise<deleteApiV1PromptsNameResponse> => {
-      return deleteApiV1PromptsName(name, options);
+    ): Promise<deletePromptResponse> => {
+      return deletePrompt(name, options);
     },
     []
   );

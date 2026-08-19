@@ -1,26 +1,26 @@
 import {ToastNotification} from "@carbon/react";
 import React, {useCallback, useEffect, useState} from "react";
-import {Namespace} from "../../models";
+import {NamespaceEntry} from "../../models";
 import {NamespaceTable} from "./NamespacesTable";
 import {NamespaceModal} from "./NamespaceModal";
 import {useNamespaces} from "../../hooks/api/use-namespaces";
 import {sortedNamespaces} from "./namespaces"
 
 export const NamespacesPage: React.FC = () => {
-  const [namespaces, setNamespaces] = useState<Namespace[]>([]);
+  const [namespaces, setNamespaces] = useState<NamespaceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openedNamespace, setOpenedNamespace] = useState<Namespace>();
+  const [openedNamespace, setOpenedNamespace] = useState<NamespaceEntry>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { listNamespaces, createNamespace, updateNamespace, removeNamespace } = useNamespaces();
 
   const refreshNamespaces = useCallback(async () => {
     return listNamespaces().then((result) => {
-      if (result.status !== 200 || !Array.isArray(result.data.data)) {
+      if (result.status !== 200 || !Array.isArray(result.data)) {
         setErrorMessage("Failed to fetch namespaces. Please try again later.");
         setNamespaces([]);
       } else {
-        setNamespaces(sortedNamespaces(result.data.data));
+        setNamespaces(sortedNamespaces(result.data));
       }
       setIsLoading(false);
     });
@@ -46,7 +46,7 @@ export const NamespacesPage: React.FC = () => {
     setIsModalOpen(false);
   }
 
-  function handleModalSubmit(namespace: Namespace): void {
+  function handleModalSubmit(namespace: NamespaceEntry): void {
     if (openedNamespace) {
       handleUpdate(namespace);
     } else {
@@ -54,7 +54,7 @@ export const NamespacesPage: React.FC = () => {
     }
   }
 
-  const handleCreate = async (namespace: Namespace) => {
+  const handleCreate = async (namespace: NamespaceEntry) => {
     try {
       await createNamespace(namespace);
       setIsModalOpen(false);
@@ -66,7 +66,7 @@ export const NamespacesPage: React.FC = () => {
     }
   };
 
-  const handleUpdate = async (namespace: Namespace) => {
+  const handleUpdate = async (namespace: NamespaceEntry) => {
     try {
       await updateNamespace(namespace);
       setErrorMessage(null);
@@ -78,10 +78,10 @@ export const NamespacesPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (namespace: Namespace) => {
+  const handleDelete = async (namespace: NamespaceEntry) => {
     try {
-      if (!namespace.id) return;
-      await removeNamespace(namespace.id);
+      if (!namespace.name) return;
+      await removeNamespace(namespace.name);
       await refreshNamespaces();
     } catch {
       setErrorMessage(`Failed to delete namespace: ${namespace.name || namespace.path}`);
@@ -110,7 +110,7 @@ export const NamespacesPage: React.FC = () => {
         <NamespaceTable
           namespaces={namespaces}
           onAdd={() => setIsModalOpen(true)}
-          onEdit={(namespace: Namespace) => { setOpenedNamespace(namespace); setIsModalOpen(true); }}
+          onEdit={(namespace: NamespaceEntry) => { setOpenedNamespace(namespace); setIsModalOpen(true); }}
           onDelete={handleDelete}
         />
         {isModalOpen && (

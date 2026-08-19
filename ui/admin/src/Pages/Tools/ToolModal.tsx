@@ -8,17 +8,18 @@ import {
   TextInput
 } from "@carbon/react";
 import React, {useEffect, useState} from "react";
-import {Namespace, ToolReference} from "../../models";
+import {NamespaceEntry, ToolEntry} from "../../models";
 import {formatInputSchema, parseInputSchema} from "./tools-utils.ts";
 import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
 import {useNamespaces} from "../../hooks/api/use-namespaces"
 import {Tools} from "./tools"
+import {unwrapData} from "../../utils/api-response";
 
 
 interface ToolModalProps {
-  tools: ToolReference[]
-  tool?: ToolReference
-  onSubmit: (tool: ToolReference) => void
+  tools: ToolEntry[]
+  tool?: ToolEntry
+  onSubmit: (tool: ToolEntry) => void
   onRequestClose: () => void
   onError?: (message: string) => void
 }
@@ -29,26 +30,27 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   onSubmit,
   onRequestClose,
 }) => {
-  const [namespaces, setNamespaces] = useState<Namespace[]>([])
+  const [namespaces, setNamespaces] = useState<NamespaceEntry[]>([])
   const [toolName, setToolName] = useState(tool?.name || "")
   const [toolNameInvalid, setToolNameInvalid] = useState(false)
   const [toolNameInvalidText, setToolNameInvalidText] = useState("")
   const [description, setDescription] = useState(tool?.description || "")
   const [uri, setUri] = useState(tool?.uri || "")
   const [toolType, setToolType] = useState(tool?.type || "http")
-  const [inputSchema, setInputSchema] = useState(formatInputSchema(tool?.inputSchema))
+  const [inputSchema, setInputSchema] = useState(formatInputSchema(tool?.inputSchema as any))
   const [inputSchemaInvalid, setInputSchemaInvalid] = useState(false)
   const [inputSchemaInvalidText, setInputSchemaInvalidText] = useState("")
-  const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace)
-  const [configurationURI, setConfigurationURI] = useState(tool?.configurationURI || "")
-  const [secretsURI, setSecretsURI] = useState(tool?.secretsURI || "")
+  const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace ?? undefined)
+  const [configurationURI, setConfigurationURI] = useState(tool?.configurationURI ?? "")
+  const [secretsURI, setSecretsURI] = useState(tool?.secretsURI ?? "")
   const { listNamespaces } = useNamespaces()
-  
+
   useEffect(() => {
     (async () => {
-      const response = await listNamespaces()
-      if (response.status == 200 && Array.isArray(response.data.data)) {
-        setNamespaces(response.data.data)
+      const response: any = await listNamespaces()
+      const data = unwrapData<NamespaceEntry[]>(response);
+      if (response.status == 200 && Array.isArray(data)) {
+        setNamespaces(data)
       }
     })()
   }, [listNamespaces])
@@ -73,13 +75,13 @@ export const ToolModal: React.FC<ToolModalProps> = ({
     }
   }
   
-  function findNamespace(id: string | undefined | null): Namespace | undefined {
+  function findNamespace(id: string | undefined | null): NamespaceEntry | undefined {
     return id
       ? namespaces.find(namespace => namespace.id === id)
       : namespaces.find(namespace => namespace.path === "default")
   }
-  
-  function otherTools(): ToolReference[] {
+
+  function otherTools(): ToolEntry[] {
     return tool ? tools.filter(t => t.id !== tool.id) : tools
   }
   
@@ -95,12 +97,13 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   function toolNameAlreadyExists(toolName: string, namespaceId: string | undefined): boolean {
     return otherTools()
       .filter(tool => tool.name === toolName)
-      .some(tool => isSameNamespace(tool.namespace, namespaceId))
+      .some(tool => isSameNamespace(tool.namespace ?? undefined, namespaceId))
   }
   
-  function validateToolName(toolName: string, namespaceId: string | undefined) {
-    setToolNameInvalid(toolNameAlreadyExists(toolName, namespaceId))
-    setToolNameInvalidText(`This tool name already exists in namespace: ${findNamespace(namespaceId)!.path}`)
+  function validateToolName(toolName: string, namespaceId: string | null | undefined) {
+    const nsId: string | undefined = namespaceId ?? undefined;
+    setToolNameInvalid(toolNameAlreadyExists(toolName, nsId))
+    setToolNameInvalidText(`This tool name already exists in namespace: ${findNamespace(nsId)!.path}`)
   }
   
   function validateInputSchema(schema: string) {
@@ -176,9 +179,9 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               id="namespace"
               labelText="Select a Namespace"
               helperText="Choose a Namespace from the list"
-              value={selectedNamespace}
+              value={selectedNamespace ?? undefined}
               onChange={namespace => {
-                setSelectedNamespace(namespace.id)
+                setSelectedNamespace(namespace.id ?? undefined)
                 validateToolName(toolName, namespace.id)
               }}
             />

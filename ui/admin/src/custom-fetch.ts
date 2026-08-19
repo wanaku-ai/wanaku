@@ -60,13 +60,14 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
       sessionStorage.removeItem(REDIRECT_TS_KEY);
     }
 
-    const data = await getBody<T>(response);
+    const body = await getBody<Record<string, unknown>>(response);
 
     if (!response.ok) {
-      const errorData = data as Record<string, unknown> | null;
-      const message = (errorData?.error as string) || `Request failed with status ${response.status}`;
+      const message = (body?.error as string) || `Request failed with status ${response.status}`;
       throw new Error(message);
     }
+
+    const data = body?.data !== undefined ? body.data : body;
 
     return { status: response.status, data, headers: response.headers } as T;
   };

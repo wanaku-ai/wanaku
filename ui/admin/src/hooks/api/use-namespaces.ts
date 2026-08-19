@@ -1,15 +1,13 @@
 import {useCallback} from "react";
 import {
-    getApiV1Namespaces,
-    getApiV1NamespacesResponse,
-    postApiV1Namespaces,
-    postApiV1NamespacesResponse,
-    putApiV1NamespacesId,
-    putApiV1NamespacesIdResponse,
-    deleteApiV1NamespacesId,
-    deleteApiV1NamespacesIdResponse,
+    listNamespaces as apiListNamespaces,
+    listNamespacesResponse,
+    createNamespace as apiCreateNamespace,
+    createNamespaceResponse,
+    deleteNamespace,
+    deleteNamespaceResponse,
 } from "../../api/wanaku-router-api";
-import {Namespace} from "../../models";
+import {NamespaceEntry} from "../../models";
 
 // Simple in-memory cache for Client Components
 let namespacesCache: {
@@ -18,35 +16,37 @@ let namespacesCache: {
 
 export const useNamespaces = () => {
   const listNamespaces = useCallback(
-    (options?: RequestInit): Promise<getApiV1NamespacesResponse> => {
-      return getApiV1Namespaces(undefined, options);
+    (options?: RequestInit): Promise<listNamespacesResponse> => {
+      return apiListNamespaces(options);
     },
     []
   );
 
   const createNamespace = useCallback(
-    (namespace: Namespace, options?: RequestInit): Promise<postApiV1NamespacesResponse> => {
+    (namespace: NamespaceEntry, options?: RequestInit): Promise<createNamespaceResponse> => {
       clearNamespacesCache();
-      return postApiV1Namespaces(namespace, options);
+      return apiCreateNamespace(namespace, options);
     },
     []
   );
 
   const updateNamespace = useCallback(
-    (namespace: Namespace, options?: RequestInit): Promise<putApiV1NamespacesIdResponse> => {
-      if (!namespace.id) {
-        throw new Error("Namespace ID is required for update");
+    async (namespace: NamespaceEntry, options?: RequestInit): Promise<void> => {
+      // No PUT endpoint - delete and recreate
+      if (!namespace.name) {
+        throw new Error("Namespace name is required for update");
       }
       clearNamespacesCache();
-      return putApiV1NamespacesId(namespace.id, namespace, options);
+      await deleteNamespace(namespace.name, options);
+      await apiCreateNamespace(namespace, options);
     },
     []
   );
 
   const removeNamespace = useCallback(
-    (id: string, options?: RequestInit): Promise<deleteApiV1NamespacesIdResponse> => {
+    (name: string, options?: RequestInit): Promise<deleteNamespaceResponse> => {
       clearNamespacesCache();
-      return deleteApiV1NamespacesId(id, options);
+      return deleteNamespace(name, options);
     },
     []
   );
@@ -72,7 +72,7 @@ export const listNamespaces = async (options: any = null) => {
   if (process.env.NODE_ENV !== 'production') {
     console.log('Fetching fresh namespaces data');
   }
-  const result = await getApiV1Namespaces(undefined, options);
+  const result = await apiListNamespaces(options);
 
   // Cache the result
   namespacesCache = {
@@ -92,7 +92,7 @@ export const getNamespacePathById = (id?: string): string => {
     return "default"
   }
   if (namespacesCache) {
-    const data = namespacesCache.data.data.data as Namespace[]
+    const data = namespacesCache.data.data as NamespaceEntry[]
     const found = data.find(namespace => namespace.id === id)?.path
     if (found) return found
   }

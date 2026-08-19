@@ -13,12 +13,12 @@ import {
     TableToolbarContent,
 } from "@carbon/react";
 import {FunctionComponent} from "react";
-import {PromptReference} from "../../models";
+import {PromptEntry} from "../../models";
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {TableEmptyState} from "../EmptyTableState"
 
 interface PromptsListProps {
-  fetchedData: PromptReference[];
+  fetchedData: PromptEntry[];
   onDelete: (promptName?: string) => void;
 }
 
@@ -47,14 +47,14 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
   ];
 
   function promptsToRows() {
-    return fetchedData.map((prompt: PromptReference, index: number) => ({
+    return fetchedData.map((prompt: PromptEntry, index: number) => ({
       id: prompt.name || `prompt-${index}`,
       name: prompt.name,
       description: prompt.description,
       messages: formatMessages(prompt.messages),
       arguments: formatArguments(prompt.arguments),
-      toolReferences: prompt.toolReferences?.join(", ") || "None",
-      namespace: getNamespacePathById(prompt.namespace),
+      toolReferences: "N/A", // toolReferences not in API schema
+      namespace: getNamespacePathById(prompt.namespace ?? undefined),
     }));
   }
   

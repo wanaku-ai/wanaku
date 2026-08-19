@@ -1,0 +1,968 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Wanaku API",
+    "description": "Wanaku MCP proxy management API",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "version": "0.3.0"
+  },
+  "paths": {
+    "/api/v1/forwards": {
+      "get": {
+        "tags": [
+          "Forwards"
+        ],
+        "operationId": "list_forwards",
+        "responses": {
+          "200": {
+            "description": "List all forwards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ForwardEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Forwards"
+        ],
+        "operationId": "create_forward",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForwardEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Forward created and tools discovered",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forwards/{name}": {
+      "get": {
+        "tags": [
+          "Forwards"
+        ],
+        "operationId": "get_forward",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Forward name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forward found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForwardEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Forward not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Forwards"
+        ],
+        "operationId": "delete_forward",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Forward name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forward removed"
+          },
+          "404": {
+            "description": "Forward not found"
+          }
+        }
+      }
+    },
+    "/api/v1/forwards/{name}/refreshes": {
+      "post": {
+        "tags": [
+          "Forwards"
+        ],
+        "operationId": "refresh_forward",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Forward name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forward refreshed",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Forward not found"
+          }
+        }
+      }
+    },
+    "/api/v1/interactions": {
+      "get": {
+        "tags": [
+          "Interactions"
+        ],
+        "operationId": "list_interactions",
+        "responses": {
+          "200": {
+            "description": "List recorded interactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Interaction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Interactions"
+        ],
+        "operationId": "clear_interactions",
+        "responses": {
+          "200": {
+            "description": "Interactions cleared"
+          }
+        }
+      }
+    },
+    "/api/v1/management/statistics": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "get_statistics",
+        "responses": {
+          "200": {
+            "description": "Registry statistics",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/namespaces": {
+      "get": {
+        "tags": [
+          "Namespaces"
+        ],
+        "operationId": "list_namespaces",
+        "responses": {
+          "200": {
+            "description": "List all namespaces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NamespaceEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Namespaces"
+        ],
+        "operationId": "create_namespace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NamespaceEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Namespace registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamespaceEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/namespaces/{name}": {
+      "get": {
+        "tags": [
+          "Namespaces"
+        ],
+        "operationId": "get_namespace",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Namespace name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Namespace found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamespaceEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Namespace not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Namespaces"
+        ],
+        "operationId": "delete_namespace",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Namespace name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Namespace removed"
+          },
+          "404": {
+            "description": "Namespace not found"
+          }
+        }
+      }
+    },
+    "/api/v1/prompts": {
+      "get": {
+        "tags": [
+          "Prompts"
+        ],
+        "operationId": "list_prompts",
+        "responses": {
+          "200": {
+            "description": "List all prompts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PromptEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prompts/{name}": {
+      "get": {
+        "tags": [
+          "Prompts"
+        ],
+        "operationId": "get_prompt",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Prompt name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prompt not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Prompts"
+        ],
+        "operationId": "delete_prompt",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Prompt name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt removed"
+          },
+          "404": {
+            "description": "Prompt not found"
+          }
+        }
+      }
+    },
+    "/api/v1/resources": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "operationId": "list_resources",
+        "responses": {
+          "200": {
+            "description": "List all resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResourceEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/resources/{name}": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "operationId": "get_resource",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Resource name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Resources"
+        ],
+        "operationId": "delete_resource",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Resource name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource removed"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      }
+    },
+    "/api/v1/tools": {
+      "get": {
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "list_tools",
+        "responses": {
+          "200": {
+            "description": "List all tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ToolEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tools/{name}": {
+      "get": {
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "get_tool",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Tool name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tool found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tool not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "delete_tool",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Tool name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tool removed"
+          },
+          "404": {
+            "description": "Tool not found"
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "healthz",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ForwardEntry": {
+        "type": "object",
+        "required": [
+          "name",
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serverInfo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/McpServerInfo"
+              }
+            ]
+          },
+          "statusMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Interaction": {
+        "type": "object",
+        "required": [
+          "epoch_ms",
+          "path",
+          "request_body",
+          "response_body",
+          "status_code",
+          "duration_ms"
+        ],
+        "properties": {
+          "completion_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "conversation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "epoch_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "request_body": {},
+          "response_body": {},
+          "status_code": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "McpServerInfo": {
+        "type": "object",
+        "required": [
+          "serverName",
+          "version"
+        ],
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serverName": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "websiteUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "NamespaceEntry": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "audience": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authRequired": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "PromptArgument": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PromptEntry": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "arguments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromptArgument"
+            }
+          },
+          "configurationURI": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromptMessage"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PromptMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "content": {},
+          "role": {
+            "$ref": "#/components/schemas/PromptRole"
+          }
+        }
+      },
+      "PromptRole": {
+        "type": "string",
+        "enum": [
+          "user",
+          "assistant",
+          "system"
+        ]
+      },
+      "ResourceEntry": {
+        "type": "object",
+        "required": [
+          "name",
+          "location",
+          "type"
+        ],
+        "properties": {
+          "configurationURI": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "location": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "secretsURI": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolEntry": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "uri",
+          "type",
+          "inputSchema"
+        ],
+        "properties": {
+          "configurationURI": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inputSchema": {},
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "secretsURI": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

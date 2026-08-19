@@ -1,4 +1,13 @@
-import {InputSchema} from "../../models";
+export interface InputSchema {
+  type?: string;
+  properties?: Record<string, Property>;
+  required?: string[];
+}
+
+export interface Property {
+  type?: string;
+  description?: string;
+}
 
 export function formatInputSchema(inputSchema?: InputSchema): string {
   return (inputSchema) ? (JSON.stringify(inputSchema, null, 1)) : ""
