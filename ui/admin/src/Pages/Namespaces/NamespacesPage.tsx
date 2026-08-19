@@ -1,4 +1,5 @@
-import {InlineNotification, SkeletonText} from "@carbon/react";
+import {InlineNotification} from "@carbon/react";
+import {PageSkeleton} from "../../components/PageSkeleton";
 import React, {useCallback, useEffect, useState} from "react";
 import {NamespaceEntry} from "../../models";
 import {NamespaceTable} from "./NamespacesTable";
@@ -39,12 +40,7 @@ export const NamespacesPage: React.FC = () => {
     }
   }, [errorMessage]);
 
-  if (isLoading) return (
-    <div>
-      <h1 className="title">Namespaces</h1>
-      <SkeletonText heading={false} lineCount={5} width="80%" />
-    </div>
-  );
+  if (isLoading) return <PageSkeleton title="Namespaces" />;
 
   function handleModalClose(): void {
     setOpenedNamespace(undefined);

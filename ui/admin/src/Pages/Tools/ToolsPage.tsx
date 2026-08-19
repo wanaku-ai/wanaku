@@ -1,4 +1,5 @@
-import {InlineNotification, SkeletonText} from "@carbon/react";
+import {InlineNotification} from "@carbon/react";
+import {PageSkeleton} from "../../components/PageSkeleton";
 import React, {useCallback, useEffect, useState} from "react";
 import {useTools} from "../../hooks/api/use-tools";
 import {ToolEntry} from "../../models";
@@ -45,12 +46,7 @@ export const ToolsPage: React.FC = () => {
     }
   }, [errorMessage]);
 
-  if (isLoading) return (
-    <div>
-      <h1 className="title">Tools</h1>
-      <SkeletonText heading={false} lineCount={5} width="80%" />
-    </div>
-  );
+  if (isLoading) return <PageSkeleton title="Tools" />;
 
   function handleToolModalClose(): void {
     setOpenedTool(undefined)

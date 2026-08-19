@@ -1,4 +1,5 @@
-import {InlineNotification, SkeletonText} from "@carbon/react";
+import {InlineNotification} from "@carbon/react";
+import {PageSkeleton} from "../../components/PageSkeleton";
 import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
 import {PromptEntry} from "../../models";
@@ -41,12 +42,7 @@ export const PromptsPage: React.FC = () => {
     }
   }, [errorMessage]);
 
-  if (isLoading) return (
-    <div>
-      <h1 className="title">Prompts</h1>
-      <SkeletonText heading={false} lineCount={5} width="80%" />
-    </div>
-  );
+  if (isLoading) return <PageSkeleton title="Prompts" />;
 
   const handleDeletePrompt = async (promptName?: string) => {
     try {
