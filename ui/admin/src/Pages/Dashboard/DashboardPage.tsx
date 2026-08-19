@@ -179,7 +179,6 @@ export const DashboardPage: React.FC = () => {
           </Grid>
         </section>
         <section className="dashboard-section">
-          <h3 className="section-heading">Filter Activity</h3>
           <SkeletonText heading={false} lineCount={5} />
         </section>
       </div>
@@ -221,6 +220,7 @@ export const DashboardPage: React.FC = () => {
             <Column lg={4} md={4} sm={4}>
               <ClickableTile
                 className="hero-tile"
+                aria-label={`${statistics.toolsCount ?? 0} tools registered — view all`}
                 onClick={() => navigate(Links.Tools)}
               >
                 <Tools size={32} className="hero-icon" />
@@ -231,6 +231,7 @@ export const DashboardPage: React.FC = () => {
             <Column lg={4} md={4} sm={4}>
               <ClickableTile
                 className="hero-tile"
+                aria-label={`${statistics.resourcesCount ?? 0} resources registered — view all`}
                 onClick={() => navigate(Links.Resources)}
               >
                 <Document size={32} className="hero-icon" />
@@ -241,6 +242,7 @@ export const DashboardPage: React.FC = () => {
             <Column lg={4} md={4} sm={4}>
               <ClickableTile
                 className="hero-tile"
+                aria-label={`${statistics.promptsCount ?? 0} prompts registered — view all`}
                 onClick={() => navigate(Links.Prompts)}
               >
                 <TextAlignJustify size={32} className="hero-icon" />
@@ -251,6 +253,7 @@ export const DashboardPage: React.FC = () => {
             <Column lg={4} md={4} sm={4}>
               <ClickableTile
                 className="hero-tile"
+                aria-label={`${statistics.forwardsCount ?? 0} forwards registered — view all`}
                 onClick={() => navigate(Links.Forwards)}
               >
                 <ArrowRight size={32} className="hero-icon" />
