@@ -1,6 +1,6 @@
 # Wanaku
 
-Rust MCP server built on the Praxis proxy framework. Routes MCP requests through a filter pipeline for namespace isolation, tool/resource/prompt management, and MCP-to-MCP forwarding.
+Governed action proxy for AI agents, built in Rust on the Praxis proxy framework. Sits between agents and backend systems, intercepting tool calls, agent-to-agent messages, and inference traffic. Policy, identity, data controls, and audit are enforced in the proxy layer — agents never touch backends directly.
 
 ## Core Guidelines
 

@@ -1,6 +1,6 @@
 # Contributing to Wanaku
 
-Thank you for your interest in contributing to the Wanaku MCP Router project!
+Thank you for your interest in contributing to the Wanaku project!
 
 ## Getting Started
 

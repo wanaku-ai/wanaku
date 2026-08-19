@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: "Wanaku MCP Router"
-  text: "Documentation"
-  tagline: Documentation guides to help you learn and use the Wanaku MCP Router.
+  name: "Wanaku"
+  text: "A Governed Action Proxy for AI Agents"
+  tagline: Documentation guides to help you learn and use Wanaku.
   actions:
     - theme: brand
       text: Getting Started

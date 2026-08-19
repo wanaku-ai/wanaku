@@ -1,20 +1,23 @@
 # Wanaku Documentation
 
-Wanaku is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. It routes AI agent requests through a filter pipeline to provide namespace isolation, tool/resource/prompt management, and MCP-to-MCP tool forwarding.
+Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls, agent-to-agent messages, and inference traffic. Integration developers build Apache Camel routes and publish them as tools; agents call those tools with parameters, but Wanaku runs the actual work — the agent never touches backend systems directly. Policy, identity, data controls, and audit happen in the proxy, not in the agent.
 
 ## Why Rust?
 
-The classic Wanaku MCP Router (Java + Quarkus) is a fully-featured MCP server with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Wanaku expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling pluggable feature crates that would be difficult to express in the classic architecture.
+The classic Wanaku (Java + Quarkus) is a fully-featured implementation with service catalogs, Camel routes, Infinispan persistence, and OIDC integration. Wanaku expands on that foundation with a composable filter pipeline architecture built on the Praxis proxy framework — enabling pluggable governance features (evaluators, policy gates, interaction tracking) that would be difficult to express in the classic architecture.
 
 Wanaku shares the same MCP protocol and management API as classic Wanaku.
 
 ## What You Get
 
+- **Agent isolation** — agents call tools through the proxy; they never reach backend systems directly
+- **Policy enforcement** — LLM-powered evaluators + WASM action scripts classify, filter, and block tool calls
+- **Identity & auth** — oauth2-proxy + Keycloak, enforced before actions reach backends
 - **MCP endpoint** (port 8081) — JSON-RPC over HTTP, compatible with any MCP client
 - **Management API** (port 8080) — REST API for tools, resources, prompts, namespaces
 - **Admin UI** — React-based web interface embedded in the binary
-- **Namespace isolation** — different tools visible to different namespaces
-- **Tool routing** — MCP-to-MCP forwarding to upstream servers with auto-discovery
+- **Namespace isolation** — different tools visible to different namespaces per team, tenant, or environment
+- **Tool discovery** — auto-discover tools from upstream MCP servers; integration developers publish Camel routes as tools
 - **Feature system** — pluggable filters for evaluation, LLM chat, interaction tracking
 - **File persistence** — optional registry snapshots to survive restarts
 
@@ -24,7 +27,7 @@ All in a single binary with no runtime dependencies (except libc).
 
 ### Getting Started
 
-- **[Getting Started](./getting-started.md)** — download, install, and run your first MCP server
+- **[Getting Started](./getting-started.md)** — download, install, and run your first Wanaku proxy
 - **[Configuration](./configuration.md)** — all environment variables and YAML config options
 - **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
 - **[Management API](./management-api.md)** — REST API reference for tools, resources, etc.
@@ -41,9 +44,10 @@ All in a single binary with no runtime dependencies (except libc).
 
 ## Who This Is For
 
-- **You want a composable filter pipeline** for MCP request processing
-- **You want namespace isolation** without multi-tenancy complexity
-- **You need pluggable features** for custom request processing
+- **You need governed agent actions** — policy, identity, and audit enforced in the proxy, not in the agent or the LLM
+- **You want agent isolation** — agents call tools but never touch backends directly
+- **You want namespace isolation** — different tool catalogs per team, tenant, or environment without multi-tenancy complexity
+- **You need pluggable governance** — evaluators, safety gates, and custom filters in the action path
 
 ## Who This Isn't For (Yet)
 
@@ -61,21 +65,21 @@ These are solvable, but they're not in scope for the initial release.
                │ MCP (JSON-RPC over HTTP)
                ▼
 ┌────────────────────────────────────────────┐
-│       Praxis Filter Pipeline                │
-│  CORS → MCP Parse → Namespace →             │
+│     Wanaku — Governed Action Proxy          │
+│  Identity → Policy → Namespace →            │
 │  Evaluator → Tool/Resource/Prompt          │
 └──────────────┬─────────────────────────────┘
                │
-          MCP Forward
+          Action forwarding
                │
                ▼
         ┌──────────┐
-        │ Upstream │
-        │   MCP    │
+        │ Backend  │
+        │ Systems  │
         └──────────┘
 ```
 
-Requests flow through a chain of filters. Each filter reads metadata (method, namespace, tool name) and decides whether to continue, reject, or synthesize a response. The in-memory registry tracks tools, resources, prompts, forwards, and namespaces. Tool calls are forwarded to upstream MCP servers.
+Agents send tool calls through Wanaku. The proxy intercepts every action, enforces identity and policy, resolves the target namespace, and forwards the action to the appropriate backend system. The agent never reaches backends directly — governance is enforced in the proxy layer.
 
 See [Architecture](./architecture.md) for the full story.
 
@@ -176,7 +180,7 @@ See [Configuration](./configuration.md) for details.
 
 ### Standalone
 
-Run Wanaku as the only MCP server. Tools are discovered from forwarded MCP servers registered via the management API or `wanaku.yaml`, executing via MCP forwarding to those upstream servers.
+Run Wanaku as a standalone proxy. Tools are discovered from upstream MCP servers registered as forwards via the management API or `wanaku.yaml`.
 
 **Pros:** Simple, no dependencies
 **Cons:** No persistence beyond file snapshots
@@ -190,16 +194,16 @@ Deploy Wanaku as a `Deployment` with a `PersistentVolume` for the registry. Use 
 
 ## What's Different from Classic Wanaku?
 
-| Feature | Classic (Java) | Wanaku (Rust) |
+| Capability | Classic (Java) | Wanaku (Rust) |
 |---|---|---|
 | **MCP protocol** | ✅ Full support | ✅ Full support |
 | **Namespace isolation** | ✅ Yes | ✅ Yes |
-| **MCP forwarding** | ✅ Yes | ✅ Yes (with auto-discovery) |
-| **Filter pipeline** | — | ✅ Composable filter chain |
+| **Action forwarding** | ✅ Yes | ✅ Yes (with auto-discovery) |
+| **Governance pipeline** | — | ✅ Composable filter chain with policy enforcement |
+| **WASM evaluators** | — | ✅ LLM + WASM action scripts for policy gates |
 | **Feature crates** | — | ✅ Pluggable Rust crates |
-| **WASM evaluators** | — | ✅ LLM + WASM action scripts |
 | **Service catalogs** | ✅ Yes | ❌ Not yet |
-| **Camel routes** | ✅ Yes | ⚠️ Delegate via MCP forward |
+| **Camel routes as tools** | ✅ Direct | ⚠️ Via MCP forward to Camel-based upstream |
 | **OIDC/OAuth** | ✅ Keycloak | ✅ oauth2-proxy + Keycloak |
 | **Persistence** | ✅ Infinispan | ⚠️ File snapshots only |
 | **Admin UI** | ✅ React + Orval | ✅ React + Orval |

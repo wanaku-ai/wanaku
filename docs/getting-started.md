@@ -1,8 +1,8 @@
 # Getting Started with Wanaku
 
-Wanaku is a Rust-based MCP (Model Context Protocol) server that routes AI agent requests through a sophisticated filter pipeline. Think of it as the bouncer at the club: it checks IDs, enforces the rules, and makes sure everyone gets to the right place.
+Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls and enforcing policy, identity, and data controls before actions reach backend systems. The agent never touches backends directly — Wanaku runs the work on its behalf.
 
-This guide gets you from zero to running MCP server in under 10 minutes.
+This guide gets you from zero to a running Wanaku proxy in under 10 minutes.
 
 ## Prerequisites
 
@@ -210,4 +210,4 @@ See [Configuration](./configuration.md) for the full list.
 - **[Management API](./management-api.md)** — full REST API reference
 - **[FAQ](./faq.md)** — common issues and troubleshooting
 
-You now have a running MCP server. The rest is about configuring it to match your environment.
+You now have a running Wanaku proxy. The rest is about configuring it to match your environment.

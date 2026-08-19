@@ -1,8 +1,8 @@
 # Architecture
 
-Wanaku is a Rust-based MCP (Model Context Protocol) server built on the Praxis proxy framework. At its core, it's a sophisticated HTTP filter pipeline that routes AI agent requests to the right tools, enforces security policies, and manages namespaces.
+Wanaku is a governed action proxy for AI agents, built in Rust on the Praxis proxy framework. It sits between agents and the systems they act on, intercepting every tool call, agent-to-agent message, and inference request. Policy, identity, data controls, and audit are enforced in the proxy — agents never touch backend systems directly.
 
-This isn't your typical REST API. It's a proxy. Requests flow through a chain of filters, each responsible for a specific concern—CORS, protocol parsing, namespace isolation, tool dispatch. Think of it as middleware, but composable and pluggable.
+Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain of filters, each responsible for a specific governance concern — identity, policy evaluation, namespace isolation, tool dispatch. Unlike a gateway that just passes traffic, the proxy does the work: it resolves tools, forwards actions to backends, and returns results to the agent.
 
 ## High-Level Architecture
 
@@ -13,9 +13,9 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
                  │ MCP (JSON-RPC over HTTP)
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Wanaku Server (Port 8081)                      │
+│         Wanaku — Governed Action Proxy (Port 8081)          │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │              Filter Pipeline (Praxis)                  │ │
+│  │           Governance Pipeline (Praxis)                 │ │
 │  │  CORS → MCP Parse → Namespace → Evaluator →            │ │
 │  │  Tool List/Call → Resource → Prompt → Static Response  │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -25,20 +25,21 @@ This isn't your typical REST API. It's a proxy. Requests flow through a chain of
 │  └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────┬────────────────────────────┘
                                  │
-                        MCP Forward (HTTP)
+                        Action Forward (HTTP)
                                  │
                                  ▼
                    ┌───────────────────────┐
-                   │ Upstream MCP Servers  │
+                   │   Backend Systems     │
+                   │  (Upstream MCP/Camel) │
                    └───────────────────────┘
 ```
 
-**Request flow:**
+**Action flow:**
 
-1. LLM sends MCP request to `/mcp` or `/{namespace}/mcp`
-2. Praxis filter pipeline processes the request
+1. Agent sends an MCP action (tool call, resource read, prompt get) to `/mcp` or `/{namespace}/mcp`
+2. Governance pipeline intercepts: identity, policy, namespace isolation
 3. Filters query the in-memory registry for tools/resources/prompts
-4. For tool calls: the filter forwards the request to the upstream MCP server registered as the tool's forward address via HTTP
+4. For tool calls: the proxy forwards the action to the backend system registered as the tool's forward address — the agent never reaches the backend directly
 5. Response flows back through filters, wrapped in JSON-RPC
 
 ## The Filter Pipeline
@@ -368,7 +369,7 @@ See [Contributing: Admin UI](./contributing-admin-ui.md) for development details
 
 ### Standalone
 
-Run Wanaku as the only MCP server. Tools are registered via the management API or `wanaku.yaml`, and execute via MCP forwarding to upstream servers.
+Run Wanaku as a standalone proxy. Tools are registered via the management API or `wanaku.yaml`, and actions are forwarded to upstream servers.
 
 **Pros:** Simple, no dependencies
 **Cons:** No persistence beyond file snapshots

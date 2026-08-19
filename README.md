@@ -1,24 +1,24 @@
-# Wanaku - An MCP Router that connects everything
+# Wanaku — A Governed Action Proxy for AI Agents
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Build](https://img.shields.io/github/actions/workflow/status/wanaku-ai/wanaku/main-build.yml?branch=main)](https://github.com/wanaku-ai/wanaku/actions)
 [![Release](https://img.shields.io/github/v/release/wanaku-ai/wanaku)](https://github.com/wanaku-ai/wanaku/releases)
 
-The Wanaku MCP Router is a router for AI-enabled applications powered by the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/).
-It sits between AI clients and your backend services, routing requests through a filter pipeline to provide namespace isolation, tool management, and MCP-to-MCP tool forwarding.
+Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls, agent-to-agent messages, and inference traffic. Integration developers build [Apache Camel](https://camel.apache.org/) routes and publish them as tools; agents call those tools with parameters, but Wanaku runs the actual work — the agent never touches backend systems directly. Policy, identity, data controls, and audit happen in the proxy, not in the agent.
 
 The project name comes from the origins of the word [Guanaco](https://en.wikipedia.org/wiki/Guanaco), a camelid native to
 South America.
 
 ## Key Features
 
-- **Unified MCP Routing** - Centralized routing and resource management for AI agents
-- **MCP-to-MCP Bridge** - Act as a gateway or proxy for other MCP servers, with auto-discovery of remote tools
-- **Multi-Namespace Support** - Organize tools and resources across isolated namespaces
-- **Secure by Default** - Authentication and authorization via oauth2-proxy and Keycloak (optional — can run without auth)
-- **Extensible Architecture** - Plugin system via feature crates and a composable filter pipeline
-- **Admin Dashboard** - Web UI for managing tools, resources, prompts, and forwards
-- **Container-Ready** - Multi-arch images (x86_64, aarch64) published automatically
+- **Agent Isolation** — Agents call tools through Wanaku; they never reach backend systems directly
+- **Policy Enforcement** — LLM-powered evaluators + WASM action scripts classify, filter, and block tool calls in the proxy layer
+- **Identity & Auth** — Authentication and authorization via oauth2-proxy and Keycloak, enforced before actions reach backends
+- **Tool Discovery** — Auto-discover tools from upstream MCP servers; integration developers publish Camel routes as tools
+- **Namespace Isolation** — Organize tools and resources across isolated namespaces per team, tenant, or environment
+- **Extensible Architecture** — Plugin system via feature crates and a composable filter pipeline
+- **Admin Dashboard** — Web UI for managing tools, resources, prompts, and forwards
+- **Container-Ready** — Multi-arch images (x86_64, aarch64) published automatically
 
 ## Quick Start
 
@@ -140,8 +140,8 @@ Contributors working on the project may want to refer to the development documen
 
 ## Related Projects
 
-- [Camel Integration Capability](https://github.com/wanaku-ai/camel-integration-capability/) - Apache Camel-based capability services
-- [Java SDK](https://github.com/wanaku-ai/wanaku-capabilities-java-sdk/) - SDK for building capability services in Java
+- [Camel Integration Capability](https://github.com/wanaku-ai/camel-integration-capability/) — Build Apache Camel routes and publish them as tools that agents can call through Wanaku
+- [Java SDK](https://github.com/wanaku-ai/wanaku-capabilities-java-sdk/) — SDK for building capability services in Java
 
 ## License
 
