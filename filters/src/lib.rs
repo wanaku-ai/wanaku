@@ -1,6 +1,6 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
-pub use wanaku_apis::metadata::{MCP_METHOD_KEY, MCP_NAME_KEY};
+pub use wanaku_apis::metadata::{MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
 
 #[macro_export]
 macro_rules! body_filter_boilerplate {
