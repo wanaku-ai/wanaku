@@ -31,7 +31,8 @@ const WANAKU_PERSIST_PATH: &str = "WANAKU_PERSIST_PATH";
 /// Unset uses the compiled-in [`rust_embed`] bundle.
 const WANAKU_UI_PATH: &str = "WANAKU_UI_PATH";
 
-/// Value for the `Access-Control-Allow-Origin` header on management API responses.
+/// Value for the `Access-Control-Allow-Origin` header on all HTTP responses
+/// (management API, MCP endpoint, and CORS preflight).
 /// Defaults to `"*"`. Set to a specific origin (e.g. `http://localhost:3000`) in production.
 const WANAKU_CORS_ORIGIN: &str = "WANAKU_CORS_ORIGIN";
 
@@ -60,7 +61,7 @@ pub struct WanakuEnv {
     pub persist: Option<PersistEnv>,
     /// Override path for serving the admin UI from the filesystem.
     pub ui_path: Option<PathBuf>,
-    /// Value for the `Access-Control-Allow-Origin` header on management API responses.
+    /// Value for the `Access-Control-Allow-Origin` header on all HTTP responses.
     pub cors_origin: String,
 }
 

@@ -10,7 +10,7 @@ filter_chains:
   - name: mcp_router
     filters:
       - filter: cors
-        allow_origins: ["*"]
+        allow_origins: ["__WANAKU_CORS_ORIGIN__"]
         allow_methods: ["GET", "POST", "OPTIONS"]
         allow_headers: ["Content-Type", "Accept", "Mcp-Session-Id", "Mcp-Protocol-Version", "Authorization"]
       - filter: mcp

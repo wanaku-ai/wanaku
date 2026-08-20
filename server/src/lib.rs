@@ -15,7 +15,9 @@ pub fn load_config(
     explicit_path: Option<&str>,
 ) -> Result<praxis_core::config::Config, praxis_core::errors::ProxyError> {
     let env = &wanaku_apis::config::ENV;
-    let mut config = DEFAULT_CONFIG.replace("127.0.0.1:11434", &env.inference_upstream);
+    let mut config = DEFAULT_CONFIG
+        .replace("127.0.0.1:11434", &env.inference_upstream)
+        .replace("__WANAKU_CORS_ORIGIN__", &env.cors_origin);
     if let Some(sni) = &env.inference_tls_sni {
         config = config.replace(
             "- name: inference\n            endpoints:",
