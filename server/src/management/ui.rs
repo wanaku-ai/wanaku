@@ -1,7 +1,7 @@
 use http::{Response, StatusCode};
 use rust_embed::Embed;
 
-use super::response::json_err;
+use crate::http_response::json_err;
 
 #[derive(Embed)]
 #[folder = "../ui/admin/dist/"]

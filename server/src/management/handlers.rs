@@ -6,7 +6,7 @@ use wanaku_apis::registry::{
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
     ToolEntry, ToolRegistry, MCP_FORWARD_TYPE,
 };
-use super::response::{json_ok, json_err};
+use crate::http_response::{json_ok, json_err};
 
 pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let tools = registry.list_tools();
