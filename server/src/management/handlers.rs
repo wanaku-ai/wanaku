@@ -355,7 +355,7 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
 #[expect(clippy::too_many_lines, reason = "sequential tool registration")]
 fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry, tools: &[serde_json::Value]) -> usize {
     let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
-    let mut count = 0;
+    let mut batch = Vec::with_capacity(tools.len());
 
     for tool_json in tools {
         let name = match tool_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
@@ -374,7 +374,8 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
             .cloned()
             .unwrap_or(serde_json::json!({"type": "object"}));
 
-        let tool = ToolEntry {
+        info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
+        batch.push(ToolEntry {
             name: name.to_owned(),
             description: description.to_owned(),
             uri: forward.address.clone(),
@@ -385,13 +386,11 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
             secrets_uri: None,
-        };
-
-        info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
-        registry.register_tool(tool);
-        count += 1;
+        });
     }
 
+    let count = batch.len();
+    registry.register_tools_batch(batch);
     count
 }
 
@@ -423,7 +422,7 @@ fn register_discovered_resources(
     templates: &[serde_json::Value],
 ) -> usize {
     let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
-    let mut count = 0;
+    let mut batch = Vec::with_capacity(resources.len() + templates.len());
 
     for res_json in resources {
         let name = match res_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
@@ -455,7 +454,8 @@ fn register_discovered_resources(
             forward.address.clone(),
         );
 
-        let resource = ResourceEntry {
+        info!(resource = %name, forward = %forward.name, "discovered forwarded resource");
+        batch.push(ResourceEntry {
             name: name.to_owned(),
             description: description.to_owned(),
             location: uri.to_owned(),
@@ -466,11 +466,7 @@ fn register_discovered_resources(
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
             secrets_uri: None,
-        };
-
-        info!(resource = %name, forward = %forward.name, "discovered forwarded resource");
-        registry.register_resource(resource);
-        count += 1;
+        });
     }
 
     for tmpl_json in templates {
@@ -507,7 +503,8 @@ fn register_discovered_resources(
             "true".to_owned(),
         );
 
-        let resource = ResourceEntry {
+        info!(template = %name, uri_template = %uri_template, forward = %forward.name, "discovered forwarded resource template");
+        batch.push(ResourceEntry {
             name: name.to_owned(),
             description: description.to_owned(),
             location: uri_template.to_owned(),
@@ -518,13 +515,11 @@ fn register_discovered_resources(
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
             secrets_uri: None,
-        };
-
-        info!(template = %name, uri_template = %uri_template, forward = %forward.name, "discovered forwarded resource template");
-        registry.register_resource(resource);
-        count += 1;
+        });
     }
 
+    let count = batch.len();
+    registry.register_resources_batch(batch);
     count
 }
 
@@ -569,7 +564,7 @@ fn register_discovered_prompts(
     prompts: &[serde_json::Value],
 ) -> usize {
     let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
-    let mut count = 0;
+    let mut batch = Vec::with_capacity(prompts.len());
 
     for prompt_json in prompts {
         let name = match prompt_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
@@ -619,10 +614,11 @@ fn register_discovered_prompts(
         };
 
         info!(prompt = %name, forward = %forward.name, "discovered forwarded prompt");
-        registry.register_prompt(prompt);
-        count += 1;
+        batch.push(prompt);
     }
 
+    let count = batch.len();
+    registry.register_prompts_batch(batch);
     count
 }
 

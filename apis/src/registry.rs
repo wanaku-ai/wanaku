@@ -232,6 +232,7 @@ pub trait ToolRegistry: Send + Sync {
     fn get_tool(&self, name: &str) -> Option<ToolEntry>;
     fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     fn register_tool(&self, tool: ToolEntry);
+    fn register_tools_batch(&self, tools: Vec<ToolEntry>);
     fn remove_tool(&self, name: &str) -> bool;
     fn remove_tools_batch(&self, names: &[String]) -> usize;
     fn tool_count(&self) -> usize;
@@ -243,6 +244,7 @@ pub trait ResourceRegistry: Send + Sync {
     fn get_resource(&self, name: &str) -> Option<ResourceEntry>;
     fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     fn register_resource(&self, resource: ResourceEntry);
+    fn register_resources_batch(&self, resources: Vec<ResourceEntry>);
     fn remove_resource(&self, name: &str) -> bool;
     fn remove_resources_batch(&self, names: &[String]) -> usize;
     fn resource_count(&self) -> usize;
@@ -254,6 +256,7 @@ pub trait PromptRegistry: Send + Sync {
     fn get_prompt(&self, name: &str) -> Option<PromptEntry>;
     fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
     fn register_prompt(&self, prompt: PromptEntry);
+    fn register_prompts_batch(&self, prompts: Vec<PromptEntry>);
     fn remove_prompt(&self, name: &str) -> bool;
     fn remove_prompts_batch(&self, names: &[String]) -> usize;
     fn prompt_count(&self) -> usize;
@@ -439,6 +442,20 @@ impl ToolRegistry for InMemoryRegistry {
         self.persist();
     }
 
+    fn register_tools_batch(&self, tools: Vec<ToolEntry>) {
+        let inject = self.inject_request_id.load(Ordering::Relaxed);
+        for mut tool in tools {
+            if tool.namespace.is_none() {
+                tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+            }
+            if inject {
+                inject_request_id_arg(&mut tool.input_schema);
+            }
+            self.tools.insert(tool.name.clone(), tool);
+        }
+        self.persist();
+    }
+
     fn remove_tool(&self, name: &str) -> bool {
         let removed = self.tools.remove(name).is_some();
         if removed {
@@ -497,6 +514,16 @@ impl ResourceRegistry for InMemoryRegistry {
         self.persist();
     }
 
+    fn register_resources_batch(&self, resources: Vec<ResourceEntry>) {
+        for mut resource in resources {
+            if resource.namespace.is_none() {
+                resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+            }
+            self.resources.insert(resource.name.clone(), resource);
+        }
+        self.persist();
+    }
+
     fn remove_resource(&self, name: &str) -> bool {
         let removed = self.resources.remove(name).is_some();
         if removed {
@@ -552,6 +579,16 @@ impl PromptRegistry for InMemoryRegistry {
             prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
         }
         self.prompts.insert(prompt.name.clone(), prompt);
+        self.persist();
+    }
+
+    fn register_prompts_batch(&self, prompts: Vec<PromptEntry>) {
+        for mut prompt in prompts {
+            if prompt.namespace.is_none() {
+                prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+            }
+            self.prompts.insert(prompt.name.clone(), prompt);
+        }
         self.persist();
     }
 
