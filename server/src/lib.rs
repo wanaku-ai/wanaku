@@ -4,7 +4,74 @@ pub mod management;
 pub mod openapi;
 pub mod pipelines;
 
+use serde_yaml::Value;
+
 const DEFAULT_CONFIG: &str = include_str!("default.yaml");
+
+fn find_named_entry_mut<'a>(
+    sequence: &'a mut [Value],
+    key: &str,
+    name: &str,
+) -> Option<&'a mut Value> {
+    sequence.iter_mut().find(|entry| {
+        entry
+            .get(key)
+            .and_then(Value::as_str)
+            .is_some_and(|n| n == name)
+    })
+}
+
+fn find_inference_cluster(yaml: &mut Value) -> Option<&mut Value> {
+    let chains = yaml.get_mut("filter_chains").and_then(Value::as_sequence_mut)?;
+    let chain = find_named_entry_mut(chains, "name", "inference_proxy")?;
+    let filters = chain.get_mut("filters").and_then(Value::as_sequence_mut)?;
+    let lb = find_named_entry_mut(filters, "filter", "load_balancer")?;
+    let clusters = lb.get_mut("clusters").and_then(Value::as_sequence_mut)?;
+    find_named_entry_mut(clusters, "name", "inference")
+}
+
+fn apply_inference_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+    let Some(cluster) = find_inference_cluster(yaml) else {
+        tracing::warn!("could not locate inference cluster in pipeline config — env overrides skipped");
+        return;
+    };
+
+    if let Some(endpoint) = cluster
+        .get_mut("endpoints")
+        .and_then(Value::as_sequence_mut)
+        .and_then(|eps| eps.first_mut())
+    {
+        *endpoint = Value::String(env.inference_upstream.clone());
+    }
+
+    if let Some(sni) = &env.inference_tls_sni
+        && let Some(mapping) = cluster.as_mapping_mut()
+    {
+        let mut tls = serde_yaml::Mapping::new();
+        tls.insert(Value::String("sni".into()), Value::String(sni.clone()));
+        mapping.insert(Value::String("tls".into()), Value::Mapping(tls));
+    }
+}
+
+fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+    let Some(chains) = yaml.get_mut("filter_chains").and_then(Value::as_sequence_mut) else {
+        return;
+    };
+    let Some(chain) = find_named_entry_mut(chains, "name", "mcp_router") else {
+        return;
+    };
+    let Some(filters) = chain.get_mut("filters").and_then(Value::as_sequence_mut) else {
+        return;
+    };
+    let Some(cors) = find_named_entry_mut(filters, "filter", "cors") else {
+        return;
+    };
+    if let Some(origins) = cors.get_mut("allow_origins").and_then(Value::as_sequence_mut) {
+        if let Some(first) = origins.first_mut() {
+            *first = Value::String(env.cors_origin.clone());
+        }
+    }
+}
 
 /// Load configuration, falling back to the built-in default.
 ///
@@ -15,15 +82,25 @@ pub fn load_config(
     explicit_path: Option<&str>,
 ) -> Result<praxis_core::config::Config, praxis_core::errors::ProxyError> {
     let env = &wanaku_apis::config::ENV;
-    let mut config = DEFAULT_CONFIG
-        .replace("127.0.0.1:11434", &env.inference_upstream)
-        .replace("__WANAKU_CORS_ORIGIN__", &env.cors_origin);
-    if let Some(sni) = &env.inference_tls_sni {
-        config = config.replace(
-            "- name: inference\n            endpoints:",
-            &format!("- name: inference\n            tls:\n              sni: \"{sni}\"\n            endpoints:"),
-        );
-    }
+
+    let config = match serde_yaml::from_str::<Value>(DEFAULT_CONFIG) {
+        Ok(mut yaml) => {
+            apply_inference_config(&mut yaml, env);
+            apply_cors_config(&mut yaml, env);
+            match serde_yaml::to_string(&yaml) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!(error = %e, "failed to serialize modified config — using raw defaults");
+                    DEFAULT_CONFIG.to_string()
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "failed to parse embedded config — using raw defaults");
+            DEFAULT_CONFIG.to_string()
+        }
+    };
+
     praxis_core::config::Config::load(explicit_path, &config)
 }
 
