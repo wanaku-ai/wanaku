@@ -111,6 +111,18 @@ pub struct McpServerInfo {
     pub instructions: Option<String>,
 }
 
+/// A root directory entry for MCP servers that require `roots/list`.
+///
+/// Some upstream MCP servers (e.g. the filesystem server) need the client to
+/// provide one or more root directories during initialization.  Entries here
+/// are returned when the server sends a `roots/list` request.
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct RootEntry {
+    pub uri: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ForwardEntry {
     pub name: String,
@@ -125,6 +137,10 @@ pub struct ForwardEntry {
     pub available: bool,
     #[serde(default, skip_serializing_if = "Option::is_none", rename = "statusMessage", alias = "status_message")]
     pub status_message: Option<String>,
+    /// Root directories to provide to the upstream MCP server when it sends a
+    /// `roots/list` request.  Optional -- most servers do not require roots.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub roots: Option<Vec<RootEntry>>,
 }
 
 fn default_available() -> bool {
@@ -364,6 +380,17 @@ impl InMemoryRegistry {
         }
 
         tracing::info!("loaded registry from persistence backend");
+    }
+
+    /// Find the root entries configured for a forward with the given address.
+    /// Returns an empty slice when no forward matches or the forward has no roots.
+    pub fn roots_for_address(&self, address: &str) -> Vec<RootEntry> {
+        for entry in self.forwards.iter() {
+            if entry.value().address == address {
+                return entry.value().roots.clone().unwrap_or_default();
+            }
+        }
+        Vec::new()
     }
 
     fn snapshot(&self) -> RegistrySnapshot {
@@ -947,6 +974,79 @@ mod tests {
         assert_eq!(entry.name, "legacy");
         assert!(entry.server_info.is_none());
         assert!(entry.labels.is_empty());
+        assert!(entry.roots.is_none());
+    }
+
+    #[test]
+    fn forward_entry_with_roots_round_trip() {
+        let json = r#"{
+            "name": "fs-server",
+            "address": "http://localhost:9000/mcp",
+            "roots": [
+                {"uri": "file:///data/project", "name": "project-root"},
+                {"uri": "file:///tmp"}
+            ]
+        }"#;
+
+        let entry: ForwardEntry = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(entry.name, "fs-server");
+        let roots = entry.roots.as_ref().expect("roots should be Some");
+        assert_eq!(roots.len(), 2);
+        assert_eq!(roots[0].uri, "file:///data/project");
+        assert_eq!(roots[0].name.as_deref(), Some("project-root"));
+        assert_eq!(roots[1].uri, "file:///tmp");
+        assert!(roots[1].name.is_none());
+
+        let serialized = serde_json::to_string(&entry).expect("serialize");
+        let reparsed: ForwardEntry = serde_json::from_str(&serialized).expect("re-deserialize");
+        assert_eq!(reparsed.roots.as_ref().map(|r| r.len()), Some(2));
+    }
+
+    #[test]
+    fn roots_for_address_returns_matching_roots() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(ForwardEntry {
+            name: "fs".to_owned(),
+            address: "http://fs:9000/mcp".to_owned(),
+            namespace: None,
+            server_info: None,
+            labels: HashMap::new(),
+            available: true,
+            status_message: None,
+            roots: Some(vec![RootEntry {
+                uri: "file:///data".to_owned(),
+                name: Some("data".to_owned()),
+            }]),
+        });
+
+        let roots = registry.roots_for_address("http://fs:9000/mcp");
+        assert_eq!(roots.len(), 1);
+        assert_eq!(roots[0].uri, "file:///data");
+    }
+
+    #[test]
+    fn roots_for_address_returns_empty_when_no_roots() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(ForwardEntry {
+            name: "plain".to_owned(),
+            address: "http://plain:8080/mcp".to_owned(),
+            namespace: None,
+            server_info: None,
+            labels: HashMap::new(),
+            available: true,
+            status_message: None,
+            roots: None,
+        });
+
+        let roots = registry.roots_for_address("http://plain:8080/mcp");
+        assert!(roots.is_empty());
+    }
+
+    #[test]
+    fn roots_for_address_returns_empty_when_no_match() {
+        let registry = InMemoryRegistry::new();
+        let roots = registry.roots_for_address("http://unknown:1234/mcp");
+        assert!(roots.is_empty());
     }
 
     #[test]

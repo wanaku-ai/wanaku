@@ -224,7 +224,8 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
         }
     };
 
-    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
+    let roots = forward.roots.as_deref().unwrap_or_default();
+    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address, roots).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed");
@@ -284,7 +285,8 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
     remove_forwarded_resources(registry, &forward.address);
     remove_forwarded_prompts(registry, &forward.address);
 
-    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
+    let roots = forward.roots.as_deref().unwrap_or_default();
+    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address, roots).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %name, error = %e, "forward refresh discovery failed");
@@ -309,7 +311,8 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
 }
 
 pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) {
-    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
+    let roots = forward.roots.as_deref().unwrap_or_default();
+    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address, roots).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
@@ -341,7 +344,8 @@ pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &
 }
 
 pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let tools = match wanaku_apis::mcp_client::list_tools(&forward.address).await {
+    let roots = forward.roots.as_deref().unwrap_or_default();
+    let tools = match wanaku_apis::mcp_client::list_tools(&forward.address, roots).await {
         Ok(t) => t,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover tools from forward");
@@ -396,7 +400,8 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
 }
 
 pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let resources = match wanaku_apis::mcp_client::list_resources(&forward.address).await {
+    let roots = forward.roots.as_deref().unwrap_or_default();
+    let resources = match wanaku_apis::mcp_client::list_resources(&forward.address, roots).await {
         Ok(r) => r,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover resources from forward");
@@ -404,7 +409,7 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
         }
     };
 
-    let templates = match wanaku_apis::mcp_client::list_resource_templates(&forward.address).await {
+    let templates = match wanaku_apis::mcp_client::list_resource_templates(&forward.address, roots).await {
         Ok(t) => t,
         Err(e) => {
             tracing::debug!(forward = %forward.name, error = %e, "no resource templates from forward (may not be supported)");
@@ -551,7 +556,8 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
 }
 
 pub async fn discover_prompts_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let prompts = match wanaku_apis::mcp_client::list_prompts(&forward.address).await {
+    let roots = forward.roots.as_deref().unwrap_or_default();
+    let prompts = match wanaku_apis::mcp_client::list_prompts(&forward.address, roots).await {
         Ok(p) => p,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover prompts from forward");
@@ -1211,6 +1217,7 @@ mod tests {
             labels: HashMap::new(),
             available: true,
             status_message: None,
+            roots: None,
         });
 
         let list_resp = handle_forward_list(&registry);
@@ -1247,6 +1254,7 @@ mod tests {
             labels: HashMap::new(),
             available: true,
             status_message: None,
+            roots: None,
         });
         assert_eq!(handle_forward_delete(&registry, "del-fwd").status(), 200);
         assert_eq!(handle_forward_get(&registry, "del-fwd").status(), 404);
@@ -1298,6 +1306,7 @@ mod tests {
             labels: HashMap::new(),
             available: true,
             status_message: None,
+            roots: None,
         });
 
         let data = data_field(&handle_statistics(&registry));

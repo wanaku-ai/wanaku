@@ -13,13 +13,63 @@ use rmcp::{
 };
 use serde_json::Value;
 
-use crate::registry::McpServerInfo;
+use crate::registry::{McpServerInfo, RootEntry};
 
 const TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_TOOLS: usize = 500;
 const MAX_RESOURCES: usize = 500;
 const MAX_RESOURCE_TEMPLATES: usize = 500;
 const MAX_PROMPTS: usize = 500;
+
+/// A [`ClientHandler`](rmcp::ClientHandler) that responds to `roots/list`
+/// with a configured set of root directories.
+///
+/// Upstream MCP servers that require file-system roots (e.g. the MCP
+/// filesystem server) send a `roots/list` request during initialization.
+/// The default handler (`()`) returns an empty list, which causes those
+/// servers to reject the connection.  `RootsHandler` lets callers supply
+/// the roots that the upstream server expects.
+#[allow(deprecated)] // Root / ListRootsResult deprecated by SEP-2577 but still functional
+struct RootsHandler {
+    roots: Vec<rmcp::model::Root>,
+}
+
+#[allow(deprecated)]
+impl RootsHandler {
+    fn from_entries(entries: &[RootEntry]) -> Self {
+        let roots = entries
+            .iter()
+            .map(|e| {
+                let root = rmcp::model::Root::new(e.uri.clone());
+                match &e.name {
+                    Some(name) => root.with_name(name.clone()),
+                    None => root,
+                }
+            })
+            .collect();
+        Self { roots }
+    }
+}
+
+#[allow(deprecated)]
+impl rmcp::ClientHandler for RootsHandler {
+    fn list_roots(
+        &self,
+        _context: rmcp::service::RequestContext<rmcp::RoleClient>,
+    ) -> impl std::future::Future<Output = Result<rmcp::model::ListRootsResult, rmcp::model::ErrorData>>
+           + rmcp::service::MaybeSendFuture
+           + '_ {
+        if self.roots.is_empty() {
+            tracing::warn!(
+                "upstream MCP server requested roots/list but no roots are configured \
+                 for this forward -- the server may reject the connection"
+            );
+        } else {
+            tracing::debug!(root_count = self.roots.len(), "responding to roots/list");
+        }
+        std::future::ready(Ok(rmcp::model::ListRootsResult::new(self.roots.clone())))
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum McpClientError {
@@ -69,11 +119,12 @@ fn build_transport(url: &str) -> impl rmcp::transport::Transport<rmcp::RoleClien
 }
 
 #[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
-pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
+pub async fn list_tools(url: &str, roots: &[RootEntry]) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout {
             url: url.clone(),
@@ -138,11 +189,13 @@ pub async fn call_tool(
     url: &str,
     tool_name: &str,
     arguments: Value,
+    roots: &[RootEntry],
 ) -> Result<CallToolResponse, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout {
             url: url.clone(),
@@ -184,11 +237,12 @@ pub async fn call_tool(
 }
 
 #[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
-pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
+pub async fn list_resources(url: &str, roots: &[RootEntry]) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -242,11 +296,13 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
 pub async fn read_resource(
     url: &str,
     resource_uri: &str,
+    roots: &[RootEntry],
 ) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -277,11 +333,12 @@ pub async fn read_resource(
 }
 
 #[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
-pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientError> {
+pub async fn list_resource_templates(url: &str, roots: &[RootEntry]) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -332,11 +389,12 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
 }
 
 #[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
-pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
+pub async fn list_prompts(url: &str, roots: &[RootEntry]) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -391,11 +449,13 @@ pub async fn get_prompt(
     url: &str,
     prompt_name: &str,
     arguments: Option<serde_json::Map<String, Value>>,
+    roots: &[RootEntry],
 ) -> Result<Value, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -434,11 +494,12 @@ pub struct ForwardDiscovery {
 }
 
 #[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP forward discovery aggregating multiple calls")]
-pub async fn discover_forward(url: &str) -> Result<ForwardDiscovery, McpClientError> {
+pub async fn discover_forward(url: &str, roots: &[RootEntry]) -> Result<ForwardDiscovery, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
+    let handler = RootsHandler::from_entries(roots);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(handler.serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {

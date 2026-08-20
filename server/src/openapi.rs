@@ -9,7 +9,7 @@ use wanaku_apis::metrics::{
 };
 use wanaku_apis::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
-    ResourceEntry, ToolEntry,
+    ResourceEntry, RootEntry, ToolEntry,
 };
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -222,7 +222,7 @@ const fn get_statistics() {}
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,
-        ForwardEntry, McpServerInfo, NamespaceEntry, Interaction,
+        ForwardEntry, McpServerInfo, RootEntry, NamespaceEntry, Interaction,
         MetricsSnapshot, FilterSnapshot, DurationSnapshot, EvaluatorSnapshot,
         DecisionSnapshot, LlmSnapshot, SchemaSnapshot, WasmSnapshot,
         PipelineSnapshot, GaugeSnapshot,

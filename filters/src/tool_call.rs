@@ -130,7 +130,7 @@ impl ToolCallFilter {
         };
 
         if tool.is_mcp_forward() {
-            return self.handle_forwarded_call(&tool, &tool_name, &parsed).await;
+            return self.handle_forwarded_call(registry, &tool, &tool_name, &parsed).await;
         }
 
         warn!(tool = %tool_name, tool_type = %tool.type_, "unsupported tool type — only MCP-forwarded tools are supported");
@@ -144,11 +144,14 @@ impl ToolCallFilter {
     #[expect(clippy::too_many_lines, reason = "MCP forwarding handler with error paths")]
     async fn handle_forwarded_call(
         &self,
+        registry: &InMemoryRegistry,
         tool: &ToolEntry,
         tool_name: &str,
         parsed: &ParsedBody,
     ) -> Result<FilterAction, FilterError> {
         trace!(tool = %tool_name, uri = %tool.uri, "forwarding tools/call to remote MCP server");
+
+        let roots = registry.roots_for_address(&tool.uri);
 
         let arguments = serde_json::Value::Object(
             parsed
@@ -158,7 +161,7 @@ impl ToolCallFilter {
                 .collect(),
         );
 
-        match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
+        match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments, &roots).await {
             Ok(call_result) => {
                 let mcp_content: Vec<serde_json::Value> = call_result.content
                     .iter()

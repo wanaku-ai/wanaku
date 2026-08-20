@@ -131,7 +131,7 @@ impl ResourceReadFilter {
         };
 
         if resource.is_mcp_forward() {
-            return self.handle_forwarded_read(&resource, &resource_uri, &parsed).await;
+            return self.handle_forwarded_read(registry, &resource, &resource_uri, &parsed).await;
         }
 
         warn!(uri = %resource_uri, resource_type = %resource.type_, "unsupported resource type — only MCP-forwarded resources are supported");
@@ -142,8 +142,10 @@ impl ResourceReadFilter {
         ))
     }
 
+    #[expect(clippy::too_many_lines, reason = "MCP forwarding handler with roots lookup")]
     async fn handle_forwarded_read(
         &self,
+        registry: &InMemoryRegistry,
         resource: &wanaku_apis::registry::ResourceEntry,
         resource_uri: &str,
         parsed: &ParsedBody,
@@ -157,9 +159,11 @@ impl ResourceReadFilter {
             ));
         };
 
+        let roots = registry.roots_for_address(forward_address);
+
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
-        match wanaku_apis::mcp_client::read_resource(forward_address, resource_uri).await {
+        match wanaku_apis::mcp_client::read_resource(forward_address, resource_uri, &roots).await {
             Ok(contents) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",

@@ -95,7 +95,7 @@ impl PromptGetFilter {
 
         if prompt.messages.is_empty()
             && let Some(ref uri) = prompt.configuration_uri {
-                return self.handle_forwarded_get(uri, &prompt_name, &parsed).await;
+                return self.handle_forwarded_get(registry, uri, &prompt_name, &parsed).await;
             }
 
         let messages: Vec<serde_json::Value> = prompt
@@ -141,10 +141,13 @@ impl PromptGetFilter {
 
     async fn handle_forwarded_get(
         &self,
+        registry: &InMemoryRegistry,
         forward_address: &str,
         prompt_name: &str,
         parsed: &ParsedBody,
     ) -> Result<FilterAction, FilterError> {
+        let roots = registry.roots_for_address(forward_address);
+
         trace!(prompt = %prompt_name, forward = %forward_address, "forwarding prompts/get to remote MCP server");
 
         let arguments = if parsed.arguments.is_empty() {
@@ -153,7 +156,7 @@ impl PromptGetFilter {
             Some(parsed.arguments.clone())
         };
 
-        match wanaku_apis::mcp_client::get_prompt(forward_address, prompt_name, arguments).await {
+        match wanaku_apis::mcp_client::get_prompt(forward_address, prompt_name, arguments, &roots).await {
             Ok(result) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",

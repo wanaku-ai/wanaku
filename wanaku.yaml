@@ -2,3 +2,6 @@ forwards:
   - name: "mock-mcp"
     address: "http://localhost:8180/mcp"
     namespace: "test-ns"
+    # roots:
+    #   - uri: "file:///path/to/allowed/directory"
+    #     name: "project-root"
