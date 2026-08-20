@@ -65,7 +65,7 @@ pub(crate) async fn handle_chat_list_models(
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "failed to fetch models from inference backend");
-            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to reach inference backend: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, "upstream request failed");
         }
     };
 
@@ -74,7 +74,7 @@ pub(crate) async fn handle_chat_list_models(
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, status = %status, "failed to read inference backend models response");
-            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to read inference backend response: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, "upstream response read failed");
         }
     };
 
@@ -174,7 +174,7 @@ pub(crate) async fn handle_chat_completions(
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "chat completions request to inference backend failed");
-            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to reach inference backend: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, "upstream request failed");
         }
     };
 
@@ -183,7 +183,7 @@ pub(crate) async fn handle_chat_completions(
         Ok(t) => t,
         Err(e) => {
             warn!(error = %e, status = %status, "failed to read inference backend completions response");
-            return json_err(StatusCode::BAD_GATEWAY, &format!("failed to read inference backend response: {e}"));
+            return json_err(StatusCode::BAD_GATEWAY, "upstream response read failed");
         }
     };
 

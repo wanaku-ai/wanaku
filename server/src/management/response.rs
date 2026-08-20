@@ -47,7 +47,7 @@ pub(super) async fn read_body(session: &mut ServerSession) -> Result<String, Res
             Ok(None) => break,
             Err(e) => {
                 warn!(error = %e, "management request body read failed");
-                return Err(json_err(StatusCode::BAD_GATEWAY, "request body read failed"));
+                return Err(json_err(StatusCode::INTERNAL_SERVER_ERROR, "request body read failed"));
             }
         }
     }
