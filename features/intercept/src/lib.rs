@@ -80,7 +80,10 @@ impl Feature for InterceptFeature {
             Ok(guard) => guard.clone(),
             Err(e) => {
                 tracing::warn!(error = %e, "interaction store lock poisoned");
-                return None;
+                return Some(wanaku_apis::http_response::json_err(
+                    http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "interaction store unavailable",
+                ));
             }
         };
         Some(match route {
