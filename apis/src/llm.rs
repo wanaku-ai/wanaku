@@ -147,14 +147,14 @@ impl<T: Clone> HotSwap<T> {
     pub fn set(&self, value: T) {
         match self.inner.write() {
             Ok(mut guard) => *guard = Some(value),
-            Err(e) => tracing::warn!("HotSwap write lock poisoned, dropping set: {e}"),
+            Err(e) => tracing::warn!(error = %e, "HotSwap write lock poisoned, dropping set"),
         }
     }
 
     pub fn clear(&self) {
         match self.inner.write() {
             Ok(mut guard) => *guard = None,
-            Err(e) => tracing::warn!("HotSwap write lock poisoned, cannot clear: {e}"),
+            Err(e) => tracing::warn!(error = %e, "HotSwap write lock poisoned, cannot clear"),
         }
     }
 
@@ -163,7 +163,7 @@ impl<T: Clone> HotSwap<T> {
         match self.inner.read() {
             Ok(guard) => guard.clone(),
             Err(e) => {
-                tracing::warn!("HotSwap read lock poisoned: {e}");
+                tracing::warn!(error = %e, "HotSwap read lock poisoned");
                 None
             }
         }
