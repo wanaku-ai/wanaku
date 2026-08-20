@@ -61,10 +61,11 @@ impl ToolCallFilter {
             return Ok(FilterAction::Continue);
         }
 
+        let mut parsed = parse_body(body);
+
         let tool_name = match ctx.get_metadata(crate::MCP_NAME_KEY) {
             Some(n) => n.to_owned(),
             None => {
-                let parsed = parse_body(body);
                 return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing tool name in tools/call"));
             }
         };
@@ -72,8 +73,6 @@ impl ToolCallFilter {
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
-
-        let mut parsed = parse_body(body);
 
         let conversation_id = parsed.arguments
             .remove(wanaku_apis::correlation::REQUEST_ID_ARG)
