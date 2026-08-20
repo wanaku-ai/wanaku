@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use http::StatusCode;
 use praxis_filter::Rejection;
+use wanaku_apis::config::ENV;
 
 pub const JSONRPC_INVALID_REQUEST: i32 = -32600;
 pub const JSONRPC_INVALID_PARAMS: i32 = -32602;
@@ -9,13 +10,13 @@ pub const JSONRPC_INTERNAL_ERROR: i32 = -32603;
 pub fn json_response(body: Bytes) -> Rejection {
     Rejection::status(StatusCode::OK.as_u16())
         .with_header("content-type", "application/json")
-        .with_header("access-control-allow-origin", "*")
+        .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
         .with_body(body)
 }
 
 pub fn empty_accepted() -> Rejection {
     Rejection::status(StatusCode::ACCEPTED.as_u16())
-        .with_header("access-control-allow-origin", "*")
+        .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
 }
 
 pub fn json_rpc_error(id: &serde_json::Value, code: i32, message: &str) -> praxis_filter::FilterAction {
@@ -136,7 +137,7 @@ mod tests {
         let r = json_response(Bytes::from("{}"));
         assert_eq!(r.status, 200);
         assert!(r.headers.iter().any(|(k, v)| k == "content-type" && v == "application/json"));
-        assert!(r.headers.iter().any(|(k, v)| k == "access-control-allow-origin" && v == "*"));
+        assert!(r.headers.iter().any(|(k, v)| k == "access-control-allow-origin" && v == ENV.cors_origin.as_str()));
     }
 
     #[test]
