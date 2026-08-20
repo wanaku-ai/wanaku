@@ -443,6 +443,9 @@ impl ToolRegistry for InMemoryRegistry {
     }
 
     fn register_tools_batch(&self, tools: Vec<ToolEntry>) {
+        if tools.is_empty() {
+            return;
+        }
         let inject = self.inject_request_id.load(Ordering::Relaxed);
         for mut tool in tools {
             if tool.namespace.is_none() {
@@ -515,6 +518,9 @@ impl ResourceRegistry for InMemoryRegistry {
     }
 
     fn register_resources_batch(&self, resources: Vec<ResourceEntry>) {
+        if resources.is_empty() {
+            return;
+        }
         for mut resource in resources {
             if resource.namespace.is_none() {
                 resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
@@ -583,6 +589,9 @@ impl PromptRegistry for InMemoryRegistry {
     }
 
     fn register_prompts_batch(&self, prompts: Vec<PromptEntry>) {
+        if prompts.is_empty() {
+            return;
+        }
         for mut prompt in prompts {
             if prompt.namespace.is_none() {
                 prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
