@@ -90,10 +90,12 @@ impl ServeHttp for WanakuManagementService {
         }
 
         let body = match method.as_str() {
-            "POST" | "PUT" | "PATCH" => match read_body(http_session).await {
-                Ok(b) => Some(b),
-                Err(resp) => return resp,
-            },
+            "POST" | "PUT" | "PATCH" if path.starts_with("/api/") => {
+                match read_body(http_session).await {
+                    Ok(b) => Some(b),
+                    Err(resp) => return resp,
+                }
+            }
             _ => None,
         };
 
