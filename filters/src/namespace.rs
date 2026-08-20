@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 
-pub use wanaku_apis::NAMESPACE_METADATA_KEY;
+pub use wanaku_apis::metadata::NAMESPACE_METADATA_KEY;
 
 crate::body_filter_boilerplate!(NamespaceFilter, "wanaku_namespace");
 
