@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use http::StatusCode;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext, Rejection};
+use wanaku_apis::config::ENV;
 
 use crate::IssuerConfig;
 
@@ -160,7 +161,7 @@ async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
                 Ok(resp_body) => {
                     Rejection::status(status)
                         .with_header("content-type", "application/json")
-                        .with_header("access-control-allow-origin", "*")
+                        .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
                         .with_body(resp_body)
                 }
                 Err(e) => {
@@ -184,13 +185,13 @@ fn redirect_to(url: &str, query: Option<&str>) -> Rejection {
     tracing::debug!(target = %target, "redirecting to issuer");
     Rejection::status(StatusCode::FOUND.as_u16())
         .with_header("location", &target)
-        .with_header("access-control-allow-origin", "*")
+        .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
 }
 
 fn json_response(status: StatusCode, value: &serde_json::Value) -> Rejection {
     let body = Bytes::from(value.to_string());
     Rejection::status(status.as_u16())
         .with_header("content-type", "application/json")
-        .with_header("access-control-allow-origin", "*")
+        .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
         .with_body(body)
 }
