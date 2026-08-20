@@ -3,6 +3,8 @@
 pub mod filter;
 mod routes;
 
+use std::sync::RwLock;
+
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
@@ -17,18 +19,14 @@ use crate::routes::{
 const DEFAULT_CAPACITY: usize = 1000;
 
 pub struct InterceptFeature {
-    store: InMemoryInteractionStore,
+    store: RwLock<InMemoryInteractionStore>,
 }
 
 impl InterceptFeature {
     #[must_use]
     pub fn new() -> Self {
-        let capacity = std::env::var("WANAKU_INTERACTION_CAPACITY")
-            .ok()
-            .and_then(|s| s.parse::<usize>().ok())
-            .unwrap_or(DEFAULT_CAPACITY);
         Self {
-            store: InMemoryInteractionStore::new(capacity),
+            store: RwLock::new(InMemoryInteractionStore::new(DEFAULT_CAPACITY)),
         }
     }
 }
@@ -63,9 +61,14 @@ impl Feature for InterceptFeature {
     }
 
     fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>> {
-        vec![Box::new(InteractionStoreExtension {
-            store: self.store.clone(),
-        })]
+        let store = match self.store.read() {
+            Ok(guard) => guard.clone(),
+            Err(e) => {
+                tracing::warn!(error = %e, "interaction store lock poisoned, using default");
+                InMemoryInteractionStore::new(DEFAULT_CAPACITY)
+            }
+        };
+        vec![Box::new(InteractionStoreExtension { store })]
     }
 
     async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
@@ -73,14 +76,36 @@ impl Feature for InterceptFeature {
         if route == InteractionRoute::NotFound {
             return None;
         }
+        let store = match self.store.read() {
+            Ok(guard) => guard.clone(),
+            Err(e) => {
+                tracing::warn!(error = %e, "interaction store lock poisoned");
+                return None;
+            }
+        };
         Some(match route {
-            InteractionRoute::List => handle_interaction_list(&self.store),
-            InteractionRoute::Clear => handle_interaction_clear(&self.store),
+            InteractionRoute::List => handle_interaction_list(&store),
+            InteractionRoute::Clear => handle_interaction_clear(&store),
             InteractionRoute::NotFound => return None,
         })
     }
 
     fn load_yaml_config(&self, _root: &serde_yaml::Value) {}
 
-    fn load_env_config(&self) {}
+    fn load_env_config(&self) {
+        if let Some(capacity) = std::env::var("WANAKU_INTERACTION_CAPACITY")
+            .ok()
+            .and_then(|s| s.parse::<usize>().ok())
+        {
+            match self.store.write() {
+                Ok(mut guard) => {
+                    *guard = InMemoryInteractionStore::new(capacity);
+                    tracing::info!(capacity, "interaction store capacity configured from env");
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "failed to update interaction store capacity");
+                }
+            }
+        }
+    }
 }
