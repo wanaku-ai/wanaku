@@ -8,25 +8,26 @@ impl McpInitFilter {
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
-        body: &mut Option<Bytes>,
+        _body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
         let Some(method) = ctx.get_metadata(crate::MCP_METHOD_KEY) else {
             return Ok(FilterAction::Continue);
         };
 
+        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+
         match method {
-            "initialize" => self.handle_initialize(body),
+            "initialize" => self.handle_initialize(&json_rpc_id),
             "notifications/initialized" => Self::handle_notification(),
-            "ping" => Self::handle_ping(body),
+            "ping" => Self::handle_ping(&json_rpc_id),
             _ => Ok(FilterAction::Continue),
         }
     }
 
     #[expect(clippy::unused_self, reason = "consistent signature across filter handler methods")]
-    fn handle_initialize(&self, body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
+    fn handle_initialize(&self, json_rpc_id: &serde_json::Value) -> Result<FilterAction, FilterError> {
         trace!("handling MCP initialize");
 
-        let json_rpc_id = crate::response::extract_json_rpc_id(body);
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": json_rpc_id,
@@ -59,10 +60,9 @@ impl McpInitFilter {
         Ok(FilterAction::Reject(crate::response::empty_accepted()))
     }
 
-    fn handle_ping(body: &Option<Bytes>) -> Result<FilterAction, FilterError> {
+    fn handle_ping(json_rpc_id: &serde_json::Value) -> Result<FilterAction, FilterError> {
         trace!("handling MCP ping");
 
-        let json_rpc_id = crate::response::extract_json_rpc_id(body);
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": json_rpc_id,

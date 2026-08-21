@@ -9,7 +9,7 @@ impl ToolListFilter {
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
-        body: &mut Option<Bytes>,
+        _body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
         let Some(method) = ctx.get_metadata(crate::MCP_METHOD_KEY) else {
             return Ok(FilterAction::Continue);
@@ -25,9 +25,10 @@ impl ToolListFilter {
 
         tracing::debug!(namespace = %namespace, "handling MCP tools/list request");
 
+        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
             tracing::error!("InMemoryRegistry not found in request extensions");
-            let json_rpc_id = crate::response::extract_json_rpc_id(body);
             return Ok(crate::response::json_rpc_error(
                 &json_rpc_id,
                 crate::response::JSONRPC_INTERNAL_ERROR,
@@ -48,8 +49,6 @@ impl ToolListFilter {
                 })
             })
             .collect();
-
-        let json_rpc_id = crate::response::extract_json_rpc_id(body);
 
         let response = serde_json::json!({
             "jsonrpc": "2.0",

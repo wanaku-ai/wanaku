@@ -140,11 +140,16 @@ impl EvaluatorFilter {
             }
             return match evaluator.on_error {
                 ErrorPolicy::Continue => Ok(FilterAction::Continue),
-                ErrorPolicy::Block => Ok(wanaku_filters::response::json_rpc_error(
-                    &wanaku_filters::response::extract_json_rpc_id(body),
-                    -32603,
-                    "evaluator processor module not available",
-                )),
+                ErrorPolicy::Block => {
+                    let json_rpc_id = wanaku_filters::response::json_rpc_id_from_metadata(
+                        ctx.get_metadata(wanaku_filters::MCP_ID_KEY),
+                    );
+                    Ok(wanaku_filters::response::json_rpc_error(
+                        &json_rpc_id,
+                        -32603,
+                        "evaluator processor module not available",
+                    ))
+                }
             };
         };
 
@@ -209,12 +214,14 @@ fn record_trigger(metrics: &Option<MetricsStore>, matched: bool) {
 #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "action dispatch with multiple variants")]
 fn dispatch_action(
     ctx: &mut HttpFilterContext<'_>,
-    body: &mut Option<Bytes>,
+    _body: &mut Option<Bytes>,
     result: ActionResult,
     method: &str,
     evaluator_name: &str,
 ) -> Result<FilterAction, FilterError> {
-    let json_rpc_id = wanaku_filters::response::extract_json_rpc_id(body);
+    let json_rpc_id = wanaku_filters::response::json_rpc_id_from_metadata(
+        ctx.get_metadata(wanaku_filters::MCP_ID_KEY),
+    );
 
     match result {
         ActionResult::Pass => Ok(FilterAction::Continue),
