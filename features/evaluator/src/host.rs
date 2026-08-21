@@ -1,4 +1,4 @@
-use wasmtime::component::{bindgen, HasSelf};
+use wasmtime::component::{HasSelf, bindgen};
 
 bindgen!({
     path: "wit/evaluator.wit",
