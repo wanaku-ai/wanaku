@@ -178,6 +178,7 @@ pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 pub const FORWARD_ADDRESS_LABEL: &str = "wanaku.forward_address";
 pub const IS_TEMPLATE_LABEL: &str = "wanaku.is_template";
 pub const FORWARD_HEADERS_LABEL: &str = "wanaku.forward_headers";
+pub const INJECT_HEADER_ARGS_LABEL: &str = "wanaku.inject_header_args";
 
 impl ToolEntry {
     pub fn is_mcp_forward(&self) -> bool {
@@ -194,6 +195,12 @@ impl ToolEntry {
                     .collect()
             })
             .unwrap_or_default()
+    }
+
+    pub fn inject_header_args(&self) -> bool {
+        self.labels
+            .get(INJECT_HEADER_ARGS_LABEL)
+            .map_or(true, |v| v != "false")
     }
 }
 
@@ -841,6 +848,26 @@ mod tests {
         assert_eq!(headers.len(), 2);
         assert!(headers.contains(&"authorization".to_owned()));
         assert!(headers.contains(&"dpop".to_owned()));
+    }
+
+    #[test]
+    fn tool_inject_header_args_default_true() {
+        let tool = sample_tool();
+        assert!(tool.inject_header_args());
+    }
+
+    #[test]
+    fn tool_inject_header_args_explicit_false() {
+        let mut tool = sample_tool();
+        tool.labels.insert(INJECT_HEADER_ARGS_LABEL.to_owned(), "false".to_owned());
+        assert!(!tool.inject_header_args());
+    }
+
+    #[test]
+    fn tool_inject_header_args_explicit_true() {
+        let mut tool = sample_tool();
+        tool.labels.insert(INJECT_HEADER_ARGS_LABEL.to_owned(), "true".to_owned());
+        assert!(tool.inject_header_args());
     }
 
     #[test]

@@ -120,6 +120,19 @@ export WANAKU_FORWARD_HEADERS=Authorization,DPoP
 
 Both lists are merged at runtime — a header is forwarded if it appears in either the global allowlist or the per-tool label. Header names are case-insensitive.
 
+**SEP-2243 argument injection** — When a tool's input schema has properties annotated with `x-mcp-header` (SEP-2243), Wanaku automatically injects matching forwarded header values as tool arguments before forwarding. This ensures downstream MCP servers using `@McpParamHeader` receive the value correctly. This behavior is enabled by default and can be disabled per-tool:
+
+```json
+{
+  "labels": {
+    "wanaku.forward_headers": "Authorization",
+    "wanaku.inject_header_args": "false"
+  }
+}
+```
+
+When disabled, headers are forwarded only as raw HTTP headers on the downstream connection — suitable for gateway scenarios where the gateway reads headers directly.
+
 **Use case:** A gateway (Envoy ExtProc, IBM ContextForge) sits between Wanaku and a protected downstream API. The gateway performs token exchange (e.g., Keycloak STS) using the `Authorization` header from the original request. Wanaku forwards the header so the gateway has a `subject_token` to exchange.
 
 **Security considerations:**
