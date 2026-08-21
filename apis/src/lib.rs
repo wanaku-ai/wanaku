@@ -13,6 +13,6 @@ pub mod metrics;
 pub mod persistence;
 pub mod registry;
 
-pub use metadata::{MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
+pub use metadata::{MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
 
 pub const WANAKU_BODY_ARG: &str = "wanaku_body";

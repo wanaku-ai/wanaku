@@ -39,6 +39,15 @@ pub fn extract_json_rpc_id(body: &Option<Bytes>) -> serde_json::Value {
         .unwrap_or(serde_json::Value::Null)
 }
 
+/// Reads the JSON-RPC request ID from its serialized metadata representation.
+///
+/// The `mcp.id` metadata is set by the `McpIdFilter` early in the filter chain
+/// so that downstream filters can retrieve the id without re-parsing the body.
+pub fn json_rpc_id_from_metadata(raw: Option<&str>) -> serde_json::Value {
+    raw.and_then(|s| serde_json::from_str(s).ok())
+        .unwrap_or(serde_json::Value::Null)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,6 +85,37 @@ mod tests {
     fn extract_id_null_when_body_is_empty() {
         let body = Some(Bytes::new());
         assert_eq!(extract_json_rpc_id(&body), serde_json::Value::Null);
+    }
+
+    #[test]
+    fn metadata_round_trip_numeric_id() {
+        let id = serde_json::Value::from(42);
+        let serialized = id.to_string();
+        assert_eq!(json_rpc_id_from_metadata(Some(&serialized)), serde_json::Value::from(42));
+    }
+
+    #[test]
+    fn metadata_round_trip_string_id() {
+        let id = serde_json::Value::from("req-1");
+        let serialized = id.to_string();
+        assert_eq!(json_rpc_id_from_metadata(Some(&serialized)), serde_json::Value::from("req-1"));
+    }
+
+    #[test]
+    fn metadata_round_trip_null_id() {
+        let id = serde_json::Value::Null;
+        let serialized = id.to_string();
+        assert_eq!(json_rpc_id_from_metadata(Some(&serialized)), serde_json::Value::Null);
+    }
+
+    #[test]
+    fn metadata_none_returns_null() {
+        assert_eq!(json_rpc_id_from_metadata(None), serde_json::Value::Null);
+    }
+
+    #[test]
+    fn metadata_malformed_returns_null() {
+        assert_eq!(json_rpc_id_from_metadata(Some("not valid json {")), serde_json::Value::Null);
     }
 
     #[test]

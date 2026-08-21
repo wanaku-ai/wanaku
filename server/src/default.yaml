@@ -15,6 +15,7 @@ filter_chains:
         allow_headers: ["Content-Type", "Accept", "Mcp-Session-Id", "Mcp-Protocol-Version", "Authorization"]
       - filter: mcp
         on_invalid: continue
+      - filter: wanaku_mcp_id
       - filter: wanaku_namespace
       - filter: wanaku_well_known
       - filter: wanaku_mcp_init
