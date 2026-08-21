@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react"
 import {LLMSetup} from "./LLMSetup.tsx"
 import {LLMTools} from "./LLMTools.tsx"
-import {LLMChatArea, LlmChatConfig} from "./LLMChatArea"
+import {LLMChatArea} from "./LLMChatArea"
 import {Column, Grid, InlineNotification} from "@carbon/react"
 import {
   isConfigStoredInLocalStorage,
@@ -32,18 +32,6 @@ export const LLMChatPage: React.FC = () => {
       persistConfig(config)
     }
     setConfig(config)
-  }
-  
-  function createChatConfig(): LlmChatConfig {
-    const llm = config.selectedLlm
-    return {
-      llm: llm,
-      model: config.llms[llm].selectedModel,
-      apiKey: config.llms[llm].apiKey,
-      extraLlmParams: config.llms[llm].extraLlmParams,
-      selectedTools: config.selectedTools,
-      systemPrompt: config.systemPrompt
-    }
   }
   
   return (
@@ -88,7 +76,7 @@ export const LLMChatPage: React.FC = () => {
         </Column>
         <Column lg={12}>
           <LLMChatArea
-            config={createChatConfig()}
+            config={config}
             onSystemPromptChange={(systemPrompt) => {
               applyConfigChange({ ...config, systemPrompt })
             }}

@@ -8,28 +8,24 @@ import {
   Tile
 } from "@carbon/react"
 import {Send, Stop} from "@carbon/icons-react"
+import {LlmConfig} from "./config"
 import {LLMChatMessage} from "./LLMChatMessage"
 import {getInferenceUrl} from "../../custom-fetch"
-import {ToolEntry} from "../../models"
 import {getErrorMessage} from "../../utils/error"
+import {selectedToolsJson} from "./utils"
+import {connectMCPClient} from "./mcp"
 
 
 interface ChatMessage {
-  role: "user" | "assistant" | "error"
-  content: string
-}
-
-export interface LlmChatConfig {
-  llm: string
-  model?: string
-  apiKey?: string
-  selectedTools: ToolEntry[]
-  extraLlmParams?: string
-  systemPrompt?: string
+  role: "system" | "user" | "assistant" | "error" | "tool"
+  content: string | null
+  name?: string
+  tool_call_id?: number
+  tool_calls?: any[]
 }
 
 interface LLMChatAreaProps {
-  config: LlmChatConfig
+  config: LlmConfig
   onSystemPromptChange: (systemPrompt: string) => void
 }
 
@@ -47,55 +43,105 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
     setDisplayedMessages([])
   }
   
-  function filteredChatHistory() {
-    return chatHistory.current.filter(message => message.role === "user" || message.role === "assistant")
+  function filteredChatHistory(): ChatMessage[] {
+    return chatHistory.current.filter(message =>
+      message.role === "user"
+      || message.role === "assistant"
+      || message.role === "tool")
   }
   
   async function runPrompt(signal: AbortSignal) {
     try {
-      const userMessage = { role: "user", content: userPrompt } as const
-      setDisplayedMessages([...chatHistory.current, userMessage])
+      chatHistory.current.push({ role: "user", content: userPrompt })
+      setDisplayedMessages(chatHistory.current)
       setIsRunning(true)
-
-      const messages = [
-        ...(config.systemPrompt ? [{ role: "system", content: config.systemPrompt }] : []),
-        ...filteredChatHistory(),
-        { role: "user", content: userPrompt }
-      ]
-
-      const response = await fetch(getInferenceUrl("/v1/chat/completions"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {})
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages
+      
+      async function send(): Promise<Response> {
+        const extraLlmParams = config.extraLlmParams ? JSON.parse(config.extraLlmParams) : {}
+        return await fetch(getInferenceUrl("/v1/chat/completions"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(config.apiKey ? {Authorization: `Bearer ${config.apiKey}`} : {})
+          },
+          body: JSON.stringify({
+            model: config.selectedModel,
+            messages: createMessages(),
+            ...extraLlmParams,
+            tools: selectedToolsJson(config.selectedTools),
+          })
         })
-      })
-      if (signal.aborted) {
-        // The chat has been aborted, do not display any response and end immediately
-        return
       }
-      if (response.ok) {
-        const data = await response.json()
-        const responseText = data?.choices?.[0]?.message?.content ?? ""
-        const aiMessage = { role: "assistant", content: responseText } as const
-        chatHistory.current.push(userMessage)
-        chatHistory.current.push(aiMessage)
-        setDisplayedMessages(chatHistory.current)
-      } else {
-        let errorText = `${response.status} ${response.statusText}`
-        try {
-          const data = await response.json()
-          errorText = data?.error?.message ?? errorText
-        } catch {
-          // response body was not JSON, fall back to status text
+      
+      function createMessages(): ChatMessage[] {
+        return [
+          ...(config.systemPrompt ? [{ role: "system", content: config.systemPrompt } as ChatMessage] : []),
+          ...filteredChatHistory()
+        ]
+      }
+      
+      while (true) {
+        if (signal.aborted) {
+          break
         }
-        const errorMessage = { role: "error", content: `Error: ${errorText}` } as const
-        chatHistory.current.push(errorMessage)
-        setDisplayedMessages(chatHistory.current)
+        const response = await send()
+        if (response.ok) {
+          const data = await response.json()
+          
+          if (data?.choices[0].message?.content) {
+            const responseText = data?.choices?.[0]?.message?.content ?? ""
+            chatHistory.current.push({ role: "assistant", content: responseText })
+            setDisplayedMessages(chatHistory.current)
+            break
+          }
+          
+          if (data?.choices[0].finish_reason === "stop") {
+            break
+          }
+          
+          if (data?.choices[0].finish_reason === "tool_calls") {
+            chatHistory.current.push({
+              role: "assistant",
+              content: null,
+              tool_calls: data.choices[0].message.tool_calls
+            })
+            
+            const mcpClient = await connectMCPClient(config)
+            try {
+              for (const toolCall of data.choices[0].message.tool_calls) {
+                const toolName = toolCall.function.name
+                const toolArgs = JSON.parse(toolCall.function.arguments || "{}")
+                
+                const toolResult = await mcpClient!.callTool({
+                  name: toolName,
+                  arguments: toolArgs
+                })
+                const toolResultText = (toolResult.content as Array<{ text: string }>)[0].text
+                chatHistory.current.push({
+                  role: "tool",
+                  name: toolName,
+                  tool_call_id: toolCall.id,
+                  content: toolResultText,
+                })
+              }
+              setDisplayedMessages(chatHistory.current)
+            } finally {
+              await mcpClient.close()
+            }
+          }
+        } else {
+          let errorText = `${response.status} ${response.statusText}`
+          try {
+            const data = await response.json()
+            errorText = data?.error?.message ?? errorText
+          } catch {
+            // response body was not JSON, fall back to status text
+          }
+          const errorMessage = {role: "error", content: `Error: ${errorText}`} as const
+          chatHistory.current.push(errorMessage)
+          setDisplayedMessages(chatHistory.current)
+          break
+        }
       }
     } catch (error) {
       if (!signal.aborted) {
@@ -169,12 +215,25 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
           />
         </Stack>
         <Stack>
-          {displayedMessages.map((message, index) => (
-            <LLMChatMessage
-              key={index}
-              message={message}
-            />
-          ))}
+          {displayedMessages.map((message, index) => {
+            const displayMessage = { role: message.role as string, content: message.content }
+            if (message.role === "tool") {
+              displayMessage.role = "tool-response"
+            }
+            else if (message.role === "assistant" && message.tool_calls) {
+              displayMessage.role = "tool-request"
+              for (const toolCall of message.tool_calls) {
+                displayMessage.content = `${toolCall.function.name}\n`
+                displayMessage.content += `${toolCall.function.arguments}\n`
+              }
+            }
+            return (
+              <LLMChatMessage
+                key={index}
+                message={displayMessage}
+              />
+            )
+          })}
         </Stack>
       </Form>
     </Tile>
