@@ -381,7 +381,7 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
             uri: forward.address.clone(),
             type_: MCP_FORWARD_TYPE.to_owned(),
             input_schema,
-            labels: std::collections::HashMap::new(),
+            labels: forward.labels.clone(),
             id: None,
             namespace: Some(namespace.to_owned()),
             configuration_uri: None,
