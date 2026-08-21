@@ -8,6 +8,7 @@ pub mod filter;
 mod host;
 pub use host::types as wit_types;
 pub mod llm_op;
+pub mod revision;
 mod routes;
 pub mod schema;
 pub mod state;
@@ -19,7 +20,8 @@ use wanaku_apis::feature::{Feature, HttpContext};
 
 use crate::config::EvaluatorsConfig;
 use crate::routes::{
-    EvaluatorRoute, handle_bind_namespace, handle_list_bindings, handle_list_evaluators,
+    EvaluatorRoute, handle_activate_revision, handle_active_revision, handle_bind_namespace,
+    handle_get_revision, handle_list_bindings, handle_list_evaluators, handle_list_revisions,
     handle_unbind_namespace, handle_update_evaluators, resolve_evaluator_route,
 };
 use crate::state::EvaluatorState;
@@ -88,6 +90,12 @@ impl Feature for EvaluatorFeature {
             EvaluatorRoute::UpdateEvaluators => {
                 handle_update_evaluators(&self.state, ctx.body.unwrap_or(""))
             }
+            EvaluatorRoute::ListRevisions => handle_list_revisions(&self.state),
+            EvaluatorRoute::ActiveRevision => handle_active_revision(&self.state),
+            EvaluatorRoute::GetRevision(id) => handle_get_revision(&self.state, id),
+            EvaluatorRoute::ActivateRevision(id) => {
+                handle_activate_revision(&self.state, id, ctx.body.unwrap_or(""))
+            }
             EvaluatorRoute::ListBindings => handle_list_bindings(&self.state),
             EvaluatorRoute::BindNamespace(ns) => {
                 handle_bind_namespace(&self.state, &ns, ctx.body.unwrap_or(""))
@@ -97,31 +105,55 @@ impl Feature for EvaluatorFeature {
         })
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "YAML parsing with legacy fallback and revision-tracked activation"
+    )]
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
         if let Some(eval_val) = root.get("evaluators") {
-            match serde_yaml::from_value::<EvaluatorsConfig>(eval_val.clone()) {
-                Ok(config) => {
-                    let count = config.evaluators.len();
-                    tracing::info!(count = count, "evaluators loaded from wanaku.yaml");
-                    self.state.load_evaluators(config.evaluators);
-                }
+            let defs = match serde_yaml::from_value::<EvaluatorsConfig>(eval_val.clone()) {
+                Ok(config) => config.evaluators,
                 Err(e) => {
-                    // Try parsing as a direct list
+                    // Try parsing as a direct list.
                     match serde_yaml::from_value::<Vec<crate::config::EvaluatorDef>>(
                         eval_val.clone(),
                     ) {
-                        Ok(defs) => {
-                            let count = defs.len();
-                            tracing::info!(count = count, "evaluators loaded from wanaku.yaml");
-                            self.state.load_evaluators(defs);
-                        }
+                        Ok(defs) => defs,
                         Err(_) => {
                             tracing::warn!(
                                 error = %e,
                                 "failed to parse evaluators config from wanaku.yaml"
                             );
+                            return;
                         }
                     }
+                }
+            };
+
+            let count = defs.len();
+            tracing::info!(count = count, "evaluators loaded from wanaku.yaml");
+
+            // Activate through the revision system so startup config gets a
+            // tracked revision. Fall back to the plain load path on error.
+            match self.state.try_activate(
+                defs.clone(),
+                crate::revision::RevisionOrigin::Startup,
+                None,
+                None,
+            ) {
+                Ok(rev) => {
+                    tracing::info!(
+                        revision_id = rev.metadata.id,
+                        count = count,
+                        "startup evaluator revision created"
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "startup evaluator revision failed, loading without revision tracking"
+                    );
+                    self.state.load_evaluators(defs);
                 }
             }
         }
