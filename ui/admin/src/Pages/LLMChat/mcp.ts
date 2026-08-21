@@ -1,34 +1,22 @@
 import {Client} from "@modelcontextprotocol/sdk/client/index.js"
-import {SSEClientTransport} from "@modelcontextprotocol/sdk/client/sse.js"
-import {getUrl} from "../../custom-fetch.ts"
+import {StreamableHTTPClientTransport} from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+import {LlmConfig} from "./config.ts"
 
 
-export class McpClient {
-  
-  realMcpClient?: Client
-  
-  async callTool(name: string, args) {
-    if (!this.realMcpClient) {
-      this.realMcpClient = await connectedMCPClient()
-    }
-    return await this.realMcpClient.callTool({
-      name: name,
-      arguments: args
-    })
-  }
-  
-  async close() {
-    return this.realMcpClient?.close()
-  }
-  
+function getMcpServerUrl(config: LlmConfig): URL {
+  // TODO replace with reading it from selected namespace
+  const baseUrl = VITE_INFERENCE_URL || `${window.location.protocol}//${window.location.hostname}:8081`
+  const url = new URL(`/${config.selectedNamespace.name}/mcp`, baseUrl)
+  const pathname = url.pathname
+  const search = url.search
+  return new URL(`${baseUrl}${pathname}${search}`)
 }
 
-async function connectedMCPClient() {
+export async function connectMCPClient(config: LlmConfig) {
   const mcpClient = new Client(
     { name: "wanaku-test-client", version: "0.0.2" },
     { capabilities: {} }
   )
-  const url = new URL(getUrl("/public/mcp/sse"))
-  await mcpClient.connect(new SSEClientTransport(url))
+  await mcpClient.connect(new StreamableHTTPClientTransport(getMcpServerUrl(config)))
   return mcpClient
 }

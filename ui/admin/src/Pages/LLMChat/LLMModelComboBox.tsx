@@ -4,20 +4,20 @@ import {getInferenceUrl} from "../../custom-fetch"
 
 
 interface LLMModelComboBoxProps {
-  llm?: string
   value?: string
   labelText?: string
   apiKey?: string
   onChange: (llmModel: string) => void
 }
 
-export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, onChange, labelText, apiKey }) => {
 
-  const [modelCatalog, setModelCatalog] = useState<{ [llm: string]: string[] }>({})
+export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ value, onChange, labelText, apiKey }) => {
+  
+  const [models, setModels] = useState<string[]>([])
 
 
   useEffect(() => {
-    if (!llm || !apiKey) {
+    if (!apiKey) {
       return
     }
 
@@ -35,7 +35,7 @@ export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, 
           })
           if (response.ok) {
             const data: { data: { id: string }[] } = await response.json()
-            setModelCatalog({ [llm]: data.data.map(m => m.id) })
+            setModels(data.data.map(m => m.id))
           }
         } catch {
           // ignore (network error or aborted), leave catalog empty for this llm
@@ -47,23 +47,19 @@ export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, 
       clearTimeout(timeoutId)
       controller.abort()
     }
-  }, [llm, apiKey])
-
-  function createItems(): string[] {
-    return (llm && modelCatalog[llm]) ? modelCatalog[llm] : []
-  }
-
+  }, [apiKey])
+  
   return (
     <ComboBox
       id="llm-model"
       titleText={labelText}
-      items={createItems()}
+      items={models}
       allowCustomValue
       selectedItem={value}
       onChange={(event) => {
         setTimeout(() => {
-          const llmModel = event.selectedItem || event.inputValue || ""
-          onChange(llmModel)
+          const model = event.selectedItem || event.inputValue || ""
+          onChange(model)
         }, 0)
       }}
     />
