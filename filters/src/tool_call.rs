@@ -132,7 +132,13 @@ impl ToolCallFilter {
 
         if tool.is_mcp_forward() {
             let forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
-            inject_header_arguments(&mut parsed.arguments, &tool.input_schema, &forward_headers);
+            if tool.inject_header_args() {
+                inject_header_arguments(
+                    &mut parsed.arguments,
+                    &tool.input_schema,
+                    &forward_headers,
+                );
+            }
             return self
                 .handle_forwarded_call(&tool, &tool_name, &parsed, forward_headers)
                 .await;
