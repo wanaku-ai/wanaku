@@ -79,6 +79,7 @@ pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum ManagementRoute {
+    Info,
     Statistics,
     NotFound,
 }
@@ -89,6 +90,7 @@ pub(super) fn resolve_management_route(method: &str, path: &str) -> ManagementRo
     };
 
     match (method, suffix) {
+        ("GET", "/info") => ManagementRoute::Info,
         ("GET", "/statistics") => ManagementRoute::Statistics,
         _ => ManagementRoute::NotFound,
     }
@@ -263,6 +265,22 @@ mod tests {
         assert_eq!(
             resolve_forward_route("DELETE", "/api/v1/forwards/a/b"),
             ForwardRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn management_route_info() {
+        assert_eq!(
+            resolve_management_route("GET", "/api/v1/management/info"),
+            ManagementRoute::Info
+        );
+    }
+
+    #[test]
+    fn management_route_info_rejects_post() {
+        assert_eq!(
+            resolve_management_route("POST", "/api/v1/management/info"),
+            ManagementRoute::NotFound
         );
     }
 }
