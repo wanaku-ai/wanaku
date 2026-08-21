@@ -14,7 +14,12 @@ use crate::state::EvaluatorState;
 wanaku_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
 
 impl EvaluatorFilter {
-    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "evaluator pipeline with multiple validation steps")]
+    #[expect(
+        clippy::too_many_lines,
+        clippy::cognitive_complexity,
+        clippy::large_stack_frames,
+        reason = "evaluator pipeline with multiple validation steps"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -95,13 +100,7 @@ impl EvaluatorFilter {
             _ => Vec::new(),
         };
 
-        let mcp_ctx = McpContext::new(
-            &method,
-            tool_name.as_deref(),
-            &arguments,
-            &tools,
-            &history,
-        );
+        let mcp_ctx = McpContext::new(&method, tool_name.as_deref(), &arguments, &tools, &history);
 
         let raw_llm_result = crate::llm_op::run_llm_operation(
             &evaluator.name,
@@ -158,12 +157,7 @@ impl EvaluatorFilter {
         };
 
         let wasm_start = std::time::Instant::now();
-        let result = compiled.evaluate(
-            registry,
-            interactions,
-            eval_ctx,
-            compiled_schema,
-        );
+        let result = compiled.evaluate(registry, interactions, eval_ctx, compiled_schema);
         if let Some(ref store) = metrics {
             store.record_wasm_execution(&evaluator.name, wasm_start.elapsed());
         }
@@ -206,7 +200,11 @@ fn record_trigger(metrics: &Option<MetricsStore>, matched: bool) {
     }
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "action dispatch with multiple variants")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "action dispatch with multiple variants"
+)]
 fn dispatch_action(
     ctx: &mut HttpFilterContext<'_>,
     body: &mut Option<Bytes>,
@@ -278,7 +276,11 @@ fn dispatch_action(
     }
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "schema validation with retry logic")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "schema validation with retry logic"
+)]
 async fn validate_and_retry_if_needed(
     raw_result: &str,
     evaluator: &EvaluatorDef,
@@ -379,10 +381,19 @@ mod tests {
     fn action_label_all_variants() {
         assert_eq!(action_label(&ActionResult::Pass), "pass");
         assert_eq!(action_label(&ActionResult::Block("r".into())), "block");
-        assert_eq!(action_label(&ActionResult::RejectMalformed("r".into())), "reject_malformed");
+        assert_eq!(
+            action_label(&ActionResult::RejectMalformed("r".into())),
+            "reject_malformed"
+        );
         assert_eq!(action_label(&ActionResult::Warn("m".into())), "warn");
-        assert_eq!(action_label(&ActionResult::FilterTools(vec![])), "filter_tools");
-        assert_eq!(action_label(&ActionResult::SetMetadata("k".into(), "v".into())), "set_metadata");
+        assert_eq!(
+            action_label(&ActionResult::FilterTools(vec![])),
+            "filter_tools"
+        );
+        assert_eq!(
+            action_label(&ActionResult::SetMetadata("k".into(), "v".into())),
+            "set_metadata"
+        );
     }
 
     #[test]

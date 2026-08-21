@@ -41,8 +41,8 @@ pub fn validate_against_schema(schema: &Value, raw: &str) -> Result<(), String> 
     let instance: Value =
         serde_json::from_str(raw).map_err(|e| format!("LLM result is not valid JSON: {e}"))?;
 
-    let validator = jsonschema::validator_for(schema)
-        .map_err(|e| format!("invalid JSON Schema: {e}"))?;
+    let validator =
+        jsonschema::validator_for(schema).map_err(|e| format!("invalid JSON Schema: {e}"))?;
 
     if validator.is_valid(&instance) {
         return Ok(());
@@ -85,7 +85,10 @@ mod tests {
         });
         let raw = r#"{"level": "green"}"#;
         let err = validate_against_schema(&schema, raw).unwrap_err();
-        assert!(err.contains("reason"), "error should mention missing field: {err}");
+        assert!(
+            err.contains("reason"),
+            "error should mention missing field: {err}"
+        );
     }
 
     #[test]
