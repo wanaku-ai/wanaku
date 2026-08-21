@@ -208,6 +208,10 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     );
     praxis_filter::register_filters!(
         @register registry,
+        http "wanaku_mcp_id" => wanaku_filters::McpIdFilter::from_config
+    );
+    praxis_filter::register_filters!(
+        @register registry,
         http "wanaku_namespace" => wanaku_filters::NamespaceFilter::from_config
     );
     praxis_filter::register_filters!(

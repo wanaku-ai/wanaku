@@ -11,10 +11,10 @@ struct ParsedBody {
     arguments: serde_json::Map<String, serde_json::Value>,
 }
 
-fn parse_body(body: &Option<Bytes>) -> ParsedBody {
+fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
     let Some(body_bytes) = body else {
         return ParsedBody {
-            id: serde_json::Value::Null,
+            id: json_rpc_id,
             name: None,
             arguments: serde_json::Map::new(),
         };
@@ -22,16 +22,11 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
 
     let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(body_bytes) else {
         return ParsedBody {
-            id: serde_json::Value::Null,
+            id: json_rpc_id,
             name: None,
             arguments: serde_json::Map::new(),
         };
     };
-
-    let id = parsed
-        .get("id")
-        .cloned()
-        .unwrap_or(serde_json::Value::Null);
 
     let params = parsed.get("params");
 
@@ -46,7 +41,7 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
         .cloned()
         .unwrap_or_default();
 
-    ParsedBody { id, name, arguments }
+    ParsedBody { id: json_rpc_id, name, arguments }
 }
 
 impl PromptGetFilter {
@@ -68,7 +63,8 @@ impl PromptGetFilter {
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
 
-        let parsed = parse_body(body);
+        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let parsed = parse_body(body, json_rpc_id);
 
         let prompt_name = match &parsed.name {
             Some(n) => n.clone(),
@@ -185,7 +181,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"summarize","arguments":{"topic":"rust"}}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(1));
         assert_eq!(parsed.id, serde_json::Value::from(1));
         assert_eq!(parsed.name.as_deref(), Some("summarize"));
         assert_eq!(parsed.arguments.len(), 1);
@@ -200,7 +196,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"id":2,"params":{"name":"greet"}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(2));
         assert_eq!(parsed.id, serde_json::Value::from(2));
         assert_eq!(parsed.name.as_deref(), Some("greet"));
         assert!(parsed.arguments.is_empty());
@@ -211,7 +207,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"id":3,"params":{"arguments":{"key":"val"}}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(3));
         assert_eq!(parsed.id, serde_json::Value::from(3));
         assert!(parsed.name.is_none());
         assert_eq!(parsed.arguments.len(), 1);
@@ -220,7 +216,7 @@ mod tests {
     #[test]
     fn parse_body_missing_params() {
         let body = Some(Bytes::from(r#"{"id":4}"#));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(4));
         assert_eq!(parsed.id, serde_json::Value::from(4));
         assert!(parsed.name.is_none());
         assert!(parsed.arguments.is_empty());
@@ -228,7 +224,7 @@ mod tests {
 
     #[test]
     fn parse_body_none() {
-        let parsed = parse_body(&None);
+        let parsed = parse_body(&None, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert!(parsed.name.is_none());
         assert!(parsed.arguments.is_empty());
@@ -237,7 +233,7 @@ mod tests {
     #[test]
     fn parse_body_malformed_json() {
         let body = Some(Bytes::from("<<<"));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert!(parsed.name.is_none());
         assert!(parsed.arguments.is_empty());
@@ -246,7 +242,7 @@ mod tests {
     #[test]
     fn parse_body_empty_bytes() {
         let body = Some(Bytes::new());
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert!(parsed.name.is_none());
         assert!(parsed.arguments.is_empty());
@@ -257,7 +253,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"params":{"name":"test-prompt"}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert_eq!(parsed.name.as_deref(), Some("test-prompt"));
     }
@@ -267,7 +263,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"id":5,"params":{"name":"p","arguments":"not-a-map"}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(5));
         assert_eq!(parsed.id, serde_json::Value::from(5));
         assert_eq!(parsed.name.as_deref(), Some("p"));
         assert!(parsed.arguments.is_empty());
@@ -278,7 +274,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"id":6,"params":{"name":99}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(6));
         assert_eq!(parsed.id, serde_json::Value::from(6));
         assert!(parsed.name.is_none());
     }

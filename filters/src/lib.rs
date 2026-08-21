@@ -1,6 +1,6 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
-pub use wanaku_apis::metadata::{MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
+pub use wanaku_apis::metadata::{MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
 
 #[macro_export]
 macro_rules! body_filter_boilerplate {
@@ -72,6 +72,7 @@ macro_rules! body_filter_boilerplate {
     };
 }
 
+pub mod mcp_id;
 pub mod mcp_init;
 pub mod namespace;
 pub mod prompt_get;
@@ -82,6 +83,7 @@ pub mod response;
 pub mod tool_call;
 pub mod tool_list;
 
+pub use mcp_id::McpIdFilter;
 pub use mcp_init::McpInitFilter;
 pub use namespace::NamespaceFilter;
 pub use prompt_get::PromptGetFilter;

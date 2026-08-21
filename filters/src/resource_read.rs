@@ -50,25 +50,20 @@ struct ParsedBody {
     uri: Option<String>,
 }
 
-fn parse_body(body: &Option<Bytes>) -> ParsedBody {
+fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
     let Some(body_bytes) = body else {
         return ParsedBody {
-            id: serde_json::Value::Null,
+            id: json_rpc_id,
             uri: None,
         };
     };
 
     let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(body_bytes) else {
         return ParsedBody {
-            id: serde_json::Value::Null,
+            id: json_rpc_id,
             uri: None,
         };
     };
-
-    let id = parsed
-        .get("id")
-        .cloned()
-        .unwrap_or(serde_json::Value::Null);
 
     let uri = parsed
         .get("params")
@@ -76,11 +71,11 @@ fn parse_body(body: &Option<Bytes>) -> ParsedBody {
         .and_then(|u| u.as_str())
         .map(str::to_owned);
 
-    ParsedBody { id, uri }
+    ParsedBody { id: json_rpc_id, uri }
 }
 
 impl ResourceReadFilter {
-    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP protocol handler with JSON-RPC response construction")]
+    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -94,7 +89,8 @@ impl ResourceReadFilter {
             return Ok(FilterAction::Continue);
         }
 
-        let parsed = parse_body(body);
+        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let parsed = parse_body(body, json_rpc_id);
 
         let resource_uri = match &parsed.uri {
             Some(u) => u.clone(),
@@ -191,7 +187,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"file:///data/report.csv"}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(1));
         assert_eq!(parsed.id, serde_json::Value::from(1));
         assert_eq!(parsed.uri.as_deref(), Some("file:///data/report.csv"));
     }
@@ -201,7 +197,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"id":2,"params":{}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(2));
         assert_eq!(parsed.id, serde_json::Value::from(2));
         assert!(parsed.uri.is_none());
     }
@@ -209,14 +205,14 @@ mod tests {
     #[test]
     fn parse_body_missing_params() {
         let body = Some(Bytes::from(r#"{"id":3}"#));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(3));
         assert_eq!(parsed.id, serde_json::Value::from(3));
         assert!(parsed.uri.is_none());
     }
 
     #[test]
     fn parse_body_none() {
-        let parsed = parse_body(&None);
+        let parsed = parse_body(&None, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert!(parsed.uri.is_none());
     }
@@ -224,7 +220,7 @@ mod tests {
     #[test]
     fn parse_body_malformed_json() {
         let body = Some(Bytes::from("{broken"));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert!(parsed.uri.is_none());
     }
@@ -232,7 +228,7 @@ mod tests {
     #[test]
     fn parse_body_empty_bytes() {
         let body = Some(Bytes::new());
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert!(parsed.uri.is_none());
     }
@@ -242,7 +238,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"params":{"uri":"s3://bucket/key"}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::Null);
         assert!(parsed.id.is_null());
         assert_eq!(parsed.uri.as_deref(), Some("s3://bucket/key"));
     }
@@ -252,7 +248,7 @@ mod tests {
         let body = Some(Bytes::from(
             r#"{"id":4,"params":{"uri":123}}"#,
         ));
-        let parsed = parse_body(&body);
+        let parsed = parse_body(&body, serde_json::Value::from(4));
         assert_eq!(parsed.id, serde_json::Value::from(4));
         assert!(parsed.uri.is_none());
     }
