@@ -66,26 +66,37 @@ impl TestHarness {
             body["namespace"] = json!(ns);
         }
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(format!("{MGMT_URL}/api/v1/tools"))
             .json(&body)
             .send()
             .expect("failed to register tool");
-        assert!(resp.status().is_success(), "register tool {name} failed: {}", resp.status());
+        assert!(
+            resp.status().is_success(),
+            "register tool {name} failed: {}",
+            resp.status()
+        );
         self.registered_tools.push(name.to_owned());
     }
 
     fn configure_evaluators(&self, config: &Value) {
-        let resp = self.client
+        let resp = self
+            .client
             .put(format!("{MGMT_URL}/api/v1/evaluators"))
             .json(config)
             .send()
             .expect("failed to configure evaluators");
-        assert!(resp.status().is_success(), "configure evaluators failed: {}", resp.status());
+        assert!(
+            resp.status().is_success(),
+            "configure evaluators failed: {}",
+            resp.status()
+        );
     }
 
     fn clear_evaluators(&self) {
-        let _ = self.client
+        let _ = self
+            .client
             .put(format!("{MGMT_URL}/api/v1/evaluators"))
             .json(&json!({"evaluators": []}))
             .send();
@@ -141,7 +152,8 @@ impl TestHarness {
 impl Drop for TestHarness {
     fn drop(&mut self) {
         for tool in &self.registered_tools {
-            let _ = self.client
+            let _ = self
+                .client
                 .delete(format!("{MGMT_URL}/api/v1/tools/{tool}"))
                 .send();
         }
@@ -178,7 +190,10 @@ mod engine {
 
         // List — starts empty or with existing config
         let resp = harness.list_evaluators();
-        assert!(resp.get("data").is_some(), "GET /evaluators should have data field");
+        assert!(
+            resp.get("data").is_some(),
+            "GET /evaluators should have data field"
+        );
 
         // Configure
         harness.configure_evaluators(&json!({
@@ -207,7 +222,10 @@ mod engine {
         harness.clear_evaluators();
         let resp = harness.list_evaluators();
         let evaluators = resp["data"].as_array().expect("data should be array");
-        assert!(evaluators.is_empty(), "evaluators should be empty after clear");
+        assert!(
+            evaluators.is_empty(),
+            "evaluators should be empty after clear"
+        );
     }
 
     #[test]
@@ -285,11 +303,7 @@ mod engine {
 
         // warn() lets the request continue — timeout or non-error response
         // both prove it wasn't blocked
-        let resp = harness.call_tool(
-            "e2e-scale-app",
-            &json!({"replicas": "3"}),
-            "default",
-        );
+        let resp = harness.call_tool("e2e-scale-app", &json!({"replicas": "3"}), "default");
 
         assert!(
             !TestHarness::was_blocked(&resp),
@@ -328,11 +342,7 @@ mod engine {
 
         harness.clear_evaluators();
 
-        let resp = harness.call_tool(
-            "e2e-clear-test",
-            &json!({"target": "prod"}),
-            "default",
-        );
+        let resp = harness.call_tool("e2e-clear-test", &json!({"target": "prod"}), "default");
 
         assert!(
             !TestHarness::was_blocked(&resp),
@@ -383,14 +393,13 @@ mod engine {
         assert!(eval.is_some(), "evaluator should be configured");
 
         let schema = &eval.unwrap()["llm"]["result_schema"];
-        assert!(schema.is_object(), "result_schema should be present in config");
+        assert!(
+            schema.is_object(),
+            "result_schema should be present in config"
+        );
         assert_eq!(schema["required"][0], "level");
 
-        let resp = harness.call_tool(
-            "e2e-schema-test",
-            &json!({"action": "test"}),
-            "default",
-        );
+        let resp = harness.call_tool("e2e-schema-test", &json!({"action": "test"}), "default");
 
         assert!(
             TestHarness::was_blocked(&resp),
@@ -430,11 +439,7 @@ mod engine {
             }]
         }));
 
-        let resp = harness.call_tool(
-            "e2e-ns-tool",
-            &json!({"target": "prod"}),
-            "e2e-ns",
-        );
+        let resp = harness.call_tool("e2e-ns-tool", &json!({"target": "prod"}), "e2e-ns");
 
         assert!(
             TestHarness::was_blocked(&resp),
@@ -501,7 +506,11 @@ mod classification {
         }
 
         let ns = "e2e-classify";
-        harness.register_tool("restart-database", "Restart a production database instance", Some(ns));
+        harness.register_tool(
+            "restart-database",
+            "Restart a production database instance",
+            Some(ns),
+        );
         configure_safety_evaluator(&harness, ns);
 
         let resp = harness.call_tool(
