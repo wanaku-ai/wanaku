@@ -4,6 +4,8 @@ Wanaku is a governed action proxy for AI agents. It sits between agents and the 
 
 This guide gets you from zero to a running Wanaku proxy in under 10 minutes.
 
+> **Coming from Classic Wanaku (Java)?** See [Migrating from Classic Wanaku](./migration-from-classic.md) for what changed, what broke, and how to migrate.
+
 ## Prerequisites
 
 You'll need:
