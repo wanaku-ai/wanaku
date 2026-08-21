@@ -447,9 +447,10 @@ impl ToolRegistry for InMemoryRegistry {
             return;
         }
         let inject = self.inject_request_id.load(Ordering::Relaxed);
+        let default_ns = DEFAULT_NAMESPACE.to_owned();
         for mut tool in tools {
             if tool.namespace.is_none() {
-                tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+                tool.namespace = Some(default_ns.clone());
             }
             if inject {
                 inject_request_id_arg(&mut tool.input_schema);
@@ -521,9 +522,10 @@ impl ResourceRegistry for InMemoryRegistry {
         if resources.is_empty() {
             return;
         }
+        let default_ns = DEFAULT_NAMESPACE.to_owned();
         for mut resource in resources {
             if resource.namespace.is_none() {
-                resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+                resource.namespace = Some(default_ns.clone());
             }
             self.resources.insert(resource.name.clone(), resource);
         }
@@ -592,9 +594,10 @@ impl PromptRegistry for InMemoryRegistry {
         if prompts.is_empty() {
             return;
         }
+        let default_ns = DEFAULT_NAMESPACE.to_owned();
         for mut prompt in prompts {
             if prompt.namespace.is_none() {
-                prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+                prompt.namespace = Some(default_ns.clone());
             }
             self.prompts.insert(prompt.name.clone(), prompt);
         }
