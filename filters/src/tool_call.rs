@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 use bytes::Bytes;
+use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
+use wanaku_apis::config::ENV;
 use wanaku_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
@@ -129,7 +131,10 @@ impl ToolCallFilter {
         };
 
         if tool.is_mcp_forward() {
-            return self.handle_forwarded_call(&tool, &tool_name, &parsed).await;
+            let forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
+            return self
+                .handle_forwarded_call(&tool, &tool_name, &parsed, forward_headers)
+                .await;
         }
 
         warn!(tool = %tool_name, tool_type = %tool.type_, "unsupported tool type — only MCP-forwarded tools are supported");
@@ -146,8 +151,14 @@ impl ToolCallFilter {
         tool: &ToolEntry,
         tool_name: &str,
         parsed: &ParsedBody,
+        forward_headers: HashMap<HeaderName, HeaderValue>,
     ) -> Result<FilterAction, FilterError> {
-        trace!(tool = %tool_name, uri = %tool.uri, "forwarding tools/call to remote MCP server");
+        trace!(
+            tool = %tool_name,
+            uri = %tool.uri,
+            forwarded_header_count = forward_headers.len(),
+            "forwarding tools/call to remote MCP server"
+        );
 
         let arguments = serde_json::Value::Object(
             parsed
@@ -157,7 +168,9 @@ impl ToolCallFilter {
                 .collect(),
         );
 
-        match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments).await {
+        match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments, forward_headers)
+            .await
+        {
             Ok(call_result) => {
                 let mcp_content: Vec<serde_json::Value> = call_result.content
                     .iter()
@@ -183,6 +196,59 @@ impl ToolCallFilter {
             }
         }
     }
+}
+
+fn collect_forward_headers(
+    request_headers: &http::HeaderMap,
+    tool: &ToolEntry,
+) -> HashMap<HeaderName, HeaderValue> {
+    let global = &ENV.forward_headers;
+    let per_tool = tool.forward_headers();
+    extract_allowed_headers(request_headers, global, &per_tool)
+}
+
+const DENIED_HEADERS: &[&str] = &[
+    "accept",
+    "mcp-session-id",
+    "last-event-id",
+    "host",
+    "content-type",
+    "content-length",
+    "transfer-encoding",
+    "connection",
+];
+
+fn extract_allowed_headers(
+    request_headers: &http::HeaderMap,
+    global_allowlist: &[String],
+    tool_allowlist: &[String],
+) -> HashMap<HeaderName, HeaderValue> {
+    if global_allowlist.is_empty() && tool_allowlist.is_empty() {
+        return HashMap::new();
+    }
+
+    let mut result = HashMap::new();
+
+    for (name, value) in request_headers {
+        let name_lower = name.as_str().to_lowercase();
+
+        if DENIED_HEADERS.contains(&name_lower.as_str()) {
+            if global_allowlist.contains(&name_lower) || tool_allowlist.contains(&name_lower) {
+                warn!(header = %name, "header is in the denylist and cannot be forwarded");
+            }
+            continue;
+        }
+
+        if global_allowlist.contains(&name_lower) || tool_allowlist.contains(&name_lower) {
+            if result.contains_key(name) {
+                trace!(header = %name, "duplicate header value overwritten");
+            }
+            trace!(header = %name, "forwarding header to downstream MCP server");
+            result.insert(name.clone(), value.clone());
+        }
+    }
+
+    result
 }
 
 #[cfg(test)]
@@ -299,5 +365,103 @@ mod tests {
         });
         let result = response.get("result").expect("result missing");
         assert_eq!(result.get("isError"), Some(&serde_json::Value::Bool(true)));
+    }
+
+    #[test]
+    fn extract_allowed_headers_empty_allowlists() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("authorization", "Bearer tok".parse().unwrap());
+        let result = extract_allowed_headers(&headers, &[], &[]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn extract_allowed_headers_global_match() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("authorization", "Bearer tok".parse().unwrap());
+        headers.insert("x-custom", "val".parse().unwrap());
+
+        let global = vec!["authorization".to_owned()];
+        let result = extract_allowed_headers(&headers, &global, &[]);
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(&HeaderName::from_static("authorization")).unwrap(), "Bearer tok");
+    }
+
+    #[test]
+    fn extract_allowed_headers_per_tool_match() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("dpop", "proof-jwt".parse().unwrap());
+        headers.insert("x-unrelated", "val".parse().unwrap());
+
+        let per_tool = vec!["dpop".to_owned()];
+        let result = extract_allowed_headers(&headers, &[], &per_tool);
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(&HeaderName::from_static("dpop")).unwrap(), "proof-jwt");
+    }
+
+    #[test]
+    fn extract_allowed_headers_combined_global_and_per_tool() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("authorization", "Bearer tok".parse().unwrap());
+        headers.insert("dpop", "proof-jwt".parse().unwrap());
+        headers.insert("x-unrelated", "val".parse().unwrap());
+
+        let global = vec!["authorization".to_owned()];
+        let per_tool = vec!["dpop".to_owned()];
+        let result = extract_allowed_headers(&headers, &global, &per_tool);
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains_key(&HeaderName::from_static("authorization")));
+        assert!(result.contains_key(&HeaderName::from_static("dpop")));
+    }
+
+    #[test]
+    fn extract_allowed_headers_no_matching_headers() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("x-other", "val".parse().unwrap());
+
+        let global = vec!["authorization".to_owned()];
+        let result = extract_allowed_headers(&headers, &global, &[]);
+
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn extract_allowed_headers_denied_header_blocked() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("content-type", "text/plain".parse().unwrap());
+        headers.insert("authorization", "Bearer tok".parse().unwrap());
+
+        let global = vec!["content-type".to_owned(), "authorization".to_owned()];
+        let result = extract_allowed_headers(&headers, &global, &[]);
+
+        assert_eq!(result.len(), 1);
+        assert!(result.contains_key(&HeaderName::from_static("authorization")));
+        assert!(!result.contains_key(&HeaderName::from_static("content-type")));
+    }
+
+    #[test]
+    fn extract_allowed_headers_all_rmcp_reserved_blocked() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("accept", "application/json".parse().unwrap());
+        headers.insert("mcp-session-id", "abc".parse().unwrap());
+        headers.insert("host", "evil.com".parse().unwrap());
+        headers.insert("transfer-encoding", "chunked".parse().unwrap());
+        headers.insert("connection", "keep-alive".parse().unwrap());
+        headers.insert("content-length", "42".parse().unwrap());
+
+        let global = vec![
+            "accept".to_owned(),
+            "mcp-session-id".to_owned(),
+            "host".to_owned(),
+            "transfer-encoding".to_owned(),
+            "connection".to_owned(),
+            "content-length".to_owned(),
+        ];
+        let result = extract_allowed_headers(&headers, &global, &[]);
+
+        assert!(result.is_empty());
     }
 }

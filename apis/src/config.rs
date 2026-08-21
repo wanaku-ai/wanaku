@@ -36,6 +36,13 @@ const WANAKU_UI_PATH: &str = "WANAKU_UI_PATH";
 /// Defaults to `"*"`. Set to a specific origin (e.g. `http://localhost:3000`) in production.
 const WANAKU_CORS_ORIGIN: &str = "WANAKU_CORS_ORIGIN";
 
+/// Comma-separated list of HTTP header names to forward from incoming MCP
+/// requests to downstream tool invocations (e.g. `Authorization,DPoP`).
+/// Empty by default — no headers are forwarded unless explicitly configured.
+/// Per-tool overrides are configured via the `wanaku.forward_headers` label
+/// on individual `ToolEntry` records.
+const WANAKU_FORWARD_HEADERS: &str = "WANAKU_FORWARD_HEADERS";
+
 /// File-persistence settings, present only when enabled.
 #[derive(Debug, Clone)]
 pub struct PersistEnv {
@@ -63,6 +70,8 @@ pub struct WanakuEnv {
     pub ui_path: Option<PathBuf>,
     /// Value for the `Access-Control-Allow-Origin` header on all HTTP responses.
     pub cors_origin: String,
+    /// Global allowlist of HTTP header names forwarded to downstream tool calls.
+    pub forward_headers: Vec<String>,
 }
 
 /// Global configuration, initialized lazily on first access.
@@ -105,6 +114,12 @@ impl WanakuEnv {
             ui_path: std::env::var(WANAKU_UI_PATH).ok().map(PathBuf::from),
             cors_origin: std::env::var(WANAKU_CORS_ORIGIN)
                 .unwrap_or_else(|_| "*".to_owned()),
+            forward_headers: std::env::var(WANAKU_FORWARD_HEADERS)
+                .unwrap_or_default()
+                .split(',')
+                .map(|s| s.trim().to_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect(),
         }
     }
 }
