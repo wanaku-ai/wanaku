@@ -18,6 +18,8 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 
 **Critical:** Changes to `server/src/default.yaml` don't trigger rebuilds (`include_str!`). Touch `server/src/lib.rs` to force recompile.
 
+**Config modification at startup:** `load_config` in `server/src/lib.rs` parses the embedded `default.yaml` into `serde_yaml::Value` and applies env var overrides programmatically (inference upstream, TLS SNI, CORS origin) before passing to praxis. Helper functions `find_named_entry_mut`, `find_inference_cluster`, `apply_inference_config`, and `apply_cors_config` navigate the YAML tree. Falls back to raw defaults with error logging if parsing or serialization fails.
+
 ## Build Info
 
 - Rust 2024, MSRV 1.96

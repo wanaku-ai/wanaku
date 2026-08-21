@@ -208,6 +208,8 @@ listeners:
   allow_headers: ["Content-Type", "Authorization"]
 ```
 
+**Note:** The `WANAKU_CORS_ORIGIN` env var overrides `allow_origins` in the embedded default pipeline config at startup. If you provide a custom pipeline config via `--pipeline-config`, `allow_origins` in that file is used as-is — the env var only applies to the embedded default.
+
 **MCP filter (praxis-ai):**
 
 ```yaml
