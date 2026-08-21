@@ -9,8 +9,7 @@ use praxis_filter::{FilterRegistry, PipelineExtension};
 use wanaku_apis::feature::{Feature, HttpContext};
 
 use crate::routes::{
-    ChatRoute, handle_chat_completions, handle_chat_list_llms, handle_chat_list_models,
-    resolve_chat_route,
+    ChatRoute, handle_chat_completions, handle_chat_list_models, resolve_chat_route,
 };
 
 pub struct ChatFeature {
@@ -54,8 +53,7 @@ impl Feature for ChatFeature {
             return None;
         }
         Some(match route {
-            ChatRoute::ListLlms => handle_chat_list_llms(),
-            ChatRoute::ListModels(_) => {
+            ChatRoute::ListModels => {
                 handle_chat_list_models(
                     &self.client,
                     &self.inference_base_url,

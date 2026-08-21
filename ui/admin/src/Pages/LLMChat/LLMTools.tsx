@@ -5,6 +5,7 @@ import {
   Stack
 } from "@carbon/react"
 import React, {useEffect, useState} from "react"
+import {useNamespaces} from "../../hooks/api/use-namespaces"
 import {useTools} from "../../hooks/api/use-tools"
 import {getErrorMessage} from "../../utils/error"
 import {NamespaceEntry, ToolEntry} from "../../models"
@@ -20,16 +21,23 @@ interface LLMToolsProps {
 
 export const LLMTools: React.FC<LLMToolsProps> = ({
     selectedNamespace, selectedTools, onSelectionChange, onError }) => {
-
+  
   const [tools, setTools] = useState<ToolEntry[]>([])
+  
+  // namespace used for filtering tools
+  const [namespace, setNamespace] = useState<NamespaceEntry>(selectedNamespace)
+  
   const [isLoading, setLoading] = useState(true)
   const { listTools } = useTools()
-
+  const { listNamespaces } = useNamespaces()
+  
+  
   useEffect(() => {
     (async () => {
       try {
         const tools = await fetchTools()
         setTools(tools)
+        await checkSelectedNamespace()
       } catch (error) {
         onError?.(getErrorMessage(error))
         setTools([])
@@ -37,7 +45,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
         setLoading(false)
       }
     })()
-  }, [listTools])
+  }, [listTools, listNamespaces, selectedNamespace])
 
   async function fetchTools(): Promise<ToolEntry[]> {
     const response = await listTools()
@@ -46,15 +54,35 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
     }
     return response.data
   }
+  
+  async function fetchNamespaces(): Promise<NamespaceEntry[]> {
+    const response = await listNamespaces()
+    if (response.status !== 200 || !Array.isArray(response.data)) {
+      throw new Error("Error while fetching namespaces: " + response.status)
+    }
+    return response.data
+  }
+  
+  /* Check that selectedNamespace exists. Reset it to "default" if it doesn't */
+  async function checkSelectedNamespace() {
+    console.log("Checking selected namespace")
+    let namespaces: NamespaceEntry[] = await fetchNamespaces()
+    if (!namespaces.find(namespace => namespace.name === selectedNamespace.name)) {
+      console.log("Selected namespace not found, resetting to default")
+      setNamespace({ name: "default" })
+    }
+  }
 
   function filteredTools(): ToolEntry[] {
-    if (!selectedNamespace) {
+    console.log("Selected namespace", namespace)
+    console.log("Tools", tools)
+    if (!namespace) {
       return tools
     }
-    const nsKey = selectedNamespace.id || selectedNamespace.name || selectedNamespace.path
-    if (selectedNamespace.path === "default") {
-      return tools.filter(tool => !tool.namespace || tool.namespace === nsKey)
+    if (namespace.name === "default") {
+      return tools.filter(tool => !tool.namespace || tool.namespace === "default")
     }
+    const nsKey = namespace.id || namespace.name || namespace.path
     return tools.filter(tool => tool.namespace === nsKey)
   }
 
@@ -76,7 +104,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
         <NamespaceSelect
           id="namespace"
           labelText="Select tools"
-          value={selectedNamespace.id ?? undefined}
+          value={namespace?.name}
           onChange={(namespace: NamespaceEntry) => {
             onSelectionChange(namespace, [])
           }}
@@ -94,7 +122,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
             indeterminate={isSomeSelected()}
             onChange={(_, { checked }) => {
               const selection = checked ? [...tools] : []
-              onSelectionChange(selectedNamespace, selection)
+              onSelectionChange(namespace, selection)
             }}
           />
           {filteredTools().map((tool) => (
@@ -108,7 +136,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
                 const selection = checked
                   ? [...selectedTools, tool]
                   : selectedTools.filter(item => item.name != tool.name)
-                onSelectionChange(selectedNamespace, selection)
+                onSelectionChange(namespace, selection)
               }}
             />
           ))}

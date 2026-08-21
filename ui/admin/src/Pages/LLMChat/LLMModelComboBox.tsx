@@ -4,50 +4,37 @@ import {getUrl} from "../../custom-fetch"
 
 
 interface LLMModelComboBoxProps {
-  llm?: string
   value?: string
   labelText?: string
   onChange: (llmModel: string) => void
 }
 
-export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, onChange, labelText }) => {
+export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ value, onChange, labelText }) => {
   
-  const [modelCatalog, setModelCatalog] = useState<{ [llm: string]: string[] }>({})
+  const [models, setModels] = useState<string[]>([])
   
   
   useEffect(() => {
     (async () => {
-      const response = await fetch(getUrl("/api/v1/chat/llms"))
+      const response = await fetch(getUrl("/api/v1/chat/models"))
       if (response.ok) {
-        const llms: string[] = await response.json()
-        const modelCatalog = {}
-        for (const llm of llms) {
-          const response = await fetch(getUrl(`/api/v1/chat/${llm}/models`))
-          if (response.ok) {
-            const models: string[] = await response.json()
-            modelCatalog[llm] = models
-          }
-        }
-        setModelCatalog(modelCatalog)
+        const models: string[] = await response.json()
+        setModels(models)
       }
     })()
-  }, [setModelCatalog])
-  
-  function createItems(): string[] {
-    return (llm && modelCatalog[llm]) ? modelCatalog[llm] : []
-  }
+  }, [setModels])
   
   return (
     <ComboBox
       id="llm-model"
       titleText={labelText}
-      items={createItems()}
+      items={models}
       allowCustomValue
       selectedItem={value}
       onChange={(event) => {
         setTimeout(() => {
-          const llmModel = event.selectedItem || event.inputValue || ""
-          onChange(llmModel)
+          const model = event.selectedItem || event.inputValue || ""
+          onChange(model)
         }, 0)
       }}
     />

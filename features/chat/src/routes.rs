@@ -4,8 +4,7 @@ use wanaku_apis::http_response::json_err;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ChatRoute {
-    ListLlms,
-    ListModels(String),
+    ListModels,
     Completions,
     NotFound,
 }
@@ -16,14 +15,7 @@ pub(crate) fn resolve_chat_route(method: &str, path: &str) -> ChatRoute {
     };
 
     match (method, suffix) {
-        ("GET", "/llms") => ChatRoute::ListLlms,
-        ("GET", s) if s.ends_with("/models") => {
-            let llm = s.strip_prefix('/').and_then(|s| s.strip_suffix("/models"));
-            match llm {
-                Some(name) if !name.is_empty() => ChatRoute::ListModels(name.to_owned()),
-                _ => ChatRoute::NotFound,
-            }
-        }
+        ("GET", "/models") => ChatRoute::ListModels,
         ("POST", "/completions") => ChatRoute::Completions,
         _ => ChatRoute::NotFound,
     }
@@ -40,10 +32,6 @@ fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
         .expect("valid json response")
 }
 
-pub(crate) fn handle_chat_list_llms() -> Response<Vec<u8>> {
-    raw_json_response(serde_json::to_vec(&serde_json::json!(["Inference"])).unwrap_or_default())
-}
-
 #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "sequential HTTP request handling")]
 pub(crate) async fn handle_chat_list_models(
     client: &reqwest::Client,
@@ -51,7 +39,7 @@ pub(crate) async fn handle_chat_list_models(
     upstream_host: Option<&str>,
     api_key: &str,
 ) -> Response<Vec<u8>> {
-    let url = format!("{base_url}/v1/models");
+    let url = format!("{base_url}/models");
 
     let mut request = client.get(&url);
     if let Some(host) = upstream_host {
@@ -118,16 +106,6 @@ pub(crate) async fn handle_chat_completions(
         Err(e) => return json_err(StatusCode::BAD_REQUEST, &format!("invalid request: {e}")),
     };
 
-    let request_api_key = request
-        .get("apiKey")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("");
-    let effective_key = if request_api_key.is_empty() {
-        api_key
-    } else {
-        request_api_key
-    };
-
     let model = request
         .get("model")
         .and_then(serde_json::Value::as_str)
@@ -160,14 +138,14 @@ pub(crate) async fn handle_chat_completions(
         "messages": messages,
     });
 
-    let url = format!("{base_url}/v1/chat/completions");
+    let url = format!("{base_url}/chat/completions");
 
     let mut req = client.post(&url).json(&openai_request);
     if let Some(host) = upstream_host {
         req = req.header("Host", host);
     }
-    if !effective_key.is_empty() {
-        req = req.bearer_auth(effective_key);
+    if !api_key.is_empty() {
+        req = req.bearer_auth(api_key);
     }
 
     let response = match req.send().await {
@@ -221,31 +199,6 @@ pub(crate) async fn handle_chat_completions(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn list_llms() {
-        assert_eq!(
-            resolve_chat_route("GET", "/api/v1/chat/llms"),
-            ChatRoute::ListLlms
-        );
-    }
-
-    #[test]
-    fn list_llms_returns_non_empty_array() {
-        let response = handle_chat_list_llms();
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body: Vec<String> = serde_json::from_slice(response.body()).unwrap();
-        assert!(!body.is_empty(), "LLM list must not be empty");
-    }
-
-    #[test]
-    fn list_models_for_llm() {
-        assert_eq!(
-            resolve_chat_route("GET", "/api/v1/chat/ollama/models"),
-            ChatRoute::ListModels("ollama".to_owned())
-        );
-    }
 
     #[test]
     fn completions() {
