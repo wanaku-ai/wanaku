@@ -207,6 +207,7 @@ cd ../safety-warn && cargo component build --release && cp target/wasm32-wasip1/
 | `WANAKU_PERSIST_BACKEND` | `"file"` | Persistence backend; `"none"` disables |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | `registry.json` dir |
 | `WANAKU_UI_PATH` | unset | FS path to UI override |
+| `WANAKU_CORS_ORIGIN` | `"*"` | `Access-Control-Allow-Origin` for all HTTP responses |
 | `WANAKU_AUTH_ISSUER` | unset | OIDC issuer (RFC 9728) |
 | `WANAKU_INFERENCE_API_KEY` | unset | Bearer token for upstream |
 
