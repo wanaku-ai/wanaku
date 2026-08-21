@@ -25,6 +25,7 @@ use self::handlers::{
     handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_resource_delete, handle_resource_get, handle_resource_list,
     handle_resource_update,
+    handle_info,
     handle_statistics,
     handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
 };
@@ -121,6 +122,7 @@ pub(crate) async fn dispatch(
     }
 
     match resolve_management_route(ctx.method, ctx.path) {
+        ManagementRoute::Info => return handle_info(),
         ManagementRoute::Statistics => return handle_statistics(registry),
         ManagementRoute::NotFound => {}
     }
@@ -260,6 +262,21 @@ mod dispatch_tests {
         let body = parse_body(&resp);
         let data = body.get("data").cloned().unwrap_or_default();
         assert_eq!(data.get("status").and_then(|v| v.as_str()), Some("ok"));
+    }
+
+    #[tokio::test]
+    async fn dispatch_info_returns_name_and_version() {
+        let registry = InMemoryRegistry::new();
+        let headers = http::HeaderMap::new();
+        let features: &[Box<dyn Feature>] = &[];
+        let ctx = HttpContext::new("GET", "/api/v1/management/info", None, None, &headers);
+
+        let resp = dispatch(&ctx, &registry, features).await;
+
+        assert_eq!(resp.status(), 200);
+        let data = data_field(&resp);
+        assert!(data.get("name").and_then(|v| v.as_str()).is_some());
+        assert!(data.get("version").and_then(|v| v.as_str()).is_some());
     }
 
     #[tokio::test]

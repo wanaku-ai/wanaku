@@ -193,6 +193,13 @@ const fn clear_interactions() {}
 )]
 const fn get_metrics() {}
 
+// -- Info ---------------------------------------------------------------------
+
+#[utoipa::path(get, path = "/api/v1/management/info", tag = "Management",
+    responses((status = 200, description = "Server name and version", body = serde_json::Value))
+)]
+const fn get_info() {}
+
 // -- Statistics ---------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/management/statistics", tag = "Management",
@@ -218,7 +225,7 @@ const fn get_statistics() {}
         list_forwards, get_forward, create_forward, delete_forward, refresh_forward,
         list_interactions, clear_interactions,
         get_metrics,
-        get_statistics,
+        get_info, get_statistics,
     ),
     components(schemas(
         ToolEntry, ResourceEntry, PromptEntry, PromptArgument, PromptMessage,
