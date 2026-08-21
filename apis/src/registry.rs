@@ -177,10 +177,23 @@ pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 
 pub const FORWARD_ADDRESS_LABEL: &str = "wanaku.forward_address";
 pub const IS_TEMPLATE_LABEL: &str = "wanaku.is_template";
+pub const FORWARD_HEADERS_LABEL: &str = "wanaku.forward_headers";
 
 impl ToolEntry {
     pub fn is_mcp_forward(&self) -> bool {
         self.type_ == MCP_FORWARD_TYPE
+    }
+
+    pub fn forward_headers(&self) -> Vec<String> {
+        self.labels
+            .get(FORWARD_HEADERS_LABEL)
+            .map(|v| {
+                v.split(',')
+                    .map(|s| s.trim().to_lowercase())
+                    .filter(|s| !s.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 }
 
@@ -813,6 +826,28 @@ mod tests {
         assert!(registry.get_resource("r1").is_none());
         assert!(registry.get_resource("r2").is_some());
         assert!(registry.get_resource("r3").is_none());
+    }
+
+    #[test]
+    fn tool_forward_headers_from_label() {
+        let mut tool = sample_tool();
+        assert!(tool.forward_headers().is_empty());
+
+        tool.labels.insert(
+            FORWARD_HEADERS_LABEL.to_owned(),
+            "Authorization, DPoP".to_owned(),
+        );
+        let headers = tool.forward_headers();
+        assert_eq!(headers.len(), 2);
+        assert!(headers.contains(&"authorization".to_owned()));
+        assert!(headers.contains(&"dpop".to_owned()));
+    }
+
+    #[test]
+    fn tool_forward_headers_empty_value() {
+        let mut tool = sample_tool();
+        tool.labels.insert(FORWARD_HEADERS_LABEL.to_owned(), String::new());
+        assert!(tool.forward_headers().is_empty());
     }
 
     #[test]

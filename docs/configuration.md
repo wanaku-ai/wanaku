@@ -22,6 +22,7 @@ These control core server behavior:
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
 | `WANAKU_INFERENCE_API_KEY` | _(unset = no auth)_ | Bearer token API key for the inference upstream. Empty means no auth. |
+| `WANAKU_FORWARD_HEADERS` | _(unset = none)_ | Comma-separated list of HTTP header names to forward from incoming MCP requests to downstream tool invocations (e.g., `Authorization,DPoP`). Per-tool overrides via the `wanaku.forward_headers` label. |
 
 **Example:**
 
@@ -93,6 +94,38 @@ wanaku-server
 The server serves files from the specified directory instead of the embedded bundle.
 
 **Warning:** Relative paths don't work. Use an absolute path.
+
+### Header Forwarding
+
+By default, Wanaku does not forward any HTTP headers from incoming MCP requests to downstream tool invocations. To enable header forwarding (e.g., for gateway-mediated token exchange), configure an allowlist of header names.
+
+**Global allowlist** — applies to all tool calls:
+
+```bash
+export WANAKU_FORWARD_HEADERS=Authorization,DPoP
+```
+
+**Per-tool override** — set the `wanaku.forward_headers` label on a `ToolEntry`:
+
+```json
+{
+  "name": "github-api",
+  "uri": "http://mcp-gateway:8080/mcp",
+  "type": "mcp-forward",
+  "labels": {
+    "wanaku.forward_headers": "Authorization,X-Third-Party-Token"
+  }
+}
+```
+
+Both lists are merged at runtime — a header is forwarded if it appears in either the global allowlist or the per-tool label. Header names are case-insensitive.
+
+**Use case:** A gateway (Envoy ExtProc, IBM ContextForge) sits between Wanaku and a protected downstream API. The gateway performs token exchange (e.g., Keycloak STS) using the `Authorization` header from the original request. Wanaku forwards the header so the gateway has a `subject_token` to exchange.
+
+**Security considerations:**
+
+- Headers that would corrupt the downstream HTTP request (`host`, `content-type`, `content-length`, `transfer-encoding`, `connection`) and rmcp-reserved headers (`accept`, `mcp-session-id`, `last-event-id`) are always blocked, even if they appear in the allowlist.
+- When `Authorization` forwarding is enabled, anyone with management API access can register a tool pointing to an arbitrary URL — the caller's bearer token would then be forwarded to that URL. Secure the management API (authentication, network isolation) before enabling credential forwarding in production.
 
 ## Feature-Specific Environment Variables
 

@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
+use http::{HeaderName, HeaderValue};
 use rmcp::{
     ServiceExt as _,
     model::{
@@ -64,7 +66,17 @@ pub enum McpClientError {
 }
 
 fn build_transport(url: &str) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
-    let config = StreamableHttpClientTransportConfig::with_uri(url);
+    build_transport_with_headers(url, HashMap::new())
+}
+
+fn build_transport_with_headers(
+    url: &str,
+    headers: HashMap<HeaderName, HeaderValue>,
+) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
+    let mut config = StreamableHttpClientTransportConfig::with_uri(url);
+    if !headers.is_empty() {
+        config = config.custom_headers(headers);
+    }
     StreamableHttpClientTransport::from_config(config)
 }
 
@@ -138,9 +150,10 @@ pub async fn call_tool(
     url: &str,
     tool_name: &str,
     arguments: Value,
+    forward_headers: HashMap<HeaderName, HeaderValue>,
 ) -> Result<CallToolResponse, McpClientError> {
     let url = url.to_owned();
-    let transport = build_transport(&url);
+    let transport = build_transport_with_headers(&url, forward_headers);
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
         .await
