@@ -132,6 +132,7 @@ impl ToolCallFilter {
 
         if tool.is_mcp_forward() {
             let forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
+            inject_header_arguments(&mut parsed.arguments, &tool.input_schema, &forward_headers);
             return self
                 .handle_forwarded_call(&tool, &tool_name, &parsed, forward_headers)
                 .await;
@@ -194,6 +195,42 @@ impl ToolCallFilter {
                     &format!("forwarded tool call failed: {e}"),
                 ))
             }
+        }
+    }
+}
+
+fn inject_header_arguments(
+    arguments: &mut HashMap<String, serde_json::Value>,
+    input_schema: &serde_json::Value,
+    forward_headers: &HashMap<HeaderName, HeaderValue>,
+) {
+    if forward_headers.is_empty() {
+        return;
+    }
+
+    let Some(properties) = input_schema.get("properties").and_then(|p| p.as_object()) else {
+        return;
+    };
+
+    for (prop_name, prop_schema) in properties {
+        let Some(header_name) = prop_schema.get("x-mcp-header").and_then(|h| h.as_str()) else {
+            continue;
+        };
+
+        if arguments.contains_key(prop_name) {
+            continue;
+        }
+
+        let header_key = HeaderName::from_bytes(header_name.as_bytes()).ok();
+        let value = header_key.and_then(|k| forward_headers.get(&k));
+
+        if let Some(val) = value.and_then(|v| v.to_str().ok()) {
+            trace!(
+                property = %prop_name,
+                header = %header_name,
+                "injecting forwarded header as tool argument (x-mcp-header)"
+            );
+            arguments.insert(prop_name.clone(), serde_json::Value::String(val.to_owned()));
         }
     }
 }
@@ -365,6 +402,95 @@ mod tests {
         });
         let result = response.get("result").expect("result missing");
         assert_eq!(result.get("isError"), Some(&serde_json::Value::Bool(true)));
+    }
+
+    #[test]
+    fn inject_header_arguments_from_schema() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "type": "string",
+                    "x-mcp-header": "Authorization"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        });
+        let mut args = HashMap::new();
+        args.insert("message".to_owned(), serde_json::json!("hello"));
+
+        let mut headers = HashMap::new();
+        headers.insert(
+            HeaderName::from_static("authorization"),
+            HeaderValue::from_static("Bearer tok"),
+        );
+
+        inject_header_arguments(&mut args, &schema, &headers);
+        assert_eq!(args.get("auth"), Some(&serde_json::json!("Bearer tok")));
+        assert_eq!(args.get("message"), Some(&serde_json::json!("hello")));
+    }
+
+    #[test]
+    fn inject_header_arguments_does_not_overwrite_existing() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "type": "string",
+                    "x-mcp-header": "Authorization"
+                }
+            }
+        });
+        let mut args = HashMap::new();
+        args.insert("auth".to_owned(), serde_json::json!("existing-value"));
+
+        let mut headers = HashMap::new();
+        headers.insert(
+            HeaderName::from_static("authorization"),
+            HeaderValue::from_static("Bearer tok"),
+        );
+
+        inject_header_arguments(&mut args, &schema, &headers);
+        assert_eq!(args.get("auth"), Some(&serde_json::json!("existing-value")));
+    }
+
+    #[test]
+    fn inject_header_arguments_no_annotation() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"}
+            }
+        });
+        let mut args = HashMap::new();
+        let mut headers = HashMap::new();
+        headers.insert(
+            HeaderName::from_static("authorization"),
+            HeaderValue::from_static("Bearer tok"),
+        );
+
+        inject_header_arguments(&mut args, &schema, &headers);
+        assert!(args.is_empty());
+    }
+
+    #[test]
+    fn inject_header_arguments_header_not_forwarded() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "type": "string",
+                    "x-mcp-header": "Authorization"
+                }
+            }
+        });
+        let mut args = HashMap::new();
+        let headers = HashMap::new();
+
+        inject_header_arguments(&mut args, &schema, &headers);
+        assert!(args.is_empty());
     }
 
     #[test]
