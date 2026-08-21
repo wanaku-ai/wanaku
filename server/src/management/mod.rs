@@ -120,85 +120,67 @@ pub(crate) async fn dispatch(
         return raw_json_response(openapi_body);
     }
 
-    let mgmt_route = resolve_management_route(ctx.method, ctx.path);
-    if mgmt_route != ManagementRoute::NotFound {
-        return match mgmt_route {
-            ManagementRoute::Statistics => handle_statistics(registry),
-            ManagementRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
-        };
+    match resolve_management_route(ctx.method, ctx.path) {
+        ManagementRoute::Statistics => return handle_statistics(registry),
+        ManagementRoute::NotFound => {}
     }
 
     tracing::debug!(method = %ctx.method, path = %ctx.path, "management API request");
 
-    let tool_route = resolve_tool_route(ctx.method, ctx.path);
-    if tool_route != ToolRoute::NotFound {
-        return match tool_route {
-            ToolRoute::List => handle_tool_list(registry),
-            ToolRoute::GetByName(name) => handle_tool_get(registry, &name),
-            ToolRoute::Update(name) => match ctx.body {
-                Some(b) => handle_tool_update(registry, &name, b),
-                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-            },
-            ToolRoute::Delete(name) => handle_tool_delete(registry, &name),
-            ToolRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
-        };
+    match resolve_tool_route(ctx.method, ctx.path) {
+        ToolRoute::List => return handle_tool_list(registry),
+        ToolRoute::GetByName(name) => return handle_tool_get(registry, &name),
+        ToolRoute::Update(name) => return match ctx.body {
+            Some(b) => handle_tool_update(registry, &name, b),
+            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+        },
+        ToolRoute::Delete(name) => return handle_tool_delete(registry, &name),
+        ToolRoute::NotFound => {}
     }
 
-    let resource_route = resolve_resource_route(ctx.method, ctx.path);
-    if resource_route != ResourceRoute::NotFound {
-        return match resource_route {
-            ResourceRoute::List => handle_resource_list(registry),
-            ResourceRoute::GetByName(name) => handle_resource_get(registry, &name),
-            ResourceRoute::Update(name) => match ctx.body {
-                Some(b) => handle_resource_update(registry, &name, b),
-                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-            },
-            ResourceRoute::Delete(name) => handle_resource_delete(registry, &name),
-            ResourceRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
-        };
+    match resolve_resource_route(ctx.method, ctx.path) {
+        ResourceRoute::List => return handle_resource_list(registry),
+        ResourceRoute::GetByName(name) => return handle_resource_get(registry, &name),
+        ResourceRoute::Update(name) => return match ctx.body {
+            Some(b) => handle_resource_update(registry, &name, b),
+            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+        },
+        ResourceRoute::Delete(name) => return handle_resource_delete(registry, &name),
+        ResourceRoute::NotFound => {}
     }
 
-    let prompt_route = resolve_prompt_route(ctx.method, ctx.path);
-    if prompt_route != PromptRoute::NotFound {
-        return match prompt_route {
-            PromptRoute::List => handle_prompt_list(registry),
-            PromptRoute::GetByName(name) => handle_prompt_get(registry, &name),
-            PromptRoute::Delete(name) => handle_prompt_delete(registry, &name),
-            PromptRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
-        };
+    match resolve_prompt_route(ctx.method, ctx.path) {
+        PromptRoute::List => return handle_prompt_list(registry),
+        PromptRoute::GetByName(name) => return handle_prompt_get(registry, &name),
+        PromptRoute::Delete(name) => return handle_prompt_delete(registry, &name),
+        PromptRoute::NotFound => {}
     }
 
-    let ns_route = resolve_namespace_route(ctx.method, ctx.path);
-    if ns_route != NamespaceRoute::NotFound {
-        return match ns_route {
-            NamespaceRoute::List => handle_namespace_list(registry),
-            NamespaceRoute::GetByName(name) => handle_namespace_get(registry, &name),
-            NamespaceRoute::Create => match ctx.body {
-                Some(b) => handle_namespace_create(registry, b),
-                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-            },
-            NamespaceRoute::Update(id) => match ctx.body {
-                Some(b) => handle_namespace_update(registry, &id, b),
-                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-            },
-            NamespaceRoute::Delete(name) => handle_namespace_delete(registry, &name),
-            NamespaceRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
-        };
+    match resolve_namespace_route(ctx.method, ctx.path) {
+        NamespaceRoute::List => return handle_namespace_list(registry),
+        NamespaceRoute::GetByName(name) => return handle_namespace_get(registry, &name),
+        NamespaceRoute::Create => return match ctx.body {
+            Some(b) => handle_namespace_create(registry, b),
+            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+        },
+        NamespaceRoute::Update(id) => return match ctx.body {
+            Some(b) => handle_namespace_update(registry, &id, b),
+            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+        },
+        NamespaceRoute::Delete(name) => return handle_namespace_delete(registry, &name),
+        NamespaceRoute::NotFound => {}
     }
 
-    let forward_route = resolve_forward_route(ctx.method, ctx.path);
-    if forward_route != ForwardRoute::NotFound {
-        return match forward_route {
-            ForwardRoute::List => handle_forward_list(registry),
-            ForwardRoute::GetByName(name) => handle_forward_get(registry, &name),
-            ForwardRoute::Create => match ctx.body {
-                Some(b) => handle_forward_create(registry, b).await,
-                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-            },
-            ForwardRoute::Delete(name) => handle_forward_delete(registry, &name),
-            ForwardRoute::Refresh(name) => handle_forward_refresh(registry, &name).await,
-            ForwardRoute::NotFound => json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default()),
-        };
+    match resolve_forward_route(ctx.method, ctx.path) {
+        ForwardRoute::List => return handle_forward_list(registry),
+        ForwardRoute::GetByName(name) => return handle_forward_get(registry, &name),
+        ForwardRoute::Create => return match ctx.body {
+            Some(b) => handle_forward_create(registry, b).await,
+            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+        },
+        ForwardRoute::Delete(name) => return handle_forward_delete(registry, &name),
+        ForwardRoute::Refresh(name) => return handle_forward_refresh(registry, &name).await,
+        ForwardRoute::NotFound => {}
     }
 
     for feature in features {
