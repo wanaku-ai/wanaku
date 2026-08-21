@@ -19,7 +19,7 @@ These control core server behavior:
 | `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file-based registry persistence |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
-| `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on management API responses |
+| `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
 | `WANAKU_INFERENCE_API_KEY` | _(unset = no auth)_ | Bearer token API key for the inference upstream. Empty means no auth. |
 
