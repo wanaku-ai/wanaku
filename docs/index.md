@@ -28,6 +28,7 @@ All in a single binary with no runtime dependencies (except libc).
 ### Getting Started
 
 - **[Getting Started](./getting-started.md)** — download, install, and run your first Wanaku proxy
+- **[Migrating from Classic Wanaku](./migration-from-classic.md)** — what changed, what broke, and how to migrate from the Java version
 - **[Configuration](./configuration.md)** — all environment variables and YAML config options
 - **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
 - **[Management API](./management-api.md)** — REST API reference for tools, resources, etc.
@@ -250,7 +251,7 @@ Wanaku is open source (Apache 2.0). Contributions welcome.
 
 - **GitHub:** https://github.com/wanaku-ai/wanaku
 - **Issues:** https://github.com/wanaku-ai/wanaku/issues
-- **Classic Wanaku:** https://github.com/wanaku-ai/wanaku
+- **Classic Wanaku:** https://github.com/wanaku-ai/wanaku-barn
 
 ## License
 
