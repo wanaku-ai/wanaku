@@ -37,6 +37,26 @@ This matches the classic Wanaku API format for CLI compatibility. The `data` fie
 
 ## Core Routes
 
+### Server Info
+
+**Get server name and version:**
+
+```bash
+GET /api/v1/management/info
+```
+
+Returns:
+
+```json
+{
+  "data": {
+    "name": "wanaku-server",
+    "version": "0.3.0"
+  },
+  "error": null
+}
+```
+
 ### Tools
 
 Tools are automatically discovered and registered when you add a forwarded MCP server via `POST /api/v1/forwards`. You cannot create tools directly — they are populated by querying upstream MCP servers.
