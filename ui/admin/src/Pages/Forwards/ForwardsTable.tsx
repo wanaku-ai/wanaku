@@ -37,7 +37,7 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
 }) => {
 
   const headers = [
-    {key: "name", header: "Name"},
+    {key: "name", header: "Name2"},
     {key: "address", header: "Address"},
     {key: "namespace", header: "Namespace"},
     {key: "server", header: "Server"},

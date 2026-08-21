@@ -8,9 +8,9 @@ import {
   Tile
 } from "@carbon/react"
 import {Send, Stop} from "@carbon/icons-react"
+import {LlmConfig} from "./config"
 import {LLMChatMessage} from "./LLMChatMessage"
 import {getUrl} from "../../custom-fetch"
-import {ToolEntry} from "../../models"
 import {getErrorMessage} from "../../utils/error"
 
 
@@ -19,17 +19,8 @@ interface ChatMessage {
   content: string
 }
 
-export interface LlmChatConfig {
-  llm: string
-  model?: string
-  apiKey?: string
-  selectedTools: ToolEntry[]
-  extraLlmParams?: string
-  systemPrompt?: string
-}
-
 interface LLMChatAreaProps {
-  config: LlmChatConfig
+  config: LlmConfig
   onSystemPromptChange: (systemPrompt: string) => void
 }
 
@@ -63,9 +54,7 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          llm: config.llm,
-          model: config.model,
-          apiKey: config.apiKey,
+          model: config.selectedModel,
           systemPrompt: config.systemPrompt,
           userPrompt: userPrompt,
           chatHistory: filteredChatHistory(),
