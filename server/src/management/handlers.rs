@@ -788,6 +788,13 @@ pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>
     }))
 }
 
+pub(super) fn handle_info() -> Response<Vec<u8>> {
+    json_ok(&serde_json::json!({
+        "name": env!("CARGO_PKG_NAME"),
+        "version": env!("CARGO_PKG_VERSION"),
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -801,6 +808,7 @@ mod tests {
 
     use super::{
         handle_forward_delete, handle_forward_get, handle_forward_list,
+        handle_info,
         handle_namespace_create, handle_namespace_delete, handle_namespace_get,
         handle_namespace_list, handle_namespace_update,
         handle_prompt_delete, handle_prompt_get, handle_prompt_list,
@@ -1384,6 +1392,15 @@ mod tests {
         assert!(body.get("data").is_some());
         assert!(body["data"].is_null());
         assert!(body.get("error").and_then(|v| v.as_str()).is_some());
+    }
+
+    #[test]
+    fn info_returns_name_and_version() {
+        let resp = handle_info();
+        assert_eq!(resp.status(), 200);
+        let data = data_field(&resp);
+        assert!(data.get("name").and_then(|v| v.as_str()).is_some());
+        assert!(data.get("version").and_then(|v| v.as_str()).is_some());
     }
 }
 
