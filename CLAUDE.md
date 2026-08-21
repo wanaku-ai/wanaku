@@ -37,33 +37,14 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 
 ### Filter Pipeline
 
-Order defined in `server/src/default.yaml`:
-```
-cors → mcp → wanaku_namespace → wanaku_well_known → wanaku_mcp_init →
-  wanaku_evaluator → wanaku_tool_list → wanaku_tool_call →
-  wanaku_resource_list → wanaku_resource_read → wanaku_prompt_list →
-  wanaku_prompt_get → static_response
-```
+See [docs/architecture.md](docs/architecture.md) for filter order, metadata contract, and execution model.
 
-**Critical ordering:**
-- MCP filter first (after CORS) — parses JSON-RPC, sets `mcp.method`/`mcp.name` metadata
-- Namespace filter runs in `on_request_body` (NOT `on_request`) — StreamBuffer processes body filters before request filters, so it runs after MCP filter sets metadata
-- All wanaku filters read metadata set by MCP + namespace
-
-**MCP filter config gotcha:** must have `on_invalid: continue` — allows OPTIONS CORS preflight (bodyless) through. Without this, OPTIONS fails validation before reaching CORS response path.
-
-Feature filters (e.g., `wanaku_evaluator`) registered via `Feature::register_filters` trait method, not `register_wanaku_filters`. No-op if unconfigured.
-
-### Metadata Contract
-
-**MCP filter (from praxis-ai) sets** (`on_request_body` pre-read):
-- `mcp.method` — JSON-RPC method (`"tools/list"`, `"tools/call"`)
-- `mcp.name` — tool/resource/prompt name (from `params.name` or `params.arguments`)
-
-**wanaku_namespace sets** (`on_request_body` post-read):
-- `wanaku.namespace` — from URL path: `/mcp` → `"default"`, `/{namespace}/mcp` → `{namespace}`, malformed → `"default"`
-
-All downstream filters query via `ctx.get_metadata(key)`.
+**Implementation notes for filter authors:**
+- Namespace filter runs in `on_request_body` (NOT `on_request`) — StreamBuffer processes body filters before request filters
+- Feature filters registered via `Feature::register_filters`, not `register_wanaku_filters`
+- MCP filter must have `on_invalid: continue` for CORS preflight
+- Metadata keys: `mcp.method`, `mcp.name` (set by MCP filter), `wanaku.namespace` (set by namespace filter)
+- Query metadata via `ctx.get_metadata(key)`
 
 ### Registry Architecture
 
@@ -78,63 +59,25 @@ All downstream filters query via `ctx.get_metadata(key)`.
 
 ### Tool Routing
 
-All tools execute via MCP forwarding:
-- Tool `type_: "mcp-forward"`
-- Filter calls `mcp_client::call_tool(tool.uri, ...)` (rmcp crate, HTTP+SSE)
-- Non-MCP-forward types error
+See [docs/architecture.md](docs/architecture.md) for tool routing and forward discovery flow.
 
-**Forward discovery:** POST `/api/v1/forwards` → register forward → discover tools, resources, and prompts from upstream → auto-register with `type_: "mcp-forward"`. This is the **only** way to populate tools, resources, and prompts. Refresh (`POST /forwards/{name}/refreshes`) removes old, re-discovers.
+All tools execute via MCP forwarding (`mcp_client::call_tool` from rmcp crate). Non-MCP-forward types error.
 
 ### Management API (Port 8080)
 
-Uses Pingora `ServeHttp` (NOT axum) in `server/src/management/mod.rs`.
+See [docs/management-api.md](docs/management-api.md) for full route reference and response format.
 
-**Core routes** (`server/src/management/`), all under `/api/v1/`:
-- `/tools`, `/resources`, `/prompts` — GET (list), GET `/{name}`, DELETE `/{name}` (read-only; populated via forward discovery)
-- `/tools/{name}`, `/resources/{name}` — also support PUT (update metadata)
-- `/namespaces` — GET (list), GET `/{name}`, POST, PUT `/{name}`, DELETE `/{name}`
-- `/forwards` — GET (list), GET `/{name}`, POST, DELETE `/{name}`
-- `/forwards/{name}/refreshes` — POST to re-discover tools/resources/prompts
-
-**Feature routes** (via `Feature::handle_route`):
-- `/api/v1/chat/llms`, `/chat/{llm}/models`, `/chat/completions` (from `features/chat/`)
-
-Dispatch: core first, then iterate features (return `None` if not owned).
-
-**Response wrapper** (management API only — MCP uses JSON-RPC format):
-```json
-{"data": <payload>, "error": null}  // success
-{"data": null, "error": "message"}  // error
-```
-
-**Route pattern** — 3 files per resource:
-1. `routes.rs` — route enum + resolver
-2. `mod.rs` — dispatch via guard pattern
-3. `handlers.rs` — handler functions
-
-No inline `if path.starts_with(...)`. See ToolRoute, ResourceRoute, etc. for the template. Feature routes use the same pattern internally but dispatch via `Feature::handle_route`.
+**Implementation notes:**
+- Uses Pingora `ServeHttp` (NOT axum) in `server/src/management/mod.rs`
+- Dispatch: core routes first, then iterate features (`Feature::handle_route`, return `None` if not owned)
+- Route pattern — 3 files per resource: `routes.rs` (enum + resolver), `mod.rs` (dispatch via guard), `handlers.rs` (handlers)
+- No inline `if path.starts_with(...)`. See ToolRoute, ResourceRoute, etc. for the template.
 
 ## Admin UI
 
-React + TypeScript embedded via `rust_embed`. Matches classic Java Wanaku UI patterns.
+See [docs/contributing-admin-ui.md](docs/contributing-admin-ui.md) for stack, conventions, page patterns, API client, and styling.
 
-**Stack:** React, TypeScript, Vite, IBM Carbon Design System, react-router-dom (hash-based), Orval-generated API client (fetch + `customFetch`), Yarn.
-
-**Build:**
-```bash
-cd ui/admin
-yarn install && yarn run build  # Orval + TS + Vite
-yarn run dev                     # dev server
-```
-
-**Conventions:**
-- Carbon components only — never raw HTML inputs/buttons/tables
-- 3-file page: `<PageName>.tsx`, `index.ts`, `router-exports.tsx` (lazy loading)
-- Route constants: `src/router/links.models.ts` `const enum Links`
-- API hooks: `src/hooks/api/` wrap Orval + `useCallback`
-- Data access: `result.data.data` — `customFetch` wraps as `{status, data, headers}`, backend wraps `{"data": ..., "error": ...}`
-- DO NOT edit `src/api/wanaku-router-api.ts` or `src/models/` — Orval-generated
-- E2E tests required — Playwright in `tests/e2e/ui/`: page objects in `pages/`, test data in `helpers/test-data.ts`, API setup in `helpers/api-helpers.ts`, specs in `tests/`. Min: page title, add modal, delete. Run `cd tests/e2e/ui && npx playwright test`.
+**E2E tests required** — Playwright in `tests/e2e/ui/`: page objects in `pages/`, test data in `helpers/test-data.ts`, API setup in `helpers/api-helpers.ts`, specs in `tests/`. Min: page title, add modal, delete. Run `cd tests/e2e/ui && npx playwright test`.
 
 ## Filter Implementation
 
@@ -174,105 +117,19 @@ StreamBuffer mode executes in this order:
 
 Namespace filter uses `on_request_body` (not `on_request`) because the MCP filter sets `mcp.method` in its `on_request_body`. If namespace ran in `on_request`, it would execute in phase 3 — before the MCP body handler in phase 2 has set the metadata. Both in `on_request_body` ensures pipeline-order execution during post-read.
 
-### Evaluator Tests
-
-Three test tiers, none require an LLM:
-
-```bash
-# Integration tests (always run, no server needed)
-# WASM engine tests skip automatically if actions aren't built
-cargo test -p wanaku-feature-evaluator
-
-# E2e tests (require a running wanaku server)
-cargo test -p wanaku-feature-evaluator --test e2e -- --ignored
-
-# Classification e2e (require server + Ollama on localhost:11434)
-# Same command — classification tests skip if Ollama isn't reachable
-```
-
-**Building WASM actions** for the engine tests:
-```bash
-cd actions/safety-block && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
-cd ../safety-warn && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
-```
-
 ## Configuration
 
-**Env vars** (core in `apis/src/config.rs`, features own theirs):
+See [docs/configuration.md](docs/configuration.md) for environment variables, pipeline config, wanaku.yaml, and evaluator config.
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Mgmt API address |
-| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend |
-| `WANAKU_PERSIST_BACKEND` | `"file"` | Persistence backend; `"none"` disables |
-| `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | `registry.json` dir |
-| `WANAKU_UI_PATH` | unset | FS path to UI override |
-| `WANAKU_CORS_ORIGIN` | `"*"` | `Access-Control-Allow-Origin` for all HTTP responses |
-| `WANAKU_AUTH_ISSUER` | unset | OIDC issuer (RFC 9728) |
-| `WANAKU_INFERENCE_API_KEY` | unset | Bearer token for upstream |
+Core env vars are defined in `apis/src/config.rs`. Feature-specific env vars are owned by their respective feature crates.
 
-**Pipeline config** (`server/src/default.yaml`): listener, filter chains. **Wanaku config** (`wanaku.yaml`): forwards bootstrap (optional).
+## Evaluator
 
-### Evaluator Config (in wanaku.yaml)
-
-```yaml
-evaluators:
-  - name: "safety-check"
-    trigger:
-      method: "tools/call"
-      namespace: "default"        # optional — matches all if omitted
-    llm:
-      operation: classify
-      prompt: "Classify this request as safe or unsafe..."
-      model: "llama3"
-      url: "http://localhost:11434"
-      api_key: ""                 # optional
-      result_schema:              # optional — JSON Schema for expected LLM output
-        type: object
-        properties:
-          level: { type: string, enum: ["green", "yellow", "red"] }
-          reason: { type: string }
-        required: ["level", "reason"]
-    processor:
-      path: "/path/to/action.wasm"
-    on_error: continue            # or "block"
-```
-
-When `result_schema` is set, the host validates the LLM result against it before passing to the WASM guest. On mismatch, it retries once with a correction prompt that includes the specific validation error. The result (valid or not after retry) is then passed to the guest, which can use `verify-llm-result` for its own validation.
-
-### Evaluator Guest API (WIT)
-
-The evaluator WIT contract (`features/evaluator/wit/evaluator.wit`) defines the WASM guest interface:
-
-**Imports available to guest scripts:**
-- `registry` — read/write access to tool registry
-- `conversation` — access to conversation history
-- `response` — control MCP response (`pass`, `block`, `reject-malformed`, `warn`, `filter-tools`, `set-metadata`)
-- `validation` — `verify-llm-result(raw) -> result<string, string>` validates against declared schema
-- `log` — structured logging (`info`, `warn`, `error`)
-
-**Response variants and their JSON-RPC error codes:**
-- `pass` — continue to next filter (no error)
-- `block(reason)` — reject with code `-32001` (policy violation)
-- `reject-malformed(reason)` — reject with code `-32002` (malformed input, cannot assess)
-- `warn(message)` — log warning, continue
-- `filter-tools(names)` — return filtered tools/list (only for `tools/list` method)
-- `set-metadata(key, value)` — set metadata for downstream filters
-
-The distinction between `block` and `reject-malformed` matters: `block` means the evaluator made a decision to reject; `reject-malformed` means the evaluator could not make a decision because the input data was malformed.
+See [docs/evaluator-engine.md](docs/evaluator-engine.md) for YAML config, WIT contract, host imports, response variants, action script development (JS and Rust), and testing.
 
 ## Common Tasks
 
-**Add feature:**
-1. `mkdir features/myfeature` + `Cargo.toml` — depend on `wanaku-apis` (Feature, registry, llm), `wanaku-filters` (boilerplate, response helpers), `praxis-filter` (HttpFilter)
-2. Implement `Feature` trait: `register_filters`, `pipeline_extensions`, `handle_route` (receives `&HttpContext`), `load_yaml_config`, `load_env_config`
-3. Add to workspace `Cargo.toml` (members + deps)
-4. Add dep in `server/Cargo.toml`, `Box::new(MyFeature::new())` in `main.rs`
-5. Add filter to `server/src/default.yaml` if applicable
-
-Reference: `features/evaluator/` (filter + mgmt + WASM), `features/chat/` (mgmt only).
-
-Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
+**Add feature:** See [docs/features.md](docs/features.md) for the full tutorial. Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
 
 **Add core filter:**
 1. `filters/src/<method>.rs` — use `body_filter_boilerplate!`
@@ -280,18 +137,7 @@ Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_
 3. Register in `server/src/lib.rs::register_wanaku_filters`
 4. Add to `server/src/default.yaml`
 
-**Test locally:**
-```bash
-cargo run
-curl -X POST http://localhost:8081/mcp -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
-curl http://localhost:8080/api/v1/tools
-```
-
-**Namespace isolation:**
-```bash
-curl -X POST http://localhost:8081/mcp -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'  # default
-curl -X POST http://localhost:8081/finance/mcp -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'  # finance
-```
+**Test locally / namespace isolation:** See [docs/getting-started.md](docs/getting-started.md).
 
 ## Known Gotchas
 
@@ -319,23 +165,16 @@ Pin to a specific `rev` — HEAD may break.
 
 ## Debugging
 
-```bash
-RUST_LOG=trace cargo run
-RUST_LOG=wanaku_filters=trace cargo run  # metadata flow
-```
-
-In filters:
+See [docs/configuration.md](docs/configuration.md) for trace log options. Filter-specific pattern:
 ```rust
 tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_metadata("wanaku.namespace"), "filter context");
 ```
 
 ## Extensibility
 
-**Features:** self-contained crates under `features/`, implement `Feature` trait, own domain logic + filter + mgmt routes + config + pipeline extensions. Server wires via `main.rs` registration.
+See [docs/features.md](docs/features.md) for the Feature trait, lifecycle, and creating custom features. See [docs/architecture.md](docs/architecture.md) for how features fit into the pipeline.
 
 **Shared LLM:** `apis/src/llm.rs` — `LlmClient` (OpenAI `/chat/completions`), `HotSwap<T>` (runtime config), `sanitize()`/`strip_markdown_fences()`/`extract_content()` utilities.
-
-**Registry backends:** traits support pluggable backends (Postgres, Redis, Etcd). Trait bounds: `Send + Sync`, Clone (wraps Arc). Only InMemoryRegistry exists.
 
 ## Testing
 
