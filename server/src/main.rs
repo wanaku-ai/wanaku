@@ -6,10 +6,11 @@
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 use clap::Parser;
-use praxis_core::config::ProtocolKind;
+use praxis_core::config::{Config, ProtocolKind};
 use praxis_core::health::build_health_registry;
 use praxis_core::PingoraServerRuntime;
-use praxis_protocol::Protocol as _;
+use praxis_filter::FilterRegistry;
+use praxis_protocol::{ListenerPipelines, Protocol as _};
 use praxis_protocol::http::PingoraHttp;
 use tracing::info;
 
@@ -59,6 +60,18 @@ fn main() {
         features,
     };
 
+    let pipelines = build_pipelines(&config, &wanaku_registry, &mut filter_registry, &service_deps);
+
+    info!("initializing server");
+    let mut server = PingoraServerRuntime::new(&config);
+
+    setup_management_service(&config, &pipelines, service_deps, &mut server);
+
+    info!("starting wanaku server");
+    server.run()
+}
+
+fn build_pipelines(config: &Config, wanaku_registry: &InMemoryRegistry, filter_registry: &mut FilterRegistry, service_deps: &ServiceDeps) -> ListenerPipelines {
     info!("building wanaku pipelines");
     let pipeline_deps = wanaku_server::pipelines::PipelineDeps::new(
         &filter_registry,
@@ -69,14 +82,7 @@ fn main() {
     );
     let pipelines = wanaku_server::pipelines::resolve_pipelines(&config, &pipeline_deps)
         .unwrap_or_else(|e| fatal(&e));
-
-    info!("initializing server");
-    let mut server = PingoraServerRuntime::new(&config);
-
-    setup_management_service(&config, &pipelines, service_deps, &mut server);
-
-    info!("starting wanaku server");
-    server.run()
+    pipelines
 }
 
 struct ServiceDeps {
