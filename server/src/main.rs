@@ -45,17 +45,7 @@ fn main() {
 
     let features: Vec<Box<dyn Feature>> = build_features(&args, metrics_store);
 
-    let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
-    if let Some(ref yaml) = wanaku_config {
-        load_core_config(yaml, &wanaku_registry);
-        for feature in &features {
-            feature.load_yaml_config(yaml);
-        }
-    }
-
-    for feature in &features {
-        feature.load_env_config();
-    }
+    load_config(&args, &wanaku_registry, &features);
 
     let mut filter_registry = wanaku_server::build_full_registry();
     for feature in &features {
@@ -105,6 +95,21 @@ fn main() {
 
     info!("starting wanaku server");
     server.run()
+}
+
+
+fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: &Vec<Box<dyn Feature>>) {
+    let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
+    if let Some(ref yaml) = wanaku_config {
+        load_core_config(yaml, &wanaku_registry);
+        for feature in features {
+            feature.load_yaml_config(yaml);
+        }
+    }
+
+    for feature in features {
+        feature.load_env_config();
+    }
 }
 
 fn setup_management_service(
