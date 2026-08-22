@@ -44,7 +44,7 @@ fn main() {
     // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
     wanaku_registry.enable_request_id_injection();
 
-    let features: Vec<Box<dyn Feature>> = build_features(&args, metrics_store);
+    let features: Vec<Box<dyn Feature>> = build_features(&args, &metrics_store);
 
     load_config(&args, &wanaku_registry, &features);
 
@@ -74,15 +74,14 @@ fn main() {
 fn build_pipelines(config: &Config, wanaku_registry: &InMemoryRegistry, filter_registry: &mut FilterRegistry, service_deps: &ServiceDeps) -> ListenerPipelines {
     info!("building wanaku pipelines");
     let pipeline_deps = wanaku_server::pipelines::PipelineDeps::new(
-        &filter_registry,
+        filter_registry,
         &service_deps.health_registry,
         &service_deps.kv_stores,
-        &wanaku_registry,
+        wanaku_registry,
         &service_deps.features,
     );
-    let pipelines = wanaku_server::pipelines::resolve_pipelines(&config, &pipeline_deps)
-        .unwrap_or_else(|e| fatal(&e));
-    pipelines
+    wanaku_server::pipelines::resolve_pipelines(config, &pipeline_deps)
+        .unwrap_or_else(|e| fatal(&e))
 }
 
 struct ServiceDeps {
@@ -95,7 +94,7 @@ struct ServiceDeps {
 fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: &Vec<Box<dyn Feature>>) {
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
     if let Some(ref yaml) = wanaku_config {
-        load_core_config(yaml, &wanaku_registry);
+        load_core_config(yaml, wanaku_registry);
         for feature in features {
             feature.load_yaml_config(yaml);
         }
@@ -148,7 +147,7 @@ fn setup_management_service(
 
 fn build_features(
     args: &ServerArgs,
-    metrics_store: wanaku_apis::metrics::MetricsStore,
+    metrics_store: &wanaku_apis::metrics::MetricsStore,
 ) -> Vec<Box<dyn Feature>> {
     vec![
         Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
