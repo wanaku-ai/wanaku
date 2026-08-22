@@ -19,7 +19,7 @@ use wanaku_apis::registry::{
     ForwardEntry, ForwardRegistry, InMemoryRegistry,
 };
 
-#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "server bootstrap")]
+#[expect(clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
     let args = ServerArgs::parse();
     let config = wanaku_server::load_config(args.pipeline_config.as_deref())
@@ -43,23 +43,7 @@ fn main() {
     // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
     wanaku_registry.enable_request_id_injection();
 
-    let features: Vec<Box<dyn Feature>> = vec![
-        Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
-        Box::new(wanaku_feature_intercept::InterceptFeature::new()),
-        Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-        Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()
-            .with_metrics(metrics_store.clone())),
-        Box::new(wanaku_feature_chat::ChatFeature::new(
-            format!(
-                "http://127.0.0.1:{}{}",
-                wanaku_apis::config::ENV.inference_proxy_port(),
-                wanaku_apis::config::ENV.inference_path_prefix,
-            ),
-            wanaku_apis::config::ENV.inference_tls_sni.clone(),
-            wanaku_apis::config::ENV.inference_api_key.clone(),
-        )),
-        Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
-    ];
+    let features: Vec<Box<dyn Feature>> = build_features(&args, metrics_store);
 
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
     if let Some(ref yaml) = wanaku_config {
@@ -132,6 +116,29 @@ fn main() {
 
     info!("starting wanaku server");
     server.run()
+}
+
+fn build_features(
+    args: &ServerArgs,
+    metrics_store: wanaku_apis::metrics::MetricsStore,
+) -> Vec<Box<dyn Feature>> {
+    vec![
+        Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
+        Box::new(wanaku_feature_intercept::InterceptFeature::new()),
+        Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
+        Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()
+            .with_metrics(metrics_store.clone())),
+        Box::new(wanaku_feature_chat::ChatFeature::new(
+            format!(
+                "http://127.0.0.1:{}{}",
+                wanaku_apis::config::ENV.inference_proxy_port(),
+                wanaku_apis::config::ENV.inference_path_prefix,
+            ),
+            wanaku_apis::config::ENV.inference_tls_sni.clone(),
+            wanaku_apis::config::ENV.inference_api_key.clone(),
+        )),
+        Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
+    ]
 }
 
 #[derive(Debug, Parser)]
