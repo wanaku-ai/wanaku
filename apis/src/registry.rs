@@ -200,7 +200,7 @@ impl ToolEntry {
     pub fn inject_header_args(&self) -> bool {
         self.labels
             .get(INJECT_HEADER_ARGS_LABEL)
-            .map_or(true, |v| v != "false")
+            .is_none_or(|v| v != "false")
     }
 }
 
