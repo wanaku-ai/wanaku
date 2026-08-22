@@ -28,4 +28,4 @@ wanaku-filters = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["blocking", "json"] }
-serial_test = "3"
+serial_test = "4"
