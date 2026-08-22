@@ -101,6 +101,17 @@ fn main() {
         );
     }
 
+    setup_management_service(features, mgmt_registry, &mut server);
+
+    info!("starting wanaku server");
+    server.run()
+}
+
+fn setup_management_service(
+    features: Vec<Box<dyn Feature>>,
+    mgmt_registry: InMemoryRegistry,
+    server: &mut PingoraServerRuntime,
+) {
     let mgmt_addr = &wanaku_apis::config::ENV.mgmt_listen;
     let mgmt = wanaku_server::management::WanakuManagementService::new(
         mgmt_registry,
@@ -113,9 +124,6 @@ fn main() {
     mgmt_service.add_tcp(mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
-
-    info!("starting wanaku server");
-    server.run()
 }
 
 fn build_features(
