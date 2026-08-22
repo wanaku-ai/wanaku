@@ -52,18 +52,20 @@ fn main() {
         feature.register_filters(&mut filter_registry);
     }
 
-    let health_registry = build_health_registry(&config.clusters);
-    let kv_stores = praxis_core::kv::KvStoreRegistry::new();
-
-    let mgmt_registry = wanaku_registry.clone();
+    let service_deps = ServiceDeps {
+        health_registry: build_health_registry(&config.clusters),
+        kv_stores: praxis_core::kv::KvStoreRegistry::new(),
+        mgmt_registry: wanaku_registry.clone(),
+        features,
+    };
 
     info!("building wanaku pipelines");
     let pipeline_deps = wanaku_server::pipelines::PipelineDeps::new(
         &filter_registry,
-        &health_registry,
-        &kv_stores,
+        &service_deps.health_registry,
+        &service_deps.kv_stores,
         &wanaku_registry,
-        &features,
+        &service_deps.features,
     );
     let pipelines = wanaku_server::pipelines::resolve_pipelines(&config, &pipeline_deps)
         .unwrap_or_else(|e| fatal(&e));
@@ -71,32 +73,18 @@ fn main() {
     info!("initializing server");
     let mut server = PingoraServerRuntime::new(&config);
 
-    if config
-        .listeners
-        .iter()
-        .any(|l| l.protocol == ProtocolKind::Http)
-    {
-        let _cert_shutdowns = Box::new(PingoraHttp)
-            .register(&mut server, &config, &pipelines)
-            .unwrap_or_else(|e| fatal(&e));
-    }
-
-    if let Some(admin_addr) = &config.admin.address {
-        praxis_protocol::http::pingora::health::add_admin_endpoints_to_pingora_server(
-            server.server_mut(),
-            admin_addr,
-            Some(health_registry),
-            Some(kv_stores),
-            config.admin.verbose,
-        );
-    }
-
-    setup_management_service(features, mgmt_registry, &mut server);
+    setup_management_service(&config, &pipelines, service_deps, &mut server);
 
     info!("starting wanaku server");
     server.run()
 }
 
+struct ServiceDeps {
+    health_registry: praxis_core::health::HealthRegistry,
+    kv_stores: praxis_core::kv::KvStoreRegistry,
+    mgmt_registry: InMemoryRegistry,
+    features: Vec<Box<dyn Feature>>,
+}
 
 fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: &Vec<Box<dyn Feature>>) {
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
@@ -113,14 +101,35 @@ fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: 
 }
 
 fn setup_management_service(
-    features: Vec<Box<dyn Feature>>,
-    mgmt_registry: InMemoryRegistry,
+    config: &praxis_core::config::Config,
+    pipelines: &praxis_protocol::ListenerPipelines,
+    deps: ServiceDeps,
     server: &mut PingoraServerRuntime,
 ) {
+    if config
+        .listeners
+        .iter()
+        .any(|listener| listener.protocol == ProtocolKind::Http)
+    {
+        let _cert_shutdowns = Box::new(PingoraHttp)
+            .register(server, config, pipelines)
+            .unwrap_or_else(|e| fatal(&e));
+    }
+
+    if let Some(admin_addr) = &config.admin.address {
+        praxis_protocol::http::pingora::health::add_admin_endpoints_to_pingora_server(
+            server.server_mut(),
+            admin_addr,
+            Some(deps.health_registry),
+            Some(deps.kv_stores),
+            config.admin.verbose,
+        );
+    }
+
     let mgmt_addr = &wanaku_apis::config::ENV.mgmt_listen;
     let mgmt = wanaku_server::management::WanakuManagementService::new(
-        mgmt_registry,
-        features,
+        deps.mgmt_registry,
+        deps.features,
     );
     let mut mgmt_service = pingora_core::services::listening::Service::new(
         "wanaku-management".to_owned(),
