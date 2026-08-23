@@ -4,6 +4,22 @@ This guide is for users moving from the Java-based Wanaku ("Classic Wanaku", `wa
 
 If you're new to Wanaku and have never used the Java version, skip this doc — start with [Getting Started](./getting-started.md) instead.
 
+Use this guide if you operate Classic Wanaku and need to plan or perform a migration. It compares the two systems, identifies compatibility limits, and provides a migration checklist.
+
+## Contents
+
+- [What Changed and Why](#what-changed-and-why)
+- [Configuration](#configuration)
+- [Namespaces](#namespaces)
+- [MCP Endpoints](#mcp-endpoints)
+- [Tool Management](#tool-management)
+- [Forward Management](#forward-management)
+- [Authentication](#authentication)
+- [Persistence](#persistence)
+- [Kubernetes Deployment](#kubernetes-deployment)
+- [CLI Compatibility](#cli-compatibility)
+- [Breaking Changes Checklist](#breaking-changes-checklist)
+
 ## What Changed and Why
 
 Classic Wanaku is a Java/Quarkus application with Infinispan persistence, Camel route execution, service catalogs, and a Kubernetes operator. It's fully featured and production-proven.
@@ -114,7 +130,7 @@ wanaku-server
 
 | Classic Property | Wanaku Praxis Env Var | Notes |
 |---|---|---|
-| `quarkus.http.port` | `WANAKU_MGMT_LISTEN` | Praxis takes `host:port`, not just port |
+| `quarkus.http.port` | `WANAKU_MGMT_LISTEN` | Praxis requires `host:port`. |
 | `wanaku.http.auth=keycloak` | `WANAKU_AUTH_ISSUER` | Use oauth2-proxy externally; see [Authentication](#authentication) |
 | `wanaku.http.auth=none` | _(default)_ | Auth is off by default in Praxis |
 | `wanaku.persistence.infinispan.base-folder` | `WANAKU_PERSIST_PATH` | Praxis defaults to `$HOME/.wanaku/server` |
@@ -299,7 +315,7 @@ There is no equivalent in Classic Wanaku — forwards must be registered after s
 The management API uses the same `/api/v1/` prefix and response envelope in both versions:
 
 ```json
-{"data": <payload>, "error": null}
+{"data": {"name": "example"}, "error": null}
 ```
 
 ### Endpoint Comparison
@@ -493,8 +509,14 @@ kind: Deployment
 metadata:
   name: wanaku-server
 spec:
-  replicas: 1
+  replicas: 1  # File persistence supports one writer
+  selector:
+    matchLabels:
+      app: wanaku-server
   template:
+    metadata:
+      labels:
+        app: wanaku-server
     spec:
       containers:
       - name: wanaku
@@ -517,13 +539,18 @@ spec:
 ### Migration Steps
 
 **If using the operator:**
-1. Update your `WanakuRouter` CR to include `praxis: {}` (or just remove the `router` section to stop the Classic backend)
-2. The operator will deploy Praxis automatically
+
+1. Add `praxis: {}` to the `WanakuRouter` custom resource.
+2. Remove the `router` section if you want to stop the Classic backend.
+3. Apply the custom resource. The operator then deploys Praxis.
 
 **If not using the operator:**
-1. Create standard Deployment, Service, and ConfigMap resources
-2. Bootstrap forwards via `wanaku.yaml` mounted as a ConfigMap
-3. Use a PersistentVolume for registry persistence
+
+1. Create a standard Deployment resource.
+2. Create a Service resource.
+3. Create a ConfigMap that contains `wanaku.yaml`.
+4. Mount the ConfigMap in the Deployment.
+5. Use a PersistentVolume for the registry snapshot directory.
 
 ## CLI Compatibility
 

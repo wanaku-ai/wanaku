@@ -36,7 +36,7 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 
 **Action flow:**
 
-1. Agent sends an MCP action (tool call, resource read, prompt get) to `/mcp` or `/{namespace}/mcp`
+1. Agent sends an MCP action (tool call, resource read, prompt get) to `/{namespace}/mcp`
 2. Governance pipeline intercepts: identity, policy, namespace isolation
 3. Filters query the in-memory registry for tools/resources/prompts
 4. For tool calls: the proxy forwards the action to the backend system registered as the tool's forward address — the agent never reaches the backend directly
@@ -94,7 +94,7 @@ In StreamBuffer mode, Praxis executes filters in this order:
 2. **Post-read phase** — `on_request_body` called again, `body` is `Some(bytes)` (buffer complete)
 3. **Request phase** — `on_request` called for all filters
 
-The MCP filter sets `mcp.method` metadata in its `on_request_body` handler (step 2). If the namespace filter ran in `on_request` (step 3), it would execute BEFORE the MCP filter's body handler, so metadata wouldn't exist yet.
+The MCP filter sets `mcp.method` metadata in its `on_request_body` handler during step 2. If the namespace filter ran in `on_request` during step 3, it would execute before the MCP filter's body handler. The metadata would not exist at that time.
 
 Running both in `on_request_body` ensures they execute in pipeline order during the post-read phase.
 
@@ -126,9 +126,10 @@ Filters communicate via metadata keys set on the request context.
 **Set by namespace filter:**
 
 - `wanaku.namespace` → extracted from URL path:
-  - `/mcp` → `"default"`
+  - `/default/mcp` → `"default"`
   - `/finance/mcp` → `"finance"`
-  - `/nested/or/malformed/mcp` → `"default"` (fallback)
+
+Wanaku rejects bare `/mcp` paths and nested namespace paths such as `/nested/or/malformed/mcp`.
 
 **Querying metadata:**
 
@@ -137,11 +138,11 @@ let method = ctx.get_metadata("mcp.method")?;
 let namespace = ctx.get_metadata("wanaku.namespace")?;
 ```
 
-All downstream filters (tool_list, tool_call, etc.) rely on these keys. If they're missing, the filter returns an error.
+All downstream filters (`tool_list`, `tool_call`, and others) use these keys. If a key is missing, the filter returns an error.
 
 ## Why Custom Filters Instead of Praxis-AI's MCP Broker?
 
-Wanaku uses the praxis-ai `McpFilter` (the classifier) to parse JSON-RPC and set `mcp.method`/`mcp.name` metadata. However, all downstream MCP handling (`tools/list`, `tools/call`, `resources/list`, `resources/read`, `prompts/list`, `prompts/get`) uses custom Wanaku filters rather than praxis-ai's `McpBrokerFilter`. Here's why:
+Wanaku uses the praxis-ai `McpFilter` classifier to parse JSON-RPC and set the `mcp.method` and `mcp.name` metadata. All downstream MCP handling uses custom Wanaku filters instead of the praxis-ai `McpBrokerFilter`. This includes `tools/list`, `tools/call`, `resources/list`, `resources/read`, `prompts/list`, and `prompts/get`. Wanaku uses custom filters for these reasons:
 
 **Praxis-ai's `McpBrokerFilter` is a static catalog broker.** Tools are declared in YAML at deploy time with preconfigured backend clusters. In stateless mode it routes `tools/call` via Pingora's L7 proxy by matching tool names to cluster endpoints; in current mode `tools/call` is not even implemented. It has no concept of namespaces, dynamic discovery, or runtime registration.
 
@@ -171,7 +172,7 @@ Wanaku uses the praxis-ai `McpFilter` (the classifier) to parse JSON-RPC and set
 
 ## The Registry
 
-The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. It's an in-memory data structure (no database) implemented as `InMemoryRegistry` in `apis/src/registry.rs`.
+The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. `InMemoryRegistry` in `apis/src/registry.rs` implements this in-memory data structure.
 
 **Key design:**
 
@@ -209,14 +210,14 @@ This is how `/finance/mcp` only sees tools registered in the `"finance"` namespa
 
 **Persistence:**
 
-The registry lives in RAM. When the server restarts, all data is lost—unless you enable file persistence:
+The registry operates in memory. File persistence is enabled by default and writes snapshots to `$HOME/.wanaku/server/registry.json`. Set a different path when necessary:
 
 ```bash
 export WANAKU_PERSIST_BACKEND=file
 export WANAKU_PERSIST_PATH=/data/registry
 ```
 
-On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shutdown, it writes back. This is a crude backup mechanism, not a production database.
+On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On an orderly shutdown, it writes the current registry. Set `WANAKU_PERSIST_BACKEND=none` to disable persistence. File persistence supports one writer; it is not a shared production database.
 
 ## Tool Routing
 
@@ -269,9 +270,7 @@ pub trait Feature: Send + Sync {
     fn name(&self) -> &'static str;
     fn register_filters(&self, registry: &mut FilterRegistry);
     fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>>;
-    async fn handle_route(
-        &self, method: &str, path: &str, query: Option<&str>, body: Option<&str>,
-    ) -> Option<Response<Vec<u8>>>;
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>>;
     fn load_yaml_config(&self, root: &serde_yaml::Value);
     fn load_env_config(&self);
 }
@@ -279,19 +278,20 @@ pub trait Feature: Send + Sync {
 
 **Lifecycle:**
 
-1. Server creates feature instances in `main.rs`
-2. Calls `load_yaml_config` and `load_env_config` to initialize
-3. Calls `register_filters` to inject filters into the pipeline
-4. Calls `pipeline_extensions` to get shared state (e.g., LLM client)
-5. For each request, calls `handle_route` if the path matches the feature's API
+1. The server creates feature instances in `main.rs`.
+2. The server calls `load_yaml_config` and `load_env_config`.
+3. The server calls `register_filters` to add filters to the pipeline.
+4. The server calls `pipeline_extensions` to get shared state, such as an LLM client.
+5. For each request, the server calls `handle_route` until a feature owns the route.
 
 **Registered features** (in `main.rs`):
 
-1. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
-2. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
-3. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
-4. **Chat** (`features/chat/`) — proxies LLM chat completions to an inference backend
-5. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
+1. **Metrics** (`features/metrics/`) — exposes an in-memory metrics snapshot
+2. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
+3. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
+4. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
+5. **Chat** (`features/chat/`) — proxies LLM chat completions to an inference backend
+6. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
 See [Features](./features.md) for how to create your own.
 
@@ -308,11 +308,11 @@ The management API runs on port 8080 and uses Pingora's `ServeHttp` trait (not a
 
 **Response wrapper:**
 
-All responses use this format:
+Management JSON responses generally use this format:
 
-```json
-{"data": <payload>, "error": null}  // success
-{"data": null, "error": "message"}  // error
+```text
+{"data": <payload>, "error": null}  # success
+{"data": null, "error": "message"}  # error
 ```
 
 This matches the classic Wanaku API format for CLI compatibility.
@@ -419,7 +419,7 @@ Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clien
 
 **Wanaku-side metadata:**
 
-The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. This endpoint is read-only and simply returns the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`.
+The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. This read-only endpoint returns the OIDC issuer URL configured through `WANAKU_AUTH_ISSUER`.
 
 When auth is disabled:
 
@@ -440,7 +440,7 @@ CORS is enabled by default via the `cors` filter (allows all origins). Restrict 
 - **Persistence beyond file snapshots** — no PostgreSQL/Redis integration
 - **Multi-tenancy** — namespaces provide isolation, but no user/tenant association
 - **Rate limiting** — no throttling on MCP or management API
-- **Metrics/observability** — no Prometheus, no tracing
+- **External metrics export** — Wanaku collects in-memory metrics, but it does not provide a Prometheus exporter or distributed tracing integration
 - **Clustering** — single-node only, no distributed registry
 
 These are all solvable (implement traits, add filters), but they're not in scope for the initial release.

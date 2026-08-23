@@ -1,24 +1,53 @@
 # Contributing to Wanaku
 
-Thank you for your interest in contributing to the Wanaku project!
+Thank you for your interest in contributing to Wanaku. This page directs contributors to the development guides and the minimum validation workflow.
 
 ## Getting Started
 
-Please read our [Getting Started](getting-started.md) guide for detailed information on:
+Use [Getting Started](getting-started.md) to run Wanaku and verify an MCP request. It is an operator quick start, not a contributor setup guide.
 
-- Understanding tools, providers, and prompts
-- Creating new capabilities
-- Setting up your development environment
-- Building and testing the project
-- Submitting pull requests
+For implementation work, read the guide that matches the area you plan to change:
 
 ## Quick Links
 
-- **Getting Started**: [getting-started.md](getting-started.md)
-- **Architecture Overview**: [architecture.md](architecture.md)
-- **Configuration Reference**: [configuration.md](configuration.md)
-- **Admin UI Development**: [contributing-admin-ui.md](contributing-admin-ui.md)
-- **Plugin Development**: [plugin-development-guide.md](plugin-development-guide.md)
+- [Architecture Overview](architecture.md): filter order, request flow, registries, routing, and feature integration.
+- [Feature Development](features.md): the `Feature` trait and a custom feature tutorial.
+- [Configuration Reference](configuration.md): environment variables, pipeline configuration, and Wanaku bootstrap configuration.
+- [Admin UI Development](contributing-admin-ui.md): React development, generated API clients, tests, and UI conventions.
+- [Plugin Development](plugin-development-guide.md): the implemented Web UI plugin contract and local test workflow.
+- [Evaluator Engine](evaluator-engine.md): evaluator configuration and JavaScript or Rust action scripts.
+
+## Contributor Workflow
+
+1. Build the workspace:
+
+   ```bash
+   cargo build
+   ```
+
+2. Run the Rust tests:
+
+   ```bash
+   cargo test
+   ```
+
+3. Check formatting:
+
+   ```bash
+   cargo fmt --check
+   ```
+
+4. Run Clippy:
+
+   ```bash
+   cargo clippy --all-targets --all-features -- -D warnings
+   ```
+
+Add meaningful tests for new behavior. Update the relevant documentation when you add or change a feature.
+
+For admin UI changes, follow the E2E workflow in [Admin UI Development](contributing-admin-ui.md). At minimum, cover the page title, add flow, and delete flow when the page supports those actions.
+
+Before you submit a pull request, review the diff for unrelated changes. Keep related corrections in the existing commit when the project maintainers ask for amended commits.
 
 ## Code of Conduct
 

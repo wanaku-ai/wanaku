@@ -19,7 +19,7 @@ Wanaku shares the same MCP protocol and management API as classic Wanaku.
 - **Namespace isolation** — different tools visible to different namespaces per team, tenant, or environment
 - **Tool discovery** — auto-discover tools from upstream MCP servers; integration developers publish Camel routes as tools
 - **Feature system** — pluggable filters for evaluation, LLM chat, interaction tracking
-- **File persistence** — optional registry snapshots to survive restarts
+- **File persistence** — registry snapshots enabled by default to preserve data across restarts
 
 All in a single binary with no runtime dependencies (except libc).
 
@@ -100,9 +100,9 @@ Filters are middleware that processes requests. Each filter hooks into the Praxi
 
 ### Registry
 
-The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. It's an in-memory `DashMap` (concurrent hash map) shared between the filter pipeline and management API.
+The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. An in-memory `DashMap` shares this data between the filter pipeline and management API.
 
-**Persistence:** By default, the registry is ephemeral. Enable file persistence with `WANAKU_PERSIST_BACKEND=file` to snapshot to `registry.json` on shutdown.
+**Persistence:** File persistence is enabled by default. Wanaku writes `registry.json` under `$HOME/.wanaku/server` on shutdown. Set `WANAKU_PERSIST_BACKEND=none` to use an in-memory registry without persistence.
 
 ### Namespaces
 
@@ -132,7 +132,8 @@ wanaku-server
 ```
 
 Server starts on:
-- MCP: `http://127.0.0.1:8081/mcp`
+
+- MCP: `http://127.0.0.1:8081/default/mcp`
 - Management API: `http://0.0.0.0:8080/api/v1`
 
 ### Register a Forward
@@ -155,8 +156,14 @@ kind: Deployment
 metadata:
   name: wanaku-server
 spec:
-  replicas: 1  # each replica has its own in-memory registry; scale only with external persistence
+  replicas: 1  # File snapshots support one writer. Do not share this volume across replicas.
+  selector:
+    matchLabels:
+      app: wanaku-server
   template:
+    metadata:
+      labels:
+        app: wanaku-server
     spec:
       containers:
       - name: wanaku
@@ -190,8 +197,8 @@ Run Wanaku as a standalone proxy. Tools are discovered from upstream MCP servers
 
 Deploy Wanaku as a `Deployment` with a `PersistentVolume` for the registry. Use `ConfigMap` for `wanaku.yaml` and `Secret` for LLM API keys.
 
-**Pros:** Horizontal scaling, declarative config
-**Cons:** Requires k8s infrastructure
+**Pros:** Declarative configuration and managed restarts
+**Cons:** File persistence supports one replica; horizontal scaling requires a shared external persistence implementation
 
 ## What's Different from Classic Wanaku?
 

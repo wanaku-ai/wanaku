@@ -1,6 +1,6 @@
 # Configuration
 
-Wanaku is configured entirely through environment variables and two optional YAML files. There's no properties file. This keeps deployment simple — set env vars in your container orchestrator or systemd unit, point at config files if needed, and you're done.
+Wanaku uses environment variables and two optional YAML files. It does not use a properties file. Set environment variables in the container orchestrator or systemd unit. Specify configuration files only when you need custom settings.
 
 ## Configuration Sources (Precedence Order)
 
@@ -16,8 +16,8 @@ These control core server behavior:
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat feature (OpenAI-compatible) |
-| `WANAKU_PERSIST_BACKEND` | _(unset = disabled)_ | Set to `"file"` to enable file-based registry persistence |
-| `WANAKU_PERSIST_PATH` | `/data/registry` | Directory where `registry.json` is read/written |
+| `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Set to `"none"` to disable persistence. |
+| `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json` |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
@@ -59,7 +59,7 @@ export WANAKU_MGMT_LISTEN=10.0.1.42:8080
 
 ### Registry Persistence
 
-By default, the registry lives in RAM and is lost on restart. Enable file persistence to survive restarts:
+File persistence is enabled by default. Wanaku reads and writes `$HOME/.wanaku/server/registry.json`. Set a different directory when the default location is not suitable:
 
 ```bash
 export WANAKU_PERSIST_BACKEND=file
@@ -72,15 +72,21 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 
 ```json
 {
-  "tools": [...],
-  "resources": [...],
-  "prompts": [...],
-  "namespaces": [...],
-  "forwards": [...]
+  "tools": [],
+  "resources": [],
+  "prompts": [],
+  "namespaces": [],
+  "forwards": []
 }
 ```
 
-**Gotcha:** This is a crude backup mechanism. If the server crashes (SIGKILL, OOM, panic), the registry is lost. For production, implement a custom persistence backend.
+**Limitation:** Wanaku writes the snapshot during an orderly shutdown. If the process stops because of SIGKILL, an out-of-memory error, or a panic, changes since the last snapshot are lost. File persistence supports one writer. Use a shared external persistence implementation before you run multiple replicas.
+
+To disable persistence:
+
+```bash
+export WANAKU_PERSIST_BACKEND=none
+```
 
 ### Admin UI Override
 
@@ -93,7 +99,7 @@ wanaku-server
 
 The server serves files from the specified directory instead of the embedded bundle.
 
-**Warning:** Relative paths don't work. Use an absolute path.
+**Warning:** Relative paths do not work. Use an absolute path.
 
 ### Header Forwarding
 
@@ -168,7 +174,7 @@ The intercept feature records request/response interactions for conversation tra
 
 The chat feature proxies LLM chat completions to an inference backend (any OpenAI-compatible endpoint).
 
-The chat feature uses the core `WANAKU_INFERENCE_UPSTREAM` env var — it doesn't define any of its own.
+The chat feature uses the core `WANAKU_INFERENCE_UPSTREAM` environment variable. It does not define a separate variable.
 
 ```bash
 export WANAKU_INFERENCE_UPSTREAM=127.0.0.1:11434
@@ -182,7 +188,7 @@ The chat feature exposes these management API routes:
 
 ## Pipeline Config File (praxis.yaml)
 
-The pipeline config defines listeners, filter chains, and filter-specific settings. It's a YAML file that matches Praxis's native config format.
+The pipeline configuration defines listeners, filter chains, and filter-specific settings. This YAML file uses the native Praxis configuration format.
 
 **Override:** Pass with `--pipeline-config`:
 
@@ -283,7 +289,7 @@ The order in `filters:` matters. The pipeline executes filters top-to-bottom.
 
 **Critical rules:**
 
-1. **CORS must be first** — otherwise CORS headers aren't added to error responses
+1. Put CORS first. Otherwise, error responses do not contain CORS headers.
 2. **MCP must be before wanaku_namespace** — namespace filter reads `mcp.method` metadata
 3. **wanaku_namespace must be before tool/resource/prompt filters** — they all read `wanaku.namespace`
 4. **static_response must be last** — catch-all for unhandled requests
@@ -292,7 +298,7 @@ If you reorder filters and requests start failing, check the logs. The filter th
 
 ## Wanaku Config File (wanaku.yaml)
 
-The Wanaku config bootstraps forwarded MCP servers on startup. It's optional — if omitted, the registry starts empty.
+The Wanaku configuration bootstraps core registry entries and feature settings at startup. This file is optional. If you omit it, Wanaku can still restore the registry from the default file snapshot. If no snapshot exists, the registry starts empty.
 
 **Location:** Pass with `--wanaku-config`:
 
@@ -306,9 +312,20 @@ wanaku-server --pipeline-config /path/to/praxis.yaml --wanaku-config /path/to/wa
 forwards:
   - name: "upstream-mcp"
     address: "http://upstream:8080/mcp"
+plugins:
+  - id: "customer-management"
+    services:
+      customer-api:
+        target: "http://customer-service:8080"
 ```
 
-**Note:** Only `forwards` and `evaluators` are loaded from wanaku.yaml at startup. Tools, resources, and prompts are discovered from the forwarded MCP servers.
+Wanaku loads these top-level sections from `wanaku.yaml`:
+
+- `forwards` — core forward bootstrap configuration
+- `evaluators` — evaluator feature configuration
+- `plugins` — plugin service mappings owned by the plugins feature
+
+Wanaku discovers tools, resources, and prompts from the configured forwards.
 
 **Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):
 
@@ -340,6 +357,7 @@ When `result_schema` is set, the host validates LLM output against the schema an
 
 ```bash
 # No persistence, embedded UI, inference backend for LLMs
+export WANAKU_PERSIST_BACKEND=none
 export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
 wanaku-server
 ```
@@ -381,8 +399,14 @@ kind: Deployment
 metadata:
   name: wanaku-server
 spec:
-  replicas: 1  # each replica has its own in-memory registry; scale only with external persistence
+  replicas: 1  # File snapshots support one writer. Do not share this volume across replicas.
+  selector:
+    matchLabels:
+      app: wanaku-server
   template:
+    metadata:
+      labels:
+        app: wanaku-server
     spec:
       containers:
       - name: wanaku
@@ -426,7 +450,7 @@ RUST_LOG=wanaku_filters=trace wanaku-server
 
 ### Verify Environment Variables
 
-The server doesn't validate env vars on startup. If you typo a var name, it silently uses the default. Enable trace logs to verify which values are being used.
+The server does not reject unknown environment variable names. A misspelled name has no effect, and the server uses the default value. Enable trace logs to verify the values that the server uses.
 
 ## Related Docs
 

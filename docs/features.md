@@ -1,12 +1,18 @@
 # Features
 
-Features are self-contained modules that extend Wanaku with new capabilities. They're not just configuration options—they're full-fledged Rust crates that can register filters into the pipeline, expose management API routes, and manage their own state.
+Features are self-contained Rust crates that extend Wanaku. A feature can register pipeline filters, expose management API routes, and manage state.
 
 Think of features as plugins. The core server provides the infrastructure (filter pipeline, registry, management API), and features build on top of it.
 
 ## Built-in Features
 
-Wanaku ships with five features:
+Wanaku ships with six features:
+
+### Metrics Feature (`features/metrics/`)
+
+Collects in-memory filter, evaluator, LLM, and WASM metrics.
+
+**Management API route:** `GET /api/v1/metrics`
 
 ### Intercept Feature (`features/intercept/`)
 
@@ -57,7 +63,7 @@ If `WANAKU_AUTH_ISSUER` is unset, the metadata endpoint returns a 404 (feature d
 
 **Authentication architecture:**
 
-Wanaku does NOT validate tokens or enforce authentication. That's handled by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy), which runs as a reverse proxy in front of Wanaku ports 8081 (MCP) and 8080 (management API).
+Wanaku does not validate tokens or enforce authentication. [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) provides these controls. It runs as a reverse proxy in front of the MCP port (8081) and management API port (8080).
 
 For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
 
@@ -130,13 +136,13 @@ See the [Plugin Development Guide](./plugin-development-guide.md) for details.
 
 ## Creating a Custom Feature
 
-Let's build a simple feature that counts tool calls and exposes stats via the management API.
+The following procedure creates a feature that counts tool calls and exposes the count through the management API.
 
 ### 1. Create the Crate
 
 ```bash
 cd features
-mkdir tool-stats
+mkdir -p tool-stats/src
 cd tool-stats
 ```
 
@@ -149,14 +155,18 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wanaku-apis = { path = "../../apis" }
-wanaku-filters = { path = "../../filters" }
-praxis-filter = "0.4.1"
-async-trait = "0.1"
-http = "1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tracing = "0.1"
+wanaku-apis = { workspace = true }
+wanaku-filters = { workspace = true }
+praxis-filter = { workspace = true }
+async-trait = { workspace = true }
+http = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+bytes = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true
 ```
 
 ### 2. Implement the Feature Trait
@@ -164,14 +174,24 @@ tracing = "0.1"
 Create `src/lib.rs`:
 
 ```rust
-use wanaku_apis::feature::Feature;
-use praxis_filter::{FilterRegistry, PipelineExtension};
+use wanaku_apis::feature::{Feature, HttpContext};
+use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use http::Response;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct ToolStatsFeature {
     counter: Arc<AtomicU64>,
+}
+
+struct ToolStatsExtension {
+    counter: Arc<AtomicU64>,
+}
+
+impl PipelineExtension for ToolStatsExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(self.counter.clone());
+    }
 }
 
 impl ToolStatsFeature {
@@ -182,6 +202,12 @@ impl ToolStatsFeature {
     }
 }
 
+impl Default for ToolStatsFeature {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[async_trait::async_trait]
 impl Feature for ToolStatsFeature {
     fn name(&self) -> &'static str {
@@ -189,27 +215,22 @@ impl Feature for ToolStatsFeature {
     }
 
     fn register_filters(&self, registry: &mut FilterRegistry) {
-        // Register a filter that increments the counter on every tool call
-        let counter = self.counter.clone();
         praxis_filter::register_filters!(
             @register registry,
-            http "wanaku_tool_stats" => move |_| ToolStatsFilter { counter: counter.clone() }
+            http "wanaku_tool_stats" => ToolStatsFilter::from_config
         );
     }
 
     fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>> {
-        vec![]
+        vec![Box::new(ToolStatsExtension {
+            counter: self.counter.clone(),
+        })]
     }
 
-    async fn handle_route(
-        &self, method: &str, path: &str, _query: Option<&str>, _body: Option<&str>,
-    ) -> Option<Response<Vec<u8>>> {
-        if method == "GET" && path == "/api/v1/stats/tools" {
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        if ctx.method == "GET" && ctx.path == "/api/v1/stats/tools" {
             let count = self.counter.load(Ordering::Relaxed);
-            let body = serde_json::json!({
-                "data": {"tool_calls": count},
-                "error": null
-            });
+            let body = serde_json::json!({"tool_calls": count});
             Some(wanaku_apis::http_response::json_ok(&body))
         } else {
             None
@@ -231,24 +252,22 @@ use wanaku_filters::body_filter_boilerplate;
 use praxis_filter::{HttpFilterContext, FilterAction, FilterError};
 use bytes::Bytes;
 
-struct ToolStatsFilter {
-    counter: Arc<AtomicU64>,
-}
-
-body_filter_boilerplate!(ToolStatsFilter, 1_048_576);
+body_filter_boilerplate!(ToolStatsFilter, "wanaku_tool_stats");
 
 impl ToolStatsFilter {
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
-        _body: &Bytes,
+        _body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        if let Some(method) = ctx.get_metadata("mcp.method") {
-            if method == "tools/call" {
-                self.counter.fetch_add(1, Ordering::Relaxed);
-                tracing::info!("Tool call count: {}", self.counter.load(Ordering::Relaxed));
-            }
+        if ctx.get_metadata("mcp.method") != Some("tools/call") {
+            return Ok(FilterAction::Continue);
         }
+        let Some(counter) = ctx.extensions.get::<Arc<AtomicU64>>() else {
+            return Ok(FilterAction::Continue);
+        };
+        counter.fetch_add(1, Ordering::Relaxed);
+        tracing::info!("Tool call count: {}", counter.load(Ordering::Relaxed));
         Ok(FilterAction::Continue)
     }
 }
@@ -259,6 +278,12 @@ impl ToolStatsFilter {
 Add to workspace `Cargo.toml`:
 
 ```toml
+[workspace]
+members = [
+    # ... existing members ...
+    "features/tool-stats",
+]
+
 [workspace.dependencies]
 wanaku-feature-tool-stats = { path = "features/tool-stats" }
 ```
@@ -270,11 +295,11 @@ Add to `server/Cargo.toml`:
 wanaku-feature-tool-stats = { workspace = true }
 ```
 
-Update `server/src/main.rs`:
+Add the feature to the vector returned by `build_features` in `server/src/main.rs`:
 
 ```rust
 let features: Vec<Box<dyn Feature>> = vec![
-    Box::new(wanaku_feature_chat::ChatFeature::new()),
+    // ... existing features ...
     Box::new(wanaku_feature_tool_stats::ToolStatsFeature::new()),
 ];
 ```
@@ -295,7 +320,7 @@ cargo run
 Call a tool:
 
 ```bash
-curl -X POST http://localhost:8081/mcp \
+curl -X POST http://localhost:8081/default/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "echo", "arguments": {"message": "test"}}, "id": 1}'
 ```
@@ -352,17 +377,17 @@ pub struct MyFeature {
 }
 
 // In handle_route:
-if path == "/api/v1/myfeature/config" && req.method() == "PUT" {
-    let new_config: MyConfig = serde_json::from_slice(body)?;
-    self.config.update(new_config);
-    // ...
+if ctx.path == "/api/v1/myfeature/config" && ctx.method == "PUT" {
+    let body = ctx.body.unwrap_or("");
+    let new_config: MyConfig = serde_json::from_str(body).ok()?;
+    self.config.set(new_config);
 }
 ```
 
 Filters read the config via:
 
 ```rust
-let config = feature_state.config.read();
+let config = feature_state.config.get();
 ```
 
 ### LLM Integration
@@ -372,58 +397,54 @@ Use `LlmClient` from `wanaku_apis::llm` for OpenAI-compatible LLM calls:
 ```rust
 use wanaku_apis::llm::LlmClient;
 
-let client = LlmClient::new("http://localhost:11434/v1");
-let response = client.chat_completion("llama3.1:8b", &messages, 30).await?;
+let client = LlmClient::new("http://localhost:11434/v1", "llama3.1:8b", "")?;
+let response = client.chat("You are a concise assistant.", user_prompt).await?;
 ```
 
 See `features/chat/src/lib.rs` for a full example.
 
 ### Management API Response Helpers
 
-Features define their own JSON response helpers to avoid depending on the server crate:
+Use the response helpers from `wanaku_apis`:
 
 ```rust
-fn json_ok<T: serde::Serialize>(data: T) -> HttpResponse {
-    let body = serde_json::json!({"data": data, "error": null}).to_string();
-    HttpResponse::ok(body)
-}
+use http::StatusCode;
+use wanaku_apis::http_response::{json_err, json_ok};
 
-fn json_err(msg: &str, status: u16) -> HttpResponse {
-    let body = serde_json::json!({"data": null, "error": msg}).to_string();
-    HttpResponse::with_status(status, body)
-}
+let response = json_ok(&serde_json::json!({"status": "ready"}));
+let error = json_err(StatusCode::BAD_REQUEST, "invalid configuration");
 ```
 
 ## Feature Discovery
 
-Features self-register on server startup. The server doesn't scan for features—they're explicitly listed in `main.rs`:
+The server does not scan for features. List each feature explicitly in `main.rs`:
 
 ```rust
 let features: Vec<Box<dyn Feature>> = vec![
-    Box::new(ChatFeature::new()),
+    // ... existing features ...
     Box::new(MyFeature::new()),
 ];
 ```
 
-This is intentional. No magic, no runtime discovery, no surprises. You see exactly what features are enabled by reading `main.rs`.
+The explicit list makes feature registration visible. Read `main.rs` to identify the enabled features.
 
 ## Feature Lifecycle
 
-1. **Creation:** Server calls `Feature::new()` in `main.rs`
-2. **Config loading:** Server calls `load_yaml_config()` and `load_env_config()`
-3. **Filter registration:** Server calls `register_filters()` to inject filters into the pipeline
-4. **Extension injection:** Server calls `pipeline_extensions()` to get shared state
-5. **Request handling:** For each request, server calls `handle_route()` for features that own the route
+1. **Creation:** The server constructs each feature in `main.rs`.
+2. **Config loading:** The server calls `load_yaml_config()` and `load_env_config()`.
+3. **Filter registration:** The server calls `register_filters()` to add filters to the pipeline.
+4. **Extension injection:** The server calls `pipeline_extensions()` to get shared state.
+5. **Request handling:** The server calls `handle_route()` for each feature until a feature owns the route.
 
-Features don't get a shutdown hook. Clean up in `Drop` if needed.
+The `Feature` trait does not provide a shutdown hook. Implement `Drop` when the feature must release resources.
 
 ## Disabling Features
 
 To disable a feature:
 
-1. Remove it from the `features` vec in `main.rs`
-2. Remove its filter from `server/src/default.yaml`
-3. Rebuild
+1. Remove the feature from the `features` vector in `main.rs`.
+2. Remove its filter from `server/src/default.yaml`.
+3. Rebuild the server.
 
 No env var or config flag. Features are compile-time dependencies.
 

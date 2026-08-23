@@ -2,9 +2,9 @@
 
 This guide covers development of the admin UI for contributors. For end-user documentation on using the admin UI, see the [Getting Started](./getting-started.md) guide.
 
-The admin UI is a React 19 + TypeScript frontend embedded into the server binary via `rust_embed`. It's accessible at `http://localhost:8080` and provides a graphical interface to the management API.
+The admin UI is a React 19 and TypeScript frontend embedded in the server binary through `rust_embed`. Open `http://localhost:8080` to use the graphical interface to the management API.
 
-This isn't a separate deployment. The UI is compiled into the Rust binary as static assets, served directly by the management API server. No nginx, no S3, no CDN. One binary, one port, one URL.
+The UI is not a separate deployment. The management API server provides the compiled static assets from the Rust binary. One binary serves the API and UI on one port.
 
 ## Tech Stack
 
@@ -39,11 +39,13 @@ ui/admin/
 │   │   │   └── router-exports.tsx  # Exports page element for lazy loading
 │   │   ├── Resources/
 │   │   └── ...
-│   ├── router/                 # Route constants and configuration
-│   │   ├── links.models.ts     # const enum Links
-│   │   └── router.tsx          # Hash-based router setup
+│   ├── navigation/             # Core navigation entries
+│   │   └── core-nav-items.ts   # Built-in navigation entries
+│   ├── router/                 # Route constants
+│   │   └── links.models.ts     # const enum Links
 │   ├── utils/                  # Utility functions
 │   ├── custom-fetch.ts         # Fetch wrapper with error handling
+│   ├── router.tsx              # Hash-based router setup
 │   ├── App.tsx                 # Root component
 │   └── index.scss              # Global Carbon theme setup
 ├── public/                     # Static files (copied to dist/)
@@ -108,7 +110,7 @@ struct AdminUI;
 
 When you visit `http://localhost:8080`, the server serves files from the embedded bundle.
 
-**Gotcha:** Changes to the UI require:
+**Important:** Complete these steps after you change the UI:
 1. `yarn run build` to update `dist/`
 2. `cargo build` to re-embed `dist/` into the binary
 
@@ -371,7 +373,7 @@ The app uses hash-based routing (URLs start with `#/`) to avoid 404s when servin
 
 **Why hash routing?**
 
-The server doesn't rewrite URLs. If you use browser routing and refresh `/tools`, the server looks for `GET /tools` instead of `GET /` + client-side routing.
+The server does not rewrite URLs. With browser routing, a refresh of `/tools` sends `GET /tools` to the server. It does not load `/` before client-side routing.
 
 Hash routing keeps all requests to `GET /` (which serves `index.html`), and the router handles `#/tools` in JavaScript.
 
@@ -413,7 +415,7 @@ cd ui/admin
 yarn run generate-api
 ```
 
-This runs `cargo run --bin wanaku-openapi` + Orval in one step. Commit both `openapi.json` and the regenerated `src/api/` and `src/models/` files.
+This runs the `wanaku-openapi` example from `server/Cargo.toml` with `--no-default-features`. It writes `openapi.json` and then runs Orval. Commit `openapi.json` and the regenerated `src/api/` and `src/models/` files.
 
 ### Build Scripts
 
@@ -455,7 +457,7 @@ This overwrites `src/api/wanaku-router-api.ts` and `src/models/`. Never edit the
 
 The Rust management API wraps all responses in `{"data": ..., "error": ...}`. The `customFetch` function in `src/custom-fetch.ts` unwraps this automatically, so API hooks and pages access `response.data` directly (not `response.data.data`).
 
-The base URL is dynamic — it uses `VITE_API_URL` if set, otherwise `window.location.origin`. This means the UI works against any backend, not just localhost.
+The base URL is dynamic. The UI uses `VITE_API_URL` when it is set. Otherwise, it uses `window.location.origin`. This supports localhost and other backend addresses.
 
 ## Authentication
 
@@ -543,24 +545,24 @@ export const enum Links {
 }
 ```
 
-**`src/router/router.tsx`:**
+**`src/router.tsx`:**
 
 ```tsx
 {
   path: Links.MyNewPage,
-  lazy: async () => import('../Pages/MyNewPage'),
-  element: <Suspense fallback={<Loading />}><MyNewPageElement /></Suspense>
+  lazy: async () => import('./Pages/MyNewPage'),
 }
 ```
 
 ### 5. Add Nav Link
 
-**`src/components/SideNav.tsx`:**
+**`src/navigation/core-nav-items.ts`:**
 
 ```tsx
-<SideNavItems>
-  <SideNavLink to={Links.MyNewPage}>My New Page</SideNavLink>
-</SideNavItems>
+export const CORE_NAV_ITEMS: NavItem[] = [
+  // Existing entries...
+  { id: "my-new-page", label: "My New Page", route: Links.MyNewPage, source: "core", order: 100 },
+];
 ```
 
 Rebuild and the page appears in the UI.

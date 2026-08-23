@@ -144,14 +144,20 @@ Namespaces isolate tools and resources. Each namespace has a **name**. Wanaku us
 - Use 1 to 63 characters.
 - Examples: `finance`, `my-team`, `staging-42`
 
-Create a `"finance"` namespace. Register a forward that assigns its tools to this namespace:
+Create a `"finance"` namespace:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/namespaces \
   -H "Content-Type: application/json" \
   -d '{"name": "finance"}'
+```
 
-wanaku forwards add --service="http://market-data-mcp:8080/mcp" --name market-data-server --no-auth
+Register a forward with `namespace` set to `"finance"`:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/forwards \
+  -H "Content-Type: application/json" \
+  -d '{"name": "market-data-server", "address": "http://market-data-mcp:8080/mcp", "namespace": "finance"}'
 ```
 
 Send a query to the MCP endpoint for the `finance` namespace:
@@ -216,8 +222,8 @@ You can configure Wanaku with environment variables. This table lists the most c
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address |
-| `WANAKU_PERSIST_BACKEND` | _(unset)_ | Set to `"file"` to persist registry to disk |
-| `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
+| `WANAKU_PERSIST_BACKEND` | `file` | File persistence backend. Set to `"none"` to disable persistence. |
+| `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory for `registry.json` |
 
 Read [Configuration](./configuration.md) for the complete list.
 
