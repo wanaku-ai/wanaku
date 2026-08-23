@@ -6,6 +6,8 @@ use crate::config::EvaluatorsConfig;
 use crate::revision::{RevisionError, RevisionOrigin};
 use crate::state::EvaluatorState;
 
+type ParseResult<T> = Result<T, Box<Response<Vec<u8>>>>;
+
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum EvaluatorRoute {
     ListEvaluators,
@@ -13,13 +15,9 @@ pub(crate) enum EvaluatorRoute {
     ListBindings,
     BindNamespace(String),
     UnbindNamespace(String),
-    /// GET /api/v1/evaluators/revisions
     ListRevisions,
-    /// GET /api/v1/evaluators/revisions/active
     ActiveRevision,
-    /// GET /api/v1/evaluators/revisions/{id}
     GetRevision(u64),
-    /// POST /api/v1/evaluators/revisions/{id}/activate
     ActivateRevision(u64),
     NotFound,
 }
@@ -111,59 +109,18 @@ struct UpdateEvaluatorsRequest {
     expected_revision: Option<u64>,
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "request parsing with legacy fallback and revision error handling"
-)]
 pub(crate) fn handle_update_evaluators(state: &EvaluatorState, body: &str) -> Response<Vec<u8>> {
-    // First try the new request format with optional expected_revision.
-    let (evaluators, expected_revision) =
-        match serde_json::from_str::<UpdateEvaluatorsRequest>(body) {
-            Ok(req) => (req.evaluators, req.expected_revision),
-            Err(_) => {
-                // Fall back to the legacy format (plain EvaluatorsConfig).
-                match serde_json::from_str::<EvaluatorsConfig>(body) {
-                    Ok(config) => (config.evaluators, None),
-                    Err(e) => {
-                        return json_err(
-                            StatusCode::BAD_REQUEST,
-                            &format!("invalid evaluators config: {e}"),
-                        );
-                    }
-                }
-            }
-        };
+    let (evaluators, expected_revision) = match parse_update_request(body) {
+        Ok(parsed) => parsed,
+        Err(resp) => return *resp,
+    };
 
     let count = evaluators.len();
-    info!(
-        count = count,
-        "evaluators update requested via management API"
-    );
+    info!(count = count, "evaluators update requested via management API");
 
     match state.try_activate(evaluators, RevisionOrigin::Api, None, expected_revision) {
-        Ok(revision) => {
-            info!(
-                revision_id = revision.metadata.id,
-                count = count,
-                "evaluators updated via management API"
-            );
-            json_ok(&serde_json::json!({
-                "revision": revision.metadata,
-                "evaluators": revision.evaluators,
-            }))
-        }
-        Err(RevisionError::Conflict { expected, actual }) => json_err(
-            StatusCode::CONFLICT,
-            &format!("stale update: expected active revision {expected}, but current is {actual}"),
-        ),
-        Err(RevisionError::ValidationFailed(reason)) => json_err(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            &format!("configuration rejected: {reason}"),
-        ),
-        Err(e) => json_err(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            &format!("failed to activate configuration: {e}"),
-        ),
+        Ok(revision) => revision_ok_response(&revision),
+        Err(e) => revision_error_response(e),
     }
 }
 
@@ -192,57 +149,77 @@ pub(crate) fn handle_get_revision(state: &EvaluatorState, id: u64) -> Response<V
     }
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "rollback request parsing with concurrency and error handling"
-)]
 pub(crate) fn handle_activate_revision(
     state: &EvaluatorState,
     source_id: u64,
     body: &str,
 ) -> Response<Vec<u8>> {
+    let expected_revision = match parse_activate_request(body) {
+        Ok(rev) => rev,
+        Err(resp) => return *resp,
+    };
+
+    match state.rollback(source_id, expected_revision) {
+        Ok(revision) => revision_ok_response(&revision),
+        Err(e) => revision_error_response(e),
+    }
+}
+
+fn parse_update_request(
+    body: &str,
+) -> ParseResult<(Vec<crate::config::EvaluatorDef>, Option<u64>)> {
+    if let Ok(req) = serde_json::from_str::<UpdateEvaluatorsRequest>(body) {
+        return Ok((req.evaluators, req.expected_revision));
+    }
+    match serde_json::from_str::<EvaluatorsConfig>(body) {
+        Ok(config) => Ok((config.evaluators, None)),
+        Err(e) => Err(Box::new(json_err(
+            StatusCode::BAD_REQUEST,
+            &format!("invalid evaluators config: {e}"),
+        ))),
+    }
+}
+
+fn parse_activate_request(body: &str) -> ParseResult<Option<u64>> {
     #[derive(serde::Deserialize, Default)]
     struct ActivateRequest {
         #[serde(default)]
         expected_revision: Option<u64>,
     }
 
-    let req: ActivateRequest = if body.is_empty() {
-        ActivateRequest::default()
-    } else {
-        match serde_json::from_str(body) {
-            Ok(r) => r,
-            Err(e) => {
-                return json_err(
-                    StatusCode::BAD_REQUEST,
-                    &format!("invalid activate request: {e}"),
-                );
-            }
-        }
-    };
+    if body.is_empty() {
+        return Ok(None);
+    }
+    match serde_json::from_str::<ActivateRequest>(body) {
+        Ok(r) => Ok(r.expected_revision),
+        Err(e) => Err(Box::new(json_err(
+            StatusCode::BAD_REQUEST,
+            &format!("invalid activate request: {e}"),
+        ))),
+    }
+}
 
-    match state.rollback(source_id, req.expected_revision) {
-        Ok(revision) => {
-            info!(
-                source_id = source_id,
-                new_revision_id = revision.metadata.id,
-                "evaluator configuration restored from revision"
-            );
-            json_ok(&serde_json::json!({
-                "revision": revision.metadata,
-                "evaluators": revision.evaluators,
-            }))
-        }
-        Err(RevisionError::NotFound(id)) => {
+fn revision_ok_response(
+    revision: &crate::revision::Revision,
+) -> Response<Vec<u8>> {
+    json_ok(&serde_json::json!({
+        "revision": revision.metadata,
+        "evaluators": revision.evaluators,
+    }))
+}
+
+fn revision_error_response(err: RevisionError) -> Response<Vec<u8>> {
+    match err {
+        RevisionError::NotFound(id) => {
             json_err(StatusCode::NOT_FOUND, &format!("revision {id} not found"))
         }
-        Err(RevisionError::Conflict { expected, actual }) => json_err(
+        RevisionError::Conflict { expected, actual } => json_err(
             StatusCode::CONFLICT,
-            &format!("stale restore: expected active revision {expected}, but current is {actual}"),
+            &format!("expected active revision {expected}, but current is {actual}"),
         ),
-        Err(RevisionError::ValidationFailed(reason)) => json_err(
+        RevisionError::ValidationFailed(reason) => json_err(
             StatusCode::UNPROCESSABLE_ENTITY,
-            &format!("restored configuration failed validation: {reason}"),
+            &format!("configuration rejected: {reason}"),
         ),
     }
 }

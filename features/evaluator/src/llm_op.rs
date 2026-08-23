@@ -29,10 +29,7 @@ pub async fn run_llm_operation(
     result
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "prompt assembly with multiple optional sections"
-)]
+#[expect(clippy::too_many_lines, reason = "prompt assembly with multiple optional sections")]
 fn build_context_prompt(mcp: &McpContext<'_>) -> String {
     let mut prompt = String::with_capacity(4096);
 
@@ -45,22 +42,24 @@ fn build_context_prompt(mcp: &McpContext<'_>) -> String {
         };
         for interaction in capped {
             if let Some(messages) = interaction.request_body.get("messages")
-                && let Some(arr) = messages.as_array()
-            {
-                for msg in arr {
-                    let role = msg
-                        .get("role")
-                        .and_then(serde_json::Value::as_str)
-                        .unwrap_or("unknown");
-                    let content = msg
-                        .get("content")
-                        .and_then(serde_json::Value::as_str)
-                        .unwrap_or("");
-                    if !content.is_empty() {
-                        prompt.push_str(&format!("[{role}]: {}\n", llm::sanitize(content, 1000)));
+                && let Some(arr) = messages.as_array() {
+                    for msg in arr {
+                        let role = msg
+                            .get("role")
+                            .and_then(serde_json::Value::as_str)
+                            .unwrap_or("unknown");
+                        let content = msg
+                            .get("content")
+                            .and_then(serde_json::Value::as_str)
+                            .unwrap_or("");
+                        if !content.is_empty() {
+                            prompt.push_str(&format!(
+                                "[{role}]: {}\n",
+                                llm::sanitize(content, 1000)
+                            ));
+                        }
                     }
                 }
-            }
             prompt.push('\n');
         }
     }

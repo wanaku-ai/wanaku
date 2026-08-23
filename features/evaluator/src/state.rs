@@ -6,7 +6,9 @@ use wanaku_apis::metrics::MetricsStore;
 
 use crate::config::EvaluatorDef;
 use crate::engine::CompiledEvaluator;
-use crate::revision::{Revision, RevisionError, RevisionOrigin, RevisionStore};
+use crate::revision::{
+    RecordRevisionParams, Revision, RevisionError, RevisionOrigin, RevisionStore,
+};
 use crate::schema::CompiledSchema;
 
 /// Shared state for the evaluator engine.
@@ -68,16 +70,6 @@ impl EvaluatorState {
 
     /// Validate, compile, and atomically activate a new evaluator
     /// configuration as a versioned revision.
-    ///
-    /// If `expected_revision` is provided, the update is rejected with a
-    /// conflict error when the current active revision does not match.
-    ///
-    /// Compilation errors cause the update to be rejected while the
-    /// previously active configuration remains untouched.
-    #[expect(
-        clippy::too_many_lines,
-        reason = "multi-step validation, compilation, and atomic activation pipeline"
-    )]
     pub fn try_activate(
         &self,
         defs: Vec<EvaluatorDef>,
@@ -85,70 +77,34 @@ impl EvaluatorState {
         actor: Option<String>,
         expected_revision: Option<u64>,
     ) -> Result<Revision, RevisionError> {
-        // 1. Validate evaluator names are non-empty and unique.
         validate_evaluator_names(&defs)?;
-
-        // 2. Validate triggers.
         validate_triggers(&defs)?;
 
-        // 3. Compile WASM modules. Collect failures.
         let (compiled_modules, wasm_errors) = self.try_compile_modules(&defs);
-
-        // 4. Compile schemas. Collect failures.
         let (compiled_schemas, schema_errors) = try_compile_schemas(&defs);
 
-        // 5. If any compilation failed, record a rejected revision and return
-        //    the failure. The active configuration is unchanged.
-        let mut all_errors: Vec<String> = Vec::new();
-        all_errors.extend(wasm_errors);
-        all_errors.extend(schema_errors);
-
+        let all_errors = collect_errors(wasm_errors, schema_errors);
         if !all_errors.is_empty() {
-            let failure_reason = all_errors.join("; ");
-            tracing::warn!(
-                errors = %failure_reason,
-                "evaluator configuration rejected: validation/compilation failed"
-            );
-
-            // Record the rejected revision in history.
-            let _rejected = self.revisions.record_revision(
-                &defs,
+            return self.reject_config(&RecordRevisionParams {
+                evaluators: defs,
                 origin,
                 actor,
                 expected_revision,
-                false,
-                Some(failure_reason.clone()),
-            )?;
-
-            return Err(RevisionError::ValidationFailed(failure_reason));
+                activate: false,
+                failure_reason: Some(all_errors.join("; ")),
+            });
         }
 
-        // 6. Record the new active revision (with optimistic concurrency).
-        let revision =
-            self.revisions
-                .record_revision(&defs, origin, actor, expected_revision, true, None)?;
+        let revision = self.revisions.record_revision(&RecordRevisionParams {
+            evaluators: defs.clone(),
+            origin,
+            actor,
+            expected_revision,
+            activate: true,
+            failure_reason: None,
+        })?;
 
-        // 7. Atomically swap in the new evaluators and compiled artifacts.
-        let count = defs.len() as u64;
-        if let Ok(mut guard) = self.compiled.write() {
-            *guard = compiled_modules;
-        }
-        if let Ok(mut guard) = self.schemas.write() {
-            *guard = compiled_schemas;
-        }
-        if let Ok(mut guard) = self.evaluators.write() {
-            *guard = defs;
-        }
-        if let Some(ref store) = self.metrics {
-            store.set_evaluators_loaded(count);
-        }
-
-        tracing::info!(
-            revision_id = revision.metadata.id,
-            evaluator_count = count,
-            "evaluator configuration activated"
-        );
-
+        self.swap_active_state(defs, compiled_modules, compiled_schemas);
         Ok(revision)
     }
 
@@ -164,7 +120,44 @@ impl EvaluatorState {
         let defs = self
             .revisions
             .restore_revision(source_id, expected_revision)?;
-        self.try_activate(defs, RevisionOrigin::Api, None, None)
+        self.try_activate(defs, RevisionOrigin::Api, None, expected_revision)
+    }
+
+    fn reject_config(
+        &self,
+        params: &RecordRevisionParams,
+    ) -> Result<Revision, RevisionError> {
+        let failure_reason = params
+            .failure_reason
+            .clone()
+            .unwrap_or_default();
+        tracing::warn!(
+            errors = %failure_reason,
+            "evaluator configuration rejected: validation/compilation failed"
+        );
+        let _rejected = self.revisions.record_revision(params)?;
+        Err(RevisionError::ValidationFailed(failure_reason))
+    }
+
+    fn swap_active_state(
+        &self,
+        defs: Vec<EvaluatorDef>,
+        compiled_modules: HashMap<PathBuf, Arc<CompiledEvaluator>>,
+        compiled_schemas: HashMap<String, Arc<CompiledSchema>>,
+    ) {
+        let count = defs.len() as u64;
+        if let Ok(mut guard) = self.compiled.write() {
+            *guard = compiled_modules;
+        }
+        if let Ok(mut guard) = self.schemas.write() {
+            *guard = compiled_schemas;
+        }
+        if let Ok(mut guard) = self.evaluators.write() {
+            *guard = defs;
+        }
+        if let Some(ref store) = self.metrics {
+            store.set_evaluators_loaded(count);
+        }
     }
 
     pub fn list_evaluators(&self) -> Vec<EvaluatorDef> {
@@ -229,40 +222,8 @@ impl EvaluatorState {
             .unwrap_or_default()
     }
 
-    #[expect(
-        clippy::too_many_lines,
-        reason = "WASM compilation loop with error handling"
-    )]
     fn compile_modules(&self, defs: &[EvaluatorDef]) {
-        let mut compiled = HashMap::new();
-
-        for def in defs {
-            let paths = collect_wasm_paths(def);
-            for path in paths {
-                if compiled.contains_key(&path) {
-                    continue;
-                }
-                match CompiledEvaluator::from_file(&def.name, &path) {
-                    Ok(module) => {
-                        tracing::info!(
-                            evaluator = %def.name,
-                            path = %path.display(),
-                            "compiled WASM action module"
-                        );
-                        compiled.insert(path, Arc::new(module));
-                    }
-                    Err(e) => {
-                        tracing::error!(
-                            evaluator = %def.name,
-                            path = %path.display(),
-                            error = %e,
-                            "failed to compile WASM action module"
-                        );
-                    }
-                }
-            }
-        }
-
+        let compiled = compile_wasm_map(defs);
         let count = compiled.len() as u64;
         if let Ok(mut guard) = self.compiled.write() {
             *guard = compiled;
@@ -292,58 +253,65 @@ impl EvaluatorState {
         }
     }
 
-    /// Try to compile all WASM modules. Returns the compiled map and a list
-    /// of error messages for any modules that failed compilation.
-    #[expect(
-        clippy::too_many_lines,
-        reason = "WASM compilation loop with error collection"
-    )]
     fn try_compile_modules(
         &self,
         defs: &[EvaluatorDef],
     ) -> (HashMap<PathBuf, Arc<CompiledEvaluator>>, Vec<String>) {
-        let mut compiled = HashMap::new();
-        let mut errors = Vec::new();
-
-        for def in defs {
-            let paths = collect_wasm_paths(def);
-            for path in paths {
-                if compiled.contains_key(&path) {
-                    continue;
-                }
-                match CompiledEvaluator::from_file(&def.name, &path) {
-                    Ok(module) => {
-                        tracing::info!(
-                            evaluator = %def.name,
-                            path = %path.display(),
-                            "compiled WASM action module"
-                        );
-                        compiled.insert(path, Arc::new(module));
-                    }
-                    Err(e) => {
-                        let msg = format!(
-                            "evaluator '{}': WASM compilation failed for {}: {e}",
-                            def.name,
-                            path.display()
-                        );
-                        tracing::error!(
-                            evaluator = %def.name,
-                            path = %path.display(),
-                            error = %e,
-                            "failed to compile WASM action module"
-                        );
-                        errors.push(msg);
-                    }
-                }
-            }
-        }
-
+        let (compiled, errors) = compile_wasm_map_with_errors(defs);
         if let Some(ref store) = self.metrics {
             store.set_wasm_compiled(compiled.len() as u64);
         }
-
         (compiled, errors)
     }
+}
+
+fn compile_wasm_map(defs: &[EvaluatorDef]) -> HashMap<PathBuf, Arc<CompiledEvaluator>> {
+    let (compiled, _) = compile_wasm_map_with_errors(defs);
+    compiled
+}
+
+fn compile_wasm_map_with_errors(
+    defs: &[EvaluatorDef],
+) -> (HashMap<PathBuf, Arc<CompiledEvaluator>>, Vec<String>) {
+    let mut compiled = HashMap::new();
+    let mut errors = Vec::new();
+    for def in defs {
+        for path in collect_wasm_paths(def) {
+            if compiled.contains_key(&path) {
+                continue;
+            }
+            match compile_single_wasm(&def.name, &path) {
+                Ok(module) => {
+                    compiled.insert(path, module);
+                }
+                Err(msg) => errors.push(msg),
+            }
+        }
+    }
+    (compiled, errors)
+}
+
+fn compile_single_wasm(
+    name: &str,
+    path: &Path,
+) -> Result<Arc<CompiledEvaluator>, String> {
+    match CompiledEvaluator::from_file(name, path) {
+        Ok(module) => {
+            tracing::info!(evaluator = %name, path = %path.display(), "compiled WASM action module");
+            Ok(Arc::new(module))
+        }
+        Err(e) => {
+            tracing::error!(evaluator = %name, path = %path.display(), error = %e, "failed to compile WASM action module");
+            Err(format!("evaluator '{name}': WASM compilation failed for {}: {e}", path.display()))
+        }
+    }
+}
+
+fn collect_errors(wasm_errors: Vec<String>, schema_errors: Vec<String>) -> Vec<String> {
+    let mut all = Vec::with_capacity(wasm_errors.len() + schema_errors.len());
+    all.extend(wasm_errors);
+    all.extend(schema_errors);
+    all
 }
 
 /// Try to compile all result schemas. Returns the compiled map and a list of

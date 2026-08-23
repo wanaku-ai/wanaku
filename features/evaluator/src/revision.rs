@@ -2,9 +2,9 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use wanaku_apis::time::iso_now;
 
 use crate::config::EvaluatorDef;
 
@@ -92,6 +92,16 @@ impl std::fmt::Display for RevisionError {
     }
 }
 
+/// Parameters for recording a new revision.
+pub struct RecordRevisionParams {
+    pub evaluators: Vec<EvaluatorDef>,
+    pub origin: RevisionOrigin,
+    pub actor: Option<String>,
+    pub expected_revision: Option<RevisionId>,
+    pub activate: bool,
+    pub failure_reason: Option<String>,
+}
+
 /// In-memory store for evaluator configuration revisions.
 ///
 /// All revisions are kept in a bounded ring: when the history exceeds
@@ -105,6 +115,47 @@ struct RevisionStoreInner {
     revisions: Vec<Revision>,
     active_id: Option<RevisionId>,
     max_history: usize,
+}
+
+impl RevisionStoreInner {
+    fn check_concurrency(
+        &self,
+        expected: Option<RevisionId>,
+    ) -> Result<(), RevisionError> {
+        if let Some(expected) = expected {
+            let actual = self.active_id.unwrap_or(0);
+            if actual != expected {
+                return Err(RevisionError::Conflict { expected, actual });
+            }
+        }
+        Ok(())
+    }
+
+    fn mark_previous_superseded(&mut self) {
+        if let Some(prev_id) = self.active_id
+            && let Some(prev) = self
+                .revisions
+                .iter_mut()
+                .find(|r| r.metadata.id == prev_id)
+        {
+            prev.metadata.status = ActivationStatus::Superseded;
+        }
+    }
+
+    fn trim_history(&mut self) {
+        while self.revisions.len() > self.max_history {
+            let is_active =
+                self.active_id == Some(self.revisions[0].metadata.id);
+            if is_active && self.revisions.len() <= self.max_history + 1 {
+                break;
+            }
+            if is_active {
+                self.revisions.remove(1);
+            } else {
+                self.revisions.remove(0);
+            }
+        }
+    }
 }
 
 impl RevisionStore {
@@ -175,19 +226,9 @@ impl RevisionStore {
     /// The `activate` flag controls whether the revision becomes active
     /// immediately. When `false` (e.g., a failed compilation), the revision is
     /// stored as rejected.
-    #[expect(
-        clippy::too_many_arguments,
-        clippy::too_many_lines,
-        reason = "revision creation with concurrency check, metadata, and history trimming"
-    )]
     pub fn record_revision(
         &self,
-        evaluators: &[EvaluatorDef],
-        origin: RevisionOrigin,
-        actor: Option<String>,
-        expected_revision: Option<RevisionId>,
-        activate: bool,
-        failure_reason: Option<String>,
+        params: &RecordRevisionParams,
     ) -> Result<Revision, RevisionError> {
         let Ok(mut guard) = self.inner.write() else {
             return Err(RevisionError::ValidationFailed(
@@ -195,59 +236,17 @@ impl RevisionStore {
             ));
         };
 
-        // Optimistic concurrency check.
-        if let Some(expected) = expected_revision {
-            let actual = guard.active_id.unwrap_or(0);
-            if actual != expected {
-                return Err(RevisionError::Conflict { expected, actual });
-            }
-        }
+        guard.check_concurrency(params.expected_revision)?;
 
-        let id = NEXT_REVISION.fetch_add(1, Ordering::Relaxed);
-        let now = iso_now();
-        let checksum = compute_checksum(evaluators);
+        let revision = build_revision(params)?;
 
-        let status = if activate {
-            ActivationStatus::Active
-        } else {
-            ActivationStatus::Rejected
-        };
-
-        let activated_at = if activate { Some(now.clone()) } else { None };
-
-        let revision = Revision {
-            metadata: RevisionMetadata {
-                id,
-                created_at: now,
-                activated_at,
-                status,
-                checksum,
-                origin,
-                actor,
-                failure_reason,
-            },
-            evaluators: evaluators.to_vec(),
-        };
-
-        // Mark the previously active revision as superseded.
-        if activate {
-            if let Some(prev_id) = guard.active_id
-                && let Some(prev) = guard
-                    .revisions
-                    .iter_mut()
-                    .find(|r| r.metadata.id == prev_id)
-            {
-                prev.metadata.status = ActivationStatus::Superseded;
-            }
-            guard.active_id = Some(id);
+        if params.activate {
+            guard.mark_previous_superseded();
+            guard.active_id = Some(revision.metadata.id);
         }
 
         guard.revisions.push(revision.clone());
-
-        // Trim oldest revisions if we exceed the limit.
-        while guard.revisions.len() > guard.max_history {
-            guard.revisions.remove(0);
-        }
+        guard.trim_history();
 
         Ok(revision)
     }
@@ -291,51 +290,42 @@ impl Default for RevisionStore {
 // Helpers
 // ---------------------------------------------------------------------------
 
+fn build_revision(
+    params: &RecordRevisionParams,
+) -> Result<Revision, RevisionError> {
+    let id = NEXT_REVISION.fetch_add(1, Ordering::Relaxed);
+    let now = iso_now();
+    let checksum = compute_checksum(&params.evaluators)?;
+
+    let (status, activated_at) = if params.activate {
+        (ActivationStatus::Active, Some(now.clone()))
+    } else {
+        (ActivationStatus::Rejected, None)
+    };
+
+    Ok(Revision {
+        metadata: RevisionMetadata {
+            id,
+            created_at: now,
+            activated_at,
+            status,
+            checksum,
+            origin: params.origin.clone(),
+            actor: params.actor.clone(),
+            failure_reason: params.failure_reason.clone(),
+        },
+        evaluators: params.evaluators.clone(),
+    })
+}
+
 /// Compute a hex-encoded hash of the serialized evaluator definitions.
-fn compute_checksum(defs: &[EvaluatorDef]) -> String {
+fn compute_checksum(defs: &[EvaluatorDef]) -> Result<String, RevisionError> {
+    let json = serde_json::to_string(defs).map_err(|e| {
+        RevisionError::ValidationFailed(format!("failed to serialize evaluator config: {e}"))
+    })?;
     let mut hasher = DefaultHasher::new();
-    // Serialize to a canonical JSON string for deterministic hashing.
-    if let Ok(json) = serde_json::to_string(defs) {
-        json.hash(&mut hasher);
-    }
-    format!("{:016x}", hasher.finish())
-}
-
-/// Return the current wall-clock time as an ISO 8601 string (UTC).
-fn iso_now() -> String {
-    let duration = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
-    let secs = duration.as_secs();
-
-    // Manual UTC formatting: YYYY-MM-DDTHH:MM:SSZ
-    // This avoids adding a chrono dependency.
-    let days = secs / 86400;
-    let time_of_day = secs % 86400;
-    let hours = time_of_day / 3600;
-    let minutes = (time_of_day % 3600) / 60;
-    let seconds = time_of_day % 60;
-
-    // Compute year/month/day from days since epoch (1970-01-01).
-    let (year, month, day) = days_to_ymd(days);
-
-    format!("{year:04}-{month:02}-{day:02}T{hours:02}:{minutes:02}:{seconds:02}Z")
-}
-
-/// Convert days since Unix epoch to (year, month, day).
-const fn days_to_ymd(days: u64) -> (u64, u64, u64) {
-    // Algorithm adapted from Howard Hinnant's civil_from_days.
-    let z = days + 719_468;
-    let era = z / 146_097;
-    let doe = z - era * 146_097;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    let y = if m <= 2 { y + 1 } else { y };
-    (y, m, d)
+    json.hash(&mut hasher);
+    Ok(format!("{:016x}", hasher.finish()))
 }
 
 #[cfg(test)]
@@ -345,6 +335,17 @@ mod tests {
         ErrorPolicy, EvaluatorDef, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
     };
     use std::path::PathBuf;
+
+    fn active_params(defs: Vec<EvaluatorDef>, origin: RevisionOrigin) -> RecordRevisionParams {
+        RecordRevisionParams {
+            evaluators: defs,
+            origin,
+            actor: None,
+            expected_revision: None,
+            activate: true,
+            failure_reason: None,
+        }
+    }
 
     fn test_evaluator(name: &str) -> EvaluatorDef {
         EvaluatorDef {
@@ -374,7 +375,7 @@ mod tests {
         let defs = vec![test_evaluator("eval-1")];
 
         let rev = store
-            .record_revision(&defs, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs, RevisionOrigin::Startup))
             .unwrap();
 
         assert_eq!(rev.metadata.status, ActivationStatus::Active);
@@ -393,10 +394,10 @@ mod tests {
         let defs2 = vec![test_evaluator("eval-2")];
 
         let rev1 = store
-            .record_revision(&defs1, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs1, RevisionOrigin::Startup))
             .unwrap();
         let rev2 = store
-            .record_revision(&defs2, RevisionOrigin::Api, None, None, true, None)
+            .record_revision(&active_params(defs2, RevisionOrigin::Api))
             .unwrap();
 
         // rev1 should be superseded now.
@@ -416,18 +417,18 @@ mod tests {
         let defs_bad = vec![test_evaluator("bad")];
 
         let good = store
-            .record_revision(&defs_good, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs_good, RevisionOrigin::Startup))
             .unwrap();
 
         let bad = store
-            .record_revision(
-                &defs_bad,
-                RevisionOrigin::Api,
-                None,
-                None,
-                false,
-                Some("compilation failed".to_owned()),
-            )
+            .record_revision(&RecordRevisionParams {
+                evaluators: defs_bad,
+                origin: RevisionOrigin::Api,
+                actor: None,
+                expected_revision: None,
+                activate: false,
+                failure_reason: Some("compilation failed".to_owned()),
+            })
             .unwrap();
 
         assert_eq!(bad.metadata.status, ActivationStatus::Rejected);
@@ -444,18 +445,18 @@ mod tests {
         let defs = vec![test_evaluator("eval-1")];
 
         let rev1 = store
-            .record_revision(&defs, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs.clone(), RevisionOrigin::Startup))
             .unwrap();
 
         // Try to update with wrong expected revision.
-        let result = store.record_revision(
-            &defs,
-            RevisionOrigin::Api,
-            None,
-            Some(rev1.metadata.id + 999),
-            true,
-            None,
-        );
+        let result = store.record_revision(&RecordRevisionParams {
+            evaluators: defs,
+            origin: RevisionOrigin::Api,
+            actor: None,
+            expected_revision: Some(rev1.metadata.id + 999),
+            activate: true,
+            failure_reason: None,
+        });
 
         assert!(result.is_err());
         if let Err(RevisionError::Conflict { expected, actual }) = result {
@@ -470,19 +471,19 @@ mod tests {
         let defs = vec![test_evaluator("eval-1")];
 
         let rev1 = store
-            .record_revision(&defs, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs, RevisionOrigin::Startup))
             .unwrap();
 
         let defs2 = vec![test_evaluator("eval-2")];
         let rev2 = store
-            .record_revision(
-                &defs2,
-                RevisionOrigin::Api,
-                None,
-                Some(rev1.metadata.id),
-                true,
-                None,
-            )
+            .record_revision(&RecordRevisionParams {
+                evaluators: defs2,
+                origin: RevisionOrigin::Api,
+                actor: None,
+                expected_revision: Some(rev1.metadata.id),
+                activate: true,
+                failure_reason: None,
+            })
             .unwrap();
 
         assert_eq!(
@@ -498,7 +499,7 @@ mod tests {
         for i in 0..5 {
             let defs = vec![test_evaluator(&format!("eval-{i}"))];
             store
-                .record_revision(&defs, RevisionOrigin::Api, None, None, true, None)
+                .record_revision(&active_params(defs, RevisionOrigin::Api))
                 .unwrap();
         }
 
@@ -521,10 +522,10 @@ mod tests {
         let defs2 = vec![test_evaluator("eval-2")];
 
         let rev1 = store
-            .record_revision(&defs1, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs1, RevisionOrigin::Startup))
             .unwrap();
         store
-            .record_revision(&defs2, RevisionOrigin::Api, None, None, true, None)
+            .record_revision(&active_params(defs2, RevisionOrigin::Api))
             .unwrap();
 
         let restored_defs = store.restore_revision(rev1.metadata.id, None).unwrap();
@@ -545,10 +546,10 @@ mod tests {
         let defs = vec![test_evaluator("eval-1")];
 
         let rev1 = store
-            .record_revision(&defs, RevisionOrigin::Startup, None, None, true, None)
+            .record_revision(&active_params(defs.clone(), RevisionOrigin::Startup))
             .unwrap();
         store
-            .record_revision(&defs, RevisionOrigin::Api, None, None, true, None)
+            .record_revision(&active_params(defs, RevisionOrigin::Api))
             .unwrap();
 
         // Try to restore rev1 but claim we expect rev1 as active (rev2 is).
@@ -569,7 +570,7 @@ mod tests {
         for i in 0..5 {
             let defs = vec![test_evaluator(&format!("eval-{i}"))];
             store
-                .record_revision(&defs, RevisionOrigin::Api, None, None, true, None)
+                .record_revision(&active_params(defs, RevisionOrigin::Api))
                 .unwrap();
         }
 
@@ -584,10 +585,10 @@ mod tests {
         let defs2 = vec![test_evaluator("eval-2")];
 
         let rev1 = store
-            .record_revision(&defs1, RevisionOrigin::Api, None, None, true, None)
+            .record_revision(&active_params(defs1, RevisionOrigin::Api))
             .unwrap();
         let rev2 = store
-            .record_revision(&defs2, RevisionOrigin::Api, None, None, true, None)
+            .record_revision(&active_params(defs2, RevisionOrigin::Api))
             .unwrap();
 
         assert_ne!(rev1.metadata.checksum, rev2.metadata.checksum);
@@ -596,17 +597,9 @@ mod tests {
     #[test]
     fn checksum_stable_for_same_config() {
         let defs = vec![test_evaluator("eval-1")];
-        let c1 = compute_checksum(&defs);
-        let c2 = compute_checksum(&defs);
+        let c1 = compute_checksum(&defs).unwrap();
+        let c2 = compute_checksum(&defs).unwrap();
         assert_eq!(c1, c2);
-    }
-
-    #[test]
-    fn iso_now_format() {
-        let ts = iso_now();
-        assert!(ts.ends_with('Z'), "timestamp should end with Z: {ts}");
-        assert!(ts.contains('T'), "timestamp should contain T: {ts}");
-        assert_eq!(ts.len(), 20, "ISO 8601 UTC should be 20 chars: {ts}");
     }
 
     #[test]
@@ -637,14 +630,14 @@ mod tests {
         let store = RevisionStore::new();
         let defs = vec![test_evaluator("eval-1")];
         let rev = store
-            .record_revision(
-                &defs,
-                RevisionOrigin::Api,
-                Some("admin@example.com".to_owned()),
-                None,
-                true,
-                None,
-            )
+            .record_revision(&RecordRevisionParams {
+                evaluators: defs,
+                origin: RevisionOrigin::Api,
+                actor: Some("admin@example.com".to_owned()),
+                expected_revision: None,
+                activate: true,
+                failure_reason: None,
+            })
             .unwrap();
         assert_eq!(rev.metadata.actor.as_deref(), Some("admin@example.com"));
     }

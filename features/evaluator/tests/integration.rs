@@ -122,18 +122,8 @@ evaluators:
 
         let schema = eval.llm.result_schema.as_ref().unwrap();
         assert_eq!(schema["type"], "object");
-        assert!(
-            schema["required"]
-                .as_array()
-                .unwrap()
-                .contains(&serde_json::json!("level"))
-        );
-        assert!(
-            schema["required"]
-                .as_array()
-                .unwrap()
-                .contains(&serde_json::json!("reason"))
-        );
+        assert!(schema["required"].as_array().unwrap().contains(&serde_json::json!("level")));
+        assert!(schema["required"].as_array().unwrap().contains(&serde_json::json!("reason")));
     }
 
     #[test]
@@ -164,10 +154,7 @@ evaluators:
       path: "/wasm/t.wasm"
 "#;
         let config: EvaluatorsConfig = serde_yaml::from_str(yaml).unwrap();
-        assert!(matches!(
-            config.evaluators[0].on_error,
-            ErrorPolicy::Continue
-        ));
+        assert!(matches!(config.evaluators[0].on_error, ErrorPolicy::Continue));
     }
 }
 
@@ -243,11 +230,9 @@ mod state {
     #[test]
     fn find_matching_respects_namespace() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![safety_evaluator(
-            "prod-gate",
-            "tools/call",
-            Some("production"),
-        )]);
+        state.load_evaluators(vec![
+            safety_evaluator("prod-gate", "tools/call", Some("production")),
+        ]);
 
         assert!(state.find_matching("tools/call", "production").is_some());
         assert!(state.find_matching("tools/call", "staging").is_none());
@@ -256,14 +241,18 @@ mod state {
     #[test]
     fn find_matching_no_match_returns_none() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![safety_evaluator("gate", "tools/call", None)]);
+        state.load_evaluators(vec![
+            safety_evaluator("gate", "tools/call", None),
+        ]);
         assert!(state.find_matching("resources/read", "default").is_none());
     }
 
     #[test]
     fn reload_replaces_evaluators() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![safety_evaluator("first", "tools/call", None)]);
+        state.load_evaluators(vec![
+            safety_evaluator("first", "tools/call", None),
+        ]);
         assert_eq!(state.list_evaluators().len(), 1);
 
         state.load_evaluators(vec![
@@ -279,7 +268,9 @@ mod state {
     #[test]
     fn clear_evaluators() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![safety_evaluator("gate", "tools/call", None)]);
+        state.load_evaluators(vec![
+            safety_evaluator("gate", "tools/call", None),
+        ]);
         assert_eq!(state.list_evaluators().len(), 1);
 
         state.load_evaluators(vec![]);
@@ -359,10 +350,7 @@ mod schema {
         });
         let raw = r#"{"level": "green"}"#;
         let err = validate_against_schema(&schema, raw).unwrap_err();
-        assert!(
-            err.contains("reason"),
-            "should mention missing field: {err}"
-        );
+        assert!(err.contains("reason"), "should mention missing field: {err}");
     }
 
     #[test]
@@ -516,10 +504,10 @@ mod action_result {
 mod engine {
     use super::*;
     use std::sync::Arc;
-    use wanaku_apis::interactions::InMemoryInteractionStore;
-    use wanaku_apis::registry::InMemoryRegistry;
     use wanaku_feature_evaluator::engine::CompiledEvaluator;
     use wanaku_feature_evaluator::schema::CompiledSchema;
+    use wanaku_apis::interactions::InMemoryInteractionStore;
+    use wanaku_apis::registry::InMemoryRegistry;
 
     macro_rules! require_wasm {
         ($name:expr) => {{
@@ -532,10 +520,7 @@ mod engine {
         }};
     }
 
-    fn eval_context(
-        method: &str,
-        llm_result: &str,
-    ) -> wanaku_feature_evaluator::wit_types::EvaluationContext {
+    fn eval_context(method: &str, llm_result: &str) -> wanaku_feature_evaluator::wit_types::EvaluationContext {
         wanaku_feature_evaluator::wit_types::EvaluationContext {
             method: method.to_owned(),
             namespace: "default".to_owned(),
