@@ -1,41 +1,41 @@
 # Getting Started with Wanaku
 
-Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls and enforcing policy, identity, and data controls before actions reach backend systems. The agent never touches backends directly — Wanaku runs the work on its behalf.
+Wanaku is a governed action proxy for AI agents. It sits between agents and backend systems, where it intercepts tool calls and enforces policy, identity, and data controls. Wanaku performs requested actions on behalf of agents, so agents never access backend systems directly.
 
-This guide gets you from zero to a running Wanaku proxy in under 10 minutes.
+This guide takes you from installation to a running Wanaku proxy in less than 10 minutes.
 
-> **Coming from Classic Wanaku (Java)?** See [Migrating from Classic Wanaku](./migration-from-classic.md) for what changed, what broke, and how to migrate.
+> **Migrating from Classic Wanaku (Java)?** Read [Migrating from Classic Wanaku](./migration-from-classic.md) for an overview of the changes, compatibility considerations, and migration process.
 
 ## Prerequisites
 
-You'll need:
+You need the following items:
 
-- A terminal where you're comfortable running commands
+- A terminal for running commands
 - `jq` (optional, for formatting JSON output)
 
-## Quick Start: Get It Running
+## Quick Start
 
 ### 1. Download the Server
 
-Wanaku ships in two variants:
+Wanaku has two variants:
 
 | Variant | Archive name | Description |
 |---|---|---|
 | **Full** | `wanaku-server-{version}-{platform}` | Includes the embedded admin UI at `http://localhost:8080/admin` |
-| **Headless** | `wanaku-server-headless-{version}-{platform}` | No admin UI — API and CLI only. Aimed at builders and integrators who embed Wanaku into their own tooling or manage it entirely through the management API and CLI. |
+| **Headless** | `wanaku-server-headless-{version}-{platform}` | Does not include the admin UI. Use the management API or CLI to manage Wanaku. You can also include Wanaku in other tools. |
 
-Both variants are functionally identical: same MCP endpoint, same management API, same filter pipeline. The only difference is whether the admin UI is served.
+Both variants provide the same MCP endpoint, management API, and filter pipeline. Only the full variant includes the admin UI.
 
-Download the variant that fits your use case from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access).
+Select a variant for your use case. Download it from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access).
 
-Make it executable and place it in your PATH:
+Make the binary executable. Move it to a directory in your `PATH`:
 
 ```bash
 chmod +x wanaku-server
 sudo mv wanaku-server /usr/local/bin/
 ```
 
-Container images are also available for both variants:
+You can also use a container image. Run the command for the selected variant:
 
 ```bash
 # Full (with admin UI)
@@ -47,20 +47,20 @@ docker pull quay.io/wanaku/wanaku-server-headless:early-access
 
 ### 2. Download the CLI
 
-The Wanaku CLI is distributed separately. Download the latest `wanaku` binary from the [wanaku-barn early access release page](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access).
+The Wanaku CLI is a separate package. Download the latest `wanaku` binary from the [wanaku-barn early access release page](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access).
 
 ```bash
 chmod +x wanaku
 sudo mv wanaku /usr/local/bin/
 ```
 
-Verify the CLI is installed:
+Verify the CLI installation:
 
 ```bash
 wanaku --version
 ```
 
-> **Note:** The Wanaku CLI was originally built for the Java-based Wanaku router and is compatible with the Rust-based engine. When running against a router without authentication enabled, use the `--no-auth` flag with CLI commands.
+> **Note:** The Wanaku CLI supports the Java-based Wanaku router and the Rust-based engine. Add the `--no-auth` flag when the router does not require authentication.
 
 ### 3. Run the Server
 
@@ -68,29 +68,30 @@ wanaku --version
 wanaku-server
 ```
 
-You should see log output indicating two services started:
+The logs show these two services:
+
 - **MCP endpoint:** `http://127.0.0.1:8081/default/mcp` (default namespace)
 - **Management API:** `http://0.0.0.0:8080/api/v1`
 
-### 4. Verify It's Alive
+### 4. Verify the Server
 
-Open another terminal and use the CLI to check for tools:
+Open another terminal. Use the CLI to list the tools:
 
 ```bash
 wanaku tools list --no-auth
 ```
 
-The output should show an empty list — the server is running, but no tools have been discovered yet. Let's fix that.
+The output contains an empty list. The server is running. It has not discovered tools yet.
 
-### 5. Register a Forward (Auto-Discover Tools)
+### 5. Register a Forward and Discover Tools
 
-Tools are discovered automatically from upstream MCP servers. Register a forward to an MCP server using the CLI:
+Wanaku automatically discovers tools from upstream MCP servers. Use the CLI to register a forward to an MCP server:
 
 ```bash
 wanaku forwards add --service="http://localhost:8180/mcp" --name my-mcp-server --no-auth
 ```
 
-Wanaku connects to the upstream server, discovers all available tools, and registers them automatically.
+Wanaku connects to the upstream server. It discovers and registers all available tools.
 
 List the discovered tools:
 
@@ -98,7 +99,7 @@ List the discovered tools:
 wanaku tools list --no-auth
 ```
 
-You'll see the tools discovered from the upstream server. The server is now ready to route MCP requests to those tools.
+The output lists the tools from the upstream server. Wanaku can now route MCP requests to these tools.
 
 ### 6. Test the MCP Endpoint
 
@@ -110,37 +111,40 @@ curl -X POST http://localhost:8081/default/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-You'll get a JSON-RPC response listing the tools discovered from your forward. The filter pipeline parsed your request, extracted the namespace from the URL path, and returned the tools from the registry.
+The server returns a JSON-RPC response. This response lists the tools from the forward. The filter pipeline parses the request. It gets the namespace from the URL path and returns the applicable tools from the registry.
 
-## What Just Happened?
+## How Wanaku Processes the Request
 
-When you hit `/default/mcp`, your request flowed through this pipeline:
+When you send a request to `/default/mcp`, the pipeline processes it in this sequence:
 
-1. **CORS filter** — added CORS headers
-2. **MCP filter (praxis-ai)** — parsed JSON-RPC, set metadata (`mcp.method = "tools/list"`)
-3. **Namespace filter** — extracted namespace `"default"` from URL path
-4. **Tool list filter** — queried the registry for tools in the `"default"` namespace
-5. **Static response** — synthetic JSON-RPC reply
+1. **CORS filter** — Adds CORS headers.
+2. **MCP filter (praxis-ai)** — Parses JSON-RPC and sets metadata (`mcp.method = "tools/list"`).
+3. **Namespace filter** — Extracts the `"default"` namespace from the URL path.
+4. **Tool list filter** — Queries the registry for tools in the `"default"` namespace.
+5. **Static response** — Returns a synthetic JSON-RPC response.
 
-No downstream services were called. The tool list is served directly from the in-memory registry.
+The pipeline does not call downstream services. It returns the tool list directly from the in-memory registry.
 
 ## Next Steps
 
+Once the basic proxy is running, you can connect more MCP servers, isolate tools and resources with namespaces, and add the controls required by your environment.
+
 ### Register Additional Forwards
 
-To discover tools from additional MCP servers, register more forwards the same way you did in step 5. Each forward connects to an upstream MCP server and auto-discovers its tools, resources, and prompts.
+Register more forwards as described in step 5. Each forward connects to one upstream MCP server. Wanaku automatically discovers the tools, resources, and prompts on that server.
 
 ### Explore Namespaces
 
-Namespaces isolate tools and resources. Each namespace is identified by a **name** that doubles as its URL path segment.
+Namespaces isolate tools and resources. Each namespace has a **name**. Wanaku uses this name as the namespace segment in the URL path.
 
 **Namespace naming rules:**
-- Lowercase letters, numbers, and hyphens only
-- Must start and end with a letter or number
-- 1 to 63 characters long
+
+- Use only lowercase letters, numbers, and hyphens.
+- Start and end the name with a letter or number.
+- Use 1 to 63 characters.
 - Examples: `finance`, `my-team`, `staging-42`
 
-Create a `"finance"` namespace and register a forward that assigns discovered tools to it:
+Create a `"finance"` namespace. Register a forward that assigns its tools to this namespace:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/namespaces \
@@ -150,7 +154,7 @@ curl -X POST http://localhost:8080/api/v1/namespaces \
 wanaku forwards add --service="http://market-data-mcp:8080/mcp" --name market-data-server --no-auth
 ```
 
-Query the finance namespace by hitting the namespace-specific MCP endpoint:
+Send a query to the MCP endpoint for the `finance` namespace:
 
 ```bash
 curl -X POST http://localhost:8081/finance/mcp \
@@ -158,25 +162,25 @@ curl -X POST http://localhost:8081/finance/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-Only tools from the `market-data-server` forward appear. The default namespace tools are invisible here.
+The response contains only the tools from the `market-data-server` forward. It does not contain tools from the default namespace.
 
-All MCP endpoints follow the `/{namespace}/mcp` pattern — there is no shortcut. Bare paths like `/finance` or `/mcp` are rejected.
+All MCP endpoints use the `/{namespace}/mcp` pattern. Paths such as `/finance` and `/mcp` do not use this complete pattern. Wanaku rejects these paths.
 
 ### Use the Admin UI
 
-> **Note:** The admin UI is only available in the full distribution. If you're running the headless variant, manage everything through the CLI or the [Management API](./management-api.md).
+> **Note:** Only the full distribution contains the admin UI. Use the CLI or the [Management API](./management-api.md) with the headless variant.
 
-Open `http://localhost:8080` in your browser. You'll see the React-based admin UI embedded in the server binary. It talks to the same management API you just used via the CLI.
+Open `http://localhost:8080` in your browser. The React-based admin UI communicates with the same management API as the CLI.
 
-From here you can view and manage tools, namespaces, resources, prompts, and forwards.
+Use the admin UI to view and manage tools, namespaces, resources, prompts, and forwards.
 
 ### Enable Authentication
 
-Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy runs as a reverse proxy in front of the MCP and management API ports.
+Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy receives requests before it sends them to the MCP and management API ports.
 
-See [Authentication](./auth.md) for detailed setup instructions, including Keycloak configuration, role-based access, and running oauth2-proxy locally.
+Read [Authentication](./auth.md) for setup instructions. It explains Keycloak configuration and role-based access. It also explains how to run oauth2-proxy locally.
 
-Once authentication is enabled, you can authenticate the CLI:
+After you enable authentication, use a token to authenticate the CLI:
 
 ```bash
 # Get a token from Keycloak
@@ -193,7 +197,7 @@ wanaku tools list --host http://localhost:4181 --token $TOKEN
 
 ### Custom Configuration
 
-The server accepts optional configuration files:
+You can start the server with optional configuration files:
 
 ```bash
 wanaku-server --pipeline-config /path/to/custom-praxis.yaml \
@@ -203,11 +207,11 @@ wanaku-server --pipeline-config /path/to/custom-praxis.yaml \
 - **`--pipeline-config`:** Praxis filter pipeline config (listeners, filter chains)
 - **`--wanaku-config`:** Wanaku bootstrap config (forwards, namespaces)
 
-Both are optional. If omitted, embedded defaults are used.
+You can omit both files. The server then uses its embedded defaults.
 
 ### Environment Variables
 
-All configuration is environment-first. Common vars:
+You can configure Wanaku with environment variables. This table lists the most common variables:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -215,15 +219,15 @@ All configuration is environment-first. Common vars:
 | `WANAKU_PERSIST_BACKEND` | _(unset)_ | Set to `"file"` to persist registry to disk |
 | `WANAKU_PERSIST_PATH` | `/data/registry` | Directory for `registry.json` |
 
-See [Configuration](./configuration.md) for the full list.
+Read [Configuration](./configuration.md) for the complete list.
 
 ## Where to Go Next
 
-- **[Architecture](./architecture.md)** — understand the filter pipeline, registry, and routing
-- **[Configuration](./configuration.md)** — all env vars, YAML options, and config patterns
-- **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
-- **[Features](./features.md)** — enable chat and create custom features
-- **[Management API](./management-api.md)** — full REST API reference
-- **[FAQ](./faq.md)** — common issues and troubleshooting
+- **[Architecture](./architecture.md)** — See how the filter pipeline, registry, and routing work together.
+- **[Configuration](./configuration.md)** — Explore the environment variables, YAML options, and configuration patterns.
+- **[Authentication](./auth.md)** — Set up oauth2-proxy with Keycloak.
+- **[Features](./features.md)** — Enable chat or create a custom feature.
+- **[Management API](./management-api.md)** — Browse the complete REST API reference.
+- **[FAQ](./faq.md)** — Find answers to common questions and problems.
 
-You now have a running Wanaku proxy. The rest is about configuring it to match your environment.
+With the proxy running, the next step is to configure Wanaku for your environment and connect the systems your agents need.
