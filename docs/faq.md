@@ -17,8 +17,8 @@ Kill the process, or change the management listen address via `WANAKU_MGMT_LISTE
 
 Check that:
 - The MCP filter has `on_invalid: continue` in the pipeline config
-- You're sending valid JSON-RPC (must have `"jsonrpc": "2.0"`, `"method"`, and `"id"`)
-- The URL path matches a configured namespace (`/mcp` -> `"default"`, `/{namespace}/mcp` -> `"{namespace}"`)
+- You send valid JSON-RPC with `"jsonrpc": "2.0"`, `"method"`, and `"id"`.
+- The URL path matches `/{namespace}/mcp`. Use `/default/mcp` for the default namespace.
 
 Enable trace logs to see what the filters are doing:
 
@@ -26,9 +26,9 @@ Enable trace logs to see what the filters are doing:
 RUST_LOG=wanaku_filters=trace wanaku-server
 ```
 
-## Tools don't appear in `/mcp` but show up via `wanaku tools list`
+## Tools do not appear in `/default/mcp` but appear in `wanaku tools list`
 
-Check the namespace. Tools registered with `namespace: "finance"` only appear in `/finance/mcp`, not `/mcp`.
+Check the namespace. Tools registered with `namespace: "finance"` appear only in `/finance/mcp`. They do not appear in `/default/mcp`.
 
 ```bash
 # List tools in the default namespace
@@ -42,7 +42,7 @@ curl -X POST http://localhost:8081/finance/mcp \
 
 ## Tool calls time out
 
-MCP forward calls have a connection timeout. If your upstream MCP server takes too long, verify it's reachable and responding:
+MCP forward calls have a connection timeout. If the upstream MCP server takes too long, verify that it is reachable and responds:
 
 ```bash
 curl -s http://your-upstream-mcp:8080/mcp \
@@ -50,7 +50,7 @@ curl -s http://your-upstream-mcp:8080/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-## LLM-based features (chat) don't work
+## LLM-based features (chat) do not work
 
 Verify:
 - The LLM endpoint is reachable (`curl http://localhost:11434/v1/models`)
@@ -82,7 +82,7 @@ wanaku tools list
 
 ## Registry data lost on restart
 
-By default, the registry lives in RAM and is lost on restart. Enable file persistence to survive restarts:
+File persistence is enabled by default. Wanaku uses `$HOME/.wanaku/server/registry.json`. Set a different path when the default location is not suitable:
 
 ```bash
 export WANAKU_PERSIST_BACKEND=file
@@ -92,7 +92,9 @@ wanaku-server
 
 On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shutdown (SIGTERM, SIGINT), it writes back.
 
-> **Note:** If the server crashes (SIGKILL, OOM), the registry is lost. For production, consider implementing a custom persistence backend.
+> **Note:** Wanaku writes the snapshot during an orderly shutdown. If the process stops because of SIGKILL or an out-of-memory error, changes since the last snapshot are lost. File persistence supports one writer.
+
+To disable persistence, set `WANAKU_PERSIST_BACKEND=none`.
 
 ## Debugging
 

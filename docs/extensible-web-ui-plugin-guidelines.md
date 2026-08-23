@@ -4,6 +4,33 @@
 
 This document defines the high-level architecture and development guidelines for making the application's web UI extensible through plugins.
 
+The audience is Wanaku maintainers and plugin platform designers. Plugin authors who need the current, implemented API should use the [Plugin Development Guide](plugin-development-guide.md).
+
+## Implementation Status
+
+This document contains both current behavior and design requirements. Unless a section says **Implemented**, treat its `must` and `should` statements as requirements for future platform work, not as claims about the current release.
+
+**Implemented:** filesystem discovery, manifest loading, ES module activation and deactivation, navigation entries, pages, notifications, static plugin files, and configured backend service proxy mappings.
+
+**Declared but not enforced:** manifest permissions and host API compatibility ranges. Wanaku currently loads plugins as trusted, same-origin JavaScript. It does not provide a security sandbox.
+
+**Planned:** capability enforcement, compatibility rejection, additional extension points, a plugin test kit, a fake development host, and stronger isolation for untrusted plugins.
+
+## Contents
+
+- [Core Architectural Principles](#1-core-architectural-principles)
+- [High-Level Architecture](#2-high-level-architecture)
+- [Plugin Manifest](#3-plugin-manifest)
+- [Plugin Lifecycle](#4-plugin-lifecycle)
+- [Plugin Host API](#5-plugin-host-api)
+- [UI Rendering Guidelines](#6-ui-rendering-guidelines)
+- [Backend Service Resolution](#7-backend-service-resolution)
+- [Authentication and Authorization](#8-authentication-and-authorization)
+- [Testing Strategy](#10-testing-strategy)
+- [Compatibility and Versioning](#11-compatibility-and-versioning)
+- [Security Guidelines](#13-security-guidelines)
+- [Recommended Initial Scope](#17-recommended-initial-scope)
+
 The main application consists of:
 
 - a **Rust backend**;
@@ -147,8 +174,8 @@ This avoids hard-coded backend hostnames and centralizes cross-cutting concerns.
 │  │  - manifest validation                                 │  │
 │  │  - lifecycle management                                │  │
 │  │  - extension-point registration                        │  │
-│  │  - capability enforcement                              │  │
-│  │  - compatibility checks                                │  │
+│  │  - capability enforcement (planned)                    │  │
+│  │  - compatibility checks (planned)                      │  │
 │  └──────────────────────────┬─────────────────────────────┘  │
 │                             │                                │
 │                             v                                │
@@ -480,7 +507,7 @@ Host
 Plugin backend
 ```
 
-Permissions declared in `plugin.json` should be checked before activation.
+**Design requirement:** A future capability-enforcement layer must check permissions declared in `plugin.json` before activation. The current runtime does not enforce these declarations.
 
 Example:
 
@@ -493,7 +520,7 @@ Example:
 }
 ```
 
-The host should not expose a capability to a plugin unless the plugin has been granted the corresponding permission.
+After Wanaku implements capability enforcement, the host must expose only the capabilities that the platform grants to the plugin.
 
 Frontend permission checks are not a substitute for backend authorization. Plugin backends must independently validate authorization for every protected operation.
 
@@ -530,6 +557,8 @@ OpenAPI
 ---
 
 ## 10. Testing Strategy
+
+**Status: planned.** The current repository does not include the test kit or fake development host described in this section.
 
 Testing should be possible without running the full application.
 
@@ -627,7 +656,7 @@ Example:
 }
 ```
 
-The host must validate compatibility before loading the plugin.
+**Design requirement:** The host must validate compatibility before it loads the plugin. The current runtime records `requires.hostApi` but does not reject incompatible ranges.
 
 Avoid silently changing existing behavior within a host API version.
 
@@ -694,6 +723,8 @@ This environment-specific configuration belongs to the platform, not the plugin 
 ---
 
 ## 13. Security Guidelines
+
+This section defines the target security model. Current plugins are trusted, same-origin code. The runtime does not enforce manifest permissions or isolate plugin JavaScript.
 
 Treat plugins as separate trust boundaries.
 
@@ -829,6 +860,8 @@ The backend should not depend on internal host UI implementation details.
 
 ## 17. Recommended Initial Scope
 
+This section describes the target scope. The implementation-status section identifies the parts that are available now.
+
 For the first version, keep the platform deliberately small.
 
 Recommended initial capabilities:
@@ -915,4 +948,3 @@ Key decisions:
 The most important boundary is:
 
 > A plugin should depend on the public plugin API and its backend API contracts, never on the private implementation details of the main application.
-

@@ -29,11 +29,16 @@ brew install oauth2-proxy
 
 The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public):
 
-1. Go to Keycloak Admin -> Clients -> `wanaku-mcp-router` -> Settings
-2. Set **Client authentication** to **ON**
-3. Save, then go to the **Credentials** tab and copy the client secret
-4. Under **Valid redirect URIs**, add `http://localhost:4180/*` and `http://localhost:4181/*`
-5. Under **Web origins**, add `*`
+1. Open Keycloak Admin.
+2. Select **Clients**.
+3. Select `wanaku-mcp-router`.
+4. Select **Settings**.
+5. Set **Client authentication** to **ON**.
+6. Save the client.
+7. Open the **Credentials** tab.
+8. Copy the client secret.
+9. Add `http://localhost:4180/*` and `http://localhost:4181/*` under **Valid redirect URIs**.
+10. Add `*` under **Web origins**.
 
 ## Setup
 
@@ -79,7 +84,7 @@ oauth2-proxy \
   --skip-auth-route="^/token$" \
   --skip-auth-route="^/register$" \
   --skip-auth-route="OPTIONS=^/.*" \
-  --api-route="^/mcp.*" \
+  --api-route="^/[^/]+/mcp/?$" \
   --upstream-timeout=3600s
 ```
 
@@ -112,7 +117,7 @@ oauth2-proxy \
 ### 5. Access Wanaku
 
 - **Admin UI:** `http://localhost:4181/admin/`
-- **MCP endpoint:** `http://localhost:4180/mcp`
+- **MCP endpoint:** `http://localhost:4180/default/mcp`
 - **Public MCP (no auth):** `http://localhost:4180/public/mcp`
 
 ## Role-Based Access
@@ -123,7 +128,7 @@ To restrict the management UI to administrators:
 2. Add `--allowed-role=admin` to the management proxy command (step 4)
 3. Assign the `admin` role to administrator users
 
-MCP users who don't have the `admin` role can use tools but cannot access the management UI.
+MCP users without the `admin` role can use tools. They cannot access the management UI.
 
 ## CLI Usage
 
@@ -140,7 +145,7 @@ TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-conn
 wanaku tools list --host http://localhost:4181 --token $TOKEN
 
 # Use with MCP endpoint directly
-curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/mcp \
+curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/default/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
@@ -168,7 +173,7 @@ wanaku tools list --no-auth
 
 ## MCP Inspector
 
-Point the MCP Inspector at `http://localhost:4180/mcp`. The Inspector's OAuth flow uses the `mcp-client` Keycloak client, which is accepted via the `--oidc-extra-audience` flag.
+Set the MCP Inspector endpoint to `http://localhost:4180/default/mcp`. The Inspector's OAuth flow uses the `mcp-client` Keycloak client. The `--oidc-extra-audience` flag permits tokens for this client.
 
 ## Related Docs
 

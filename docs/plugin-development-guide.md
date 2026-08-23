@@ -2,6 +2,21 @@
 
 Plugins extend the Wanaku admin UI by adding pages, navigation entries, and backend service integration without modifying the core application. This guide shows you how to build one.
 
+This guide is for plugin developers and platform operators. It explains the runtime contract, manifest, host API, backend mappings, local tests, and cleanup rules.
+
+## Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Manifest Reference](#manifest-reference-pluginjson)
+- [Plugin Lifecycle](#plugin-lifecycle)
+- [PluginHost API Reference](#pluginhost-api-reference)
+- [Backend Configuration](#backend-configuration)
+- [Complete Example](#complete-example)
+- [Using Carbon Design System](#using-carbon-design-system)
+- [Testing Locally](#testing-locally)
+- [Best Practices](#best-practices)
+
 ## Overview
 
 Plugins are ES modules loaded at runtime. A plugin can:
@@ -11,7 +26,9 @@ Plugins are ES modules loaded at runtime. A plugin can:
 - Call backend services through an authenticated proxy
 - Show notifications to users
 
-What plugins can't do: access DOM outside their container, reach into internal host state, or bypass the host API. The plugin contract is a stable browser API, not access to React internals or Carbon component instances.
+The supported plugin contract is the host API. Plugins must keep DOM changes inside their page container. They must not read internal host state or call service URLs outside the configured proxy.
+
+Plugins currently run as same-origin JavaScript. Wanaku does not sandbox them or enforce manifest permissions. Install only trusted plugins. The host API contract does not expose React internals or Carbon component instances.
 
 ## Quick Start
 
@@ -23,7 +40,7 @@ Five steps to see a plugin running:
 4. **Start the server with `--plugins-path /data/plugins`**
 5. **Open the admin UI** — your plugin page appears in the navigation
 
-Here's the smallest working plugin:
+The following example is the smallest working plugin:
 
 **plugin.json:**
 ```json
@@ -126,9 +143,9 @@ Returns `void` or `Promise<void>`. Errors thrown here prevent the plugin from lo
 
 Called when the plugin is unloaded (currently only on page refresh). Clean up timers, event listeners, subscriptions, or other resources here.
 
-Returns `void` or `Promise<void>`. If you skip this export, the host assumes there's nothing to clean up.
+Returns `void` or `Promise<void>`. If you omit this export, the host assumes that the plugin has no resources to release.
 
-**Critical:** A plugin that doesn't clean up resources in `deactivate()` will leak memory or leave orphaned timers. If you register anything in `activate()`, dispose it in `deactivate()`.
+**Critical:** A plugin that does not release resources in `deactivate()` can leak memory or leave timers active. Dispose each resource that you register in `activate()`.
 
 ## PluginHost API Reference
 
@@ -144,7 +161,7 @@ console.log(`Running on host API ${host.version}`);
 
 ### host.navigation.add(entry)
 
-Adds a navigation entry to the sidebar. The entry appears in the order specified by `order` (lower numbers first). If multiple plugins use the same order, they're sorted by registration order.
+Adds a navigation entry to the sidebar. The `order` value controls its position. Lower values appear first. If multiple plugins use the same value, the host uses registration order.
 
 **Parameters:**
 
@@ -185,7 +202,7 @@ Registers a page that renders when the route matches. The host calls your `mount
 | `mount` | function | `(container: HTMLElement) => void \| Disposable` |
 
 The `mount` function receives a container element. You can return:
-- `undefined` — the host assumes you'll clean up in `deactivate()`
+- `undefined` — the host assumes that the plugin releases resources in `deactivate()`
 - A `Disposable` object — the host calls `dispose()` when the route unmounts
 
 **Returns:** `Disposable`
@@ -212,7 +229,7 @@ host.pages.register({
 });
 ```
 
-If you're using a framework like React, call your framework's mount function inside `mount()` and return a disposable that unmounts:
+If you use a framework such as React, call its mount function inside `mount()`. Return a disposable that unmounts the page:
 
 ```javascript
 import { createRoot } from "react-dom/client";
@@ -337,11 +354,11 @@ The backend reads this on startup and registers the mappings.
 
 You can dynamically register service mappings via the management API (not yet implemented — this is a placeholder for future capability).
 
-**Key point:** The plugin doesn't know the backend URL. The platform resolves it. This keeps plugins environment-agnostic — the same plugin works in dev (localhost), staging (k8s cluster), and prod (different cluster) without code changes.
+**Key point:** The plugin does not know the backend URL. The platform resolves it. The same plugin can run in development, staging, and production without a code change.
 
 ## Complete Example
 
-Here's the `hello-world` plugin from the examples directory, annotated:
+The following example shows the `hello-world` plugin from the examples directory:
 
 **plugin.json:**
 ```json
@@ -416,11 +433,11 @@ Open `http://localhost:8080` (or your admin UI URL). Click "Hello Plugin" in the
 
 ## Using Carbon Design System
 
-The admin UI uses IBM Carbon Design System. If you're building a first-party plugin, use Carbon components for visual consistency. This isn't required — the plugin API doesn't enforce it — but it makes your plugin look like part of the platform.
+The admin UI uses IBM Carbon Design System. Use Carbon components in first-party plugins for visual consistency. The plugin API does not require or enforce Carbon.
 
 ### Bundling Approach
 
-Since plugins are ES modules loaded at runtime, you can't use npm dependencies directly in the browser. You need to bundle your plugin with a tool like esbuild, Rollup, or Vite.
+Plugins are ES modules that load at runtime. Bundle npm dependencies with a tool such as esbuild, Rollup, or Vite.
 
 **Example with esbuild:**
 
@@ -453,19 +470,23 @@ esbuild src/plugin.js --bundle --format=esm --outfile=plugin.js
 
 Now `plugin.js` includes the Carbon button component. The browser can load it as a single ES module.
 
-**Caveat:** Carbon React components won't work in a plain ES module context — you'd need to bundle React and ReactDOM too, which inflates the plugin size. For React-based plugins, consider using a framework like Vite that can produce optimized ES module builds with code splitting.
+**Caveat:** Carbon React components require React and ReactDOM. Include these dependencies in the plugin bundle. This increases the plugin size. For React-based plugins, use a build tool such as Vite to produce optimized ES modules with code splitting.
 
 ## Testing Locally
 
 Step-by-step process to test a plugin:
 
-1. **Create the plugin directory:**
+1. Create the plugin directory:
    ```bash
    mkdir -p /tmp/plugins/my-plugin
+   ```
+
+2. Enter the plugin directory:
+   ```bash
    cd /tmp/plugins/my-plugin
    ```
 
-2. **Write the manifest:**
+3. Write the manifest:
    ```bash
    cat > plugin.json <<EOF
    {
@@ -477,7 +498,7 @@ Step-by-step process to test a plugin:
    EOF
    ```
 
-3. **Write the plugin code:**
+4. Write the plugin code:
    ```bash
    cat > plugin.js <<EOF
    export async function activate(host) {
@@ -499,21 +520,22 @@ Step-by-step process to test a plugin:
    EOF
    ```
 
-4. **Run the server:**
+5. Run the server:
    ```bash
    cargo run -- --plugins-path /tmp/plugins
    ```
 
-6. **Open the admin UI:**
-   Navigate to `http://localhost:8080`. Click "Test Page" in the sidebar. You should see "It works!".
+6. Open `http://localhost:8080`.
 
-**Hot reload:** The server doesn't watch for plugin changes. After editing a plugin, restart the server.
+7. Select **Test Page** in the sidebar. The page shows **It works!**.
+
+**Hot reload:** The server does not monitor plugin files for changes. Restart the server after you edit a plugin.
 
 ## Best Practices
 
 ### Clean Up Resources in deactivate()
 
-If you create timers, event listeners, subscriptions, or other stateful resources in `activate()`, dispose them in `deactivate()`. The host can't do this for you.
+If you create timers, event listeners, subscriptions, or other stateful resources in `activate()`, dispose them in `deactivate()`. The host cannot dispose resources that the plugin does not return.
 
 **Bad:**
 ```javascript
@@ -577,16 +599,16 @@ Only your plugin's buttons are red.
 
 Or use CSS modules if your bundler supports them.
 
-### Don't Access DOM Outside Your Container
+### Keep DOM Access Inside the Container
 
-The `mount(container)` function gives you a container element. You own everything inside it. Don't reach outside.
+The `mount(container)` function gives the plugin a container element. Change only elements inside this container.
 
 **Bad:**
 ```javascript
 mount(container) {
   document.body.appendChild(createModal());
   // Now the modal outlives the route
-  // The host can't clean it up
+  // The host cannot clean it up
 }
 ```
 
@@ -606,7 +628,7 @@ mount(container) {
 
 ### Use the Disposable Pattern for All Registrations
 
-Every `host.navigation.add()` and `host.pages.register()` call returns a `Disposable`. Store it and call `dispose()` when you're done.
+Each `host.navigation.add()` and `host.pages.register()` call returns a `Disposable`. Store it. Call `dispose()` when the registration is no longer necessary.
 
 **Why?** If you need to unregister something before the plugin unloads (e.g., a dynamic nav entry based on user permissions), you can:
 
@@ -617,7 +639,7 @@ const disposable = host.navigation.add({ id: "admin", label: "Admin", route: "/a
 disposable.dispose();
 ```
 
-The nav entry disappears immediately. You don't have to wait for the plugin to unload.
+The navigation entry disappears immediately. The plugin does not have to unload first.
 
 ---
 
