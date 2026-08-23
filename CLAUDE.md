@@ -4,7 +4,7 @@ Governed action proxy for AI agents, built in Rust on the Praxis proxy framework
 
 ## Core Guidelines
 
-Think before you write. Don't create abstractions unnecessarily. Simplicity matters — focus on minimum code to achieve the result.
+Think before you write. Don't create abstractions unnecessarily. Simplicity matters — focus on minimum code to achieve the result. Don't cheat lint or clippy rules.
 
 ## Quick Start
 
@@ -194,7 +194,7 @@ Unit tests in modules (`#[cfg(test)]`). Integration tests in `server/tests/` (no
 - Tests should be meaningful
 - New features should have documentation
 - Feature updates should include documentation updates
-- Ammend similar commits before sending pull requests
+- Amended similar commits before sending pull requests
 
 # Community Engagement
 
