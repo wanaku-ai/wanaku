@@ -90,6 +90,14 @@ Tools are discovered automatically from upstream MCP servers. Register a forward
 wanaku forwards add --service="http://localhost:8180/mcp" --name my-mcp-server --no-auth
 ```
 
+As an optional alternative, an operator can explicitly register [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp):
+
+```bash
+wanaku forwards add --service="https://search.parallel.ai/mcp" --name parallel-search --no-auth
+```
+
+The Parallel endpoint requires no account or API key. Here, `--no-auth` is the existing local management tutorial flag for connecting the CLI to the local Wanaku server; it does not disable security globally. The forward is used only after an operator runs the command. User-provided search objectives, search queries, and requested URLs are sent to Parallel.
+
 Wanaku connects to the upstream server, discovers all available tools, and registers them automatically.
 
 List the discovered tools:
