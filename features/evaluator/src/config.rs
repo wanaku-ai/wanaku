@@ -74,10 +74,9 @@ impl TriggerDef {
             return false;
         }
         if let Some(ref ns) = self.namespace
-            && ns != namespace
-        {
-            return false;
-        }
+            && ns != namespace {
+                return false;
+            }
         true
     }
 }

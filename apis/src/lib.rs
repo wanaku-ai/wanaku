@@ -12,6 +12,7 @@ pub mod metadata;
 pub mod metrics;
 pub mod persistence;
 pub mod registry;
+pub mod time;
 
 pub use metadata::{MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
 
