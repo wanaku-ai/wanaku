@@ -10,6 +10,19 @@
 //! ```
 //!
 //! Tests that also need Ollama (LLM classification) are in the `classification` module.
+//!
+//! LLM connections are config-only (never settable via the management API), so the
+//! server must be started with a `wanaku.yaml` defining the connection these tests
+//! reference (the repo root `wanaku.yaml` already has one named `local-llama` — run
+//! the server from the repo root and these tests pick it up automatically):
+//!
+//! ```yaml
+//! llm_connections:
+//!   - name: "local-llama"
+//!     model: "llama3.2"
+//!     url: "http://localhost:11434/v1"
+//!     api_key: ""
+//! ```
 
 use std::time::Duration;
 
@@ -188,8 +201,7 @@ mod engine {
                 "llm": {
                     "operation": "classify",
                     "prompt": "test",
-                    "model": "test",
-                    "url": "http://localhost:11434/v1"
+                    "connection": "local-llama"
                 },
                 "processor": {"path": "/nonexistent.wasm"},
                 "on_error": "continue"
@@ -234,8 +246,7 @@ mod engine {
                 "llm": {
                     "operation": "classify",
                     "prompt": "Classify as green/yellow/red",
-                    "model": "llama3.2",
-                    "url": "http://localhost:11434/v1"
+                    "connection": "local-llama"
                 },
                 "processor": {"path": block_wasm},
                 "on_error": "continue"
@@ -275,8 +286,7 @@ mod engine {
                 "llm": {
                     "operation": "classify",
                     "prompt": "Classify",
-                    "model": "llama3.2",
-                    "url": "http://localhost:11434/v1"
+                    "connection": "local-llama"
                 },
                 "processor": {"path": warn_wasm},
                 "on_error": "continue"
@@ -318,8 +328,7 @@ mod engine {
                 "llm": {
                     "operation": "classify",
                     "prompt": "Classify",
-                    "model": "llama3.2",
-                    "url": "http://localhost:11434/v1"
+                    "connection": "local-llama"
                 },
                 "processor": {"path": block_wasm},
                 "on_error": "continue"
@@ -361,8 +370,7 @@ mod engine {
                 "llm": {
                     "operation": "classify",
                     "prompt": "Classify as green/yellow/red. Respond with JSON: {\"level\": \"green|yellow|red\", \"reason\": \"brief\"}",
-                    "model": "llama3.2",
-                    "url": "http://localhost:11434/v1",
+                    "connection": "local-llama",
                     "result_schema": {
                         "type": "object",
                         "properties": {
@@ -422,8 +430,7 @@ mod engine {
                 "llm": {
                     "operation": "classify",
                     "prompt": "Classify",
-                    "model": "llama3.2",
-                    "url": "http://localhost:11434/v1"
+                    "connection": "local-llama"
                 },
                 "processor": {"path": block_wasm},
                 "on_error": "continue"
@@ -473,8 +480,7 @@ mod classification {
                 "llm": {
                     "operation": "classify",
                     "prompt": "You are a strict safety classifier. Classify this tool call as green (safe, read-only), yellow (elevated, writes), or red (dangerous, database restarts, scaling to zero). Restarting production databases is ALWAYS red. Respond with ONLY: {\"level\": \"green|yellow|red\", \"reason\": \"brief\"}",
-                    "model": "llama3.2",
-                    "url": "http://localhost:11434/v1",
+                    "connection": "local-llama",
                     "result_schema": {
                         "type": "object",
                         "properties": {

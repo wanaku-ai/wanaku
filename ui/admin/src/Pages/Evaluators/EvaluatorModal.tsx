@@ -12,6 +12,7 @@ import { EvaluatorDef } from "../../hooks/api/use-evaluators";
 interface EvaluatorModalProps {
   evaluator?: EvaluatorDef;
   existingNames: string[];
+  connections: string[];
   onRequestClose: () => void;
   onSubmit: (evaluator: EvaluatorDef) => void;
 }
@@ -19,6 +20,7 @@ interface EvaluatorModalProps {
 export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   evaluator,
   existingNames,
+  connections,
   onRequestClose,
   onSubmit,
 }) => {
@@ -27,9 +29,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   const [triggerNamespace, setTriggerNamespace] = useState(evaluator?.trigger.namespace || "");
   const [llmOperation, setLlmOperation] = useState(evaluator?.llm.operation || "classify");
   const [llmPrompt, setLlmPrompt] = useState(evaluator?.llm.prompt || "");
-  const [llmModel, setLlmModel] = useState(evaluator?.llm.model || "");
-  const [llmUrl, setLlmUrl] = useState(evaluator?.llm.url || "http://localhost:11434/v1");
-  const [llmApiKey, setLlmApiKey] = useState(evaluator?.llm.api_key || "");
+  const [llmConnection, setLlmConnection] = useState(evaluator?.llm.connection || "");
   const [processorPath, setProcessorPath] = useState(evaluator?.processor.path || "");
   const [onError, setOnError] = useState(evaluator?.on_error || "continue");
 
@@ -46,9 +46,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
       llm: {
         operation: llmOperation as "classify" | "filter" | "augment",
         prompt: llmPrompt,
-        model: llmModel.trim(),
-        url: llmUrl.trim(),
-        api_key: llmApiKey || undefined,
+        connection: llmConnection,
       },
       processor: {
         path: processorPath.trim(),
@@ -57,13 +55,17 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
     });
   };
 
+  const connectionHelperText =
+    connections.length === 0
+      ? "Add at least one entry under llm_connections in the server's wanaku.yaml file before you can create an evaluator."
+      : undefined;
+
   const isValid =
     trimmedName &&
     !isDuplicate &&
     triggerMethod &&
     llmPrompt.trim() &&
-    llmModel.trim() &&
-    llmUrl.trim() &&
+    llmConnection &&
     processorPath.trim();
 
   return (
@@ -133,33 +135,25 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
           required
         />
 
-        <TextInput
-          id="llm-model"
-          labelText="LLM Model"
-          placeholder="e.g. llama3.2"
-          value={llmModel}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLlmModel(e.target.value)}
-          required
-        />
-
-        <TextInput
-          id="llm-url"
-          labelText="LLM URL"
-          placeholder="http://localhost:11434/v1"
-          value={llmUrl}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLlmUrl(e.target.value)}
-          helperText="OpenAI-compatible chat completions endpoint"
-          required
-        />
-
-        <TextInput
-          id="llm-api-key"
-          labelText="LLM API Key (optional)"
-          type="password"
-          placeholder="Bearer token for authentication"
-          value={llmApiKey}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLlmApiKey(e.target.value)}
-        />
+        <Select
+          id="llm-connection"
+          labelText="LLM Connection"
+          value={llmConnection}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLlmConnection(e.target.value)}
+          disabled={connections.length === 0}
+          helperText={connectionHelperText}
+        >
+          {connections.length === 0 ? (
+            <SelectItem disabled hidden text="No connections configured" value="" />
+          ) : (
+            <>
+              <SelectItem disabled hidden text="Select a connection..." value="" />
+              {connections.map((name) => (
+                <SelectItem key={name} value={name} text={name} />
+              ))}
+            </>
+          )}
+        </Select>
 
         <TextInput
           id="processor-path"

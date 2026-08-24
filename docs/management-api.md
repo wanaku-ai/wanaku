@@ -114,6 +114,7 @@ The evaluator uses these interactions as conversation history.
 | --- | --- | --- |
 | `GET` | `/api/v1/evaluators` | List evaluator definitions. |
 | `PUT` | `/api/v1/evaluators` | Replace evaluator definitions. The body uses the `evaluators` configuration schema. |
+| `GET` | `/api/v1/evaluators/llm-connections` | List configured LLM connection names only, never the model, URL, or credential. Connections are config-only. Set them in `wanaku.yaml`, not through this API. |
 | `GET` | `/api/v1/evaluators/namespaces` | List namespace-to-conversation bindings. |
 | `PUT` | `/api/v1/evaluators/namespaces/{namespace}` | Bind a namespace to a conversation. |
 | `DELETE` | `/api/v1/evaluators/namespaces/{namespace}` | Remove a namespace binding. |

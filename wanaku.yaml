@@ -1,4 +1,49 @@
 forwards:
-  - name: "mock-mcp"
-    address: "http://localhost:8180/mcp"
+  - name: "echo-mcp"
+    address: "http://localhost:9090/mcp"
     namespace: "test-ns"
+  - name: "test-mcp"
+    address: "http://localhost:8181/mcp"
+    namespace: "test-ns"
+
+# Sample evaluator configuration. See docs/evaluator-engine.md for the full guide.
+# LLM connections are config-only: they can't be set or read through the
+# management API, only here.
+llm_connections:
+  - name: "local-llama"
+    model: "llama3.2"
+    url: "http://localhost:11434/"
+    api_key: ""
+  - name: "openrouter"
+    model: "modelname"
+    url: "https://openrouter.ai/api"
+    api_key: "your-api-key"
+
+evaluators:
+  - name: "safety-gate"
+    trigger:
+      method: "tools/call"
+    llm:
+      operation: classify
+      prompt: |
+        You are a strict safety classifier. Classify this tool call as:
+        - green: safe operations (read-only, low impact)
+        - yellow: elevated operations (writes, config changes)
+        - red: dangerous operations (database restarts, production deploys)
+
+        Respond with ONLY a JSON object: {"level": "green|yellow|red", "reason": "brief explanation"}
+      connection: "local-llama"
+      result_schema:
+        type: object
+        properties:
+          level:
+            type: string
+            enum: ["green", "yellow", "red"]
+          reason:
+            type: string
+        required: ["level", "reason"]
+    # Built via: cd actions/safety-block && cargo component build --release
+    #            && cp target/wasm32-wasip1/release/*.wasm ../dist/
+    processor:
+      path: "actions/dist/safety_block_action.wasm"
+    on_error: continue

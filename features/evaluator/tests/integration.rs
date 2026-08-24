@@ -13,8 +13,10 @@ use std::path::PathBuf;
 
 use wanaku_feature_evaluator::action::ActionResult;
 use wanaku_feature_evaluator::config::{
-    ErrorPolicy, EvaluatorDef, EvaluatorsConfig, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
+    ErrorPolicy, EvaluatorDef, EvaluatorsConfig, LlmConnection, LlmDef, LlmOperation, ProcessorRef,
+    TriggerDef,
 };
+use wanaku_feature_evaluator::revision::RevisionOrigin;
 use wanaku_feature_evaluator::schema::validate_against_schema;
 use wanaku_feature_evaluator::state::EvaluatorState;
 
@@ -30,9 +32,7 @@ fn safety_evaluator(name: &str, method: &str, namespace: Option<&str>) -> Evalua
         llm: LlmDef {
             operation: LlmOperation::Classify,
             prompt: "test prompt".to_owned(),
-            model: "test-model".to_owned(),
-            url: "http://localhost:11434/v1".to_owned(),
-            api_key: String::new(),
+            connection: "test-connection".to_owned(),
             result_schema: None,
         },
         processor: ProcessorRef {
@@ -78,8 +78,7 @@ evaluators:
     llm:
       operation: classify
       prompt: "classify this"
-      model: "llama3.2"
-      url: "http://localhost:11434/v1"
+      connection: "local-llama"
     processor:
       path: "/wasm/test.wasm"
 "#;
@@ -99,8 +98,7 @@ evaluators:
     llm:
       operation: classify
       prompt: "classify this"
-      model: "llama3.2"
-      url: "http://localhost:11434/v1"
+      connection: "local-llama"
       result_schema:
         type: object
         properties:
@@ -139,6 +137,28 @@ evaluators:
     }
 
     #[test]
+    fn rejects_legacy_inline_connection_fields() {
+        // Connection details (model/url/api_key) moved to named, config-only
+        // LlmConnection entries. An evaluator payload embedding them inline
+        // (the pre-security-fix shape) must be rejected, not silently
+        // stripped, so callers get a clear signal instead of a dropped key.
+        let json = r#"{
+            "name": "legacy",
+            "trigger": {"method": "tools/call"},
+            "llm": {
+                "operation": "classify",
+                "prompt": "classify this",
+                "model": "llama3.2",
+                "url": "http://localhost:11434/v1",
+                "api_key": "secret-token"
+            },
+            "processor": {"path": "/wasm/test.wasm"}
+        }"#;
+        let err = serde_json::from_str::<EvaluatorDef>(json).unwrap_err();
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
     fn default_on_error_is_continue() {
         let yaml = r#"
 evaluators:
@@ -148,8 +168,7 @@ evaluators:
     llm:
       operation: classify
       prompt: "test"
-      model: "m"
-      url: "http://localhost"
+      connection: "local-llama"
     processor:
       path: "/wasm/t.wasm"
 "#;
@@ -301,6 +320,97 @@ mod state {
         assert_eq!(bindings.len(), 2);
         assert_eq!(bindings.get("finance").unwrap(), "conv-1");
         assert_eq!(bindings.get("engineering").unwrap(), "conv-2");
+    }
+}
+
+// =====================================================================
+// Named LLM connections — config-only, never exposed via the management API
+// =====================================================================
+
+mod connections {
+    use super::*;
+
+    fn secret_connection() -> LlmConnection {
+        LlmConnection {
+            name: "test-connection".to_owned(),
+            model: "llama3.2".to_owned(),
+            url: "http://localhost:11434/v1".to_owned(),
+            api_key: "super-secret-token".to_owned(),
+        }
+    }
+
+    #[test]
+    fn try_activate_rejects_unknown_connection() {
+        let state = EvaluatorState::new();
+        let def = safety_evaluator("gate", "tools/call", None);
+
+        let result = state.try_activate(vec![def], RevisionOrigin::Api, None, None);
+
+        match result {
+            Err(err) => assert!(err.to_string().contains("unknown llm connection")),
+            Ok(_) => panic!("expected activation to fail for an unregistered connection"),
+        }
+    }
+
+    #[test]
+    fn load_llm_connections_rejects_duplicate_names() {
+        let state = EvaluatorState::new();
+        let first = secret_connection();
+        let mut second = secret_connection();
+        second.model = "other-model".to_owned();
+
+        let result = state.load_llm_connections(vec![first, second]);
+
+        assert!(result.is_err());
+        assert!(state.list_llm_connections().is_empty());
+    }
+
+    #[test]
+    fn load_llm_connections_rejects_empty_name() {
+        let state = EvaluatorState::new();
+        let mut unnamed = secret_connection();
+        unnamed.name = String::new();
+
+        assert!(state.load_llm_connections(vec![unnamed]).is_err());
+    }
+
+    #[test]
+    fn list_llm_connections_is_sorted_by_name() {
+        let state = EvaluatorState::new();
+        let mut zeta = secret_connection();
+        zeta.name = "zeta".to_owned();
+        let mut alpha = secret_connection();
+        alpha.name = "alpha".to_owned();
+        state.load_llm_connections(vec![zeta, alpha]).unwrap();
+
+        let names = state.list_llm_connections();
+        assert_eq!(names, vec!["alpha".to_owned(), "zeta".to_owned()]);
+    }
+
+    #[test]
+    fn list_llm_connections_returns_names_only() {
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![secret_connection()]).unwrap();
+
+        let names = state.list_llm_connections();
+        assert_eq!(names, vec!["test-connection".to_owned()]);
+
+        let json = serde_json::to_string(&names).unwrap();
+        assert!(!json.contains("super-secret-token"));
+        assert!(!json.contains("llama3.2"));
+        assert!(!json.contains("localhost"));
+        assert!(!json.contains("api_key"));
+    }
+
+    #[test]
+    fn evaluator_list_never_serializes_api_key() {
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![secret_connection()]).unwrap();
+        state.load_evaluators(vec![safety_evaluator("gate", "tools/call", None)]);
+
+        let json = serde_json::to_string(&state.list_evaluators()).unwrap();
+        assert!(!json.contains("super-secret-token"));
+        assert!(!json.contains("api_key"));
     }
 }
 

@@ -4,7 +4,7 @@ use std::sync::{Arc, RwLock};
 
 use wanaku_apis::metrics::MetricsStore;
 
-use crate::config::EvaluatorDef;
+use crate::config::{EvaluatorDef, LlmConnection};
 use crate::engine::CompiledEvaluator;
 use crate::revision::{
     RecordRevisionParams, Revision, RevisionError, RevisionOrigin, RevisionStore,
@@ -20,6 +20,7 @@ pub struct EvaluatorState {
     compiled: Arc<RwLock<HashMap<PathBuf, Arc<CompiledEvaluator>>>>,
     schemas: Arc<RwLock<HashMap<String, Arc<CompiledSchema>>>>,
     bindings: Arc<RwLock<HashMap<String, String>>>,
+    connections: Arc<RwLock<HashMap<String, LlmConnection>>>,
     metrics: Option<MetricsStore>,
     revisions: RevisionStore,
 }
@@ -32,6 +33,7 @@ impl EvaluatorState {
             compiled: Arc::new(RwLock::new(HashMap::new())),
             schemas: Arc::new(RwLock::new(HashMap::new())),
             bindings: Arc::new(RwLock::new(HashMap::new())),
+            connections: Arc::new(RwLock::new(HashMap::new())),
             metrics: None,
             revisions: RevisionStore::new(),
         }
@@ -56,6 +58,56 @@ impl Default for EvaluatorState {
 }
 
 impl EvaluatorState {
+    /// Load named LLM connections from config. Config-only: there is no
+    /// management API route that calls this, so connections can never be
+    /// set or changed at runtime by a client.
+    ///
+    /// Rejects the whole set (loading none) if any name is empty or
+    /// duplicated. A silent first/last-wins collision would leave an
+    /// evaluator referencing that name wired to the wrong endpoint and
+    /// credential without any operator-visible signal.
+    pub fn load_llm_connections(&self, connections: Vec<LlmConnection>) -> Result<(), String> {
+        let mut seen = std::collections::HashSet::new();
+        for conn in &connections {
+            if conn.name.is_empty() {
+                return Err("llm connection name must not be empty".to_owned());
+            }
+            if !seen.insert(&conn.name) {
+                return Err(format!("duplicate llm connection name: '{}'", conn.name));
+            }
+        }
+
+        let count = connections.len();
+        let map = connections.into_iter().map(|c| (c.name.clone(), c)).collect();
+        if let Ok(mut guard) = self.connections.write() {
+            *guard = map;
+        }
+        tracing::info!(count = count, "LLM connections loaded from config");
+        Ok(())
+    }
+
+    pub fn get_llm_connection(&self, name: &str) -> Option<LlmConnection> {
+        self.connections
+            .read()
+            .ok()
+            .and_then(|guard| guard.get(name).cloned())
+    }
+
+    /// Names of configured connections, for display/selection — never the
+    /// model, URL, or credential, so this endpoint has nothing worth leaking.
+    /// Sorted for a stable, deterministic order — `HashMap` iteration order
+    /// is randomized per process and would otherwise vary across restarts
+    /// even with an unchanged config.
+    pub fn list_llm_connections(&self) -> Vec<String> {
+        let mut names: Vec<String> = self
+            .connections
+            .read()
+            .map(|guard| guard.keys().cloned().collect())
+            .unwrap_or_default();
+        names.sort();
+        names
+    }
+
     pub fn load_evaluators(&self, defs: Vec<EvaluatorDef>) {
         self.compile_modules(&defs);
         self.compile_schemas(&defs);
@@ -79,6 +131,7 @@ impl EvaluatorState {
     ) -> Result<Revision, RevisionError> {
         validate_evaluator_names(&defs)?;
         validate_triggers(&defs)?;
+        self.validate_llm_connections(&defs)?;
 
         let (compiled_modules, wasm_errors) = self.try_compile_modules(&defs);
         let (compiled_schemas, schema_errors) = try_compile_schemas(&defs);
@@ -262,6 +315,24 @@ impl EvaluatorState {
             store.set_wasm_compiled(compiled.len() as u64);
         }
         (compiled, errors)
+    }
+
+    /// Validate that every evaluator's `llm.connection` names a connection
+    /// loaded from config. Connections are immutable after startup, so once
+    /// an evaluator is active this can never later become dangling.
+    fn validate_llm_connections(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
+        let guard = self.connections.read().map_err(|_| {
+            RevisionError::ValidationFailed("LLM connection registry lock poisoned".to_owned())
+        })?;
+        for def in defs {
+            if !guard.contains_key(&def.llm.connection) {
+                return Err(RevisionError::ValidationFailed(format!(
+                    "evaluator '{}': unknown llm connection '{}'",
+                    def.name, def.llm.connection
+                )));
+            }
+        }
+        Ok(())
     }
 }
 

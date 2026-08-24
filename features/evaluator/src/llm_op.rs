@@ -2,22 +2,31 @@ use wanaku_apis::llm::{self, LlmClient};
 use wanaku_apis::mcp::McpContext;
 use wanaku_apis::metrics::MetricsStore;
 
-use crate::config::LlmDef;
+use crate::config::{LlmConnection, LlmDef};
+
+/// An evaluator's LLM operation definition paired with its resolved
+/// connection — everything needed to actually call the LLM. Grouping these
+/// keeps the functions below under the workspace's argument-count lint.
+#[derive(Clone, Copy)]
+pub struct ResolvedLlm<'a> {
+    pub def: &'a LlmDef,
+    pub connection: &'a LlmConnection,
+}
 
 /// Execute the LLM operation and return the raw result string.
 /// The processor WASM module is responsible for parsing and acting on this.
 pub async fn run_llm_operation(
     evaluator_name: &str,
-    llm_def: &LlmDef,
+    llm: ResolvedLlm<'_>,
     mcp: &McpContext<'_>,
     metrics: Option<&MetricsStore>,
 ) -> Option<String> {
-    let client = LlmClient::new(&llm_def.url, &llm_def.model, &llm_def.api_key)?;
+    let client = LlmClient::new(&llm.connection.url, &llm.connection.model, &llm.connection.api_key)?;
 
     let user_prompt = build_context_prompt(mcp);
 
     let start = std::time::Instant::now();
-    let result = client.chat(&llm_def.prompt, &user_prompt).await;
+    let result = client.chat(&llm.def.prompt, &user_prompt).await;
 
     if let Some(store) = metrics {
         store.record_llm_call(evaluator_name, result.is_some(), start.elapsed());
@@ -98,13 +107,13 @@ fn build_context_prompt(mcp: &McpContext<'_>) -> String {
 /// Retry an LLM operation with a correction prompt that includes
 /// the schema and the previous (invalid) response.
 pub async fn retry_with_schema_correction(
-    llm_def: &LlmDef,
+    llm: ResolvedLlm<'_>,
     mcp: &McpContext<'_>,
     previous_result: &str,
     schema: &serde_json::Value,
     validation_error: &str,
 ) -> Option<String> {
-    let client = LlmClient::new(&llm_def.url, &llm_def.model, &llm_def.api_key)?;
+    let client = LlmClient::new(&llm.connection.url, &llm.connection.model, &llm.connection.api_key)?;
 
     let base_prompt = build_context_prompt(mcp);
     let correction = format!(
@@ -116,5 +125,5 @@ pub async fn retry_with_schema_correction(
          Provide a response that strictly matches the expected JSON schema."
     );
 
-    client.chat(&llm_def.prompt, &correction).await
+    client.chat(&llm.def.prompt, &correction).await
 }

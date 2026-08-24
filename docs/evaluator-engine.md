@@ -23,9 +23,18 @@ This guide is for developers who configure evaluators or write evaluator action 
 
 ## YAML Configuration
 
-Evaluators live in `wanaku.yaml` or get pushed via the management API. Each evaluator has four parts:
+Evaluators live in `wanaku.yaml` or get pushed via the management API. LLM connections
+are config-only. They hold the model, endpoint, and credential. Set them in
+`wanaku.yaml`. The management API cannot set or read them. An evaluator refers to a
+connection by name. Each evaluator has four parts:
 
 ```yaml
+llm_connections:                      # Config-only. Never exposed via the management API.
+  - name: "local-llama"
+    model: "llama3.2"
+    url: "http://localhost:11434/v1"
+    api_key: ""                       # Optional bearer token
+
 evaluators:
   - name: "safety-gate"               # Unique identifier
     trigger:                          # When to run
@@ -34,13 +43,25 @@ evaluators:
     llm:                              # LLM operation
       operation: classify             # classify | filter | augment
       prompt: "You are a safety classifier..."
-      model: "llama3.2"
-      url: "http://localhost:11434/v1"
-      api_key: ""                     # Optional bearer token
+      connection: "local-llama"       # References an entry in llm_connections
     processor:                        # WASM action script
       path: "/wasm/safety-gate.wasm"
     on_error: continue                # continue | block (default: continue)
 ```
+
+### LLM Connections
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `name` | string | Unique identifier referenced by an evaluator's `llm.connection` |
+| `model` | string | Model name (passed to `/v1/chat/completions`) |
+| `url` | string | OpenAI-compatible endpoint URL |
+| `api_key` | string | Optional bearer token for the LLM endpoint |
+
+The server loads connections once at startup from `wanaku.yaml`. No API can create,
+update, or read a connection's `api_key`. This design keeps credentials out of the
+management API, including out of evaluator revision history. See
+[Security Considerations](#security-considerations).
 
 ### Trigger Fields
 
@@ -55,9 +76,7 @@ evaluators:
 |-------|------|---------|
 | `operation` | string | `classify` (pick a label), `filter` (return structured data), or `augment` (enrich prompt) |
 | `prompt` | string | System prompt for the LLM. The engine builds a user prompt with request context. |
-| `model` | string | Model name (passed to `/v1/chat/completions`) |
-| `url` | string | OpenAI-compatible endpoint URL |
-| `api_key` | string | Optional bearer token for the LLM endpoint |
+| `connection` | string | Name of an entry in `llm_connections` (see above) |
 | `result_schema` | object | Optional JSON Schema for validating LLM output. When set, the host validates the LLM result before passing it to the WASM guest. On mismatch, retries once with a correction prompt. |
 
 **How the LLM sees context:** The engine builds a user prompt containing:
@@ -91,6 +110,11 @@ The WASM script can call `block()`, `pass()`, `warn()`, `filterTools()`, or `set
 Block dangerous tool calls based on LLM classification.
 
 ```yaml
+llm_connections:
+  - name: "local-llama"
+    model: "llama3.2"
+    url: "http://localhost:11434/v1"
+
 evaluators:
   - name: "safety-gate"
     trigger:
@@ -104,8 +128,7 @@ evaluators:
         - red: dangerous operations (database restarts, production deploys)
         
         Respond with ONLY a JSON object: {"level": "green|yellow|red", "reason": "brief explanation"}
-      model: "llama3.2"
-      url: "http://localhost:11434/v1"
+      connection: "local-llama"
       result_schema:                    # Optional: validate LLM output shape
         type: object
         properties:
@@ -145,11 +168,12 @@ evaluators:
         return a JSON array of tool names that are relevant and safe for this user.
         
         Respond with ONLY a JSON array: ["tool-name-1", "tool-name-2"]
-      model: "llama3.2"
-      url: "http://localhost:11434/v1"
+      connection: "local-llama"
     processor:
       path: "/wasm/assembly-filter.wasm"
 ```
+
+This example reuses the `local-llama` connection from Example 1.
 
 **What happens:**
 1. User sends `tools/list` to the `curated` namespace (`/curated/mcp`)
@@ -618,9 +642,7 @@ curl http://localhost:8080/api/v1/evaluators
       "llm": {
         "operation": "classify",
         "prompt": "...",
-        "model": "llama3.2",
-        "url": "http://localhost:11434/v1",
-        "api_key": ""
+        "connection": "local-llama"
       },
       "processor": {"path": "/wasm/safety-gate.wasm"},
       "on_error": "continue"
@@ -629,6 +651,10 @@ curl http://localhost:8080/api/v1/evaluators
   "error": null
 }
 ```
+
+This response has no `model`, `url`, or `api_key` field. Those fields live only in
+`llm_connections` in `wanaku.yaml`. They never transit the management API. The
+`llm.connection` field names the connection the evaluator uses.
 
 ### Update Evaluators (Hot-Reload)
 
@@ -643,8 +669,7 @@ curl -X PUT http://localhost:8080/api/v1/evaluators \
         "llm": {
           "operation": "classify",
           "prompt": "You are a safety classifier...",
-          "model": "llama3.2",
-          "url": "http://localhost:11434/v1"
+          "connection": "local-llama"
         },
         "processor": {"path": "/wasm/safety-gate.wasm"}
       }
@@ -654,11 +679,36 @@ curl -X PUT http://localhost:8080/api/v1/evaluators \
 
 **What happens:** The engine:
 1. Parses the config
-2. Compiles all WASM files (expensive — do this at startup or infrequently)
-3. Replaces the active evaluators
-4. Returns the new config in `{"data": [...], "error": null}`
+2. Validates that `llm.connection` names a connection already loaded from `wanaku.yaml` — an unknown name rejects the whole update with `422` and leaves the previous evaluators active
+3. Compiles all WASM files (expensive — do this at startup or infrequently)
+4. Replaces the active evaluators
+5. Returns the new config in `{"data": [...], "error": null}`
 
 **If a WASM file fails to compile:** That evaluator is skipped, the rest are loaded, and you get a warning in the response.
+
+**Legacy payloads:** a request with `model`/`url`/`api_key` inline under `llm` (the
+pre-connection shape) is rejected with `400` rather than silently dropping those fields.
+
+### List LLM Connections
+
+```bash
+curl http://localhost:8080/api/v1/evaluators/llm-connections
+```
+
+**Response:**
+
+```json
+{
+  "data": ["local-llama"],
+  "error": null
+}
+```
+
+Read-only. Lists connection names loaded from `wanaku.yaml` at startup, for
+display/selection purposes. Returns names only — never `model`, `url`, or `api_key` —
+so this endpoint has nothing about your LLM backend worth leaking. There is no
+endpoint to create, update, or delete a connection; edit `wanaku.yaml` and restart
+the server.
 
 ### List Namespace Bindings
 
@@ -982,6 +1032,7 @@ This re-compiles all WASM files referenced in the config.
 - **LLM prompts can be attacked** — sanitize user input, use system prompts that are robust to injection, and fail open if unsure.
 - **WASM actions are deterministic** — the same input always produces the same output. Use this property to test your logic thoroughly.
 - **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings (but evaluator definitions from `wanaku.yaml` are preserved).
+- **LLM credentials never transit the management API.** `model`, `url`, and `api_key` live only in `llm_connections` in `wanaku.yaml`, loaded once at startup. Evaluators refer to a connection by name. No route can set, update, or read an `api_key`, not on evaluator create or update, and not in evaluator revision history. To rotate a credential, edit `wanaku.yaml` and restart the server.
 
 ## Next Steps
 

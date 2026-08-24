@@ -341,6 +341,7 @@ plugins:
 Wanaku loads these top-level sections from `wanaku.yaml`:
 
 - `forwards` — core forward bootstrap configuration
+- `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `evaluators` — evaluator feature configuration
 - `plugins` — plugin service mappings owned by the plugins feature
 
@@ -349,6 +350,11 @@ Wanaku discovers tools, resources, and prompts from the configured forwards.
 **Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):
 
 ```yaml
+llm_connections:
+  - name: "local-llama"
+    model: "llama3.2"
+    url: "http://localhost:11434/v1"
+
 evaluators:
   - name: "safety-gate"
     trigger:
@@ -356,8 +362,7 @@ evaluators:
     llm:
       operation: classify
       prompt: "Classify this tool call..."
-      model: "llama3.2"
-      url: "http://localhost:11434/v1"
+      connection: "local-llama"
       result_schema:              # Optional JSON Schema for LLM output validation
         type: object
         properties:
