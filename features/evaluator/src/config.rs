@@ -20,6 +20,22 @@ pub struct EvaluatorDef {
     pub on_error: ErrorPolicy,
 }
 
+/// A named LLM connection: model, endpoint, and credential.
+///
+/// Connections are config-only. They are loaded from `llm_connections` in
+/// `wanaku.yaml` at startup and are never part of the management API's
+/// request or response shapes for evaluators — evaluators reference a
+/// connection by name instead of embedding one, so credentials never
+/// transit the management API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmConnection {
+    pub name: String,
+    pub model: String,
+    pub url: String,
+    #[serde(default)]
+    pub api_key: String,
+}
+
 /// What triggers this evaluator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TriggerDef {
@@ -29,14 +45,19 @@ pub struct TriggerDef {
 }
 
 /// LLM operation configuration.
+///
+/// Carries only what an evaluator *does* with the LLM (operation, prompt,
+/// result schema) plus a reference to a named [`LlmConnection`] configured
+/// in `wanaku.yaml`. Connection details (model/url/api_key) are deliberately
+/// not fields here: `deny_unknown_fields` turns any legacy inline
+/// `model`/`url`/`api_key` in a client payload into a clear 400 instead of
+/// silently dropping it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LlmDef {
     pub operation: LlmOperation,
     pub prompt: String,
-    pub model: String,
-    pub url: String,
-    #[serde(default)]
-    pub api_key: String,
+    pub connection: String,
     #[serde(default)]
     pub result_schema: Option<serde_json::Value>,
 }

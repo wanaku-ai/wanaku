@@ -9,6 +9,7 @@ import { BindingModal } from "./BindingModal";
 
 const EvaluatorsPage: React.FC = () => {
   const [evaluators, setEvaluators] = useState<EvaluatorDef[]>([]);
+  const [connections, setConnections] = useState<string[]>([]);
   const [bindings, setBindings] = useState<BindingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
@@ -22,7 +23,7 @@ const EvaluatorsPage: React.FC = () => {
   const evaluatorsRef = useRef(evaluators);
   evaluatorsRef.current = evaluators;
 
-  const { listEvaluators, updateEvaluators, listBindings, bindNamespace, unbindNamespace } =
+  const { listEvaluators, updateEvaluators, listLlmConnections, listBindings, bindNamespace, unbindNamespace } =
     useEvaluators();
 
   const fetchEvaluators = useCallback(async () => {
@@ -38,6 +39,19 @@ const EvaluatorsPage: React.FC = () => {
       setEvaluators([]);
     }
   }, [listEvaluators]);
+
+  const fetchConnections = useCallback(async () => {
+    try {
+      const result = await listLlmConnections();
+      if (result.status === 200 && result.data) {
+        setConnections(result.data);
+      } else {
+        setConnections([]);
+      }
+    } catch {
+      setConnections([]);
+    }
+  }, [listLlmConnections]);
 
   const fetchBindings = useCallback(async () => {
     try {
@@ -56,8 +70,8 @@ const EvaluatorsPage: React.FC = () => {
   }, [listBindings]);
 
   useEffect(() => {
-    Promise.all([fetchEvaluators(), fetchBindings()]).finally(() => setIsLoading(false));
-  }, [fetchEvaluators, fetchBindings]);
+    Promise.all([fetchEvaluators(), fetchConnections(), fetchBindings()]).finally(() => setIsLoading(false));
+  }, [fetchEvaluators, fetchConnections, fetchBindings]);
 
   useEffect(() => {
     if (errorMessage) {
@@ -225,6 +239,7 @@ const EvaluatorsPage: React.FC = () => {
         <EvaluatorModal
           evaluator={openedEvaluator}
           existingNames={evaluators.map((ev) => ev.name)}
+          connections={connections}
           onRequestClose={() => {
             setOpenedEvaluator(undefined);
             setIsEvaluatorModalOpen(false);

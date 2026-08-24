@@ -9,9 +9,7 @@ export interface EvaluatorTrigger {
 export interface EvaluatorLlm {
   operation: "classify" | "filter" | "augment";
   prompt: string;
-  model: string;
-  url: string;
-  api_key?: string;
+  connection: string;
 }
 
 export interface EvaluatorProcessor {
@@ -44,6 +42,12 @@ export interface SimpleResponse {
   headers: Headers;
 }
 
+export interface LlmConnectionsResponse {
+  status: number;
+  data: string[];
+  headers: Headers;
+}
+
 export const useEvaluators = () => {
   const listEvaluators = useCallback(
     (options?: RequestInit): Promise<EvaluatorsResponse> => {
@@ -65,6 +69,16 @@ export const useEvaluators = () => {
           ...options?.headers,
         },
         body: JSON.stringify({ evaluators }),
+      });
+    },
+    []
+  );
+
+  const listLlmConnections = useCallback(
+    (options?: RequestInit): Promise<LlmConnectionsResponse> => {
+      return customFetch<LlmConnectionsResponse>("/api/v1/evaluators/llm-connections", {
+        ...options,
+        method: "GET",
       });
     },
     []
@@ -108,6 +122,7 @@ export const useEvaluators = () => {
   return {
     listEvaluators,
     updateEvaluators,
+    listLlmConnections,
     listBindings,
     bindNamespace,
     unbindNamespace,

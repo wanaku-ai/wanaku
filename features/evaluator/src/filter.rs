@@ -8,7 +8,7 @@ use wanaku_apis::metrics::{MetricsStore, SkipReason};
 use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
 
 use crate::action::ActionResult;
-use crate::config::{ErrorPolicy, EvaluatorDef, LlmOperation};
+use crate::config::{ErrorPolicy, EvaluatorDef, LlmConnection, LlmOperation};
 use crate::state::EvaluatorState;
 
 wanaku_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
@@ -103,21 +103,43 @@ impl EvaluatorFilter {
             &history,
         );
 
+        let Some(llm_connection) = state.get_llm_connection(&evaluator.llm.connection) else {
+            tracing::error!(
+                evaluator = %evaluator.name,
+                connection = %evaluator.llm.connection,
+                "llm connection not found at request time (should be unreachable: validated at activation)"
+            );
+            if let Some(ref store) = metrics {
+                store.record_llm_call(&evaluator.name, false, std::time::Duration::ZERO);
+            }
+            return match evaluator.on_error {
+                ErrorPolicy::Continue => Ok(FilterAction::Continue),
+                ErrorPolicy::Block => Ok(wanaku_filters::response::json_rpc_error(
+                    &wanaku_filters::response::extract_json_rpc_id(body),
+                    -32603,
+                    "evaluator llm connection not available",
+                )),
+            };
+        };
+
         let raw_llm_result = crate::llm_op::run_llm_operation(
             &evaluator.name,
-            &evaluator.llm,
+            crate::llm_op::ResolvedLlm { def: &evaluator.llm, connection: &llm_connection },
             &mcp_ctx,
             metrics.as_ref(),
         )
         .await
         .unwrap_or_default();
 
-        let compiled_schema = state.get_compiled_schema(&evaluator.name);
+        let resolved = ResolvedRuntime {
+            connection: llm_connection,
+            compiled_schema: state.get_compiled_schema(&evaluator.name),
+        };
 
         let llm_result = validate_and_retry_if_needed(
             &raw_llm_result,
             &evaluator,
-            compiled_schema.as_ref(),
+            &resolved,
             &mcp_ctx,
             metrics.as_ref(),
         )
@@ -167,7 +189,7 @@ impl EvaluatorFilter {
             registry,
             interactions,
             eval_ctx,
-            compiled_schema,
+            resolved.compiled_schema,
         );
         if let Some(ref store) = metrics {
             store.record_wasm_execution(&evaluator.name, wasm_start.elapsed());
@@ -285,15 +307,25 @@ fn dispatch_action(
     }
 }
 
+/// Per-request state resolved from [`EvaluatorState`]: the evaluator's LLM
+/// connection and its compiled result schema (if any). Grouped together to
+/// keep `validate_and_retry_if_needed` under the workspace's argument-count
+/// lint. By the time this is constructed, the connection has already been
+/// resolved successfully — see the early return in `handle_body`.
+struct ResolvedRuntime {
+    connection: LlmConnection,
+    compiled_schema: Option<std::sync::Arc<crate::schema::CompiledSchema>>,
+}
+
 #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "schema validation with retry logic")]
 async fn validate_and_retry_if_needed(
     raw_result: &str,
     evaluator: &EvaluatorDef,
-    compiled_schema: Option<&std::sync::Arc<crate::schema::CompiledSchema>>,
+    resolved: &ResolvedRuntime,
     mcp: &McpContext<'_>,
     metrics: Option<&MetricsStore>,
 ) -> String {
-    let Some(schema) = compiled_schema else {
+    let Some(schema) = resolved.compiled_schema.as_ref() else {
         return raw_result.to_owned();
     };
 
@@ -319,17 +351,18 @@ async fn validate_and_retry_if_needed(
     );
 
     let raw_schema = evaluator.llm.result_schema.as_ref();
-    let retry_result = if let Some(raw_schema) = raw_schema {
-        crate::llm_op::retry_with_schema_correction(
-            &evaluator.llm,
-            mcp,
-            raw_result,
-            raw_schema,
-            &validation_error,
-        )
-        .await
-    } else {
-        None
+    let retry_result = match raw_schema {
+        Some(raw_schema) => {
+            crate::llm_op::retry_with_schema_correction(
+                crate::llm_op::ResolvedLlm { def: &evaluator.llm, connection: &resolved.connection },
+                mcp,
+                raw_result,
+                raw_schema,
+                &validation_error,
+            )
+            .await
+        }
+        None => None,
     };
 
     match retry_result {

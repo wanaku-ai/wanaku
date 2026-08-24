@@ -21,8 +21,9 @@ use wanaku_apis::feature::{Feature, HttpContext};
 use crate::config::EvaluatorsConfig;
 use crate::routes::{
     EvaluatorRoute, handle_activate_revision, handle_active_revision, handle_bind_namespace,
-    handle_get_revision, handle_list_bindings, handle_list_evaluators, handle_list_revisions,
-    handle_unbind_namespace, handle_update_evaluators, resolve_evaluator_route,
+    handle_get_revision, handle_list_bindings, handle_list_evaluators,
+    handle_list_llm_connections, handle_list_revisions, handle_unbind_namespace,
+    handle_update_evaluators, resolve_evaluator_route,
 };
 use crate::state::EvaluatorState;
 
@@ -42,6 +43,19 @@ impl EvaluatorFeature {
     pub fn with_metrics(mut self, store: wanaku_apis::metrics::MetricsStore) -> Self {
         self.state = self.state.with_metrics(store);
         self
+    }
+
+    fn load_llm_connections_from_yaml(&self, root: &serde_yaml::Value) {
+        let Some(conn_val) = root.get("llm_connections") else {
+            return;
+        };
+        let Some(connections) = parse_llm_connections_yaml(conn_val) else {
+            return;
+        };
+
+        if let Err(e) = self.state.load_llm_connections(connections) {
+            tracing::error!(error = %e, "llm_connections rejected; no connections loaded");
+        }
     }
 }
 
@@ -90,6 +104,7 @@ impl Feature for EvaluatorFeature {
             EvaluatorRoute::UpdateEvaluators => {
                 handle_update_evaluators(&self.state, ctx.body.unwrap_or(""))
             }
+            EvaluatorRoute::ListLlmConnections => handle_list_llm_connections(&self.state),
             EvaluatorRoute::ListRevisions => handle_list_revisions(&self.state),
             EvaluatorRoute::ActiveRevision => handle_active_revision(&self.state),
             EvaluatorRoute::GetRevision(id) => handle_get_revision(&self.state, id),
@@ -106,6 +121,8 @@ impl Feature for EvaluatorFeature {
     }
 
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
+        self.load_llm_connections_from_yaml(root);
+
         let Some(eval_val) = root.get("evaluators") else {
             return;
         };
@@ -117,7 +134,7 @@ impl Feature for EvaluatorFeature {
         tracing::info!(count = count, "evaluators loaded from wanaku.yaml");
 
         match self.state.try_activate(
-            defs.clone(),
+            defs,
             crate::revision::RevisionOrigin::Startup,
             None,
             None,
@@ -130,13 +147,27 @@ impl Feature for EvaluatorFeature {
                 );
             }
             Err(e) => {
-                tracing::warn!(error = %e, "startup revision failed, loading without tracking");
-                self.state.load_evaluators(defs);
+                // Fail closed: an invalid startup config must not end up active.
+                // No evaluators are loaded until wanaku.yaml is fixed and the
+                // server restarts (or a valid config is pushed via the API).
+                tracing::error!(error = %e, "startup evaluator configuration rejected; no evaluators loaded");
             }
         }
     }
 
     fn load_env_config(&self) {}
+}
+
+fn parse_llm_connections_yaml(
+    conn_val: &serde_yaml::Value,
+) -> Option<Vec<crate::config::LlmConnection>> {
+    match serde_yaml::from_value::<Vec<crate::config::LlmConnection>>(conn_val.clone()) {
+        Ok(connections) => Some(connections),
+        Err(e) => {
+            tracing::warn!(error = %e, "failed to parse llm_connections from wanaku.yaml");
+            None
+        }
+    }
 }
 
 fn parse_evaluator_yaml(

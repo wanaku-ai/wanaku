@@ -357,9 +357,7 @@ mod tests {
             llm: LlmDef {
                 operation: LlmOperation::Classify,
                 prompt: "test".to_owned(),
-                model: "test-model".to_owned(),
-                url: "http://localhost".to_owned(),
-                api_key: String::new(),
+                connection: "test-connection".to_owned(),
                 result_schema: None,
             },
             processor: ProcessorRef {

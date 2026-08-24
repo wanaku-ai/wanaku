@@ -12,6 +12,7 @@ type ParseResult<T> = Result<T, Box<Response<Vec<u8>>>>;
 pub(crate) enum EvaluatorRoute {
     ListEvaluators,
     UpdateEvaluators,
+    ListLlmConnections,
     ListBindings,
     BindNamespace(String),
     UnbindNamespace(String),
@@ -40,10 +41,27 @@ pub(crate) fn resolve_evaluator_route(method: &str, path: &str) -> EvaluatorRout
         return resolve_revision_route(method, rev_suffix);
     }
 
+    if let Some(conn_suffix) = suffix.strip_prefix("/llm-connections") {
+        return resolve_llm_connections_route(method, conn_suffix);
+    }
+
     let Some(ns_suffix) = suffix.strip_prefix("/namespaces") else {
         return EvaluatorRoute::NotFound;
     };
+    resolve_namespace_route(method, ns_suffix)
+}
 
+fn resolve_llm_connections_route(method: &str, suffix: &str) -> EvaluatorRoute {
+    if !suffix.is_empty() && suffix != "/" {
+        return EvaluatorRoute::NotFound;
+    }
+    match method {
+        "GET" => EvaluatorRoute::ListLlmConnections,
+        _ => EvaluatorRoute::NotFound,
+    }
+}
+
+fn resolve_namespace_route(method: &str, ns_suffix: &str) -> EvaluatorRoute {
     if ns_suffix.is_empty() || ns_suffix == "/" {
         return match method {
             "GET" => EvaluatorRoute::ListBindings,
@@ -95,6 +113,11 @@ fn resolve_revision_route(method: &str, suffix: &str) -> EvaluatorRoute {
 
 pub(crate) fn handle_list_evaluators(state: &EvaluatorState) -> Response<Vec<u8>> {
     json_ok(&serde_json::json!(state.list_evaluators()))
+}
+
+/// Secret-free connection summaries only — never returns `api_key`.
+pub(crate) fn handle_list_llm_connections(state: &EvaluatorState) -> Response<Vec<u8>> {
+    json_ok(&serde_json::json!(state.list_llm_connections()))
 }
 
 /// Request body for the update evaluators endpoint. Optionally includes

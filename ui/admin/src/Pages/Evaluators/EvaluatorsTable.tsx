@@ -36,7 +36,7 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
     { key: "method", header: "Trigger Method" },
     { key: "namespace", header: "Namespace" },
     { key: "operation", header: "LLM Operation" },
-    { key: "model", header: "LLM Model" },
+    { key: "connection", header: "LLM Connection" },
     { key: "on_error", header: "Error Policy" },
   ];
 
@@ -47,7 +47,7 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
       method: ev.trigger.method,
       namespace: ev.trigger.namespace || "—",
       operation: ev.llm.operation,
-      model: ev.llm.model,
+      connection: ev.llm.connection,
       on_error: ev.on_error,
     }));
   }
