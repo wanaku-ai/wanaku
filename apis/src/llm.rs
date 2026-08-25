@@ -66,20 +66,20 @@ impl LlmClient {
         let response = match request.json(&body).send().await {
             Ok(r) => r,
             Err(e) => {
-                tracing::warn!(error = %e, "LLM request failed");
+                tracing::warn!(url = %self.url, model = %self.model, error = %e, "LLM request failed");
                 return None;
             }
         };
 
         if !response.status().is_success() {
-            tracing::warn!(status = %response.status(), "LLM returned non-success status");
+            tracing::warn!(url = %self.url, model = %self.model, status = %response.status(), "LLM returned non-success status");
             return None;
         }
 
         let json: serde_json::Value = match response.json().await {
             Ok(b) => b,
             Err(e) => {
-                tracing::warn!(error = %e, "LLM response parse failed");
+                tracing::warn!(url = %self.url, model = %self.model, error = %e, "LLM response parse failed");
                 return None;
             }
         };

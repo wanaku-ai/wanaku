@@ -122,6 +122,12 @@ impl EvaluatorFilter {
             };
         };
 
+        tracing::debug!(
+            "Invoking evaluator {} on behalf of tracking ID {}",
+            evaluator.name,
+            conversation_id.as_deref().unwrap_or("-")
+        );
+
         let raw_llm_result = crate::llm_op::run_llm_operation(
             &evaluator.name,
             crate::llm_op::ResolvedLlm { def: &evaluator.llm, connection: &llm_connection },

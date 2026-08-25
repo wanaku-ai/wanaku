@@ -11,13 +11,13 @@ forwards:
 # management API, only here.
 llm_connections:
   - name: "local-llama"
-    model: "llama3.2"
-    url: "http://localhost:11434/"
+    model: "llama3.2:latest"
+    url: "http://localhost:11434/v1/"
     api_key: ""
-  - name: "openrouter"
-    model: "modelname"
-    url: "https://openrouter.ai/api"
-    api_key: "your-api-key"
+#  - name: "openrouter"
+#    model: "modelname"
+#    url: "https://openrouter.ai/api"
+#    api_key: "your-api-key"
 
 evaluators:
   - name: "safety-gate"
