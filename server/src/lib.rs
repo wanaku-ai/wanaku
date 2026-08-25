@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod http_response;
 pub mod management;
@@ -53,6 +54,48 @@ fn apply_inference_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv
     }
 }
 
+fn apply_inference_host_header(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+    if let Err(reason) = try_apply_inference_host_header(yaml, env) {
+        tracing::warn!(reason, "inference proxy Host header override skipped");
+    }
+}
+
+fn try_apply_inference_host_header(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) -> Result<(), &'static str> {
+    let chains = yaml
+        .get_mut("filter_chains")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("no filter_chains in pipeline config")?;
+    let chain = find_named_entry_mut(chains, "name", "inference_proxy").ok_or("inference_proxy chain not found")?;
+    let filters = chain
+        .get_mut("filters")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("chain has no filters")?;
+    let headers = find_named_entry_mut(filters, "filter", "headers").ok_or("no headers filter on chain")?;
+    let request_set = headers
+        .get_mut("request_set")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("headers filter has no request_set")?;
+    let host_entry = find_named_entry_mut(request_set, "name", "Host").ok_or("no Host entry in request_set")?;
+    let value = host_entry.get_mut("value").ok_or("Host entry has no value field")?;
+    *value = Value::String(inference_host_header_value(env));
+    Ok(())
+}
+
+/// The `Host` sent upstream must match what the inference backend expects,
+/// not the browser's original request to Wanaku — reverse proxies that route
+/// by hostname (e.g. TLS-terminating ingresses) reject a mismatched Host.
+///
+/// For the default HTTPS port, `inference_tls_sni` (a bare hostname) is
+/// used as-is, matching how a client omitting an explicit Host would behave.
+/// For any other port — including plain (non-TLS) upstreams — the full
+/// `host:port` is required, since a bare hostname would silently drop it.
+fn inference_host_header_value(env: &wanaku_apis::config::WanakuEnv) -> String {
+    match &env.inference_tls_sni {
+        Some(hostname) if env.inference_upstream.ends_with(":443") => hostname.clone(),
+        _ => env.inference_upstream.clone(),
+    }
+}
+
 fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
     for chain_name in ["mcp_router", "inference_proxy"] {
         apply_cors_to_chain(yaml, chain_name, &env.cors_origin);
@@ -102,6 +145,7 @@ pub fn load_config(
     let config = match serde_yaml::from_str::<Value>(DEFAULT_CONFIG) {
         Ok(mut yaml) => {
             apply_inference_config(&mut yaml, env);
+            apply_inference_host_header(&mut yaml, env);
             apply_cors_config(&mut yaml, env);
             match serde_yaml::to_string(&yaml) {
                 Ok(s) => s,
@@ -166,4 +210,54 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
         @register registry,
         http "wanaku_prompt_get" => wanaku_filters::PromptGetFilter::from_config
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use wanaku_apis::config::WanakuEnv;
+
+    use super::{Value, inference_host_header_value, try_apply_inference_host_header};
+
+    fn env_with(upstream: &str, tls_sni: Option<&str>) -> WanakuEnv {
+        WanakuEnv {
+            mgmt_listen: "0.0.0.0:8080".to_owned(),
+            inference_upstream: upstream.to_owned(),
+            inference_tls_sni: tls_sni.map(ToOwned::to_owned),
+            persist: None,
+            ui_path: None,
+            cors_origin: "*".to_owned(),
+            forward_headers: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn host_header_default_tls_port_uses_bare_hostname() {
+        let env = env_with("api.example.com:443", Some("api.example.com"));
+        assert_eq!(inference_host_header_value(&env), "api.example.com");
+    }
+
+    #[test]
+    fn host_header_non_default_tls_port_keeps_port() {
+        let env = env_with("api.example.com:8443", Some("api.example.com"));
+        assert_eq!(inference_host_header_value(&env), "api.example.com:8443");
+    }
+
+    #[test]
+    fn host_header_plain_upstream_keeps_port() {
+        let env = env_with("127.0.0.1:11434", None);
+        assert_eq!(inference_host_header_value(&env), "127.0.0.1:11434");
+    }
+
+    /// Guards against the `headers`/`request_set`/`Host` lookup silently
+    /// drifting out of sync with `default.yaml` (e.g. a filter rename or
+    /// reorder) and falling back to the unpatched placeholder value.
+    #[test]
+    fn try_apply_inference_host_header_matches_embedded_default_config() {
+        let mut yaml: Value = serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
+        let env = env_with("upstream.internal:9999", None);
+        try_apply_inference_host_header(&mut yaml, &env).expect("headers filter must be found in default.yaml");
+
+        let patched = serde_yaml::to_string(&yaml).expect("patched yaml must serialize");
+        assert!(patched.contains("upstream.internal:9999"), "Host value was not patched:\n{patched}");
+    }
 }
