@@ -15,7 +15,7 @@ the action result as JSON to stdout.
 ## Rust Guests (Full WIT Support)
 
 For the full imperative API (calling `registry.listTools()`, `response.block()`,
-etc. during execution), use Rust with `cargo-component`. See `actions/safety-block/`
+etc. during execution), use Rust with `cargo-component`. See `actions/safety-review/`
 for an example.
 
 ## JS Guest Example (stdin/stdout)

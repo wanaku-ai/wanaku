@@ -139,7 +139,7 @@ evaluators:
             type: string
         required: ["level", "reason"]
     processor:
-      path: "/wasm/safety-block.wasm"
+      path: "/wasm/safety_review_action.wasm"
     on_error: continue
 ```
 
@@ -147,7 +147,7 @@ evaluators:
 1. User calls `restart-database` tool
 2. Engine sends tool name + args to LLM with your prompt
 3. LLM returns `{"level": "red", "reason": "database restart is dangerous"}`
-4. Engine runs `safety-block.wasm` with the raw LLM output in `ctx.llmResult`
+4. Engine runs `safety_review_action.wasm` with the raw LLM output in `ctx.llmResult`
 5. WASM script parses the JSON, sees `"red"`, calls `block("Tool call blocked: red")`
 6. User gets JSON-RPC error instead of executing the tool
 
@@ -463,15 +463,15 @@ rustup target add wasm32-wasip1
 ### Step 1: Create a cdylib Crate
 
 ```bash
-cargo new --lib safety-block-action
-cd safety-block-action
+cargo new --lib safety-review-action
+cd safety-review-action
 ```
 
 Edit `Cargo.toml`:
 
 ```toml
 [package]
-name = "safety-block-action"
+name = "safety-review-action"
 version = "0.1.0"
 edition = "2024"
 
@@ -481,9 +481,10 @@ crate-type = ["cdylib"]
 [dependencies]
 wit-bindgen = "0.41"
 wit-bindgen-rt = "0.41"
+serde_json = "1.0"
 
 [package.metadata.component]
-package = "wanaku:safety-block"
+package = "wanaku:safety-review"
 
 [package.metadata.component.target]
 path = "wit/evaluator.wit"
@@ -507,15 +508,15 @@ mod bindings;
 use bindings::wanaku::evaluator::types::EvaluationContext;
 use bindings::Guest;
 
-struct SafetyBlock;
+struct SafetyReview;
 
-impl Guest for SafetyBlock {
+impl Guest for SafetyReview {
     fn evaluate(ctx: EvaluationContext) {
         // Your logic here
     }
 }
 
-bindings::export!(SafetyBlock with_types_in bindings);
+bindings::export!(SafetyReview with_types_in bindings);
 ```
 
 The `cargo component build` command generates the `bindings` module. Do not write this module.
@@ -525,7 +526,7 @@ The `cargo component build` command generates the `bindings` module. Do not writ
 Access host imports via `bindings::wanaku::evaluator::{registry, response, validation, log, conversation}`:
 
 ```rust
-impl Guest for SafetyBlock {
+impl Guest for SafetyReview {
     fn evaluate(ctx: EvaluationContext) {
         let reason = format!(
             "Tool call blocked by safety classification: {}",
@@ -579,7 +580,7 @@ log::error("message");
 cargo component build --release
 ```
 
-Output: `target/wasm32-wasip1/release/safety_block_action.wasm`
+Output: `target/wasm32-wasip1/release/safety_review_action.wasm`
 
 The filename comes from your `[package] name` with `_` replacing `-`.
 
@@ -589,12 +590,16 @@ Same as JavaScript — reference the WASM file in your evaluator config:
 
 ```yaml
 processor:
-  path: "/wasm/safety_block_action.wasm"
+  path: "/wasm/safety_review_action.wasm"
 ```
 
 ### Complete Rust Example
 
-Full `src/lib.rs` for a safety blocker:
+Full `src/lib.rs` for a safety gate. The action reads the LLM classification
+from `ctx.llm_result` and maps the level to a response: `red` blocks, `yellow`
+warns, and any other level passes. The LLM is expected to return a JSON object
+of the form `{"level": "green|yellow|red", "reason": "..."}`. When the result
+is not valid JSON, the level is inferred from the raw text.
 
 ```rust
 #[allow(warnings)]
@@ -603,20 +608,57 @@ mod bindings;
 use bindings::wanaku::evaluator::types::EvaluationContext;
 use bindings::Guest;
 
-struct SafetyBlock;
+struct SafetyReview;
 
-impl Guest for SafetyBlock {
+impl Guest for SafetyReview {
     fn evaluate(ctx: EvaluationContext) {
-        let reason = format!(
-            "Tool call blocked by safety classification: {}",
-            ctx.llm_result
-        );
-        bindings::wanaku::evaluator::log::warn(&reason);
-        bindings::wanaku::evaluator::response::block(&reason);
+        let (level, reason) = classify(&ctx.llm_result);
+
+        match level.as_str() {
+            "red" => {
+                bindings::wanaku::evaluator::log::warn(&format!("Blocked: {reason}"));
+                bindings::wanaku::evaluator::response::block(&format!(
+                    "Tool call blocked by safety classification: {reason}"
+                ));
+            }
+            "yellow" => {
+                bindings::wanaku::evaluator::log::warn(&format!("Warning: {reason}"));
+                bindings::wanaku::evaluator::response::warn(&format!("Safety warning: {reason}"));
+            }
+            _ => {
+                bindings::wanaku::evaluator::response::pass();
+            }
+        }
     }
 }
 
-bindings::export!(SafetyBlock with_types_in bindings);
+fn classify(llm_result: &str) -> (String, String) {
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(llm_result) {
+        let level = value
+            .get("level")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("green")
+            .to_string();
+        let reason = value
+            .get("reason")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or(llm_result)
+            .to_string();
+        return (level, reason);
+    }
+
+    let lower = llm_result.to_lowercase();
+    let level = if lower.contains("red") {
+        "red"
+    } else if lower.contains("yellow") {
+        "yellow"
+    } else {
+        "green"
+    };
+    (level.to_string(), llm_result.to_string())
+}
+
+bindings::export!(SafetyReview with_types_in bindings);
 ```
 
 **Why this works:** The `bindings` module is generated from `evaluator.wit` by `cargo-component`. It provides Rust types for `EvaluationContext` and functions for all host imports. You implement the `Guest` trait's `evaluate` method, and `bindings::export!` makes it callable from the host.
@@ -766,7 +808,7 @@ set -euo pipefail
 
 MGMT=http://localhost:8080
 MCP=http://localhost:8081
-WASM="$(pwd)/actions/dist/safety-block.wasm"
+WASM="$(pwd)/actions/dist/safety_review_action.wasm"
 
 echo "Configuring evaluator with WASM action..."
 curl -sf -X PUT $MGMT/api/v1/evaluators -H "Content-Type: application/json" \
@@ -804,8 +846,7 @@ The evaluator crate has integration tests that run in the process. The test runn
 cargo test -p wanaku-feature-evaluator
 
 # Build WASM actions so engine tests run (instead of skipping)
-cd actions/safety-block && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
-cd ../safety-warn && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
+cd actions/safety-review && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
 ```
 
 Tests cover: config parsing (including `result_schema`), trigger matching, evaluator state management, schema validation, action result variants, and WASM action execution with hardcoded `llm_result` (no LLM needed).
@@ -1047,6 +1088,6 @@ This re-compiles all WASM files referenced in the config.
 - **WIT Interface:** [`features/evaluator/wit/evaluator.wit`](../features/evaluator/wit/evaluator.wit)
 - **TypeScript Definitions:** [`sdk/js/wanaku-actions.d.ts`](../sdk/js/wanaku-actions.d.ts)
 - **JavaScript Examples:** [`actions/js-examples/`](../actions/js-examples/)
-- **Rust Example:** [`actions/safety-block/`](../actions/safety-block/)
+- **Rust Example:** [`actions/safety-review/`](../actions/safety-review/)
 - **jco Componentize Docs:** [Bytecode Alliance jco](https://github.com/bytecodealliance/jco)
 - **cargo-component Docs:** [cargo-component](https://github.com/bytecodealliance/cargo-component)

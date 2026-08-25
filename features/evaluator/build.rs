@@ -9,8 +9,7 @@ fn main() {
     std::fs::create_dir_all(&dist_dir).ok();
 
     let rust_actions = [
-        ("safety-block", "safety_block_action.wasm"),
-        ("safety-warn", "safety_warn_action.wasm"),
+        ("safety-review", "safety_review_action.wasm"),
         ("assembly-filter", "assembly_filter_action.wasm"),
     ];
 

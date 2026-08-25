@@ -225,20 +225,21 @@ mod engine {
     #[test]
     #[serial]
     #[ignore = "requires running wanaku server and pre-built WASM actions"]
-    fn safety_block_wasm_blocks_tool_call() {
+    fn safety_review_wasm_blocks_tool_call() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
             eprintln!("SKIP: wanaku server not running");
             return;
         }
 
-        let block_wasm = wasm_path("safety_block_action.wasm");
+        let block_wasm = wasm_path("safety_review_action.wasm");
 
         harness.register_tool("e2e-restart-db", "Restart a production database", None);
 
-        // Configure evaluator with safety-block WASM.
-        // LLM URL points to localhost:11434 — if Ollama isn't running,
-        // llm_result will be empty, but safety-block always blocks anyway.
+        // Configure evaluator with safety-review WASM. The action blocks only
+        // when the LLM classifies the call as "red", so this test requires a
+        // running LLM (connection "local-llama") that returns a red verdict
+        // for the dangerous tool below.
         harness.configure_evaluators(&json!({
             "evaluators": [{
                 "name": "e2e-safety",
@@ -261,21 +262,21 @@ mod engine {
 
         assert!(
             TestHarness::was_blocked(&resp),
-            "safety-block should block the request, got: {resp:?}"
+            "safety-review should block the request, got: {resp:?}"
         );
     }
 
     #[test]
     #[serial]
     #[ignore = "requires running wanaku server and pre-built WASM actions"]
-    fn safety_warn_wasm_does_not_block() {
+    fn safety_wasm_does_not_block_non_red() {
         let mut harness = TestHarness::new();
         if !harness.server_is_reachable() {
             eprintln!("SKIP: wanaku server not running");
             return;
         }
 
-        let warn_wasm = wasm_path("safety_warn_action.wasm");
+        let block_wasm = wasm_path("safety_review_action.wasm");
 
         harness.register_tool("e2e-scale-app", "Scale an application", None);
 
@@ -288,13 +289,14 @@ mod engine {
                     "prompt": "Classify",
                     "connection": "local-llama"
                 },
-                "processor": {"path": warn_wasm},
+                "processor": {"path": block_wasm},
                 "on_error": "continue"
             }]
         }));
 
-        // warn() lets the request continue — timeout or non-error response
-        // both prove it wasn't blocked
+        // A non-red classification (green/yellow, or an empty result when no
+        // LLM is reachable) lets the request continue — timeout or a
+        // non-error response both prove it wasn't blocked.
         let resp = harness.call_tool(
             "e2e-scale-app",
             &json!({"replicas": "3"}),
@@ -303,7 +305,7 @@ mod engine {
 
         assert!(
             !TestHarness::was_blocked(&resp),
-            "safety-warn should NOT block, got: {resp:?}"
+            "safety-review should NOT block a non-red classification, got: {resp:?}"
         );
     }
 
@@ -317,7 +319,7 @@ mod engine {
             return;
         }
 
-        let block_wasm = wasm_path("safety_block_action.wasm");
+        let block_wasm = wasm_path("safety_review_action.wasm");
 
         harness.register_tool("e2e-clear-test", "Test clearing evaluators", None);
 
@@ -359,7 +361,7 @@ mod engine {
             return;
         }
 
-        let block_wasm = wasm_path("safety_block_action.wasm");
+        let block_wasm = wasm_path("safety_review_action.wasm");
 
         harness.register_tool("e2e-schema-test", "Test schema validation config", None);
 
@@ -402,7 +404,7 @@ mod engine {
 
         assert!(
             TestHarness::was_blocked(&resp),
-            "safety-block should block even with schema configured, got: {resp:?}"
+            "safety-review should block even with schema configured, got: {resp:?}"
         );
     }
 
@@ -416,7 +418,7 @@ mod engine {
             return;
         }
 
-        let block_wasm = wasm_path("safety_block_action.wasm");
+        let block_wasm = wasm_path("safety_review_action.wasm");
 
         harness.register_tool("e2e-ns-tool", "Namespace test tool", Some("e2e-ns"));
 
@@ -468,7 +470,7 @@ mod classification {
     }
 
     fn configure_safety_evaluator(harness: &TestHarness, namespace: &str) {
-        let block_wasm = wasm_path("safety_block_action.wasm");
+        let block_wasm = wasm_path("safety_review_action.wasm");
 
         harness.configure_evaluators(&json!({
             "evaluators": [{
