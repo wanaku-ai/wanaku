@@ -42,8 +42,8 @@ evaluators:
           reason:
             type: string
         required: ["level", "reason"]
-    # Built via: cd actions/safety-block && cargo component build --release
+    # Built via: cd actions/safety-review && cargo component build --release
     #            && cp target/wasm32-wasip1/release/*.wasm ../dist/
     processor:
-      path: "actions/dist/safety_block_action.wasm"
+      path: "actions/dist/safety_review_action.wasm"
     on_error: continue

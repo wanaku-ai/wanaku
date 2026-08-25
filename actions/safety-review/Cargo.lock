@@ -415,9 +415,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "safety-warn-action"
+name = "safety-review-action"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "wit-bindgen",
  "wit-bindgen-rt",
 ]

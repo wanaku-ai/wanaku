@@ -5,8 +5,7 @@
 //! `.wasm` files are not found. Build them with:
 //!
 //! ```sh
-//! cd actions/safety-block && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
-//! cd actions/safety-warn  && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
+//! cd actions/safety-review && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
 //! ```
 
 use std::path::PathBuf;
@@ -607,7 +606,7 @@ mod action_result {
 //
 // These tests skip automatically if the WASM files are not built.
 // Build them with:
-//   cd actions/safety-block && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
+//   cd actions/safety-review && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
 //   cd actions/safety-warn  && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
 // =====================================================================
 
@@ -642,10 +641,10 @@ mod engine {
     }
 
     #[test]
-    fn safety_block_action_always_blocks() {
-        let path = require_wasm!("safety_block_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-block", &path)
-            .expect("failed to compile safety-block WASM");
+    fn safety_action_blocks_on_red() {
+        let path = require_wasm!("safety_review_action.wasm");
+        let compiled = CompiledEvaluator::from_file("safety-review", &path)
+            .expect("failed to compile safety-review WASM");
 
         let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "dangerous"}"#);
         let result = compiled.evaluate(
@@ -657,15 +656,15 @@ mod engine {
 
         assert!(
             matches!(result, ActionResult::Block(_)),
-            "safety-block should always block, got: {result:?}"
+            "safety-review should block on red, got: {result:?}"
         );
     }
 
     #[test]
-    fn safety_warn_action_always_warns() {
-        let path = require_wasm!("safety_warn_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-warn", &path)
-            .expect("failed to compile safety-warn WASM");
+    fn safety_action_warns_on_yellow() {
+        let path = require_wasm!("safety_review_action.wasm");
+        let compiled = CompiledEvaluator::from_file("safety-review", &path)
+            .expect("failed to compile safety-review WASM");
 
         let ctx = eval_context("tools/call", r#"{"level": "yellow", "reason": "elevated"}"#);
         let result = compiled.evaluate(
@@ -677,15 +676,35 @@ mod engine {
 
         assert!(
             matches!(result, ActionResult::Warn(_)),
-            "safety-warn should always warn, got: {result:?}"
+            "safety-review should warn on yellow, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn safety_action_passes_on_green() {
+        let path = require_wasm!("safety_review_action.wasm");
+        let compiled = CompiledEvaluator::from_file("safety-review", &path)
+            .expect("failed to compile safety-review WASM");
+
+        let ctx = eval_context("tools/call", r#"{"level": "green", "reason": "safe"}"#);
+        let result = compiled.evaluate(
+            InMemoryRegistry::new(),
+            InMemoryInteractionStore::new(100),
+            ctx,
+            None,
+        );
+
+        assert!(
+            matches!(result, ActionResult::Pass),
+            "safety-review should pass on green, got: {result:?}"
         );
     }
 
     #[test]
     fn block_action_includes_llm_result_in_reason() {
-        let path = require_wasm!("safety_block_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-block", &path)
-            .expect("failed to compile safety-block WASM");
+        let path = require_wasm!("safety_review_action.wasm");
+        let compiled = CompiledEvaluator::from_file("safety-review", &path)
+            .expect("failed to compile safety-review WASM");
 
         let llm_output = r#"{"level": "red", "reason": "nuclear launch detected"}"#;
         let ctx = eval_context("tools/call", llm_output);
@@ -708,9 +727,9 @@ mod engine {
 
     #[test]
     fn evaluate_with_schema_passed_to_host() {
-        let path = require_wasm!("safety_block_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-block", &path)
-            .expect("failed to compile safety-block WASM");
+        let path = require_wasm!("safety_review_action.wasm");
+        let compiled = CompiledEvaluator::from_file("safety-review", &path)
+            .expect("failed to compile safety-review WASM");
 
         let schema_val = serde_json::json!({
             "type": "object",
@@ -738,7 +757,7 @@ mod engine {
 
     #[test]
     fn state_compiles_and_caches_wasm() {
-        let path = require_wasm!("safety_block_action.wasm");
+        let path = require_wasm!("safety_review_action.wasm");
 
         let state = EvaluatorState::new();
         let mut eval = safety_evaluator("compile-test", "tools/call", None);
