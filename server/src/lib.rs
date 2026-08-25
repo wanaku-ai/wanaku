@@ -96,6 +96,33 @@ fn inference_host_header_value(env: &wanaku_apis::config::WanakuEnv) -> String {
     }
 }
 
+fn apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+    if let Err(reason) = try_apply_inference_path_prefix(yaml, env) {
+        tracing::warn!(reason, "inference proxy path prefix override skipped");
+    }
+}
+
+/// A path component in `WANAKU_INFERENCE_UPSTREAM` (e.g. `/api` in
+/// `https://host/api`) must be prepended to every request forwarded
+/// upstream — the load-balancer only routes by host:port, so this path
+/// would otherwise be silently dropped.
+fn try_apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) -> Result<(), &'static str> {
+    let chains = yaml
+        .get_mut("filter_chains")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("no filter_chains in pipeline config")?;
+    let chain = find_named_entry_mut(chains, "name", "inference_proxy").ok_or("inference_proxy chain not found")?;
+    let filters = chain
+        .get_mut("filters")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("chain has no filters")?;
+    let path_rewrite =
+        find_named_entry_mut(filters, "filter", "path_rewrite").ok_or("no path_rewrite filter on chain")?;
+    let add_prefix = path_rewrite.get_mut("add_prefix").ok_or("path_rewrite filter has no add_prefix")?;
+    *add_prefix = Value::String(env.inference_path_prefix.clone());
+    Ok(())
+}
+
 fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
     for chain_name in ["mcp_router", "inference_proxy"] {
         apply_cors_to_chain(yaml, chain_name, &env.cors_origin);
@@ -146,6 +173,7 @@ pub fn load_config(
         Ok(mut yaml) => {
             apply_inference_config(&mut yaml, env);
             apply_inference_host_header(&mut yaml, env);
+            apply_inference_path_prefix(&mut yaml, env);
             apply_cors_config(&mut yaml, env);
             match serde_yaml::to_string(&yaml) {
                 Ok(s) => s,
@@ -216,12 +244,17 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
 mod tests {
     use wanaku_apis::config::WanakuEnv;
 
-    use super::{Value, inference_host_header_value, try_apply_inference_host_header};
+    use super::{Value, inference_host_header_value, try_apply_inference_host_header, try_apply_inference_path_prefix};
 
     fn env_with(upstream: &str, tls_sni: Option<&str>) -> WanakuEnv {
+        env_with_path(upstream, tls_sni, "")
+    }
+
+    fn env_with_path(upstream: &str, tls_sni: Option<&str>, path_prefix: &str) -> WanakuEnv {
         WanakuEnv {
             mgmt_listen: "0.0.0.0:8080".to_owned(),
             inference_upstream: upstream.to_owned(),
+            inference_path_prefix: path_prefix.to_owned(),
             inference_tls_sni: tls_sni.map(ToOwned::to_owned),
             persist: None,
             ui_path: None,
@@ -259,5 +292,18 @@ mod tests {
 
         let patched = serde_yaml::to_string(&yaml).expect("patched yaml must serialize");
         assert!(patched.contains("upstream.internal:9999"), "Host value was not patched:\n{patched}");
+    }
+
+    /// Guards against the `path_rewrite`/`add_prefix` lookup silently
+    /// drifting out of sync with `default.yaml`, which would leave a
+    /// configured upstream path (e.g. `/api`) silently dropped.
+    #[test]
+    fn try_apply_inference_path_prefix_matches_embedded_default_config() {
+        let mut yaml: Value = serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
+        let env = env_with_path("openrouter.ai:443", Some("openrouter.ai"), "/api");
+        try_apply_inference_path_prefix(&mut yaml, &env).expect("path_rewrite filter must be found in default.yaml");
+
+        let patched = serde_yaml::to_string(&yaml).expect("patched yaml must serialize");
+        assert!(patched.contains("add_prefix: /api"), "path prefix was not patched:\n{patched}");
     }
 }
