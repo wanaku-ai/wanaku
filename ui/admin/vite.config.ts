@@ -9,6 +9,8 @@ export default defineConfig({
   define: {
     VITE_API_URL:
       process.env.VITE_API_URL ?? JSON.stringify(""),
+    VITE_INFERENCE_URL:
+      process.env.VITE_INFERENCE_URL ?? JSON.stringify(""),
   },
   build: {
     outDir,

@@ -290,8 +290,7 @@ pub trait Feature: Send + Sync {
 2. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
 3. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
 4. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
-5. **Chat** (`features/chat/`) — proxies LLM chat completions to an inference backend
-6. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
+5. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
 See [Features](./features.md) for how to create your own.
 
@@ -381,7 +380,7 @@ Deploy Wanaku as a `Deployment` with:
 - **Service:** ClusterIP for MCP endpoint (port 8081)
 - **Service:** LoadBalancer for management API (port 8080)
 - **ConfigMap:** `wanaku.yaml` bootstrap config
-- **Secret:** LLM API keys (for chat features)
+- **Secret:** evaluator LLM connection credentials, mounted into `wanaku.yaml`
 
 Mount `WANAKU_PERSIST_PATH` to a `PersistentVolume` for registry persistence across restarts.
 
@@ -448,6 +447,6 @@ These are all solvable (implement traits, add filters), but they're not in scope
 ## Related Docs
 
 - [Configuration](./configuration.md) — all env vars and YAML options
-- [Features](./features.md) — enable chat, create custom features
+- [Features](./features.md) — enable evaluators, create custom features
 - [Management API](./management-api.md) — REST API reference
 - [Contributing: Admin UI](./contributing-admin-ui.md) — customize the embedded UI

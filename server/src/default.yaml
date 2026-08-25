@@ -33,6 +33,10 @@ filter_chains:
         body: '{"jsonrpc":"2.0","error":{"code":-32601,"message":"method not supported"},"id":null}'
   - name: inference_proxy
     filters:
+      - filter: cors
+        allow_origins: ["*"]
+        allow_methods: ["GET", "POST", "OPTIONS"]
+        allow_headers: ["Content-Type", "Accept", "Authorization"]
       - filter: wanaku_intercept
       - filter: router
         routes:

@@ -54,10 +54,16 @@ fn apply_inference_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv
 }
 
 fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+    for chain_name in ["mcp_router", "inference_proxy"] {
+        apply_cors_to_chain(yaml, chain_name, &env.cors_origin);
+    }
+}
+
+fn apply_cors_to_chain(yaml: &mut Value, chain_name: &str, origin: &str) {
     let Some(chains) = yaml.get_mut("filter_chains").and_then(Value::as_sequence_mut) else {
         return;
     };
-    let Some(chain) = find_named_entry_mut(chains, "name", "mcp_router") else {
+    let Some(chain) = find_named_entry_mut(chains, "name", chain_name) else {
         return;
     };
     let Some(filters) = chain.get_mut("filters").and_then(Value::as_sequence_mut) else {
@@ -68,7 +74,7 @@ fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
     };
     if let Some(origins) = cors.get_mut("allow_origins").and_then(Value::as_sequence_mut) {
         if let Some(first) = origins.first_mut() {
-            *first = Value::String(env.cors_origin.clone());
+            *first = Value::String(origin.to_owned());
         }
     }
 }

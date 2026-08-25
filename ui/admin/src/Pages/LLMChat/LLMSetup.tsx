@@ -48,6 +48,7 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, onConfigChan
           labelText="LLM Model"
           llm={selectedLlm}
           value={selectedModel}
+          apiKey={apiKey}
           onChange={(selectedModel: string) => {
             const newConfig = structuredClone(config)
             newConfig.llms[selectedLlm].selectedModel = selectedModel

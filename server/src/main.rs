@@ -155,15 +155,6 @@ fn build_features(
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
         Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()
             .with_metrics(metrics_store.clone())),
-        Box::new(wanaku_feature_chat::ChatFeature::new(
-            format!(
-                "http://127.0.0.1:{}{}",
-                wanaku_apis::config::ENV.inference_proxy_port(),
-                wanaku_apis::config::ENV.inference_path_prefix,
-            ),
-            wanaku_apis::config::ENV.inference_tls_sni.clone(),
-            wanaku_apis::config::ENV.inference_api_key.clone(),
-        )),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
     ]
 }

@@ -232,7 +232,7 @@ Read [Configuration](./configuration.md) for the complete list.
 - **[Architecture](./architecture.md)** — See how the filter pipeline, registry, and routing work together.
 - **[Configuration](./configuration.md)** — Explore the environment variables, YAML options, and configuration patterns.
 - **[Authentication](./auth.md)** — Set up oauth2-proxy with Keycloak.
-- **[Features](./features.md)** — Enable chat or create a custom feature.
+- **[Features](./features.md)** — Enable evaluators or create a custom feature.
 - **[Management API](./management-api.md)** — Browse the complete REST API reference.
 - **[FAQ](./faq.md)** — Find answers to common questions and problems.
 

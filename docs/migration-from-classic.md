@@ -37,7 +37,7 @@ Wanaku Praxis is a ground-up rewrite in Rust, built on the Praxis proxy framewor
 **What's new:**
 - Composable filter pipeline with metadata-driven routing
 - WASM-based evaluator engine for policy enforcement
-- LLM chat proxy with hot-swappable backends
+- Raw inference proxy for OpenAI-compatible chat completions
 - Interaction recording for conversation history
 - In-memory metrics collection
 - Single static binary — no JVM, no runtime dependencies
@@ -370,8 +370,6 @@ These endpoints are new in Wanaku Praxis:
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/v1/chat/llms` | List LLM backends |
-| `POST /api/v1/chat/completions` | Proxy chat completions |
 | `GET /api/v1/evaluators` | Evaluator configuration |
 | `GET /api/v1/interactions` | Recorded MCP interactions |
 | `GET /api/v1/metrics` | In-memory metrics snapshot |
@@ -601,9 +599,9 @@ WASM-based policy enforcement in the filter pipeline. Evaluators can classify to
 
 See [Evaluator Engine](./evaluator-engine.md).
 
-### Chat Proxy
+### Inference Proxy
 
-Proxies LLM chat completions to inference backends (OpenAI-compatible). Supports hot-swappable backends and model listing.
+A raw, transparent reverse proxy (port 8083) to an OpenAI-compatible backend. Forwards requests as-is, including the caller's own `Authorization` header — Wanaku does not store or inject a credential for it.
 
 ```bash
 export WANAKU_INFERENCE_UPSTREAM=http://ollama:11434

@@ -67,43 +67,6 @@ Wanaku does not validate tokens or enforce authentication. [oauth2-proxy](https:
 
 For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
 
-### Chat Feature (`features/chat/`)
-
-Proxies LLM chat completion requests to an inference backend (any OpenAI-compatible endpoint). This lets you proxy LLM chat completions alongside MCP tool actions through a single Wanaku deployment.
-
-**How it works:**
-
-The chat feature exposes these management API routes:
-
-- `GET /api/v1/chat/llms` — list available LLM backends
-- `GET /api/v1/chat/{llm}/models` — list models for an LLM
-- `POST /api/v1/chat/completions` — proxy chat completion request to the inference backend
-
-**Configuration:**
-
-The chat feature uses the core inference endpoint:
-
-```bash
-export WANAKU_INFERENCE_UPSTREAM=http://localhost:11434
-```
-
-**Example:**
-
-```bash
-# List available models
-curl http://localhost:8080/api/v1/chat/inference/models
-
-# Send chat completion request
-curl -X POST http://localhost:8080/api/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama3.1:8b",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
-```
-
-The request is proxied to `WANAKU_INFERENCE_UPSTREAM/v1/chat/completions`.
-
 ### Evaluator Feature (`features/evaluator/`)
 
 A WASM-based evaluation engine that lets you build trigger→evaluate→act pipelines. When an MCP request matches a trigger, the engine calls an LLM to classify or filter, then runs a WebAssembly action script that can block requests, filter tool lists, or set metadata.
@@ -401,7 +364,7 @@ let client = LlmClient::new("http://localhost:11434/v1", "llama3.1:8b", "")?;
 let response = client.chat("You are a concise assistant.", user_prompt).await?;
 ```
 
-See `features/chat/src/lib.rs` for a full example.
+See `features/evaluator/src/llm_op.rs` for a full example.
 
 ### Management API Response Helpers
 
