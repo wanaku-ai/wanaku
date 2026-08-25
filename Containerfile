@@ -41,7 +41,6 @@ COPY Cargo.toml Cargo.lock ./
 COPY apis/Cargo.toml apis/Cargo.toml
 COPY filters/Cargo.toml filters/Cargo.toml
 COPY server/Cargo.toml server/Cargo.toml
-COPY features/chat/Cargo.toml features/chat/Cargo.toml
 COPY features/evaluator/Cargo.toml features/evaluator/Cargo.toml
 COPY features/intercept/Cargo.toml features/intercept/Cargo.toml
 COPY features/mcp-metadata/Cargo.toml features/mcp-metadata/Cargo.toml
@@ -49,12 +48,11 @@ COPY features/metrics/Cargo.toml features/metrics/Cargo.toml
 COPY features/plugins/Cargo.toml features/plugins/Cargo.toml
 
 RUN mkdir -p apis/src filters/src server/src \
-    features/chat/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/metrics/src features/plugins/src \
+    features/evaluator/src features/intercept/src features/mcp-metadata/src features/metrics/src features/plugins/src \
     ui/admin/dist \
     && echo '//! stub' > apis/src/lib.rs \
     && echo '//! stub' > filters/src/lib.rs \
     && echo '//! stub' > server/src/lib.rs \
-    && echo '//! stub' > features/chat/src/lib.rs \
     && echo '//! stub' > features/evaluator/src/lib.rs \
     && echo '//! stub' > features/intercept/src/lib.rs \
     && echo '//! stub' > features/mcp-metadata/src/lib.rs \

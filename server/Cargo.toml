@@ -42,7 +42,6 @@ tokio = { workspace = true, features = ["rt", "sync", "time", "fs"] }
 tracing = { workspace = true }
 wanaku-apis = { workspace = true }
 wanaku-filters = { workspace = true }
-wanaku-feature-chat = { workspace = true }
 wanaku-feature-evaluator = { workspace = true }
 wanaku-feature-intercept = { workspace = true }
 wanaku-feature-mcp-metadata = { workspace = true }

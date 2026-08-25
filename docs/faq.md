@@ -50,12 +50,12 @@ curl -s http://your-upstream-mcp:8080/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-## LLM-based features (chat) do not work
+## LLM-based features (evaluators, inference proxy) do not work
 
 Verify:
 - The LLM endpoint is reachable (`curl http://localhost:11434/v1/models`)
-- Environment variables are set correctly (`WANAKU_INFERENCE_UPSTREAM`)
-- The feature is configured via the management API or `wanaku.yaml`
+- `WANAKU_INFERENCE_UPSTREAM` is set correctly for the inference proxy (port 8083)
+- Evaluator LLM connections are defined under `llm_connections` in `wanaku.yaml`
 
 ## Server crashes with "thread 'main' panicked"
 

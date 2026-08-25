@@ -9,7 +9,7 @@ import {
 } from "@carbon/react"
 import {Send, Stop} from "@carbon/icons-react"
 import {LLMChatMessage} from "./LLMChatMessage"
-import {getUrl} from "../../custom-fetch"
+import {getInferenceUrl} from "../../custom-fetch"
 import {ToolEntry} from "../../models"
 import {getErrorMessage} from "../../utils/error"
 
@@ -56,21 +56,22 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
       const userMessage = { role: "user", content: userPrompt } as const
       setDisplayedMessages([...chatHistory.current, userMessage])
       setIsRunning(true)
-      
-      const response = await fetch(getUrl("/api/v1/chat/completions"), {
+
+      const messages = [
+        ...(config.systemPrompt ? [{ role: "system", content: config.systemPrompt }] : []),
+        ...filteredChatHistory(),
+        { role: "user", content: userPrompt }
+      ]
+
+      const response = await fetch(getInferenceUrl("/v1/chat/completions"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {})
         },
         body: JSON.stringify({
-          llm: config.llm,
           model: config.model,
-          apiKey: config.apiKey,
-          systemPrompt: config.systemPrompt,
-          userPrompt: userPrompt,
-          chatHistory: filteredChatHistory(),
-          selectedTools: config.selectedTools.map(tool => tool.name),
-          extraLlmParams: config.extraLlmParams ? JSON.parse(config.extraLlmParams) : {}
+          messages
         })
       })
       if (signal.aborted) {
@@ -78,13 +79,21 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
         return
       }
       if (response.ok) {
-        const responseText = await response.text()
+        const data = await response.json()
+        const responseText = data?.choices?.[0]?.message?.content ?? ""
         const aiMessage = { role: "assistant", content: responseText } as const
         chatHistory.current.push(userMessage)
         chatHistory.current.push(aiMessage)
         setDisplayedMessages(chatHistory.current)
       } else {
-        const errorMessage = { role: "error", content: `Error: ${response.status} ${response.statusText}` } as const
+        let errorText = `${response.status} ${response.statusText}`
+        try {
+          const data = await response.json()
+          errorText = data?.error?.message ?? errorText
+        } catch {
+          // response body was not JSON, fall back to status text
+        }
+        const errorMessage = { role: "error", content: `Error: ${errorText}` } as const
         chatHistory.current.push(errorMessage)
         setDisplayedMessages(chatHistory.current)
       }

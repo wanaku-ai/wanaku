@@ -15,13 +15,12 @@ These control core server behavior:
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
-| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Inference backend for chat feature (OpenAI-compatible) |
+| `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Upstream for the inference-proxy pipeline (port 8083), an OpenAI-compatible passthrough. Clients call this port directly and supply their own bearer token. |
 | `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Set to `"none"` to disable persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json` |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
-| `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, and CORS preflight) |
+| `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, inference proxy, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
-| `WANAKU_INFERENCE_API_KEY` | _(unset = no auth)_ | Bearer token API key for the inference upstream. Empty means no auth. |
 | `WANAKU_FORWARD_HEADERS` | _(unset = none)_ | Comma-separated list of HTTP header names to forward from incoming MCP requests to downstream tool invocations (e.g., `Authorization,DPoP`). Per-tool overrides via the `wanaku.forward_headers` label. |
 
 **Example:**
@@ -148,7 +147,7 @@ When disabled, headers are forwarded only as raw HTTP headers on the downstream 
 
 ## Feature-Specific Environment Variables
 
-Features (mcp-metadata, chat, etc.) define their own environment variables.
+Features (mcp-metadata, evaluator, etc.) define their own environment variables.
 
 ### Authentication with oauth2-proxy
 
@@ -170,21 +169,25 @@ The intercept feature records request/response interactions for conversation tra
 |---|---|---|
 | `WANAKU_INTERACTION_CAPACITY` | `1000` | Maximum number of interactions kept in the in-memory store |
 
-### Chat Feature
+### Inference Proxy
 
-The chat feature proxies LLM chat completions to an inference backend (any OpenAI-compatible endpoint).
-
-The chat feature uses the core `WANAKU_INFERENCE_UPSTREAM` environment variable. It does not define a separate variable.
+The inference proxy is a raw, transparent reverse proxy (port 8083) to an
+OpenAI-compatible backend. It forwards requests as-is, including the caller's
+own `Authorization` header — Wanaku does not inject or store a credential for
+it. Point it at a backend with `WANAKU_INFERENCE_UPSTREAM`:
 
 ```bash
 export WANAKU_INFERENCE_UPSTREAM=127.0.0.1:11434
 ```
 
-The chat feature exposes these management API routes:
+The Admin UI's LLM Chat page calls this port directly with a key you supply in
+the browser. See [Management API](./management-api.md) for the endpoint shape.
 
-- `GET /api/v1/chat/llms` — list available LLMs
-- `GET /api/v1/chat/{llm}/models` — list models for an LLM
-- `POST /api/v1/chat/completions` — proxy chat completion request
+Because the proxy forwards the `Origin` header unchanged, the backend's own
+origin policy still applies. Ollama, for example, rejects browser-origin
+requests by default — set `OLLAMA_ORIGINS` on the Ollama side to allow the
+Admin UI's origin. Wanaku's own CORS filter on port 8083 controls only the
+response back to the browser; it does not affect what the backend accepts.
 
 ## Pipeline Config File (praxis.yaml)
 
@@ -456,6 +459,6 @@ The server does not reject unknown environment variable names. A misspelled name
 
 - [Architecture](./architecture.md) — understand the filter pipeline and registry
 - [Authentication](./auth.md) — oauth2-proxy setup and Keycloak configuration
-- [Features](./features.md) — configure chat and custom features
+- [Features](./features.md) — enable evaluators and create custom features
 - [Management API](./management-api.md) — API routes that respect configuration
 - [FAQ](./faq.md) — troubleshooting common issues

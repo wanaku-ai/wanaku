@@ -1,42 +1,44 @@
 import React, {useEffect, useState} from "react"
 import {ComboBox} from "@carbon/react"
-import {getUrl} from "../../custom-fetch"
+import {getInferenceUrl} from "../../custom-fetch"
 
 
 interface LLMModelComboBoxProps {
   llm?: string
   value?: string
   labelText?: string
+  apiKey?: string
   onChange: (llmModel: string) => void
 }
 
-export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, onChange, labelText }) => {
-  
+export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, onChange, labelText, apiKey }) => {
+
   const [modelCatalog, setModelCatalog] = useState<{ [llm: string]: string[] }>({})
-  
-  
+
+
   useEffect(() => {
     (async () => {
-      const response = await fetch(getUrl("/api/v1/chat/llms"))
-      if (response.ok) {
-        const llms: string[] = await response.json()
-        const modelCatalog = {}
-        for (const llm of llms) {
-          const response = await fetch(getUrl(`/api/v1/chat/${llm}/models`))
-          if (response.ok) {
-            const models: string[] = await response.json()
-            modelCatalog[llm] = models
-          }
+      if (!llm || !apiKey) {
+        return
+      }
+      try {
+        const response = await fetch(getInferenceUrl("/v1/models"), {
+          headers: { Authorization: `Bearer ${apiKey}` }
+        })
+        if (response.ok) {
+          const data: { data: { id: string }[] } = await response.json()
+          setModelCatalog({ [llm]: data.data.map(m => m.id) })
         }
-        setModelCatalog(modelCatalog)
+      } catch {
+        // ignore, leave catalog empty for this llm
       }
     })()
-  }, [setModelCatalog])
-  
+  }, [llm, apiKey])
+
   function createItems(): string[] {
     return (llm && modelCatalog[llm]) ? modelCatalog[llm] : []
   }
-  
+
   return (
     <ComboBox
       id="llm-model"

@@ -18,7 +18,7 @@ Wanaku shares the same MCP protocol and management API as classic Wanaku.
 - **Admin UI** — React-based web interface embedded in the binary
 - **Namespace isolation** — different tools visible to different namespaces per team, tenant, or environment
 - **Tool discovery** — auto-discover tools from upstream MCP servers; integration developers publish Camel routes as tools
-- **Feature system** — pluggable filters for evaluation, LLM chat, interaction tracking
+- **Feature system** — pluggable filters for evaluation, interaction tracking
 - **File persistence** — registry snapshots enabled by default to preserve data across restarts
 
 All in a single binary with no runtime dependencies (except libc).
@@ -37,7 +37,7 @@ All in a single binary with no runtime dependencies (except libc).
 ### Understanding the System
 
 - **[Architecture](./architecture.md)** — filter pipeline, registry, tool routing, deployment patterns
-- **[Features](./features.md)** — LLM chat and how to create custom features
+- **[Features](./features.md)** — evaluators and how to create custom features
 
 ### Contributing
 

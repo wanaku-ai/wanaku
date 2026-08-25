@@ -128,29 +128,27 @@ Use this body to bind a namespace:
 
 See [Evaluator Engine](evaluator-engine.md) for the evaluator configuration schema.
 
-### Chat
+### Inference Proxy (not part of this API)
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/v1/chat/llms` | List configured LLM backends. |
-| `GET` | `/api/v1/chat/{llm}/models` | List models from an LLM backend. |
-| `POST` | `/api/v1/chat/completions` | Send a chat-completion request to the configured inference upstream. |
+Chat completions do not go through the management API. Wanaku exposes a
+separate, raw reverse-proxy listener on port 8083 that forwards requests
+as-is to whatever OpenAI-compatible backend `WANAKU_INFERENCE_UPSTREAM`
+points at — including the caller's own `Authorization` header. The Admin
+UI's LLM Chat page calls this port directly with a key you supply in the
+browser:
 
-The completion request uses the OpenAI chat-completions shape:
-
-```json
-{
-  "model": "llama3.1:8b",
-  "messages": [
-    {
-      "role": "user",
-      "content": "Hello!"
-    }
-  ]
-}
+```bash
+curl -X POST http://localhost:8083/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-key>" \
+  -d '{
+    "model": "llama3.1:8b",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
 ```
 
-Wanaku sends this request to `WANAKU_INFERENCE_UPSTREAM/v1/chat/completions`.
+See [Configuration](configuration.md#inference-proxy) for how to set the
+upstream.
 
 ### OAuth Metadata
 
@@ -201,7 +199,7 @@ Set a specific origin in production:
 export WANAKU_CORS_ORIGIN=https://app.example.com
 ```
 
-The MCP endpoint on port 8081 uses the pipeline CORS filter.
+The MCP endpoint (port 8081) and the inference proxy (port 8083) each use their own pipeline CORS filter, set from the same `WANAKU_CORS_ORIGIN` value.
 
 ## Related Docs
 
