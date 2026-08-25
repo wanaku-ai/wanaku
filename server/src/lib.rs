@@ -60,23 +60,33 @@ fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
 }
 
 fn apply_cors_to_chain(yaml: &mut Value, chain_name: &str, origin: &str) {
-    let Some(chains) = yaml.get_mut("filter_chains").and_then(Value::as_sequence_mut) else {
-        return;
-    };
-    let Some(chain) = find_named_entry_mut(chains, "name", chain_name) else {
-        return;
-    };
-    let Some(filters) = chain.get_mut("filters").and_then(Value::as_sequence_mut) else {
-        return;
-    };
-    let Some(cors) = find_named_entry_mut(filters, "filter", "cors") else {
-        return;
-    };
-    if let Some(origins) = cors.get_mut("allow_origins").and_then(Value::as_sequence_mut) {
-        if let Some(first) = origins.first_mut() {
-            *first = Value::String(origin.to_owned());
-        }
+    if let Err(reason) = try_apply_cors_to_chain(yaml, chain_name, origin) {
+        tracing::warn!(chain = chain_name, reason, "WANAKU_CORS_ORIGIN override skipped");
     }
+}
+
+fn try_apply_cors_to_chain(
+    yaml: &mut Value,
+    chain_name: &str,
+    origin: &str,
+) -> Result<(), &'static str> {
+    let chains = yaml
+        .get_mut("filter_chains")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("no filter_chains in pipeline config")?;
+    let chain = find_named_entry_mut(chains, "name", chain_name).ok_or("chain not found")?;
+    let filters = chain
+        .get_mut("filters")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("chain has no filters")?;
+    let cors = find_named_entry_mut(filters, "filter", "cors").ok_or("no cors filter on chain")?;
+    let origins = cors
+        .get_mut("allow_origins")
+        .and_then(Value::as_sequence_mut)
+        .ok_or("cors filter has no allow_origins")?;
+    let first = origins.first_mut().ok_or("cors filter's allow_origins is empty")?;
+    *first = Value::String(origin.to_owned());
+    Ok(())
 }
 
 /// Load configuration, falling back to the built-in default.
