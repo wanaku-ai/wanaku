@@ -10,7 +10,7 @@ use praxis_filter::{FilterRegistry, PipelineExtension};
 pub struct HttpContext<'a> {
     /// HTTP method (`"GET"`, `"POST"`, …).
     pub method: &'a str,
-    /// Request path, e.g. `"/api/v1/chat/completions"`.
+    /// Request path, e.g. `"/api/v1/evaluators"`.
     pub path: &'a str,
     /// Raw query string, if present.
     pub query: Option<&'a str>,

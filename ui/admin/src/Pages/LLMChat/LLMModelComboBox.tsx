@@ -17,22 +17,36 @@ export const LLMModelComboBox: React.FC<LLMModelComboBoxProps> = ({ llm, value, 
 
 
   useEffect(() => {
-    (async () => {
-      if (!llm || !apiKey) {
-        return
-      }
-      try {
-        const response = await fetch(getInferenceUrl("/v1/models"), {
-          headers: { Authorization: `Bearer ${apiKey}` }
-        })
-        if (response.ok) {
-          const data: { data: { id: string }[] } = await response.json()
-          setModelCatalog({ [llm]: data.data.map(m => m.id) })
+    if (!llm || !apiKey) {
+      return
+    }
+
+    const controller = new AbortController()
+
+    // Debounced: apiKey changes on every keystroke in the password input,
+    // and firing a request per character would spam the backend with
+    // partial/invalid tokens.
+    const timeoutId = setTimeout(() => {
+      (async () => {
+        try {
+          const response = await fetch(getInferenceUrl("/v1/models"), {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            signal: controller.signal
+          })
+          if (response.ok) {
+            const data: { data: { id: string }[] } = await response.json()
+            setModelCatalog({ [llm]: data.data.map(m => m.id) })
+          }
+        } catch {
+          // ignore (network error or aborted), leave catalog empty for this llm
         }
-      } catch {
-        // ignore, leave catalog empty for this llm
-      }
-    })()
+      })()
+    }, 500)
+
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [llm, apiKey])
 
   function createItems(): string[] {
