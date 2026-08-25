@@ -189,6 +189,15 @@ requests by default — set `OLLAMA_ORIGINS` on the Ollama side to allow the
 Admin UI's origin. Wanaku's own CORS filter on port 8083 controls only the
 response back to the browser; it does not affect what the backend accepts.
 
+Wanaku also rewrites the outgoing `Host` header to match
+`WANAKU_INFERENCE_UPSTREAM`, instead of forwarding the browser's original
+Host. Backends that route by hostname (for example, a TLS-terminating
+ingress in front of a hosted LLM API) reject a mismatched Host. **Note:**
+like `WANAKU_CORS_ORIGIN`, this override applies only to the embedded
+default pipeline config. A custom `--pipeline-config` must define its own
+`headers` filter with `request_set` on the `inference_proxy` chain to get
+this behavior.
+
 ## Pipeline Config File (praxis.yaml)
 
 The pipeline configuration defines listeners, filter chains, and filter-specific settings. This YAML file uses the native Praxis configuration format.

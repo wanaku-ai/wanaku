@@ -133,16 +133,29 @@ fn parse_upstream(raw: &str) -> ParsedUpstream {
         None => host_and_rest,
     };
 
-    let hostname = authority.split(':').next().unwrap_or(authority);
-    let host_port = if authority.contains(':') {
-        authority.to_owned()
-    } else {
-        format!("{authority}:{default_port}")
+    let (hostname, port) = split_authority(authority);
+    let host_port = match port {
+        Some(_) => authority.to_owned(),
+        None => format!("{authority}:{default_port}"),
     };
 
     ParsedUpstream {
         host_port,
         tls_sni: if is_tls { Some(hostname.to_owned()) } else { None },
+    }
+}
+
+/// Splits an authority into a hostname and optional port, honoring IPv6
+/// bracket notation (`[::1]:8443`) where a naive split on the first or
+/// last `:` breaks.
+fn split_authority(authority: &str) -> (&str, Option<&str>) {
+    if let Some(bracket_end) = authority.find(']') {
+        let host = &authority[..=bracket_end];
+        return (host, authority[bracket_end + 1..].strip_prefix(':'));
+    }
+    match authority.rsplit_once(':') {
+        Some((host, port)) => (host, Some(port)),
+        None => (authority, None),
     }
 }
 
@@ -190,5 +203,19 @@ mod tests {
         let p = parse_upstream("http://example.com");
         assert_eq!(p.host_port, "example.com:80");
         assert!(p.tls_sni.is_none());
+    }
+
+    #[test]
+    fn https_ipv6_with_port() {
+        let p = parse_upstream("https://[::1]:8443/v1");
+        assert_eq!(p.host_port, "[::1]:8443");
+        assert_eq!(p.tls_sni.as_deref(), Some("[::1]"));
+    }
+
+    #[test]
+    fn https_ipv6_no_port() {
+        let p = parse_upstream("https://[::1]/v1");
+        assert_eq!(p.host_port, "[::1]:443");
+        assert_eq!(p.tls_sni.as_deref(), Some("[::1]"));
     }
 }
