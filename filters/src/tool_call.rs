@@ -136,7 +136,7 @@ impl ToolCallFilter {
                 );
             }
             return self
-                .handle_forwarded_call(&tool, &tool_name, &parsed, forward_headers)
+                .handle_forwarded_call(&tool, &tool_name, &parsed, forward_headers, &conversation_id)
                 .await;
         }
 
@@ -155,6 +155,7 @@ impl ToolCallFilter {
         tool_name: &str,
         parsed: &ParsedBody,
         forward_headers: HashMap<HeaderName, HeaderValue>,
+        tracking_id: &str,
     ) -> Result<FilterAction, FilterError> {
         trace!(
             tool = %tool_name,
@@ -170,6 +171,8 @@ impl ToolCallFilter {
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
         );
+
+        tracing::debug!("Invoking tool {tool_name} with a tracking id of {tracking_id}");
 
         match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments, forward_headers)
             .await
