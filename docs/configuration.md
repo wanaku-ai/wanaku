@@ -198,6 +198,13 @@ default pipeline config. A custom `--pipeline-config` must define its own
 `headers` filter with `request_set` on the `inference_proxy` chain to get
 this behavior.
 
+`WANAKU_INFERENCE_UPSTREAM` may include a path, for example
+`https://openrouter.ai/api`. Wanaku prepends that path to every request it
+forwards — a request to `/v1/chat/completions` on port 8083 reaches
+`https://openrouter.ai/api/v1/chat/completions` upstream. The same
+custom-`--pipeline-config` caveat applies: this requires a `path_rewrite`
+filter with `add_prefix` on the `inference_proxy` chain.
+
 ## Pipeline Config File (praxis.yaml)
 
 The pipeline configuration defines listeners, filter chains, and filter-specific settings. This YAML file uses the native Praxis configuration format.

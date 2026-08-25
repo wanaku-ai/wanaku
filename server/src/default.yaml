@@ -42,6 +42,8 @@ filter_chains:
         request_set:
           - name: Host
             value: "127.0.0.1:11434"
+      - filter: path_rewrite
+        add_prefix: ""
       - filter: router
         routes:
           - path_prefix: "/"
