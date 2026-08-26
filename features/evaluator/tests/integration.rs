@@ -212,6 +212,7 @@ mod trigger {
 
 mod state {
     use super::*;
+    use wanaku_apis::metrics::MetricsStore;
 
     #[test]
     fn load_and_list_evaluators() {
@@ -355,6 +356,72 @@ mod state {
         assert_eq!(listed[0].name, "gate");
         assert_eq!(revision.evaluators[0].name, listed[0].name);
         assert!(state.get_compiled(&path).is_some());
+    }
+
+    #[test]
+    fn rejected_config_does_not_change_active_state_gauges() {
+        // A configuration that fails to compile must not touch the active-state
+        // gauges: the running modules are unchanged, so the metrics must keep
+        // their last successful values. Runs without a WASM artifact
+        // (compilation fails by design), so it always executes in CI.
+        let store = MetricsStore::new();
+        store.set_evaluators_loaded(3);
+        store.set_wasm_compiled(3);
+
+        let state = EvaluatorState::new().with_metrics(store.clone());
+        state.load_llm_connections(vec![test_connection()]).unwrap();
+
+        // The default processor path does not resolve, so compilation fails and
+        // the activation is rejected.
+        let bad = safety_evaluator("gate", "tools/call", None);
+        let result = state.try_activate(vec![bad], RevisionOrigin::Api, None, None);
+        assert!(result.is_err(), "activation with an uncompilable module must be rejected");
+
+        let snap = store.snapshot();
+        assert_eq!(snap.gauges.wasm_compiled, 3, "rejected config must not change wasm_compiled");
+        assert_eq!(
+            snap.gauges.evaluators_loaded, 3,
+            "rejected config must not change evaluators_loaded"
+        );
+    }
+
+    #[test]
+    fn cas_conflict_does_not_change_active_state_gauges() {
+        let path = wasm_path("safety_review_action.wasm");
+        if !path.exists() {
+            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            return;
+        }
+
+        let store = MetricsStore::new();
+        let state = EvaluatorState::new().with_metrics(store.clone());
+        state.load_llm_connections(vec![test_connection()]).unwrap();
+
+        let mut first = safety_evaluator("gate", "tools/call", None);
+        first.processor.path = path.clone();
+        let active = state
+            .try_activate(vec![first], RevisionOrigin::Api, None, None)
+            .expect("first activation should succeed");
+
+        let baseline = store.snapshot();
+        assert_eq!(baseline.gauges.wasm_compiled, 1);
+        assert_eq!(baseline.gauges.evaluators_loaded, 1);
+
+        // A second activation carrying a stale expected_revision conflicts and
+        // never installs, so the gauges must keep the first activation's values
+        // even though the conflicting candidate compiled successfully.
+        let mut second = safety_evaluator("gate-2", "tools/call", None);
+        second.processor.path = path.clone();
+        let stale = active.metadata.id + 999;
+        let result = state.try_activate(vec![second], RevisionOrigin::Api, None, Some(stale));
+        assert!(result.is_err(), "stale expected_revision must conflict");
+
+        let snap = store.snapshot();
+        assert_eq!(snap.gauges.wasm_compiled, 1, "conflict must not change wasm_compiled");
+        assert_eq!(
+            snap.gauges.evaluators_loaded, 1,
+            "conflict must not change evaluators_loaded"
+        );
     }
 
     #[test]
