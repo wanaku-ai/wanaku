@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
 use wanaku_apis::metrics::MetricsStore;
 
@@ -11,31 +11,47 @@ use crate::revision::{
 };
 use crate::schema::CompiledSchema;
 
+/// Immutable bundle of the runtime state derived from one evaluator
+/// configuration: the evaluator definitions, the compiled WASM modules, and
+/// the compiled result schemas.
+///
+/// All three are replaced together as a single `Arc` swap so that readers
+/// always observe a self-consistent configuration. A concurrent activation can
+/// never expose evaluator definitions from one revision alongside compiled
+/// modules or schemas from another.
+#[derive(Default)]
+struct ActiveSnapshot {
+    evaluators: Vec<EvaluatorDef>,
+    compiled: HashMap<PathBuf, Arc<CompiledEvaluator>>,
+    schemas: HashMap<String, Arc<CompiledSchema>>,
+}
+
 /// Shared state for the evaluator engine.
-/// Holds loaded evaluator definitions, compiled WASM modules,
-/// namespace-to-conversation bindings, and the revision store.
+/// Holds the active configuration snapshot, namespace-to-conversation
+/// bindings, LLM connections, and the revision store.
 #[derive(Clone)]
 pub struct EvaluatorState {
-    evaluators: Arc<RwLock<Vec<EvaluatorDef>>>,
-    compiled: Arc<RwLock<HashMap<PathBuf, Arc<CompiledEvaluator>>>>,
-    schemas: Arc<RwLock<HashMap<String, Arc<CompiledSchema>>>>,
+    active: Arc<RwLock<Arc<ActiveSnapshot>>>,
     bindings: Arc<RwLock<HashMap<String, String>>>,
     connections: Arc<RwLock<HashMap<String, LlmConnection>>>,
     metrics: Option<MetricsStore>,
     revisions: RevisionStore,
+    /// Serializes revision commit and snapshot installation so that revision
+    /// metadata and the active snapshot can never describe different
+    /// configurations under concurrent activations.
+    activation: Arc<Mutex<()>>,
 }
 
 impl EvaluatorState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            evaluators: Arc::new(RwLock::new(Vec::new())),
-            compiled: Arc::new(RwLock::new(HashMap::new())),
-            schemas: Arc::new(RwLock::new(HashMap::new())),
+            active: Arc::new(RwLock::new(Arc::new(ActiveSnapshot::default()))),
             bindings: Arc::new(RwLock::new(HashMap::new())),
             connections: Arc::new(RwLock::new(HashMap::new())),
             metrics: None,
             revisions: RevisionStore::new(),
+            activation: Arc::new(Mutex::new(())),
         }
     }
 
@@ -109,19 +125,20 @@ impl EvaluatorState {
     }
 
     pub fn load_evaluators(&self, defs: Vec<EvaluatorDef>) {
-        self.compile_modules(&defs);
-        self.compile_schemas(&defs);
-        let count = defs.len() as u64;
-        if let Ok(mut guard) = self.evaluators.write() {
-            *guard = defs;
-        }
-        if let Some(ref store) = self.metrics {
-            store.set_evaluators_loaded(count);
-        }
+        let compiled = compile_wasm_map(&defs);
+        let schemas = compile_schema_map(&defs);
+        let _activation = self.lock_activation();
+        self.install_snapshot(defs, compiled, schemas);
     }
 
     /// Validate, compile, and atomically activate a new evaluator
     /// configuration as a versioned revision.
+    ///
+    /// Validation and compilation run without holding the activation lock
+    /// because they touch no shared state. The revision commit and the
+    /// snapshot installation run under the activation lock as a single
+    /// critical section, so revision metadata and the active snapshot are
+    /// always replaced together.
     pub fn try_activate(
         &self,
         defs: Vec<EvaluatorDef>,
@@ -133,10 +150,13 @@ impl EvaluatorState {
         validate_triggers(&defs)?;
         self.validate_llm_connections(&defs)?;
 
-        let (compiled_modules, wasm_errors) = self.try_compile_modules(&defs);
+        let (compiled_modules, wasm_errors) = compile_wasm_map_with_errors(&defs);
         let (compiled_schemas, schema_errors) = try_compile_schemas(&defs);
 
         let all_errors = collect_errors(wasm_errors, schema_errors);
+
+        let _activation = self.lock_activation();
+
         if !all_errors.is_empty() {
             return self.reject_config(&RecordRevisionParams {
                 evaluators: defs,
@@ -157,7 +177,7 @@ impl EvaluatorState {
             failure_reason: None,
         })?;
 
-        self.swap_active_state(defs, compiled_modules, compiled_schemas);
+        self.install_snapshot(defs, compiled_modules, compiled_schemas);
         Ok(revision)
     }
 
@@ -192,55 +212,70 @@ impl EvaluatorState {
         Err(RevisionError::ValidationFailed(failure_reason))
     }
 
-    fn swap_active_state(
+    /// Acquire the activation lock, recovering from poisoning. The critical
+    /// section it guards performs no operation that can panic, so a poisoned
+    /// lock indicates an unrelated panic elsewhere; the guarded data is `()`
+    /// and remains valid, so recovery is safe.
+    fn lock_activation(&self) -> MutexGuard<'_, ()> {
+        match self.activation.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
+
+    /// Return the current active snapshot. Cloning the `Arc` is cheap and lets
+    /// readers work against a stable, self-consistent configuration even if an
+    /// activation swaps in a new snapshot concurrently.
+    fn snapshot(&self) -> Arc<ActiveSnapshot> {
+        self.active
+            .read()
+            .map(|guard| Arc::clone(&guard))
+            .unwrap_or_default()
+    }
+
+    /// Bundle the config-derived state into an immutable snapshot and replace
+    /// the active one in a single `Arc` swap. Callers must hold the activation
+    /// lock so the snapshot swap stays paired with its revision commit.
+    fn install_snapshot(
         &self,
-        defs: Vec<EvaluatorDef>,
-        compiled_modules: HashMap<PathBuf, Arc<CompiledEvaluator>>,
-        compiled_schemas: HashMap<String, Arc<CompiledSchema>>,
+        evaluators: Vec<EvaluatorDef>,
+        compiled: HashMap<PathBuf, Arc<CompiledEvaluator>>,
+        schemas: HashMap<String, Arc<CompiledSchema>>,
     ) {
-        let count = defs.len() as u64;
-        if let Ok(mut guard) = self.compiled.write() {
-            *guard = compiled_modules;
-        }
-        if let Ok(mut guard) = self.schemas.write() {
-            *guard = compiled_schemas;
-        }
-        if let Ok(mut guard) = self.evaluators.write() {
-            *guard = defs;
+        let evaluator_count = evaluators.len() as u64;
+        let wasm_count = compiled.len() as u64;
+        let snapshot = Arc::new(ActiveSnapshot {
+            evaluators,
+            compiled,
+            schemas,
+        });
+        if let Ok(mut guard) = self.active.write() {
+            *guard = snapshot;
         }
         if let Some(ref store) = self.metrics {
-            store.set_evaluators_loaded(count);
+            store.set_evaluators_loaded(evaluator_count);
+            store.set_wasm_compiled(wasm_count);
         }
     }
 
     pub fn list_evaluators(&self) -> Vec<EvaluatorDef> {
-        self.evaluators
-            .read()
-            .map(|guard| guard.clone())
-            .unwrap_or_default()
+        self.snapshot().evaluators.clone()
     }
 
     pub fn find_matching(&self, method: &str, namespace: &str) -> Option<EvaluatorDef> {
-        self.evaluators.read().ok().and_then(|guard| {
-            guard
-                .iter()
-                .find(|e| e.trigger.matches(method, namespace))
-                .cloned()
-        })
+        self.snapshot()
+            .evaluators
+            .iter()
+            .find(|e| e.trigger.matches(method, namespace))
+            .cloned()
     }
 
     pub fn get_compiled_schema(&self, evaluator_name: &str) -> Option<Arc<CompiledSchema>> {
-        self.schemas
-            .read()
-            .ok()
-            .and_then(|guard| guard.get(evaluator_name).cloned())
+        self.snapshot().schemas.get(evaluator_name).cloned()
     }
 
     pub fn get_compiled(&self, path: &Path) -> Option<Arc<CompiledEvaluator>> {
-        self.compiled
-            .read()
-            .ok()
-            .and_then(|guard| guard.get(path).cloned())
+        self.snapshot().compiled.get(path).cloned()
     }
 
     pub fn bind_namespace(&self, namespace: &str, conversation_id: &str) {
@@ -275,48 +310,6 @@ impl EvaluatorState {
             .unwrap_or_default()
     }
 
-    fn compile_modules(&self, defs: &[EvaluatorDef]) {
-        let compiled = compile_wasm_map(defs);
-        let count = compiled.len() as u64;
-        if let Ok(mut guard) = self.compiled.write() {
-            *guard = compiled;
-        }
-        if let Some(ref store) = self.metrics {
-            store.set_wasm_compiled(count);
-        }
-    }
-
-    fn compile_schemas(&self, defs: &[EvaluatorDef]) {
-        let mut schemas = HashMap::new();
-
-        for def in defs {
-            if let Some(ref schema_val) = def.llm.result_schema
-                && let Some(compiled) = CompiledSchema::compile(schema_val)
-            {
-                tracing::info!(
-                    evaluator = %def.name,
-                    "compiled result schema"
-                );
-                schemas.insert(def.name.clone(), Arc::new(compiled));
-            }
-        }
-
-        if let Ok(mut guard) = self.schemas.write() {
-            *guard = schemas;
-        }
-    }
-
-    fn try_compile_modules(
-        &self,
-        defs: &[EvaluatorDef],
-    ) -> (HashMap<PathBuf, Arc<CompiledEvaluator>>, Vec<String>) {
-        let (compiled, errors) = compile_wasm_map_with_errors(defs);
-        if let Some(ref store) = self.metrics {
-            store.set_wasm_compiled(compiled.len() as u64);
-        }
-        (compiled, errors)
-    }
-
     /// Validate that every evaluator's `llm.connection` names a connection
     /// loaded from config. Connections are immutable after startup, so once
     /// an evaluator is active this can never later become dangling.
@@ -339,6 +332,14 @@ impl EvaluatorState {
 fn compile_wasm_map(defs: &[EvaluatorDef]) -> HashMap<PathBuf, Arc<CompiledEvaluator>> {
     let (compiled, _) = compile_wasm_map_with_errors(defs);
     compiled
+}
+
+/// Best-effort compilation of all result schemas, silently dropping any that
+/// fail. Used by the startup load path, which tolerates partial configuration;
+/// `try_activate` uses [`try_compile_schemas`] instead to surface errors.
+fn compile_schema_map(defs: &[EvaluatorDef]) -> HashMap<String, Arc<CompiledSchema>> {
+    let (schemas, _) = try_compile_schemas(defs);
+    schemas
 }
 
 fn compile_wasm_map_with_errors(
