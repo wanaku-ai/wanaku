@@ -16,14 +16,16 @@ test.describe('Evaluators', () => {
     expect(title).toBe('Evaluators');
   });
 
-  test('LLM connection select is disabled with no connections configured', async () => {
+  test('LLM connection select is enabled and populated from configured connections', async () => {
+    // The e2e server loads the repository wanaku.yaml, which configures
+    // llm_connections. The select must therefore be enabled and list them.
     await evaluators.goto();
     await evaluators.clickAddEvaluator();
 
     const isDisabled = await evaluators.isConnectionSelectDisabled();
-    expect(isDisabled).toBeTruthy();
+    expect(isDisabled).toBeFalsy();
 
-    const hasHelperText = await evaluators.modalHasText('llm_connections');
-    expect(hasHelperText).toBeTruthy();
+    const options = await evaluators.connectionOptionValues();
+    expect(options).toContain('local-llama');
   });
 });
