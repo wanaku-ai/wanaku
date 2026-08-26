@@ -118,7 +118,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wanaku-apis = { workspace = true }
+wanaku-types = { workspace = true }
+wanaku-apis = { workspace = true }  # required by wanaku-filters' body_filter_boilerplate! macro
 wanaku-filters = { workspace = true }
 praxis-filter = { workspace = true }
 async-trait = { workspace = true }
@@ -137,7 +138,7 @@ workspace = true
 Create `src/lib.rs`:
 
 ```rust
-use wanaku_apis::feature::{Feature, HttpContext};
+use wanaku_types::feature::{Feature, HttpContext};
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use http::Response;
 use std::sync::Arc;
@@ -194,7 +195,7 @@ impl Feature for ToolStatsFeature {
         if ctx.method == "GET" && ctx.path == "/api/v1/stats/tools" {
             let count = self.counter.load(Ordering::Relaxed);
             let body = serde_json::json!({"tool_calls": count});
-            Some(wanaku_apis::http_response::json_ok(&body))
+            Some(wanaku_types::http_response::json_ok(&body))
         } else {
             None
         }
@@ -368,11 +369,11 @@ See `features/evaluator/src/llm_op.rs` for a full example.
 
 ### Management API Response Helpers
 
-Use the response helpers from `wanaku_apis`:
+Use the response helpers from `wanaku_types`:
 
 ```rust
 use http::StatusCode;
-use wanaku_apis::http_response::{json_err, json_ok};
+use wanaku_types::http_response::{json_err, json_ok};
 
 let response = json_ok(&serde_json::json!({"status": "ready"}));
 let error = json_err(StatusCode::BAD_REQUEST, "invalid configuration");

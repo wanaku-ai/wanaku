@@ -1,6 +1,6 @@
 use http::{Response, StatusCode};
 use tracing::info;
-use wanaku_apis::http_response::{json_err, json_ok};
+use wanaku_types::http_response::{json_err, json_ok};
 
 use crate::config::EvaluatorsConfig;
 use crate::revision::{RevisionError, RevisionOrigin};

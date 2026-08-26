@@ -8,8 +8,8 @@ use wasmtime_wasi::{WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::schema::CompiledSchema;
 
-use wanaku_apis::interactions::InMemoryInteractionStore;
 use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::interactions::InMemoryInteractionStore;
 
 use crate::action::ActionResult;
 use crate::host::{self, EvaluatorAction, HostState};

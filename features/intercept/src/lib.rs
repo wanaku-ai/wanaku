@@ -8,8 +8,8 @@ use std::sync::RwLock;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::{Feature, HttpContext};
-use wanaku_apis::interactions::InMemoryInteractionStore;
+use wanaku_types::feature::{Feature, HttpContext};
+use wanaku_types::interactions::InMemoryInteractionStore;
 
 use crate::routes::{
     InteractionRoute, handle_interaction_clear, handle_interaction_list,
@@ -80,7 +80,7 @@ impl Feature for InterceptFeature {
             Ok(guard) => guard.clone(),
             Err(e) => {
                 tracing::warn!(error = %e, "interaction store lock poisoned");
-                return Some(wanaku_apis::http_response::json_err(
+                return Some(wanaku_types::http_response::json_err(
                     http::StatusCode::INTERNAL_SERVER_ERROR,
                     "interaction store unavailable",
                 ));

@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::{Arc, RwLock};
 
 use serde::{Deserialize, Serialize};
-use wanaku_apis::time::iso_now;
+use wanaku_types::time::iso_now;
 
 use crate::config::EvaluatorDef;
 use crate::revision_persistence::{RevisionPersistence, RevisionsSnapshot};
@@ -756,7 +756,7 @@ mod tests {
 
     use crate::revision_persistence::{RevisionPersistence, RevisionsSnapshot};
     use std::sync::Mutex;
-    use wanaku_apis::persistence::PersistenceError;
+    use wanaku_types::persistence::PersistenceError;
 
     /// In-memory persistence backend for tests: emulates a durable store that
     /// survives a "restart" (a new `RevisionStore` reading the same backend).

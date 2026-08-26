@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use http::StatusCode;
 use praxis_filter::Rejection;
-use wanaku_apis::config::ENV;
+use wanaku_types::config::ENV;
 
 pub const JSONRPC_INVALID_REQUEST: i32 = -32600;
 pub const JSONRPC_INVALID_PARAMS: i32 = -32602;

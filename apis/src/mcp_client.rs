@@ -15,7 +15,7 @@ use rmcp::{
 };
 use serde_json::Value;
 
-use crate::registry::McpServerInfo;
+use wanaku_types::registry::McpServerInfo;
 
 const TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_TOOLS: usize = 500;

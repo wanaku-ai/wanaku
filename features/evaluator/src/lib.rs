@@ -17,7 +17,7 @@ pub mod state;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::{Feature, HttpContext};
+use wanaku_types::feature::{Feature, HttpContext};
 
 use crate::config::EvaluatorsConfig;
 use crate::routes::{

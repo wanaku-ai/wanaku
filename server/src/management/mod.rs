@@ -14,8 +14,8 @@ use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 
-use wanaku_apis::feature::{Feature, HttpContext};
 use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::feature::{Feature, HttpContext};
 
 use self::handlers::{
     handle_forward_create, handle_forward_delete, handle_forward_get, handle_forward_list,
@@ -55,7 +55,7 @@ impl WanakuManagementService {
         features: Vec<Box<dyn Feature>>,
     ) -> Self {
         #[cfg(feature = "ui")]
-        let ui_path = wanaku_apis::config::ENV.ui_path.clone();
+        let ui_path = wanaku_types::config::ENV.ui_path.clone();
         #[cfg(feature = "ui")]
         if let Some(p) = &ui_path {
             tracing::info!(path = %p.display(), "Admin UI serving enabled");
@@ -197,8 +197,8 @@ pub(crate) async fn dispatch(
 #[cfg(test)]
 mod dispatch_tests {
     use super::*;
-    use wanaku_apis::feature::{Feature, HttpContext};
     use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_types::feature::{Feature, HttpContext};
 
     fn parse_body(resp: &http::Response<Vec<u8>>) -> serde_json::Value {
         serde_json::from_slice(resp.body()).unwrap_or_default()

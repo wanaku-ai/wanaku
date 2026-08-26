@@ -14,11 +14,10 @@ use praxis_protocol::{ListenerPipelines, Protocol as _};
 use praxis_protocol::http::PingoraHttp;
 use tracing::info;
 
-use wanaku_apis::feature::Feature;
 use wanaku_apis::persistence::FilePersistence;
-use wanaku_apis::registry::{
-    ForwardEntry, ForwardRegistry, InMemoryRegistry,
-};
+use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::feature::Feature;
+use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
 
 #[expect(clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
@@ -131,7 +130,7 @@ fn setup_management_service(
         );
     }
 
-    let mgmt_addr = &wanaku_apis::config::ENV.mgmt_listen;
+    let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
     let mgmt = wanaku_server::management::WanakuManagementService::new(
         deps.mgmt_registry,
         deps.features,

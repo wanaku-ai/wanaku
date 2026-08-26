@@ -31,7 +31,7 @@ fn find_inference_cluster(yaml: &mut Value) -> Option<&mut Value> {
     find_named_entry_mut(clusters, "name", "inference")
 }
 
-fn apply_inference_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+fn apply_inference_config(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
     let Some(cluster) = find_inference_cluster(yaml) else {
         tracing::warn!("could not locate inference cluster in pipeline config — env overrides skipped");
         return;
@@ -54,13 +54,13 @@ fn apply_inference_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv
     }
 }
 
-fn apply_inference_host_header(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+fn apply_inference_host_header(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
     if let Err(reason) = try_apply_inference_host_header(yaml, env) {
         tracing::warn!(reason, "inference proxy Host header override skipped");
     }
 }
 
-fn try_apply_inference_host_header(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) -> Result<(), &'static str> {
+fn try_apply_inference_host_header(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) -> Result<(), &'static str> {
     let chains = yaml
         .get_mut("filter_chains")
         .and_then(Value::as_sequence_mut)
@@ -89,14 +89,14 @@ fn try_apply_inference_host_header(yaml: &mut Value, env: &wanaku_apis::config::
 /// used as-is, matching how a client omitting an explicit Host would behave.
 /// For any other port — including plain (non-TLS) upstreams — the full
 /// `host:port` is required, since a bare hostname would silently drop it.
-fn inference_host_header_value(env: &wanaku_apis::config::WanakuEnv) -> String {
+fn inference_host_header_value(env: &wanaku_types::config::WanakuEnv) -> String {
     match &env.inference_tls_sni {
         Some(hostname) if env.inference_upstream.ends_with(":443") => hostname.clone(),
         _ => env.inference_upstream.clone(),
     }
 }
 
-fn apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+fn apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
     if let Err(reason) = try_apply_inference_path_prefix(yaml, env) {
         tracing::warn!(reason, "inference proxy path prefix override skipped");
     }
@@ -106,7 +106,7 @@ fn apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_apis::config::Wana
 /// `https://host/api`) must be prepended to every request forwarded
 /// upstream — the load-balancer only routes by host:port, so this path
 /// would otherwise be silently dropped.
-fn try_apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) -> Result<(), &'static str> {
+fn try_apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) -> Result<(), &'static str> {
     let chains = yaml
         .get_mut("filter_chains")
         .and_then(Value::as_sequence_mut)
@@ -123,7 +123,7 @@ fn try_apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_apis::config::
     Ok(())
 }
 
-fn apply_cors_config(yaml: &mut Value, env: &wanaku_apis::config::WanakuEnv) {
+fn apply_cors_config(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
     for chain_name in ["mcp_router", "inference_proxy"] {
         apply_cors_to_chain(yaml, chain_name, &env.cors_origin);
     }
@@ -167,7 +167,7 @@ fn try_apply_cors_to_chain(
 pub fn load_config(
     explicit_path: Option<&str>,
 ) -> Result<praxis_core::config::Config, praxis_core::errors::ProxyError> {
-    let env = &wanaku_apis::config::ENV;
+    let env = &wanaku_types::config::ENV;
 
     let config = match serde_yaml::from_str::<Value>(DEFAULT_CONFIG) {
         Ok(mut yaml) => {
@@ -246,7 +246,7 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
 
 #[cfg(test)]
 mod tests {
-    use wanaku_apis::config::WanakuEnv;
+    use wanaku_types::config::WanakuEnv;
 
     use super::{Value, inference_host_header_value, try_apply_inference_host_header, try_apply_inference_path_prefix};
 

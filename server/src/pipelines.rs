@@ -6,8 +6,8 @@ use praxis_filter::{FilterPipeline, FilterRegistry, PipelineExtension, RequestEx
 use praxis_protocol::ListenerPipelines;
 use tracing::info;
 
-use wanaku_apis::feature::Feature;
 use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::feature::Feature;
 
 /// Dependencies needed to build filter pipelines for all listeners.
 ///
