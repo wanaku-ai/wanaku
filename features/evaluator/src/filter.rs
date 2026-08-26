@@ -122,9 +122,10 @@ impl EvaluatorFilter {
             };
         };
 
-        tracing::debug!(
-            "Invoking evaluator {} on behalf of tracking ID {}",
+        tracing::info!(
+            "Invoking evaluator {} using llm {} on behalf of tracking ID {}",
             evaluator.name,
+            evaluator.llm.connection,
             conversation_id.as_deref().unwrap_or("-")
         );
 
