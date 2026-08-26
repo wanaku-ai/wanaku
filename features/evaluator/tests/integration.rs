@@ -401,6 +401,58 @@ mod state {
             "active snapshot must match the active revision's configuration"
         );
     }
+
+    #[test]
+    fn captured_snapshot_is_immutable_across_activation() {
+        let path = wasm_path("safety_review_action.wasm");
+        if !path.exists() {
+            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            return;
+        }
+
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![test_connection()]).unwrap();
+
+        let mut first = safety_evaluator_with_schema("gate-old");
+        first.processor.path = path.clone();
+        state
+            .try_activate(vec![first], RevisionOrigin::Api, None, None)
+            .expect("first activation should succeed");
+
+        // A request captures one snapshot at its start.
+        let request_config = state.active_config();
+
+        // A concurrent activation swaps in an entirely new configuration. The
+        // new config carries no result schema, so if the captured snapshot ever
+        // read through to the live state its schema lookup would return None.
+        let mut second = safety_evaluator("gate-new", "tools/call", None);
+        second.processor.path = path.clone();
+        state
+            .try_activate(vec![second], RevisionOrigin::Api, None, None)
+            .expect("second activation should succeed");
+
+        // The captured snapshot still resolves the old definition, its compiled
+        // processor, and its compiled result schema — it never mixes in the
+        // newly activated artifacts.
+        let matched = request_config
+            .find_matching("tools/call", "default")
+            .expect("old evaluator must still match in the captured snapshot");
+        assert_eq!(matched.name, "gate-old");
+        assert!(request_config.get_compiled(&path).is_some());
+        assert!(
+            request_config.get_compiled_schema("gate-old").is_some(),
+            "captured snapshot must retain the old evaluator's compiled schema"
+        );
+
+        // The live state reflects the new activation.
+        assert_eq!(
+            state
+                .find_matching("tools/call", "default")
+                .expect("new evaluator must match live state")
+                .name,
+            "gate-new"
+        );
+    }
 }
 
 // =====================================================================
