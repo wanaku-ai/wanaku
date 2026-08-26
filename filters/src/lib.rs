@@ -72,6 +72,7 @@ macro_rules! body_filter_boilerplate {
     };
 }
 
+pub mod json_rpc;
 pub mod mcp_id;
 pub mod mcp_init;
 pub mod namespace;
