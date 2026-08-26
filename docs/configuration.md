@@ -87,6 +87,32 @@ To disable persistence:
 export WANAKU_PERSIST_BACKEND=none
 ```
 
+### Evaluator Revision Persistence
+
+Evaluator revision history uses the same persistence configuration as the registry. When `WANAKU_PERSIST_BACKEND=file`, the server reads and writes `evaluator-revisions.json` in `WANAKU_PERSIST_PATH`. When persistence is disabled, revision history stays in memory and is lost on restart.
+
+The server writes the file after every revision change, not only at shutdown. A revision created or activated through the management API therefore survives an abrupt stop.
+
+On startup the server loads the persisted history. The `wanaku.yaml` configuration is the source of truth for the live runtime. If the startup configuration matches the persisted active revision, the server re-validates and recompiles that revision and installs it, without recording a new revision. If the startup configuration differs, the server activates it as a new revision.
+
+When the server re-applies an existing active revision, it re-validates the evaluator names, triggers, and LLM connection references and recompiles the WASM processors and result schemas. If the revision no longer validates or compiles on the current host, the server leaves the runtime configuration empty and logs the error. The server does not append a revision in this case, so a repeatedly failing host does not churn the bounded history.
+
+The server keeps a bounded history of the most recent 50 revisions. Older revisions are dropped. Rejected revisions are also persisted, so a failed activation stays visible in the history.
+
+If the startup `wanaku.yaml` evaluator configuration is identical to the persisted active revision, the server keeps that revision active and creates no new revision. A restart with an unchanged configuration does not grow the history.
+
+**Format:**
+
+```json
+{
+  "revisions": [],
+  "active_id": null,
+  "next_id": 1
+}
+```
+
+**Limitation:** File persistence supports one writer. Use a shared external persistence implementation before you run multiple replicas.
+
 ### Admin UI Override
 
 The admin UI is embedded in the binary. To serve UI files from a directory on disk instead of the embedded bundle:

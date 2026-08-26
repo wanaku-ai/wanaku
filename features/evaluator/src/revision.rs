@@ -1,18 +1,15 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use serde::{Deserialize, Serialize};
 use wanaku_apis::time::iso_now;
 
 use crate::config::EvaluatorDef;
+use crate::revision_persistence::{RevisionPersistence, RevisionsSnapshot};
 
-/// Monotonically increasing revision counter shared across a single server lifetime.
-static NEXT_REVISION: AtomicU64 = AtomicU64::new(1);
-
-/// Maximum number of revisions kept in memory when no persistence backend is
-/// configured. Oldest revisions beyond this limit are silently dropped.
+/// Maximum number of revisions kept, in memory and on disk. Oldest revisions
+/// beyond this limit are silently dropped.
 const DEFAULT_MAX_HISTORY: usize = 50;
 
 /// Unique identifier for an evaluator configuration revision.
@@ -102,19 +99,27 @@ pub struct RecordRevisionParams {
     pub failure_reason: Option<String>,
 }
 
-/// In-memory store for evaluator configuration revisions.
+/// Store for evaluator configuration revisions.
 ///
 /// All revisions are kept in a bounded ring: when the history exceeds
-/// `max_history`, the oldest entry is removed.
+/// `max_history`, the oldest entry is removed. When a
+/// [`RevisionPersistence`] backend is configured, the full history is written
+/// after every change and reloaded at startup, so revision history and
+/// rollback survive a restart.
 #[derive(Clone)]
 pub struct RevisionStore {
     inner: Arc<RwLock<RevisionStoreInner>>,
+    persistence: Option<Arc<dyn RevisionPersistence>>,
 }
 
 struct RevisionStoreInner {
     revisions: Vec<Revision>,
     active_id: Option<RevisionId>,
     max_history: usize,
+    /// The next revision ID to assign. Instance-scoped (not a process global)
+    /// so it can be seeded from persisted history at startup, keeping IDs
+    /// monotonic across restarts.
+    next_id: RevisionId,
 }
 
 impl RevisionStoreInner {
@@ -173,8 +178,95 @@ impl RevisionStore {
                 revisions: Vec::new(),
                 active_id: None,
                 max_history,
+                next_id: 1,
             })),
+            persistence: None,
         }
+    }
+
+    /// Create a revision store backed by the given persistence backend and load
+    /// any previously persisted history. The next revision ID is seeded above
+    /// the highest persisted ID so IDs stay monotonic across restarts.
+    #[must_use]
+    pub fn with_persistence(backend: Arc<dyn RevisionPersistence>) -> Self {
+        let store = Self {
+            inner: Arc::new(RwLock::new(RevisionStoreInner {
+                revisions: Vec::new(),
+                active_id: None,
+                max_history: DEFAULT_MAX_HISTORY,
+                next_id: 1,
+            })),
+            persistence: Some(backend),
+        };
+        store.load_persisted();
+        store
+    }
+
+    /// Load persisted revisions into the store, replacing any current state.
+    /// Best-effort: a load failure leaves the store empty and is logged, so a
+    /// corrupt or unreadable file never blocks startup.
+    fn load_persisted(&self) {
+        let Some(backend) = self.persistence.as_ref() else {
+            return;
+        };
+        let snapshot = match backend.load() {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!(error = %e, "failed to load persisted evaluator revisions; starting empty");
+                return;
+            }
+        };
+        let Ok(mut guard) = self.inner.write() else {
+            tracing::warn!("revision store lock poisoned; persisted revisions not loaded");
+            return;
+        };
+        let max_id = snapshot
+            .revisions
+            .iter()
+            .map(|r| r.metadata.id)
+            .max()
+            .unwrap_or(0);
+        guard.next_id = snapshot.next_id.max(max_id.saturating_add(1)).max(1);
+        guard.revisions = snapshot.revisions;
+        guard.active_id = snapshot.active_id;
+        guard.trim_history();
+        tracing::info!(
+            count = guard.revisions.len(),
+            active = ?guard.active_id,
+            next_id = guard.next_id,
+            "loaded persisted evaluator revisions"
+        );
+    }
+
+    /// Persist the current history. Best-effort: a save failure is logged but
+    /// does not fail the operation, so a full or read-only disk degrades to
+    /// in-memory-only rather than rejecting valid activations. Callers hold the
+    /// activation lock, so saves are serialized and cannot interleave.
+    pub(crate) fn persist(&self) {
+        let Some(backend) = self.persistence.as_ref() else {
+            return;
+        };
+        let snapshot = {
+            let Ok(guard) = self.inner.read() else {
+                tracing::warn!("revision store lock poisoned; skipping persist");
+                return;
+            };
+            RevisionsSnapshot {
+                revisions: guard.revisions.clone(),
+                active_id: guard.active_id,
+                next_id: guard.next_id,
+            }
+        };
+        if let Err(e) = backend.save(&snapshot) {
+            tracing::error!(error = %e, "failed to persist evaluator revisions");
+        }
+    }
+
+    /// Checksum of the active revision's configuration, if any. Used to detect
+    /// whether a startup configuration matches the already-active revision.
+    #[must_use]
+    pub fn active_checksum(&self) -> Option<String> {
+        self.active_revision().map(|r| r.metadata.checksum)
     }
 
     /// Return the currently active revision, if any.
@@ -230,6 +322,24 @@ impl RevisionStore {
         &self,
         params: &RecordRevisionParams,
     ) -> Result<Revision, RevisionError> {
+        let revision = self.commit_revision(params)?;
+        self.persist();
+        Ok(revision)
+    }
+
+    /// Commit a revision to the in-memory history WITHOUT persisting it. The
+    /// caller MUST call [`Self::persist`] afterward to make the change durable.
+    ///
+    /// Kept separate from [`Self::record_revision`] so an activation can install
+    /// the runtime snapshot between the in-memory commit and the disk write.
+    /// This keeps the disk write out of the window between "the store reports the
+    /// new active revision" and "the runtime enforces it", so a slow disk cannot
+    /// widen that inconsistency window. Callers must hold the activation lock so
+    /// the commit, the snapshot install, and the persist stay serialized.
+    pub(crate) fn commit_revision(
+        &self,
+        params: &RecordRevisionParams,
+    ) -> Result<Revision, RevisionError> {
         let Ok(mut guard) = self.inner.write() else {
             return Err(RevisionError::ValidationFailed(
                 "internal lock error".to_owned(),
@@ -238,16 +348,19 @@ impl RevisionStore {
 
         guard.check_concurrency(params.expected_revision)?;
 
-        let revision = build_revision(params)?;
+        // Allocate the ID before committing it, so a checksum failure in
+        // build_revision leaves next_id untouched (no gaps).
+        let id = guard.next_id;
+        let revision = build_revision(id, params)?;
+        guard.next_id = id.saturating_add(1);
 
         if params.activate {
             guard.mark_previous_superseded();
-            guard.active_id = Some(revision.metadata.id);
+            guard.active_id = Some(id);
         }
 
         guard.revisions.push(revision.clone());
         guard.trim_history();
-
         Ok(revision)
     }
 
@@ -291,9 +404,9 @@ impl Default for RevisionStore {
 // ---------------------------------------------------------------------------
 
 fn build_revision(
+    id: RevisionId,
     params: &RecordRevisionParams,
 ) -> Result<Revision, RevisionError> {
-    let id = NEXT_REVISION.fetch_add(1, Ordering::Relaxed);
     let now = iso_now();
     let checksum = compute_checksum(&params.evaluators)?;
 
@@ -318,7 +431,23 @@ fn build_revision(
     })
 }
 
+/// Checksum of a candidate evaluator configuration, using the same encoding as
+/// recorded revisions. Returns `None` if the configuration cannot be
+/// serialized. Used to compare a startup configuration against the active
+/// revision without recording a new one.
+#[must_use]
+pub fn config_checksum(defs: &[EvaluatorDef]) -> Option<String> {
+    compute_checksum(defs).ok()
+}
+
 /// Compute a hex-encoded hash of the serialized evaluator definitions.
+///
+/// `DefaultHasher`'s algorithm is not guaranteed stable across Rust releases,
+/// so a persisted checksum may not match one recomputed by a binary built with
+/// a different toolchain. The only consequence is that startup dedup can miss
+/// once after a toolchain upgrade, recording one extra startup revision; the
+/// bounded history absorbs it and checksums are stable again thereafter. A
+/// stronger hash is not worth a new dependency for this use.
 fn compute_checksum(defs: &[EvaluatorDef]) -> Result<String, RevisionError> {
     let json = serde_json::to_string(defs).map_err(|e| {
         RevisionError::ValidationFailed(format!("failed to serialize evaluator config: {e}"))
@@ -621,6 +750,177 @@ mod tests {
         assert!(store.active_revision().is_none());
         assert!(store.active_revision_id().is_none());
         assert!(store.list_revisions().is_empty());
+    }
+
+    // --- Persistence -------------------------------------------------------
+
+    use crate::revision_persistence::{RevisionPersistence, RevisionsSnapshot};
+    use std::sync::Mutex;
+    use wanaku_apis::persistence::PersistenceError;
+
+    /// In-memory persistence backend for tests: emulates a durable store that
+    /// survives a "restart" (a new `RevisionStore` reading the same backend).
+    #[derive(Default)]
+    struct MemoryPersistence {
+        saved: Mutex<Option<RevisionsSnapshot>>,
+    }
+
+    impl RevisionPersistence for MemoryPersistence {
+        fn load(&self) -> Result<RevisionsSnapshot, PersistenceError> {
+            let guard = self.saved.lock().unwrap();
+            let snapshot = guard.as_ref().map_or_else(RevisionsSnapshot::default, |s| {
+                RevisionsSnapshot {
+                    revisions: s.revisions.clone(),
+                    active_id: s.active_id,
+                    next_id: s.next_id,
+                }
+            });
+            Ok(snapshot)
+        }
+
+        fn save(&self, snapshot: &RevisionsSnapshot) -> Result<(), PersistenceError> {
+            *self.saved.lock().unwrap() = Some(RevisionsSnapshot {
+                revisions: snapshot.revisions.clone(),
+                active_id: snapshot.active_id,
+                next_id: snapshot.next_id,
+            });
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn history_survives_restart() {
+        let backend = Arc::new(MemoryPersistence::default());
+
+        let store = RevisionStore::with_persistence(backend.clone());
+        store
+            .record_revision(&active_params(
+                vec![test_evaluator("eval-1")],
+                RevisionOrigin::Startup,
+            ))
+            .unwrap();
+        let rev2 = store
+            .record_revision(&active_params(
+                vec![test_evaluator("eval-2")],
+                RevisionOrigin::Api,
+            ))
+            .unwrap();
+
+        // "Restart": a fresh store reading the same backend.
+        let restored = RevisionStore::with_persistence(backend);
+        assert_eq!(restored.list_revisions().len(), 2);
+        assert_eq!(
+            restored.active_revision().unwrap().metadata.id,
+            rev2.metadata.id
+        );
+        assert_eq!(
+            restored.active_revision().unwrap().evaluators[0].name,
+            "eval-2"
+        );
+    }
+
+    #[test]
+    fn next_id_stays_monotonic_across_restart() {
+        let backend = Arc::new(MemoryPersistence::default());
+
+        let store = RevisionStore::with_persistence(backend.clone());
+        let rev1 = store
+            .record_revision(&active_params(
+                vec![test_evaluator("eval-1")],
+                RevisionOrigin::Api,
+            ))
+            .unwrap();
+
+        let restored = RevisionStore::with_persistence(backend);
+        let rev2 = restored
+            .record_revision(&active_params(
+                vec![test_evaluator("eval-2")],
+                RevisionOrigin::Api,
+            ))
+            .unwrap();
+
+        assert!(
+            rev2.metadata.id > rev1.metadata.id,
+            "new revision after restart must get a higher ID"
+        );
+    }
+
+    #[test]
+    fn next_id_seeds_above_trimmed_history() {
+        let backend = Arc::new(MemoryPersistence::default());
+
+        // Record more than the history bound so early IDs are trimmed away.
+        let store = {
+            let s = RevisionStore::with_persistence(backend.clone());
+            // Shrink the bound so the test stays small.
+            if let Ok(mut g) = s.inner.write() {
+                g.max_history = 3;
+            }
+            s
+        };
+        for i in 0..5 {
+            store
+                .record_revision(&active_params(
+                    vec![test_evaluator(&format!("eval-{i}"))],
+                    RevisionOrigin::Api,
+                ))
+                .unwrap();
+        }
+        let highest = store
+            .list_revisions()
+            .iter()
+            .map(|m| m.id)
+            .max()
+            .unwrap();
+
+        // Restart and record again: the new ID must exceed the highest ever
+        // assigned, not just the highest still in the trimmed history.
+        let restored = RevisionStore::with_persistence(backend);
+        let next = restored
+            .record_revision(&active_params(
+                vec![test_evaluator("eval-new")],
+                RevisionOrigin::Api,
+            ))
+            .unwrap();
+        assert!(next.metadata.id > highest);
+    }
+
+    #[test]
+    fn rejected_revisions_are_persisted() {
+        let backend = Arc::new(MemoryPersistence::default());
+
+        let store = RevisionStore::with_persistence(backend.clone());
+        store
+            .record_revision(&RecordRevisionParams {
+                evaluators: vec![test_evaluator("bad")],
+                origin: RevisionOrigin::Api,
+                actor: None,
+                expected_revision: None,
+                activate: false,
+                failure_reason: Some("compilation failed".to_owned()),
+            })
+            .unwrap();
+
+        let restored = RevisionStore::with_persistence(backend);
+        let list = restored.list_revisions();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].status, ActivationStatus::Rejected);
+        assert!(restored.active_revision().is_none());
+    }
+
+    #[test]
+    fn active_checksum_matches_config_checksum() {
+        let store = RevisionStore::new();
+        let defs = vec![test_evaluator("eval-1")];
+        store
+            .record_revision(&active_params(defs.clone(), RevisionOrigin::Startup))
+            .unwrap();
+
+        assert_eq!(store.active_checksum(), config_checksum(&defs));
+        assert_ne!(
+            store.active_checksum(),
+            config_checksum(&[test_evaluator("other")])
+        );
     }
 
     #[test]
