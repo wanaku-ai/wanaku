@@ -14,10 +14,10 @@ llm_connections:
     model: "llama3.2:latest"
     url: "http://localhost:11434/v1/"
     api_key: ""
-#  - name: "openrouter"
-#    model: "modelname"
-#    url: "https://openrouter.ai/api"
-#    api_key: "your-api-key"
+  - name: "openrouter"
+    model: "poolside/laguna-s-2.1:free"
+    url: "https://openrouter.ai/api"
+    api_key: ""
 
 evaluators:
   - name: "safety-gate"
