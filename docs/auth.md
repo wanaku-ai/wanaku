@@ -88,6 +88,14 @@ oauth2-proxy \
   --upstream-timeout=3600s
 ```
 
+If keycloak has a public accessible URL different than the internal one, you may want to set these additional properties:
+```bash
+--skip-oidc-discovery=true
+--login-url=<public keycloak url>
+--redeem-url=<internal keycloak url>
+--oidc-jwks-url=<internal keycloak url>
+```
+
 ### 4. Start the Management Proxy
 
 In another terminal, using the same `$COOKIE_SECRET` for SSO:

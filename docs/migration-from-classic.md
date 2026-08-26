@@ -577,6 +577,7 @@ The `wanaku` CLI works with both Classic and Wanaku Praxis. Most commands are id
 | `wanaku tools generate` | OpenAPI-to-tool generation not available |
 | `wanaku configure *` | MCP client config helpers not available |
 | `wanaku namespaces cleanup` | Stale namespace cleanup not available |
+| `wanaku admin` | Moved to wanaku-keycloak-admin module in wanaku-barn |
 
 ### Important: The `--no-auth` Flag
 
@@ -588,6 +589,22 @@ wanaku forwards add --service="http://echo:8080/mcp" --name echo --no-auth
 ```
 
 This matches the Classic Wanaku behavior when `wanaku.http.auth=none`.
+
+### wanaku admin commands
+
+The admin command moved to wanaku-keycloak-admin module, so once the module is built you can use it like:
+
+List the users:
+
+```bash
+java -jar apps/wanaku-keycloak-admin/target/quarkus-app/quarkus-run.jar users list --admin-username admin --admin-password admin --keycloak-url=http://localhost:8543
+```
+
+Add an user:
+
+```bash
+java -jar apps/wanaku-keycloak-admin/target/quarkus-app/quarkus-run.jar users add --admin-username admin --admin-password admin --username utest1 --password admin --email utest1@example.com --first-name UTest --last-name test --keycloak-url=http://localhost:8543
+```
 
 ## New Features in Wanaku Praxis
 
