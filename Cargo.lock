@@ -5058,6 +5058,7 @@ dependencies = [
  "serial_test",
  "tracing",
  "wanaku-apis",
+ "wanaku-feature-evaluator",
  "wanaku-filters",
  "wasmtime",
  "wasmtime-wasi",
