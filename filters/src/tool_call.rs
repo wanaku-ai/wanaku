@@ -15,31 +15,7 @@ struct ParsedBody {
 }
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
-    let Some(body_bytes) = body else {
-        return ParsedBody {
-            id: json_rpc_id,
-            arguments: HashMap::new(),
-        };
-    };
-
-    let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(body_bytes) else {
-        return ParsedBody {
-            id: json_rpc_id,
-            arguments: HashMap::new(),
-        };
-    };
-
-    let arguments = parsed
-        .get("params")
-        .and_then(|p| p.get("arguments"))
-        .and_then(|a| a.as_object())
-        .map(|args| {
-            args.iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect()
-        })
-        .unwrap_or_default();
-
+    let arguments = crate::json_rpc::JsonRpcParams::parse(body).arguments.into_iter().collect();
     ParsedBody { id: json_rpc_id, arguments }
 }
 
@@ -309,36 +285,6 @@ mod tests {
     }
 
     #[test]
-    fn parse_body_arguments_with_non_string_values() {
-        let body = Some(Bytes::from(
-            r#"{"id":2,"params":{"arguments":{"count":42,"flag":true,"nested":{"a":1}}}}"#,
-        ));
-        let parsed = parse_body(&body, serde_json::Value::from(2));
-        assert_eq!(parsed.id, serde_json::Value::from(2));
-        assert_eq!(parsed.arguments.get("count"), Some(&serde_json::json!(42)));
-        assert_eq!(parsed.arguments.get("flag"), Some(&serde_json::json!(true)));
-        assert_eq!(parsed.arguments.get("nested"), Some(&serde_json::json!({"a": 1})));
-    }
-
-    #[test]
-    fn parse_body_missing_arguments() {
-        let body = Some(Bytes::from(
-            r#"{"id":3,"params":{"name":"echo"}}"#,
-        ));
-        let parsed = parse_body(&body, serde_json::Value::from(3));
-        assert_eq!(parsed.id, serde_json::Value::from(3));
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
-    fn parse_body_missing_params() {
-        let body = Some(Bytes::from(r#"{"id":4}"#));
-        let parsed = parse_body(&body, serde_json::Value::from(4));
-        assert_eq!(parsed.id, serde_json::Value::from(4));
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
     fn parse_body_none() {
         let parsed = parse_body(&None, serde_json::Value::Null);
         assert!(parsed.id.is_null());
@@ -346,39 +292,12 @@ mod tests {
     }
 
     #[test]
-    fn parse_body_malformed_json() {
-        let body = Some(Bytes::from("not json"));
-        let parsed = parse_body(&body, serde_json::Value::Null);
-        assert!(parsed.id.is_null());
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
-    fn parse_body_empty_bytes() {
-        let body = Some(Bytes::new());
-        let parsed = parse_body(&body, serde_json::Value::Null);
-        assert!(parsed.id.is_null());
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
-    fn parse_body_no_id_field() {
+    fn parse_body_id_comes_from_parameter_not_body() {
         let body = Some(Bytes::from(
-            r#"{"params":{"arguments":{"key":"val"}}}"#,
+            r#"{"jsonrpc":"2.0","id":999,"params":{"arguments":{}}}"#,
         ));
-        let parsed = parse_body(&body, serde_json::Value::Null);
-        assert!(parsed.id.is_null());
-        assert_eq!(parsed.arguments.get("key"), Some(&serde_json::Value::String("val".to_owned())));
-    }
-
-    #[test]
-    fn parse_body_arguments_is_not_object() {
-        let body = Some(Bytes::from(
-            r#"{"id":5,"params":{"arguments":"not-an-object"}}"#,
-        ));
-        let parsed = parse_body(&body, serde_json::Value::from(5));
-        assert_eq!(parsed.id, serde_json::Value::from(5));
-        assert!(parsed.arguments.is_empty());
+        let parsed = parse_body(&body, serde_json::Value::from(1));
+        assert_eq!(parsed.id, serde_json::Value::from(1));
     }
 
     #[test]

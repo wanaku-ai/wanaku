@@ -12,36 +12,8 @@ struct ParsedBody {
 }
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
-    let Some(body_bytes) = body else {
-        return ParsedBody {
-            id: json_rpc_id,
-            name: None,
-            arguments: serde_json::Map::new(),
-        };
-    };
-
-    let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(body_bytes) else {
-        return ParsedBody {
-            id: json_rpc_id,
-            name: None,
-            arguments: serde_json::Map::new(),
-        };
-    };
-
-    let params = parsed.get("params");
-
-    let name = params
-        .and_then(|p| p.get("name"))
-        .and_then(|n| n.as_str())
-        .map(str::to_owned);
-
-    let arguments = params
-        .and_then(|p| p.get("arguments"))
-        .and_then(|a| a.as_object())
-        .cloned()
-        .unwrap_or_default();
-
-    ParsedBody { id: json_rpc_id, name, arguments }
+    let params = crate::json_rpc::JsonRpcParams::parse(body);
+    ParsedBody { id: json_rpc_id, name: params.name, arguments: params.arguments }
 }
 
 impl PromptGetFilter {
@@ -203,26 +175,6 @@ mod tests {
     }
 
     #[test]
-    fn parse_body_missing_name() {
-        let body = Some(Bytes::from(
-            r#"{"id":3,"params":{"arguments":{"key":"val"}}}"#,
-        ));
-        let parsed = parse_body(&body, serde_json::Value::from(3));
-        assert_eq!(parsed.id, serde_json::Value::from(3));
-        assert!(parsed.name.is_none());
-        assert_eq!(parsed.arguments.len(), 1);
-    }
-
-    #[test]
-    fn parse_body_missing_params() {
-        let body = Some(Bytes::from(r#"{"id":4}"#));
-        let parsed = parse_body(&body, serde_json::Value::from(4));
-        assert_eq!(parsed.id, serde_json::Value::from(4));
-        assert!(parsed.name.is_none());
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
     fn parse_body_none() {
         let parsed = parse_body(&None, serde_json::Value::Null);
         assert!(parsed.id.is_null());
@@ -231,51 +183,11 @@ mod tests {
     }
 
     #[test]
-    fn parse_body_malformed_json() {
-        let body = Some(Bytes::from("<<<"));
-        let parsed = parse_body(&body, serde_json::Value::Null);
-        assert!(parsed.id.is_null());
-        assert!(parsed.name.is_none());
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
-    fn parse_body_empty_bytes() {
-        let body = Some(Bytes::new());
-        let parsed = parse_body(&body, serde_json::Value::Null);
-        assert!(parsed.id.is_null());
-        assert!(parsed.name.is_none());
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
-    fn parse_body_no_id_field() {
+    fn parse_body_id_comes_from_parameter_not_body() {
         let body = Some(Bytes::from(
-            r#"{"params":{"name":"test-prompt"}}"#,
+            r#"{"jsonrpc":"2.0","id":999,"params":{"name":"greet"}}"#,
         ));
-        let parsed = parse_body(&body, serde_json::Value::Null);
-        assert!(parsed.id.is_null());
-        assert_eq!(parsed.name.as_deref(), Some("test-prompt"));
-    }
-
-    #[test]
-    fn parse_body_arguments_is_not_object() {
-        let body = Some(Bytes::from(
-            r#"{"id":5,"params":{"name":"p","arguments":"not-a-map"}}"#,
-        ));
-        let parsed = parse_body(&body, serde_json::Value::from(5));
-        assert_eq!(parsed.id, serde_json::Value::from(5));
-        assert_eq!(parsed.name.as_deref(), Some("p"));
-        assert!(parsed.arguments.is_empty());
-    }
-
-    #[test]
-    fn parse_body_name_is_not_string() {
-        let body = Some(Bytes::from(
-            r#"{"id":6,"params":{"name":99}}"#,
-        ));
-        let parsed = parse_body(&body, serde_json::Value::from(6));
-        assert_eq!(parsed.id, serde_json::Value::from(6));
-        assert!(parsed.name.is_none());
+        let parsed = parse_body(&body, serde_json::Value::from(1));
+        assert_eq!(parsed.id, serde_json::Value::from(1));
     }
 }
