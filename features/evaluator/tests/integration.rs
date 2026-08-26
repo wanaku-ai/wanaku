@@ -320,6 +320,87 @@ mod state {
         assert_eq!(bindings.get("finance").unwrap(), "conv-1");
         assert_eq!(bindings.get("engineering").unwrap(), "conv-2");
     }
+
+    fn test_connection() -> LlmConnection {
+        LlmConnection {
+            name: "test-connection".to_owned(),
+            model: "llama3.2".to_owned(),
+            url: "http://localhost:11434/v1".to_owned(),
+            api_key: String::new(),
+        }
+    }
+
+    #[test]
+    fn activation_installs_snapshot_matching_revision() {
+        let path = wasm_path("safety_review_action.wasm");
+        if !path.exists() {
+            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            return;
+        }
+
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![test_connection()]).unwrap();
+
+        let mut eval = safety_evaluator("gate", "tools/call", None);
+        eval.processor.path = path.clone();
+
+        let revision = state
+            .try_activate(vec![eval], RevisionOrigin::Api, None, None)
+            .expect("activation should succeed");
+
+        // The active snapshot (evaluators + compiled modules) and the recorded
+        // revision must describe the same configuration.
+        let listed = state.list_evaluators();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].name, "gate");
+        assert_eq!(revision.evaluators[0].name, listed[0].name);
+        assert!(state.get_compiled(&path).is_some());
+    }
+
+    #[test]
+    fn concurrent_activations_keep_snapshot_and_revision_consistent() {
+        let path = wasm_path("safety_review_action.wasm");
+        if !path.exists() {
+            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            return;
+        }
+
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![test_connection()]).unwrap();
+
+        // Fire many activations at once, each carrying a distinct evaluator
+        // name. With `expected_revision` unset none of them conflict, so every
+        // thread commits a revision and installs its snapshot.
+        let handles: Vec<_> = (0..16)
+            .map(|i| {
+                let state = state.clone();
+                let path = path.clone();
+                std::thread::spawn(move || {
+                    let mut eval = safety_evaluator(&format!("gate-{i}"), "tools/call", None);
+                    eval.processor.path = path;
+                    state
+                        .try_activate(vec![eval], RevisionOrigin::Api, None, None)
+                        .expect("activation should succeed");
+                })
+            })
+            .collect();
+        for handle in handles {
+            handle.join().expect("activation thread panicked");
+        }
+
+        // Whichever revision ended up active, the installed snapshot must match
+        // it exactly — never a different revision's configuration.
+        let active = state
+            .revision_store()
+            .active_revision()
+            .expect("an active revision must exist");
+        let listed = state.list_evaluators();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(
+            listed[0].name, active.evaluators[0].name,
+            "active snapshot must match the active revision's configuration"
+        );
+    }
 }
 
 // =====================================================================
