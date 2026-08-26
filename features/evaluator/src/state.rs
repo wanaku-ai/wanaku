@@ -91,6 +91,140 @@ impl EvaluatorState {
         self
     }
 
+    /// Replace the revision store with a persistence-backed one and load the
+    /// persisted history (revisions, active pointer, ID counter).
+    ///
+    /// This does NOT install a runtime snapshot: the persisted active revision
+    /// is re-validated, re-compiled, and installed later by
+    /// [`Self::reconcile_startup`], after config-only LLM connections are
+    /// loaded. Call during startup construction, before the state is shared or
+    /// cloned into the pipeline.
+    #[must_use]
+    pub fn with_revision_persistence(
+        mut self,
+        backend: Arc<dyn crate::revision_persistence::RevisionPersistence>,
+    ) -> Self {
+        self.revisions = RevisionStore::with_persistence(backend);
+        self
+    }
+
+    /// Reconcile the startup configuration with any persisted active revision
+    /// and install the resulting runtime snapshot.
+    ///
+    /// Call once at startup, AFTER LLM connections are loaded, so activation can
+    /// validate connection references exactly as it does at runtime. Behavior:
+    ///
+    /// - Startup config present and byte-identical to the persisted active
+    ///   revision: keep that revision active and record no new one, but still
+    ///   re-validate and re-compile it and install the snapshot (decision #1).
+    /// - Startup config present and different (or no active revision): activate
+    ///   it as a new revision through [`Self::try_activate`].
+    /// - No startup config: re-activate the persisted active revision, if any,
+    ///   without recording a new revision.
+    ///
+    /// Every path runs the same validation and compilation as a normal
+    /// activation and fails closed. A restart therefore behaves exactly like a
+    /// first boot with the same configuration: a revision that no longer
+    /// validates or compiles on this host does not silently stay active — a
+    /// rejected revision is recorded and the runtime is left without it.
+    pub fn reconcile_startup(&self, startup_defs: Option<Vec<EvaluatorDef>>) {
+        let active = self.revisions.active_revision();
+
+        match startup_defs {
+            Some(defs) => {
+                if Self::matches_active(active.as_ref(), &defs) {
+                    tracing::info!(
+                        count = defs.len(),
+                        "startup evaluator config matches persisted active revision; keeping it"
+                    );
+                    self.reinstall_active_revision();
+                } else {
+                    match self.try_activate(defs, RevisionOrigin::Startup, None, None) {
+                        Ok(rev) => tracing::info!(
+                            revision_id = rev.metadata.id,
+                            "startup evaluator revision activated"
+                        ),
+                        Err(e) => tracing::error!(
+                            error = %e,
+                            "startup evaluator configuration rejected; no evaluators loaded"
+                        ),
+                    }
+                }
+            }
+            None => {
+                if active.is_some() {
+                    self.reinstall_active_revision();
+                }
+            }
+        }
+    }
+
+    /// Whether `defs` is byte-identical to the given active revision's
+    /// configuration. False when there is no active revision or either checksum
+    /// cannot be computed.
+    fn matches_active(active: Option<&Revision>, defs: &[EvaluatorDef]) -> bool {
+        let Some(active) = active else {
+            return false;
+        };
+        match (
+            crate::revision::config_checksum(&active.evaluators),
+            crate::revision::config_checksum(defs),
+        ) {
+            (Some(a), Some(b)) => a == b,
+            _ => false,
+        }
+    }
+
+    /// Re-validate, re-compile, and install the already-recorded active revision
+    /// as the live runtime snapshot, WITHOUT recording any new revision.
+    ///
+    /// This re-applies a revision that already exists in history, so it never
+    /// appends to that history: doing so on every restart would churn the
+    /// bounded history and, on a host where the revision no longer compiles,
+    /// eventually evict all legitimate rollback history. Any failure (validation
+    /// or compilation) is logged and leaves the runtime empty (fail closed). The
+    /// revision stays as it was recorded; the failure is an operational
+    /// condition of this host, surfaced through logs rather than history.
+    fn reinstall_active_revision(&self) {
+        let Some(active) = self.revisions.active_revision() else {
+            return;
+        };
+        let revision_id = active.metadata.id;
+        let defs = active.evaluators;
+
+        if let Err(e) = validate_evaluator_names(&defs)
+            .and_then(|()| validate_triggers(&defs))
+            .and_then(|()| self.validate_llm_connections(&defs))
+        {
+            tracing::error!(
+                revision_id = revision_id,
+                error = %e,
+                "persisted active evaluator revision failed validation on this host; runtime left empty"
+            );
+            return;
+        }
+
+        let (compiled, wasm_errors) = compile_wasm_map_with_errors(&defs);
+        let (schemas, schema_errors) = try_compile_schemas(&defs);
+        let errors = collect_errors(wasm_errors, schema_errors);
+
+        let _activation = self.lock_activation();
+        if !errors.is_empty() {
+            tracing::error!(
+                revision_id = revision_id,
+                errors = %errors.join("; "),
+                "persisted active evaluator revision failed to compile on this host; runtime left empty"
+            );
+            return;
+        }
+
+        self.install_snapshot(defs, compiled, schemas);
+        tracing::info!(
+            revision_id = revision_id,
+            "restored active evaluator revision from persistence"
+        );
+    }
+
     /// Return a reference to the revision store for query operations.
     #[must_use]
     pub const fn revision_store(&self) -> &RevisionStore {
@@ -210,7 +344,12 @@ impl EvaluatorState {
             });
         }
 
-        let revision = self.revisions.record_revision(&RecordRevisionParams {
+        // Commit the revision, install the runtime snapshot, then persist. The
+        // in-memory commit and the snapshot install run back-to-back so readers
+        // never see the new active revision before it is enforced; the disk
+        // write happens afterward, still under the activation lock, so a slow
+        // disk cannot widen that window.
+        let revision = self.revisions.commit_revision(&RecordRevisionParams {
             evaluators: defs.clone(),
             origin,
             actor,
@@ -220,6 +359,7 @@ impl EvaluatorState {
         })?;
 
         self.install_snapshot(defs, compiled_modules, compiled_schemas);
+        self.revisions.persist();
         Ok(revision)
     }
 

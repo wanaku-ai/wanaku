@@ -907,3 +907,241 @@ mod engine {
         );
     }
 }
+
+// =====================================================================
+// Revision persistence (state-level restart survival)
+// =====================================================================
+
+mod persistence {
+    use super::*;
+    use std::sync::Arc;
+
+    use wanaku_feature_evaluator::revision::{
+        ActivationStatus, Revision, RevisionMetadata, config_checksum,
+    };
+    use wanaku_feature_evaluator::revision_persistence::{
+        FileRevisionPersistence, RevisionPersistence, RevisionsSnapshot,
+    };
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(name);
+        let _ = std::fs::remove_dir_all(&dir);
+        dir
+    }
+
+    fn connection() -> LlmConnection {
+        LlmConnection {
+            name: "test-connection".to_owned(),
+            model: "llama3.2".to_owned(),
+            url: "http://localhost:11434/v1".to_owned(),
+            api_key: String::new(),
+        }
+    }
+
+    /// Write a persisted history with a single active revision for `defs`,
+    /// bypassing the normal activation path. This lets a test set up a
+    /// persisted active revision that no longer validates or compiles on the
+    /// simulated restart host — a state the live API can never produce but a
+    /// real deployment can (a removed WASM file, a dropped connection).
+    fn seed_active(file: &PathBuf, defs: Vec<EvaluatorDef>) {
+        let checksum = config_checksum(&defs).expect("checksum");
+        let revision = Revision {
+            metadata: RevisionMetadata {
+                id: 1,
+                created_at: "2026-01-01T00:00:00Z".to_owned(),
+                activated_at: Some("2026-01-01T00:00:00Z".to_owned()),
+                status: ActivationStatus::Active,
+                checksum,
+                origin: RevisionOrigin::Api,
+                actor: None,
+                failure_reason: None,
+            },
+            evaluators: defs,
+        };
+        let snapshot = RevisionsSnapshot {
+            revisions: vec![revision],
+            active_id: Some(1),
+            next_id: 2,
+        };
+        FileRevisionPersistence::new(file).save(&snapshot).expect("seed persist");
+    }
+
+    fn activate_and_persist(file: &PathBuf, eval: EvaluatorDef) -> u64 {
+        let backend = Arc::new(FileRevisionPersistence::new(file));
+        let state = EvaluatorState::new().with_revision_persistence(backend);
+        state.load_llm_connections(vec![connection()]).unwrap();
+        state
+            .try_activate(vec![eval], RevisionOrigin::Api, None, None)
+            .expect("activation should succeed")
+            .metadata
+            .id
+    }
+
+    #[test]
+    fn active_revision_and_runtime_survive_restart() {
+        let path = wasm_path("safety_review_action.wasm");
+        if !path.exists() {
+            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            return;
+        }
+        let dir = temp_dir("wanaku-eval-persist-restart");
+        let file = dir.join("evaluator-revisions.json");
+
+        let mut eval = safety_evaluator("gate", "tools/call", None);
+        eval.processor.path = path.clone();
+
+        let revision_id = activate_and_persist(&file, eval.clone());
+
+        // Restart: a fresh state reading the same persisted file. Connections
+        // load first, then reconciliation restores the active revision.
+        let backend = Arc::new(FileRevisionPersistence::new(&file));
+        let restored = EvaluatorState::new().with_revision_persistence(backend);
+        restored.load_llm_connections(vec![connection()]).unwrap();
+        restored.reconcile_startup(Some(vec![eval]));
+
+        let active = restored
+            .revision_store()
+            .active_revision()
+            .expect("active revision must survive restart");
+        assert_eq!(active.metadata.id, revision_id);
+
+        // Dedup: the unchanged config must NOT create a new revision.
+        assert_eq!(
+            restored.revision_store().list_revisions().len(),
+            1,
+            "unchanged startup config must not record a new revision"
+        );
+
+        let listed = restored.list_evaluators();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].name, "gate");
+        assert!(
+            restored.get_compiled(&path).is_some(),
+            "restored runtime snapshot must have the compiled WASM"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn changed_startup_config_records_new_revision() {
+        let path = wasm_path("safety_review_action.wasm");
+        if !path.exists() {
+            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            return;
+        }
+        let dir = temp_dir("wanaku-eval-persist-changed");
+        let file = dir.join("evaluator-revisions.json");
+
+        let mut eval = safety_evaluator("gate", "tools/call", None);
+        eval.processor.path = path.clone();
+        activate_and_persist(&file, eval);
+
+        // Restart with a different config: a new revision must supersede.
+        let mut changed = safety_evaluator("gate-v2", "tools/call", None);
+        changed.processor.path = path.clone();
+
+        let backend = Arc::new(FileRevisionPersistence::new(&file));
+        let restored = EvaluatorState::new().with_revision_persistence(backend);
+        restored.load_llm_connections(vec![connection()]).unwrap();
+        restored.reconcile_startup(Some(vec![changed]));
+
+        assert_eq!(restored.revision_store().list_revisions().len(), 2);
+        assert_eq!(restored.list_evaluators()[0].name, "gate-v2");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn restart_with_uncompilable_persisted_active_fails_closed_without_churn() {
+        // A persisted active revision points at a WASM file that no longer
+        // resolves on this host (removed between runs). On restart the runtime
+        // must fail closed (empty), and reconciliation must NOT append a new
+        // revision — re-applying an already-recorded revision must never churn
+        // history (Findings 1 & 2).
+        let dir = temp_dir("wanaku-eval-persist-badwasm");
+        let file = dir.join("evaluator-revisions.json");
+
+        let mut eval = safety_evaluator("gate", "tools/call", None);
+        eval.processor.path = PathBuf::from("/nonexistent/gone.wasm");
+        seed_active(&file, vec![eval.clone()]);
+
+        let backend = Arc::new(FileRevisionPersistence::new(&file));
+        let restored = EvaluatorState::new().with_revision_persistence(backend);
+        restored.load_llm_connections(vec![connection()]).unwrap();
+        // Startup config is byte-identical to the persisted active revision, so
+        // dedup matches — the reconcile path still re-compiles and fails closed.
+        restored.reconcile_startup(Some(vec![eval]));
+
+        assert!(
+            restored.list_evaluators().is_empty(),
+            "uncompilable persisted revision must not populate the runtime"
+        );
+        assert!(
+            restored
+                .get_compiled(&PathBuf::from("/nonexistent/gone.wasm"))
+                .is_none()
+        );
+        assert_eq!(
+            restored.revision_store().list_revisions().len(),
+            1,
+            "reinstalling an existing revision must not append to history"
+        );
+    }
+
+    #[test]
+    fn repeated_restarts_of_uncompilable_active_do_not_grow_history() {
+        // Finding 1 regression guard: a broken-on-this-host active revision must
+        // not accumulate one rejected revision per restart, which would evict
+        // real rollback history once the bounded limit is reached. Runs without
+        // a built WASM artifact, so it always executes in CI.
+        let dir = temp_dir("wanaku-eval-persist-nochurn");
+        let file = dir.join("evaluator-revisions.json");
+
+        let mut eval = safety_evaluator("gate", "tools/call", None);
+        eval.processor.path = PathBuf::from("/nonexistent/gone.wasm");
+        seed_active(&file, vec![eval.clone()]);
+
+        for _ in 0..5 {
+            let backend = Arc::new(FileRevisionPersistence::new(&file));
+            let restored = EvaluatorState::new().with_revision_persistence(backend);
+            restored.load_llm_connections(vec![connection()]).unwrap();
+            restored.reconcile_startup(Some(vec![eval.clone()]));
+            assert_eq!(
+                restored.revision_store().list_revisions().len(),
+                1,
+                "history must not grow across repeated restarts of a broken revision"
+            );
+            assert!(restored.list_evaluators().is_empty());
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn restart_with_missing_connection_leaves_runtime_empty() {
+        // A persisted active revision references an LLM connection that is not
+        // present in this run's config. This is Finding 2: connection
+        // validation must run on restart exactly as it does on first boot, so
+        // the dangling revision is not silently reinstalled.
+        let dir = temp_dir("wanaku-eval-persist-badconn");
+        let file = dir.join("evaluator-revisions.json");
+
+        let mut eval = safety_evaluator("gate", "tools/call", None);
+        eval.llm.connection = "gone-connection".to_owned();
+        seed_active(&file, vec![eval.clone()]);
+
+        let backend = Arc::new(FileRevisionPersistence::new(&file));
+        let restored = EvaluatorState::new().with_revision_persistence(backend);
+        // Only "test-connection" is loaded; the revision needs "gone-connection".
+        restored.load_llm_connections(vec![connection()]).unwrap();
+        restored.reconcile_startup(Some(vec![eval]));
+
+        assert!(
+            restored.list_evaluators().is_empty(),
+            "revision with an unknown connection must not be reinstalled on restart"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

@@ -1072,7 +1072,8 @@ This re-compiles all WASM files referenced in the config.
 - **WASM is sandboxed** — actions cannot access the filesystem, network, or system calls beyond what the WIT interface exposes.
 - **LLM prompts can be attacked** — sanitize user input, use system prompts that are robust to injection, and fail open if unsure.
 - **WASM actions are deterministic** — the same input always produces the same output. Use this property to test your logic thoroughly.
-- **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings (but evaluator definitions from `wanaku.yaml` are preserved).
+- **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings.
+- **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](configuration.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
 - **LLM credentials never transit the management API.** `model`, `url`, and `api_key` live only in `llm_connections` in `wanaku.yaml`, loaded once at startup. Evaluators refer to a connection by name. No route can set, update, or read an `api_key`, not on evaluator create or update, and not in evaluator revision history. To rotate a credential, edit `wanaku.yaml` and restart the server.
 
 ## Next Steps

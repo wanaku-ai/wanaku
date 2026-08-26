@@ -149,12 +149,20 @@ fn build_features(
     args: &ServerArgs,
     metrics_store: &wanaku_apis::metrics::MetricsStore,
 ) -> Vec<Box<dyn Feature>> {
+    let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
+        .with_metrics(metrics_store.clone());
+    if let Some(backend) =
+        wanaku_feature_evaluator::revision_persistence::FileRevisionPersistence::from_config()
+    {
+        info!("evaluator revision persistence enabled");
+        evaluator = evaluator.with_revision_persistence(backend);
+    }
+
     vec![
         Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-        Box::new(wanaku_feature_evaluator::EvaluatorFeature::new()
-            .with_metrics(metrics_store.clone())),
+        Box::new(evaluator),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
     ]
 }

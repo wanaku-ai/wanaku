@@ -9,6 +9,7 @@ mod host;
 pub use host::types as wit_types;
 pub mod llm_op;
 pub mod revision;
+pub mod revision_persistence;
 mod routes;
 pub mod schema;
 pub mod state;
@@ -42,6 +43,18 @@ impl EvaluatorFeature {
     #[must_use]
     pub fn with_metrics(mut self, store: wanaku_apis::metrics::MetricsStore) -> Self {
         self.state = self.state.with_metrics(store);
+        self
+    }
+
+    /// Enable revision persistence, loading any previously persisted history and
+    /// restoring the active revision as the live runtime configuration. Call
+    /// after [`Self::with_metrics`] so the restored snapshot updates metrics.
+    #[must_use]
+    pub fn with_revision_persistence(
+        mut self,
+        backend: std::sync::Arc<dyn crate::revision_persistence::RevisionPersistence>,
+    ) -> Self {
+        self.state = self.state.with_revision_persistence(backend);
         self
     }
 
@@ -121,38 +134,25 @@ impl Feature for EvaluatorFeature {
     }
 
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
+        // Connections are config-only and must load before reconciliation so
+        // that activation can validate every evaluator's connection reference.
         self.load_llm_connections_from_yaml(root);
 
-        let Some(eval_val) = root.get("evaluators") else {
-            return;
-        };
-        let Some(defs) = parse_evaluator_yaml(eval_val) else {
-            return;
-        };
+        // Absent or unparseable `evaluators` yields `None`, which tells
+        // reconciliation to re-activate the persisted active revision (if any)
+        // rather than clear it — a restart keeps the last known configuration.
+        let startup_defs = root
+            .get("evaluators")
+            .and_then(|eval_val| parse_evaluator_yaml(eval_val));
 
-        let count = defs.len();
-        tracing::info!(count = count, "evaluators loaded from wanaku.yaml");
-
-        match self.state.try_activate(
-            defs,
-            crate::revision::RevisionOrigin::Startup,
-            None,
-            None,
-        ) {
-            Ok(rev) => {
-                tracing::info!(
-                    revision_id = rev.metadata.id,
-                    count = count,
-                    "startup evaluator revision created"
-                );
-            }
-            Err(e) => {
-                // Fail closed: an invalid startup config must not end up active.
-                // No evaluators are loaded until wanaku.yaml is fixed and the
-                // server restarts (or a valid config is pushed via the API).
-                tracing::error!(error = %e, "startup evaluator configuration rejected; no evaluators loaded");
-            }
+        if let Some(ref defs) = startup_defs {
+            tracing::info!(count = defs.len(), "evaluators loaded from wanaku.yaml");
         }
+
+        // Reconcile the startup config against any persisted active revision.
+        // Every path re-validates and re-compiles through the safe activation
+        // path and fails closed, so a restart behaves like a first boot.
+        self.state.reconcile_startup(startup_defs);
     }
 
     fn load_env_config(&self) {}
