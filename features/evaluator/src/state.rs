@@ -155,6 +155,17 @@ impl EvaluatorState {
         names
     }
 
+    /// Seed the active snapshot directly, bypassing validation and revision
+    /// recording.
+    ///
+    /// This is a TEST-ONLY helper. It compiles WASM and schemas leniently
+    /// (dropping errors) and installs the definitions without recording a
+    /// revision, so runtime state and revision history would diverge. It is
+    /// gated behind the `test-util` feature and must never be used in
+    /// production. The production path is [`Self::try_activate`], which
+    /// validates, records a revision, and fails closed on any compilation
+    /// error.
+    #[cfg(any(test, feature = "test-util"))]
     pub fn load_evaluators(&self, defs: Vec<EvaluatorDef>) {
         let compiled = compile_wasm_map(&defs);
         let schemas = compile_schema_map(&defs);
@@ -362,14 +373,19 @@ impl EvaluatorState {
     }
 }
 
+/// Best-effort WASM compilation, silently dropping any module that fails.
+/// Test-only: serves [`EvaluatorState::load_evaluators`]. The production path
+/// uses [`compile_wasm_map_with_errors`] so `try_activate` can fail closed.
+#[cfg(any(test, feature = "test-util"))]
 fn compile_wasm_map(defs: &[EvaluatorDef]) -> HashMap<PathBuf, Arc<CompiledEvaluator>> {
     let (compiled, _) = compile_wasm_map_with_errors(defs);
     compiled
 }
 
 /// Best-effort compilation of all result schemas, silently dropping any that
-/// fail. Used by the startup load path, which tolerates partial configuration;
-/// `try_activate` uses [`try_compile_schemas`] instead to surface errors.
+/// fail. Test-only: serves [`EvaluatorState::load_evaluators`]. The production
+/// path uses [`try_compile_schemas`] so `try_activate` can surface errors.
+#[cfg(any(test, feature = "test-util"))]
 fn compile_schema_map(defs: &[EvaluatorDef]) -> HashMap<String, Arc<CompiledSchema>> {
     let (schemas, _) = try_compile_schemas(defs);
     schemas

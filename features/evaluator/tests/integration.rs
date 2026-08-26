@@ -358,6 +358,10 @@ mod state {
     }
 
     #[test]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "synchronous test needs real OS threads to exercise concurrent activation locking; the tokio guidance does not apply"
+    )]
     fn concurrent_activations_keep_snapshot_and_revision_consistent() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
