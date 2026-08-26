@@ -24,6 +24,14 @@ export class EvaluatorsPage extends BasePage {
     return this.connectionSelect().isDisabled();
   }
 
+  async connectionOptionValues(): Promise<string[]> {
+    return this.connectionSelect()
+      .locator('option')
+      .evaluateAll((opts) =>
+        opts.map((o) => (o as HTMLOptionElement).value).filter((v) => v.length > 0)
+      );
+  }
+
   async modalHasText(text: string): Promise<boolean> {
     const content = await this.modal().innerText();
     return content.includes(text);
