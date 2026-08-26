@@ -33,7 +33,7 @@ wanaku-filters = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["blocking", "json"] }
-serial_test = "3"
+serial_test = "4"
 # Self-dependency to enable `test-util` when compiling this crate's own
 # integration tests, so the seeding helpers are visible to tests only.
 wanaku-feature-evaluator = { path = ".", features = ["test-util"] }
