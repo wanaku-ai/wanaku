@@ -262,7 +262,7 @@ This removes all tools previously discovered from that forward and re-queries th
 
 ## The Feature System
 
-Features are self-contained modules that extend Wanaku with new capabilities. They live in `features/<name>/` and implement the `Feature` trait from `apis/src/feature.rs`:
+Features are self-contained modules that extend Wanaku with new capabilities. They live in `features/<name>/` and implement the `Feature` trait from `types/src/feature.rs`:
 
 ```rust
 #[async_trait::async_trait]

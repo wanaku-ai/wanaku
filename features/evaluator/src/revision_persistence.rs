@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use wanaku_apis::persistence::PersistenceError;
+use wanaku_types::persistence::PersistenceError;
 
 use crate::revision::{Revision, RevisionId};
 
@@ -57,7 +57,7 @@ impl FileRevisionPersistence {
     /// Returns `None` when persistence is disabled, so the store stays purely
     /// in memory. Uses the same directory as the registry snapshot.
     pub fn from_config() -> Option<Arc<dyn RevisionPersistence>> {
-        let persist = wanaku_apis::config::ENV.persist.as_ref()?;
+        let persist = wanaku_types::config::ENV.persist.as_ref()?;
         let path = persist.dir.join("evaluator-revisions.json");
         Some(Arc::new(Self::new(path)))
     }

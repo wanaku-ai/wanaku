@@ -4,8 +4,8 @@
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::{Feature, HttpContext};
 use wanaku_apis::metrics::MetricsStore;
+use wanaku_types::feature::{Feature, HttpContext};
 
 pub struct MetricsFeature {
     store: MetricsStore,
@@ -47,7 +47,7 @@ impl Feature for MetricsFeature {
             return None;
         }
         let snapshot = self.store.snapshot();
-        Some(wanaku_apis::http_response::json_ok(
+        Some(wanaku_types::http_response::json_ok(
             &serde_json::json!(snapshot),
         ))
     }

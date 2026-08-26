@@ -1,23 +1,27 @@
 [package]
-name = "wanaku-feature-plugins"
+name = "wanaku-types"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
 [lib]
-name = "wanaku_feature_plugins"
+name = "wanaku_types"
 
 [lints]
 workspace = true
 
+[features]
+openapi = ["dep:utoipa"]
+
 [dependencies]
 async-trait = { workspace = true }
 http = { workspace = true }
-praxis-filter = { workspace = true }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+rand = { workspace = true }
 serde = { workspace = true }
+praxis-filter = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
-wanaku-types = { workspace = true }
+utoipa = { version = "5.5", optional = true }

@@ -369,7 +369,8 @@ impl MetricsStore {
 // Serializable snapshots
 // ---------------------------------------------------------------------------
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct MetricsSnapshot {
     pub filters: HashMap<String, FilterSnapshot>,
     pub evaluators: HashMap<String, EvaluatorSnapshot>,
@@ -377,7 +378,8 @@ pub struct MetricsSnapshot {
     pub gauges: GaugeSnapshot,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct FilterSnapshot {
     pub requests_continue: u64,
     pub requests_reject: u64,
@@ -386,14 +388,16 @@ pub struct FilterSnapshot {
     pub duration: DurationSnapshot,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct DurationSnapshot {
     pub count: u64,
     pub total_ms: f64,
     pub avg_ms: f64,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct EvaluatorSnapshot {
     pub decisions: DecisionSnapshot,
     pub llm: LlmSnapshot,
@@ -402,7 +406,8 @@ pub struct EvaluatorSnapshot {
     pub pipeline_duration: DurationSnapshot,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct DecisionSnapshot {
     pub pass: u64,
     pub block: u64,
@@ -412,7 +417,8 @@ pub struct DecisionSnapshot {
     pub set_metadata: u64,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct LlmSnapshot {
     pub calls_success: u64,
     pub calls_failure: u64,
@@ -420,7 +426,8 @@ pub struct LlmSnapshot {
     pub duration: DurationSnapshot,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct SchemaSnapshot {
     pub validations_pass: u64,
     pub validations_fail: u64,
@@ -428,14 +435,16 @@ pub struct SchemaSnapshot {
     pub retries_failure: u64,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct WasmSnapshot {
     pub executions: u64,
     pub not_found: u64,
     pub duration: DurationSnapshot,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct PipelineSnapshot {
     pub trigger_matches: u64,
     pub trigger_misses: u64,
@@ -446,7 +455,8 @@ pub struct PipelineSnapshot {
     pub skipped_no_interactions: u64,
 }
 
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct GaugeSnapshot {
     pub evaluators_loaded: u64,
     pub wasm_compiled: u64,

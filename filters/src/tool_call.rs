@@ -4,8 +4,9 @@ use bytes::Bytes;
 use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_apis::config::ENV;
-use wanaku_apis::registry::{InMemoryRegistry, ToolEntry, ToolRegistry};
+use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::config::ENV;
+use wanaku_types::registry::{ToolEntry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
@@ -46,10 +47,10 @@ impl ToolCallFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
 
         let conversation_id = parsed.arguments
-            .remove(wanaku_apis::correlation::REQUEST_ID_ARG)
+            .remove(wanaku_types::correlation::REQUEST_ID_ARG)
             .map_or_else(|| "-".to_owned(), |v| match v {
                 serde_json::Value::String(s) => s,
                 other => other.to_string(),

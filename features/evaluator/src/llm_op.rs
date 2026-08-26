@@ -1,6 +1,6 @@
 use wanaku_apis::llm::{self, LlmClient};
-use wanaku_apis::mcp::McpContext;
 use wanaku_apis::metrics::MetricsStore;
+use wanaku_types::mcp::McpContext;
 
 use crate::config::{LlmConnection, LlmDef};
 

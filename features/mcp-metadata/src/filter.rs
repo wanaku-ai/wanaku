@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use http::StatusCode;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext, Rejection};
-use wanaku_apis::config::ENV;
+use wanaku_types::config::ENV;
 
 use crate::IssuerConfig;
 

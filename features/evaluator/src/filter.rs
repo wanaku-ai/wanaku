@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
-use wanaku_apis::interactions::{InMemoryInteractionStore, InteractionStore};
-use wanaku_apis::mcp::McpContext;
 use wanaku_apis::metrics::{MetricsStore, SkipReason};
-use wanaku_apis::registry::{InMemoryRegistry, ToolRegistry};
+use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_types::mcp::McpContext;
+use wanaku_types::registry::ToolRegistry;
 
 use crate::action::ActionResult;
 use crate::config::{ErrorPolicy, EvaluatorDef, LlmConnection, LlmOperation};
@@ -40,8 +41,8 @@ impl EvaluatorFilter {
         };
 
         let namespace = ctx
-            .get_metadata(wanaku_apis::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE)
+            .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
             .to_owned();
 
         // Capture one immutable active-configuration snapshot at request start.
@@ -88,7 +89,7 @@ impl EvaluatorFilter {
         let arguments = parse_arguments(body);
 
         let conversation_id = arguments
-            .get(wanaku_apis::correlation::REQUEST_ID_ARG)
+            .get(wanaku_types::correlation::REQUEST_ID_ARG)
             .cloned()
             .or_else(|| state.get_binding(&namespace));
 

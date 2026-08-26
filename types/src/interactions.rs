@@ -1,11 +1,15 @@
-#![allow(clippy::large_stack_frames, reason = "utoipa::ToSchema derive generates large stack frames")]
+#![cfg_attr(
+    feature = "openapi",
+    allow(clippy::large_stack_frames, reason = "utoipa::ToSchema derive generates large stack frames")
+)]
 
 use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct Interaction {
     pub epoch_ms: u64,
     pub path: String,

@@ -28,9 +28,11 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 
 ## Architecture
 
-**Workspace:** `apis/` (shared types, Feature trait, context structs, LLM, registry, config), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
+**Workspace:** `types/` (shared types, traits, Feature trait, context structs — zero heavy deps), `apis/` (infra: LLM client, MCP client, metrics, persistence, registry impl), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
 
-**Context structs** (`apis/src/`): group related parameters to keep function signatures under the clippy `too-many-arguments-threshold` (5). Use `Type::new(...)` to construct:
+Feature crates that only need `Feature`/`HttpContext`/registry traits depend on `wanaku-types`; crates needing concrete infra (LLM calls, MCP forwarding, metrics counters, file persistence) also depend on `wanaku-apis`. See [docs/architecture.md](docs/architecture.md) for the full boundary.
+
+**Context structs** (`types/src/`): group related parameters to keep function signatures under the clippy `too-many-arguments-threshold` (5). Use `Type::new(...)` to construct:
 - `HttpContext` (`feature.rs`) — HTTP method, path, query, body, headers. Passed to `Feature::handle_route`.
 - `McpContext` (`mcp.rs`) — MCP method, tool name, arguments, tool list, conversation history. Used by evaluator LLM operations.
 - `PipelineDeps` (`server/src/pipelines.rs`) — filter registry, health, KV, wanaku registry, features. Used by `resolve_pipelines`.
@@ -123,7 +125,7 @@ Namespace filter uses `on_request_body` (not `on_request`) because the MCP filte
 
 See [docs/configuration.md](docs/configuration.md) for environment variables, pipeline config, wanaku.yaml, and evaluator config.
 
-Core env vars are defined in `apis/src/config.rs`. Feature-specific env vars are owned by their respective feature crates.
+Core env vars are defined in `types/src/config.rs`. Feature-specific env vars are owned by their respective feature crates.
 
 ## Evaluator
 

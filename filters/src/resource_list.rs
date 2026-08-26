@@ -1,7 +1,8 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::trace;
-use wanaku_apis::registry::{InMemoryRegistry, ResourceRegistry};
+use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::registry::ResourceRegistry;
 
 crate::body_filter_boilerplate!(ResourceListFilter, "wanaku_resource_list");
 
@@ -24,7 +25,7 @@ impl ResourceListFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
 
         trace!(namespace = %namespace, "handling MCP resources/list request");
 

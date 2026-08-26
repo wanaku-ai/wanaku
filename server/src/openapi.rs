@@ -2,12 +2,12 @@
 
 use utoipa::OpenApi;
 
-use wanaku_apis::interactions::Interaction;
 use wanaku_apis::metrics::{
     DecisionSnapshot, DurationSnapshot, EvaluatorSnapshot, FilterSnapshot,
     GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
 };
-use wanaku_apis::registry::{
+use wanaku_types::interactions::Interaction;
+use wanaku_types::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
     ResourceEntry, ToolEntry,
 };

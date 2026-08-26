@@ -1,7 +1,8 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_apis::registry::{InMemoryRegistry, ResourceRegistry};
+use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::registry::ResourceRegistry;
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
@@ -82,7 +83,7 @@ impl ResourceReadFilter {
 
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
 
         trace!(uri = %resource_uri, namespace = %namespace, "handling MCP resources/read request");
 
@@ -121,7 +122,7 @@ impl ResourceReadFilter {
 
     async fn handle_forwarded_read(
         &self,
-        resource: &wanaku_apis::registry::ResourceEntry,
+        resource: &wanaku_types::registry::ResourceEntry,
         resource_uri: &str,
         parsed: &ParsedBody,
     ) -> Result<FilterAction, FilterError> {

@@ -1,8 +1,9 @@
 use http::{Response, StatusCode};
 use tracing::{info, warn};
 
-use wanaku_apis::registry::{
-    ForwardEntry, ForwardRegistry, InMemoryRegistry, NamespaceEntry, NamespaceRegistry,
+use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_types::registry::{
+    ForwardEntry, ForwardRegistry, NamespaceEntry, NamespaceRegistry,
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
     ToolEntry, ToolRegistry, MCP_FORWARD_TYPE,
 };
@@ -155,7 +156,7 @@ pub(super) fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -
         }
     };
 
-    if let Err(reason) = wanaku_apis::registry::validate_namespace_name(&namespace.name) {
+    if let Err(reason) = wanaku_types::registry::validate_namespace_name(&namespace.name) {
         warn!(name = %namespace.name, reason = %reason, "namespace name validation failed");
         return json_err(StatusCode::BAD_REQUEST, &reason);
     }
@@ -178,7 +179,7 @@ pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &s
         }
     };
 
-    if let Err(reason) = wanaku_apis::registry::validate_namespace_name(path_name) {
+    if let Err(reason) = wanaku_types::registry::validate_namespace_name(path_name) {
         warn!(name = %path_name, reason = %reason, "namespace name validation failed");
         return json_err(StatusCode::BAD_REQUEST, &reason);
     }
@@ -354,7 +355,7 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
 
 #[expect(clippy::too_many_lines, reason = "sequential tool registration")]
 fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry, tools: &[serde_json::Value]) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
     let mut batch = Vec::with_capacity(tools.len());
 
     for tool_json in tools {
@@ -421,7 +422,7 @@ fn register_discovered_resources(
     resources: &[serde_json::Value],
     templates: &[serde_json::Value],
 ) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
     let mut batch = Vec::with_capacity(resources.len() + templates.len());
 
     for res_json in resources {
@@ -450,7 +451,7 @@ fn register_discovered_resources(
 
         let mut labels = std::collections::HashMap::new();
         labels.insert(
-            wanaku_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
+            wanaku_types::registry::FORWARD_ADDRESS_LABEL.to_owned(),
             forward.address.clone(),
         );
 
@@ -495,11 +496,11 @@ fn register_discovered_resources(
 
         let mut labels = std::collections::HashMap::new();
         labels.insert(
-            wanaku_apis::registry::FORWARD_ADDRESS_LABEL.to_owned(),
+            wanaku_types::registry::FORWARD_ADDRESS_LABEL.to_owned(),
             forward.address.clone(),
         );
         labels.insert(
-            wanaku_apis::registry::IS_TEMPLATE_LABEL.to_owned(),
+            wanaku_types::registry::IS_TEMPLATE_LABEL.to_owned(),
             "true".to_owned(),
         );
 
@@ -563,7 +564,7 @@ fn register_discovered_prompts(
     forward: &ForwardEntry,
     prompts: &[serde_json::Value],
 ) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE);
+    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
     let mut batch = Vec::with_capacity(prompts.len());
 
     for prompt_json in prompts {
@@ -579,14 +580,14 @@ fn register_discovered_prompts(
             .and_then(|d| d.as_str())
             .unwrap_or_default();
 
-        let arguments: Vec<wanaku_apis::registry::PromptArgument> = prompt_json
+        let arguments: Vec<wanaku_types::registry::PromptArgument> = prompt_json
             .get("arguments")
             .and_then(|a| a.as_array())
             .map(|arr| {
                 arr.iter()
                     .filter_map(|arg| {
                         let arg_name = arg.get("name")?.as_str()?;
-                        Some(wanaku_apis::registry::PromptArgument {
+                        Some(wanaku_types::registry::PromptArgument {
                             name: arg_name.to_owned(),
                             description: arg
                                 .get("description")
@@ -636,8 +637,9 @@ fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_apis::registry::{InMemoryRegistry, PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
-    use wanaku_apis::registry::{PromptMessage, PromptRole};
+    use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_types::registry::{PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
+    use wanaku_types::registry::{PromptMessage, PromptRole};
     use std::collections::HashMap;
 
     #[test]
@@ -800,8 +802,9 @@ mod tests {
     use std::collections::HashMap;
 
     use http::Response;
-    use wanaku_apis::registry::{
-        ForwardEntry, ForwardRegistry, InMemoryRegistry,
+    use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_types::registry::{
+        ForwardEntry, ForwardRegistry,
         PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
         ToolEntry, ToolRegistry,
     };

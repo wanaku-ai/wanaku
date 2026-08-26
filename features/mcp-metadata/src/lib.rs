@@ -5,7 +5,7 @@ pub mod filter;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::feature::{Feature, HttpContext};
+use wanaku_types::feature::{Feature, HttpContext};
 
 const WANAKU_AUTH_ISSUER: &str = "WANAKU_AUTH_ISSUER";
 

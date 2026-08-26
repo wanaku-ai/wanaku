@@ -819,8 +819,8 @@ mod engine {
     use std::sync::Arc;
     use wanaku_feature_evaluator::engine::CompiledEvaluator;
     use wanaku_feature_evaluator::schema::CompiledSchema;
-    use wanaku_apis::interactions::InMemoryInteractionStore;
     use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_types::interactions::InMemoryInteractionStore;
 
     macro_rules! require_wasm {
         ($name:expr) => {{

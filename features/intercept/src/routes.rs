@@ -1,7 +1,7 @@
 use http::Response;
 use tracing::info;
-use wanaku_apis::http_response::json_ok;
-use wanaku_apis::interactions::{InMemoryInteractionStore, InteractionStore};
+use wanaku_types::http_response::json_ok;
+use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum InteractionRoute {
