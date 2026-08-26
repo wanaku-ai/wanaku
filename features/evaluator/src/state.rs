@@ -19,11 +19,42 @@ use crate::schema::CompiledSchema;
 /// always observe a self-consistent configuration. A concurrent activation can
 /// never expose evaluator definitions from one revision alongside compiled
 /// modules or schemas from another.
+///
+/// A request captures one snapshot at its start via
+/// [`EvaluatorState::active_config`] and resolves its evaluator definition,
+/// result schema, and WASM processor from that same snapshot. This guarantees a
+/// request never mixes artifacts from different revisions, even if an activation
+/// swaps in a new snapshot while the request awaits the LLM.
 #[derive(Default)]
-struct ActiveSnapshot {
+pub struct ActiveSnapshot {
     evaluators: Vec<EvaluatorDef>,
     compiled: HashMap<PathBuf, Arc<CompiledEvaluator>>,
     schemas: HashMap<String, Arc<CompiledSchema>>,
+}
+
+impl ActiveSnapshot {
+    #[must_use]
+    pub fn list_evaluators(&self) -> Vec<EvaluatorDef> {
+        self.evaluators.clone()
+    }
+
+    #[must_use]
+    pub fn find_matching(&self, method: &str, namespace: &str) -> Option<EvaluatorDef> {
+        self.evaluators
+            .iter()
+            .find(|e| e.trigger.matches(method, namespace))
+            .cloned()
+    }
+
+    #[must_use]
+    pub fn get_compiled_schema(&self, evaluator_name: &str) -> Option<Arc<CompiledSchema>> {
+        self.schemas.get(evaluator_name).cloned()
+    }
+
+    #[must_use]
+    pub fn get_compiled(&self, path: &Path) -> Option<Arc<CompiledEvaluator>> {
+        self.compiled.get(path).cloned()
+    }
 }
 
 /// Shared state for the evaluator engine.
@@ -224,9 +255,15 @@ impl EvaluatorState {
     }
 
     /// Return the current active snapshot. Cloning the `Arc` is cheap and lets
-    /// readers work against a stable, self-consistent configuration even if an
+    /// a caller work against a stable, self-consistent configuration even if an
     /// activation swaps in a new snapshot concurrently.
-    fn snapshot(&self) -> Arc<ActiveSnapshot> {
+    ///
+    /// A request must capture the snapshot once at its start and resolve every
+    /// per-request artifact (evaluator definition, result schema, WASM
+    /// processor) from that same handle, so it never mixes artifacts from
+    /// different revisions across an `await`.
+    #[must_use]
+    pub fn active_config(&self) -> Arc<ActiveSnapshot> {
         self.active
             .read()
             .map(|guard| Arc::clone(&guard))
@@ -259,23 +296,19 @@ impl EvaluatorState {
     }
 
     pub fn list_evaluators(&self) -> Vec<EvaluatorDef> {
-        self.snapshot().evaluators.clone()
+        self.active_config().list_evaluators()
     }
 
     pub fn find_matching(&self, method: &str, namespace: &str) -> Option<EvaluatorDef> {
-        self.snapshot()
-            .evaluators
-            .iter()
-            .find(|e| e.trigger.matches(method, namespace))
-            .cloned()
+        self.active_config().find_matching(method, namespace)
     }
 
     pub fn get_compiled_schema(&self, evaluator_name: &str) -> Option<Arc<CompiledSchema>> {
-        self.snapshot().schemas.get(evaluator_name).cloned()
+        self.active_config().get_compiled_schema(evaluator_name)
     }
 
     pub fn get_compiled(&self, path: &Path) -> Option<Arc<CompiledEvaluator>> {
-        self.snapshot().compiled.get(path).cloned()
+        self.active_config().get_compiled(path)
     }
 
     pub fn bind_namespace(&self, namespace: &str, conversation_id: &str) {

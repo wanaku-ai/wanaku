@@ -44,7 +44,14 @@ impl EvaluatorFilter {
             .unwrap_or(wanaku_apis::registry::DEFAULT_NAMESPACE)
             .to_owned();
 
-        let Some(evaluator) = state.find_matching(&method, &namespace) else {
+        // Capture one immutable active-configuration snapshot at request start.
+        // The evaluator definition, its result schema, and its WASM processor
+        // are all resolved from this same snapshot, so a concurrent activation
+        // during the LLM await can never mix an old definition with new
+        // artifacts. Each request observes one complete configuration (#1868).
+        let config = state.active_config();
+
+        let Some(evaluator) = config.find_matching(&method, &namespace) else {
             record_skip(&metrics, &SkipReason::Unmatched);
             record_trigger(&metrics, false);
             return Ok(FilterAction::Continue);
@@ -140,7 +147,7 @@ impl EvaluatorFilter {
 
         let resolved = ResolvedRuntime {
             connection: llm_connection,
-            compiled_schema: state.get_compiled_schema(&evaluator.name),
+            compiled_schema: config.get_compiled_schema(&evaluator.name),
         };
 
         let llm_result = validate_and_retry_if_needed(
@@ -158,7 +165,7 @@ impl EvaluatorFilter {
             "LLM operation result"
         );
 
-        let Some(compiled) = state.get_compiled(&evaluator.processor.path) else {
+        let Some(compiled) = config.get_compiled(&evaluator.processor.path) else {
             tracing::warn!(
                 evaluator = %evaluator.name,
                 path = %evaluator.processor.path.display(),
